@@ -1,0 +1,103 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/golang/protobuf/proto",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "69b215d01a5606c843240eab4937eab3acee6530",
+			"branch": "master",
+			"path": "/proto",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/protobuf/ptypes/any",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "69b215d01a5606c843240eab4937eab3acee6530",
+			"branch": "master",
+			"path": "ptypes/any",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "906cda9512f77671ab44f8c8563b13a8e707b230",
+			"branch": "master",
+			"path": "/context",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/text/internal/gen",
+			"repository": "https://go.googlesource.com/text",
+			"vcs": "git",
+			"revision": "0ad425fe45e885577bef05dc1c50f72e33188b16",
+			"branch": "master",
+			"path": "internal/gen",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/text/internal/triegen",
+			"repository": "https://go.googlesource.com/text",
+			"vcs": "git",
+			"revision": "0ad425fe45e885577bef05dc1c50f72e33188b16",
+			"branch": "master",
+			"path": "internal/triegen",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/text/internal/ucd",
+			"repository": "https://go.googlesource.com/text",
+			"vcs": "git",
+			"revision": "0ad425fe45e885577bef05dc1c50f72e33188b16",
+			"branch": "master",
+			"path": "internal/ucd",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/text/unicode/cldr",
+			"repository": "https://go.googlesource.com/text",
+			"vcs": "git",
+			"revision": "0ad425fe45e885577bef05dc1c50f72e33188b16",
+			"branch": "master",
+			"path": "/unicode/cldr",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/text/unicode/rangetable",
+			"repository": "https://go.googlesource.com/text",
+			"vcs": "git",
+			"revision": "0ad425fe45e885577bef05dc1c50f72e33188b16",
+			"branch": "master",
+			"path": "unicode/rangetable",
+			"notests": true
+		},
+		{
+			"importpath": "google.golang.org/appengine/internal",
+			"repository": "https://github.com/golang/appengine",
+			"vcs": "git",
+			"revision": "3a452f9e00122ead39586d68ffdb9c6e1326af3c",
+			"branch": "master",
+			"path": "internal",
+			"notests": true
+		},
+		{
+			"importpath": "google.golang.org/appengine/urlfetch",
+			"repository": "https://github.com/golang/appengine",
+			"vcs": "git",
+			"revision": "3a452f9e00122ead39586d68ffdb9c6e1326af3c",
+			"branch": "master",
+			"path": "/urlfetch",
+			"notests": true
+		},
+		{
+			"importpath": "k8s.io/client-go",
+			"repository": "https://github.com/kubernetes/client-go",
+			"vcs": "git",
+			"revision": "e121606b0d09b2e1c467183ee46217fa85a6b672",
+			"branch": "HEAD",
+			"notests": true
+		}
+	]
+}

@@ -1,0 +1,21 @@
+FROM centos:7
+
+LABEL Release="1.2.9" Vendor="Crunchy Data Solutions" 
+
+RUN yum -y install bind-utils \
+	hostname \
+	openssh-clients \
+ 	procps-ng   && yum -y clean all
+
+
+# set up cpm directory
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf 
+
+RUN chown -R daemon:daemon /opt/cpm
+
+ADD bin/crunchy-operator /opt/cpm/bin
+ADD conf/crunchy-operator /opt/cpm/conf
+
+USER daemon
+
+ENTRYPOINT ["/opt/cpm/bin/crunchy-operator"]
