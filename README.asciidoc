@@ -1,13 +1,25 @@
 # operator
 
-=== Building
-
+=== Project Structure and Dependencies
 ....
+mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
+export GOPATH=$HOME/odev
+export GOBIN=$GOPATH/bin
+mkdir -p $GOPATH/github.com/crunchydata/
+cd $GOPATH/github.com/crunchydata
+git clone https://github.com/CrunchyData/operator.git
+cd operator
 go get -u github.com/FiloSottile/gvt
-gvt fetch -tag v2.0.0 k8s.io/client-go
-gvt restore
-make operatorserver
 ....
+
+=== Test Environment
+
+minikube 1.6.0-alpha, executed using:
+....
+minikube start --kubernetes-version=v1.6.0-alpha.0 --feature-gates=AllAlpha=true
+....
+
+=== Allowing minikube Docker Image Access
 
 On minikube, to use the local docker image, in /etc/sysconfig/docker:
 ....
@@ -23,4 +35,13 @@ then,
 eval $(minikube docker-env)
 ....
 
+=== Building
+....
+gvt restore
+make operatorserver
+....
 
+Current dependencies include:
+....
+gvt fetch -tag v2.0.0 k8s.io/client-go
+....
