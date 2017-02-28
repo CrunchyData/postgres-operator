@@ -48,6 +48,12 @@ gvt fetch -tag v2.0.0 k8s.io/client-go
 
 === CLI 
 
+run the client like this to test with:
+....
+cd client
+go run main.go -kubeconfig=/home/jeffmc/.kube/config
+....
+
 Only ideas right now:
 ....
 crunchy create database -name=foodb
