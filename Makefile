@@ -9,10 +9,6 @@ versiontest:
 	if test -z "$$CCP_VERSION"; then echo "CCP_VERSION undefined"; exit 1;fi;
 setup:
 	$(BUILDBASE)/bin/install-deps.sh
-gendeps:
-	godep save \
-	github.com/crunchydata/fishysmell/operator \
-	github.com/crunchydata/fishysmell/operatorcontroller 
 
 docbuild:
 	cd docs && ./build-docs.sh
