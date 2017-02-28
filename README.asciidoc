@@ -45,3 +45,29 @@ Current dependencies include:
 ....
 gvt fetch -tag v2.0.0 k8s.io/client-go
 ....
+
+=== CLI 
+
+Only ideas right now:
+....
+crunchy create database -name=foodb
+crunchy create database -name=foodb -pvc=foopvc
+crunchy create cluster -name=mycluster
+crunchy create cluster -name=mycluster -pvc=mypvc
+crunchy backup -name=foodb -pvc=foopvc
+crunchy restore -name=restoredb -pvc=foopvc -archive=foodb-backups/01-09-01-2 -pvc=restorepvc
+crunchy show database -name=foodb
+crunchy show cluster -name=mycluster
+crunchy show cluster -all
+crunchy delete cluster -name=mycluster
+crunchy delete database -name=foodb
+....
+
+Future ideas:
+....
+crunchy upgrade database -name=foodb -to=9.6
+crunchy database policy update -config=pg_hba.conf -name=foodb
+crunchy database policy update -config=pg_hba.conf -all
+crunchy user add -name=foodb -config=userconfig
+crunchy user delete -name=foodb -user=foouser
+....
