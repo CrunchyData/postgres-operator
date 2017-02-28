@@ -27,11 +27,17 @@ func main() {
 		panic(err.Error())
 	}
 	for {
-		pods, err := clientset.Core().Pods("").List(v1.ListOptions{})
+		lo := v1.ListOptions{LabelSelector: "k8s-app=kube-dns"}
+		fmt.Println("label selector is " + lo.LabelSelector)
+		pods, err := clientset.Core().Pods("").List(lo)
 		if err != nil {
 			panic(err.Error())
 		}
 		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
+		for _, pod := range pods.Items {
+			fmt.Println("pod Name " + pod.ObjectMeta.Name)
+			fmt.Println("pod phase is " + pod.Status.Phase)
+		}
 		time.Sleep(10 * time.Second)
 	}
 }
