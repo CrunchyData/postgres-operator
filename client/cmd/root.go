@@ -24,6 +24,7 @@ import (
 
 var cfgFile string
 var KubeconfigPath string
+var Labelselector string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -62,6 +63,7 @@ func init() {
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	RootCmd.PersistentFlags().StringVar(&KubeconfigPath, "kubeconfig", "", "kube config file")
+	RootCmd.PersistentFlags().StringVar(&Labelselector, "selector", "", "label selector string")
 
 }
 

@@ -51,10 +51,24 @@ gvt fetch -tag v2.0.0 k8s.io/client-go
 run the client like this to test with:
 ....
 cd client
-go run main.go -kubeconfig=/home/jeffmc/.kube/config
+go run main.go show --selector='name=ms-master' --kubeconfig=/home/jeffmc/.kube/config
 ....
 
-Only ideas right now:
+Viewing database components (service and pod):
+....
+crunchy show database 
+crunchy show database ms-master
+crunchy show database --selector='crunchydb=ms-master'
+....
+
+Viewing database cluster components (service and pods):
+....
+crunchy show cluster
+crunchy show cluster mycluster
+crunchy show cluster --selector='crunchycluster=mycluster'
+....
+
+Creating database pod and related service:
 ....
 crunchy create database -name=foodb
 crunchy create database -name=foodb -pvc=foopvc
@@ -62,9 +76,6 @@ crunchy create cluster -name=mycluster
 crunchy create cluster -name=mycluster -pvc=mypvc
 crunchy backup -name=foodb -pvc=foopvc
 crunchy restore -name=restoredb -pvc=foopvc -archive=foodb-backups/01-09-01-2 -pvc=restorepvc
-crunchy show database -name=foodb
-crunchy show cluster -name=mycluster
-crunchy show cluster -all
 crunchy delete cluster -name=mycluster
 crunchy delete database -name=foodb
 ....
@@ -77,3 +88,4 @@ crunchy database policy update -config=pg_hba.conf -all
 crunchy user add -name=foodb -config=userconfig
 crunchy user delete -name=foodb -user=foouser
 ....
+

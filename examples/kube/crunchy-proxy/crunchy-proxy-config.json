@@ -1,0 +1,47 @@
+{
+	"Name": "sampleconfig",
+	"HostPort": "0.0.0.0:5432",
+	"AdminHostPort": "0.0.0.0:10000",
+	"ReadAnnotation": "read",
+	"StartAnnotation": "start",
+	"FinishAnnotation": "finish",
+	"healthcheck": {
+		"delay": 10,
+		"query": "select now();"
+	},
+	"pool": {
+		"enabled": true,
+		"capacity": 2
+	},
+	"Credentials": {
+		"username": "postgres",
+		"database": "postgres",
+		"password": "password",
+		"options": {},
+		"SSL": {
+			"Enable": false,
+			"SSLMode": "disable"
+		}
+	},
+	"Adapters": [{
+		"AdapterType": "audit",
+		"metadata": {
+			"Age": 6,
+			"filepath": "/tmp/audit.log2"
+		}
+	}],
+	"Master": {
+		"HostPort": "ms-master:5432",
+		"metadata": {
+			"cpu": "large",
+			"disk": "fast"
+		}
+	},
+	"Replicas":[{
+		"HostPort": "ms-replica:5432",
+		"metadata": {
+			"cpu": "small",
+			"disk": "slow"
+		}
+	}]
+}

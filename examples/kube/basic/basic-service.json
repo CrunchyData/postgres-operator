@@ -1,0 +1,24 @@
+{
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "basic",
+            "labels": {
+                "name": "basic",
+                "crunchydb": "basic"
+            }
+        },
+        "spec": {
+            "ports": [{
+                "protocol": "TCP",
+                "port": 5432,
+                "targetPort": 5432,
+                "nodePort": 0
+            }],
+            "selector": {
+                "name": "basic"
+            },
+            "type": "ClusterIP",
+            "sessionAffinity": "None"
+        }
+}

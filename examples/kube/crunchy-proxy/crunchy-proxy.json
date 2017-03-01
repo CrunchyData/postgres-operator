@@ -1,0 +1,49 @@
+{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "crunchy-proxy",
+        "labels": {
+            "name": "crunchy-proxy",
+            "crunchycluster": "my-cluster"
+        }
+    },
+    "spec": {
+        "containers": [{
+            "name": "proxy",
+            "image": "crunchydata/crunchy-proxy:$PROXY_IMAGE_TAG",
+            "ports": [{
+                "name": "proxy",
+                "containerPort": 5432,
+                "protocol": "TCP"
+            }, {
+                "name": "admin",
+                "containerPort": 10000,
+                "protocol": "TCP"
+            }],
+            "env": [{
+                "name": "PG_MASTER_SERVICE_NAME",
+                "value": "ms-master"
+            }, {
+                "name": "PG_SLAVE_SERVICE_NAME",
+                "value": "ms-replica"
+            }, {
+                "name": "DEBUG",
+                "value": "true"
+            }],
+            "volumeMounts": [{
+                "mountPath": "/config",
+                "name": "config",
+                "readOnly": true
+            }]
+
+        }],
+
+        "volumes": [{
+            "name": "config",
+            "persistentVolumeClaim": {
+                "claimName": "crunchy-pvc"
+            }
+        }]
+    }
+}

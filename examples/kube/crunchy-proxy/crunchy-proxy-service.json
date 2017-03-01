@@ -1,0 +1,25 @@
+    {
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "crunchy-proxy",
+            "labels": {
+                "name": "crunchy-proxy",
+                "crunchycluster": "my-cluster"
+            }
+        },
+        "spec": {
+            "type": "ClusterIP",
+            "ports": [{
+                "protocol": "TCP",
+                "port": 5432,
+                "targetPort": 5432
+            }],
+            "selector": {
+                "name": "crunchy-proxy"
+            }
+        },
+        "status": {
+            "loadBalancer": {}
+        }
+    }
