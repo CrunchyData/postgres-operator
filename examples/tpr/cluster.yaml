@@ -1,0 +1,7 @@
+apiVersion: extensions/v1beta1
+kind: ThirdPartyResource
+metadata:
+  name: cluster.crunchydata.com
+description: "A PostgreSQL cluster specification"
+versions:
+- name: v1
