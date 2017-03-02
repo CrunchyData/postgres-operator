@@ -1,0 +1,6 @@
+apiVersion: "crunchydata.com/v1"
+kind: CrunchyCluster
+metadata:
+  name: my-new-crunchy-cluster-object
+cronSpec: "* * * * /5"
+image: my-awesome-cron-image
