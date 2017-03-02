@@ -89,3 +89,11 @@ crunchy user add -name=foodb -config=userconfig
 crunchy user delete -name=foodb -user=foouser
 ....
 
+=== TPR Endpoints
+
+After creating the TPRs, you can work with TPR objects from the
+new TPR APIs as follows:
+....
+ curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchydatabases --insecure
+ curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchyclusters --insecure
+....
