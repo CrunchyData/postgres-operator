@@ -15,7 +15,7 @@ func NewTPRClient() (*rest.RESTClient, error) {
 	}
 
 	config.GroupVersion = &unversioned.GroupVersion{
-		Group:   "crunchy.com",
+		Group:   "crunchydata.com",
 		Version: "v1beta1",
 	}
 	config.APIPath = "/apis"

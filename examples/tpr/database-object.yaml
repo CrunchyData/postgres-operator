@@ -1,6 +1,7 @@
 apiVersion: "crunchydata.com/v1"
 kind: CrunchyDatabase
 metadata:
-  name: my-new-crunchy-database-object
-cronSpec: "* * * * /5"
-image: my-awesome-cron-image
+  name: "example1"
+spec:
+  foo: "example1 foo"
+  bar: true
