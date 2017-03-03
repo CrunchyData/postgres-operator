@@ -5,7 +5,7 @@
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
-mkdir -p $GOPATH/github.com/crunchydata/
+mkdir -p $GOPATH/src/github.com/crunchydata/
 cd $GOPATH/github.com/crunchydata
 git clone https://github.com/CrunchyData/operator.git
 cd operator
