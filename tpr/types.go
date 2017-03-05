@@ -13,34 +13,17 @@
  limitations under the License.
 */
 
-package cmd
+// Package tpr defines the ThirdPartyResources used within
+// the crunchy operator, namely the CrunchyDatabase and CrunchyCluster
+// types.
+package tpr
 
-import (
-	"fmt"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-)
+import ()
 
-var Config *rest.Config
-var Clientset *kubernetes.Clientset
+type CrunchyDatabase struct {
+	Name string
+}
 
-func ConnectToKube() {
-
-	//setup connection to kube
-	// uses the current context in kubeconfig
-	var err error
-	Config, err = clientcmd.BuildConfigFromFlags("", KubeconfigPath)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// creates the clientset
-	Clientset, err = kubernetes.NewForConfig(Config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	fmt.Println("connected to kube. at " + KubeconfigPath)
-
+type CrunchyCluster struct {
+	Name string
 }
