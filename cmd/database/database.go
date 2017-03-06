@@ -17,9 +17,11 @@
 package database
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"html/template"
-	"os"
+	"io/ioutil"
+	"text/template"
 	"time"
 
 	"github.com/crunchydata/operator/tpr"
@@ -30,12 +32,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type ServiceTemplate struct {
+type ServiceTemplateFields struct {
 	Name string
 	Port string
 }
 
-type PodTemplate struct {
+type PodTemplateFields struct {
 	Name               string
 	Port               string
 	CCP_IMAGE_TAG      string
@@ -45,6 +47,32 @@ type PodTemplate struct {
 	PG_PASSWORD        string
 	PG_DATABASE        string
 	PG_ROOT_PASSWORD   string
+}
+
+const SERVICE_PATH = "/pgconf/database-service.json"
+const POD_PATH = "/pgconf/database-pod.json"
+
+var PodTemplate *template.Template
+var ServiceTemplate *template.Template
+
+func init() {
+	var err error
+	var buf []byte
+
+	buf, err = ioutil.ReadFile(POD_PATH)
+	if err != nil {
+		fmt.Println(err.Error())
+		panic(err.Error())
+	}
+	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
+
+	buf, err = ioutil.ReadFile(SERVICE_PATH)
+	if err != nil {
+		fmt.Println(err.Error())
+		panic(err.Error())
+	}
+
+	ServiceTemplate = template.Must(template.New("service template").Parse(string(buf)))
 }
 
 func Process(client *rest.RESTClient, stopchan chan struct{}) {
@@ -97,20 +125,22 @@ func addDatabase(db *tpr.CrunchyDatabase) {
 	fmt.Println("created with Name=" + db.Spec.Name)
 
 	//create the service
-	service := ServiceTemplate{
+	serviceFields := ServiceTemplateFields{
 		Name: db.Spec.Name,
 		Port: "5432",
 	}
 
-	t, err := template.New("service template").ParseFiles("/pgconf/database-service.json")
+	var doc bytes.Buffer
+	err := ServiceTemplate.Execute(&doc, serviceFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	t.Execute(os.Stdout, service)
+	serviceDocString := doc.String()
+	fmt.Println(serviceDocString)
 
 	//create the pod
-	pod := PodTemplate{
+	podFields := PodTemplateFields{
 		Name:               db.Spec.Name,
 		Port:               "5432",
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
@@ -122,12 +152,23 @@ func addDatabase(db *tpr.CrunchyDatabase) {
 		PG_ROOT_PASSWORD:   "password",
 	}
 
-	t, err = template.New("pod template").ParseFiles("/pgconf/database-pod.json")
+	var doc2 bytes.Buffer
+	err = PodTemplate.Execute(&doc2, podFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	t.Execute(os.Stdout, pod)
+	podDocString := doc2.String()
+	fmt.Println(podDocString)
+
+	pod := api.Pod{}
+	err = json.Unmarshal(doc2.Bytes(), &pod)
+	if err != nil {
+		fmt.Println("error unmarshalling json into Pod ")
+		fmt.Println(err.Error())
+		return
+	}
+
 }
 
 func deleteDatabase(db *tpr.CrunchyDatabase) {

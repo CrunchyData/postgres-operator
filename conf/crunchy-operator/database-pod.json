@@ -4,7 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            "name": "{{.Name}}"
+            "name": "{{.Name}}",
             "crunchy-database": "{{.Name}}"
         }
     },
@@ -32,7 +32,7 @@
             },
 
             "ports": [{
-                "containerPort": {{.Port}},
+                "containerPort": {{.Port }},
                 "protocol": "TCP"
             }],
             "env": [{
