@@ -21,10 +21,10 @@ $DIR/cleanup.sh
 sudo cp $DIR/database-service.json /data
 sudo cp $DIR/database-pod.json /data
 
-kubectl create -f $DIR/crunchy-pv.yaml
+kubectl create -f $DIR/crunchy-pv.json
 
 sleep 3
-kubectl create -f $DIR/crunchy-pvc.yaml
+kubectl create -f $DIR/crunchy-pvc.json
 
 sleep 3
-kubectl create -f $DIR/deployment.yaml
+kubectl create -f $DIR/deployment.json

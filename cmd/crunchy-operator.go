@@ -122,6 +122,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		unversioned.GroupVersion{Group: "crunchydata.com", Version: "v1"},
 		&tpr.CrunchyDatabase{},
 		&tpr.CrunchyDatabaseList{},
+		&tpr.CrunchyCluster{},
+		&tpr.CrunchyClusterList{},
 		&api.ListOptions{},
 		&api.DeleteOptions{},
 	)

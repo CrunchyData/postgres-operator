@@ -3,5 +3,5 @@ kind: CrunchyDatabase
 metadata:
   name: "example1"
 spec:
-  foo: "example1 foo"
+  name: "example1"
   bar: true

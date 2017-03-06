@@ -3,5 +3,5 @@ kind: CrunchyCluster
 metadata:
   name: "example1"
 spec:
-  doo: "example1 doo"
+  name: "example1"
   goo: true

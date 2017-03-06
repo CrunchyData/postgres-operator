@@ -37,14 +37,12 @@ func Process(client *rest.RESTClient, stopchan chan struct{}) {
 	createAddHandler := func(obj interface{}) {
 		cluster := obj.(*tpr.CrunchyCluster)
 		eventchan <- cluster
-		fmt.Println("creating CrunchyCluster object")
-		fmt.Println("created with Name=" + cluster.Spec.Name)
+		addCluster(cluster)
 	}
 	createDeleteHandler := func(obj interface{}) {
 		cluster := obj.(*tpr.CrunchyCluster)
 		eventchan <- cluster
-		fmt.Println("deleting CrunchyCluster object")
-		fmt.Println("deleted with Name=" + cluster.Spec.Name)
+		deleteCluster(cluster)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
@@ -73,4 +71,14 @@ func Process(client *rest.RESTClient, stopchan chan struct{}) {
 		}
 	}
 
+}
+
+func addCluster(db *tpr.CrunchyCluster) {
+	fmt.Println("creating CrunchyCluster object")
+	fmt.Println("created with Name=" + db.Spec.Name)
+}
+
+func deleteCluster(db *tpr.CrunchyCluster) {
+	fmt.Println("deleting CrunchyCluster object")
+	fmt.Println("deleting with Name=" + db.Spec.Name)
 }
