@@ -17,99 +17,30 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	"github.com/crunchydata/operator/cmd/cluster"
+	"github.com/crunchydata/operator/cmd/database"
 	"github.com/crunchydata/operator/tpr"
 
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
 	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
-
-type CrunchyDatabaseSpec struct {
-	Foo string `json:"foo"`
-	Bar bool   `json:"bar"`
-}
-
-type CrunchyDatabase struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
-
-	Spec CrunchyDatabaseSpec `json:"spec"`
-}
-
-type CrunchyDatabaseList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
-
-	Items []CrunchyDatabase `json:"items"`
-}
-
-func (e *CrunchyDatabase) GetObjectKind() unversioned.ObjectKind {
-	return &e.TypeMeta
-}
-
-func (e *CrunchyDatabase) GetObjectMeta() meta.Object {
-	return &e.Metadata
-}
-
-func (el *CrunchyDatabaseList) GetObjectKind() unversioned.ObjectKind {
-	return &el.TypeMeta
-}
-
-func (el *CrunchyDatabaseList) GetListMeta() unversioned.List {
-	return &el.Metadata
-}
-
-type CrunchyDatabaseListCopy CrunchyDatabaseList
-type CrunchyDatabaseCopy CrunchyDatabase
-
-func (e *CrunchyDatabase) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyDatabaseCopy{}
-	err := json.Unmarshal(data, &tmp)
-	if err != nil {
-		return err
-	}
-	tmp2 := CrunchyDatabase(tmp)
-	*e = tmp2
-	return nil
-}
-
-func (el *CrunchyDatabaseList) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyDatabaseListCopy{}
-	err := json.Unmarshal(data, &tmp)
-	if err != nil {
-		return err
-	}
-	tmp2 := CrunchyDatabaseList(tmp)
-	*el = tmp2
-	return nil
-}
 
 var (
 	config *rest.Config
 )
 
 func main() {
-	db := tpr.CrunchyDatabase{}
-	if db.Name != "" {
-	}
-	cl := tpr.CrunchyCluster{}
-	if cl.Name != "" {
-	}
 	kubeconfig := flag.String("kubeconfig", "", "the path to a kubeconfig, specifies this tool runs outside the cluster")
 	flag.Parse()
 
@@ -118,7 +49,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	exampleList := CrunchyDatabaseList{}
+	exampleList := tpr.CrunchyDatabaseList{}
 	err = client.Get().
 		Resource("crunchydatabases").
 		Do().Into(&exampleList)
@@ -127,7 +58,7 @@ func main() {
 	}
 	fmt.Printf("%#v\n", exampleList)
 
-	example := CrunchyDatabase{}
+	example := tpr.CrunchyDatabase{}
 	err = client.Get().
 		Namespace("default").
 		Resource("crunchydatabases").
@@ -143,50 +74,10 @@ func main() {
 	fmt.Println("---------------------------------------------------------")
 	fmt.Println()
 
-	eventchan := make(chan *CrunchyDatabase)
 	stopchan := make(chan struct{}, 1)
-	source := cache.NewListWatchFromClient(client, "crunchydatabases", api.NamespaceAll, fields.Everything())
 
-	createAddHandler := func(obj interface{}) {
-		example := obj.(*CrunchyDatabase)
-		eventchan <- example
-		fmt.Println("creating an example object")
-		fmt.Println("created with Foo=" + example.Spec.Foo)
-	}
-	createDeleteHandler := func(obj interface{}) {
-		example := obj.(*CrunchyDatabase)
-		eventchan <- example
-		fmt.Println("deleting an example object")
-		fmt.Println("deleted with Foo=" + example.Spec.Foo)
-	}
-
-	updateHandler := func(old interface{}, obj interface{}) {
-		example := obj.(*CrunchyDatabase)
-		eventchan <- example
-		fmt.Println("updating an example object")
-		fmt.Println("updated with Foo=" + example.Spec.Foo)
-	}
-
-	_, controller := cache.NewInformer(
-		source,
-		&CrunchyDatabase{},
-		time.Second*10,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    createAddHandler,
-			UpdateFunc: updateHandler,
-			DeleteFunc: createDeleteHandler,
-		})
-
-	go controller.Run(stopchan)
-
-	go func() {
-		for {
-			select {
-			case event := <-eventchan:
-				fmt.Printf("%#v\n", event)
-			}
-		}
-	}()
+	go database.Process(client, stopchan)
+	go cluster.Process(client, stopchan)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -229,8 +120,8 @@ func configFromFlags(kubeconfig string) (*rest.Config, error) {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
 		unversioned.GroupVersion{Group: "crunchydata.com", Version: "v1"},
-		&CrunchyDatabase{},
-		&CrunchyDatabaseList{},
+		&tpr.CrunchyDatabase{},
+		&tpr.CrunchyDatabaseList{},
 		&api.ListOptions{},
 		&api.DeleteOptions{},
 	)

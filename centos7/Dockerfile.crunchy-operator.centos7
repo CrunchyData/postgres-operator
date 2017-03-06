@@ -7,15 +7,10 @@ RUN yum -y install bind-utils \
 	openssh-clients \
  	procps-ng   && yum -y clean all
 
+ADD bin/crunchy-operator /usr/local/bin
 
-# set up cpm directory
-RUN mkdir -p /opt/cpm/bin /opt/cpm/conf 
-
-RUN chown -R daemon:daemon /opt/cpm
-
-ADD bin/crunchy-operator /opt/cpm/bin
-ADD conf/crunchy-operator /opt/cpm/conf
+VOLUME ["/pgconf"]
 
 USER daemon
 
-ENTRYPOINT ["/opt/cpm/bin/crunchy-operator"]
+ENTRYPOINT ["crunchy-operator"]
