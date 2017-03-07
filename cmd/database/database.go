@@ -215,5 +215,23 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 	fmt.Println("deleting with Name=" + db.Spec.Name)
 
 	//delete the service
+	err := clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println("error deleting Service ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("deleted service " + db.Spec.Name)
+
+	//delete the pod
+	err = clientset.Pods(v1.NamespaceDefault).Delete(db.Spec.Name,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println("error deleting Pod ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("deleted pod " + db.Spec.Name)
 	//delete the pod
 }
