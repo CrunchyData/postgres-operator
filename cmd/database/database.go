@@ -192,14 +192,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		fmt.Println(err.Error())
 		return
 	}
-	/**
-	var resultPod api.Pod
-	err = client.Post().
-		Resource("pods").
-		Namespace(api.NamespaceDefault).
-		Body(pod).
-		Do().Into(&resultPod)
-	*/
+
 	resultPod, err := clientset.Pods(v1.NamespaceDefault).Create(&pod)
 	if err != nil {
 		fmt.Println("error creating Pod ")
