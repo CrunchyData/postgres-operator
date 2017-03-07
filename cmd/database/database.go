@@ -78,7 +78,7 @@ func init() {
 	ServiceTemplate = template.Must(template.New("service template").Parse(string(buf)))
 }
 
-func Process(client *rest.RESTClient, stopchan chan struct{}) {
+func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
 
 	eventchan := make(chan *tpr.CrunchyDatabase)
 
@@ -87,12 +87,12 @@ func Process(client *rest.RESTClient, stopchan chan struct{}) {
 	createAddHandler := func(obj interface{}) {
 		db := obj.(*tpr.CrunchyDatabase)
 		eventchan <- db
-		addDatabase(client, db)
+		addDatabase(clientset, client, db)
 	}
 	createDeleteHandler := func(obj interface{}) {
 		db := obj.(*tpr.CrunchyDatabase)
 		eventchan <- db
-		deleteDatabase(client, db)
+		deleteDatabase(clientset, client, db)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
@@ -124,7 +124,7 @@ func Process(client *rest.RESTClient, stopchan chan struct{}) {
 }
 
 // database consists of a Service and a Pod
-func addDatabase(client *rest.RESTClient, db *tpr.CrunchyDatabase) {
+func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyDatabase) {
 	fmt.Println("creating CrunchyDatabase object")
 	fmt.Println("created with Name=" + db.Spec.Name)
 
@@ -154,27 +154,7 @@ func addDatabase(client *rest.RESTClient, db *tpr.CrunchyDatabase) {
 
 	//var result api.Service
 
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		fmt.Println("error creating cluster config ")
-		fmt.Println(err.Error())
-		return
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		fmt.Println("error creating kube client ")
-		fmt.Println(err.Error())
-		return
-	}
 	svc, err := clientset.Services(v1.NamespaceDefault).Create(&service)
-	/**
-	err = client.Post().
-			Resource("services").
-			Namespace(api.NamespaceDefault).
-			Body(service).
-			Do().Into(&result)
-	*/
 	if err != nil {
 		fmt.Println("error creating Service ")
 		fmt.Println(err.Error())
@@ -230,7 +210,7 @@ func addDatabase(client *rest.RESTClient, db *tpr.CrunchyDatabase) {
 
 }
 
-func deleteDatabase(client *rest.RESTClient, db *tpr.CrunchyDatabase) {
+func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyDatabase) {
 	fmt.Println("deleting CrunchyDatabase object")
 	fmt.Println("deleting with Name=" + db.Spec.Name)
 

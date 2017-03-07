@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/operator/cmd/database"
 	"github.com/crunchydata/operator/tpr"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/pkg/runtime"
@@ -44,13 +45,25 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "the path to a kubeconfig, specifies this tool runs outside the cluster")
 	flag.Parse()
 
-	client, err := buildClientFromFlags(*kubeconfig)
+	tprclient, err := buildClientFromFlags(*kubeconfig)
 	if err != nil {
 		panic(err.Error())
 	}
 
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		fmt.Println("error creating cluster config ")
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		fmt.Println("error creating kube client ")
+		panic(err.Error())
+	}
+
 	exampleList := tpr.CrunchyDatabaseList{}
-	err = client.Get().
+	err = tprclient.Get().
 		Resource("crunchydatabases").
 		Do().Into(&exampleList)
 	if err != nil {
@@ -59,7 +72,7 @@ func main() {
 	fmt.Printf("%#v\n", exampleList)
 
 	example := tpr.CrunchyDatabase{}
-	err = client.Get().
+	err = tprclient.Get().
 		Namespace("default").
 		Resource("crunchydatabases").
 		Name("example1").
@@ -76,8 +89,8 @@ func main() {
 
 	stopchan := make(chan struct{}, 1)
 
-	go database.Process(client, stopchan)
-	go cluster.Process(client, stopchan)
+	go database.Process(clientset, tprclient, stopchan)
+	go cluster.Process(clientset, tprclient, stopchan)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
