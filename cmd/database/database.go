@@ -26,7 +26,10 @@ import (
 
 	"github.com/crunchydata/operator/tpr"
 
+	"k8s.io/client-go/kubernetes"
+
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -84,12 +87,12 @@ func Process(client *rest.RESTClient, stopchan chan struct{}) {
 	createAddHandler := func(obj interface{}) {
 		db := obj.(*tpr.CrunchyDatabase)
 		eventchan <- db
-		addDatabase(db)
+		addDatabase(client, db)
 	}
 	createDeleteHandler := func(obj interface{}) {
 		db := obj.(*tpr.CrunchyDatabase)
 		eventchan <- db
-		deleteDatabase(db)
+		deleteDatabase(client, db)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
@@ -120,11 +123,13 @@ func Process(client *rest.RESTClient, stopchan chan struct{}) {
 
 }
 
-func addDatabase(db *tpr.CrunchyDatabase) {
+// database consists of a Service and a Pod
+func addDatabase(client *rest.RESTClient, db *tpr.CrunchyDatabase) {
 	fmt.Println("creating CrunchyDatabase object")
 	fmt.Println("created with Name=" + db.Spec.Name)
 
-	//create the service
+	//create the service - TODO get these fields from
+	//the TPR instance
 	serviceFields := ServiceTemplateFields{
 		Name: db.Spec.Name,
 		Port: "5432",
@@ -139,7 +144,46 @@ func addDatabase(db *tpr.CrunchyDatabase) {
 	serviceDocString := doc.String()
 	fmt.Println(serviceDocString)
 
-	//create the pod
+	service := v1.Service{}
+	err = json.Unmarshal(doc.Bytes(), &service)
+	if err != nil {
+		fmt.Println("error unmarshalling json into Service ")
+		fmt.Println(err.Error())
+		return
+	}
+
+	//var result api.Service
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		fmt.Println("error creating cluster config ")
+		fmt.Println(err.Error())
+		return
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		fmt.Println("error creating kube client ")
+		fmt.Println(err.Error())
+		return
+	}
+	svc, err := clientset.Services(v1.NamespaceDefault).Create(&service)
+	/**
+	err = client.Post().
+			Resource("services").
+			Namespace(api.NamespaceDefault).
+			Body(service).
+			Do().Into(&result)
+	*/
+	if err != nil {
+		fmt.Println("error creating Service ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("created service " + svc.Name)
+
+	//create the pod - TODO get these fields from the
+	//TPR instance
 	podFields := PodTemplateFields{
 		Name:               db.Spec.Name,
 		Port:               "5432",
@@ -161,17 +205,32 @@ func addDatabase(db *tpr.CrunchyDatabase) {
 	podDocString := doc2.String()
 	fmt.Println(podDocString)
 
-	pod := api.Pod{}
+	pod := v1.Pod{}
 	err = json.Unmarshal(doc2.Bytes(), &pod)
 	if err != nil {
 		fmt.Println("error unmarshalling json into Pod ")
 		fmt.Println(err.Error())
 		return
 	}
+	/**
+	var resultPod api.Pod
+	err = client.Post().
+		Resource("pods").
+		Namespace(api.NamespaceDefault).
+		Body(pod).
+		Do().Into(&resultPod)
+	*/
+	resultPod, err := clientset.Pods(v1.NamespaceDefault).Create(&pod)
+	if err != nil {
+		fmt.Println("error creating Pod ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("created pod " + resultPod.Name)
 
 }
 
-func deleteDatabase(db *tpr.CrunchyDatabase) {
+func deleteDatabase(client *rest.RESTClient, db *tpr.CrunchyDatabase) {
 	fmt.Println("deleting CrunchyDatabase object")
 	fmt.Println("deleting with Name=" + db.Spec.Name)
 
