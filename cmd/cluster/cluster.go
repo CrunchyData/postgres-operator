@@ -300,8 +300,44 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	fmt.Println("deleting with Name=" + db.Spec.Name)
 
 	//delete the master service
+
+	err := clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println("error deleting master Service ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("deleted master service " + db.Spec.Name)
+
 	//delete the replica service
+	err = clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println("error deleting replica Service ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX)
+
 	//delete the master deployment
+	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println("error deleting master Deployment ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("deleted master Deployment " + db.Spec.Name)
+
 	//delete the replica deployment
+	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println("error deleting replica Deployment ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX)
 
 }
