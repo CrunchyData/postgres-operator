@@ -379,4 +379,33 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 		}
 	}
 
+	//lastly, delete any remaining pods
+	listOptions := v1.ListOptions{}
+	listOptions.LabelSelector = "name=" + db.Spec.Name
+	pods, err := clientset.Core().Pods(v1.NamespaceDefault).List(listOptions)
+	for _, pod := range pods.Items {
+		fmt.Println("deleting pod " + pod.Name)
+		err = clientset.Pods(v1.NamespaceDefault).Delete(pod.Name,
+			&v1.DeleteOptions{})
+		if err != nil {
+			fmt.Println("error deleting pod " + pod.Name)
+			fmt.Println(err.Error())
+		}
+		fmt.Println("deleted pod " + pod.Name)
+
+	}
+	listOptions.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
+	pods, err = clientset.Core().Pods(v1.NamespaceDefault).List(listOptions)
+	for _, pod := range pods.Items {
+		fmt.Println("deleting pod " + pod.Name)
+		err = clientset.Pods(v1.NamespaceDefault).Delete(pod.Name,
+			&v1.DeleteOptions{})
+		if err != nil {
+			fmt.Println("error deleting pod " + pod.Name)
+			fmt.Println(err.Error())
+		}
+		fmt.Println("deleted pod " + pod.Name)
+
+	}
+
 }
