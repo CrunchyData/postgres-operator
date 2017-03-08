@@ -136,13 +136,17 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	for {
 		select {
 		case event := <-eventchan:
-			fmt.Printf("%#v\n", event)
+			if event == nil {
+				fmt.Printf("%#v\n", event)
+			}
 		}
 	}
 
 }
 
 func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyCluster) {
+	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
+	var err error
 	fmt.Println("creating CrunchyCluster object")
 	fmt.Println("created with Name=" + db.Spec.Name)
 
@@ -152,64 +156,60 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		Port: "5432",
 	}
 
-	var doc bytes.Buffer
-	err := ServiceTemplate.Execute(&doc, serviceFields)
+	err = ServiceTemplate.Execute(&serviceDoc, serviceFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	serviceDocString := doc.String()
+	serviceDocString := serviceDoc.String()
 	fmt.Println(serviceDocString)
 
 	service := v1.Service{}
-	err = json.Unmarshal(doc.Bytes(), &service)
+	err = json.Unmarshal(serviceDoc.Bytes(), &service)
 	if err != nil {
 		fmt.Println("error unmarshalling json into Service ")
 		fmt.Println(err.Error())
 		return
 	}
 
-	//var result api.Service
-
-	svc, err := clientset.Services(v1.NamespaceDefault).Create(&service)
-	if err != nil {
+	svc, err2 := clientset.Services(v1.NamespaceDefault).Create(&service)
+	if err2 != nil {
 		fmt.Println("error creating Service ")
-		fmt.Println(err.Error())
+		fmt.Println(err2.Error())
 		return
 	}
 	fmt.Println("created master service " + svc.Name)
 
 	//create the replica service
-	serviceFields = ServiceTemplateFields{
+	replicaServiceFields := ServiceTemplateFields{
 		Name: db.Spec.Name + REPLICA_SUFFIX,
 		Port: "5432",
 	}
 
-	err = ServiceTemplate.Execute(&doc, serviceFields)
+	err = ServiceTemplate.Execute(&replicaServiceDoc, replicaServiceFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	var doc4 bytes.Buffer
-	serviceDocString = doc4.String()
-	fmt.Println(serviceDocString)
+	replicaServiceDocString := replicaServiceDoc.String()
+	fmt.Println(replicaServiceDocString)
 
-	service = v1.Service{}
-	err = json.Unmarshal(doc4.Bytes(), &service)
+	replicaService := v1.Service{}
+	err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)
 	if err != nil {
-		fmt.Println("error unmarshalling json into Service ")
+		fmt.Println("error unmarshalling json into replica Service ")
 		fmt.Println(err.Error())
 		return
 	}
 
-	svc, err = clientset.Services(v1.NamespaceDefault).Create(&service)
-	if err != nil {
-		fmt.Println("error creating Service ")
-		fmt.Println(err.Error())
+	svc2, err3 := clientset.Services(v1.NamespaceDefault).Create(&replicaService)
+	if err3 != nil {
+		fmt.Println("error creating replica Service ")
+		fmt.Println(err3.Error())
 		return
 	}
-	fmt.Println("created replica service " + svc.Name)
+	fmt.Println("created replica service " + svc2.Name)
 
 	//create the master deployment
 	//create the deployment - TODO get these fields from the
@@ -227,34 +227,33 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		PG_ROOT_PASSWORD:   "password",
 	}
 
-	var doc3 bytes.Buffer
-	err = DeploymentTemplate.Execute(&doc3, deploymentFields)
+	err = DeploymentTemplate.Execute(&masterDoc, deploymentFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	deploymentDocString := doc3.String()
+	deploymentDocString := masterDoc.String()
 	fmt.Println(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
-	err = json.Unmarshal(doc.Bytes(), &deployment)
+	err = json.Unmarshal(masterDoc.Bytes(), &deployment)
 	if err != nil {
 		fmt.Println("error unmarshalling master json into Deployment ")
 		fmt.Println(err.Error())
 		return
 	}
 
-	resultDeployment, err := clientset.Deployments(v1.NamespaceDefault).Create(&deployment)
-	if err != nil {
+	resultDeployment, err4 := clientset.Deployments(v1.NamespaceDefault).Create(&deployment)
+	if err4 != nil {
 		fmt.Println("error creating master Deployment ")
-		fmt.Println(err.Error())
+		fmt.Println(err4.Error())
 		return
 	}
 	fmt.Println("created master Deployment " + resultDeployment.Name)
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:               db.Spec.Name,
+		Name:               db.Spec.Name + REPLICA_SUFFIX,
 		Port:               "5432",
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
 		PVC_NAME:           "crunchy-pvc",
@@ -268,27 +267,26 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		REPLICAS:           "2",
 	}
 
-	var doc2 bytes.Buffer
-	err = DeploymentTemplate.Execute(&doc2, replicaDeploymentFields)
+	err = DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	replicaDeploymentDocString := doc2.String()
+	replicaDeploymentDocString := replicaDoc.String()
 	fmt.Println(replicaDeploymentDocString)
 
 	replicaDeployment := v1beta1.Deployment{}
-	err = json.Unmarshal(doc2.Bytes(), &replicaDeployment)
+	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		fmt.Println("error unmarshalling replica json into Deployment ")
 		fmt.Println(err.Error())
 		return
 	}
 
-	resultReplicaDeployment, err2 := clientset.Deployments(v1.NamespaceDefault).Create(&replicaDeployment)
-	if err2 != nil {
+	resultReplicaDeployment, err5 := clientset.Deployments(v1.NamespaceDefault).Create(&replicaDeployment)
+	if err5 != nil {
 		fmt.Println("error creating replica Deployment ")
-		fmt.Println(err.Error())
+		fmt.Println(err5.Error())
 		return
 	}
 	fmt.Println("created replica Deployment " + resultReplicaDeployment.Name)

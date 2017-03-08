@@ -4,7 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            "name": "{{.Name}}"
+            "name": "{{.Name}}",
             "crunchy-cluster": "{{.Name}}"
         }
     },
@@ -24,10 +24,10 @@
             "spec": {
                 "containers": [{
                     "name": "database",
-                    "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG.}}",
+                    "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG}}",
                     "env": [{
                         "name": "PG_MASTER_PORT",
-                        "value": {{.Port}}
+                        "value": "{{.Port}}"
                     }, {
                         "name": "PG_MODE",
                         "value": "master"
@@ -77,7 +77,7 @@
                 }],
 
                 "restartPolicy": "Always",
-                "dnsPolicy": "ClusterFirst",
+                "dnsPolicy": "ClusterFirst"
             }
         },
         "strategy": {

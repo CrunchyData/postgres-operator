@@ -12,9 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kubectl delete CrunchyCluster my-new-crunchy-cluster-object
-kubectl delete CrunchyDatabase my-new-crunchy-database-object
+kubectl delete crunchydatabase example1
+kubectl delete service example1
+kubectl delete pod example1
 
-kubectl delete thirdpartyresource crunchy-cluster.crunchydata.com
-kubectl delete thirdpartyresource crunchy-database.crunchydata.com
+kubectl delete crunchycluster cluster1
+kubectl delete service cluster1 cluster1-replica
+kubectl delete deployment cluster1 cluster1-replica
+
+kubectl delete pod -l name=cluster1
+kubectl delete replicaset -l name=cluster1
+kubectl delete pod -l name=cluster1-replica
+kubectl delete replicaset -l name=cluster1-replica
+
+#kubectl delete thirdpartyresource crunchy-cluster.crunchydata.com
+#kubectl delete thirdpartyresource crunchy-database.crunchydata.com
 
