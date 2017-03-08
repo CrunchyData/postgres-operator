@@ -147,6 +147,9 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyCluster) {
 	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
 	var err error
+	var replicaServiceResult, serviceResult *v1.Service
+	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
+
 	fmt.Println("creating CrunchyCluster object")
 	fmt.Println("created with Name=" + db.Spec.Name)
 
@@ -172,13 +175,13 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		return
 	}
 
-	svc, err2 := clientset.Services(v1.NamespaceDefault).Create(&service)
-	if err2 != nil {
+	serviceResult, err = clientset.Services(v1.NamespaceDefault).Create(&service)
+	if err != nil {
 		fmt.Println("error creating Service ")
-		fmt.Println(err2.Error())
+		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("created master service " + svc.Name)
+	fmt.Println("created master service " + serviceResult.Name)
 
 	//create the replica service
 	replicaServiceFields := ServiceTemplateFields{
@@ -203,13 +206,13 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		return
 	}
 
-	svc2, err3 := clientset.Services(v1.NamespaceDefault).Create(&replicaService)
-	if err3 != nil {
+	replicaServiceResult, err = clientset.Services(v1.NamespaceDefault).Create(&replicaService)
+	if err != nil {
 		fmt.Println("error creating replica Service ")
-		fmt.Println(err3.Error())
+		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("created replica service " + svc2.Name)
+	fmt.Println("created replica service " + replicaServiceResult.Name)
 
 	//create the master deployment
 	//create the deployment - TODO get these fields from the
@@ -243,13 +246,13 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		return
 	}
 
-	resultDeployment, err4 := clientset.Deployments(v1.NamespaceDefault).Create(&deployment)
-	if err4 != nil {
+	deploymentResult, err = clientset.Deployments(v1.NamespaceDefault).Create(&deployment)
+	if err != nil {
 		fmt.Println("error creating master Deployment ")
-		fmt.Println(err4.Error())
+		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("created master Deployment " + resultDeployment.Name)
+	fmt.Println("created master Deployment " + deploymentResult.Name)
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
@@ -267,7 +270,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		REPLICAS:           "2",
 	}
 
-	err = DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
+	err = ReplicaDeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -283,13 +286,13 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		return
 	}
 
-	resultReplicaDeployment, err5 := clientset.Deployments(v1.NamespaceDefault).Create(&replicaDeployment)
-	if err5 != nil {
+	replicaDeploymentResult, err = clientset.Deployments(v1.NamespaceDefault).Create(&replicaDeployment)
+	if err != nil {
 		fmt.Println("error creating replica Deployment ")
-		fmt.Println(err5.Error())
+		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("created replica Deployment " + resultReplicaDeployment.Name)
+	fmt.Println("created replica Deployment " + replicaDeploymentResult.Name)
 
 }
 
