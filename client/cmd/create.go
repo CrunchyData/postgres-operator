@@ -24,45 +24,45 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create a Database or Cluster",
+	Long: `CREATE allows you to create a new Database or Cluster 
+For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+crunchy create database
+crunchy create cluster
+.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
 		fmt.Println("create called")
+		if len(args) == 0 {
+			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
+	* database
+	* cluster`)
+		}
 	},
 }
 
 // createDatbaseCmd represents the create database command
 var createDatabaseCmd = &cobra.Command{
 	Use:   "database",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create a new database",
+	Long: `Create a crunchy database which consists of a Service and Pod
+For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+crunchy create database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("create database called")
+		createDatabase()
 	},
 }
 
 // createClusterCmd represents the create database command
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create a database cluster",
+	Long: `Create a crunchy cluster which consist of a
+master and a number of replica backends. For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+crunchy create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
 		fmt.Println("create cluster called")
@@ -84,4 +84,17 @@ func init() {
 	// is called directly, e.g.:
 	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+}
+
+func createDatabase() {
+
+	// connect to kube
+	ConnectToKube()
+
+	fmt.Println("create database called")
+	// get tpr
+	// error if tpr doesnt exist
+	// get tpr database
+	// error if exists
+	// create tpr database
 }

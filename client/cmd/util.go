@@ -20,10 +20,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	//for TPR client
+	"github.com/crunchydata/operator/tpr"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/unversioned"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/runtime"
+	"k8s.io/client-go/pkg/runtime/serializer"
 )
 
 var Config *rest.Config
 var Clientset *kubernetes.Clientset
+var Tprclient *rest.RESTClient
 
 func ConnectToKube() {
 
@@ -41,6 +50,53 @@ func ConnectToKube() {
 		panic(err.Error())
 	}
 
+	//verify that the TPRs exist in the Kube
+	//var tpr *v1beta1.ThirdPartyResource
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-cluster.crunchydata.com")
+	if err != nil {
+		panic(err.Error())
+	}
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-database.crunchydata.com")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	var tprconfig *rest.Config
+	tprconfig = Config
+	configureTPRClient(tprconfig)
+
+	Tprclient, err = rest.RESTClientFor(tprconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	fmt.Println("connected to kube. at " + KubeconfigPath)
 
+}
+
+func configureTPRClient(config *rest.Config) {
+	groupversion := unversioned.GroupVersion{
+		Group:   "k8s.io",
+		Version: "v1",
+	}
+
+	config.GroupVersion = &groupversion
+	config.APIPath = "/apis"
+	config.ContentType = runtime.ContentTypeJSON
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+
+	schemeBuilder := runtime.NewSchemeBuilder(
+		func(scheme *runtime.Scheme) error {
+			scheme.AddKnownTypes(
+				groupversion,
+				&tpr.CrunchyDatabase{},
+				&tpr.CrunchyDatabaseList{},
+				&tpr.CrunchyCluster{},
+				&tpr.CrunchyClusterList{},
+				&api.ListOptions{},
+				&api.DeleteOptions{},
+			)
+			return nil
+		})
+	schemeBuilder.AddToScheme(api.Scheme)
 }

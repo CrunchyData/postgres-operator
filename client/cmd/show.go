@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/crunchydata/operator/tpr"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/pkg/api/v1"
 )
@@ -44,6 +45,8 @@ to quickly create a Cobra application.`,
 
 func init() {
 	RootCmd.AddCommand(showCmd)
+	showCmd.AddCommand(showDatabaseCmd)
+	showCmd.AddCommand(showClusterCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -54,6 +57,62 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// showCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+}
+
+// showDatbaseCmd represents the show database command
+var showDatabaseCmd = &cobra.Command{
+	Use:   "database",
+	Short: "Show database information",
+	Long: `Show a crunchy database. For example:
+
+				crunchy show database mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showDatabase()
+	},
+}
+
+// showClusterCmd represents the show cluster command
+var showClusterCmd = &cobra.Command{
+	Use:   "cluster",
+	Short: "Show cluster information",
+	Long: `Show a crunchy cluster. For example:
+
+				crunchy show cluster mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showCluster()
+	},
+}
+
+func showDatabase() {
+	ConnectToKube()
+	// Fetch a list of our database TPRs
+	exampleList := tpr.ExampleList{}
+	err := Tprclient.Get().Resource("examples").Do().Into(&exampleList)
+	if err != nil {
+		panic(err)
+	}
+	databaseList := tpr.CrunchyDatabaseList{}
+	err = Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
+	if err != nil {
+		panic(err)
+	}
+	for _, database := range databaseList.Items {
+		fmt.Println("database LIST: " + database.Spec.Name)
+	}
+}
+
+func showCluster() {
+	ConnectToKube()
+	// Fetch a list of our cluster TPRs
+	clusterList := tpr.CrunchyClusterList{}
+	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
+	if err != nil {
+		panic(err)
+	}
+	for _, cluster := range clusterList.Items {
+		fmt.Println("cluster LIST: " + cluster.Spec.Name)
+	}
 
 }
 
