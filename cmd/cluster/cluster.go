@@ -307,7 +307,6 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	if err != nil {
 		fmt.Println("error deleting master Service ")
 		fmt.Println(err.Error())
-		return
 	}
 	fmt.Println("deleted master service " + db.Spec.Name)
 
@@ -317,7 +316,6 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	if err != nil {
 		fmt.Println("error deleting replica Service ")
 		fmt.Println(err.Error())
-		return
 	}
 	fmt.Println("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX)
 
@@ -327,9 +325,32 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	if err != nil {
 		fmt.Println("error deleting master Deployment ")
 		fmt.Println(err.Error())
-		return
 	}
+
 	fmt.Println("deleted master Deployment " + db.Spec.Name)
+	//delete the master replicaset
+
+	//find the replicaset pod name
+	options := v1.ListOptions{}
+	options.LabelSelector = "name=" + db.Spec.Name
+
+	var reps *v1beta1.ReplicaSetList
+	reps, err = clientset.ReplicaSets(v1.NamespaceDefault).List(options)
+	if err != nil {
+		fmt.Println("error getting master replicaset name")
+		fmt.Println(err.Error())
+	} else {
+		if len(reps.Items) > 0 {
+			err = clientset.ReplicaSets(v1.NamespaceDefault).Delete(reps.Items[0].Name,
+				&v1.DeleteOptions{})
+			if err != nil {
+				fmt.Println("error deleting master replicaset ")
+				fmt.Println(err.Error())
+			}
+
+			fmt.Println("deleted master replicaset " + reps.Items[0].Name)
+		}
+	}
 
 	//delete the replica deployment
 	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
@@ -337,8 +358,25 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	if err != nil {
 		fmt.Println("error deleting replica Deployment ")
 		fmt.Println(err.Error())
-		return
 	}
 	fmt.Println("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX)
+	//delete the replica ReplicaSet
+	options.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
+
+	reps, err = clientset.ReplicaSets(v1.NamespaceDefault).List(options)
+	if err != nil {
+		fmt.Println("error getting replica replicaset name")
+		fmt.Println(err.Error())
+	} else {
+		if len(reps.Items) > 0 {
+			err = clientset.ReplicaSets(v1.NamespaceDefault).Delete(reps.Items[0].Name,
+				&v1.DeleteOptions{})
+			if err != nil {
+				fmt.Println("error deleting replica replicaset ")
+				fmt.Println(err.Error())
+			}
+			fmt.Println("deleted replica replicaset " + reps.Items[0].Name)
+		}
+	}
 
 }
