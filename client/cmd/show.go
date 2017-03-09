@@ -141,42 +141,59 @@ func showCluster(args []string) {
 	}
 
 	//each arg represents a cluster name or the special 'all' value
-	var pod *v1.Pod
-	var service *v1.Service
 	for _, arg := range args {
 		fmt.Println("show cluster " + arg)
 		for _, cluster := range clusterList.Items {
 			if arg == "all" || cluster.Spec.Name == arg {
-				fmt.Println("cluster LIST: " + cluster.Spec.Name)
-				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(cluster.Spec.Name)
-				if err != nil {
-					fmt.Println("error in getting cluster pod " + cluster.Spec.Name)
-					fmt.Println(err.Error())
-				} else {
-					fmt.Println("pod " + pod.Name)
-				}
-
-				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(cluster.Spec.Name)
-				if err != nil {
-					fmt.Println("error in getting cluster service " + cluster.Spec.Name)
-					fmt.Println(err.Error())
-				} else {
-					fmt.Println("service " + service.Name)
-				}
+				//list the deployments
+				listDeployments(cluster.Spec.Name)
+				//list the replicasets
+				listReplicaSets(cluster.Spec.Name)
+				//list the pods
+				listPods(cluster.Spec.Name)
+				//list the services
+				listServices(cluster.Spec.Name)
 			}
 		}
 	}
 
 }
 
-func ListPods() {
-	//ConnectToKube()
-
-	lo := v1.ListOptions{LabelSelector: "k8s-app=kube-dns"}
-	fmt.Println("label selector is " + lo.LabelSelector)
-	pods, err := Clientset.Core().Pods("").List(lo)
+func listReplicaSets(name string) {
+	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	reps, err := Clientset.ReplicaSets(api.NamespaceDefault).List(lo)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println("error getting list of replicasets")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Printf("There are %d replicasets in the cluster\n", len(reps.Items))
+	for _, r := range reps.Items {
+		fmt.Println("replicaset Name " + r.ObjectMeta.Name)
+	}
+
+}
+func listDeployments(name string) {
+	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	deployments, err := Clientset.Deployments(api.NamespaceDefault).List(lo)
+	if err != nil {
+		fmt.Println("error getting list of deployments")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Printf("There are %d deployments in the cluster\n", len(deployments.Items))
+	for _, d := range deployments.Items {
+		fmt.Println("deployment Name " + d.ObjectMeta.Name)
+	}
+
+}
+func listPods(name string) {
+	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	pods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+	if err != nil {
+		fmt.Println("error getting list of pods")
+		fmt.Println(err.Error())
+		return
 	}
 	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 	for _, pod := range pods.Items {
@@ -184,4 +201,17 @@ func ListPods() {
 		fmt.Println("pod phase is " + pod.Status.Phase)
 	}
 
+}
+func listServices(name string) {
+	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	services, err := Clientset.Core().Services(api.NamespaceDefault).List(lo)
+	if err != nil {
+		fmt.Println("error getting list of services")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Printf("There are %d services in the cluster\n", len(services.Items))
+	for _, service := range services.Items {
+		fmt.Println("service Name " + service.ObjectMeta.Name)
+	}
 }
