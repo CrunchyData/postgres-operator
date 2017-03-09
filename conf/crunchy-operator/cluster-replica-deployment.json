@@ -5,7 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
-            "crunchy-cluster": "{{.Name}}"
+            "crunchy-cluster": "{{.ClusterName}}"
         }
     },
     "spec": {
@@ -18,7 +18,8 @@
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "{{.Name}}"
+                    "name": "{{.Name}}",
+                    "crunchy-cluster": "{{.ClusterName}}"
                 }
             },
             "spec": {

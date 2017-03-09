@@ -20,7 +20,6 @@ import (
 	"github.com/crunchydata/operator/tpr"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
 // deleteCmd represents the delete command
@@ -87,21 +86,21 @@ func deleteDatabase(args []string) {
 	databaseList := tpr.CrunchyDatabaseList{}
 	err = Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
 	if err != nil {
-		panic(err)
+		fmt.Println("error getting database list")
+		fmt.Println(err.Error())
+		return
 	}
+	// delete the crunchydatabase resource instance
 	for _, arg := range args {
-		// delete the crunchydatabase resource instance
 		for _, database := range databaseList.Items {
 			fmt.Println("database LIST: " + database.Spec.Name)
-			if database.Spec.Name == arg {
+			if arg == "all" || database.Spec.Name == arg {
 				err = Tprclient.Delete().
 					Resource("crunchydatabases").
 					Namespace(api.NamespaceDefault).
 					Name(database.Spec.Name).
-					//Body(database).
 					Do().
 					Error()
-					//Into(&tpr.CrunchyDatabase{})
 				if err != nil {
 					fmt.Println("error deleting crunchydatabase " + arg)
 					fmt.Println(err.Error())
@@ -110,23 +109,6 @@ func deleteDatabase(args []string) {
 			}
 
 		}
-		// delete the Service
-		err = Clientset.Services(v1.NamespaceDefault).Delete(arg,
-			&v1.DeleteOptions{})
-		if err != nil {
-			fmt.Println("error deleting service " + arg)
-			fmt.Println(err.Error())
-		}
-		fmt.Println("deleted service " + arg)
-
-		// delete the Pod
-		err = Clientset.Pods(v1.NamespaceDefault).Delete(arg,
-			&v1.DeleteOptions{})
-		if err != nil {
-			fmt.Println("error deleting pod " + arg)
-			fmt.Println(err.Error())
-		}
-		fmt.Println("deleted pod " + arg)
 
 	}
 }
@@ -143,16 +125,35 @@ var deleteClusterCmd = &cobra.Command{
 }
 
 func deleteCluster(args []string) {
+	// Fetch a list of our cluster TPRs
+	clusterList := tpr.CrunchyClusterList{}
+	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
+	if err != nil {
+		fmt.Println("error getting cluster list")
+		fmt.Println(err.Error())
+		return
+	}
+
+	//to remove a cluster, you just have to remove
+	//the crunchycluster object, the operator will do the actual deletes
 	for _, arg := range args {
-		// Fetch a list of our database TPRs
 		fmt.Println("deleting cluster " + arg)
-		databaseList := tpr.CrunchyDatabaseList{}
-		err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
-		if err != nil {
-			panic(err)
-		}
-		for _, database := range databaseList.Items {
-			fmt.Println("database LIST: " + database.Spec.Name)
+		for _, cluster := range clusterList.Items {
+			if arg == "all" || arg == cluster.Spec.Name {
+				err = Tprclient.Delete().
+					Resource("crunchyclusters").
+					Namespace(api.NamespaceDefault).
+					Name(cluster.Spec.Name).
+					Do().
+					Error()
+				if err != nil {
+					fmt.Println("error deleting crunchycluster " + arg)
+					fmt.Println(err.Error())
+				} else {
+					fmt.Println("deleted crunchycluster " + cluster.Spec.Name)
+				}
+
+			}
 		}
 	}
 }

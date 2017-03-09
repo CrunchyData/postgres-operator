@@ -131,16 +131,39 @@ func showDatabase(args []string) {
 }
 
 func showCluster(args []string) {
+	//get a list of all clusters
+	clusterList := tpr.CrunchyClusterList{}
+	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
+	if err != nil {
+		fmt.Println("error getting list of clusters")
+		fmt.Println(err.Error())
+		return
+	}
+
+	//each arg represents a cluster name or the special 'all' value
+	var pod *v1.Pod
+	var service *v1.Service
 	for _, arg := range args {
 		fmt.Println("show cluster " + arg)
-		// Fetch a list of our cluster TPRs
-		clusterList := tpr.CrunchyClusterList{}
-		err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
-		if err != nil {
-			panic(err)
-		}
 		for _, cluster := range clusterList.Items {
-			fmt.Println("cluster LIST: " + cluster.Spec.Name)
+			if arg == "all" || cluster.Spec.Name == arg {
+				fmt.Println("cluster LIST: " + cluster.Spec.Name)
+				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(cluster.Spec.Name)
+				if err != nil {
+					fmt.Println("error in getting cluster pod " + cluster.Spec.Name)
+					fmt.Println(err.Error())
+				} else {
+					fmt.Println("pod " + pod.Name)
+				}
+
+				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(cluster.Spec.Name)
+				if err != nil {
+					fmt.Println("error in getting cluster service " + cluster.Spec.Name)
+					fmt.Println(err.Error())
+				} else {
+					fmt.Println("service " + service.Name)
+				}
+			}
 		}
 	}
 

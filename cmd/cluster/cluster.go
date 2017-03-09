@@ -40,12 +40,14 @@ import (
 )
 
 type ServiceTemplateFields struct {
-	Name string
-	Port string
+	Name        string
+	ClusterName string
+	Port        string
 }
 
 type DeploymentTemplateFields struct {
 	Name               string
+	ClusterName        string
 	Port               string
 	CCP_IMAGE_TAG      string
 	PG_MASTER_USER     string
@@ -155,8 +157,9 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	//create the master service
 	serviceFields := ServiceTemplateFields{
-		Name: db.Spec.Name,
-		Port: "5432",
+		Name:        db.Spec.Name,
+		ClusterName: db.Spec.Name,
+		Port:        "5432",
 	}
 
 	err = ServiceTemplate.Execute(&serviceDoc, serviceFields)
@@ -185,8 +188,9 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	//create the replica service
 	replicaServiceFields := ServiceTemplateFields{
-		Name: db.Spec.Name + REPLICA_SUFFIX,
-		Port: "5432",
+		Name:        db.Spec.Name + REPLICA_SUFFIX,
+		ClusterName: db.Spec.Name,
+		Port:        "5432",
 	}
 
 	err = ServiceTemplate.Execute(&replicaServiceDoc, replicaServiceFields)
@@ -219,6 +223,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	//TPR instance
 	deploymentFields := DeploymentTemplateFields{
 		Name:               db.Spec.Name,
+		ClusterName:        db.Spec.Name,
 		Port:               "5432",
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
 		PVC_NAME:           "crunchy-pvc",
@@ -257,6 +262,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:               db.Spec.Name + REPLICA_SUFFIX,
+		ClusterName:        db.Spec.Name,
 		Port:               "5432",
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
 		PVC_NAME:           "crunchy-pvc",
