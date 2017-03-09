@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/crunchydata/operator/tpr"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -92,15 +93,39 @@ var ShowClusterCmd = &cobra.Command{
 }
 
 func showDatabase(args []string) {
+	//get a list of all databases
+	databaseList := tpr.CrunchyDatabaseList{}
+	err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
+	if err != nil {
+		fmt.Println("error getting list of databases")
+		fmt.Println(err.Error())
+		return
+	}
+
+	//each arg represents a database name or the special 'all' value
+	var pod *v1.Pod
+	var service *v1.Service
 	for _, arg := range args {
 		fmt.Println("show database " + arg)
-		databaseList := tpr.CrunchyDatabaseList{}
-		err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
-		if err != nil {
-			panic(err)
-		}
 		for _, database := range databaseList.Items {
-			fmt.Println("database LIST: " + database.Spec.Name)
+			if arg == "all" || database.Spec.Name == arg {
+				fmt.Println("database LIST: " + database.Spec.Name)
+				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(database.Spec.Name)
+				if err != nil {
+					fmt.Println("error in getting database pod " + database.Spec.Name)
+					fmt.Println(err.Error())
+				} else {
+					fmt.Println("pod " + pod.Name)
+				}
+
+				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
+				if err != nil {
+					fmt.Println("error in getting database service " + database.Spec.Name)
+					fmt.Println(err.Error())
+				} else {
+					fmt.Println("service " + service.Name)
+				}
+			}
 		}
 	}
 }
