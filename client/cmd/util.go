@@ -36,6 +36,7 @@ var Tprclient *rest.RESTClient
 
 func ConnectToKube() {
 
+	//fmt.Println("ConnectToKube called")
 	//setup connection to kube
 	// uses the current context in kubeconfig
 	var err error
@@ -70,13 +71,13 @@ func ConnectToKube() {
 		panic(err.Error())
 	}
 
-	fmt.Println("connected to kube. at " + KubeconfigPath)
+	//fmt.Println("connected to kube. at " + KubeconfigPath)
 
 }
 
 func configureTPRClient(config *rest.Config) {
 	groupversion := unversioned.GroupVersion{
-		Group:   "k8s.io",
+		Group:   "crunchydata.com",
 		Version: "v1",
 	}
 

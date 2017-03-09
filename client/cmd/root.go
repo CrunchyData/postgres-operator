@@ -61,6 +61,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&KubeconfigPath, "kubeconfig", "", "kube config file")
 	RootCmd.PersistentFlags().StringVar(&Labelselector, "selector", "", "label selector string")
 
+	//fmt.Println("root init called")
+
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -82,4 +84,8 @@ func initConfig() {
 		fmt.Println("--kubeconfig flag is not set and required")
 		panic("--kubeconfig flag required")
 	}
+
+	//fmt.Println(" root initConfig called")
+	ConnectToKube()
+
 }

@@ -21,8 +21,8 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
-// showCmd represents the show command
-var showCmd = &cobra.Command{
+// ShowCmd represents the show command
+var ShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
@@ -32,36 +32,49 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("show called")
 		if KubeconfigPath == "" {
 			fmt.Println("kubeconfig is empty")
 		} else {
 			fmt.Println("kubeconfig is " + KubeconfigPath)
 		}
-		ListPods()
+		if len(args) == 0 {
+			fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
+			        * database
+				* cluster`)
+		} else {
+			switch args[0] {
+			case "database":
+			case "cluster":
+				break
+			default:
+				fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
+			        * database
+				* cluster`)
+			}
+		}
+
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(showCmd)
-	showCmd.AddCommand(showDatabaseCmd)
-	showCmd.AddCommand(showClusterCmd)
+	fmt.Println("show init called")
+	RootCmd.AddCommand(ShowCmd)
+	ShowCmd.AddCommand(ShowDatabaseCmd)
+	ShowCmd.AddCommand(ShowClusterCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// showCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// ShowCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// showCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
+	// ShowCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // showDatbaseCmd represents the show database command
-var showDatabaseCmd = &cobra.Command{
+var ShowDatabaseCmd = &cobra.Command{
 	Use:   "database",
 	Short: "Show database information",
 	Long: `Show a crunchy database. For example:
@@ -72,8 +85,8 @@ var showDatabaseCmd = &cobra.Command{
 	},
 }
 
-// showClusterCmd represents the show cluster command
-var showClusterCmd = &cobra.Command{
+// ShowClusterCmd represents the show cluster command
+var ShowClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Show cluster information",
 	Long: `Show a crunchy cluster. For example:
@@ -85,15 +98,11 @@ var showClusterCmd = &cobra.Command{
 }
 
 func showDatabase() {
-	ConnectToKube()
+	//ConnectToKube()
+	//fmt.Println("showDatabase called")
 	// Fetch a list of our database TPRs
-	exampleList := tpr.ExampleList{}
-	err := Tprclient.Get().Resource("examples").Do().Into(&exampleList)
-	if err != nil {
-		panic(err)
-	}
 	databaseList := tpr.CrunchyDatabaseList{}
-	err = Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
+	err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
 	if err != nil {
 		panic(err)
 	}
@@ -103,7 +112,7 @@ func showDatabase() {
 }
 
 func showCluster() {
-	ConnectToKube()
+	//ConnectToKube()
 	// Fetch a list of our cluster TPRs
 	clusterList := tpr.CrunchyClusterList{}
 	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
@@ -117,7 +126,7 @@ func showCluster() {
 }
 
 func ListPods() {
-	ConnectToKube()
+	//ConnectToKube()
 
 	lo := v1.ListOptions{LabelSelector: "k8s-app=kube-dns"}
 	fmt.Println("label selector is " + lo.LabelSelector)
