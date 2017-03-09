@@ -17,8 +17,10 @@ package cmd
 
 import (
 	"fmt"
-
+	"github.com/crunchydata/operator/tpr"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/errors"
 )
 
 // createCmd represents the create command
@@ -32,7 +34,6 @@ crunchy create database
 crunchy create cluster
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
 		fmt.Println("create called")
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
@@ -64,7 +65,6 @@ master and a number of replica backends. For example:
 
 crunchy create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
 		fmt.Println("create cluster called")
 		createCluster(args)
 	},
@@ -89,24 +89,101 @@ func init() {
 
 func createDatabase(args []string) {
 
+	var err error
+
 	for _, arg := range args {
 		fmt.Println("create database called for " + arg)
-		// get tpr
-		// error if tpr doesnt exist
-		// get tpr database
-		// error if exists
-		// create tpr database
+		result := tpr.CrunchyDatabase{}
+
+		// error if it already exists
+		err = Tprclient.Get().
+			Resource("crunchydatabases").
+			Namespace(api.NamespaceDefault).
+			Name(arg).
+			Do().
+			Into(&result)
+		if err == nil {
+			fmt.Println("crunchydatabase " + arg + " was found so we will not create it")
+			break
+		} else if errors.IsNotFound(err) {
+			fmt.Println("crunchydatabase " + arg + " not found so we will create it")
+		} else {
+			fmt.Println("error getting crunchydatabase " + arg)
+			fmt.Println(err.Error())
+			break
+		}
+
+		// Create an instance of our TPR
+		newInstance := &tpr.CrunchyDatabase{
+			Metadata: api.ObjectMeta{
+				Name: arg,
+			},
+			Spec: tpr.CrunchyDatabaseSpec{
+				Name: arg,
+				Bar:  true,
+			},
+		}
+
+		err = Tprclient.Post().
+			Resource("crunchydatabases").
+			Namespace(api.NamespaceDefault).
+			Body(newInstance).
+			Do().Into(&result)
+		if err != nil {
+			fmt.Println("error in creating CrunchyDatabase TPR instance")
+			fmt.Println(err.Error())
+		}
+		fmt.Println("created CrunchyDatabase " + arg)
+
 	}
 }
 
 func createCluster(args []string) {
+	var err error
 
 	for _, arg := range args {
 		fmt.Println("create cluster called for " + arg)
-		// get tpr
-		// error if tpr doesnt exist
-		// get tpr database
-		// error if exists
-		// create tpr database
+		result := tpr.CrunchyCluster{}
+
+		// error if it already exists
+		err = Tprclient.Get().
+			Resource("crunchyclusters").
+			Namespace(api.NamespaceDefault).
+			Name(arg).
+			Do().
+			Into(&result)
+		if err == nil {
+			fmt.Println("crunchycluster " + arg + " was found so we will not create it")
+			break
+		} else if errors.IsNotFound(err) {
+			fmt.Println("crunchycluster " + arg + " not found so we will create it")
+		} else {
+			fmt.Println("error getting crunchycluster " + arg)
+			fmt.Println(err.Error())
+			break
+		}
+
+		// Create an instance of our TPR
+		newInstance := &tpr.CrunchyCluster{
+			Metadata: api.ObjectMeta{
+				Name: arg,
+			},
+			Spec: tpr.CrunchyClusterSpec{
+				Name: arg,
+				Bar:  true,
+			},
+		}
+
+		err = Tprclient.Post().
+			Resource("crunchyclusters").
+			Namespace(api.NamespaceDefault).
+			Body(newInstance).
+			Do().Into(&result)
+		if err != nil {
+			fmt.Println("error in creating CrunchyCluster instance")
+			fmt.Println(err.Error())
+		}
+		fmt.Println("created CrunchyCluster " + arg)
+
 	}
 }

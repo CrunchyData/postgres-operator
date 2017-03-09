@@ -16,10 +16,11 @@
 package cmd
 
 import (
-	//"fmt"
+	"fmt"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"os"
 
 	//for TPR client
 	"github.com/crunchydata/operator/tpr"
@@ -55,11 +56,13 @@ func ConnectToKube() {
 	//var tpr *v1beta1.ThirdPartyResource
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-cluster.crunchydata.com")
 	if err != nil {
-		panic(err.Error())
+		fmt.Println("required crunchy-cluster.crunchydata.com TPR was not found on your kube cluster")
+		os.Exit(2)
 	}
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-database.crunchydata.com")
 	if err != nil {
-		panic(err.Error())
+		fmt.Println("required crunchy-database.crunchydata.com TPR was not found on your kube cluster")
+		os.Exit(2)
 	}
 
 	var tprconfig *rest.Config
