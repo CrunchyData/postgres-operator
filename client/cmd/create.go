@@ -51,7 +51,7 @@ For example:
 
 crunchy create database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		createDatabase()
+		createDatabase(args)
 	},
 }
 
@@ -66,6 +66,7 @@ crunchy create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Work your own magic here
 		fmt.Println("create cluster called")
+		createCluster(args)
 	},
 }
 
@@ -86,15 +87,26 @@ func init() {
 
 }
 
-func createDatabase() {
+func createDatabase(args []string) {
 
-	// connect to kube
-	ConnectToKube()
+	for _, arg := range args {
+		fmt.Println("create database called for " + arg)
+		// get tpr
+		// error if tpr doesnt exist
+		// get tpr database
+		// error if exists
+		// create tpr database
+	}
+}
 
-	fmt.Println("create database called")
-	// get tpr
-	// error if tpr doesnt exist
-	// get tpr database
-	// error if exists
-	// create tpr database
+func createCluster(args []string) {
+
+	for _, arg := range args {
+		fmt.Println("create cluster called for " + arg)
+		// get tpr
+		// error if tpr doesnt exist
+		// get tpr database
+		// error if exists
+		// create tpr database
+	}
 }

@@ -24,19 +24,13 @@ import (
 // ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
 	Use:   "show",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "show a description of a database or cluster",
+	Long: `show allows you to show the details of a database or cluster.
+For example:
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+crunchy show database mydatabase
+crunchy show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if KubeconfigPath == "" {
-			fmt.Println("kubeconfig is empty")
-		} else {
-			fmt.Println("kubeconfig is " + KubeconfigPath)
-		}
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
 			        * database
@@ -81,7 +75,7 @@ var ShowDatabaseCmd = &cobra.Command{
 
 				crunchy show database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showDatabase()
+		showDatabase(args)
 	},
 }
 
@@ -93,34 +87,36 @@ var ShowClusterCmd = &cobra.Command{
 
 				crunchy show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showCluster()
+		showCluster(args)
 	},
 }
 
-func showDatabase() {
-	//ConnectToKube()
-	//fmt.Println("showDatabase called")
-	// Fetch a list of our database TPRs
-	databaseList := tpr.CrunchyDatabaseList{}
-	err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
-	if err != nil {
-		panic(err)
-	}
-	for _, database := range databaseList.Items {
-		fmt.Println("database LIST: " + database.Spec.Name)
+func showDatabase(args []string) {
+	for _, arg := range args {
+		fmt.Println("show database " + arg)
+		databaseList := tpr.CrunchyDatabaseList{}
+		err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
+		if err != nil {
+			panic(err)
+		}
+		for _, database := range databaseList.Items {
+			fmt.Println("database LIST: " + database.Spec.Name)
+		}
 	}
 }
 
-func showCluster() {
-	//ConnectToKube()
-	// Fetch a list of our cluster TPRs
-	clusterList := tpr.CrunchyClusterList{}
-	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
-	if err != nil {
-		panic(err)
-	}
-	for _, cluster := range clusterList.Items {
-		fmt.Println("cluster LIST: " + cluster.Spec.Name)
+func showCluster(args []string) {
+	for _, arg := range args {
+		fmt.Println("show cluster " + arg)
+		// Fetch a list of our cluster TPRs
+		clusterList := tpr.CrunchyClusterList{}
+		err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
+		if err != nil {
+			panic(err)
+		}
+		for _, cluster := range clusterList.Items {
+			fmt.Println("cluster LIST: " + cluster.Spec.Name)
+		}
 	}
 
 }
