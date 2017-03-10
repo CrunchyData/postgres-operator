@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/crunchydata/operator/tpr"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 )
@@ -205,4 +206,140 @@ func createCluster(args []string) {
 		fmt.Println("created CrunchyCluster " + arg)
 
 	}
+}
+
+func getDatabaseParams(name string) *tpr.CrunchyDatabase {
+
+	//set to internal defaults
+	spec := tpr.CrunchyDatabaseSpec{
+		Name:               name,
+		PVC_NAME:           "crunchy-pvc",
+		Port:               "5432",
+		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
+		PG_MASTER_USER:     "master",
+		PG_MASTER_PASSWORD: "password",
+		PG_USER:            "testuser",
+		PG_PASSWORD:        "password",
+		PG_DATABASE:        "userdb",
+		PG_ROOT_PASSWORD:   "password",
+	}
+
+	//override any values from config file
+	str := viper.GetString("database.CCP_IMAGE_TAG")
+	if str != "" {
+		spec.CCP_IMAGE_TAG = str
+	}
+	str = viper.GetString("database.Port")
+	if str != "" {
+		spec.Port = str
+	}
+	str = viper.GetString("database.PVC_NAME")
+	if str != "" {
+		spec.PVC_NAME = str
+	}
+	str = viper.GetString("database.PG_MASTER_USER")
+	if str != "" {
+		spec.PG_MASTER_USER = str
+	}
+	str = viper.GetString("database.PG_MASTER_PASSWORD")
+	if str != "" {
+		spec.PG_MASTER_PASSWORD = str
+	}
+	str = viper.GetString("database.PG_USER")
+	if str != "" {
+		spec.PG_USER = str
+	}
+	str = viper.GetString("database.PG_PASSWORD")
+	if str != "" {
+		spec.PG_PASSWORD = str
+	}
+	str = viper.GetString("database.PG_DATABASE")
+	if str != "" {
+		spec.PG_DATABASE = str
+	}
+	str = viper.GetString("database.PG_ROOT_PASSWORD")
+	if str != "" {
+		spec.PG_ROOT_PASSWORD = str
+	}
+
+	//override from command line
+
+	newInstance := &tpr.CrunchyDatabase{
+		Metadata: api.ObjectMeta{
+			Name: name,
+		},
+		Spec: spec,
+	}
+	return newInstance
+}
+func getClusterParams(name string) *tpr.CrunchyCluster {
+
+	//set to internal defaults
+	spec := tpr.CrunchyClusterSpec{
+		Name:               name,
+		ClusterName:        name,
+		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
+		Port:               "5432",
+		PVC_NAME:           "crunchy-pvc",
+		PG_MASTER_HOST:     name,
+		PG_MASTER_USER:     "master",
+		PG_MASTER_PASSWORD: "password",
+		PG_USER:            "testuser",
+		PG_PASSWORD:        "password",
+		PG_DATABASE:        "userdb",
+		PG_ROOT_PASSWORD:   "password",
+		REPLICAS:           "2",
+	}
+
+	//override any values from config file
+	str := viper.GetString("cluster.CCP_IMAGE_TAG")
+	if str != "" {
+		spec.CCP_IMAGE_TAG = str
+	}
+	str = viper.GetString("cluster.Port")
+	if str != "" {
+		spec.Port = str
+	}
+	str = viper.GetString("cluster.PVC_NAME")
+	if str != "" {
+		spec.PVC_NAME = str
+	}
+	str = viper.GetString("cluster.PG_MASTER_USER")
+	if str != "" {
+		spec.PG_MASTER_USER = str
+	}
+	str = viper.GetString("cluster.PG_MASTER_PASSWORD")
+	if str != "" {
+		spec.PG_MASTER_PASSWORD = str
+	}
+	str = viper.GetString("cluster.PG_USER")
+	if str != "" {
+		spec.PG_USER = str
+	}
+	str = viper.GetString("cluster.PG_PASSWORD")
+	if str != "" {
+		spec.PG_PASSWORD = str
+	}
+	str = viper.GetString("cluster.PG_DATABASE")
+	if str != "" {
+		spec.PG_DATABASE = str
+	}
+	str = viper.GetString("cluster.PG_ROOT_PASSWORD")
+	if str != "" {
+		spec.PG_ROOT_PASSWORD = str
+	}
+	str = viper.GetString("cluster.REPLICAS")
+	if str != "" {
+		spec.REPLICAS = str
+	}
+
+	//override from command line
+
+	newInstance := &tpr.CrunchyCluster{
+		Metadata: api.ObjectMeta{
+			Name: name,
+		},
+		Spec: spec,
+	}
+	return newInstance
 }
