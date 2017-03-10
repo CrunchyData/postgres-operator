@@ -43,6 +43,7 @@ type ServiceTemplateFields struct {
 type PodTemplateFields struct {
 	Name               string
 	Port               string
+	PVC_NAME           string
 	CCP_IMAGE_TAG      string
 	PG_MASTER_USER     string
 	PG_MASTER_PASSWORD string
@@ -167,6 +168,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	podFields := PodTemplateFields{
 		Name:               db.Spec.Name,
 		Port:               "5432",
+		PVC_NAME:           "crunchy-pvc",
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
 		PG_MASTER_USER:     "master",
 		PG_MASTER_PASSWORD: "password",

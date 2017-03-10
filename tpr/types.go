@@ -26,8 +26,16 @@ import (
 )
 
 type CrunchyDatabaseSpec struct {
-	Name string `json:"name"`
-	Bar  bool   `json:"bar"`
+	Name               string `json:"name"`
+	PVC_NAME           string `json:"pvcname"`
+	Port               string `json:"port"`
+	CCP_IMAGE_TAG      string `json:"ccpimagetag"`
+	PG_MASTER_USER     string `json:"pgmasteruser"`
+	PG_MASTER_PASSWORD string `json:"pgmasterpassword"`
+	PG_USER            string `json:"pguser"`
+	PG_PASSWORD        string `json:"pgpassword"`
+	PG_DATABASE        string `json:"pgdatabase"`
+	PG_ROOT_PASSWORD   string `json:"pgrootpassword"`
 }
 
 type CrunchyDatabase struct {
@@ -85,8 +93,19 @@ func (el *CrunchyDatabaseList) UnmarshalJSON(data []byte) error {
 }
 
 type CrunchyClusterSpec struct {
-	Name string `json:"name"`
-	Bar  bool   `json:"bar"`
+	Name               string `json:"name"`
+	ClusterName        string `json:"clustername"`
+	CCP_IMAGE_TAG      string `json:"ccpimagetag"`
+	Port               string `json:"port"`
+	PVC_NAME           string `json:"pvcname"`
+	PG_MASTER_HOST     string `json:"pgmasterhost"`
+	PG_MASTER_USER     string `json:"pgmasteruser"`
+	PG_MASTER_PASSWORD string `json:"pgmasterpassword"`
+	PG_USER            string `json:"pguser"`
+	PG_PASSWORD        string `json:"pgpassword"`
+	PG_DATABASE        string `json:"pgdatabase"`
+	PG_ROOT_PASSWORD   string `json:"pgrootpassword"`
+	REPLICAS           string `json:"replicas"`
 }
 
 type CrunchyCluster struct {

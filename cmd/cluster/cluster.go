@@ -159,7 +159,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	serviceFields := ServiceTemplateFields{
 		Name:        db.Spec.Name,
 		ClusterName: db.Spec.Name,
-		Port:        "5432",
+		Port:        db.Spec.Port,
 	}
 
 	err = ServiceTemplate.Execute(&serviceDoc, serviceFields)
@@ -190,7 +190,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	replicaServiceFields := ServiceTemplateFields{
 		Name:        db.Spec.Name + REPLICA_SUFFIX,
 		ClusterName: db.Spec.Name,
-		Port:        "5432",
+		Port:        db.Spec.Port,
 	}
 
 	err = ServiceTemplate.Execute(&replicaServiceDoc, replicaServiceFields)
@@ -224,15 +224,15 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	deploymentFields := DeploymentTemplateFields{
 		Name:               db.Spec.Name,
 		ClusterName:        db.Spec.Name,
-		Port:               "5432",
-		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-		PVC_NAME:           "crunchy-pvc",
-		PG_MASTER_USER:     "master",
-		PG_MASTER_PASSWORD: "password",
-		PG_USER:            "testuser",
-		PG_PASSWORD:        "password",
-		PG_DATABASE:        "userdb",
-		PG_ROOT_PASSWORD:   "password",
+		Port:               db.Spec.Port,
+		CCP_IMAGE_TAG:      db.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:           db.Spec.PVC_NAME,
+		PG_MASTER_USER:     db.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD: db.Spec.PG_MASTER_PASSWORD,
+		PG_USER:            db.Spec.PG_USER,
+		PG_PASSWORD:        db.Spec.PG_PASSWORD,
+		PG_DATABASE:        db.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
 	}
 
 	err = DeploymentTemplate.Execute(&masterDoc, deploymentFields)
@@ -263,17 +263,17 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:               db.Spec.Name + REPLICA_SUFFIX,
 		ClusterName:        db.Spec.Name,
-		Port:               "5432",
-		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-		PVC_NAME:           "crunchy-pvc",
-		PG_MASTER_USER:     "master",
-		PG_MASTER_PASSWORD: "password",
-		PG_USER:            "testuser",
-		PG_PASSWORD:        "password",
-		PG_DATABASE:        "userdb",
-		PG_ROOT_PASSWORD:   "password",
-		PG_MASTER_HOST:     db.Spec.Name,
-		REPLICAS:           "2",
+		Port:               db.Spec.Port,
+		CCP_IMAGE_TAG:      db.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:           db.Spec.PVC_NAME,
+		PG_MASTER_HOST:     db.Spec.PG_MASTER_HOST,
+		PG_MASTER_USER:     db.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD: db.Spec.PG_MASTER_PASSWORD,
+		PG_USER:            db.Spec.PG_USER,
+		PG_PASSWORD:        db.Spec.PG_PASSWORD,
+		PG_DATABASE:        db.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
+		REPLICAS:           db.Spec.REPLICAS,
 	}
 
 	err = ReplicaDeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)

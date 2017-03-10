@@ -1,9 +1,9 @@
 apiVersion: "crunchydata.com/v1"
 kind: CrunchyDatabase
 metadata:
-  name: "example1"
+  name: "database2"
 spec:
-  name: "example1"
+  name: "database2"
   pvcname: "crunchy-pvc"
   port: "5432"
   ccpimagetag: "centos7-9.5-1.2.8"

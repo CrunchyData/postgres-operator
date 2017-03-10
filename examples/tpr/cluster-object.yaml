@@ -4,4 +4,15 @@ metadata:
   name: "cluster1"
 spec:
   name: "cluster1"
-  goo: true
+  clustername: "cluster1"
+  pgmasterhost: "cluster1"
+  port: "5432"
+  replicas: "2"
+  ccpimagetag: "centos7-9.5-1.2.8"
+  pvcname: "crunchy-pvc"
+  pgmasteruser: "master"
+  pgmasterpassword: "password"
+  pguser: "testuser"
+  pgpassword: "password"
+  pgdatabase: "userdb"
+  pgrootpassword: "password"
