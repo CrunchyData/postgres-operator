@@ -22,6 +22,9 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 )
 
+const TREE_BRANCH = "├── "
+const TREE_TRUNK = "└── "
+
 // ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
 	Use:   "show",
@@ -52,7 +55,6 @@ crunchy show cluster mycluster`,
 }
 
 func init() {
-	fmt.Println("show init called")
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowDatabaseCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
@@ -106,16 +108,16 @@ func showDatabase(args []string) {
 	var pod *v1.Pod
 	var service *v1.Service
 	for _, arg := range args {
-		fmt.Println("show database " + arg)
+		//fmt.Println("show database " + arg)
 		for _, database := range databaseList.Items {
 			if arg == "all" || database.Spec.Name == arg {
-				fmt.Println("database LIST: " + database.Spec.Name)
+				fmt.Println("database : " + database.Spec.Name)
 				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(database.Spec.Name)
 				if err != nil {
 					fmt.Println("error in getting database pod " + database.Spec.Name)
 					fmt.Println(err.Error())
 				} else {
-					fmt.Println("pod " + pod.Name)
+					fmt.Println(TREE_BRANCH + "pod " + pod.Name)
 				}
 
 				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
@@ -123,7 +125,7 @@ func showDatabase(args []string) {
 					fmt.Println("error in getting database service " + database.Spec.Name)
 					fmt.Println(err.Error())
 				} else {
-					fmt.Println("service " + service.Name)
+					fmt.Println(TREE_TRUNK + "service " + service.Name)
 				}
 			}
 		}
@@ -142,7 +144,7 @@ func showCluster(args []string) {
 
 	//each arg represents a cluster name or the special 'all' value
 	for _, arg := range args {
-		fmt.Println("show cluster " + arg)
+		fmt.Println("cluster : " + arg)
 		for _, cluster := range clusterList.Items {
 			if arg == "all" || cluster.Spec.Name == arg {
 				//list the deployments
@@ -167,9 +169,8 @@ func listReplicaSets(name string) {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Printf("There are %d replicasets in the cluster\n", len(reps.Items))
 	for _, r := range reps.Items {
-		fmt.Println("replicaset Name " + r.ObjectMeta.Name)
+		fmt.Println(TREE_BRANCH + "replicaset : " + r.ObjectMeta.Name)
 	}
 
 }
@@ -181,9 +182,8 @@ func listDeployments(name string) {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Printf("There are %d deployments in the cluster\n", len(deployments.Items))
 	for _, d := range deployments.Items {
-		fmt.Println("deployment Name " + d.ObjectMeta.Name)
+		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
 	}
 
 }
@@ -195,10 +195,9 @@ func listPods(name string) {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 	for _, pod := range pods.Items {
-		fmt.Println("pod Name " + pod.ObjectMeta.Name)
-		fmt.Println("pod phase is " + pod.Status.Phase)
+		fmt.Println(TREE_BRANCH + "pod : " + pod.ObjectMeta.Name)
+		//fmt.Println(TREE_TRUNK + " phase : " + pod.Status.Phase)
 	}
 
 }
@@ -210,8 +209,11 @@ func listServices(name string) {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Printf("There are %d services in the cluster\n", len(services.Items))
-	for _, service := range services.Items {
-		fmt.Println("service Name " + service.ObjectMeta.Name)
+	for i, service := range services.Items {
+		if i == len(services.Items)-1 {
+			fmt.Println(TREE_TRUNK + "service : " + service.ObjectMeta.Name)
+		} else {
+			fmt.Println(TREE_BRANCH + "service : " + service.ObjectMeta.Name)
+		}
 	}
 }
