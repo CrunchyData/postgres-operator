@@ -119,8 +119,16 @@ func createDatabase(args []string) {
 				Name: arg,
 			},
 			Spec: tpr.CrunchyDatabaseSpec{
-				Name: arg,
-				Bar:  true,
+				Name:               arg,
+				PVC_NAME:           "crunchy-pvc",
+				Port:               "5432",
+				CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
+				PG_MASTER_USER:     "master",
+				PG_MASTER_PASSWORD: "password",
+				PG_USER:            "testuser",
+				PG_PASSWORD:        "password",
+				PG_DATABASE:        "userdb",
+				PG_ROOT_PASSWORD:   "password",
 			},
 		}
 
@@ -169,8 +177,19 @@ func createCluster(args []string) {
 				Name: arg,
 			},
 			Spec: tpr.CrunchyClusterSpec{
-				Name: arg,
-				Bar:  true,
+				Name:               arg,
+				ClusterName:        arg,
+				CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
+				Port:               "5432",
+				PVC_NAME:           "crunchy-pvc",
+				PG_MASTER_HOST:     arg,
+				PG_MASTER_USER:     "master",
+				PG_MASTER_PASSWORD: "password",
+				PG_USER:            "testuser",
+				PG_PASSWORD:        "password",
+				PG_DATABASE:        "userdb",
+				PG_ROOT_PASSWORD:   "password",
+				REPLICAS:           "2",
 			},
 		}
 

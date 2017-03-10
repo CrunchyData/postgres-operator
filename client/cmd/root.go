@@ -71,13 +71,19 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	}
 
-	viper.SetConfigName(".crunchy") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")    // adding home directory as first search path
-	viper.AutomaticEnv()            // read in environment variables that match
+	viper.SetConfigName(".crunchy")     // name of config file (without extension)
+	viper.AddConfigPath(".")            // adding home directory as first search path
+	viper.AddConfigPath("$HOME")        // adding home directory as first search path
+	viper.AddConfigPath("/etc/crunchy") // adding home directory as first search path
+	viper.AutomaticEnv()                // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
+	err := viper.ReadInConfig()
+	if err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		fmt.Println("error reading viper config file")
+		fmt.Println(err.Error())
 	}
 
 	if KubeconfigPath == "" {
@@ -85,6 +91,7 @@ func initConfig() {
 		panic("--kubeconfig flag required")
 	}
 
+	fmt.Println("viper value is " + viper.GetString("cluster.clusterthing"))
 	//fmt.Println(" root initConfig called")
 	ConnectToKube()
 
