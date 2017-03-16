@@ -87,11 +87,15 @@ func initConfig() {
 	}
 
 	if KubeconfigPath == "" {
+		KubeconfigPath = viper.GetString("kubeconfig")
+	}
+	if KubeconfigPath == "" {
 		fmt.Println("--kubeconfig flag is not set and required")
-		panic("--kubeconfig flag required")
+		os.Exit(2)
 	}
 
-	fmt.Println("viper value is " + viper.GetString("cluster.clusterthing"))
+	fmt.Println("viper kubeconfig value is " + viper.GetString("kubeconfig"))
+	fmt.Println("viper CCP_IMAGE_TAG value is " + viper.GetString("cluster.CCP_IMAGE_TAG"))
 	//fmt.Println(" root initConfig called")
 	ConnectToKube()
 
