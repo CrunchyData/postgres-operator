@@ -97,20 +97,104 @@ Get the dependencies:
 ....
 cd $BUILDBASE
 go get -u github.com/FiloSottile/gvt
-gvt restore
+make restore
 ....
 
 Compile the CLI:
 ....
 cd $BUILDBASE
 make cli
-which crunchy
 ....
 
 Compile and build the operator Docker image:
 ....
 cd $BUILDBASE
 make operatorimage
-docker images | grep operator
 ....
 
+
+=== Test Environment
+
+minikube 1.6.0-alpha, executed using:
+....
+minikube start --kubernetes-version=v1.6.0-alpha.0 --feature-gates=AllAlpha=true
+....
+
+=== Allowing minikube Docker Image Access
+
+On minikube, to use the local docker image, in /etc/sysconfig/docker:
+....
+< DOCKER_CERT_PATH=/etc/docker
+---
+> if [ -z "${DOCKER_CERT_PATH}" ]; then
+>   DOCKER_CERT_PATH=/etc/docker
+> fi
+....
+
+then,
+....
+eval $(minikube docker-env)
+....
+
+=== Building
+....
+gvt restore
+make operatorserver
+....
+
+Current dependencies include:
+....
+gvt fetch -tag v2.0.0 k8s.io/client-go
+....
+
+=== CLI 
+
+run the client like this to test with:
+....
+cd client
+go run main.go show --selector='name=ms-master' --kubeconfig=/home/jeffmc/.kube/config
+....
+
+Viewing database components (service and pod):
+....
+crunchy show database 
+crunchy show database ms-master
+crunchy show database --selector='crunchydb=ms-master'
+....
+
+Viewing database cluster components (service and pods):
+....
+crunchy show cluster
+crunchy show cluster mycluster
+crunchy show cluster --selector='crunchycluster=mycluster'
+....
+
+Creating database pod and related service:
+....
+crunchy create database -name=foodb
+crunchy create database -name=foodb -pvc=foopvc
+crunchy create cluster -name=mycluster
+crunchy create cluster -name=mycluster -pvc=mypvc
+crunchy backup -name=foodb -pvc=foopvc
+crunchy restore -name=restoredb -pvc=foopvc -archive=foodb-backups/01-09-01-2 -pvc=restorepvc
+crunchy delete cluster -name=mycluster
+crunchy delete database -name=foodb
+....
+
+Future ideas:
+....
+crunchy upgrade database -name=foodb -to=9.6
+crunchy database policy update -config=pg_hba.conf -name=foodb
+crunchy database policy update -config=pg_hba.conf -all
+crunchy user add -name=foodb -config=userconfig
+crunchy user delete -name=foodb -user=foouser
+....
+
+=== TPR Endpoints
+
+After creating the TPRs, you can work with TPR objects from the
+new TPR APIs as follows:
+....
+ curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchydatabases --insecure
+ curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchyclusters --insecure
+....
