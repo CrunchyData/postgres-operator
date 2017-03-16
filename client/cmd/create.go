@@ -115,23 +115,7 @@ func createDatabase(args []string) {
 		}
 
 		// Create an instance of our TPR
-		newInstance := &tpr.CrunchyDatabase{
-			Metadata: api.ObjectMeta{
-				Name: arg,
-			},
-			Spec: tpr.CrunchyDatabaseSpec{
-				Name:               arg,
-				PVC_NAME:           "crunchy-pvc",
-				Port:               "5432",
-				CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-				PG_MASTER_USER:     "master",
-				PG_MASTER_PASSWORD: "password",
-				PG_USER:            "testuser",
-				PG_PASSWORD:        "password",
-				PG_DATABASE:        "userdb",
-				PG_ROOT_PASSWORD:   "password",
-			},
-		}
+		newInstance := getDatabaseParams(arg)
 
 		err = Tprclient.Post().
 			Resource("crunchydatabases").
@@ -173,26 +157,7 @@ func createCluster(args []string) {
 		}
 
 		// Create an instance of our TPR
-		newInstance := &tpr.CrunchyCluster{
-			Metadata: api.ObjectMeta{
-				Name: arg,
-			},
-			Spec: tpr.CrunchyClusterSpec{
-				Name:               arg,
-				ClusterName:        arg,
-				CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-				Port:               "5432",
-				PVC_NAME:           "crunchy-pvc",
-				PG_MASTER_HOST:     arg,
-				PG_MASTER_USER:     "master",
-				PG_MASTER_PASSWORD: "password",
-				PG_USER:            "testuser",
-				PG_PASSWORD:        "password",
-				PG_DATABASE:        "userdb",
-				PG_ROOT_PASSWORD:   "password",
-				REPLICAS:           "2",
-			},
-		}
+		newInstance := getClusterParams(arg)
 
 		err = Tprclient.Post().
 			Resource("crunchyclusters").

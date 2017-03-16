@@ -1,3 +1,21 @@
+== Crunchy Operator
+v1.0.0, {docdate}
+
+image::docs/crunchy_logo.png?raw=true[]
+
+
+Crunchy Operator provides a Kubernetes operator capability
+enabling automation of PostgreSQL container deployment
+and management.
+
+# Features
+
+The crunchy-operator provides the following functions:
+ * SHOW - display a Crunchy PostgreSQL *database* or *cluster*
+ * CREATE - create a Crunchy PostgreSQL *database* or *cluster*
+ * DELETE - delete a Crunchy PostgreSQL *database* or *cluster*
+ * BACKUP - backup a Crunchy PostgreSQL *database* or *cluster*
+
 # operator
 
 === Project Structure and Dependencies

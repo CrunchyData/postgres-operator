@@ -93,7 +93,6 @@ func deleteDatabase(args []string) {
 	// delete the crunchydatabase resource instance
 	for _, arg := range args {
 		for _, database := range databaseList.Items {
-			fmt.Println("database LIST: " + database.Spec.Name)
 			if arg == "all" || database.Spec.Name == arg {
 				err = Tprclient.Delete().
 					Resource("crunchydatabases").
