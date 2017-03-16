@@ -144,8 +144,9 @@ func showCluster(args []string) {
 
 	//each arg represents a cluster name or the special 'all' value
 	for _, arg := range args {
-		fmt.Println("cluster : " + arg)
 		for _, cluster := range clusterList.Items {
+			fmt.Println("")
+			fmt.Println("cluster : " + cluster.Spec.Name)
 			if arg == "all" || cluster.Spec.Name == arg {
 				//list the deployments
 				listDeployments(cluster.Spec.Name)
