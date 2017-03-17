@@ -103,7 +103,7 @@ gvt restore
 Compile the CLI:
 ....
 cd $COROOT
-make cli
+make clientcli
 which crunchy
 ....
 
@@ -119,5 +119,12 @@ Deploy the Crunchy ThirdPartyResources
 cd $COROOT/examples/tpr
 ./run.sh
 kubectl get thirdpartyresources
+....
+
+Deploy the Crunchy Operator
+....
+cd $COROOT/examples/tpr
+./run.sh
+kubectl get pod
 ....
 
