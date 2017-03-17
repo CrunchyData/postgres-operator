@@ -20,8 +20,9 @@ $DIR/cleanup.sh
 
 sudo mkdir /data
 sudo chmod 777 /data
-sudo cp $DIR/database-service.json /data
-sudo cp $DIR/database-pod.json /data
+
+# copy all the operator templates to the PVC location
+sudo cp $COROOT/conf/crunchy-operator/*.json /data
 
 kubectl create -f $DIR/crunchy-pv.json
 

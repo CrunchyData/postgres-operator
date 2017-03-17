@@ -85,15 +85,21 @@ from source:
 ....
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
+export GOBIN=$GOPATH/bin;export PATH=$PATH:$GOBIN
 mkdir -p $GOPATH/src/github.com/crunchydata/
-cd $GOPATH/github.com/crunchydata
+cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/crunchy-operator.git
 cd crunchy-operator
 export COROOT=$GOPATH/src/github.com/crunchydata/crunchy-operator
 ....
 
 ==== Get the dependencies:
+
+Install a golang compiler, this can be done with either
+your package manager or by following directions
+from https://golang.org/dl/
+
+Then install the project library dependencies:
 ....
 cd $COROOT
 go get -u github.com/FiloSottile/gvt
