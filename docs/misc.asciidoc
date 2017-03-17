@@ -1,200 +1,107 @@
-== Crunchy Operator
+== Crunchy Operator Design
 v1.0.0, {docdate}
 
-image::docs/crunchy_logo.png?raw=true[]
+image::crunchy_logo.png?raw=true[]
 
-Crunchy Operator provides a Kubernetes operator capability
-for managing PostgreSQL containers deployed within a Kubernetes cluster.
+This document goes a bit deeper into the Crunchy Operator
+design and explains the concepts fuller.
 
-# Usage
+== Third Party Resources
 
-Some examples of using the command line interface:
+Kubernetes Third Party Resources are used in the design
+of the Crunchy Operator to define:
 
-.Display Database or Cluster Information
+ * Database  - *crunchydatabases*
+ * Cluster - *crunchyclusters*
+
+A Database is made up of Pods and Services, whereas a Cluster is
+made up of multiple Pods, Services, and Proxies.
+
+
+=== Command Line Interface
+
+The Crunchy command line interface (CLI) is used by a normal end-user
+to create databases or clusters, or make changes to existing databases.
+
+The CLI interacts interacts with the Kubernetes cluster using
+the golang Kubernetes client package.  
+
+When the CLI needs to create a new database, it does so by 
+creating a new ThirdPartyResource of type *crunchydatabase*.
+Likewise, the CLI can create a new cluster by creating
+a new ThirdPartyResource instance of type *crunchycluster*.
+
+From the CLI, users can view existing databases and clusters that
+were deployed using the CLI and Operator.  Objects that were
+not created by the Crunchy Operator are now viewable from the CLI.
+
+=== Operator Deployment
+
+The Crunchy Operator runs within a Pod Deployment in the Kubernetes
+cluster.  An administrator will deploy the Crunchy Operator pod
+using the provided script.  Once installed and running, the Operator
+pod will start watching for certain defined events.
+
+The operator watches for create/update/delete actions on 
+the *crunchydatabase* and *crunchycluster* third party resources.  When
+the CLI creates for example a new *crunchydatabase* third party
+resource, the operator catches that event and creates pods and services
+for that new database request.
+
+=== CLI Design
+
+The CLI uses the cobra package to implement CLI functionality
+like help text, config file processing, and command line parsing.
+
+=== Verbs
+
+A user works with the CLI by entering verbs to indicate
+what they want to do, as follows:
 [source,bash]
 ----
 crunchy show database all
-crunchy show database db1 db2 db3
-crunchy show cluster mycluster
-----
-
-.Create Database or Cluster
-[source,bash]
-----
-crunchy create database mydatabase
+crunchy delete database db1 db2 db3
 crunchy create cluster mycluster
 ----
 
-.Delete a Database or Cluster
+In the above example, the *show*, *backup*, *delete*, and *create* verbs are used.  The CLI is case sensitive and supports only lowercase.
+
+=== Object Types
+
+Currently the operator supports object types of *database* and *cluster*.
+The object type follows the verb as follows:
+
 [source,bash]
 ----
-crunchy delete database mydatabase
-crunchy delete cluster mycluster
+crunchy show database all
+crunchy delete database db1 db2 db3
+crunchy create cluster mycluster
 ----
 
-.Backup Database or Cluster
+== Debugging
+
+Some tips on debugging the operator include the following:
+
+To see if the operator pod is running enter the following:
 [source,bash]
 ----
-crunchy backup mycluster
-crunchy backup mydatabase
+kubectl get pod -l 'name=crunchy-operator'
 ----
 
-
-# Crunchy-Operator Container
-
-The operator funtionality runs in a Pod deployed to your
-Kubernetes cluster.  The *crunchy-operator* Docker container
-is available on Dockerhub.  
-
-You can also build the Docker image for *crunchy-operator* using
-the build instructions below.
-
-The first step to using the operator is to deploy
-the operator container to your Kubernetes environment
-by running the script located at:
-TODO
-
-Verify the operator is running:
-....
-kubectl get pod TODO
-....
-
-Verify the operator installed the following ThirdPartyResources:
-....
+To verify the operator installed the following ThirdPartyResources:
+[source,bash]
+----
 kubectl get thirdpartyresources
-TODO
-....
+----
+
+You should see 3 crunchy third party resources deployed.
 
 # Command Line Interface
 
-With the operator deployed, you can then use the *crunchy* command line 
-interface to execute commands that the *crunchy-operator* understands 
-and reacts to.
+You can view the  TPR Endpoints as follows:
 
-You can download a pre-built *crunchy* CLI binary from 
-the Releases page on the github repository or build
-it yourself using the build instructions below.
-
-
-# Build Instructions
-
-Here are the steps required to build the operator and CLI
-from source:
-
-=== Create Project and Clone 
-....
-mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-mkdir -p $GOPATH/src/github.com/crunchydata/
-cd $GOPATH/github.com/crunchydata
-git clone https://github.com/CrunchyData/crunchy-operator.git
-cd crunchy-operator
-export COROOT=$GOPATH/src/github.com/crunchydata/crunchy-operator
-....
-
-Get the dependencies:
-....
-cd $COROOT
-go get -u github.com/FiloSottile/gvt
-make restore
-....
-
-Compile the CLI:
-....
-cd $COROOT
-make cli
-....
-
-Compile and build the operator Docker image:
-....
-cd $COROOT
-make operatorimage
-....
-
-
-=== Test Environment
-
-minikube 1.6.0-alpha, executed using:
-....
-minikube start --kubernetes-version=v1.6.0-alpha.0 --feature-gates=AllAlpha=true
-....
-
-=== Allowing minikube Docker Image Access
-
-On minikube, to use the local docker image, in /etc/sysconfig/docker:
-....
-< DOCKER_CERT_PATH=/etc/docker
----
-> if [ -z "${DOCKER_CERT_PATH}" ]; then
->   DOCKER_CERT_PATH=/etc/docker
-> fi
-....
-
-then,
-....
-eval $(minikube docker-env)
-....
-
-=== Building
-....
-gvt restore
-make operatorserver
-....
-
-Current dependencies include:
-....
-gvt fetch -tag v2.0.0 k8s.io/client-go
-....
-
-=== CLI 
-
-run the client like this to test with:
-....
-cd client
-go run main.go show --selector='name=ms-master' --kubeconfig=/home/jeffmc/.kube/config
-....
-
-Viewing database components (service and pod):
-....
-crunchy show database 
-crunchy show database ms-master
-crunchy show database --selector='crunchydb=ms-master'
-....
-
-Viewing database cluster components (service and pods):
-....
-crunchy show cluster
-crunchy show cluster mycluster
-crunchy show cluster --selector='crunchycluster=mycluster'
-....
-
-Creating database pod and related service:
-....
-crunchy create database -name=foodb
-crunchy create database -name=foodb -pvc=foopvc
-crunchy create cluster -name=mycluster
-crunchy create cluster -name=mycluster -pvc=mypvc
-crunchy backup -name=foodb -pvc=foopvc
-crunchy restore -name=restoredb -pvc=foopvc -archive=foodb-backups/01-09-01-2 -pvc=restorepvc
-crunchy delete cluster -name=mycluster
-crunchy delete database -name=foodb
-....
-
-Future ideas:
-....
-crunchy upgrade database -name=foodb -to=9.6
-crunchy database policy update -config=pg_hba.conf -name=foodb
-crunchy database policy update -config=pg_hba.conf -all
-crunchy user add -name=foodb -config=userconfig
-crunchy user delete -name=foodb -user=foouser
-....
-
-=== TPR Endpoints
-
-After creating the TPRs, you can work with TPR objects from the
-new TPR APIs as follows:
-....
+[source,bash]
+----
  curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchydatabases --insecure
  curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchyclusters --insecure
-....
+----
