@@ -76,7 +76,7 @@ the Releases page on the github repository or build
 it yourself using the build instructions below.
 
 
-# Build Instructions
+# Build and Setup Instructions
 
 Here are the steps required to build the operator and CLI
 from source:
@@ -112,5 +112,12 @@ Compile and build the operator Docker image:
 cd $COROOT
 make operatorimage
 docker images | grep operator
+....
+
+Deploy the Crunchy ThirdPartyResources
+....
+cd $COROOT/examples/tpr
+./run.sh
+kubectl get thirdpartyresources
 ....
 

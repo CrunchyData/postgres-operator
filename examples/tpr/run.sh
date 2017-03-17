@@ -21,6 +21,6 @@ $DIR/cleanup.sh
 kubectl create -f $DIR/crunchy-cluster-tpr.yaml
 kubectl create -f $DIR/crunchy-database-tpr.yaml
 
-sleep 4
-kubectl create -f $DIR/cluster-object.yaml
-kubectl create -f $DIR/database-object.yaml
+#sleep 4
+#kubectl create -f $DIR/cluster-object.yaml
+#kubectl create -f $DIR/database-object.yaml
