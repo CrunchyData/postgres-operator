@@ -18,6 +18,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
+sudo mkdir /data
+sudo chmod 777 /data
 sudo cp $DIR/database-service.json /data
 sudo cp $DIR/database-pod.json /data
 

@@ -93,38 +93,55 @@ cd crunchy-operator
 export COROOT=$GOPATH/src/github.com/crunchydata/crunchy-operator
 ....
 
-Get the dependencies:
+==== Get the dependencies:
 ....
 cd $COROOT
 go get -u github.com/FiloSottile/gvt
 gvt restore
 ....
 
-Compile the CLI:
+==== Compile the CLI:
 ....
 cd $COROOT
 make clientcli
 which crunchy
 ....
 
-Compile and build the operator Docker image:
+==== Compile and build the operator Docker image:
 ....
 cd $COROOT
 make operatorimage
 docker images | grep operator
 ....
 
-Deploy the Crunchy ThirdPartyResources
+==== Deploy the Crunchy ThirdPartyResources
 ....
 cd $COROOT/examples/tpr
 ./run.sh
 kubectl get thirdpartyresources
 ....
 
-Deploy the Crunchy Operator
+==== Deploy the Crunchy Operator
+note that this will create and use */data* on your
+local system as the persistent store for the operator to use
+for its persistent volume:
 ....
-cd $COROOT/examples/tpr
+cd $COROOT/examples/operator
 ./run.sh
-kubectl get pod
+kubectl get pod -l 'name=crunchy-operator'
 ....
+
+Note that this example will create a PVC called *crunchy-pvc* that is
+referenced in the examples and *crunchy* configuration file as the
+desired PVC to use when databases and clusters are created.
+
+==== Setup initial configuration file for the crunchy CLI
+....
+cp $COROOT/examples/sample.crunchy.yaml $HOME/.crunchy.yaml
+....
+
+Note that this config file assumes your Kubernetes config file is
+located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
+path to match your local Kube config file location.
+
 
