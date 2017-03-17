@@ -42,28 +42,19 @@ crunchy backup mydatabase
 
 # Crunchy-Operator Container
 
+In the following diagram, the Crunchy Operator CLI (client) is
+shown interacting with the Crunchy Operator that runs within
+a Kubernetes cluster.  The operator is responsible for creating
+or modifying PostgreSQL databases deployed within the Kube cluster.
+
+image::docs/operator-diagram.png?raw=true[]
+
 The operator funtionality runs in a Pod deployed to your
 Kubernetes cluster.  The *crunchy-operator* Docker container
 is available on Dockerhub.  
 
 You can also build the Docker image for *crunchy-operator* using
 the build instructions below.
-
-The first step to using the operator is to deploy
-the operator container to your Kubernetes environment
-by running the script located at:
-TODO
-
-Verify the operator is running:
-....
-kubectl get pod TODO
-....
-
-Verify the operator installed the following ThirdPartyResources:
-....
-kubectl get thirdpartyresources
-TODO
-....
 
 # Command Line Interface
 
