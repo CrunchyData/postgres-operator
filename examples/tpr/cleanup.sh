@@ -14,4 +14,5 @@
 
 kubectl delete thirdpartyresource crunchy-cluster.crunchydata.com
 kubectl delete thirdpartyresource crunchy-database.crunchydata.com
+kubectl delete thirdpartyresource crunchy-backup.crunchydata.com
 
