@@ -24,7 +24,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/crunchydata/operator/tpr"
+	"github.com/crunchydata/crunchy-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 

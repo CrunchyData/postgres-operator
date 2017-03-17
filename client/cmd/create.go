@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/crunchydata/operator/tpr"
+	"github.com/crunchydata/crunchy-operator/tpr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"

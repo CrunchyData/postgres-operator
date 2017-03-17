@@ -23,9 +23,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/crunchydata/operator/cmd/cluster"
-	"github.com/crunchydata/operator/cmd/database"
-	"github.com/crunchydata/operator/tpr"
+	"github.com/crunchydata/crunchy-operator/cmd/cluster"
+	"github.com/crunchydata/crunchy-operator/cmd/database"
+	"github.com/crunchydata/crunchy-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"

@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/crunchydata/operator/client/cmd"
+	"github.com/crunchydata/crunchy-operator/client/cmd"
 )
 
 func main() {
