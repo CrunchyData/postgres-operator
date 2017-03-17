@@ -17,6 +17,6 @@ kubectl delete service ms-replica
 kubectl delete pod ms-master
 kubectl delete pod ms-replica
 kubectl delete pod ms-replica-2
-$BUILDBASE/examples/waitforterm.sh ms-master kubectl
-$BUILDBASE/examples/waitforterm.sh ms-replica kubectl
-$BUILDBASE/examples/waitforterm.sh ms-replica-2 kubectl
+$COROOT/examples/waitforterm.sh ms-master kubectl
+$COROOT/examples/waitforterm.sh ms-replica kubectl
+$COROOT/examples/waitforterm.sh ms-replica-2 kubectl

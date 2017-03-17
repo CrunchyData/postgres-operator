@@ -90,25 +90,25 @@ mkdir -p $GOPATH/src/github.com/crunchydata/
 cd $GOPATH/github.com/crunchydata
 git clone https://github.com/CrunchyData/crunchy-operator.git
 cd crunchy-operator
-export BUILDBASE=$GOPATH/src/github.com/crunchydata/crunchy-operator
+export COROOT=$GOPATH/src/github.com/crunchydata/crunchy-operator
 ....
 
 Get the dependencies:
 ....
-cd $BUILDBASE
+cd $COROOT
 go get -u github.com/FiloSottile/gvt
 make restore
 ....
 
 Compile the CLI:
 ....
-cd $BUILDBASE
+cd $COROOT
 make cli
 ....
 
 Compile and build the operator Docker image:
 ....
-cd $BUILDBASE
+cd $COROOT
 make operatorimage
 ....
 

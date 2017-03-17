@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $BUILDBASE/examples/envvars.sh
+source $COROOT/examples/envvars.sh
 
 echo "this example depends on the master-replica example being run prior"
 

@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $BUILDBASE/examples/envvars.sh
+source $COROOT/examples/envvars.sh
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 kubectl delete service crunchy-proxy
 kubectl delete pod -l name=crunchy-proxy
 
-$BUILDBASE/examples/waitforterm.sh crunchy-proxy kubectl
+$COROOT/examples/waitforterm.sh crunchy-proxy kubectl
 
 
