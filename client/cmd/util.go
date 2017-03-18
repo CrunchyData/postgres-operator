@@ -43,24 +43,30 @@ func ConnectToKube() {
 	var err error
 	Config, err = clientcmd.BuildConfigFromFlags("", KubeconfigPath)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err.Error())
+		fmt.Println("can not connect to Kube using kubeconfig")
+		os.Exit(2)
 	}
 
 	// creates the clientset
 	Clientset, err = kubernetes.NewForConfig(Config)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err.Error())
+		fmt.Println("can not create client to Kube ")
+		os.Exit(2)
 	}
 
 	//verify that the TPRs exist in the Kube
 	//var tpr *v1beta1.ThirdPartyResource
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-cluster.crunchydata.com")
 	if err != nil {
+		fmt.Println(err.Error())
 		fmt.Println("required crunchy-cluster.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-database.crunchydata.com")
 	if err != nil {
+		fmt.Println(err.Error())
 		fmt.Println("required crunchy-database.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
@@ -71,7 +77,9 @@ func ConnectToKube() {
 
 	Tprclient, err = rest.RESTClientFor(tprconfig)
 	if err != nil {
-		panic(err.Error())
+		fmt.Println(err.Error())
+		fmt.Println("can not get client to TPR")
+		os.Exit(2)
 	}
 
 	//fmt.Println("connected to kube. at " + KubeconfigPath)

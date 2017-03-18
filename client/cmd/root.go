@@ -82,8 +82,7 @@ func initConfig() {
 	if err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
-		fmt.Println("error reading viper config file")
-		fmt.Println(err.Error())
+		fmt.Println("config file not found")
 	}
 
 	if KubeconfigPath == "" {
@@ -94,8 +93,8 @@ func initConfig() {
 		os.Exit(2)
 	}
 
-	fmt.Println("viper kubeconfig value is " + viper.GetString("kubeconfig"))
-	fmt.Println("viper CCP_IMAGE_TAG value is " + viper.GetString("cluster.CCP_IMAGE_TAG"))
+	fmt.Println("kubeconfig path is " + viper.GetString("kubeconfig"))
+	//fmt.Println("viper CCP_IMAGE_TAG value is " + viper.GetString("cluster.CCP_IMAGE_TAG"))
 	//fmt.Println(" root initConfig called")
 	ConnectToKube()
 
