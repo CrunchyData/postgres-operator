@@ -16,10 +16,7 @@ package cmd
 
 import (
 	"fmt"
-
-	"github.com/crunchydata/crunchy-operator/tpr"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/pkg/api"
 )
 
 // deleteCmd represents the delete command
@@ -80,38 +77,6 @@ var deleteDatabaseCmd = &cobra.Command{
 	},
 }
 
-func deleteDatabase(args []string) {
-	var err error
-	//result := tpr.CrunchyDatabaseList{}
-	databaseList := tpr.CrunchyDatabaseList{}
-	err = Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
-	if err != nil {
-		fmt.Println("error getting database list")
-		fmt.Println(err.Error())
-		return
-	}
-	// delete the crunchydatabase resource instance
-	for _, arg := range args {
-		for _, database := range databaseList.Items {
-			if arg == "all" || database.Spec.Name == arg {
-				err = Tprclient.Delete().
-					Resource("crunchydatabases").
-					Namespace(api.NamespaceDefault).
-					Name(database.Spec.Name).
-					Do().
-					Error()
-				if err != nil {
-					fmt.Println("error deleting crunchydatabase " + arg)
-					fmt.Println(err.Error())
-				}
-				fmt.Println("deleted crunchydatabase " + database.Spec.Name)
-			}
-
-		}
-
-	}
-}
-
 // deleteClusterCmd represents the delete cluster command
 var deleteClusterCmd = &cobra.Command{
 	Use:   "cluster",
@@ -121,38 +86,4 @@ var deleteClusterCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteCluster(args)
 	},
-}
-
-func deleteCluster(args []string) {
-	// Fetch a list of our cluster TPRs
-	clusterList := tpr.CrunchyClusterList{}
-	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
-	if err != nil {
-		fmt.Println("error getting cluster list")
-		fmt.Println(err.Error())
-		return
-	}
-
-	//to remove a cluster, you just have to remove
-	//the crunchycluster object, the operator will do the actual deletes
-	for _, arg := range args {
-		fmt.Println("deleting cluster " + arg)
-		for _, cluster := range clusterList.Items {
-			if arg == "all" || arg == cluster.Spec.Name {
-				err = Tprclient.Delete().
-					Resource("crunchyclusters").
-					Namespace(api.NamespaceDefault).
-					Name(cluster.Spec.Name).
-					Do().
-					Error()
-				if err != nil {
-					fmt.Println("error deleting crunchycluster " + arg)
-					fmt.Println(err.Error())
-				} else {
-					fmt.Println("deleted crunchycluster " + cluster.Spec.Name)
-				}
-
-			}
-		}
-	}
 }

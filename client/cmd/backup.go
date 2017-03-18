@@ -47,3 +47,7 @@ func init() {
 	// backupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
+
+func showBackup(args []string) {
+	fmt.Printf("showBackup called %v\n", args)
+}

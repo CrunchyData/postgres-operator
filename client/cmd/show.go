@@ -16,10 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/crunchydata/crunchy-operator/tpr"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
 const TREE_BRANCH = "├── "
@@ -38,16 +35,19 @@ crunchy show cluster mycluster`,
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
 			        * database
-				* cluster`)
+				* cluster
+				* backup`)
 		} else {
 			switch args[0] {
 			case "database":
 			case "cluster":
+			case "backup":
 				break
 			default:
 				fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
 			        * database
-				* cluster`)
+				* cluster
+				* backup`)
 			}
 		}
 
@@ -58,6 +58,7 @@ func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowDatabaseCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
+	ShowCmd.AddCommand(ShowBackupCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -68,6 +69,18 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// ShowCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+// showBackupCmd represents the show backup command
+var ShowBackupCmd = &cobra.Command{
+	Use:   "backup",
+	Short: "Show backup information",
+	Long: `Show backup information. For example:
+
+				crunchy show backup mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showBackup(args)
+	},
 }
 
 // showDatbaseCmd represents the show database command
@@ -92,129 +105,4 @@ var ShowClusterCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		showCluster(args)
 	},
-}
-
-func showDatabase(args []string) {
-	//get a list of all databases
-	databaseList := tpr.CrunchyDatabaseList{}
-	err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
-	if err != nil {
-		fmt.Println("error getting list of databases")
-		fmt.Println(err.Error())
-		return
-	}
-
-	//each arg represents a database name or the special 'all' value
-	var pod *v1.Pod
-	var service *v1.Service
-	for _, arg := range args {
-		//fmt.Println("show database " + arg)
-		for _, database := range databaseList.Items {
-			if arg == "all" || database.Spec.Name == arg {
-				fmt.Println("database : " + database.Spec.Name)
-				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(database.Spec.Name)
-				if err != nil {
-					fmt.Println("error in getting database pod " + database.Spec.Name)
-					fmt.Println(err.Error())
-				} else {
-					fmt.Println(TREE_BRANCH + "pod " + pod.Name)
-				}
-
-				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
-				if err != nil {
-					fmt.Println("error in getting database service " + database.Spec.Name)
-					fmt.Println(err.Error())
-				} else {
-					fmt.Println(TREE_TRUNK + "service " + service.Name)
-				}
-			}
-		}
-	}
-}
-
-func showCluster(args []string) {
-	//get a list of all clusters
-	clusterList := tpr.CrunchyClusterList{}
-	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
-	if err != nil {
-		fmt.Println("error getting list of clusters")
-		fmt.Println(err.Error())
-		return
-	}
-
-	//each arg represents a cluster name or the special 'all' value
-	for _, arg := range args {
-		for _, cluster := range clusterList.Items {
-			fmt.Println("")
-			fmt.Println("cluster : " + cluster.Spec.Name)
-			if arg == "all" || cluster.Spec.Name == arg {
-				//list the deployments
-				listDeployments(cluster.Spec.Name)
-				//list the replicasets
-				listReplicaSets(cluster.Spec.Name)
-				//list the pods
-				listPods(cluster.Spec.Name)
-				//list the services
-				listServices(cluster.Spec.Name)
-			}
-		}
-	}
-
-}
-
-func listReplicaSets(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
-	reps, err := Clientset.ReplicaSets(api.NamespaceDefault).List(lo)
-	if err != nil {
-		fmt.Println("error getting list of replicasets")
-		fmt.Println(err.Error())
-		return
-	}
-	for _, r := range reps.Items {
-		fmt.Println(TREE_BRANCH + "replicaset : " + r.ObjectMeta.Name)
-	}
-
-}
-func listDeployments(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
-	deployments, err := Clientset.Deployments(api.NamespaceDefault).List(lo)
-	if err != nil {
-		fmt.Println("error getting list of deployments")
-		fmt.Println(err.Error())
-		return
-	}
-	for _, d := range deployments.Items {
-		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
-	}
-
-}
-func listPods(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
-	pods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
-	if err != nil {
-		fmt.Println("error getting list of pods")
-		fmt.Println(err.Error())
-		return
-	}
-	for _, pod := range pods.Items {
-		fmt.Println(TREE_BRANCH + "pod : " + pod.ObjectMeta.Name)
-		//fmt.Println(TREE_TRUNK + " phase : " + pod.Status.Phase)
-	}
-
-}
-func listServices(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
-	services, err := Clientset.Core().Services(api.NamespaceDefault).List(lo)
-	if err != nil {
-		fmt.Println("error getting list of services")
-		fmt.Println(err.Error())
-		return
-	}
-	for i, service := range services.Items {
-		if i == len(services.Items)-1 {
-			fmt.Println(TREE_TRUNK + "service : " + service.ObjectMeta.Name)
-		} else {
-			fmt.Println(TREE_BRANCH + "service : " + service.ObjectMeta.Name)
-		}
-	}
 }
