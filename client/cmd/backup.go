@@ -51,3 +51,11 @@ func init() {
 func showBackup(args []string) {
 	fmt.Printf("showBackup called %v\n", args)
 }
+
+func createBackup(args []string) {
+	fmt.Printf("createBackup called %v\n", args)
+}
+
+func deleteBackup(args []string) {
+	fmt.Printf("createBackup called %v\n", args)
+}

@@ -23,24 +23,37 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Database or Cluster",
-	Long: `CREATE allows you to create a new Database or Cluster 
+	Short: "Create a Database, Cluster, or Backup",
+	Long: `CREATE allows you to create a new Database, Cluster, or Backup
 For example:
 
 crunchy create database
 crunchy create cluster
+crunchy create backup mydatabase
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
 	* database
-	* cluster`)
+	* cluster
+	* backup`)
 		}
 	},
 }
 
-// createDatbaseCmd represents the create database command
+var createBackupCmd = &cobra.Command{
+	Use:   "backup",
+	Short: "Create a new backup",
+	Long: `Create a backup of a database or cluster
+For example:
+
+crunchy create backup mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		createBackup(args)
+	},
+}
+
 var createDatabaseCmd = &cobra.Command{
 	Use:   "database",
 	Short: "Create a new database",
@@ -71,6 +84,7 @@ func init() {
 	RootCmd.AddCommand(createCmd)
 	createCmd.AddCommand(createDatabaseCmd)
 	createCmd.AddCommand(createClusterCmd)
+	createCmd.AddCommand(createBackupCmd)
 
 	// Here you will define your flags and configuration settings.
 

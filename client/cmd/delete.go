@@ -22,27 +22,31 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a database or Cluster",
-	Long: `delete allows you to delete a database or cluster
+	Short: "Delete a database, cluster, or backup",
+	Long: `delete allows you to delete a database, cluster, or backup
 For example:
 
 crunchy delete database mydatabase
-crunchy delete cluster mycluster`,
+crunchy delete cluster mycluster
+crunchy delete backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
 	* database
-	* cluster`)
+	* cluster
+	* backup`)
 		} else {
 			switch args[0] {
 			case "database":
 			case "cluster":
+			case "backup":
 				break
 			default:
 				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
 	* database
-	* cluster`)
+	* cluster
+	* backup`)
 			}
 		}
 
@@ -53,6 +57,7 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deleteDatabaseCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
+	deleteCmd.AddCommand(deleteBackupCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -66,7 +71,16 @@ func init() {
 
 }
 
-// showDatbaseCmd represents the show database command
+var deleteBackupCmd = &cobra.Command{
+	Use:   "backup",
+	Short: "delete a backup",
+	Long: `delete a backup. For example:
+	crunchy delete backup mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		deleteBackup(args)
+	},
+}
+
 var deleteDatabaseCmd = &cobra.Command{
 	Use:   "database",
 	Short: "delete a database",
@@ -77,7 +91,6 @@ var deleteDatabaseCmd = &cobra.Command{
 	},
 }
 
-// deleteClusterCmd represents the delete cluster command
 var deleteClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "delete a cluster",

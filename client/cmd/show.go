@@ -29,14 +29,15 @@ var ShowCmd = &cobra.Command{
 	Long: `show allows you to show the details of a database or cluster.
 For example:
 
-crunchy show database mydatabase
-crunchy show cluster mycluster`,
+	crunchy show database mydatabase
+	crunchy show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
-			        * database
-				* cluster
-				* backup`)
+			fmt.Println(`You must specify the type of resource to show.  
+Valid resource types include:
+	* database
+	* cluster
+	* backup`)
 		} else {
 			switch args[0] {
 			case "database":
@@ -44,10 +45,11 @@ crunchy show cluster mycluster`,
 			case "backup":
 				break
 			default:
-				fmt.Println(`You must specify the type of resource to show.  Valid resource types include:
-			        * database
-				* cluster
-				* backup`)
+				fmt.Println(`You must specify the type of resource to show.  
+Valid resource types include:
+	* database
+	* cluster
+	* backup`)
 			}
 		}
 
