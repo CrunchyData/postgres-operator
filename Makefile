@@ -1,6 +1,8 @@
 
 pgo:
 	cd client && go build -o $(GOBIN)/pgo pgo.go
+clean:
+	rm $(GOBIN)/pgo $(GOBIN)/postgres-operator
 operatorimage:
 	cd operator && go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kubectl delete thirdpartyresource crunchy-cluster.crunchydata.com
-kubectl delete thirdpartyresource crunchy-database.crunchydata.com
-kubectl delete thirdpartyresource crunchy-backup.crunchydata.com
+kubectl delete thirdpartyresource pg-cluster.crunchydata.com
+kubectl delete thirdpartyresource pg-database.crunchydata.com
+kubectl delete thirdpartyresource pg-backup.crunchydata.com
 

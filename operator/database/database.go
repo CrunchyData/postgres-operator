@@ -80,31 +80,31 @@ func init() {
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
 
-	eventchan := make(chan *tpr.CrunchyDatabase)
+	eventchan := make(chan *tpr.PgDatabase)
 
-	source := cache.NewListWatchFromClient(client, "crunchydatabases", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgdatabases", api.NamespaceAll, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
-		db := obj.(*tpr.CrunchyDatabase)
+		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
 		addDatabase(clientset, client, db)
 	}
 	createDeleteHandler := func(obj interface{}) {
-		db := obj.(*tpr.CrunchyDatabase)
+		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
 		deleteDatabase(clientset, client, db)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
-		db := obj.(*tpr.CrunchyDatabase)
+		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
-		fmt.Println("updating CrunchyDatabase object")
+		fmt.Println("updating PgDatabase object")
 		fmt.Println("updated with Name=" + db.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
 		source,
-		&tpr.CrunchyDatabase{},
+		&tpr.PgDatabase{},
 		time.Second*10,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    createAddHandler,
@@ -124,8 +124,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 }
 
 // database consists of a Service and a Pod
-func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyDatabase) {
-	fmt.Println("creating CrunchyDatabase object")
+func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
+	fmt.Println("creating PgDatabase object")
 	fmt.Println("created with Name=" + db.Spec.Name)
 
 	//create the service - TODO get these fields from
@@ -202,8 +202,8 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 
 }
 
-func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyDatabase) {
-	fmt.Println("deleting CrunchyDatabase object")
+func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
+	fmt.Println("deleting PgDatabase object")
 	fmt.Println("deleting with Name=" + db.Spec.Name)
 
 	//delete the service

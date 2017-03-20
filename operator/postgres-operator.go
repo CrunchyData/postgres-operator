@@ -63,9 +63,10 @@ func main() {
 		panic(err.Error())
 	}
 
+	/**
 	exampleList := tpr.CrunchyDatabaseList{}
 	err = tprclient.Get().
-		Resource("crunchydatabases").
+		Resource("pgdatabases").
 		Do().Into(&exampleList)
 	if err != nil {
 		panic(err.Error())
@@ -75,7 +76,7 @@ func main() {
 	example := tpr.CrunchyDatabase{}
 	err = tprclient.Get().
 		Namespace("default").
-		Resource("crunchydatabases").
+		Resource("pgdatabases").
 		Name("example1").
 		Do().Into(&example)
 	if err != nil {
@@ -83,10 +84,9 @@ func main() {
 	} else {
 		fmt.Printf("%#v\n", example)
 	}
+	*/
 
-	fmt.Println()
 	fmt.Println("---------------------------------------------------------")
-	fmt.Println()
 
 	stopchan := make(chan struct{}, 1)
 
@@ -135,12 +135,12 @@ func configFromFlags(kubeconfig string) (*rest.Config, error) {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
 		unversioned.GroupVersion{Group: "crunchydata.com", Version: "v1"},
-		&tpr.CrunchyDatabase{},
-		&tpr.CrunchyDatabaseList{},
-		&tpr.CrunchyCluster{},
-		&tpr.CrunchyClusterList{},
-		&tpr.CrunchyBackup{},
-		&tpr.CrunchyBackupList{},
+		&tpr.PgDatabase{},
+		&tpr.PgDatabaseList{},
+		&tpr.PgCluster{},
+		&tpr.PgClusterList{},
+		&tpr.PgBackup{},
+		&tpr.PgBackupList{},
 		&api.ListOptions{},
 		&api.DeleteOptions{},
 	)

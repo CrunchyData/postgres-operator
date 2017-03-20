@@ -1,5 +1,5 @@
 apiVersion: "crunchydata.com/v1"
-kind: CrunchyCluster
+kind: PgCluster
 metadata:
   name: "cluster1"
 spec:

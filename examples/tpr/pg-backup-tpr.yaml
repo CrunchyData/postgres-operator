@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: ThirdPartyResource
 metadata:
-  name: crunchy-backup.crunchydata.com
+  name: pg-backup.crunchydata.com
 description: "A PostgreSQL backup specification"
 versions:
 - name: v1

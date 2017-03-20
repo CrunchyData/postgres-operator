@@ -1,5 +1,5 @@
 apiVersion: "crunchydata.com/v1"
-kind: CrunchyDatabase
+kind: PgDatabase
 metadata:
   name: "example1"
 spec:

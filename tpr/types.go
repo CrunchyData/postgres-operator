@@ -14,7 +14,7 @@
 */
 
 // Package tpr defines the ThirdPartyResources used within
-// the crunchy operator, namely the CrunchyDatabase and CrunchyCluster
+// the crunchy operator, namely the PgDatabase and PgCluster
 // types.
 package tpr
 
@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
-type CrunchyDatabaseSpec struct {
+type PgDatabaseSpec struct {
 	Name               string `json:"name"`
 	PVC_NAME           string `json:"pvcname"`
 	Port               string `json:"port"`
@@ -38,61 +38,61 @@ type CrunchyDatabaseSpec struct {
 	PG_ROOT_PASSWORD   string `json:"pgrootpassword"`
 }
 
-type CrunchyDatabase struct {
+type PgDatabase struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             api.ObjectMeta `json:"metadata"`
 
-	Spec CrunchyDatabaseSpec `json:"spec"`
+	Spec PgDatabaseSpec `json:"spec"`
 }
 
-type CrunchyDatabaseList struct {
+type PgDatabaseList struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             unversioned.ListMeta `json:"metadata"`
 
-	Items []CrunchyDatabase `json:"items"`
+	Items []PgDatabase `json:"items"`
 }
 
-func (e *CrunchyDatabase) GetObjectKind() unversioned.ObjectKind {
+func (e *PgDatabase) GetObjectKind() unversioned.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *CrunchyDatabase) GetObjectMeta() meta.Object {
+func (e *PgDatabase) GetObjectMeta() meta.Object {
 	return &e.Metadata
 }
 
-func (el *CrunchyDatabaseList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgDatabaseList) GetObjectKind() unversioned.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *CrunchyDatabaseList) GetListMeta() unversioned.List {
+func (el *PgDatabaseList) GetListMeta() unversioned.List {
 	return &el.Metadata
 }
 
-type CrunchyDatabaseListCopy CrunchyDatabaseList
-type CrunchyDatabaseCopy CrunchyDatabase
+type PgDatabaseListCopy PgDatabaseList
+type PgDatabaseCopy PgDatabase
 
-func (e *CrunchyDatabase) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyDatabaseCopy{}
+func (e *PgDatabase) UnmarshalJSON(data []byte) error {
+	tmp := PgDatabaseCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := CrunchyDatabase(tmp)
+	tmp2 := PgDatabase(tmp)
 	*e = tmp2
 	return nil
 }
-func (el *CrunchyDatabaseList) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyDatabaseListCopy{}
+func (el *PgDatabaseList) UnmarshalJSON(data []byte) error {
+	tmp := PgDatabaseListCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := CrunchyDatabaseList(tmp)
+	tmp2 := PgDatabaseList(tmp)
 	*el = tmp2
 	return nil
 }
 
-type CrunchyClusterSpec struct {
+type PgClusterSpec struct {
 	Name               string `json:"name"`
 	ClusterName        string `json:"clustername"`
 	CCP_IMAGE_TAG      string `json:"ccpimagetag"`
@@ -108,61 +108,61 @@ type CrunchyClusterSpec struct {
 	REPLICAS           string `json:"replicas"`
 }
 
-type CrunchyCluster struct {
+type PgCluster struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             api.ObjectMeta `json:"metadata"`
 
-	Spec CrunchyClusterSpec `json:"spec"`
+	Spec PgClusterSpec `json:"spec"`
 }
 
-type CrunchyClusterList struct {
+type PgClusterList struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             unversioned.ListMeta `json:"metadata"`
 
-	Items []CrunchyCluster `json:"items"`
+	Items []PgCluster `json:"items"`
 }
 
-func (e *CrunchyCluster) GetObjectKind() unversioned.ObjectKind {
+func (e *PgCluster) GetObjectKind() unversioned.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *CrunchyCluster) GetObjectMeta() meta.Object {
+func (e *PgCluster) GetObjectMeta() meta.Object {
 	return &e.Metadata
 }
 
-func (el *CrunchyClusterList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgClusterList) GetObjectKind() unversioned.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *CrunchyClusterList) GetListMeta() unversioned.List {
+func (el *PgClusterList) GetListMeta() unversioned.List {
 	return &el.Metadata
 }
 
-type CrunchyClusterListCopy CrunchyClusterList
-type CrunchyClusterCopy CrunchyCluster
+type PgClusterListCopy PgClusterList
+type PgClusterCopy PgCluster
 
-func (e *CrunchyCluster) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyClusterCopy{}
+func (e *PgCluster) UnmarshalJSON(data []byte) error {
+	tmp := PgClusterCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := CrunchyCluster(tmp)
+	tmp2 := PgCluster(tmp)
 	*e = tmp2
 	return nil
 }
-func (el *CrunchyClusterList) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyClusterListCopy{}
+func (el *PgClusterList) UnmarshalJSON(data []byte) error {
+	tmp := PgClusterListCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := CrunchyClusterList(tmp)
+	tmp2 := PgClusterList(tmp)
 	*el = tmp2
 	return nil
 }
 
-type CrunchyBackupSpec struct {
+type PgBackupSpec struct {
 	Name          string `json:"name"`
 	PVC_NAME      string `json:"pvcname"`
 	CCP_IMAGE_TAG string `json:"ccpimagetag"`
@@ -172,57 +172,57 @@ type CrunchyBackupSpec struct {
 	BACKUP_PORT   string `json:"backupport"`
 }
 
-type CrunchyBackup struct {
+type PgBackup struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             api.ObjectMeta `json:"metadata"`
 
-	Spec CrunchyBackupSpec `json:"spec"`
+	Spec PgBackupSpec `json:"spec"`
 }
 
-type CrunchyBackupList struct {
+type PgBackupList struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             unversioned.ListMeta `json:"metadata"`
 
-	Items []CrunchyBackup `json:"items"`
+	Items []PgBackup `json:"items"`
 }
 
-func (e *CrunchyBackup) GetObjectKind() unversioned.ObjectKind {
+func (e *PgBackup) GetObjectKind() unversioned.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *CrunchyBackup) GetObjectMeta() meta.Object {
+func (e *PgBackup) GetObjectMeta() meta.Object {
 	return &e.Metadata
 }
 
-func (el *CrunchyBackupList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgBackupList) GetObjectKind() unversioned.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *CrunchyBackupList) GetListMeta() unversioned.List {
+func (el *PgBackupList) GetListMeta() unversioned.List {
 	return &el.Metadata
 }
 
-type CrunchyBackupListCopy CrunchyBackupList
-type CrunchyBackupCopy CrunchyBackup
+type PgBackupListCopy PgBackupList
+type PgBackupCopy PgBackup
 
-func (e *CrunchyBackup) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyBackupCopy{}
+func (e *PgBackup) UnmarshalJSON(data []byte) error {
+	tmp := PgBackupCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := CrunchyBackup(tmp)
+	tmp2 := PgBackup(tmp)
 	*e = tmp2
 	return nil
 }
 
-func (el *CrunchyBackupList) UnmarshalJSON(data []byte) error {
-	tmp := CrunchyBackupListCopy{}
+func (el *PgBackupList) UnmarshalJSON(data []byte) error {
+	tmp := PgBackupListCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := CrunchyBackupList(tmp)
+	tmp2 := PgBackupList(tmp)
 	*el = tmp2
 	return nil
 }

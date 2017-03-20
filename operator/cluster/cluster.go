@@ -100,31 +100,31 @@ func init() {
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
 
-	eventchan := make(chan *tpr.CrunchyCluster)
+	eventchan := make(chan *tpr.PgCluster)
 
-	source := cache.NewListWatchFromClient(client, "crunchyclusters", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgclusters", api.NamespaceAll, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
-		cluster := obj.(*tpr.CrunchyCluster)
+		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
 		addCluster(clientset, client, cluster)
 	}
 	createDeleteHandler := func(obj interface{}) {
-		cluster := obj.(*tpr.CrunchyCluster)
+		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
 		deleteCluster(clientset, client, cluster)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
-		cluster := obj.(*tpr.CrunchyCluster)
+		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
-		fmt.Println("updating CrunchyCluster object")
+		fmt.Println("updating PgCluster object")
 		fmt.Println("updated with Name=" + cluster.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
 		source,
-		&tpr.CrunchyCluster{},
+		&tpr.PgCluster{},
 		time.Second*10,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    createAddHandler,
@@ -145,13 +145,13 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyCluster) {
+func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
 	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
 	var err error
 	var replicaServiceResult, serviceResult *v1.Service
 	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
 
-	fmt.Println("creating CrunchyCluster object")
+	fmt.Println("creating PgCluster object")
 	fmt.Println("created with Name=" + db.Spec.Name)
 
 	//create the master service
@@ -299,8 +299,8 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 }
 
-func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.CrunchyCluster) {
-	fmt.Println("deleting CrunchyCluster object")
+func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
+	fmt.Println("deleting PgCluster object")
 	fmt.Println("deleting with Name=" + db.Spec.Name)
 
 	//delete the master service

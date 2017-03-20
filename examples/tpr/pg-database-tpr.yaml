@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: ThirdPartyResource
 metadata:
-  name: crunchy-database.crunchydata.com
+  name: pg-database.crunchydata.com
 description: "A database specification containing a Pod and Service which run a PostgreSQL database"
 versions:
 - name: v1

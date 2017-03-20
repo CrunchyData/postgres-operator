@@ -64,31 +64,31 @@ func init() {
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
 
-	eventchan := make(chan *tpr.CrunchyBackup)
+	eventchan := make(chan *tpr.PgBackup)
 
-	source := cache.NewListWatchFromClient(client, "crunchybackups", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgbackups", api.NamespaceAll, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
-		job := obj.(*tpr.CrunchyBackup)
+		job := obj.(*tpr.PgBackup)
 		eventchan <- job
 		addBackup(clientset, client, job)
 	}
 	createDeleteHandler := func(obj interface{}) {
-		job := obj.(*tpr.CrunchyBackup)
+		job := obj.(*tpr.PgBackup)
 		eventchan <- job
 		deleteBackup(clientset, client, job)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
-		job := obj.(*tpr.CrunchyBackup)
+		job := obj.(*tpr.PgBackup)
 		eventchan <- job
-		fmt.Println("updating CrunchyBackup object")
+		fmt.Println("updating PgBackup object")
 		fmt.Println("updated with Name=" + job.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
 		source,
-		&tpr.CrunchyBackup{},
+		&tpr.PgBackup{},
 		time.Second*10,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    createAddHandler,
@@ -107,8 +107,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.CrunchyBackup) {
-	fmt.Println("creating CrunchyBackup object")
+func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
+	fmt.Println("creating PgBackup object")
 	fmt.Println("created with Name=" + job.Spec.Name)
 
 	//create the job -
@@ -149,8 +149,8 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 
 }
 
-func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.CrunchyBackup) {
-	fmt.Println("deleting CrunchyBackup object")
+func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
+	fmt.Println("deleting PgBackup object")
 	fmt.Println("deleting with Name=" + job.Spec.Name)
 
 	//delete the job

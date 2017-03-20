@@ -1,18 +1,19 @@
-== Crunchy Operator Design
+== postgres Operator Design
 v1.0.0, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
-This document goes a bit deeper into the Crunchy Operator
+This document goes a bit deeper into the postgres Operator
 design and explains the concepts fuller.
 
 == Third Party Resources
 
 Kubernetes Third Party Resources are used in the design
-of the Crunchy Operator to define:
+of the postgres Operator to define:
 
- * Database  - *crunchydatabases*
- * Cluster - *crunchyclusters*
+ * Database  - *pgdatabases*
+ * Cluster - *pgclusters*
+ * Backup - *pgbackups*
 
 A Database is made up of Pods and Services, whereas a Cluster is
 made up of multiple Pods, Services, and Proxies.
@@ -20,16 +21,16 @@ made up of multiple Pods, Services, and Proxies.
 
 === Command Line Interface
 
-The Crunchy command line interface (CLI) is used by a normal end-user
+The pgo command line interface (CLI) is used by a normal end-user
 to create databases or clusters, or make changes to existing databases.
 
 The CLI interacts interacts with the Kubernetes cluster using
 the golang Kubernetes client package.  
 
 When the CLI needs to create a new database, it does so by 
-creating a new ThirdPartyResource of type *crunchydatabase*.
+creating a new ThirdPartyResource of type *pgdatabase*.
 Likewise, the CLI can create a new cluster by creating
-a new ThirdPartyResource instance of type *crunchycluster*.
+a new ThirdPartyResource instance of type *pgcluster*.
 
 From the CLI, users can view existing databases and clusters that
 were deployed using the CLI and Operator.  Objects that were
@@ -37,14 +38,14 @@ not created by the Crunchy Operator are now viewable from the CLI.
 
 === Operator Deployment
 
-The Crunchy Operator runs within a Pod Deployment in the Kubernetes
-cluster.  An administrator will deploy the Crunchy Operator pod
+The postgres Operator runs within a Pod Deployment in the Kubernetes
+cluster.  An administrator will deploy the postgres Operator pod
 using the provided script.  Once installed and running, the Operator
 pod will start watching for certain defined events.
 
 The operator watches for create/update/delete actions on 
-the *crunchydatabase* and *crunchycluster* third party resources.  When
-the CLI creates for example a new *crunchydatabase* third party
+the *pgdatabase* and *pgcluster* third party resources.  When
+the CLI creates for example a new *pgdatabase* third party
 resource, the operator catches that event and creates pods and services
 for that new database request.
 
@@ -59,9 +60,9 @@ A user works with the CLI by entering verbs to indicate
 what they want to do, as follows:
 [source,bash]
 ----
-crunchy show database all
-crunchy delete database db1 db2 db3
-crunchy create cluster mycluster
+pgo show database all
+pgo delete database db1 db2 db3
+pgo create cluster mycluster
 ----
 
 In the above example, the *show*, *backup*, *delete*, and *create* verbs are used.  The CLI is case sensitive and supports only lowercase.
@@ -73,19 +74,17 @@ The object type follows the verb as follows:
 
 [source,bash]
 ----
-crunchy show database all
-crunchy delete database db1 db2 db3
-crunchy create cluster mycluster
+pgo show database all
+pgo delete database db1 db2 db3
+pgo create cluster mycluster
 ----
 
 == Debugging
 
-Some tips on debugging the operator include the following:
-
 To see if the operator pod is running enter the following:
 [source,bash]
 ----
-kubectl get pod -l 'name=crunchy-operator'
+kubectl get pod -l 'name=postgres-operator'
 ----
 
 To verify the operator installed the following ThirdPartyResources:
@@ -102,6 +101,6 @@ You can view the  TPR Endpoints as follows:
 
 [source,bash]
 ----
- curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchydatabases --insecure
- curl https//192.168.42.30:8443/apis/crunchydata.com/v1/crunchyclusters --insecure
+ curl https//192.168.42.30:8443/apis/crunchydata.com/v1/pgdatabases --insecure
+ curl https//192.168.42.30:8443/apis/crunchydata.com/v1/pgclusters --insecure
 ----
