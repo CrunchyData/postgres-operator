@@ -7,15 +7,15 @@
     "spec": {
         "selector": {
             "matchLabels": {
-                "app": "{{.Name}}"
+                "pg-database": "{{.Name}}"
             }
         },
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
-                    "app": "{{.Name}}",
-                    "crunchy-database": "{{.Name}}"
+                    "pgbackup": "true",
+                    "pg-database": "{{.Name}}"
                 }
             },
             "spec": {

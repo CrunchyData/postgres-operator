@@ -22,11 +22,45 @@ import (
 	//"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
-	//"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/api/v1"
 )
 
 func showBackup(args []string) {
 	fmt.Printf("showBackup called %v\n", args)
+	var err error
+
+	var pod *v1.Pod
+
+	//show pod information for job
+	for _, arg := range args {
+		fmt.Println("show backup called for " + arg)
+		//pg-database=basic or
+		//pgbackup=true
+		if arg == "all" {
+			lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
+			fmt.Println("label selector is " + lo.LabelSelector)
+			pods, err2 := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+			if err2 != nil {
+				panic(err2.Error())
+			}
+			fmt.Printf("There are %d backup job pods in the cluster\n", len(pods.Items))
+			for _, pod := range pods.Items {
+				fmt.Println("backup pod Name " + pod.ObjectMeta.Name)
+				fmt.Println("backup pod phase is " + pod.Status.Phase)
+			}
+
+		} else {
+			pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(arg)
+			if err != nil {
+				fmt.Println("error in getting backup job pod " + arg)
+				fmt.Println(err.Error())
+			} else {
+				fmt.Println(TREE_BRANCH + "pod " + pod.Name)
+			}
+
+		}
+
+	}
 
 }
 
@@ -74,7 +108,37 @@ func createBackup(args []string) {
 }
 
 func deleteBackup(args []string) {
-	fmt.Printf("createBackup called %v\n", args)
+	fmt.Printf("deleteBackup called %v\n", args)
+	var err error
+	backupList := tpr.PgBackupList{}
+	err = Tprclient.Get().Resource("pgbackups").Do().Into(&backupList)
+	if err != nil {
+		fmt.Println("error getting backup list")
+		fmt.Println(err.Error())
+		return
+	}
+	// delete the pgbackup resource instance
+	for _, arg := range args {
+		for _, backup := range backupList.Items {
+			if arg == "all" || backup.Spec.Name == arg {
+				err = Tprclient.Delete().
+					Resource("pgbackups").
+					Namespace(api.NamespaceDefault).
+					Name(backup.Spec.Name).
+					Do().
+					Error()
+				if err != nil {
+					fmt.Println("error deleting pgbackup " + arg)
+					fmt.Println(err.Error())
+				}
+				fmt.Println("deleted pgbackup " + backup.Spec.Name)
+			}
+
+		}
+
+	}
+
+	//delete Job
 }
 
 func getBackupParams(name string) *tpr.PgBackup {
