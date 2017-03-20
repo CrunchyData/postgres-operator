@@ -42,7 +42,7 @@ pgo backup mydatabase
 
 # postgres-operator Container
 
-In the following diagram, the postgres operator CLI (client) is
+In the following diagram, the postgres operator client, *pgo*, is
 shown interacting with the postgres operator that runs within
 a Kubernetes cluster.  The operator is responsible for creating
 or modifying PostgreSQL databases deployed within the Kube cluster.
