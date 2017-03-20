@@ -23,7 +23,7 @@ import (
 	"os"
 
 	//for TPR client
-	"github.com/crunchydata/crunchy-operator/tpr"
+	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/unversioned"
 	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"

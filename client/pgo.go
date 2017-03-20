@@ -16,7 +16,7 @@
 package main
 
 import (
-	"github.com/crunchydata/crunchy-operator/client/cmd"
+	"github.com/crunchydata/postgres-operator/client/cmd"
 )
 
 func main() {

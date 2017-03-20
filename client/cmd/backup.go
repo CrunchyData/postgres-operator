@@ -18,43 +18,83 @@ package cmd
 
 import (
 	"fmt"
-
-	"github.com/spf13/cobra"
+	"github.com/crunchydata/postgres-operator/tpr"
+	//"github.com/spf13/viper"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/errors"
+	//"k8s.io/client-go/pkg/api/v1"
 )
-
-var backupCmd = &cobra.Command{
-	Use:   "backup",
-	Short: "not implemented yet",
-	Long:  `not implemented yet.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Work your own magic here
-		fmt.Println("backup called")
-	},
-}
-
-func init() {
-	RootCmd.AddCommand(backupCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// backupCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// backupCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-}
 
 func showBackup(args []string) {
 	fmt.Printf("showBackup called %v\n", args)
+
 }
 
 func createBackup(args []string) {
 	fmt.Printf("createBackup called %v\n", args)
+	var err error
+
+	for _, arg := range args {
+		fmt.Println("create backup called for " + arg)
+		result := tpr.PgBackup{}
+
+		// error if it already exists
+		err = Tprclient.Get().
+			Resource("pgbackups").
+			Namespace(api.NamespaceDefault).
+			Name(arg).
+			Do().
+			Into(&result)
+		if err == nil {
+			fmt.Println("pgbackup " + arg + " was found so we will not create it")
+			break
+		} else if errors.IsNotFound(err) {
+			fmt.Println("pgbackup " + arg + " not found so we will create it")
+		} else {
+			fmt.Println("error getting pgbackup " + arg)
+			fmt.Println(err.Error())
+			break
+		}
+		// Create an instance of our TPR
+		newInstance := getBackupParams(arg)
+
+		err = Tprclient.Post().
+			Resource("pgbackups").
+			Namespace(api.NamespaceDefault).
+			Body(newInstance).
+			Do().Into(&result)
+		if err != nil {
+			fmt.Println("error in creating PgBackup TPR instance")
+			fmt.Println(err.Error())
+		}
+		fmt.Println("created PgBackup " + arg)
+
+	}
+
 }
 
 func deleteBackup(args []string) {
 	fmt.Printf("createBackup called %v\n", args)
+}
+
+func getBackupParams(name string) *tpr.PgBackup {
+
+	//TODO see if name is a database or cluster
+
+	spec := tpr.PgBackupSpec{}
+	spec.Name = name
+	spec.PVC_NAME = "crunchy-pvc"
+	spec.CCP_IMAGE_TAG = "centos7-9.5-1.2.8"
+	spec.BACKUP_HOST = "basic"
+	spec.BACKUP_USER = "master"
+	spec.BACKUP_PASS = "password"
+	spec.BACKUP_PORT = "5432"
+
+	newInstance := &tpr.PgBackup{
+		Metadata: api.ObjectMeta{
+			Name: name,
+		},
+		Spec: spec,
+	}
+	return newInstance
 }
