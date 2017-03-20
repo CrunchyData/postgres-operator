@@ -29,8 +29,8 @@ var ShowCmd = &cobra.Command{
 	Long: `show allows you to show the details of a database or cluster.
 For example:
 
-	crunchy show database mydatabase
-	crunchy show cluster mycluster`,
+	pgo show database mydatabase
+	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to show.  
@@ -79,7 +79,7 @@ var ShowBackupCmd = &cobra.Command{
 	Short: "Show backup information",
 	Long: `Show backup information. For example:
 
-				crunchy show backup mydatabase`,
+				pgo show backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showBackup(args)
 	},
@@ -91,7 +91,7 @@ var ShowDatabaseCmd = &cobra.Command{
 	Short: "Show database information",
 	Long: `Show a crunchy database. For example:
 
-				crunchy show database mydatabase`,
+				pgo show database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showDatabase(args)
 	},
@@ -103,7 +103,7 @@ var ShowClusterCmd = &cobra.Command{
 	Short: "Show cluster information",
 	Long: `Show a crunchy cluster. For example:
 
-				crunchy show cluster mycluster`,
+				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showCluster(args)
 	},

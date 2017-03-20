@@ -26,9 +26,9 @@ var deleteCmd = &cobra.Command{
 	Long: `delete allows you to delete a database, cluster, or backup
 For example:
 
-crunchy delete database mydatabase
-crunchy delete cluster mycluster
-crunchy delete backup mycluster`,
+pgo delete database mydatabase
+pgo delete cluster mycluster
+pgo delete backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
@@ -75,7 +75,7 @@ var deleteBackupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "delete a backup",
 	Long: `delete a backup. For example:
-	crunchy delete backup mydatabase`,
+	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteBackup(args)
 	},
@@ -85,7 +85,7 @@ var deleteDatabaseCmd = &cobra.Command{
 	Use:   "database",
 	Short: "delete a database",
 	Long: `delete a crunchy database. For example:
-	crunchy delete database mydatabase`,
+	pgo delete database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteDatabase(args)
 	},
@@ -95,7 +95,7 @@ var deleteClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "delete a cluster",
 	Long: `delete a crunchy cluster. For example:
-	crunchy delete cluster mycluster`,
+	pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteCluster(args)
 	},

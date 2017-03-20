@@ -163,19 +163,17 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	}
 	fmt.Println("created service " + svc.Name)
 
-	//create the pod - TODO get these fields from the
-	//TPR instance
 	podFields := PodTemplateFields{
 		Name:               db.Spec.Name,
-		Port:               "5432",
-		PVC_NAME:           "crunchy-pvc",
-		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-		PG_MASTER_USER:     "master",
-		PG_MASTER_PASSWORD: "password",
-		PG_USER:            "testuser",
-		PG_PASSWORD:        "password",
-		PG_DATABASE:        "userdb",
-		PG_ROOT_PASSWORD:   "password",
+		Port:               db.Spec.Port,
+		PVC_NAME:           db.Spec.PVC_NAME,
+		CCP_IMAGE_TAG:      db.Spec.CCP_IMAGE_TAG,
+		PG_MASTER_USER:     db.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD: db.Spec.PG_MASTER_PASSWORD,
+		PG_USER:            db.Spec.PG_USER,
+		PG_PASSWORD:        db.Spec.PG_PASSWORD,
+		PG_DATABASE:        db.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
 	}
 
 	var doc2 bytes.Buffer

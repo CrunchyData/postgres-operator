@@ -27,9 +27,9 @@ var createCmd = &cobra.Command{
 	Long: `CREATE allows you to create a new Database, Cluster, or Backup
 For example:
 
-crunchy create database
-crunchy create cluster
-crunchy create backup mydatabase
+pgo create database
+pgo create cluster
+pgo create backup mydatabase
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
@@ -48,7 +48,7 @@ var createBackupCmd = &cobra.Command{
 	Long: `Create a backup of a database or cluster
 For example:
 
-crunchy create backup mydatabase`,
+pgo create backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		createBackup(args)
 	},
@@ -60,7 +60,7 @@ var createDatabaseCmd = &cobra.Command{
 	Long: `Create a crunchy database which consists of a Service and Pod
 For example:
 
-crunchy create database mydatabase`,
+pgo create database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		createDatabase(args)
 	},
@@ -73,7 +73,7 @@ var createClusterCmd = &cobra.Command{
 	Long: `Create a crunchy cluster which consist of a
 master and a number of replica backends. For example:
 
-crunchy create cluster mycluster`,
+pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create cluster called")
 		createCluster(args)

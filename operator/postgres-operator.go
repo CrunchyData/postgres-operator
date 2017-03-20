@@ -23,9 +23,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/crunchydata/crunchy-operator/operator/cluster"
-	"github.com/crunchydata/crunchy-operator/operator/database"
-	"github.com/crunchydata/crunchy-operator/tpr"
+	"github.com/crunchydata/postgres-operator/operator/backup"
+	"github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/operator/database"
+	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
@@ -91,6 +92,7 @@ func main() {
 
 	go database.Process(clientset, tprclient, stopchan)
 	go cluster.Process(clientset, tprclient, stopchan)
+	go backup.Process(clientset, tprclient, stopchan)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -137,6 +139,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&tpr.CrunchyDatabaseList{},
 		&tpr.CrunchyCluster{},
 		&tpr.CrunchyClusterList{},
+		&tpr.CrunchyBackup{},
+		&tpr.CrunchyBackupList{},
 		&api.ListOptions{},
 		&api.DeleteOptions{},
 	)

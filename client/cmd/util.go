@@ -70,6 +70,12 @@ func ConnectToKube() {
 		fmt.Println("required crunchy-database.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("crunchy-backup.crunchydata.com")
+	if err != nil {
+		fmt.Println(err.Error())
+		fmt.Println("required crunchy-backup.crunchydata.com TPR was not found on your kube cluster")
+		os.Exit(2)
+	}
 
 	var tprconfig *rest.Config
 	tprconfig = Config
@@ -105,6 +111,8 @@ func configureTPRClient(config *rest.Config) {
 				&tpr.CrunchyDatabaseList{},
 				&tpr.CrunchyCluster{},
 				&tpr.CrunchyClusterList{},
+				&tpr.CrunchyBackup{},
+				&tpr.CrunchyBackupList{},
 				&api.ListOptions{},
 				&api.DeleteOptions{},
 			)

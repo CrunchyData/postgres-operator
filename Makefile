@@ -1,6 +1,6 @@
 
 clientcli:
-	cd client && go build -o $(GOBIN)/crunchy crunchy.go
+	cd client && go build -o $(GOBIN)/pgo pgo.go
 operatorimage:
 	cd operator && go install crunchy-operator.go
 	cp $(GOBIN)/crunchy-operator bin/crunchy-operator

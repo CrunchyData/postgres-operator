@@ -1,8 +1,8 @@
 
 default:
-		go install crunchy-operator.go
+		go install postgres-operator.go
 
 clean:
-		rm -rf $(GOBIN)/crunchy-operator
+		rm -rf $(GOBIN)/postgres-operator
 
 

@@ -161,3 +161,68 @@ func (el *CrunchyClusterList) UnmarshalJSON(data []byte) error {
 	*el = tmp2
 	return nil
 }
+
+type CrunchyBackupSpec struct {
+	Name          string `json:"name"`
+	PVC_NAME      string `json:"pvcname"`
+	CCP_IMAGE_TAG string `json:"ccpimagetag"`
+	BACKUP_HOST   string `json:"backuphost"`
+	BACKUP_USER   string `json:"backupuser"`
+	BACKUP_PASS   string `json:"backuppass"`
+	BACKUP_PORT   string `json:"backupport"`
+}
+
+type CrunchyBackup struct {
+	unversioned.TypeMeta `json:",inline"`
+	Metadata             api.ObjectMeta `json:"metadata"`
+
+	Spec CrunchyBackupSpec `json:"spec"`
+}
+
+type CrunchyBackupList struct {
+	unversioned.TypeMeta `json:",inline"`
+	Metadata             unversioned.ListMeta `json:"metadata"`
+
+	Items []CrunchyBackup `json:"items"`
+}
+
+func (e *CrunchyBackup) GetObjectKind() unversioned.ObjectKind {
+	return &e.TypeMeta
+}
+
+func (e *CrunchyBackup) GetObjectMeta() meta.Object {
+	return &e.Metadata
+}
+
+func (el *CrunchyBackupList) GetObjectKind() unversioned.ObjectKind {
+	return &el.TypeMeta
+}
+
+func (el *CrunchyBackupList) GetListMeta() unversioned.List {
+	return &el.Metadata
+}
+
+type CrunchyBackupListCopy CrunchyBackupList
+type CrunchyBackupCopy CrunchyBackup
+
+func (e *CrunchyBackup) UnmarshalJSON(data []byte) error {
+	tmp := CrunchyBackupCopy{}
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		return err
+	}
+	tmp2 := CrunchyBackup(tmp)
+	*e = tmp2
+	return nil
+}
+
+func (el *CrunchyBackupList) UnmarshalJSON(data []byte) error {
+	tmp := CrunchyBackupListCopy{}
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		return err
+	}
+	tmp2 := CrunchyBackupList(tmp)
+	*el = tmp2
+	return nil
+}

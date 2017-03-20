@@ -13,7 +13,6 @@
  limitations under the License.
 */
 
-// Package main is the main function for the crunchy CLI
 package main
 
 import (

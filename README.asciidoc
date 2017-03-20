@@ -1,9 +1,9 @@
-== Crunchy Operator
+== Crunchy Postgres Operator
 v1.0.0, {docdate}
 
 image::docs/crunchy_logo.png?raw=true[]
 
-Crunchy Operator provides a Kubernetes operator capability
+Crunchy's Postgres Operator provides a Kubernetes operator capability
 for managing PostgreSQL containers deployed within a Kubernetes cluster.
 
 # Usage
@@ -13,56 +13,56 @@ Some examples of using the command line interface:
 .Display Database or Cluster Information
 [source,bash]
 ----
-crunchy show database all
-crunchy show database db1 db2 db3
-crunchy show cluster mycluster
+pgo show database all
+pgo show database db1 db2 db3
+pgo show cluster mycluster
 ----
 
 .Create Database or Cluster
 [source,bash]
 ----
-crunchy create database mydatabase
-crunchy create cluster mycluster
+pgo create database mydatabase
+pgo create cluster mycluster
 ----
 
 .Delete a Database or Cluster
 [source,bash]
 ----
-crunchy delete database mydatabase
-crunchy delete cluster mycluster
+pgo delete database mydatabase
+pgo delete cluster mycluster
 ----
 
 .Backup Database or Cluster
 [source,bash]
 ----
-crunchy backup mycluster
-crunchy backup mydatabase
+pgo backup mycluster
+pgo backup mydatabase
 ----
 
 
-# Crunchy-Operator Container
+# postgres-operator Container
 
-In the following diagram, the Crunchy Operator CLI (client) is
-shown interacting with the Crunchy Operator that runs within
+In the following diagram, the postgres operator CLI (client) is
+shown interacting with the postgres operator that runs within
 a Kubernetes cluster.  The operator is responsible for creating
 or modifying PostgreSQL databases deployed within the Kube cluster.
 
 image::docs/operator-diagram.png?raw=true[]
 
 The operator funtionality runs in a Pod deployed to your
-Kubernetes cluster.  The *crunchy-operator* Docker container
+Kubernetes cluster.  The *postgres-operator* Docker container
 is available on Dockerhub.  
 
-You can also build the Docker image for *crunchy-operator* using
+You can also build the Docker image for *postgres-operator* using
 the build instructions below.
 
 # Command Line Interface
 
-With the operator deployed, you can then use the *crunchy* command line 
-interface to execute commands that the *crunchy-operator* understands 
+With the operator deployed, you can then use the *pgo* command line 
+interface to execute commands that the *postgres-operator* understands 
 and reacts to.
 
-You can download a pre-built *crunchy* CLI binary from 
+You can download a pre-built *pgo* CLI binary from 
 the Releases page on the github repository or build
 it yourself using the build instructions below.
 
@@ -79,9 +79,9 @@ export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin;export PATH=$PATH:$GOBIN
 mkdir -p $GOPATH/src/github.com/crunchydata/
 cd $GOPATH/src/github.com/crunchydata
-git clone https://github.com/CrunchyData/crunchy-operator.git
-cd crunchy-operator
-export COROOT=$GOPATH/src/github.com/crunchydata/crunchy-operator
+git clone https://github.com/CrunchyData/postgres-operator.git
+cd postgres-operator
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 ....
 
 ==== Get the dependencies:
@@ -101,7 +101,7 @@ gvt restore
 ....
 cd $COROOT
 make clientcli
-which crunchy
+which pgo
 ....
 
 ==== Compile and build the operator Docker image:
@@ -118,23 +118,23 @@ cd $COROOT/examples/tpr
 kubectl get thirdpartyresources
 ....
 
-==== Deploy the Crunchy Operator
+==== Deploy the postgres Operator
 note that this will create and use */data* on your
 local system as the persistent store for the operator to use
 for its persistent volume:
 ....
 cd $COROOT/examples/operator
 ./run.sh
-kubectl get pod -l 'name=crunchy-operator'
+kubectl get pod -l 'name=postgres-operator'
 ....
 
 Note that this example will create a PVC called *crunchy-pvc* that is
-referenced in the examples and *crunchy* configuration file as the
+referenced in the examples and *pgo* configuration file as the
 desired PVC to use when databases and clusters are created.
 
-==== Setup initial configuration file for the crunchy CLI
+==== Setup initial configuration file for the postgres operator CLI
 ....
-cp $COROOT/examples/sample.crunchy.yaml $HOME/.crunchy.yaml
+cp $COROOT/examples/sample.pgo.yaml $HOME/.pgo.yaml
 ....
 
 Note that this config file assumes your Kubernetes config file is

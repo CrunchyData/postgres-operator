@@ -29,8 +29,8 @@ var Labelselector string
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "crunchy",
-	Short: "The crunchy command line interface.",
-	Long: `The crunchy command line interface lets you
+	Short: "The pgo command line interface.",
+	Long: `The pgo command line interface lets you
 create and manage both databases and clusters.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -71,11 +71,11 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	}
 
-	viper.SetConfigName(".crunchy")     // name of config file (without extension)
-	viper.AddConfigPath(".")            // adding home directory as first search path
-	viper.AddConfigPath("$HOME")        // adding home directory as first search path
-	viper.AddConfigPath("/etc/crunchy") // adding home directory as first search path
-	viper.AutomaticEnv()                // read in environment variables that match
+	viper.SetConfigName(".pgo")     // name of config file (without extension)
+	viper.AddConfigPath(".")        // adding home directory as first search path
+	viper.AddConfigPath("$HOME")    // adding home directory as first search path
+	viper.AddConfigPath("/etc/pgo") // adding home directory as first search path
+	viper.AutomaticEnv()            // read in environment variables that match
 
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
