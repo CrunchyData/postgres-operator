@@ -25,8 +25,8 @@ import (
 
 func showCluster(args []string) {
 	//get a list of all clusters
-	clusterList := tpr.CrunchyClusterList{}
-	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
+	clusterList := tpr.PgClusterList{}
+	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
 	if err != nil {
 		fmt.Println("error getting list of clusters")
 		fmt.Println(err.Error())
@@ -54,7 +54,7 @@ func showCluster(args []string) {
 }
 
 func listReplicaSets(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	reps, err := Clientset.ReplicaSets(api.NamespaceDefault).List(lo)
 	if err != nil {
 		fmt.Println("error getting list of replicasets")
@@ -67,7 +67,7 @@ func listReplicaSets(name string) {
 
 }
 func listDeployments(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	deployments, err := Clientset.Deployments(api.NamespaceDefault).List(lo)
 	if err != nil {
 		fmt.Println("error getting list of deployments")
@@ -80,7 +80,7 @@ func listDeployments(name string) {
 
 }
 func listPods(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	pods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
 	if err != nil {
 		fmt.Println("error getting list of pods")
@@ -94,7 +94,7 @@ func listPods(name string) {
 
 }
 func listServices(name string) {
-	lo := v1.ListOptions{LabelSelector: "crunchy-cluster=" + name}
+	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	services, err := Clientset.Core().Services(api.NamespaceDefault).List(lo)
 	if err != nil {
 		fmt.Println("error getting list of services")
@@ -115,22 +115,22 @@ func createCluster(args []string) {
 
 	for _, arg := range args {
 		fmt.Println("create cluster called for " + arg)
-		result := tpr.CrunchyCluster{}
+		result := tpr.PgCluster{}
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource("crunchyclusters").
+			Resource("pgclusters").
 			Namespace(api.NamespaceDefault).
 			Name(arg).
 			Do().
 			Into(&result)
 		if err == nil {
-			fmt.Println("crunchycluster " + arg + " was found so we will not create it")
+			fmt.Println("pgcluster " + arg + " was found so we will not create it")
 			break
 		} else if errors.IsNotFound(err) {
-			fmt.Println("crunchycluster " + arg + " not found so we will create it")
+			fmt.Println("pgcluster " + arg + " not found so we will create it")
 		} else {
-			fmt.Println("error getting crunchycluster " + arg)
+			fmt.Println("error getting pgcluster " + arg)
 			fmt.Println(err.Error())
 			break
 		}
@@ -139,23 +139,23 @@ func createCluster(args []string) {
 		newInstance := getClusterParams(arg)
 
 		err = Tprclient.Post().
-			Resource("crunchyclusters").
+			Resource("pgclusters").
 			Namespace(api.NamespaceDefault).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
-			fmt.Println("error in creating CrunchyCluster instance")
+			fmt.Println("error in creating PgCluster instance")
 			fmt.Println(err.Error())
 		}
-		fmt.Println("created CrunchyCluster " + arg)
+		fmt.Println("created PgCluster " + arg)
 
 	}
 }
 
-func getClusterParams(name string) *tpr.CrunchyCluster {
+func getClusterParams(name string) *tpr.PgCluster {
 
 	//set to internal defaults
-	spec := tpr.CrunchyClusterSpec{
+	spec := tpr.PgClusterSpec{
 		Name:               name,
 		ClusterName:        name,
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
@@ -215,7 +215,7 @@ func getClusterParams(name string) *tpr.CrunchyCluster {
 
 	//override from command line
 
-	newInstance := &tpr.CrunchyCluster{
+	newInstance := &tpr.PgCluster{
 		Metadata: api.ObjectMeta{
 			Name: name,
 		},
@@ -226,8 +226,8 @@ func getClusterParams(name string) *tpr.CrunchyCluster {
 
 func deleteCluster(args []string) {
 	// Fetch a list of our cluster TPRs
-	clusterList := tpr.CrunchyClusterList{}
-	err := Tprclient.Get().Resource("crunchyclusters").Do().Into(&clusterList)
+	clusterList := tpr.PgClusterList{}
+	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
 	if err != nil {
 		fmt.Println("error getting cluster list")
 		fmt.Println(err.Error())
@@ -235,22 +235,22 @@ func deleteCluster(args []string) {
 	}
 
 	//to remove a cluster, you just have to remove
-	//the crunchycluster object, the operator will do the actual deletes
+	//the pgcluster object, the operator will do the actual deletes
 	for _, arg := range args {
 		fmt.Println("deleting cluster " + arg)
 		for _, cluster := range clusterList.Items {
 			if arg == "all" || arg == cluster.Spec.Name {
 				err = Tprclient.Delete().
-					Resource("crunchyclusters").
+					Resource("pgclusters").
 					Namespace(api.NamespaceDefault).
 					Name(cluster.Spec.Name).
 					Do().
 					Error()
 				if err != nil {
-					fmt.Println("error deleting crunchycluster " + arg)
+					fmt.Println("error deleting pgcluster " + arg)
 					fmt.Println(err.Error())
 				} else {
-					fmt.Println("deleted crunchycluster " + cluster.Spec.Name)
+					fmt.Println("deleted pgcluster " + cluster.Spec.Name)
 				}
 
 			}

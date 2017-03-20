@@ -25,8 +25,8 @@ import (
 
 func showDatabase(args []string) {
 	//get a list of all databases
-	databaseList := tpr.CrunchyDatabaseList{}
-	err := Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
+	databaseList := tpr.PgDatabaseList{}
+	err := Tprclient.Get().Resource("pgdatabases").Do().Into(&databaseList)
 	if err != nil {
 		fmt.Println("error getting list of databases")
 		fmt.Println(err.Error())
@@ -67,22 +67,22 @@ func createDatabase(args []string) {
 
 	for _, arg := range args {
 		fmt.Println("create database called for " + arg)
-		result := tpr.CrunchyDatabase{}
+		result := tpr.PgDatabase{}
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource("crunchydatabases").
+			Resource("pgdatabases").
 			Namespace(api.NamespaceDefault).
 			Name(arg).
 			Do().
 			Into(&result)
 		if err == nil {
-			fmt.Println("crunchydatabase " + arg + " was found so we will not create it")
+			fmt.Println("pgdatabase " + arg + " was found so we will not create it")
 			break
 		} else if errors.IsNotFound(err) {
-			fmt.Println("crunchydatabase " + arg + " not found so we will create it")
+			fmt.Println("pgdatabase " + arg + " not found so we will create it")
 		} else {
-			fmt.Println("error getting crunchydatabase " + arg)
+			fmt.Println("error getting pgdatabase " + arg)
 			fmt.Println(err.Error())
 			break
 		}
@@ -91,23 +91,23 @@ func createDatabase(args []string) {
 		newInstance := getDatabaseParams(arg)
 
 		err = Tprclient.Post().
-			Resource("crunchydatabases").
+			Resource("pgdatabases").
 			Namespace(api.NamespaceDefault).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
-			fmt.Println("error in creating CrunchyDatabase TPR instance")
+			fmt.Println("error in creating PgDatabase TPR instance")
 			fmt.Println(err.Error())
 		}
-		fmt.Println("created CrunchyDatabase " + arg)
+		fmt.Println("created PgDatabase " + arg)
 
 	}
 }
 
-func getDatabaseParams(name string) *tpr.CrunchyDatabase {
+func getDatabaseParams(name string) *tpr.PgDatabase {
 
 	//set to internal defaults
-	spec := tpr.CrunchyDatabaseSpec{
+	spec := tpr.PgDatabaseSpec{
 		Name:               name,
 		PVC_NAME:           "crunchy-pvc",
 		Port:               "5432",
@@ -160,7 +160,7 @@ func getDatabaseParams(name string) *tpr.CrunchyDatabase {
 
 	//override from command line
 
-	newInstance := &tpr.CrunchyDatabase{
+	newInstance := &tpr.PgDatabase{
 		Metadata: api.ObjectMeta{
 			Name: name,
 		},
@@ -171,29 +171,29 @@ func getDatabaseParams(name string) *tpr.CrunchyDatabase {
 
 func deleteDatabase(args []string) {
 	var err error
-	//result := tpr.CrunchyDatabaseList{}
-	databaseList := tpr.CrunchyDatabaseList{}
-	err = Tprclient.Get().Resource("crunchydatabases").Do().Into(&databaseList)
+	//result := tpr.PgDatabaseList{}
+	databaseList := tpr.PgDatabaseList{}
+	err = Tprclient.Get().Resource("pgdatabases").Do().Into(&databaseList)
 	if err != nil {
 		fmt.Println("error getting database list")
 		fmt.Println(err.Error())
 		return
 	}
-	// delete the crunchydatabase resource instance
+	// delete the pgdatabase resource instance
 	for _, arg := range args {
 		for _, database := range databaseList.Items {
 			if arg == "all" || database.Spec.Name == arg {
 				err = Tprclient.Delete().
-					Resource("crunchydatabases").
+					Resource("pgdatabases").
 					Namespace(api.NamespaceDefault).
 					Name(database.Spec.Name).
 					Do().
 					Error()
 				if err != nil {
-					fmt.Println("error deleting crunchydatabase " + arg)
+					fmt.Println("error deleting pgdatabase " + arg)
 					fmt.Println(err.Error())
 				}
-				fmt.Println("deleted crunchydatabase " + database.Spec.Name)
+				fmt.Println("deleted pgdatabase " + database.Spec.Name)
 			}
 
 		}
