@@ -22,7 +22,7 @@ sudo mkdir /data
 sudo chmod 777 /data
 
 # copy all the operator templates to the PVC location
-sudo cp $COROOT/conf/crunchy-operator/*.json /data
+sudo cp $COROOT/conf/postgres-operator/*.json /data
 
 kubectl create -f $DIR/crunchy-pv.json
 

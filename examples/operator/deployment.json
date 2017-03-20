@@ -2,20 +2,20 @@
     "apiVersion": "extensions/v1beta1",
     "kind": "Deployment",
     "metadata": {
-        "name": "crunchy-operator"
+        "name": "postgres-operator"
     },
     "spec": {
         "replicas": 1,
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "crunchy-operator"
+                    "name": "postgres-operator"
                 }
             },
             "spec": {
                 "containers": [{
-                    "name": "crunchy-operator",
-                    "image": "crunchydata/crunchy-operator:centos7-9.5-1.2.8",
+                    "name": "postgres-operator",
+                    "image": "crunchydata/postgres-operator:centos7-9.5-1.2.8",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
                         "name": "NAMESPACE",

@@ -13,7 +13,6 @@
  limitations under the License.
 */
 
-// Package main is the main function for the crunchy operator
 package database
 
 import (
@@ -24,7 +23,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/crunchydata/crunchy-operator/tpr"
+	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 

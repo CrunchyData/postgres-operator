@@ -100,7 +100,7 @@ gvt restore
 ==== Compile the CLI:
 ....
 cd $COROOT
-make clientcli
+make pgo
 which pgo
 ....
 

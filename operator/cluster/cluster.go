@@ -16,7 +16,6 @@
 // Package cluster holds the cluster TPR logic and definitions
 // A cluster is comprised of a master service, replica service,
 // master deployment, and replica deployment
-// TODO add a crunchy-proxy deployment to the cluster
 package cluster
 
 import (
@@ -27,7 +26,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/crunchydata/crunchy-operator/tpr"
+	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
@@ -219,8 +218,6 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	fmt.Println("created replica service " + replicaServiceResult.Name)
 
 	//create the master deployment
-	//create the deployment - TODO get these fields from the
-	//TPR instance
 	deploymentFields := DeploymentTemplateFields{
 		Name:               db.Spec.Name,
 		ClusterName:        db.Spec.Name,
