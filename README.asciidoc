@@ -111,12 +111,6 @@ make operatorimage
 docker images | grep operator
 ....
 
-==== Deploy the Crunchy ThirdPartyResources
-....
-cd $COROOT/examples/tpr
-./run.sh
-kubectl get thirdpartyresources
-....
 
 ==== Deploy the postgres Operator
 note that this will create and use */data* on your
@@ -126,11 +120,15 @@ for its persistent volume:
 cd $COROOT/examples/operator
 ./run.sh
 kubectl get pod -l 'name=postgres-operator'
+kubectl get thirdpartyresources
 ....
 
 Note that this example will create a PVC called *crunchy-pvc* that is
 referenced in the examples and *pgo* configuration file as the
 desired PVC to use when databases and clusters are created.
+
+When you first run the operator, it will create the required
+ThirdPartyResources.
 
 ==== Setup initial configuration file for the postgres operator CLI
 ....
