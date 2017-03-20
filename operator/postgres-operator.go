@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
@@ -30,7 +31,10 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/unversioned"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
@@ -62,6 +66,11 @@ func main() {
 		fmt.Println("error creating kube client ")
 		panic(err.Error())
 	}
+
+	initializeResources(clientset)
+
+	//wait a bit to let the resources be created
+	time.Sleep(2000 * time.Millisecond)
 
 	/**
 	exampleList := tpr.CrunchyDatabaseList{}
@@ -146,4 +155,84 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	)
 
 	return nil
+}
+
+func initializeResources(clientset *kubernetes.Clientset) {
+	// initialize third party resources if they do not exist
+
+	tpr, err := clientset.Extensions().ThirdPartyResources().Get("pg-database.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-database.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres database ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		fmt.Printf("SKIPPING: already exists %#v\n", tpr)
+	}
+
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-cluster.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres cluster ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		fmt.Printf("SKIPPING: already exists %#v\n", tpr)
+	}
+
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-backup.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres backup ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		fmt.Printf("SKIPPING: already exists %#v\n", tpr)
+	}
+
 }
