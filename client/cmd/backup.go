@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	//"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -27,19 +28,20 @@ import (
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
+	"strings"
 	"text/template"
 	"time"
 )
 
 func showBackup(args []string) {
-	fmt.Printf("showBackup called %v\n", args)
+	//fmt.Printf("showBackup called %v\n", args)
 	var err error
 
 	var pod *v1.Pod
 
 	//show pod information for job
 	for _, arg := range args {
-		fmt.Println("show backup called for " + arg)
+		//fmt.Println("show backup called for " + arg)
 		//pg-database=basic or
 		//pgbackup=true
 		if arg == "all" {
@@ -47,7 +49,8 @@ func showBackup(args []string) {
 			fmt.Println("label selector is " + lo.LabelSelector)
 			pods, err2 := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
 			if err2 != nil {
-				panic(err2.Error())
+				fmt.Println(err2.Error())
+				return
 			}
 			fmt.Printf("There are %d backup job pods in the cluster\n", len(pods.Items))
 			for _, pod := range pods.Items {
@@ -273,8 +276,8 @@ func printLog(name string) {
 		fmt.Println(err.Error())
 		return
 	}
-	podDocString := doc2.String()
-	fmt.Println(podDocString)
+	//podDocString := doc2.String()
+	//fmt.Println(podDocString)
 
 	//template name is lspvc-pod.json
 	//create lspvc pod
@@ -301,9 +304,9 @@ func printLog(name string) {
 	logOptions := v1.PodLogOptions{}
 	req := Clientset.Core().Pods(api.NamespaceDefault).GetLogs(podName, &logOptions)
 	if req == nil {
-		fmt.Println("error in get logs for " + podName)
+		//fmt.Println("error in get logs for " + podName)
 	} else {
-		fmt.Println("got the logs for " + podName)
+		//fmt.Println("got the logs for " + podName)
 	}
 
 	readCloser, err := req.Stream()
@@ -314,7 +317,23 @@ func printLog(name string) {
 	defer readCloser.Close()
 	var buf2 bytes.Buffer
 	_, err = io.Copy(&buf2, readCloser)
-	fmt.Printf("backups are... \n%s", buf2.String())
+	//fmt.Printf("backups are... \n%s", buf2.String())
+
+	fmt.Println(name + "-backups")
+	lines := strings.Split(buf2.String(), "\n")
+
+	//chop off last line since its only a newline
+	last := len(lines) - 1
+	newlines := make([]string, last)
+	copy(newlines, lines[:last])
+
+	for k, v := range newlines {
+		if k == len(newlines)-1 {
+			fmt.Printf("%s%s\n", TREE_TRUNK, v)
+		} else {
+			fmt.Printf("%s%s\n", TREE_BRANCH, v)
+		}
+	}
 
 	//delete lspvc pod
 	err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,

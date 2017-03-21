@@ -98,8 +98,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
-		fmt.Println("updating PgDatabase object")
-		fmt.Println("updated with Name=" + db.Spec.Name)
+		//fmt.Println("updating PgDatabase object")
+		//fmt.Println("updated with Name=" + db.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(

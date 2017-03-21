@@ -118,8 +118,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
-		fmt.Println("updating PgCluster object")
-		fmt.Println("updated with Name=" + cluster.Spec.Name)
+		//fmt.Println("updating PgCluster object")
+		//fmt.Println("updated with Name=" + cluster.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
