@@ -35,9 +35,6 @@ import (
 
 func showBackup(args []string) {
 	//fmt.Printf("showBackup called %v\n", args)
-	var err error
-
-	var pod *v1.Pod
 
 	//show pod information for job
 	for _, arg := range args {
@@ -52,26 +49,62 @@ func showBackup(args []string) {
 				fmt.Println(err2.Error())
 				return
 			}
-			fmt.Printf("There are %d backup job pods in the cluster\n", len(pods.Items))
 			for _, pod := range pods.Items {
-				fmt.Println("backup pod Name " + pod.ObjectMeta.Name)
-				fmt.Println("backup pod phase is " + pod.Status.Phase)
+				showItem(pod.Name, "crunchy-pvc")
 			}
 
 		} else {
-			pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(arg)
-			if err != nil {
-				fmt.Println("error in getting backup job pod " + arg)
-				fmt.Println(err.Error())
-			} else {
-				fmt.Println(TREE_BRANCH + "pod " + pod.Name)
-			}
-			printLog(pod.Name)
+			showItem(arg, "crunchy-pvc")
 
 		}
 
 	}
 
+}
+func showItem(name string, pvcName string) {
+	//print the pgbackups TPR
+	result := tpr.PgBackup{}
+	err := Tprclient.Get().
+		Resource("pgbackups").
+		Namespace(api.NamespaceDefault).
+		Name(name).
+		Do().
+		Into(&result)
+	if err == nil {
+		fmt.Printf("\npgbackup %s\n", name+" was found ")
+	} else if errors.IsNotFound(err) {
+		fmt.Printf("\npgbackup %s\n", name+" was not found ")
+	} else {
+		fmt.Printf("\npgbackup %s\n", name+" lookup error ")
+		fmt.Println(err.Error())
+	}
+
+	//print the backup jobs if any exists
+	lo := v1.ListOptions{LabelSelector: "pg-database=" + name}
+	//fmt.Println("label selector is " + lo.LabelSelector)
+	pods, err2 := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+	if err2 != nil {
+		fmt.Println(err2.Error())
+	}
+	fmt.Printf("\nbackup job pods for database %s\n", name+"...")
+	for _, p := range pods.Items {
+		fmt.Printf("%s%s\n", TREE_TRUNK, p.Name)
+	}
+
+	//print the database pod if it exists
+	var pod *v1.Pod
+	pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(name)
+	if err != nil {
+		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
+		fmt.Println(err.Error())
+	} else {
+		fmt.Printf("\ndatabase pod %s\n", name+" is found")
+	}
+
+	fmt.Println("")
+
+	//print the backups found in the pvc
+	printLog(pod.Name, pvcName)
 }
 
 func createBackup(args []string) {
@@ -232,7 +265,7 @@ type PodTemplateFields struct {
 	PVC_NAME     string
 }
 
-func printLog(name string) {
+func printLog(name string, pvcName string) {
 	var POD_PATH = viper.GetString("pgo.lspvc_template")
 	var PodTemplate *template.Template
 	var err error
@@ -242,7 +275,9 @@ func printLog(name string) {
 
 	//delete lspvc pod if it was not deleted for any reason prior
 	_, err = Clientset.Core().Pods(api.NamespaceDefault).Get(podName)
-	if err != nil {
+	if errors.IsNotFound(err) {
+		//
+	} else if err != nil {
 		fmt.Println(err.Error())
 	} else {
 		fmt.Println("deleting prior pod " + podName)
@@ -268,7 +303,7 @@ func printLog(name string) {
 		Name:         podName,
 		CO_IMAGE_TAG: viper.GetString("pgo.CO_IMAGE_TAG"),
 		BACKUP_ROOT:  name + "-backups",
-		PVC_NAME:     "crunchy-pvc",
+		PVC_NAME:     pvcName,
 	}
 
 	err = PodTemplate.Execute(&doc2, podFields)
@@ -288,14 +323,14 @@ func printLog(name string) {
 		fmt.Println(err.Error())
 		return
 	}
-	var resultPod *v1.Pod
-	resultPod, err = Clientset.Core().Pods(v1.NamespaceDefault).Create(&newpod)
+	//var resultPod *v1.Pod
+	_, err = Clientset.Core().Pods(v1.NamespaceDefault).Create(&newpod)
 	if err != nil {
 		fmt.Println("error creating lspvc Pod ")
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("created pod " + resultPod.Name)
+	//fmt.Println("created pod " + resultPod.Name)
 
 	//sleep a bit for the pod to finish, replace later with watch or better
 	time.Sleep(3000 * time.Millisecond)
@@ -319,7 +354,7 @@ func printLog(name string) {
 	_, err = io.Copy(&buf2, readCloser)
 	//fmt.Printf("backups are... \n%s", buf2.String())
 
-	fmt.Println(name + "-backups")
+	fmt.Println("pvc=" + pvcName)
 	lines := strings.Split(buf2.String(), "\n")
 
 	//chop off last line since its only a newline
@@ -329,9 +364,9 @@ func printLog(name string) {
 
 	for k, v := range newlines {
 		if k == len(newlines)-1 {
-			fmt.Printf("%s%s\n", TREE_TRUNK, v)
+			fmt.Printf("%s%s\n", TREE_TRUNK, name+"-backups/"+v)
 		} else {
-			fmt.Printf("%s%s\n", TREE_BRANCH, v)
+			fmt.Printf("%s%s\n", TREE_BRANCH, name+"-backups/"+v)
 		}
 	}
 
