@@ -17,12 +17,18 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/crunchydata/postgres-operator/tpr"
-	//"github.com/spf13/viper"
+	"github.com/spf13/viper"
+	"io"
+	"io/ioutil"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
+	"text/template"
+	"time"
 )
 
 func showBackup(args []string) {
@@ -57,6 +63,7 @@ func showBackup(args []string) {
 			} else {
 				fmt.Println(TREE_BRANCH + "pod " + pod.Name)
 			}
+			printLog(pod.Name)
 
 		}
 
@@ -66,7 +73,9 @@ func showBackup(args []string) {
 
 func createBackup(args []string) {
 	fmt.Printf("createBackup called %v\n", args)
+
 	var err error
+	var newInstance *tpr.PgBackup
 
 	for _, arg := range args {
 		fmt.Println("create backup called for " + arg)
@@ -90,7 +99,11 @@ func createBackup(args []string) {
 			break
 		}
 		// Create an instance of our TPR
-		newInstance := getBackupParams(arg)
+		newInstance, err = getBackupParams(arg)
+		if err != nil {
+			fmt.Println("error creating backup")
+			break
+		}
 
 		err = Tprclient.Post().
 			Resource("pgbackups").
@@ -141,24 +154,174 @@ func deleteBackup(args []string) {
 	//delete Job
 }
 
-func getBackupParams(name string) *tpr.PgBackup {
-
-	//TODO see if name is a database or cluster
+func getBackupParams(name string) (*tpr.PgBackup, error) {
+	var newInstance *tpr.PgBackup
 
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
 	spec.PVC_NAME = "crunchy-pvc"
-	spec.CCP_IMAGE_TAG = "centos7-9.5-1.2.8"
+	spec.CCP_IMAGE_TAG = viper.GetString("database.CCP_IMAGE_TAG")
 	spec.BACKUP_HOST = "basic"
 	spec.BACKUP_USER = "master"
 	spec.BACKUP_PASS = "password"
 	spec.BACKUP_PORT = "5432"
 
-	newInstance := &tpr.PgBackup{
+	//TODO see if name is a database or cluster
+	db := tpr.PgDatabase{}
+	err := Tprclient.Get().
+		Resource("pgdatabases").
+		Namespace(api.NamespaceDefault).
+		Name(name).
+		Do().
+		Into(&db)
+	if err == nil {
+		fmt.Println(name + " is a database")
+		spec.PVC_NAME = db.Spec.PVC_NAME
+		spec.CCP_IMAGE_TAG = db.Spec.CCP_IMAGE_TAG
+		spec.BACKUP_HOST = db.Spec.Name
+		spec.BACKUP_USER = db.Spec.PG_MASTER_USER
+		spec.BACKUP_PASS = db.Spec.PG_MASTER_PASSWORD
+		spec.BACKUP_PORT = db.Spec.Port
+	} else if errors.IsNotFound(err) {
+		fmt.Println(name + " is not a database")
+		cluster := tpr.PgCluster{}
+		err = Tprclient.Get().
+			Resource("pgclusters").
+			Namespace(api.NamespaceDefault).
+			Name(name).
+			Do().
+			Into(&cluster)
+		if err == nil {
+			fmt.Println(name + " is a cluster")
+			spec.PVC_NAME = cluster.Spec.PVC_NAME
+			spec.CCP_IMAGE_TAG = cluster.Spec.CCP_IMAGE_TAG
+			spec.BACKUP_HOST = cluster.Spec.Name
+			spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
+			spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD
+			spec.BACKUP_PORT = cluster.Spec.Port
+		} else if errors.IsNotFound(err) {
+			fmt.Println(name + " is not a cluster")
+			return newInstance, err
+		} else {
+			fmt.Println("error getting pgcluster " + name)
+			fmt.Println(err.Error())
+			return newInstance, err
+		}
+	} else {
+		fmt.Println("error getting pgdatabase " + name)
+		fmt.Println(err.Error())
+		return newInstance, err
+	}
+
+	newInstance = &tpr.PgBackup{
 		Metadata: api.ObjectMeta{
 			Name: name,
 		},
 		Spec: spec,
 	}
-	return newInstance
+	return newInstance, nil
+}
+
+type PodTemplateFields struct {
+	Name         string
+	CO_IMAGE_TAG string
+	BACKUP_ROOT  string
+	PVC_NAME     string
+}
+
+func printLog(name string) {
+	var POD_PATH = viper.GetString("pgo.lspvc_template")
+	var PodTemplate *template.Template
+	var err error
+	var buf []byte
+	var doc2 bytes.Buffer
+	var podName = "lspvc-" + name
+
+	//delete lspvc pod if it was not deleted for any reason prior
+	_, err = Clientset.Core().Pods(api.NamespaceDefault).Get(podName)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("deleting prior pod " + podName)
+		err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,
+			&v1.DeleteOptions{})
+		if err != nil {
+			fmt.Println("delete pod error " + err.Error()) //TODO this is debug info
+		}
+		//sleep a bit for the pod to be deleted
+		time.Sleep(2000 * time.Millisecond)
+	}
+
+	buf, err = ioutil.ReadFile(POD_PATH)
+	if err != nil {
+		fmt.Println("error reading lspvc_template file")
+		fmt.Println("make sure it is specified in your .pgo.yaml config")
+		fmt.Println(err.Error())
+		return
+	}
+	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
+
+	podFields := PodTemplateFields{
+		Name:         podName,
+		CO_IMAGE_TAG: viper.GetString("pgo.CO_IMAGE_TAG"),
+		BACKUP_ROOT:  name + "-backups",
+		PVC_NAME:     "crunchy-pvc",
+	}
+
+	err = PodTemplate.Execute(&doc2, podFields)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	podDocString := doc2.String()
+	fmt.Println(podDocString)
+
+	//template name is lspvc-pod.json
+	//create lspvc pod
+	newpod := v1.Pod{}
+	err = json.Unmarshal(doc2.Bytes(), &newpod)
+	if err != nil {
+		fmt.Println("error unmarshalling json into Pod ")
+		fmt.Println(err.Error())
+		return
+	}
+	var resultPod *v1.Pod
+	resultPod, err = Clientset.Core().Pods(v1.NamespaceDefault).Create(&newpod)
+	if err != nil {
+		fmt.Println("error creating lspvc Pod ")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("created pod " + resultPod.Name)
+
+	//sleep a bit for the pod to finish, replace later with watch or better
+	time.Sleep(3000 * time.Millisecond)
+
+	//get lspvc pod output
+	logOptions := v1.PodLogOptions{}
+	req := Clientset.Core().Pods(api.NamespaceDefault).GetLogs(podName, &logOptions)
+	if req == nil {
+		fmt.Println("error in get logs for " + podName)
+	} else {
+		fmt.Println("got the logs for " + podName)
+	}
+
+	readCloser, err := req.Stream()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	defer readCloser.Close()
+	var buf2 bytes.Buffer
+	_, err = io.Copy(&buf2, readCloser)
+	fmt.Printf("backups are... \n%s", buf2.String())
+
+	//delete lspvc pod
+	err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,
+		&v1.DeleteOptions{})
+	if err != nil {
+		fmt.Println(err.Error())
+		fmt.Println("error deleting lspvc pod " + podName)
+	}
+
 }
