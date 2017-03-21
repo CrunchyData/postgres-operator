@@ -20,6 +20,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var BackupPath, BackupPVC string
+
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -82,18 +84,20 @@ pgo create cluster mycluster`,
 
 func init() {
 	RootCmd.AddCommand(createCmd)
-	createCmd.AddCommand(createDatabaseCmd)
-	createCmd.AddCommand(createClusterCmd)
-	createCmd.AddCommand(createBackupCmd)
+	createCmd.AddCommand(createDatabaseCmd, createClusterCmd, createBackupCmd)
+	//createCmd.AddCommand(createClusterCmd)
+	//createCmd.AddCommand(createBackupCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
+	//createCmd.PersistentFlags().String("from-pvc", "", "The PVC which contains a backup archive to restore from")
+	//createCmd.PersistentFlags().String("from-backup", "", "The backup archive path to restore from")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	createDatabaseCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
+	createDatabaseCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
 
 }
