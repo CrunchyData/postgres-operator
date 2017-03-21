@@ -50,12 +50,16 @@ type PodTemplateFields struct {
 	PG_PASSWORD        string
 	PG_DATABASE        string
 	PG_ROOT_PASSWORD   string
+	BACKUP_PVC_NAME    string
+	BACKUP_PATH        string
 }
 
 const SERVICE_PATH = "/pgconf/database-service.json"
 const POD_PATH = "/pgconf/database-pod.json"
+const RESTORE_POD_PATH = "/pgconf/restore-database-pod.json"
 
 var PodTemplate *template.Template
+var RestorePodTemplate *template.Template
 var ServiceTemplate *template.Template
 
 func init() {
@@ -68,6 +72,12 @@ func init() {
 		panic(err.Error())
 	}
 	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
+	buf, err = ioutil.ReadFile(RESTORE_POD_PATH)
+	if err != nil {
+		fmt.Println(err.Error())
+		panic(err.Error())
+	}
+	RestorePodTemplate = template.Must(template.New("restore pod template").Parse(string(buf)))
 
 	buf, err = ioutil.ReadFile(SERVICE_PATH)
 	if err != nil {
@@ -127,6 +137,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
 	fmt.Println("creating PgDatabase object")
 	fmt.Println("created with Name=" + db.Spec.Name)
+	fmt.Println("BackupPVC=" + db.Spec.BACKUP_PVC_NAME)
+	fmt.Println("BackupPath=" + db.Spec.BACKUP_PATH)
 
 	//create the service - TODO get these fields from
 	//the TPR instance
@@ -173,10 +185,19 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		PG_PASSWORD:        db.Spec.PG_PASSWORD,
 		PG_DATABASE:        db.Spec.PG_DATABASE,
 		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
+		BACKUP_PVC_NAME:    db.Spec.BACKUP_PVC_NAME,
+		BACKUP_PATH:        db.Spec.BACKUP_PATH,
 	}
 
 	var doc2 bytes.Buffer
-	err = PodTemplate.Execute(&doc2, podFields)
+	//the client should make sure that BOTH
+	//the backup pvc and backup path are specified if at all
+	if db.Spec.BACKUP_PVC_NAME != "" {
+		err = RestorePodTemplate.Execute(&doc2, podFields)
+		fmt.Printf("doing a restore!!! with pvc %s and path %s\n", db.Spec.BACKUP_PVC_NAME, db.Spec.BACKUP_PATH)
+	} else {
+		err = PodTemplate.Execute(&doc2, podFields)
+	}
 	if err != nil {
 		fmt.Println(err.Error())
 		return

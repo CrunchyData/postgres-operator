@@ -118,6 +118,8 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 		PG_PASSWORD:        "password",
 		PG_DATABASE:        "userdb",
 		PG_ROOT_PASSWORD:   "password",
+		BACKUP_PVC_NAME:    "",
+		BACKUP_PATH:        "",
 	}
 
 	//override any values from config file
@@ -157,6 +159,10 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	if str != "" {
 		spec.PG_ROOT_PASSWORD = str
 	}
+
+	//pass along command line flags for a restore
+	spec.BACKUP_PATH = BackupPath
+	spec.BACKUP_PVC_NAME = BackupPVC
 
 	//override from command line
 

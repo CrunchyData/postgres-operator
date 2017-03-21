@@ -36,6 +36,8 @@ type PgDatabaseSpec struct {
 	PG_PASSWORD        string `json:"pgpassword"`
 	PG_DATABASE        string `json:"pgdatabase"`
 	PG_ROOT_PASSWORD   string `json:"pgrootpassword"`
+	BACKUP_PVC_NAME    string `json:"backuppvcname"`
+	BACKUP_PATH        string `json:"backuppath"`
 }
 
 type PgDatabase struct {
