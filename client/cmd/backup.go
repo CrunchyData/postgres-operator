@@ -131,6 +131,7 @@ func deleteBackup(args []string) {
 		return
 	}
 	// delete the pgbackup resource instance
+	// which will cause the operator to remove the related Job
 	for _, arg := range args {
 		for _, backup := range backupList.Items {
 			if arg == "all" || backup.Spec.Name == arg {
@@ -151,7 +152,6 @@ func deleteBackup(args []string) {
 
 	}
 
-	//delete Job
 }
 
 func getBackupParams(name string) (*tpr.PgBackup, error) {

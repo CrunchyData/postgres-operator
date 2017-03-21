@@ -1,15 +1,10 @@
 {
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
         "name": "backup-{{.Name}}"
     },
     "spec": {
-        "selector": {
-            "matchLabels": {
-                "pg-database": "{{.Name}}"
-            }
-        },
         "template": {
             "metadata": {
                 "name": "{{.Name}}",

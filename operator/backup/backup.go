@@ -29,7 +29,9 @@ import (
 
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+
+	//	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -131,7 +133,8 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	jobDocString := doc2.String()
 	fmt.Println(jobDocString)
 
-	newjob := v1beta1.Job{}
+	//newjob := v1beta1.Job{}
+	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc2.Bytes(), &newjob)
 	if err != nil {
 		fmt.Println("error unmarshalling json into Job ")
@@ -139,7 +142,8 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 		return
 	}
 
-	resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
+	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
+	resultJob, err := clientset.Batch().Jobs(v1.NamespaceDefault).Create(&newjob)
 	if err != nil {
 		fmt.Println("error creating Job ")
 		fmt.Println(err.Error())
@@ -155,7 +159,8 @@ func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job 
 	fmt.Println("deleting Job with Name=" + jobName)
 
 	//delete the job
-	err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete("backup-"+jobName,
+	//err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(jobName,
+	err := clientset.Batch().Jobs(v1.NamespaceDefault).Delete(jobName,
 		&v1.DeleteOptions{})
 	if err != nil {
 		fmt.Println("error deleting Job " + jobName)
