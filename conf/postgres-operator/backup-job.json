@@ -2,7 +2,7 @@
     "apiVersion": "extensions/v1beta1",
     "kind": "Job",
     "metadata": {
-        "name": "{{.Name}}"
+        "name": "backup-{{.Name}}"
     },
     "spec": {
         "selector": {

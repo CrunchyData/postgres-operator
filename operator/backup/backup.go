@@ -151,15 +151,16 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 
 func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
 	fmt.Println("deleting PgBackup object")
-	fmt.Println("deleting with Name=" + job.Spec.Name)
+	var jobName = "backup-" + job.Spec.Name
+	fmt.Println("deleting Job with Name=" + jobName)
 
 	//delete the job
-	err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(job.Spec.Name,
+	err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete("backup-"+jobName,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting Job ")
+		fmt.Println("error deleting Job " + jobName)
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println("deleted Job " + job.Spec.Name)
+	fmt.Println("deleted Job " + jobName)
 }
