@@ -1,12 +1,31 @@
-== Crunchy Postgres Operator
+== PostgreSQL Operator
 v1.0.0, {docdate}
 
-image::docs/crunchy_logo.png?raw=true[]
+# Overview
 
-Crunchy's Postgres Operator provides a Kubernetes operator capability
-for managing PostgreSQL containers deployed within a Kubernetes cluster.
+The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Databases and Clusters deployed within a Kubernetes.
 
-# Usage
+The PostgreSQL Operator leverages a Kubernetes Third Party Resources in order to define custom Kubernetes objects such as 'Database Name' and 'Cluster Name'.  
+
+Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object. 
+
+The PostgreSQL Operator runs within Kubernetes enabling Kubernetes to detect these new custom object types being created or removed. 
+
+Once the objects are detected, the PostgreSQL Operator enables useres to perform operations across the Kubernetes environment, including
+
+* Create Database or Cluster
+* Destroy Database or Cluster
+* Backup Database or Cluster
+* Restore Database or Cluster
+* View PVC
+
+# Requirements
+
+* Kubernetes 1.5.3+
+* [TO CONFIRM]
+
+
+# Example Commands Usage
 
 Some examples of using the command line interface:
 
@@ -124,7 +143,7 @@ docker images | grep operator
 ....
 
 
-==== Deploy the postgres Operator
+==== Deploy the PostgreSQL Operator
 note that this will create and use */data* on your
 local system as the persistent store for the operator to use
 for its persistent volume:
