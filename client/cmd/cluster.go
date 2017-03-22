@@ -100,9 +100,9 @@ func listServices(name string) {
 	}
 	for i, service := range services.Items {
 		if i == len(services.Items)-1 {
-			fmt.Println(TREE_TRUNK + "service : " + service.ObjectMeta.Name)
+			fmt.Println(TREE_TRUNK + "service : " + service.ObjectMeta.Name + " (" + service.Spec.ClusterIP + ")")
 		} else {
-			fmt.Println(TREE_BRANCH + "service : " + service.ObjectMeta.Name)
+			fmt.Println(TREE_BRANCH + "service : " + service.ObjectMeta.Name + " (" + service.Spec.ClusterIP + ")")
 		}
 	}
 }

@@ -45,14 +45,15 @@ func showDatabase(args []string) {
 				if err != nil {
 					log.Error("error in getting database pod " + database.Spec.Name + err.Error())
 				} else {
-					fmt.Println(TREE_BRANCH + "pod " + pod.Name)
+					fmt.Println(TREE_BRANCH + "pod : " + pod.Name)
 				}
 
 				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
 				if err != nil {
 					log.Error("error in getting database service " + database.Spec.Name + err.Error())
 				} else {
-					fmt.Println(TREE_TRUNK + "service " + service.Name)
+					fmt.Println(TREE_TRUNK + "service : " + service.Name + " (" + service.Spec.ClusterIP + ")")
+
 				}
 			}
 		}
