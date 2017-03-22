@@ -88,9 +88,9 @@ var ShowPVCCmd = &cobra.Command{
 				pgo show pvc mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a PVC name is required for this command")
+			log.Error("PVC name(s) required for this command")
 		} else {
-			showBackup(args)
+			showPVC(args)
 		}
 	},
 }
@@ -104,7 +104,7 @@ var ShowBackupCmd = &cobra.Command{
 				pgo show backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("either a database or cluster name is required for this command")
+			log.Error("database or cluster name(s) required for this command")
 		} else {
 			showBackup(args)
 		}
@@ -120,7 +120,7 @@ var ShowDatabaseCmd = &cobra.Command{
 				pgo show database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a database name is required for this command")
+			log.Error("database name(s) required for this command")
 		} else {
 			showDatabase(args)
 		}
@@ -136,7 +136,7 @@ var ShowClusterCmd = &cobra.Command{
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a cluster name is required for this command")
+			log.Error("cluster name(s) required for this command")
 		} else {
 			showCluster(args)
 		}

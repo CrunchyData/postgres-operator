@@ -99,13 +99,13 @@ func showItem(name string, pvcName string) {
 		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
 		fmt.Println(err.Error())
 	} else {
-		fmt.Printf("\ndatabase pod %s\n", name+" is found")
+		fmt.Printf("\ndatabase pod %s\n", pod.Name+" is found")
 	}
 
 	fmt.Println("")
 
 	//print the backups found in the pvc
-	printLog(pod.Name, pvcName)
+	printLog(name, pvcName)
 }
 
 func createBackup(args []string) {
