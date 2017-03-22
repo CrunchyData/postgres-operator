@@ -1,0 +1,48 @@
+== PostgreSQL Operator Deployment Strategies
+v1.0.0, {docdate}
+
+
+This document describes the various deployment strategies
+offered by the operator.  A deployment in this case is 
+the set of objects created in Kubernetes when a 
+third party resource of type database or cluster is created.
+TPRs are created by the pgo client command.
+
+== Strategies
+
+There are different strategies for what pods and services
+get created for a database and cluster.  Right now, the operator
+supports only a default strategy for a database and cluster, but
+in the future, more deployment strategies will be supported
+to offer users more customization to what they see deployed
+in their Kube cluster.
+
+== Default Database Deployment Strategy
+
+A *database* when created by the operator will create the
+following on a Kube cluster:
+
+image::operator-diagram-database.png?raw=true[]
+
+The default database strategy creates the following:
+
+ * pod running Postgres container
+ * service mapped to the Postgres container
+ * PVC will be created if not specified in configuration
+
+== Default Cluster Deployment Strategy
+
+A *cluster* when created by the operator will create the
+following on a Kube cluster:
+
+image::operator-diagram-cluster.png?raw=true[]
+
+The default cluster strategy creates the following:
+
+ * deployment running a Postgres *master* container with replica count of 1
+ * deployment running a Postgres *replica* container with replica count of 2
+ * service mapped to the *master* Postgres database
+ * service mapped to the *replica* Postgres database
+ * PVC for the *master* will be created if not specified in configuration
+
+
