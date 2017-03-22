@@ -22,7 +22,7 @@ Once the objects are detected, the PostgreSQL Operator enables useres to perform
 # Requirements
 
 * Kubernetes 1.5.3+
-* [TO CONFIRM]
+* Crunchy Container Suite 1.2.8+
 
 
 # Example Commands Usage
