@@ -35,8 +35,20 @@ pgo delete cluster mycluster
 .Backup Database or Cluster
 [source,bash]
 ----
-pgo backup mycluster
-pgo backup mydatabase
+pgo create backup mycluster
+pgo create backup mydatabase
+----
+
+.Restore Database
+[source,bash]
+----
+pgo create database myrestore --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
+----
+
+.View PVC
+[source,bash]
+----
+pgo show pvc mypvc
 ----
 
 
