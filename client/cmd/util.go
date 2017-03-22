@@ -16,7 +16,8 @@
 package cmd
 
 import (
-	"fmt"
+	log "github.com/Sirupsen/logrus"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -43,16 +44,16 @@ func ConnectToKube() {
 	var err error
 	Config, err = clientcmd.BuildConfigFromFlags("", KubeconfigPath)
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("can not connect to Kube using kubeconfig")
+		log.Error(err.Error())
+		log.Error("can not connect to Kube using kubeconfig")
 		os.Exit(2)
 	}
 
 	// creates the clientset
 	Clientset, err = kubernetes.NewForConfig(Config)
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("can not create client to Kube ")
+		log.Error(err.Error())
+		log.Error("can not create client to Kube ")
 		os.Exit(2)
 	}
 
@@ -60,20 +61,20 @@ func ConnectToKube() {
 	//var tpr *v1beta1.ThirdPartyResource
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("required pg-cluster.crunchydata.com TPR was not found on your kube cluster")
+		log.Error(err.Error())
+		log.Error("required pg-cluster.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-database.crunchydata.com")
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("required pg-database.crunchydata.com TPR was not found on your kube cluster")
+		log.Error(err.Error())
+		log.Error("required pg-database.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com")
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("required pg-backup.crunchydata.com TPR was not found on your kube cluster")
+		log.Error(err.Error())
+		log.Error("required pg-backup.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
 
@@ -83,12 +84,12 @@ func ConnectToKube() {
 
 	Tprclient, err = rest.RESTClientFor(tprconfig)
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println("can not get client to TPR")
+		log.Error(err.Error())
+		log.Error("can not get client to TPR")
 		os.Exit(2)
 	}
 
-	//fmt.Println("connected to kube. at " + KubeconfigPath)
+	log.Debug("connected to kube. at " + KubeconfigPath)
 
 }
 

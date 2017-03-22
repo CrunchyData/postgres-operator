@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -25,6 +25,7 @@ import (
 var cfgFile string
 var KubeconfigPath string
 var Labelselector string
+var DebugFlag bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -41,9 +42,10 @@ create and manage both databases and clusters.`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Debug(err.Error())
 		os.Exit(-1)
 	}
+
 }
 
 func init() {
@@ -60,8 +62,7 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&KubeconfigPath, "kubeconfig", "", "kube config file")
 	RootCmd.PersistentFlags().StringVar(&Labelselector, "selector", "", "label selector string")
-
-	//fmt.Println("root init called")
+	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "enable debug with true")
 
 }
 
@@ -80,20 +81,25 @@ func initConfig() {
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
 	if err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Debugf("Using config file:", viper.ConfigFileUsed())
 	} else {
-		fmt.Println("config file not found")
+		log.Debug("config file not found")
+	}
+
+	if DebugFlag || viper.GetBool("pgo.debug") {
+		log.Debug("debug flag is set to true")
+		log.SetLevel(log.DebugLevel)
 	}
 
 	if KubeconfigPath == "" {
 		KubeconfigPath = viper.GetString("kubeconfig")
 	}
 	if KubeconfigPath == "" {
-		fmt.Println("--kubeconfig flag is not set and required")
+		log.Error("--kubeconfig flag is not set and required")
 		os.Exit(2)
 	}
 
-	fmt.Println("kubeconfig path is " + viper.GetString("kubeconfig"))
+	log.Error("kubeconfig path is " + viper.GetString("kubeconfig"))
 	//fmt.Println("viper CCP_IMAGE_TAG value is " + viper.GetString("cluster.CCP_IMAGE_TAG"))
 	//fmt.Println(" root initConfig called")
 	ConnectToKube()

@@ -2,6 +2,7 @@ kubeconfig:  /etc/kubernetes/admin.conf
 pgo:
   lspvc_template:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.0.0
+  debug:  false
 database:
   CCP_IMAGE_TAG:  centos7-9.5-1.2.8
   Port:  5432
