@@ -4,7 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            "crunchy-database": "{{.Name}}",
+            "pg-database": "{{.Name}}",
             "name": "{{.Name}}"
         }
     },

@@ -39,6 +39,7 @@ func showCluster(args []string) {
 			fmt.Println("")
 			fmt.Println("cluster : " + cluster.Spec.Name)
 			if arg == "all" || cluster.Spec.Name == arg {
+				log.Debug("listing cluster " + arg)
 				//list the deployments
 				listDeployments(cluster.Spec.Name)
 				//list the replicasets

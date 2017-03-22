@@ -4,7 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            "crunchy-cluster": "{{.ClusterName}}",
+            "pg-cluster": "{{.ClusterName}}",
             "name": "{{.Name}}"
         }
     },
