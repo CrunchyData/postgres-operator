@@ -18,7 +18,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
@@ -48,7 +48,16 @@ var (
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "the path to a kubeconfig, specifies this tool runs outside the cluster")
+	var debug = flag.Bool("debug", false, "defaults to false")
 	flag.Parse()
+
+	var debugEnv = os.Getenv("DEBUG")
+
+	if *debug || debugEnv != "" {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 
 	tprclient, err := buildClientFromFlags(*kubeconfig)
 	if err != nil {
@@ -57,13 +66,13 @@ func main() {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		fmt.Println("error creating cluster config ")
+		log.Info("error creating cluster config ")
 		panic(err.Error())
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Println("error creating kube client ")
+		log.Info("error creating kube client ")
 		panic(err.Error())
 	}
 
@@ -89,13 +98,13 @@ func main() {
 		Name("example1").
 		Do().Into(&example)
 	if err != nil {
-		fmt.Println("example1 not found")
+		log.Info("example1 not found")
 	} else {
 		fmt.Printf("%#v\n", example)
 	}
 	*/
 
-	fmt.Println("---------------------------------------------------------")
+	log.Info("---------------------------------------------------------")
 
 	stopchan := make(chan struct{}, 1)
 
@@ -108,7 +117,7 @@ func main() {
 	for {
 		select {
 		case s := <-signals:
-			fmt.Printf("received signal %#v, exiting...\n", s)
+			log.Infof("received signal %#v, exiting...\n", s)
 			os.Exit(0)
 		}
 	}
@@ -177,12 +186,12 @@ func initializeResources(clientset *kubernetes.Clientset) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
 		} else {
 			panic(err)
 		}
 	} else {
-		fmt.Printf("SKIPPING: already exists %#v\n", tpr)
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
 	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
@@ -202,12 +211,12 @@ func initializeResources(clientset *kubernetes.Clientset) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
 		} else {
 			panic(err)
 		}
 	} else {
-		fmt.Printf("SKIPPING: already exists %#v\n", tpr)
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
 	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com")
@@ -227,12 +236,12 @@ func initializeResources(clientset *kubernetes.Clientset) {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
 		} else {
 			panic(err)
 		}
 	} else {
-		fmt.Printf("SKIPPING: already exists %#v\n", tpr)
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
 }

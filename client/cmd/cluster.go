@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
@@ -28,8 +29,7 @@ func showCluster(args []string) {
 	clusterList := tpr.PgClusterList{}
 	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
 	if err != nil {
-		fmt.Println("error getting list of clusters")
-		fmt.Println(err.Error())
+		log.Error("error getting list of clusters" + err.Error())
 		return
 	}
 
@@ -57,8 +57,7 @@ func listReplicaSets(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	reps, err := Clientset.ReplicaSets(api.NamespaceDefault).List(lo)
 	if err != nil {
-		fmt.Println("error getting list of replicasets")
-		fmt.Println(err.Error())
+		log.Error("error getting list of replicasets" + err.Error())
 		return
 	}
 	for _, r := range reps.Items {
@@ -70,8 +69,7 @@ func listDeployments(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	deployments, err := Clientset.Deployments(api.NamespaceDefault).List(lo)
 	if err != nil {
-		fmt.Println("error getting list of deployments")
-		fmt.Println(err.Error())
+		log.Error("error getting list of deployments" + err.Error())
 		return
 	}
 	for _, d := range deployments.Items {
@@ -83,8 +81,7 @@ func listPods(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	pods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
 	if err != nil {
-		fmt.Println("error getting list of pods")
-		fmt.Println(err.Error())
+		log.Error("error getting list of pods" + err.Error())
 		return
 	}
 	for _, pod := range pods.Items {
@@ -97,8 +94,7 @@ func listServices(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	services, err := Clientset.Core().Services(api.NamespaceDefault).List(lo)
 	if err != nil {
-		fmt.Println("error getting list of services")
-		fmt.Println(err.Error())
+		log.Error("error getting list of services" + err.Error())
 		return
 	}
 	for i, service := range services.Items {
@@ -114,7 +110,7 @@ func createCluster(args []string) {
 	var err error
 
 	for _, arg := range args {
-		fmt.Println("create cluster called for " + arg)
+		log.Debug("create cluster called for " + arg)
 		result := tpr.PgCluster{}
 
 		// error if it already exists
@@ -125,13 +121,12 @@ func createCluster(args []string) {
 			Do().
 			Into(&result)
 		if err == nil {
-			fmt.Println("pgcluster " + arg + " was found so we will not create it")
+			log.Debug("pgcluster " + arg + " was found so we will not create it")
 			break
 		} else if errors.IsNotFound(err) {
-			fmt.Println("pgcluster " + arg + " not found so we will create it")
+			log.Debug("pgcluster " + arg + " not found so we will create it")
 		} else {
-			fmt.Println("error getting pgcluster " + arg)
-			fmt.Println(err.Error())
+			log.Error("error getting pgcluster " + arg + err.Error())
 			break
 		}
 
@@ -144,8 +139,7 @@ func createCluster(args []string) {
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
-			fmt.Println("error in creating PgCluster instance")
-			fmt.Println(err.Error())
+			log.Error(" in creating PgCluster instance" + err.Error())
 		}
 		fmt.Println("created PgCluster " + arg)
 
@@ -229,8 +223,7 @@ func deleteCluster(args []string) {
 	clusterList := tpr.PgClusterList{}
 	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
 	if err != nil {
-		fmt.Println("error getting cluster list")
-		fmt.Println(err.Error())
+		log.Error("error getting cluster list" + err.Error())
 		return
 	}
 
@@ -247,8 +240,7 @@ func deleteCluster(args []string) {
 					Do().
 					Error()
 				if err != nil {
-					fmt.Println("error deleting pgcluster " + arg)
-					fmt.Println(err.Error())
+					log.Error("error deleting pgcluster " + arg + err.Error())
 				} else {
 					fmt.Println("deleted pgcluster " + cluster.Spec.Name)
 				}

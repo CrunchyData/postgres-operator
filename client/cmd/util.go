@@ -38,7 +38,7 @@ var Tprclient *rest.RESTClient
 
 func ConnectToKube() {
 
-	//fmt.Println("ConnectToKube called")
+	log.Debug("ConnectToKube called")
 	//setup connection to kube
 	// uses the current context in kubeconfig
 	var err error

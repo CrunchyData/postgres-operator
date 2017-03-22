@@ -21,7 +21,8 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+
+	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"text/template"
 	"time"
@@ -77,21 +78,21 @@ func init() {
 
 	buf, err = ioutil.ReadFile(DEPLOYMENT_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 	DeploymentTemplate = template.Must(template.New("deployment template").Parse(string(buf)))
 
 	buf, err = ioutil.ReadFile(REPLICA_DEPLOYMENT_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 	ReplicaDeploymentTemplate = template.Must(template.New("replica deployment template").Parse(string(buf)))
 
 	buf, err = ioutil.ReadFile(SERVICE_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 
@@ -118,8 +119,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
-		//fmt.Println("updating PgCluster object")
-		//fmt.Println("updated with Name=" + cluster.Spec.Name)
+		//log.Info("updating PgCluster object")
+		//log.Info("updated with Name=" + cluster.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
@@ -138,7 +139,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 		select {
 		case event := <-eventchan:
 			if event == nil {
-				fmt.Printf("%#v\n", event)
+				log.Infof("%#v\n", event)
 			}
 		}
 	}
@@ -151,8 +152,8 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	var replicaServiceResult, serviceResult *v1.Service
 	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
 
-	fmt.Println("creating PgCluster object")
-	fmt.Println("created with Name=" + db.Spec.Name)
+	log.Info("creating PgCluster object")
+	log.Info("created with Name=" + db.Spec.Name)
 
 	//create the master service
 	serviceFields := ServiceTemplateFields{
@@ -163,27 +164,27 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	err = ServiceTemplate.Execute(&serviceDoc, serviceFields)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 	serviceDocString := serviceDoc.String()
-	fmt.Println(serviceDocString)
+	log.Info(serviceDocString)
 
 	service := v1.Service{}
 	err = json.Unmarshal(serviceDoc.Bytes(), &service)
 	if err != nil {
-		fmt.Println("error unmarshalling json into Service ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling json into Service ")
+		log.Info(err.Error())
 		return
 	}
 
 	serviceResult, err = clientset.Services(v1.NamespaceDefault).Create(&service)
 	if err != nil {
-		fmt.Println("error creating Service ")
-		fmt.Println(err.Error())
+		log.Info("error creating Service ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created master service " + serviceResult.Name)
+	log.Info("created master service " + serviceResult.Name)
 
 	//create the replica service
 	replicaServiceFields := ServiceTemplateFields{
@@ -194,28 +195,28 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	err = ServiceTemplate.Execute(&replicaServiceDoc, replicaServiceFields)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 
 	replicaServiceDocString := replicaServiceDoc.String()
-	fmt.Println(replicaServiceDocString)
+	log.Info(replicaServiceDocString)
 
 	replicaService := v1.Service{}
 	err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)
 	if err != nil {
-		fmt.Println("error unmarshalling json into replica Service ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling json into replica Service ")
+		log.Info(err.Error())
 		return
 	}
 
 	replicaServiceResult, err = clientset.Services(v1.NamespaceDefault).Create(&replicaService)
 	if err != nil {
-		fmt.Println("error creating replica Service ")
-		fmt.Println(err.Error())
+		log.Info("error creating replica Service ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created replica service " + replicaServiceResult.Name)
+	log.Info("created replica service " + replicaServiceResult.Name)
 
 	//create the master deployment
 	deploymentFields := DeploymentTemplateFields{
@@ -234,27 +235,27 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	err = DeploymentTemplate.Execute(&masterDoc, deploymentFields)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 	deploymentDocString := masterDoc.String()
-	fmt.Println(deploymentDocString)
+	log.Info(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(masterDoc.Bytes(), &deployment)
 	if err != nil {
-		fmt.Println("error unmarshalling master json into Deployment ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling master json into Deployment ")
+		log.Info(err.Error())
 		return
 	}
 
 	deploymentResult, err = clientset.Deployments(v1.NamespaceDefault).Create(&deployment)
 	if err != nil {
-		fmt.Println("error creating master Deployment ")
-		fmt.Println(err.Error())
+		log.Info("error creating master Deployment ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created master Deployment " + deploymentResult.Name)
+	log.Info("created master Deployment " + deploymentResult.Name)
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
@@ -275,62 +276,62 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	err = ReplicaDeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 	replicaDeploymentDocString := replicaDoc.String()
-	fmt.Println(replicaDeploymentDocString)
+	log.Info(replicaDeploymentDocString)
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
-		fmt.Println("error unmarshalling replica json into Deployment ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling replica json into Deployment ")
+		log.Info(err.Error())
 		return
 	}
 
 	replicaDeploymentResult, err = clientset.Deployments(v1.NamespaceDefault).Create(&replicaDeployment)
 	if err != nil {
-		fmt.Println("error creating replica Deployment ")
-		fmt.Println(err.Error())
+		log.Info("error creating replica Deployment ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created replica Deployment " + replicaDeploymentResult.Name)
+	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
 
 }
 
 func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
-	fmt.Println("deleting PgCluster object")
-	fmt.Println("deleting with Name=" + db.Spec.Name)
+	log.Info("deleting PgCluster object")
+	log.Info("deleting with Name=" + db.Spec.Name)
 
 	//delete the master service
 
 	err := clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting master Service ")
-		fmt.Println(err.Error())
+		log.Info("error deleting master Service ")
+		log.Info(err.Error())
 	}
-	fmt.Println("deleted master service " + db.Spec.Name)
+	log.Info("deleted master service " + db.Spec.Name)
 
 	//delete the replica service
 	err = clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting replica Service ")
-		fmt.Println(err.Error())
+		log.Info("error deleting replica Service ")
+		log.Info(err.Error())
 	}
-	fmt.Println("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX)
+	log.Info("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX)
 
 	//delete the master deployment
 	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting master Deployment ")
-		fmt.Println(err.Error())
+		log.Info("error deleting master Deployment ")
+		log.Info(err.Error())
 	}
 
-	fmt.Println("deleted master Deployment " + db.Spec.Name)
+	log.Info("deleted master Deployment " + db.Spec.Name)
 	//delete the master replicaset
 
 	//find the replicaset pod name
@@ -340,18 +341,18 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	var reps *v1beta1.ReplicaSetList
 	reps, err = clientset.ReplicaSets(v1.NamespaceDefault).List(options)
 	if err != nil {
-		fmt.Println("error getting master replicaset name")
-		fmt.Println(err.Error())
+		log.Info("error getting master replicaset name")
+		log.Info(err.Error())
 	} else {
 		if len(reps.Items) > 0 {
 			err = clientset.ReplicaSets(v1.NamespaceDefault).Delete(reps.Items[0].Name,
 				&v1.DeleteOptions{})
 			if err != nil {
-				fmt.Println("error deleting master replicaset ")
-				fmt.Println(err.Error())
+				log.Info("error deleting master replicaset ")
+				log.Info(err.Error())
 			}
 
-			fmt.Println("deleted master replicaset " + reps.Items[0].Name)
+			log.Info("deleted master replicaset " + reps.Items[0].Name)
 		}
 	}
 
@@ -359,26 +360,26 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting replica Deployment ")
-		fmt.Println(err.Error())
+		log.Info("error deleting replica Deployment ")
+		log.Info(err.Error())
 	}
-	fmt.Println("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX)
+	log.Info("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX)
 	//delete the replica ReplicaSet
 	options.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
 
 	reps, err = clientset.ReplicaSets(v1.NamespaceDefault).List(options)
 	if err != nil {
-		fmt.Println("error getting replica replicaset name")
-		fmt.Println(err.Error())
+		log.Info("error getting replica replicaset name")
+		log.Info(err.Error())
 	} else {
 		if len(reps.Items) > 0 {
 			err = clientset.ReplicaSets(v1.NamespaceDefault).Delete(reps.Items[0].Name,
 				&v1.DeleteOptions{})
 			if err != nil {
-				fmt.Println("error deleting replica replicaset ")
-				fmt.Println(err.Error())
+				log.Info("error deleting replica replicaset ")
+				log.Info(err.Error())
 			}
-			fmt.Println("deleted replica replicaset " + reps.Items[0].Name)
+			log.Info("deleted replica replicaset " + reps.Items[0].Name)
 		}
 	}
 
@@ -387,27 +388,27 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 	listOptions.LabelSelector = "name=" + db.Spec.Name
 	pods, err := clientset.Core().Pods(v1.NamespaceDefault).List(listOptions)
 	for _, pod := range pods.Items {
-		fmt.Println("deleting pod " + pod.Name)
+		log.Info("deleting pod " + pod.Name)
 		err = clientset.Pods(v1.NamespaceDefault).Delete(pod.Name,
 			&v1.DeleteOptions{})
 		if err != nil {
-			fmt.Println("error deleting pod " + pod.Name)
-			fmt.Println(err.Error())
+			log.Info("error deleting pod " + pod.Name)
+			log.Info(err.Error())
 		}
-		fmt.Println("deleted pod " + pod.Name)
+		log.Info("deleted pod " + pod.Name)
 
 	}
 	listOptions.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
 	pods, err = clientset.Core().Pods(v1.NamespaceDefault).List(listOptions)
 	for _, pod := range pods.Items {
-		fmt.Println("deleting pod " + pod.Name)
+		log.Info("deleting pod " + pod.Name)
 		err = clientset.Pods(v1.NamespaceDefault).Delete(pod.Name,
 			&v1.DeleteOptions{})
 		if err != nil {
-			fmt.Println("error deleting pod " + pod.Name)
-			fmt.Println(err.Error())
+			log.Info("error deleting pod " + pod.Name)
+			log.Info(err.Error())
 		}
-		fmt.Println("deleted pod " + pod.Name)
+		log.Info("deleted pod " + pod.Name)
 
 	}
 

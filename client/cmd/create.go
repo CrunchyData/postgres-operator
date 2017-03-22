@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +35,7 @@ pgo create cluster
 pgo create backup mydatabase
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create called")
+		log.Debug("create called")
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
 	* database
@@ -77,7 +78,7 @@ master and a number of replica backends. For example:
 
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create cluster called")
+		log.Debug("create cluster called")
 		createCluster(args)
 	},
 }

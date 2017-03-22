@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
@@ -28,8 +29,7 @@ func showDatabase(args []string) {
 	databaseList := tpr.PgDatabaseList{}
 	err := Tprclient.Get().Resource("pgdatabases").Do().Into(&databaseList)
 	if err != nil {
-		fmt.Println("error getting list of databases")
-		fmt.Println(err.Error())
+		log.Error("error getting list of databases" + err.Error())
 		return
 	}
 
@@ -37,22 +37,20 @@ func showDatabase(args []string) {
 	var pod *v1.Pod
 	var service *v1.Service
 	for _, arg := range args {
-		//fmt.Println("show database " + arg)
+		log.Debug("show database " + arg)
 		for _, database := range databaseList.Items {
 			if arg == "all" || database.Spec.Name == arg {
 				fmt.Println("database : " + database.Spec.Name)
 				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(database.Spec.Name)
 				if err != nil {
-					fmt.Println("error in getting database pod " + database.Spec.Name)
-					fmt.Println(err.Error())
+					log.Error("error in getting database pod " + database.Spec.Name + err.Error())
 				} else {
 					fmt.Println(TREE_BRANCH + "pod " + pod.Name)
 				}
 
 				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
 				if err != nil {
-					fmt.Println("error in getting database service " + database.Spec.Name)
-					fmt.Println(err.Error())
+					log.Error("error in getting database service " + database.Spec.Name + err.Error())
 				} else {
 					fmt.Println(TREE_TRUNK + "service " + service.Name)
 				}
@@ -66,7 +64,7 @@ func createDatabase(args []string) {
 	var err error
 
 	for _, arg := range args {
-		fmt.Println("create database called for " + arg)
+		log.Debug("create database called for " + arg)
 		result := tpr.PgDatabase{}
 
 		// error if it already exists
@@ -77,13 +75,12 @@ func createDatabase(args []string) {
 			Do().
 			Into(&result)
 		if err == nil {
-			fmt.Println("pgdatabase " + arg + " was found so we will not create it")
+			log.Debug("pgdatabase " + arg + " was found so we will not create it")
 			break
 		} else if errors.IsNotFound(err) {
-			fmt.Println("pgdatabase " + arg + " not found so we will create it")
+			log.Debug("pgdatabase " + arg + " not found so we will create it")
 		} else {
-			fmt.Println("error getting pgdatabase " + arg)
-			fmt.Println(err.Error())
+			log.Error("error getting pgdatabase " + arg + err.Error())
 			break
 		}
 
@@ -96,8 +93,7 @@ func createDatabase(args []string) {
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
-			fmt.Println("error in creating PgDatabase TPR instance")
-			fmt.Println(err.Error())
+			log.Error("error in creating PgDatabase TPR instance" + err.Error())
 		}
 		fmt.Println("created PgDatabase " + arg)
 
@@ -181,8 +177,7 @@ func deleteDatabase(args []string) {
 	databaseList := tpr.PgDatabaseList{}
 	err = Tprclient.Get().Resource("pgdatabases").Do().Into(&databaseList)
 	if err != nil {
-		fmt.Println("error getting database list")
-		fmt.Println(err.Error())
+		log.Error("error getting database list" + err.Error())
 		return
 	}
 	// delete the pgdatabase resource instance
@@ -196,8 +191,7 @@ func deleteDatabase(args []string) {
 					Do().
 					Error()
 				if err != nil {
-					fmt.Println("error deleting pgdatabase " + arg)
-					fmt.Println(err.Error())
+					log.Error("error deleting pgdatabase " + arg + err.Error())
 				}
 				fmt.Println("deleted pgdatabase " + database.Spec.Name)
 			}

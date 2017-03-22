@@ -18,7 +18,7 @@ package database
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"text/template"
 	"time"
@@ -68,20 +68,20 @@ func init() {
 
 	buf, err = ioutil.ReadFile(POD_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
 	buf, err = ioutil.ReadFile(RESTORE_POD_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 	RestorePodTemplate = template.Must(template.New("restore pod template").Parse(string(buf)))
 
 	buf, err = ioutil.ReadFile(SERVICE_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 
@@ -108,8 +108,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
-		//fmt.Println("updating PgDatabase object")
-		//fmt.Println("updated with Name=" + db.Spec.Name)
+		//log.Info("updating PgDatabase object")
+		//log.Info("updated with Name=" + db.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
@@ -127,7 +127,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	for {
 		select {
 		case event := <-eventchan:
-			fmt.Printf("%#v\n", event)
+			log.Infof("%#v\n", event)
 		}
 	}
 
@@ -135,10 +135,10 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 // database consists of a Service and a Pod
 func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
-	fmt.Println("creating PgDatabase object")
-	fmt.Println("created with Name=" + db.Spec.Name)
-	fmt.Println("BackupPVC=" + db.Spec.BACKUP_PVC_NAME)
-	fmt.Println("BackupPath=" + db.Spec.BACKUP_PATH)
+	log.Info("creating PgDatabase object")
+	log.Info("created with Name=" + db.Spec.Name)
+	log.Info("BackupPVC=" + db.Spec.BACKUP_PVC_NAME)
+	log.Info("BackupPath=" + db.Spec.BACKUP_PATH)
 
 	//create the service - TODO get these fields from
 	//the TPR instance
@@ -150,17 +150,17 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	var doc bytes.Buffer
 	err := ServiceTemplate.Execute(&doc, serviceFields)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 	serviceDocString := doc.String()
-	fmt.Println(serviceDocString)
+	log.Info(serviceDocString)
 
 	service := v1.Service{}
 	err = json.Unmarshal(doc.Bytes(), &service)
 	if err != nil {
-		fmt.Println("error unmarshalling json into Service ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling json into Service ")
+		log.Info(err.Error())
 		return
 	}
 
@@ -168,11 +168,11 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 
 	svc, err := clientset.Services(v1.NamespaceDefault).Create(&service)
 	if err != nil {
-		fmt.Println("error creating Service ")
-		fmt.Println(err.Error())
+		log.Info("error creating Service ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created service " + svc.Name)
+	log.Info("created service " + svc.Name)
 
 	podFields := PodTemplateFields{
 		Name:               db.Spec.Name,
@@ -194,57 +194,57 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	//the backup pvc and backup path are specified if at all
 	if db.Spec.BACKUP_PVC_NAME != "" {
 		err = RestorePodTemplate.Execute(&doc2, podFields)
-		fmt.Printf("doing a restore!!! with pvc %s and path %s\n", db.Spec.BACKUP_PVC_NAME, db.Spec.BACKUP_PATH)
+		log.Infof("doing a restore!!! with pvc %s and path %s\n", db.Spec.BACKUP_PVC_NAME, db.Spec.BACKUP_PATH)
 	} else {
 		err = PodTemplate.Execute(&doc2, podFields)
 	}
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 	podDocString := doc2.String()
-	fmt.Println(podDocString)
+	log.Info(podDocString)
 
 	pod := v1.Pod{}
 	err = json.Unmarshal(doc2.Bytes(), &pod)
 	if err != nil {
-		fmt.Println("error unmarshalling json into Pod ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling json into Pod ")
+		log.Info(err.Error())
 		return
 	}
 
 	resultPod, err := clientset.Pods(v1.NamespaceDefault).Create(&pod)
 	if err != nil {
-		fmt.Println("error creating Pod ")
-		fmt.Println(err.Error())
+		log.Info("error creating Pod ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created pod " + resultPod.Name)
+	log.Info("created pod " + resultPod.Name)
 
 }
 
 func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
-	fmt.Println("deleting PgDatabase object")
-	fmt.Println("deleting with Name=" + db.Spec.Name)
+	log.Info("deleting PgDatabase object")
+	log.Info("deleting with Name=" + db.Spec.Name)
 
 	//delete the service
 	err := clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting Service ")
-		fmt.Println(err.Error())
+		log.Info("error deleting Service ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("deleted service " + db.Spec.Name)
+	log.Info("deleted service " + db.Spec.Name)
 
 	//delete the pod
 	err = clientset.Pods(v1.NamespaceDefault).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting Pod ")
-		fmt.Println(err.Error())
+		log.Info("error deleting Pod ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("deleted pod " + db.Spec.Name)
+	log.Info("deleted pod " + db.Spec.Name)
 	//delete the pod
 }

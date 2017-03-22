@@ -18,7 +18,7 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"text/template"
 	"time"
@@ -57,7 +57,7 @@ func init() {
 
 	buf, err = ioutil.ReadFile(JOB_PATH)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		panic(err.Error())
 	}
 	JobTemplate = template.Must(template.New("backup job template").Parse(string(buf)))
@@ -84,8 +84,8 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		job := obj.(*tpr.PgBackup)
 		eventchan <- job
-		//fmt.Println("updating PgBackup object")
-		//fmt.Println("updated with Name=" + job.Spec.Name)
+		//log.Info("updating PgBackup object")
+		//log.Info("updated with Name=" + job.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
@@ -103,15 +103,15 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	for {
 		select {
 		case event := <-eventchan:
-			fmt.Printf("%#v\n", event)
+			log.Infof("%#v\n", event)
 		}
 	}
 
 }
 
 func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
-	fmt.Println("creating PgBackup object")
-	fmt.Println("created with Name=" + job.Spec.Name)
+	log.Info("creating PgBackup object")
+	log.Info("created with Name=" + job.Spec.Name)
 
 	//create the job -
 	jobFields := JobTemplateFields{
@@ -127,45 +127,45 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	var doc2 bytes.Buffer
 	err := JobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Info(err.Error())
 		return
 	}
 	jobDocString := doc2.String()
-	fmt.Println(jobDocString)
+	log.Info(jobDocString)
 
 	//newjob := v1beta1.Job{}
 	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc2.Bytes(), &newjob)
 	if err != nil {
-		fmt.Println("error unmarshalling json into Job ")
-		fmt.Println(err.Error())
+		log.Info("error unmarshalling json into Job ")
+		log.Info(err.Error())
 		return
 	}
 
 	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
 	resultJob, err := clientset.Batch().Jobs(v1.NamespaceDefault).Create(&newjob)
 	if err != nil {
-		fmt.Println("error creating Job ")
-		fmt.Println(err.Error())
+		log.Info("error creating Job ")
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("created Job " + resultJob.Name)
+	log.Info("created Job " + resultJob.Name)
 
 }
 
 func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
-	fmt.Println("deleting PgBackup object")
+	log.Info("deleting PgBackup object")
 	var jobName = "backup-" + job.Spec.Name
-	fmt.Println("deleting Job with Name=" + jobName)
+	log.Info("deleting Job with Name=" + jobName)
 
 	//delete the job
 	//err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(jobName,
 	err := clientset.Batch().Jobs(v1.NamespaceDefault).Delete(jobName,
 		&v1.DeleteOptions{})
 	if err != nil {
-		fmt.Println("error deleting Job " + jobName)
-		fmt.Println(err.Error())
+		log.Info("error deleting Job " + jobName)
+		log.Info(err.Error())
 		return
 	}
-	fmt.Println("deleted Job " + jobName)
+	log.Info("deleted Job " + jobName)
 }
