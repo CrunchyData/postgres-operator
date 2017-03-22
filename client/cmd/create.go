@@ -53,7 +53,11 @@ For example:
 
 pgo create backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		createBackup(args)
+		if len(args) == 0 {
+			log.Error("a database or cluster name is required for this command")
+		} else {
+			createBackup(args)
+		}
 	},
 }
 
@@ -65,7 +69,11 @@ For example:
 
 pgo create database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		createDatabase(args)
+		if len(args) == 0 {
+			log.Error("a database or cluster name is required for this command")
+		} else {
+			createDatabase(args)
+		}
 	},
 }
 
@@ -79,7 +87,11 @@ master and a number of replica backends. For example:
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create cluster called")
-		createCluster(args)
+		if len(args) == 0 {
+			log.Error("a cluster name is required for this command")
+		} else {
+			createCluster(args)
+		}
 	},
 }
 

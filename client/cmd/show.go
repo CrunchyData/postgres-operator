@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	//	log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -27,10 +27,12 @@ const TREE_TRUNK = "└── "
 var ShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "show a description of a database or cluster",
-	Long: `show allows you to show the details of a database or cluster.
+	Long: `show allows you to show the details of a database, backup, pvc, or cluster.
 For example:
 
 	pgo show database mydatabase
+	pgo show pvc mypvc
+	pgo show backup mydatabase
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -38,11 +40,13 @@ For example:
 Valid resource types include:
 	* database
 	* cluster
+	* pvc
 	* backup`)
 		} else {
 			switch args[0] {
 			case "database":
 			case "cluster":
+			case "pvc":
 			case "backup":
 				break
 			default:
@@ -50,6 +54,7 @@ Valid resource types include:
 Valid resource types include:
 	* database
 	* cluster
+	* pvc
 	* backup`)
 			}
 		}
@@ -62,6 +67,7 @@ func init() {
 	ShowCmd.AddCommand(ShowDatabaseCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
+	ShowCmd.AddCommand(ShowPVCCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -74,6 +80,21 @@ func init() {
 	// ShowCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
+var ShowPVCCmd = &cobra.Command{
+	Use:   "pvc",
+	Short: "Show pvc information",
+	Long: `Show pvc information. For example:
+
+				pgo show pvc mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("a PVC name is required for this command")
+		} else {
+			showBackup(args)
+		}
+	},
+}
+
 // showBackupCmd represents the show backup command
 var ShowBackupCmd = &cobra.Command{
 	Use:   "backup",
@@ -82,7 +103,11 @@ var ShowBackupCmd = &cobra.Command{
 
 				pgo show backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showBackup(args)
+		if len(args) == 0 {
+			log.Error("either a database or cluster name is required for this command")
+		} else {
+			showBackup(args)
+		}
 	},
 }
 
@@ -94,7 +119,11 @@ var ShowDatabaseCmd = &cobra.Command{
 
 				pgo show database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showDatabase(args)
+		if len(args) == 0 {
+			log.Error("a database name is required for this command")
+		} else {
+			showDatabase(args)
+		}
 	},
 }
 
@@ -106,6 +135,10 @@ var ShowClusterCmd = &cobra.Command{
 
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showCluster(args)
+		if len(args) == 0 {
+			log.Error("a cluster name is required for this command")
+		} else {
+			showCluster(args)
+		}
 	},
 }

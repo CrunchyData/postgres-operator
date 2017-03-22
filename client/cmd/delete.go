@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	//log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -78,7 +78,11 @@ var deleteBackupCmd = &cobra.Command{
 	Long: `delete a backup. For example:
 	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		deleteBackup(args)
+		if len(args) == 0 {
+			log.Error("a database or cluster name is required for this command")
+		} else {
+			deleteBackup(args)
+		}
 	},
 }
 
@@ -88,7 +92,11 @@ var deleteDatabaseCmd = &cobra.Command{
 	Long: `delete a crunchy database. For example:
 	pgo delete database mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
-		deleteDatabase(args)
+		if len(args) == 0 {
+			log.Error("a database name is required for this command")
+		} else {
+			deleteDatabase(args)
+		}
 	},
 }
 
@@ -98,6 +106,10 @@ var deleteClusterCmd = &cobra.Command{
 	Long: `delete a crunchy cluster. For example:
 	pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		deleteCluster(args)
+		if len(args) == 0 {
+			log.Error("a cluster name is required for this command")
+		} else {
+			deleteCluster(args)
+		}
 	},
 }
