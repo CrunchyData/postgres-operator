@@ -57,7 +57,7 @@ func init() {
 
 	buf, err = ioutil.ReadFile(JOB_PATH)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		panic(err.Error())
 	}
 	JobTemplate = template.Must(template.New("backup job template").Parse(string(buf)))
@@ -103,7 +103,10 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	for {
 		select {
 		case event := <-eventchan:
-			log.Infof("%#v\n", event)
+			//log.Infof("%#v\n", event)
+			if event == nil {
+				log.Info("event was null")
+			}
 		}
 	}
 
@@ -127,26 +130,24 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	var doc2 bytes.Buffer
 	err := JobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		return
 	}
 	jobDocString := doc2.String()
-	log.Info(jobDocString)
+	log.Debug(jobDocString)
 
 	//newjob := v1beta1.Job{}
 	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc2.Bytes(), &newjob)
 	if err != nil {
-		log.Info("error unmarshalling json into Job ")
-		log.Info(err.Error())
+		log.Error("error unmarshalling json into Job " + err.Error())
 		return
 	}
 
 	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
 	resultJob, err := clientset.Batch().Jobs(v1.NamespaceDefault).Create(&newjob)
 	if err != nil {
-		log.Info("error creating Job ")
-		log.Info(err.Error())
+		log.Error("error creating Job " + err.Error())
 		return
 	}
 	log.Info("created Job " + resultJob.Name)
@@ -154,18 +155,16 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 }
 
 func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
-	log.Info("deleting PgBackup object")
 	var jobName = "backup-" + job.Spec.Name
-	log.Info("deleting Job with Name=" + jobName)
+	log.Debug("deleting Job with Name=" + jobName)
 
 	//delete the job
 	//err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(jobName,
 	err := clientset.Batch().Jobs(v1.NamespaceDefault).Delete(jobName,
 		&v1.DeleteOptions{})
 	if err != nil {
-		log.Info("error deleting Job " + jobName)
-		log.Info(err.Error())
+		log.Error("error deleting Job " + jobName + err.Error())
 		return
 	}
-	log.Info("deleted Job " + jobName)
+	log.Debug("deleted Job " + jobName)
 }

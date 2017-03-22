@@ -68,20 +68,20 @@ func init() {
 
 	buf, err = ioutil.ReadFile(POD_PATH)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		panic(err.Error())
 	}
 	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
 	buf, err = ioutil.ReadFile(RESTORE_POD_PATH)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		panic(err.Error())
 	}
 	RestorePodTemplate = template.Must(template.New("restore pod template").Parse(string(buf)))
 
 	buf, err = ioutil.ReadFile(SERVICE_PATH)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		panic(err.Error())
 	}
 
@@ -127,7 +127,9 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	for {
 		select {
 		case event := <-eventchan:
-			log.Infof("%#v\n", event)
+			if event == nil {
+				//log.Infof("%#v\n", event)
+			}
 		}
 	}
 
@@ -150,17 +152,17 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	var doc bytes.Buffer
 	err := ServiceTemplate.Execute(&doc, serviceFields)
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		return
 	}
+
 	serviceDocString := doc.String()
 	log.Info(serviceDocString)
 
 	service := v1.Service{}
 	err = json.Unmarshal(doc.Bytes(), &service)
 	if err != nil {
-		log.Info("error unmarshalling json into Service ")
-		log.Info(err.Error())
+		log.Error("error unmarshalling json into Service " + err.Error())
 		return
 	}
 
@@ -168,8 +170,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 
 	svc, err := clientset.Services(v1.NamespaceDefault).Create(&service)
 	if err != nil {
-		log.Info("error creating Service ")
-		log.Info(err.Error())
+		log.Error("error creating Service " + err.Error())
 		return
 	}
 	log.Info("created service " + svc.Name)
@@ -199,7 +200,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		err = PodTemplate.Execute(&doc2, podFields)
 	}
 	if err != nil {
-		log.Info(err.Error())
+		log.Error(err.Error())
 		return
 	}
 	podDocString := doc2.String()
@@ -208,15 +209,13 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	pod := v1.Pod{}
 	err = json.Unmarshal(doc2.Bytes(), &pod)
 	if err != nil {
-		log.Info("error unmarshalling json into Pod ")
-		log.Info(err.Error())
+		log.Error("error unmarshalling json into Pod " + err.Error())
 		return
 	}
 
 	resultPod, err := clientset.Pods(v1.NamespaceDefault).Create(&pod)
 	if err != nil {
-		log.Info("error creating Pod ")
-		log.Info(err.Error())
+		log.Error("error creating Pod " + err.Error())
 		return
 	}
 	log.Info("created pod " + resultPod.Name)
@@ -231,8 +230,7 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 	err := clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
-		log.Info("error deleting Service ")
-		log.Info(err.Error())
+		log.Error("error deleting Service " + err.Error())
 		return
 	}
 	log.Info("deleted service " + db.Spec.Name)
@@ -241,8 +239,7 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 	err = clientset.Pods(v1.NamespaceDefault).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
-		log.Info("error deleting Pod ")
-		log.Info(err.Error())
+		log.Error("error deleting Pod " + err.Error())
 		return
 	}
 	log.Info("deleted pod " + db.Spec.Name)
