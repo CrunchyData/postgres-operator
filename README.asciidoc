@@ -5,19 +5,23 @@ v1.0.0, {docdate}
 
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Databases and Clusters deployed within a Kubernetes.
 
-The PostgreSQL Operator leverages a Kubernetes Third Party Resources in order to define custom Kubernetes objects such as 'Database Name' and 'Cluster Name'.  
+The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource types *pgdatabase* and *pgcluster*.
 
 Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object. 
 
-The PostgreSQL Operator runs within Kubernetes enabling Kubernetes to detect these new custom object types being created or removed. 
+The PostgreSQL Operator runs within Kubernetes detecting these new custom object types being created or removed. 
 
-Once the objects are detected, the PostgreSQL Operator enables useres to perform operations across the Kubernetes environment, including
+Once the objects are detected, the PostgreSQL Operator enables users to perform operations across the Kubernetes environment, including:
 
 * Create Database or Cluster
 * Destroy Database or Cluster
 * Backup Database or Cluster
 * Restore Database or Cluster
 * View PVC
+
+What actually gets created on the Kube cluster for a *pgdatabase* or
+*pgcluster* resource is defined as a *deployment strategy*.  Strategies
+are documented in detail here link:docs/strategies.asciidoc[Deployment Strategies] 
 
 # Requirements
 
