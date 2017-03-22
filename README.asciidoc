@@ -151,4 +151,13 @@ Note that this config file assumes your Kubernetes config file is
 located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kube config file location.
 
+==== Viewing Operator Resources
+
+You can view the various resources created and used by the
+operator as follows:
+....
+kubectl get pgdatabases
+kubectl get pgclusters
+kubectl get pgbackups
+....
 
