@@ -59,7 +59,7 @@ shown interacting with the postgres operator that runs within
 a Kubernetes cluster.  The operator is responsible for creating
 or modifying PostgreSQL databases deployed within the Kube cluster.
 
-image::docs/operator-diagram.png?raw=true[width=900,height=500]
+image::docs/operator_diagram.png?raw=true[]
 
 The operator funtionality runs in a Pod deployed to your
 Kubernetes cluster.  The *postgres-operator* Docker container
