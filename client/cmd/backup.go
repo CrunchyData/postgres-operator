@@ -197,7 +197,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
 	spec.PVC_NAME = "crunchy-pvc"
-	spec.CCP_IMAGE_TAG = viper.GetString("database.CCP_IMAGE_TAG")
+	spec.CCP_IMAGE_TAG = viper.GetString("db.CCP_IMAGE_TAG")
 	spec.BACKUP_HOST = "basic"
 	spec.BACKUP_USER = "master"
 	spec.BACKUP_PASS = "password"

@@ -120,39 +120,39 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	}
 
 	//override any values from config file
-	str := viper.GetString("database.CCP_IMAGE_TAG")
+	str := viper.GetString("db.CCP_IMAGE_TAG")
 	if str != "" {
 		spec.CCP_IMAGE_TAG = str
 	}
-	str = viper.GetString("database.Port")
+	str = viper.GetString("db.Port")
 	if str != "" {
 		spec.Port = str
 	}
-	str = viper.GetString("database.PVC_NAME")
+	str = viper.GetString("db.PVC_NAME")
 	if str != "" {
 		spec.PVC_NAME = str
 	}
-	str = viper.GetString("database.PG_MASTER_USER")
+	str = viper.GetString("db.PG_MASTER_USER")
 	if str != "" {
 		spec.PG_MASTER_USER = str
 	}
-	str = viper.GetString("database.PG_MASTER_PASSWORD")
+	str = viper.GetString("db.PG_MASTER_PASSWORD")
 	if str != "" {
 		spec.PG_MASTER_PASSWORD = str
 	}
-	str = viper.GetString("database.PG_USER")
+	str = viper.GetString("db.PG_USER")
 	if str != "" {
 		spec.PG_USER = str
 	}
-	str = viper.GetString("database.PG_PASSWORD")
+	str = viper.GetString("db.PG_PASSWORD")
 	if str != "" {
 		spec.PG_PASSWORD = str
 	}
-	str = viper.GetString("database.PG_DATABASE")
+	str = viper.GetString("db.PG_DATABASE")
 	if str != "" {
 		spec.PG_DATABASE = str
 	}
-	str = viper.GetString("database.PG_ROOT_PASSWORD")
+	str = viper.GetString("db.PG_ROOT_PASSWORD")
 	if str != "" {
 		spec.PG_ROOT_PASSWORD = str
 	}

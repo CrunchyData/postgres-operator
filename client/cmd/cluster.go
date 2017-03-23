@@ -37,8 +37,8 @@ func showCluster(args []string) {
 	for _, arg := range args {
 		for _, cluster := range clusterList.Items {
 			fmt.Println("")
-			fmt.Println("cluster : " + cluster.Spec.Name)
 			if arg == "all" || cluster.Spec.Name == arg {
+				fmt.Println("cluster : " + cluster.Spec.Name)
 				log.Debug("listing cluster " + arg)
 				//list the deployments
 				listDeployments(cluster.Spec.Name)
@@ -167,39 +167,39 @@ func getClusterParams(name string) *tpr.PgCluster {
 	}
 
 	//override any values from config file
-	str := viper.GetString("cluster.CCP_IMAGE_TAG")
+	str := viper.GetString("db.CCP_IMAGE_TAG")
 	if str != "" {
 		spec.CCP_IMAGE_TAG = str
 	}
-	str = viper.GetString("cluster.Port")
+	str = viper.GetString("db.Port")
 	if str != "" {
 		spec.Port = str
 	}
-	str = viper.GetString("cluster.PVC_NAME")
+	str = viper.GetString("db.PVC_NAME")
 	if str != "" {
 		spec.PVC_NAME = str
 	}
-	str = viper.GetString("cluster.PG_MASTER_USER")
+	str = viper.GetString("db.PG_MASTER_USER")
 	if str != "" {
 		spec.PG_MASTER_USER = str
 	}
-	str = viper.GetString("cluster.PG_MASTER_PASSWORD")
+	str = viper.GetString("db.PG_MASTER_PASSWORD")
 	if str != "" {
 		spec.PG_MASTER_PASSWORD = str
 	}
-	str = viper.GetString("cluster.PG_USER")
+	str = viper.GetString("db.PG_USER")
 	if str != "" {
 		spec.PG_USER = str
 	}
-	str = viper.GetString("cluster.PG_PASSWORD")
+	str = viper.GetString("db.PG_PASSWORD")
 	if str != "" {
 		spec.PG_PASSWORD = str
 	}
-	str = viper.GetString("cluster.PG_DATABASE")
+	str = viper.GetString("db.PG_DATABASE")
 	if str != "" {
 		spec.PG_DATABASE = str
 	}
-	str = viper.GetString("cluster.PG_ROOT_PASSWORD")
+	str = viper.GetString("db.PG_ROOT_PASSWORD")
 	if str != "" {
 		spec.PG_ROOT_PASSWORD = str
 	}

@@ -100,8 +100,6 @@ func initConfig() {
 	}
 
 	log.Debug("kubeconfig path is " + viper.GetString("kubeconfig"))
-	//fmt.Println("viper CCP_IMAGE_TAG value is " + viper.GetString("cluster.CCP_IMAGE_TAG"))
-	//fmt.Println(" root initConfig called")
 	ConnectToKube()
 
 }
