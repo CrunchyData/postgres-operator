@@ -16,6 +16,37 @@ can be defined in the following locations:
 
 The .pgo.yaml file location is checked in that order.
 
+=== pgo Configuration Format
+
+The sample pgo client configuration file, included in
+*examples/sample.pgo.yaml*, looks like this:
+
+[source,yaml]
+....
+kubeconfig:  /etc/kubernetes/admin.conf
+db:
+  PVC_NAME:  crunchy-pvc
+  PVC_SIZE:  100M
+  PVC_ACCESS_MODE:  ReadWriteMany
+  CCP_IMAGE_TAG:  centos7-9.5-1.2.8
+  Port:  5432
+  PG_MASTER_USER:  master
+  PG_MASTER_PASSWORD:  password
+  PG_USER:  testuser
+  PG_PASSWORD:  password
+  PG_DATABASE:  userdb
+  PG_ROOT_PASSWORD:  password
+pgo:
+  lspvc_template:  /home/jeffmc/.pgo.lspvc-template.json
+  CO_IMAGE_TAG:  centos7-1.0.0
+  debug:  false
+cluster:
+  REPLICAS:  2
+....
+
+Values in the pgo configuration file have the following meaning:
+
+
 == Operator Configuration (Server)
 
 The operator is run as a Kube Deployment on the Kube cluster
