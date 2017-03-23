@@ -185,6 +185,7 @@ func deleteDatabase(args []string) {
 	for _, arg := range args {
 		for _, database := range databaseList.Items {
 			if arg == "all" || database.Spec.Name == arg {
+				log.Debug("deleting pgdatabase " + arg)
 				err = Tprclient.Delete().
 					Resource("pgdatabases").
 					Namespace(api.NamespaceDefault).
