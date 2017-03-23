@@ -26,8 +26,8 @@ are documented in detail here link:docs/strategies.asciidoc[Deployment Strategie
 # Requirements
 
 * Kubernetes 1.5.3+
-* Crunchy Container Suite 1.2.8+
-
+* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-backup/ [PostgreSQL Backup Container]
 
 # Example Commands Usage
 
