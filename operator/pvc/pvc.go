@@ -86,3 +86,33 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 	return nil
 
 }
+
+func Delete(clientset *kubernetes.Clientset, name string) error {
+	log.Debug("in pvc.Delete")
+	var err error
+
+	var pvc *v1.PersistentVolumeClaim
+
+	//see if the PVC exists
+	pvc, err = clientset.Core().PersistentVolumeClaims(v1.NamespaceDefault).Get(name)
+	if err != nil {
+		log.Info("\nPVC %s\n", name+" is not found, will not attempt delete")
+		return nil
+	} else {
+		log.Info("\nPVC %s\n", pvc.Name+" is found")
+		log.Info("%v\n", pvc)
+		//if pgremove = true remove it
+		if pvc.ObjectMeta.Labels["pgremove"] == "true" {
+			log.Info("pgremove is true on this pvc")
+			log.Debug("delete PVC " + name)
+			err = clientset.Core().PersistentVolumeClaims(v1.NamespaceDefault).Delete(name, &v1.DeleteOptions{})
+			if err != nil {
+				log.Error("error deleting PVC " + name + err.Error())
+				return err
+			}
+		}
+	}
+
+	return nil
+
+}

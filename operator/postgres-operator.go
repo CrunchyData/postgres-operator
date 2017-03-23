@@ -51,7 +51,7 @@ func main() {
 	var debug = flag.Bool("debug", false, "defaults to false")
 	flag.Parse()
 
-	var debugEnv = os.Getenv("DEBUG")
+	var debugEnv = os.Getenv("debug")
 
 	if *debug || debugEnv != "" {
 		log.SetLevel(log.DebugLevel)

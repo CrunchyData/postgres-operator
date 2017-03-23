@@ -255,5 +255,11 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 		return
 	}
 	log.Info("deleted pod " + db.Spec.Name)
-	//delete the pod
+
+	err = pvc.Delete(clientset, db.Spec.Name+"-pvc")
+	if err != nil {
+		log.Error("error deleting pvc " + err.Error())
+		return
+	}
+
 }

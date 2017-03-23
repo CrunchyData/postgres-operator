@@ -27,6 +27,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -154,6 +155,19 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 
 	log.Info("creating PgCluster object")
 	log.Info("created with Name=" + db.Spec.Name)
+
+	//create the PVC for the master if required
+	if db.Spec.PVC_NAME == "" {
+		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
+		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
+			db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		log.Info("created PVC =" + db.Spec.PVC_NAME)
+	}
 
 	//create the master service
 	serviceFields := ServiceTemplateFields{
