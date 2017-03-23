@@ -1,0 +1,30 @@
+== PostgreSQL Operator Configuration
+v1.0.0, {docdate}
+
+
+This document describes the configuration options
+for the *postgres operator*.
+
+== pgo Client Configuration
+
+There is a configuration file named *.pgo.yaml* for the operator client.  It
+can be defined in the following locations:
+ 
+ * . (current directory)
+ * $HOME
+ * /etc/pgo/
+
+The .pgo.yaml file location is checked in that order.
+
+== Operator Configuration (Server)
+
+The operator is run as a Kube Deployment on the Kube cluster
+within a namespace.  
+
+The script *example/operator/run.sh* will create the operator
+deployment on your Kube cluster.  
+
+That script will also create a PV named *crunchy-pv* using a HostPath of */data*  and a PVC named *crunchy-pvc* on your local system.  This is 
+only for testing the operator, edit or remove the PV/PVC creation
+to meet your requirements.
+
