@@ -106,7 +106,9 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	//set to internal defaults
 	spec := tpr.PgDatabaseSpec{
 		Name:               name,
-		PVC_NAME:           "crunchy-pvc",
+		PVC_NAME:           "",
+		PVC_SIZE:           "100M",
+		PVC_ACCESS_MODE:    "ReadWriteMany",
 		Port:               "5432",
 		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
 		PG_MASTER_USER:     "master",
@@ -131,6 +133,14 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	str = viper.GetString("db.PVC_NAME")
 	if str != "" {
 		spec.PVC_NAME = str
+	}
+	str = viper.GetString("db.PVC_SIZE")
+	if str != "" {
+		spec.PVC_SIZE = str
+	}
+	str = viper.GetString("db.PVC_ACCESS_MODE")
+	if str != "" {
+		spec.PVC_ACCESS_MODE = str
 	}
 	str = viper.GetString("db.PG_MASTER_USER")
 	if str != "" {

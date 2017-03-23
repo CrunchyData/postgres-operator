@@ -23,6 +23,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
@@ -72,6 +73,7 @@ func init() {
 		panic(err.Error())
 	}
 	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
+
 	buf, err = ioutil.ReadFile(RESTORE_POD_PATH)
 	if err != nil {
 		log.Error(err.Error())
@@ -137,10 +139,20 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 // database consists of a Service and a Pod
 func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
+	var err error
 	log.Info("creating PgDatabase object")
-	log.Info("created with Name=" + db.Spec.Name)
-	log.Info("BackupPVC=" + db.Spec.BACKUP_PVC_NAME)
-	log.Info("BackupPath=" + db.Spec.BACKUP_PATH)
+
+	if db.Spec.PVC_NAME == "" {
+		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
+		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
+			db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		log.Info("created PVC =" + db.Spec.PVC_NAME)
+	}
 
 	//create the service - TODO get these fields from
 	//the TPR instance
@@ -150,7 +162,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	}
 
 	var doc bytes.Buffer
-	err := ServiceTemplate.Execute(&doc, serviceFields)
+	err = ServiceTemplate.Execute(&doc, serviceFields)
 	if err != nil {
 		log.Error(err.Error())
 		return

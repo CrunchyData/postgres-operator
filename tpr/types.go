@@ -28,6 +28,8 @@ import (
 type PgDatabaseSpec struct {
 	Name               string `json:"name"`
 	PVC_NAME           string `json:"pvcname"`
+	PVC_ACCESS_MODE    string `json:"pvcaccessmode"`
+	PVC_SIZE           string `json:"pvcsize"`
 	Port               string `json:"port"`
 	CCP_IMAGE_TAG      string `json:"ccpimagetag"`
 	PG_MASTER_USER     string `json:"pgmasteruser"`
@@ -100,6 +102,8 @@ type PgClusterSpec struct {
 	CCP_IMAGE_TAG      string `json:"ccpimagetag"`
 	Port               string `json:"port"`
 	PVC_NAME           string `json:"pvcname"`
+	PVC_SIZE           string `json:"pvcsize"`
+	PVC_ACCESS_MODE    string `json:"pvcaccessmode"`
 	PG_MASTER_HOST     string `json:"pgmasterhost"`
 	PG_MASTER_USER     string `json:"pgmasteruser"`
 	PG_MASTER_PASSWORD string `json:"pgmasterpassword"`
