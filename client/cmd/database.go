@@ -121,6 +121,7 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 		BACKUP_PATH:         "",
 		FS_GROUP:            "",
 		SUPPLEMENTAL_GROUPS: "",
+		STRATEGY:            "1",
 	}
 
 	//override any values from config file
@@ -175,6 +176,10 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	str = viper.GetString("DB.SUPPLEMENTALGROUPS")
 	if str != "" {
 		spec.SUPPLEMENTAL_GROUPS = str
+	}
+	str = viper.GetString("DB.STRATEGY")
+	if str != "" {
+		spec.STRATEGY = str
 	}
 
 	//pass along command line flags for a restore

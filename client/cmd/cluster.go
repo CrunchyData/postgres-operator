@@ -168,6 +168,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 		REPLICAS:            "2",
 		FS_GROUP:            "",
 		SUPPLEMENTAL_GROUPS: "",
+		STRATEGY:            "1",
 	}
 
 	//override any values from config file
@@ -215,10 +216,6 @@ func getClusterParams(name string) *tpr.PgCluster {
 	if str != "" {
 		spec.PG_ROOT_PASSWORD = str
 	}
-	str = viper.GetString("CLUSTER.REPLICAS")
-	if str != "" {
-		spec.REPLICAS = str
-	}
 	str = viper.GetString("DB.FSGROUP")
 	if str != "" {
 		spec.FS_GROUP = str
@@ -226,6 +223,14 @@ func getClusterParams(name string) *tpr.PgCluster {
 	str = viper.GetString("DB.SUPPLEMENTALGROUPS")
 	if str != "" {
 		spec.SUPPLEMENTAL_GROUPS = str
+	}
+	str = viper.GetString("CLUSTER.STRATEGY")
+	if str != "" {
+		spec.STRATEGY = str
+	}
+	str = viper.GetString("CLUSTER.REPLICAS")
+	if str != "" {
+		spec.REPLICAS = str
 	}
 
 	//override from command line

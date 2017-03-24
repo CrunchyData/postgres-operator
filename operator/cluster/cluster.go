@@ -63,10 +63,14 @@ type DeploymentTemplateFields struct {
 
 const REPLICA_SUFFIX = "-replica"
 
-var strategy1 ClusterStrategy
+var strategyMap map[string]ClusterStrategy
+
+//var strategy1 ClusterStrategy
 
 func init() {
-	strategy1 = ClusterStrategy1{}
+	//strategy1 = ClusterStrategy1{}
+	strategyMap = make(map[string]ClusterStrategy)
+	strategyMap["1"] = ClusterStrategy1{}
 }
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
@@ -118,7 +122,6 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
 	var err error
-	var strategy ClusterStrategy
 
 	//create the PVC for the master if required
 	if db.Spec.PVC_NAME == "" {
@@ -132,26 +135,38 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		}
 		log.Info("created PVC =" + db.Spec.PVC_NAME)
 	}
-	log.Debug("creating PgCluster object " + db.Spec.STRATEGY)
+	log.Debug("creating PgCluster object strategy is [" + db.Spec.STRATEGY + "]")
 
-	if db.Spec.STRATEGY == "1" || db.Spec.STRATEGY == "" {
-		strategy = strategy1
+	if db.Spec.STRATEGY == "" {
+		db.Spec.STRATEGY = "1"
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
 	} else {
 		log.Error("invalid STRATEGY requested for cluster creation" + db.Spec.STRATEGY)
+		return
 	}
+
 	strategy.AddCluster(clientset, client, db)
 
 }
 
 func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
-	var strategy ClusterStrategy
 
 	log.Debug("deleteCluster called with strategy " + db.Spec.STRATEGY)
 
-	if db.Spec.STRATEGY == "1" || db.Spec.STRATEGY == "" {
-		strategy = strategy1
+	if db.Spec.STRATEGY == "" {
+		db.Spec.STRATEGY = "1"
+	}
+
+	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested cluster deletion " + db.Spec.STRATEGY)
+		log.Error("invalid STRATEGY requested for cluster creation" + db.Spec.STRATEGY)
 		return
 	}
 	strategy.DeleteCluster(clientset, client, db)

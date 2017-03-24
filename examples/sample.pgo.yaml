@@ -13,10 +13,11 @@ DB:
   PVC_ACCESS_MODE:  ReadWriteMany
   FSGROUP:  26
   SUPPLEMENTALGROUPS:  65534
+  STRATEGY:  1
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.0.0
   DEBUG:  false
 CLUSTER:
   REPLICAS:  2
-  STRATEGY:  default
+  STRATEGY:  1

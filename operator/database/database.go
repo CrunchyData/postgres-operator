@@ -56,10 +56,12 @@ type DatabaseStrategy interface {
 	DeleteDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase) error
 }
 
-var strategy1 DatabaseStrategy
+var strategyMap map[string]DatabaseStrategy
 
 func init() {
-	strategy1 = DatabaseStrategy1{}
+	strategyMap = make(map[string]DatabaseStrategy)
+	strategyMap["1"] = DatabaseStrategy1{}
+
 }
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
@@ -127,12 +129,20 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 
 	log.Debug("creating PgDatabase object " + db.Spec.STRATEGY)
 
-	if db.Spec.STRATEGY == "1" || db.Spec.STRATEGY == "" {
-		strategy = strategy1
+	if db.Spec.STRATEGY == "" {
+		db.Spec.STRATEGY = "1"
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
+
 	} else {
 		log.Error("invalid STRATEGY requested for Database creation" + db.Spec.STRATEGY)
 		return
 	}
+
 	strategy.AddDatabase(clientset, client, db)
 
 }
@@ -140,10 +150,19 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
 	log.Debug("deleting PgDatabase object with strategy " + db.Spec.STRATEGY)
 
-	if db.Spec.STRATEGY == "1" || db.Spec.STRATEGY == "" {
-		strategy1.DeleteDatabase(clientset, client, db)
-	} else {
-		log.Error("invalid STRATEGY requested Database deletion " + db.Spec.STRATEGY)
+	if db.Spec.STRATEGY == "" {
+		db.Spec.STRATEGY = "1"
+		log.Info("using default strategy")
 	}
+
+	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		log.Error("invalid STRATEGY requested for database creation" + db.Spec.STRATEGY)
+		return
+	}
+
+	strategy.DeleteDatabase(clientset, client, db)
 
 }
