@@ -45,7 +45,7 @@ func showDatabase(args []string) {
 				if err != nil {
 					log.Error("error in getting database pod " + database.Spec.Name + err.Error())
 				} else {
-					fmt.Println(TREE_BRANCH + "pod : " + pod.Name)
+					fmt.Println(TREE_BRANCH + "pod : " + pod.Name + " (" + string(pod.Status.Phase) + ")")
 				}
 
 				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
