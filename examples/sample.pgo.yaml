@@ -1,7 +1,7 @@
-kubeconfig:  /etc/kubernetes/admin.conf
-db:
+KUBECONFIG:  /etc/kubernetes/admin.conf
+DB:
   CCP_IMAGE_TAG:  centos7-9.5-1.2.8
-  Port:  5432
+  PORT:  5432
   PG_MASTER_USER:  master
   PG_MASTER_PASSWORD:  password
   PG_USER:  testuser
@@ -11,11 +11,12 @@ db:
   PVC_NAME:  crunchy-pvc
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
-  fsGroup:  26
-  supplementalGroups:  65534
-pgo:
-  lspvc_template:  /home/jeffmc/.pgo.lspvc-template.json
+  FSGROUP:  26
+  SUPPLEMENTALGROUPS:  65534
+PGO:
+  LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.0.0
-  debug:  false
-cluster:
+  DEBUG:  false
+CLUSTER:
   REPLICAS:  2
+  STRATEGY:  default

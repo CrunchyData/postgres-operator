@@ -18,7 +18,7 @@
                     "image": "crunchydata/postgres-operator:centos7-1.0.0",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
-                        "name" : "debug",
+                        "name" : "DEBUG",
 			"value": "true"
                     }, {
                         "name": "NAMESPACE",

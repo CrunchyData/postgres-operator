@@ -42,6 +42,7 @@ type PgDatabaseSpec struct {
 	BACKUP_PATH         string `json:"backuppath"`
 	FS_GROUP            string `json:"fsgroup"`
 	SUPPLEMENTAL_GROUPS string `json:"supplementalgroups"`
+	STRATEGY            string `json:"strategy"`
 }
 
 type PgDatabase struct {
@@ -116,6 +117,7 @@ type PgClusterSpec struct {
 	REPLICAS            string `json:"replicas"`
 	FS_GROUP            string `json:"fsgroup"`
 	SUPPLEMENTAL_GROUPS string `json:"supplementalgroups"`
+	STRATEGY            string `json:"strategy"`
 }
 
 type PgCluster struct {
