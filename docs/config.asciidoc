@@ -23,24 +23,26 @@ The sample pgo client configuration file, included in
 
 [source,yaml]
 ....
-kubeconfig:  /etc/kubernetes/admin.conf
-db:
+KUBECONFIG:  /etc/kubernetes/admin.conf
+DB:
   PVC_NAME:  crunchy-pvc
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
   CCP_IMAGE_TAG:  centos7-9.5-1.2.8
-  Port:  5432
+  PORT:  5432
   PG_MASTER_USER:  master
   PG_MASTER_PASSWORD:  password
   PG_USER:  testuser
   PG_PASSWORD:  password
   PG_DATABASE:  userdb
   PG_ROOT_PASSWORD:  password
-pgo:
-  lspvc_template:  /home/jeffmc/.pgo.lspvc-template.json
+  FSGROUP:  26
+  SUPPLEMENTALGROUPS:  65534
+PGO:
+  LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.0.0
-  debug:  false
-cluster:
+  DEBUG:  false
+CLUSTER:
   REPLICAS:  2
 ....
 
@@ -50,21 +52,23 @@ Values in the pgo configuration file have the following meaning:
 [width="90%",cols="m,2",frame="topbot",options="header"]
 |======================
 |Setting | Definition
-|kubeconfig        | the path to the kubeconfig file
-|db.PVC_NAME        |if set, the PVC to use for created databases, only makes sense when your file system is sharable
-|db.PVC_SIZE        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|db.PVC_ACCESS_MODE        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
-|db.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.2.8)
-|db.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
-|db.PG_MASTER_USER        | the PostgreSQL master user name
-|db.PG_MASTER_PASSWORD        | the PostgreSQL master user password
-|db.PG_USER        | the PostgreSQL normal user name
-|db.PG_PASSWORD        | the PostgreSQL normal user password
-|db.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password
-|pgo.lspvc_template        | the PVC lspvc template file used to view PVCs
-|pgo.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
-|pgo.debug        | set to true if you want to see debug messages from the pgo client
-|cluster.REPLICAS        | the number of cluster replicas to create for newly created clusters
+|KUBECONFIG        | the path to the kubeconfig file
+|DB.PVC_NAME        |if set, the PVC to use for created databases, only makes sense when your file system is sharable
+|DB.PVC_SIZE        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|DB.PVC_ACCESS_MODE        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
+|DB.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.2.8)
+|DB.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
+|DB.PG_MASTER_USER        | the PostgreSQL master user name
+|DB.PG_MASTER_PASSWORD        | the PostgreSQL master user password
+|DB.PG_USER        | the PostgreSQL normal user name
+|DB.PG_PASSWORD        | the PostgreSQL normal user password
+|DB.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password
+|DB.FSGROUP        | if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
+|DB.SUPPLEMENTALGROUPS        | if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
+|PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
+|PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
+|CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
 |======================
 
 
@@ -80,7 +84,7 @@ That script will also create a PV named *crunchy-pv* using a HostPath of */data*
 only for testing the operator, edit or remove the PV/PVC creation
 to meet your requirements.
 
-To enable DEBUG messages from the operator pod, set the *debug* environment
+To enable DEBUG messages from the operator pod, set the *DEBUG* environment
 variable to *true* within its deployment file *deployment.json*.
 
 === Operator Templates
@@ -95,7 +99,8 @@ is started.  The templates are copied to a HostPath location by the *example/ope
 the operator pod.
 
 For your persistent file system, you might need to adjust the templates
-to add *fsGroup* or *supplementalGroup* attributes.
+to add *fsGroup* or *supplementalGroup* attributes to your *pgo* configuration
+file.
 
 === Persistence
 
@@ -116,6 +121,6 @@ pgo create database example1
 It will result in a PVC being created named *example1-pvc*.
 
 If however, you are using a shared persistent file system such as NFS or HostPath, 
-and you want to share a single PVC, the pgo user can define the *db.PVC_NAME*
+and you want to share a single PVC, the pgo user can define the *DB.PVC_NAME*
 configuration setting.  When set, that value will be used for all
 databases created by the operator.
