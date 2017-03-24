@@ -197,7 +197,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
 	spec.PVC_NAME = "crunchy-pvc"
-	spec.CCP_IMAGE_TAG = viper.GetString("db.CCP_IMAGE_TAG")
+	spec.CCP_IMAGE_TAG = viper.GetString("DB.CCP_IMAGE_TAG")
 	spec.BACKUP_HOST = "basic"
 	spec.BACKUP_USER = "master"
 	spec.BACKUP_PASS = "password"
@@ -267,7 +267,7 @@ type PodTemplateFields struct {
 }
 
 func printLog(name string, pvcName string) {
-	var POD_PATH = viper.GetString("pgo.lspvc_template")
+	var POD_PATH = viper.GetString("PGO.LSPVC_TEMPLATE")
 	var PodTemplate *template.Template
 	var err error
 	var buf []byte
@@ -302,7 +302,7 @@ func printLog(name string, pvcName string) {
 
 	podFields := PodTemplateFields{
 		Name:         podName,
-		CO_IMAGE_TAG: viper.GetString("pgo.CO_IMAGE_TAG"),
+		CO_IMAGE_TAG: viper.GetString("PGO.CO_IMAGE_TAG"),
 		BACKUP_ROOT:  name + "-backups",
 		PVC_NAME:     pvcName,
 	}

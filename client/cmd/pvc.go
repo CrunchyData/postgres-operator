@@ -59,7 +59,7 @@ func printPVC(pvcName string) {
 }
 
 func printPVCListing(pvcName string) {
-	var POD_PATH = viper.GetString("pgo.lspvc_template")
+	var POD_PATH = viper.GetString("PGO.LSPVC_TEMPLATE")
 	var PodTemplate *template.Template
 	var err error
 	var buf []byte
@@ -94,7 +94,7 @@ func printPVCListing(pvcName string) {
 
 	podFields := PodTemplateFields{
 		Name:         podName,
-		CO_IMAGE_TAG: viper.GetString("pgo.CO_IMAGE_TAG"),
+		CO_IMAGE_TAG: viper.GetString("PGO.CO_IMAGE_TAG"),
 		BACKUP_ROOT:  "/",
 		PVC_NAME:     pvcName,
 	}

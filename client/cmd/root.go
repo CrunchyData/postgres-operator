@@ -86,20 +86,20 @@ func initConfig() {
 		log.Debug("config file not found")
 	}
 
-	if DebugFlag || viper.GetBool("pgo.debug") {
+	if DebugFlag || viper.GetBool("PGO.DEBUG") {
 		log.Debug("debug flag is set to true")
 		log.SetLevel(log.DebugLevel)
 	}
 
 	if KubeconfigPath == "" {
-		KubeconfigPath = viper.GetString("kubeconfig")
+		KubeconfigPath = viper.GetString("KUBECONFIG")
 	}
 	if KubeconfigPath == "" {
 		log.Error("--kubeconfig flag is not set and required")
 		os.Exit(2)
 	}
 
-	log.Debug("kubeconfig path is " + viper.GetString("kubeconfig"))
+	log.Debug("kubeconfig path is " + viper.GetString("KUBECONFIG"))
 	ConnectToKube()
 
 }
