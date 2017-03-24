@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
@@ -53,6 +54,7 @@ type PodTemplateFields struct {
 	PG_ROOT_PASSWORD   string
 	BACKUP_PVC_NAME    string
 	BACKUP_PATH        string
+	SECURITY_CONTEXT   string
 }
 
 const SERVICE_PATH = "/pgconf/database-service.json"
@@ -200,6 +202,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
 		BACKUP_PVC_NAME:    db.Spec.BACKUP_PVC_NAME,
 		BACKUP_PATH:        db.Spec.BACKUP_PATH,
+		SECURITY_CONTEXT:   util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	var doc2 bytes.Buffer

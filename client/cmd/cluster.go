@@ -151,21 +151,23 @@ func getClusterParams(name string) *tpr.PgCluster {
 
 	//set to internal defaults
 	spec := tpr.PgClusterSpec{
-		Name:               name,
-		ClusterName:        name,
-		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-		Port:               "5432",
-		PVC_NAME:           "",
-		PVC_SIZE:           "100M",
-		PVC_ACCESS_MODE:    "ReadWriteMany",
-		PG_MASTER_HOST:     name,
-		PG_MASTER_USER:     "master",
-		PG_MASTER_PASSWORD: "password",
-		PG_USER:            "testuser",
-		PG_PASSWORD:        "password",
-		PG_DATABASE:        "userdb",
-		PG_ROOT_PASSWORD:   "password",
-		REPLICAS:           "2",
+		Name:                name,
+		ClusterName:         name,
+		CCP_IMAGE_TAG:       "centos7-9.5-1.2.8",
+		Port:                "5432",
+		PVC_NAME:            "",
+		PVC_SIZE:            "100M",
+		PVC_ACCESS_MODE:     "ReadWriteMany",
+		PG_MASTER_HOST:      name,
+		PG_MASTER_USER:      "master",
+		PG_MASTER_PASSWORD:  "password",
+		PG_USER:             "testuser",
+		PG_PASSWORD:         "password",
+		PG_DATABASE:         "userdb",
+		PG_ROOT_PASSWORD:    "password",
+		REPLICAS:            "2",
+		FS_GROUP:            "",
+		SUPPLEMENTAL_GROUPS: "",
 	}
 
 	//override any values from config file
@@ -216,6 +218,14 @@ func getClusterParams(name string) *tpr.PgCluster {
 	str = viper.GetString("cluster.REPLICAS")
 	if str != "" {
 		spec.REPLICAS = str
+	}
+	str = viper.GetString("db.fsGroup")
+	if str != "" {
+		spec.FS_GROUP = str
+	}
+	str = viper.GetString("db.supplementalGroups")
+	if str != "" {
+		spec.SUPPLEMENTAL_GROUPS = str
 	}
 
 	//override from command line

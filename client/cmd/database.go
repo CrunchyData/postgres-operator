@@ -105,20 +105,22 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 
 	//set to internal defaults
 	spec := tpr.PgDatabaseSpec{
-		Name:               name,
-		PVC_NAME:           "",
-		PVC_SIZE:           "100M",
-		PVC_ACCESS_MODE:    "ReadWriteMany",
-		Port:               "5432",
-		CCP_IMAGE_TAG:      "centos7-9.5-1.2.8",
-		PG_MASTER_USER:     "master",
-		PG_MASTER_PASSWORD: "password",
-		PG_USER:            "testuser",
-		PG_PASSWORD:        "password",
-		PG_DATABASE:        "userdb",
-		PG_ROOT_PASSWORD:   "password",
-		BACKUP_PVC_NAME:    "",
-		BACKUP_PATH:        "",
+		Name:                name,
+		PVC_NAME:            "",
+		PVC_SIZE:            "100M",
+		PVC_ACCESS_MODE:     "ReadWriteMany",
+		Port:                "5432",
+		CCP_IMAGE_TAG:       "centos7-9.5-1.2.8",
+		PG_MASTER_USER:      "master",
+		PG_MASTER_PASSWORD:  "password",
+		PG_USER:             "testuser",
+		PG_PASSWORD:         "password",
+		PG_DATABASE:         "userdb",
+		PG_ROOT_PASSWORD:    "password",
+		BACKUP_PVC_NAME:     "",
+		BACKUP_PATH:         "",
+		FS_GROUP:            "",
+		SUPPLEMENTAL_GROUPS: "",
 	}
 
 	//override any values from config file
@@ -165,6 +167,14 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	str = viper.GetString("db.PG_ROOT_PASSWORD")
 	if str != "" {
 		spec.PG_ROOT_PASSWORD = str
+	}
+	str = viper.GetString("db.fsGroup")
+	if str != "" {
+		spec.FS_GROUP = str
+	}
+	str = viper.GetString("db.supplementalGroups")
+	if str != "" {
+		spec.SUPPLEMENTAL_GROUPS = str
 	}
 
 	//pass along command line flags for a restore

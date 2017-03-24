@@ -1,8 +1,5 @@
 kubeconfig:  /etc/kubernetes/admin.conf
 db:
-  PVC_NAME:  crunchy-pvc
-  PVC_SIZE:  100M
-  PVC_ACCESS_MODE:  ReadWriteMany
   CCP_IMAGE_TAG:  centos7-9.5-1.2.8
   Port:  5432
   PG_MASTER_USER:  master
@@ -11,6 +8,11 @@ db:
   PG_PASSWORD:  password
   PG_DATABASE:  userdb
   PG_ROOT_PASSWORD:  password
+  PVC_NAME:  crunchy-pvc
+  PVC_SIZE:  100M
+  PVC_ACCESS_MODE:  ReadWriteMany
+  fsGroup:  26
+  supplementalGroups:  65534
 pgo:
   lspvc_template:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.0.0

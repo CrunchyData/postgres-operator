@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -59,8 +60,9 @@ type DeploymentTemplateFields struct {
 	PG_ROOT_PASSWORD   string
 	PVC_NAME           string
 	//next 2 are for the replica deployment only
-	REPLICAS       string
-	PG_MASTER_HOST string
+	REPLICAS         string
+	PG_MASTER_HOST   string
+	SECURITY_CONTEXT string
 }
 
 const SERVICE_PATH = "/pgconf/cluster-service.json"
@@ -241,6 +243,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		PG_PASSWORD:        db.Spec.PG_PASSWORD,
 		PG_DATABASE:        db.Spec.PG_DATABASE,
 		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
+		SECURITY_CONTEXT:   util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = DeploymentTemplate.Execute(&masterDoc, deploymentFields)
@@ -280,6 +283,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		PG_DATABASE:        db.Spec.PG_DATABASE,
 		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
 		REPLICAS:           db.Spec.REPLICAS,
+		SECURITY_CONTEXT:   util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = ReplicaDeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
