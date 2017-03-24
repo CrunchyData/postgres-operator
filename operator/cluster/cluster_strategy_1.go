@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 
 	log "github.com/Sirupsen/logrus"
-	"io/ioutil"
 	"text/template"
 
 	"github.com/crunchydata/postgres-operator/operator/util"
@@ -43,33 +42,10 @@ var ReplicaDeploymentTemplate1 *template.Template
 var ServiceTemplate1 *template.Template
 
 func init() {
-	var err error
-	var buf []byte
-	var SERVICE_PATH_1 = "/pgconf/postgres-operator/cluster/1/cluster-service.json"
-	var DEPLOYMENT_PATH_1 = "/pgconf/postgres-operator/cluster/1/cluster-deployment.json"
-	var REPLICA_DEPLOYMENT_PATH_1 = "/pgconf/postgres-operator/cluster/1/cluster-replica-deployment.json"
 
-	buf, err = ioutil.ReadFile(DEPLOYMENT_PATH_1)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-	DeploymentTemplate1 = template.Must(template.New("deployment1 template").Parse(string(buf)))
-
-	buf, err = ioutil.ReadFile(REPLICA_DEPLOYMENT_PATH_1)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-	ReplicaDeploymentTemplate1 = template.Must(template.New("replica1 deployment template").Parse(string(buf)))
-
-	buf, err = ioutil.ReadFile(SERVICE_PATH_1)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-
-	ServiceTemplate1 = template.Must(template.New("service1 template").Parse(string(buf)))
+	ServiceTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-service.json")
+	ReplicaDeploymentTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-replica-deployment.json")
+	DeploymentTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-deployment.json")
 }
 
 func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) error {

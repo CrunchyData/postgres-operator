@@ -17,6 +17,9 @@ package util
 
 import (
 	"bytes"
+	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
+	"text/template"
 )
 
 func CreateSecContext(FS_GROUP string, SUPP string) string {
@@ -52,4 +55,14 @@ func CreateSecContext(FS_GROUP string, SUPP string) string {
 	}
 
 	return sc.String()
+}
+
+func LoadTemplate(path string) *template.Template {
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Error(err.Error())
+		panic(err.Error())
+	}
+	return template.Must(template.New(path).Parse(string(buf)))
+
 }

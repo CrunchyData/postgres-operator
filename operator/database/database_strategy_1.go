@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"io/ioutil"
 	"text/template"
 
 	"github.com/crunchydata/postgres-operator/operator/pvc"
@@ -39,33 +38,11 @@ var RestorePodTemplate1 *template.Template
 var ServiceTemplate1 *template.Template
 
 func init() {
-	var err error
-	var buf []byte
-	var SERVICE_PATH = "/pgconf/postgres-operator/database/1/database-service.json"
-	var POD_PATH = "/pgconf/postgres-operator/database/1/database-pod.json"
-	var RESTORE_POD_PATH = "/pgconf/postgres-operator/database/1/restore-database-pod.json"
 
-	buf, err = ioutil.ReadFile(POD_PATH)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-	PodTemplate1 = template.Must(template.New("pod1 template").Parse(string(buf)))
+	ServiceTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/database/1/database-service.json")
+	PodTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/database/1/database-pod.json")
+	RestorePodTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/database/1/restore-database-pod.json")
 
-	buf, err = ioutil.ReadFile(RESTORE_POD_PATH)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-	RestorePodTemplate1 = template.Must(template.New("restore1 pod template").Parse(string(buf)))
-
-	buf, err = ioutil.ReadFile(SERVICE_PATH)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-
-	ServiceTemplate1 = template.Must(template.New("service1 template").Parse(string(buf)))
 }
 
 // database consists of a Service and a Pod
