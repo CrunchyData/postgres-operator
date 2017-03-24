@@ -5,21 +5,66 @@ v1.0.0, {docdate}
 This document describes the various deployment strategies
 offered by the operator.  A deployment in this case is 
 the set of objects created in Kubernetes when a 
-third party resource of type database or cluster is created.
-TPRs are created by the pgo client command.
+third party resource of type *pgdatabase* or *pgcluster* is created.
+TPRs are created by the pgo client command and acted upon
+by the postgres operator.
 
 == Strategies
 
-There are different strategies for what pods and services
-get created for a database and cluster.  Right now, the operator
-supports only a default strategy for a database and cluster, but
-in the future, more deployment strategies will be supported
+To support different types of deployments, the operator supports
+multiple strategy implementations.  For Release 1.0, there is
+only a default *database* strategy and a default *cluster* strategy.
+
+In the future, more deployment strategies will be supported
 to offer users more customization to what they see deployed
 in their Kube cluster.
 
-== Default Database Deployment Strategy
+Being open source, users can also write their own strategy!
 
-A *database* when created by the operator will create the
+=== Specifying a Strategy
+
+In the pgo client configuration file, there is a *DB.STRATEGY*
+and *CLUSTER.STRATEGY* settings.  The current value of the
+default strategy is *1*.  If you don't set that value, the
+default strategy is assumed.  If you set that value to something
+not supported, the operator will log an error.
+
+=== Strategy Template Files
+
+Each strategy supplies its set of templates used by the operator
+to create new pods, services, etc.
+
+When the operator is deployed, part of the deployment process
+is to copy the required strategy templates into the mounted
+volume (*/pgconf*) used by the operator pod.  See the
+*examples/operator/run.sh* script for an example of this using
+a HostPath PV/PVC.
+
+The directory structure of the strategy templates is as 
+follows:
+....
+├── backup-job.json
+├── cluster
+│   └── 1
+│       ├── cluster-deployment.json
+│       ├── cluster-replica-deployment.json
+│       └── cluster-service.json
+├── database
+│   └── 1
+│       ├── database-pod.json
+│       ├── database-service.json
+│       └── restore-database-pod.json
+├── pvc.json
+....
+
+In this structure, each strategy's templates live in a subdirectory
+that matches the strategy identifier.  The default strategy templates
+are denoted by the value of *1* in the directory structure above.
+
+
+== Default Database Deployment Strategy (1)
+
+Using the default database strategy, a *database* when created by the operator will create the
 following on a Kube cluster:
 
 image::operator-diagram-database.png?raw=true[]
@@ -30,9 +75,9 @@ The default database strategy creates the following:
  * service mapped to the Postgres container
  * PVC will be created if not specified in configuration
 
-== Default Cluster Deployment Strategy
+== Default Cluster Deployment Strategy (1)
 
-A *cluster* when created by the operator will create the
+Using the default cluster strategy, a *cluster* when created by the operator will create the
 following on a Kube cluster:
 
 image::operator-diagram-cluster.png?raw=true[]
