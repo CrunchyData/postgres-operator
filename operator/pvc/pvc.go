@@ -26,7 +26,7 @@ import (
 	"time"
 )
 
-const PVC_PATH = "/pgconf/pvc.json"
+const PVC_PATH = "/pgconf/postgres-operator/pvc.json"
 
 var PVCTemplate *template.Template
 

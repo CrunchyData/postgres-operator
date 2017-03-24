@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"text/template"
 
-	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
@@ -46,9 +45,9 @@ var ServiceTemplate1 *template.Template
 func init() {
 	var err error
 	var buf []byte
-	var SERVICE_PATH_1 = "/pgconf/cluster-service.json"
-	var DEPLOYMENT_PATH_1 = "/pgconf/cluster-deployment.json"
-	var REPLICA_DEPLOYMENT_PATH_1 = "/pgconf/cluster-replica-deployment.json"
+	var SERVICE_PATH_1 = "/pgconf/postgres-operator/cluster/1/cluster-service.json"
+	var DEPLOYMENT_PATH_1 = "/pgconf/postgres-operator/cluster/1/cluster-deployment.json"
+	var REPLICA_DEPLOYMENT_PATH_1 = "/pgconf/postgres-operator/cluster/1/cluster-replica-deployment.json"
 
 	buf, err = ioutil.ReadFile(DEPLOYMENT_PATH_1)
 	if err != nil {
@@ -81,19 +80,6 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 	log.Info("creating PgCluster object using Strategy 1")
 	log.Info("created with Name=" + db.Spec.Name)
-
-	//create the PVC for the master if required
-	if db.Spec.PVC_NAME == "" {
-		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
-		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
-		if err != nil {
-			log.Error(err.Error())
-			return err
-		}
-		log.Info("created PVC =" + db.Spec.PVC_NAME)
-	}
 
 	//create the master service
 	serviceFields := ServiceTemplateFields{

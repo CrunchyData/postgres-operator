@@ -118,6 +118,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
 	var err error
+	var strategy ClusterStrategy
 
 	//create the PVC for the master if required
 	if db.Spec.PVC_NAME == "" {
@@ -134,20 +135,25 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 	log.Debug("creating PgCluster object " + db.Spec.STRATEGY)
 
 	if db.Spec.STRATEGY == "1" || db.Spec.STRATEGY == "" {
-		strategy1.AddCluster(clientset, client, db)
+		strategy = strategy1
 	} else {
 		log.Error("invalid STRATEGY requested for cluster creation" + db.Spec.STRATEGY)
 	}
+	strategy.AddCluster(clientset, client, db)
 
 }
 
 func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
+	var strategy ClusterStrategy
+
 	log.Debug("deleteCluster called with strategy " + db.Spec.STRATEGY)
 
 	if db.Spec.STRATEGY == "1" || db.Spec.STRATEGY == "" {
-		strategy1.DeleteCluster(clientset, client, db)
+		strategy = strategy1
 	} else {
 		log.Error("invalid STRATEGY requested cluster deletion " + db.Spec.STRATEGY)
+		return
 	}
+	strategy.DeleteCluster(clientset, client, db)
 
 }
