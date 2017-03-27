@@ -12,6 +12,18 @@ Postgres Operator.
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/ [PostgreSQL Backup Container]
 
+=== Kubernetes Environment
+
+To test the *postgres-operator* you will need a Kubernetes cluster
+environment.  There are many ways to install a Kube cluster, but for the
+purposes of this document, I have created a test VM on Centos 7 that
+installs a Kube cluster using the kubeadm project as described here.  link: http://linoxide.com/containers/setup-kubernetes-kubeadm-centos/
+
+Once you have your Kube VM created, install some of the 
+required dependencies:
+....
+yum -y install git
+....
 
 === Create Project and Clone 
 ....
