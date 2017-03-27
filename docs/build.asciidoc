@@ -6,8 +6,9 @@ v1.0.0, {docdate}
 This document describes how to build from source code the
 Postgres Operator.  If you don't want to build the images
 from source, you can download them from the following:
+
  * Dockerhub (crunchydata/lspvc and crunchydata/postgres-operator images)
- * Github Releases  (pgo client and client configuration files, extracted to your $HOME)
+ * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]  (pgo client and client configuration files, extracted to your $HOME)
 
 == Requirements
 
