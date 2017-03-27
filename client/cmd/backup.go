@@ -93,13 +93,14 @@ func showItem(name string, pvcName string) {
 	}
 
 	//print the database pod if it exists
-	var pod *v1.Pod
-	pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(name)
-	if err != nil {
+	lo = v1.ListOptions{LabelSelector: "name=" + name}
+	log.Debug("label selector is " + lo.LabelSelector)
+	dbpods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+	if err != nil  || len(dbpods.Items) == 0{
 		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
 		fmt.Println(err.Error())
 	} else {
-		fmt.Printf("\ndatabase pod %s\n", pod.Name+" is found")
+		fmt.Printf("\ndatabase pod %s\n", name+" is found")
 	}
 
 	fmt.Println("")
