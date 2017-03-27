@@ -19,6 +19,14 @@ environment.  There are many ways to install a Kube cluster, but for the
 purposes of this document, I have created a test VM on Centos 7 that
 installs a Kube cluster using the kubeadm project as described here.  link: http://linoxide.com/containers/setup-kubernetes-kubeadm-centos/
 
+The kubeadm installation will create */etc/kubernetes/admin.conf* for
+the kubeconfig file you will use to execute the *postgres-operator*, it
+needs to be readable from your user account, to enable this change
+the permissions:
+....
+sudo chmod +r /etc/kubernetes/admin.conf
+....
+
 Once you have your Kube VM created, install some of the 
 required dependencies:
 ....
@@ -26,15 +34,21 @@ yum -y install git
 ....
 
 === Create Project and Clone 
+In your .bashrc file, include the following:
+....
+export GOPATH=$HOME/odev
+export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+....
+
+Then execute these commands to build the project structure:
 ....
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin;export PATH=$PATH:$GOBIN
 mkdir -p $GOPATH/src/github.com/crunchydata/
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 ....
 
 ==== Get the dependencies:
@@ -48,6 +62,17 @@ Then install the project library dependencies:
 cd $COROOT
 go get -u github.com/FiloSottile/gvt
 gvt restore
+....
+
+In a development environment you will likely want to create a 
+*docker* group and add your user ID to that group, this allows 
+you as your normal user ID to access the *docker* daemon and 
+issue commands to it:
+....
+sudo groupadd docker
+sudo usermod -a -G docker youruserID
+sudo systemctl restart docker
+newgrp docker 
 ....
 
 ==== Compile the CLI:
@@ -84,13 +109,26 @@ When you first run the operator, it will create the required
 ThirdPartyResources.
 
 ==== Setup initial configuration file for the postgres operator CLI
+
+The *pgo* client requires two configuration files be copied
+to your $HOME as follows:
 ....
 cp $COROOT/examples/sample.pgo.yaml $HOME/.pgo.yaml
+cp $COROOT/examples/lspvc-template.yaml $HOME/.pgo.lspvc-template.json
+vi $HOME/.pgo.yaml
+....
+
+Edit the $HOME/.pgo.yaml file changing the following
+settings:
+....
+KUBECONFIG:  /etc/kubernetes/admin.conf
+LSPVC_TEMPLATE:  /home/yourid/.pgo.lspvc-template.json
 ....
 
 Note that this config file assumes your Kubernetes config file is
 located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
-path to match your local Kube config file location.
+path to match your local Kube config file location.  Also, update
+the location of the LSPVC_TEMPLATE value to match your $HOME value.
 
 ==== Viewing Operator Resources
 
@@ -103,4 +141,6 @@ kubectl get pgdatabases
 kubectl get pgclusters
 kubectl get pgbackups
 ....
+
+At this point, you should be ready to start using the *pgo* client!
 
