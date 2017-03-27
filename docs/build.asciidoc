@@ -58,7 +58,26 @@ git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ....
 
-== Get the dependencies:
+== Get Pre-built Images
+At this point if you want to avoid building the images and binary
+from source, you can pull down the Docker images as follows:
+....
+docker pull crunchydata/lspvc:centos7-1.0.0
+docker pull crunchydata/postgres-operator:centos7-1.0.0
+....
+
+Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
+it into your $HOME directory:
+....
+cd $HOME
+wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.0/postgres-operator.1.0.0.tar.gz
+tar xvzf ./postgres-operator.1.0.0.tar.gz
+....
+
+Lastly, add the *pgo* client into your PATH.
+
+
+== Source Dependencies
 
 Install a golang compiler, this can be done with either
 your package manager or by following directions
@@ -82,14 +101,14 @@ sudo systemctl restart docker
 newgrp docker 
 ....
 
-== Compile the CLI:
+== Compile *pgo*
 ....
 cd $COROOT
 make pgo
 which pgo
 ....
 
-== Compile and build the operator Docker images:
+== Build the Docker Images
 ....
 cd $COROOT
 make operatorimage
@@ -116,7 +135,7 @@ desired PVC to use when databases and clusters are created.
 When you first run the operator, it will create the required
 ThirdPartyResources.
 
-== Setup initial configuration file for the postgres operator CLI
+== Setup *pgo* Configuration File 
 
 The *pgo* client requires two configuration files be copied
 to your $HOME as follows:
