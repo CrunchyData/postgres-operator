@@ -2,7 +2,7 @@
     "kind": "Pod",
     "apiVersion": "v1",
     "metadata": {
-        "name": "lspvc-{{.Name}}",
+        "name": "{{.Name}}",
         "labels": {
             "name": "lspvc"
         }
