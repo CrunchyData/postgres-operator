@@ -1,4 +1,4 @@
-== PostgreSQL Operator Build and Setup
+= PostgreSQL Operator Build and Setup
 v1.0.0, {docdate}
 
 == Overview
@@ -9,13 +9,13 @@ from source, you can download them from the following:
  * Dockerhub (crunchydata/lspvc and crunchydata/postgres-operator images)
  * Github Releases  (pgo client and client configuration files, extracted to your $HOME)
 
-=== Requirements
+== Requirements
 
 * Kubernetes 1.5.3+
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/ [PostgreSQL Backup Container]
 
-=== Kubernetes Environment
+== Kubernetes Environment
 
 To test the *postgres-operator* you will need a Kubernetes cluster
 environment.  There are many ways to install a Kube cluster, but for the
@@ -36,7 +36,7 @@ required dependencies:
 yum -y install git
 ....
 
-=== Create Project and Clone 
+== Create Project and Clone 
 In your .bashrc file, include the following:
 ....
 export GOPATH=$HOME/odev
@@ -57,7 +57,7 @@ git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ....
 
-==== Get the dependencies:
+== Get the dependencies:
 
 Install a golang compiler, this can be done with either
 your package manager or by following directions
@@ -81,14 +81,14 @@ sudo systemctl restart docker
 newgrp docker 
 ....
 
-==== Compile the CLI:
+== Compile the CLI:
 ....
 cd $COROOT
 make pgo
 which pgo
 ....
 
-==== Compile and build the operator Docker images:
+== Compile and build the operator Docker images:
 ....
 cd $COROOT
 make operatorimage
@@ -97,7 +97,7 @@ docker images | grep crunchydata
 ....
 
 
-==== Deploy the PostgreSQL Operator
+== Deploy the PostgreSQL Operator
 note that this will create and use */data* on your
 local system as the persistent store for the operator to use
 for its persistent volume:
@@ -115,7 +115,7 @@ desired PVC to use when databases and clusters are created.
 When you first run the operator, it will create the required
 ThirdPartyResources.
 
-==== Setup initial configuration file for the postgres operator CLI
+== Setup initial configuration file for the postgres operator CLI
 
 The *pgo* client requires two configuration files be copied
 to your $HOME as follows:
@@ -137,7 +137,7 @@ located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kube config file location.  Also, update
 the location of the LSPVC_TEMPLATE value to match your $HOME value.
 
-==== Viewing Operator Resources
+== Viewing Operator Resources
 
 When you first run the operator, it will look for the presence
 of its third party resources, and create them if not found.  You can view the various resources created and used by the

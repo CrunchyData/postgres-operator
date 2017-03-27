@@ -1,4 +1,4 @@
-== PostgreSQL Operator Configuration
+= PostgreSQL Operator Configuration
 v1.0.0, {docdate}
 
 

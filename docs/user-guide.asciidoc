@@ -1,4 +1,4 @@
-== postgres Operator User Guide
+= postgres Operator User Guide
 v1.0.0, {docdate}
 
 This document is meant for users and demonstrates
