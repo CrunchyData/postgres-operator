@@ -1,4 +1,4 @@
-== postgres Operator Design
+= postgres Operator Design
 v1.0.0, {docdate}
 
 image::crunchy_logo.png?raw=true[]
@@ -19,7 +19,7 @@ A Database is made up of Pods and Services, whereas a Cluster is
 made up of multiple Pods, Services, and Proxies.
 
 
-=== Command Line Interface
+== Command Line Interface
 
 The pgo command line interface (CLI) is used by a normal end-user
 to create databases or clusters, or make changes to existing databases.
@@ -36,7 +36,7 @@ From the CLI, users can view existing databases and clusters that
 were deployed using the CLI and Operator.  Objects that were
 not created by the Crunchy Operator are now viewable from the CLI.
 
-=== Operator Deployment
+== Operator Deployment
 
 The postgres Operator runs within a Pod Deployment in the Kubernetes
 cluster.  An administrator will deploy the postgres Operator pod
@@ -49,7 +49,7 @@ the CLI creates for example a new *pgdatabase* third party
 resource, the operator catches that event and creates pods and services
 for that new database request.
 
-=== CLI Design
+== CLI Design
 
 The CLI uses the cobra package to implement CLI functionality
 like help text, config file processing, and command line parsing.

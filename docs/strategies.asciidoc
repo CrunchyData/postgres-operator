@@ -1,4 +1,4 @@
-== PostgreSQL Operator Deployment Strategies
+= PostgreSQL Operator Deployment Strategies
 v1.0.0, {docdate}
 
 
@@ -21,7 +21,7 @@ in their Kube cluster.
 
 Being open source, users can also write their own strategy!
 
-=== Specifying a Strategy
+== Specifying a Strategy
 
 In the pgo client configuration file, there is a *DB.STRATEGY*
 and *CLUSTER.STRATEGY* settings.  The current value of the
@@ -29,7 +29,7 @@ default strategy is *1*.  If you don't set that value, the
 default strategy is assumed.  If you set that value to something
 not supported, the operator will log an error.
 
-=== Strategy Template Files
+== Strategy Template Files
 
 Each strategy supplies its set of templates used by the operator
 to create new pods, services, etc.
