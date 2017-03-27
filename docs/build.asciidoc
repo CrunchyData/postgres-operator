@@ -13,7 +13,7 @@ from source, you can download them from the following:
 
 * Kubernetes 1.5.3+
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
-* link:https://hub.docker.com/r/crunchydata/crunchy-backup/ [PostgreSQL Backup Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 
 == Kubernetes Environment
 
