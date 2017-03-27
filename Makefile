@@ -1,4 +1,7 @@
 
+RELTMPDIR=/tmp/release.$(CO_VERSION)
+RELFILE=/tmp/postgres-operator.$(CO_VERSION).tar.gz
+
 pgo:
 	cd client && go build -o $(GOBIN)/pgo pgo.go
 clean:
@@ -13,6 +16,18 @@ lsimage:
 	docker tag lspvc crunchydata/lspvc:$(CO_BASEOS)-$(CO_VERSION)
 all:
 	make operatorimage
+	make lsimage
+	make pgo
+push:
+	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
+	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
+release:
+	rm -rf $(RELTMPDIR) $(RELFILE)
+	mkdir $(RELTMPDIR)
+	cp $(GOBIN)/pgo $(RELTMPDIR)
+	cp $(COROOT)/examples/.pgo.yaml $(RELTMPDIR)
+	cp $(COROOT)/examples/.pgo.lspvc-template.json $(RELTMPDIR)
+	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 default:
 	all
 

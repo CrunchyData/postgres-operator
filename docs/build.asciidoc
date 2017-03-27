@@ -40,6 +40,9 @@ export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_BASEOS=centos7
+export CO_VERSION=1.0.0
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
 Then execute these commands to build the project structure:
@@ -114,8 +117,8 @@ ThirdPartyResources.
 The *pgo* client requires two configuration files be copied
 to your $HOME as follows:
 ....
-cp $COROOT/examples/sample.pgo.yaml $HOME/.pgo.yaml
-cp $COROOT/examples/lspvc-template.yaml $HOME/.pgo.lspvc-template.json
+cp $COROOT/examples/.pgo.yaml $HOME
+cp $COROOT/examples/.pgo.lspvc-template.yaml $HOME
 vi $HOME/.pgo.yaml
 ....
 
