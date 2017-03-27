@@ -82,11 +82,12 @@ make pgo
 which pgo
 ....
 
-==== Compile and build the operator Docker image:
+==== Compile and build the operator Docker images:
 ....
 cd $COROOT
 make operatorimage
-docker images | grep operator
+make lsimage
+docker images | grep crunchydata
 ....
 
 

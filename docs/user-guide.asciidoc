@@ -1,0 +1,138 @@
+== postgres Operator User Guide
+v1.0.0, {docdate}
+
+This document is meant for users and demonstrates
+the basic interface of the *pgo* command line interface.
+
+== Create Database
+
+To create a database, use the following:
+....
+pgo create database mydatabase
+....
+
+You can then view that database as:
+....
+pgo show database mydatabase
+....
+
+The output will give you the current status of the database pod
+and the IP address of the database service.  If you have *postgresql*
+installed on your test system you can connect to the
+database using the service IP address:
+....
+psql -h 10.105.121.12 -U postgres postgres
+....
+
+You can view *all* databases using the special keyword *all*:
+....
+pgo show database all
+....
+
+== Backup Database
+
+You can start a backup job for a database or cluster as follows:
+....
+pgo create backup mydatabase
+pgo create backup mycluster
+....
+
+You can view the backup:
+....
+pgo show backup mydatabase
+pgo show backup mycluster
+....
+
+The output of the backup will list the backup snapshots
+found in the backup PVC, for example:
+....
+backup job pods for database mydatabase...
+└── backup-mydatabase-63fw1
+└── mydatabase
+
+database pod mydatabase is found
+
+├── mydatabase-backups/2017-03-27-13-54-33
+├── mydatabase-backups/2017-03-27-13-56-49
+└── *mydatabase-backups/2017-03-27-14-02-38*
+....
+
+This output is important in that it can let you copy/paste
+a backup snapshot path and use it for restoring a database or
+essentially cloning a database with an existing backup archive.
+
+For example, to restore a database from a backup archive:
+....
+pgo create database restoredb --backup-path=mydatabase-backups/2017-03-27-13-56-49 --backup-pvc=crunchy-pvc
+....
+
+This will create a new database called *restoredb* based on the
+backup found in *mydatabase-backups/2017-03-27-13-56-49*.
+
+
+== Create Cluster
+
+A cluster in this case consists of a *master* and a *replica* database
+that use PostgreSQL streaming replication to form a PostgreSQL
+cluster.
+
+Use the *pgo* command to create a cluster:
+....
+pgo create cluster mycluster
+....
+
+View the cluster:
+....
+pgo show cluster mycluster
+....
+
+You will see in the output a variety of Kubernetes objects
+where created including:
+
+ * a Deployment holding the master PostgreSQL database
+ * a Deployment holding the replica PostgreSQL database
+ * a service for the master database
+ * a service for the replica databases
+
+Since Postgres is a single-master database by design, the master
+Deployment is set to a replica count of 1, it can not scale beyond 1.
+
+The replica Deployment is set to an initial value of 2, you will
+see there are 2 replica databases running.  Those replica databases
+are in read-only mode, but you can scale up the number of replicas
+beyond 2 if you need higher read scaling.
+
+There are 2 connections available to the postgres cluster, one is
+to the master database which allows read-write SQL processing, and
+the other is to the set of read-only replica databases.  The replica
+service performs round-robin load balancing to the 2 replica databases.
+
+You can connect to the master database and verify that it is replicating
+to the 2 replica databases as follows:
+....
+psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'
+....
+
+You can view *all* clusters using the special keyword *all*:
+....
+pgo show cluster all
+....
+
+
+== Delete Database and Cluster
+
+You can delete a database as follows:
+....
+pgo delete database mydatabase
+....
+
+Likewise, you can delete a cluster as follows:
+....
+pgo delete cluster mycluster
+....
+
+*Note*, when you delete a database or cluster, the operator
+will delete the unique PVC that pertains to the database if one
+exists.  This is the case when you specify a PVC to be created
+for a database instead of using a shared PVC configuration.
+
