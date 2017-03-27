@@ -18,16 +18,18 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-sudo mkdir /data
-sudo chmod 777 /data
+if [ -d /data ]; then
+	echo "create the HostPath directory"
+	sudo mkdir /data
+	sudo chmod 777 /data
+	echo "create the test PV and PVC using the HostPath dir"
+	kubectl create -f $DIR/crunchy-pv.json
+	sleep 3
+	kubectl create -f $DIR/crunchy-pvc.json
+	sleep 3
+fi
 
 # copy all the operator templates to the PVC location
 sudo cp -r $COROOT/conf/postgres-operator /data
 
-kubectl create -f $DIR/crunchy-pv.json
-
-sleep 3
-kubectl create -f $DIR/crunchy-pvc.json
-
-sleep 3
 kubectl create -f $DIR/deployment.json
