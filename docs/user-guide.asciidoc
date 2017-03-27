@@ -136,3 +136,13 @@ will delete the unique PVC that pertains to the database if one
 exists.  This is the case when you specify a PVC to be created
 for a database instead of using a shared PVC configuration.
 
+
+== Viewing PVC Information
+
+You can view the files on a PVC as follows:
+....
+pgo show pvc crunchy-pvc
+....
+
+In this example, the PVC is *crunchy-pvc*.  This command is useful
+in some cases to examine what files are on a given PVC.
