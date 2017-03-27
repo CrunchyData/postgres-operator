@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/tpr"
+	"github.com/crunchydata/postgres-operator/operator/pvc"
 
 	"k8s.io/client-go/kubernetes"
 
@@ -113,8 +114,21 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 }
 
 func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
+	var err error
 	log.Info("creating PgBackup object")
 	log.Info("created with Name=" + job.Spec.Name)
+
+	//create the PVC if necessary
+	if job.Spec.PVC_NAME == "" {
+		job.Spec.PVC_NAME = job.Spec.Name + "-backup-pvc"
+  		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE)
+                if err != nil {
+                        log.Error(err.Error())
+                        return
+                }
+                log.Info("created backup PVC =" + job.Spec.PVC_NAME)
+
+	}
 
 	//create the job -
 	jobFields := JobTemplateFields{
@@ -128,7 +142,7 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	}
 
 	var doc2 bytes.Buffer
-	err := JobTemplate.Execute(&doc2, jobFields)
+	err = JobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return

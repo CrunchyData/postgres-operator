@@ -51,18 +51,19 @@ func showBackup(args []string) {
 				return
 			}
 			for _, pod := range pods.Items {
-				showItem(pod.Name, "crunchy-pvc")
+				showItem(pod.Name)
 			}
 
 		} else {
-			showItem(arg, "crunchy-pvc")
+			showItem(arg)
 
 		}
 
 	}
 
 }
-func showItem(name string, pvcName string) {
+func showItem(name string ) {
+	var pvcName string
 	//print the pgbackups TPR
 	result := tpr.PgBackup{}
 	err := Tprclient.Get().
@@ -72,12 +73,24 @@ func showItem(name string, pvcName string) {
 		Do().
 		Into(&result)
 	if err == nil {
-		fmt.Printf("\npgbackup %s\n", name+" was found ")
+		if result.Spec.PVC_NAME == "" {
+			pvcName = name + "-backup-pvc"
+		} else {
+			pvcName = result.Spec.PVC_NAME
+		}
+		fmt.Printf("\npgbackup %s\n", name+" was found PVC_NAME is " + pvcName)
 	} else if errors.IsNotFound(err) {
-		fmt.Printf("\npgbackup %s\n", name+" was not found ")
+		configPVC := viper.GetString("DB.PVC_NAME") 
+		if configPVC == "" {
+			pvcName = name + "-backup-pvc"
+		} else {
+			pvcName = configPVC
+		}
+		fmt.Printf("\npgbackup %s\n", name+" was not found assuming PVC_NAME is " + pvcName)
 	} else {
 		log.Errorf("\npgbackup %s\n", name+" lookup error ")
 		log.Error(err.Error())
+		return
 	}
 
 	//print the backup jobs if any exists
@@ -197,7 +210,9 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
-	spec.PVC_NAME = "crunchy-pvc"
+	spec.PVC_NAME = viper.GetString("PVC_NAME")
+	spec.PVC_ACCESS_MODE = viper.GetString("DB.PVC_ACCESS_MODE")
+	spec.PVC_SIZE = viper.GetString("DB.PVC_SIZE")
 	spec.CCP_IMAGE_TAG = viper.GetString("DB.CCP_IMAGE_TAG")
 	spec.BACKUP_HOST = "basic"
 	spec.BACKUP_USER = "master"
@@ -214,8 +229,6 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 		Into(&db)
 	if err == nil {
 		fmt.Println(name + " is a database")
-		spec.PVC_NAME = db.Spec.PVC_NAME
-		spec.CCP_IMAGE_TAG = db.Spec.CCP_IMAGE_TAG
 		spec.BACKUP_HOST = db.Spec.Name
 		spec.BACKUP_USER = db.Spec.PG_MASTER_USER
 		spec.BACKUP_PASS = db.Spec.PG_MASTER_PASSWORD
@@ -231,8 +244,6 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 			Into(&cluster)
 		if err == nil {
 			fmt.Println(name + " is a cluster")
-			spec.PVC_NAME = cluster.Spec.PVC_NAME
-			spec.CCP_IMAGE_TAG = cluster.Spec.CCP_IMAGE_TAG
 			spec.BACKUP_HOST = cluster.Spec.Name
 			spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
 			spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD

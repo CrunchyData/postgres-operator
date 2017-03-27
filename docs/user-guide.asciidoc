@@ -132,9 +132,7 @@ pgo delete cluster mycluster
 ....
 
 *Note*, when you delete a database or cluster, the operator
-will delete the unique PVC that pertains to the database if one
-exists.  This is the case when you specify a PVC to be created
-for a database instead of using a shared PVC configuration.
+will NOT delete any associated PVCs used by the cluster or database.
 
 
 == Viewing PVC Information

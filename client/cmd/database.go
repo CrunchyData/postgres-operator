@@ -136,7 +136,7 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	str = viper.GetString("DB.PVC_NAME")
 	if str != "" {
 		spec.PVC_NAME = str
-	}
+	} 
 	str = viper.GetString("DB.PVC_SIZE")
 	if str != "" {
 		spec.PVC_SIZE = str

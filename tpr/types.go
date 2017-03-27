@@ -177,6 +177,8 @@ func (el *PgClusterList) UnmarshalJSON(data []byte) error {
 type PgBackupSpec struct {
 	Name          string `json:"name"`
 	PVC_NAME      string `json:"pvcname"`
+	PVC_ACCESS_MODE      string `json:"pvcaccessmode"`
+	PVC_SIZE      string `json:"pvcsize"`
 	CCP_IMAGE_TAG string `json:"ccpimagetag"`
 	BACKUP_HOST   string `json:"backuphost"`
 	BACKUP_USER   string `json:"backupuser"`

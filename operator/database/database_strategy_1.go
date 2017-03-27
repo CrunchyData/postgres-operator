@@ -21,7 +21,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"text/template"
 
-	"github.com/crunchydata/postgres-operator/operator/pvc"
+	//"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
@@ -150,11 +150,13 @@ func (r DatabaseStrategy1) DeleteDatabase(clientset *kubernetes.Clientset, clien
 	}
 	log.Info("deleted pod " + db.Spec.Name)
 
+/**
 	err = pvc.Delete(clientset, db.Spec.Name+"-pvc")
 	if err != nil {
 		log.Error("error deleting pvc " + err.Error())
 		return err
 	}
+*/
 	return err
 
 }
