@@ -24,6 +24,7 @@ if [ -d /data ]; then
 	sudo chmod 777 /data
 	echo "create the test PV and PVC using the HostPath dir"
 	kubectl create -f $DIR/crunchy-pv.json
+	$DIR/create-pv.sh
 	sleep 3
 	kubectl create -f $DIR/crunchy-pvc.json
 	sleep 3
