@@ -56,7 +56,7 @@ func showCluster(args []string) {
 
 func listReplicaSets(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	reps, err := Clientset.ReplicaSets(api.NamespaceDefault).List(lo)
+	reps, err := Clientset.ReplicaSets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of replicasets" + err.Error())
 		return
@@ -68,7 +68,7 @@ func listReplicaSets(name string) {
 }
 func listDeployments(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	deployments, err := Clientset.Deployments(api.NamespaceDefault).List(lo)
+	deployments, err := Clientset.Deployments(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
 		return
@@ -80,7 +80,7 @@ func listDeployments(name string) {
 }
 func listPods(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	pods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+	pods, err := Clientset.Core().Pods(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of pods" + err.Error())
 		return
@@ -93,7 +93,7 @@ func listPods(name string) {
 }
 func listServices(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	services, err := Clientset.Core().Services(api.NamespaceDefault).List(lo)
+	services, err := Clientset.Core().Services(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of services" + err.Error())
 		return
@@ -117,7 +117,7 @@ func createCluster(args []string) {
 		// error if it already exists
 		err = Tprclient.Get().
 			Resource("pgclusters").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Name(arg).
 			Do().
 			Into(&result)
@@ -136,7 +136,7 @@ func createCluster(args []string) {
 
 		err = Tprclient.Post().
 			Resource("pgclusters").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
@@ -261,7 +261,7 @@ func deleteCluster(args []string) {
 			if arg == "all" || arg == cluster.Spec.Name {
 				err = Tprclient.Delete().
 					Resource("pgclusters").
-					Namespace(api.NamespaceDefault).
+					Namespace(Namespace).
 					Name(cluster.Spec.Name).
 					Do().
 					Error()

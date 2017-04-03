@@ -45,7 +45,7 @@ func showBackup(args []string) {
 		if arg == "all" {
 			lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
 			log.Debug("label selector is " + lo.LabelSelector)
-			pods, err2 := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+			pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
 			if err2 != nil {
 				log.Error(err2.Error())
 				return
@@ -68,7 +68,7 @@ func showItem(name string ) {
 	result := tpr.PgBackup{}
 	err := Tprclient.Get().
 		Resource("pgbackups").
-		Namespace(api.NamespaceDefault).
+		Namespace(Namespace).
 		Name(name).
 		Do().
 		Into(&result)
@@ -80,7 +80,7 @@ func showItem(name string ) {
 		}
 		fmt.Printf("\npgbackup %s\n", name+" was found PVC_NAME is " + pvcName)
 	} else if errors.IsNotFound(err) {
-		configPVC := viper.GetString("DB.PVC_NAME") 
+		configPVC := viper.GetString("DB.PVC_NAME")
 		if configPVC == "" {
 			pvcName = name + "-backup-pvc"
 		} else {
@@ -96,7 +96,7 @@ func showItem(name string ) {
 	//print the backup jobs if any exists
 	lo := v1.ListOptions{LabelSelector: "pg-database=" + name}
 	log.Debug("label selector is " + lo.LabelSelector)
-	pods, err2 := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+	pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
 	if err2 != nil {
 		log.Error(err2.Error())
 	}
@@ -108,7 +108,7 @@ func showItem(name string ) {
 	//print the database pod if it exists
 	lo = v1.ListOptions{LabelSelector: "name=" + name}
 	log.Debug("label selector is " + lo.LabelSelector)
-	dbpods, err := Clientset.Core().Pods(api.NamespaceDefault).List(lo)
+	dbpods, err := Clientset.Core().Pods(Namespace).List(lo)
 	if err != nil  || len(dbpods.Items) == 0{
 		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
 		fmt.Println(err.Error())
@@ -135,7 +135,7 @@ func createBackup(args []string) {
 		// error if it already exists
 		err = Tprclient.Get().
 			Resource("pgbackups").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Name(arg).
 			Do().
 			Into(&result)
@@ -158,7 +158,7 @@ func createBackup(args []string) {
 
 		err = Tprclient.Post().
 			Resource("pgbackups").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
@@ -188,7 +188,7 @@ func deleteBackup(args []string) {
 			if arg == "all" || backup.Spec.Name == arg {
 				err = Tprclient.Delete().
 					Resource("pgbackups").
-					Namespace(api.NamespaceDefault).
+					Namespace(Namespace).
 					Name(backup.Spec.Name).
 					Do().
 					Error()
@@ -223,7 +223,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	db := tpr.PgDatabase{}
 	err := Tprclient.Get().
 		Resource("pgdatabases").
-		Namespace(api.NamespaceDefault).
+		Namespace(Namespace).
 		Name(name).
 		Do().
 		Into(&db)
@@ -238,7 +238,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 		cluster := tpr.PgCluster{}
 		err = Tprclient.Get().
 			Resource("pgclusters").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Name(name).
 			Do().
 			Into(&cluster)
@@ -287,14 +287,14 @@ func printLog(name string, pvcName string) {
 	var podName = "lspvc-" + name
 
 	//delete lspvc pod if it was not deleted for any reason prior
-	_, err = Clientset.Core().Pods(api.NamespaceDefault).Get(podName)
+	_, err = Clientset.Core().Pods(Namespace).Get(podName)
 	if errors.IsNotFound(err) {
 		//
 	} else if err != nil {
 		log.Error(err.Error())
 	} else {
 		log.Debug("deleting prior pod " + podName)
-		err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,
+		err = Clientset.Core().Pods(Namespace).Delete(podName,
 			&v1.DeleteOptions{})
 		if err != nil {
 			log.Error("delete pod error " + err.Error()) //TODO this is debug info
@@ -350,7 +350,7 @@ func printLog(name string, pvcName string) {
 
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}
-	req := Clientset.Core().Pods(api.NamespaceDefault).GetLogs(podName, &logOptions)
+	req := Clientset.Core().Pods(Namespace).GetLogs(podName, &logOptions)
 	if req == nil {
 		log.Debug("error in get logs for " + podName)
 	} else {
@@ -384,7 +384,7 @@ func printLog(name string, pvcName string) {
 	}
 
 	//delete lspvc pod
-	err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,
+	err = Clientset.Core().Pods(Namespace).Delete(podName,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err.Error())

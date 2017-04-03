@@ -33,8 +33,8 @@ import (
 )
 
 type ClusterStrategy interface {
-	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster) error
-	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster) error
+	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string) error
+	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string) error
 }
 
 type ServiceTemplateFields struct {
@@ -73,7 +73,7 @@ func init() {
 	strategyMap["1"] = ClusterStrategy1{}
 }
 
-func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
+func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
 	eventchan := make(chan *tpr.PgCluster)
 
@@ -82,12 +82,12 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	createAddHandler := func(obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
-		addCluster(clientset, client, cluster)
+		addCluster(clientset, client, cluster, namespace)
 	}
 	createDeleteHandler := func(obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
-		deleteCluster(clientset, client, cluster)
+		deleteCluster(clientset, client, cluster, namespace)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
@@ -120,7 +120,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
+func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) {
 	var err error
 
 	//create the PVC for the master if required
@@ -128,12 +128,12 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
 			db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return
 		}
-		log.Info("created PVC =" + db.Spec.PVC_NAME)
+		log.Info("created PVC =" + db.Spec.PVC_NAME  + " in namespace " + namespace)
 	}
 	log.Debug("creating PgCluster object strategy is [" + db.Spec.STRATEGY + "]")
 
@@ -150,11 +150,11 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		return
 	}
 
-	strategy.AddCluster(clientset, client, db)
+	strategy.AddCluster(clientset, client, db, namespace)
 
 }
 
-func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) {
+func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) {
 
 	log.Debug("deleteCluster called with strategy " + db.Spec.STRATEGY)
 
@@ -169,6 +169,6 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 		log.Error("invalid STRATEGY requested for cluster creation" + db.Spec.STRATEGY)
 		return
 	}
-	strategy.DeleteCluster(clientset, client, db)
+	strategy.DeleteCluster(clientset, client, db, namespace)
 
 }

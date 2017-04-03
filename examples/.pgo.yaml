@@ -1,4 +1,5 @@
 KUBECONFIG:  /etc/kubernetes/admin.conf
+NAMESPACE:  default
 DB:
   CCP_IMAGE_TAG:  centos7-9.5-1.2.8
   PORT:  5432

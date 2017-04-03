@@ -26,6 +26,7 @@ var cfgFile string
 var KubeconfigPath string
 var Labelselector string
 var DebugFlag bool
+var Namespace string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -61,6 +62,7 @@ func init() {
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 	RootCmd.PersistentFlags().StringVar(&KubeconfigPath, "kubeconfig", "", "kube config file")
+	RootCmd.PersistentFlags().StringVar(&Namespace, "namespace", "", "kube namespace to work in (default is default)")
 	RootCmd.PersistentFlags().StringVar(&Labelselector, "selector", "", "label selector string")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "enable debug with true")
 
@@ -73,9 +75,9 @@ func initConfig() {
 	}
 
 	viper.SetConfigName(".pgo")     // name of config file (without extension)
-	viper.AddConfigPath(".")        // adding home directory as first search path
-	viper.AddConfigPath("$HOME")    // adding home directory as first search path
-	viper.AddConfigPath("/etc/pgo") // adding home directory as first search path
+	viper.AddConfigPath(".")        // adding current directory as first search path
+	viper.AddConfigPath("$HOME")    // adding home directory as second search path
+	viper.AddConfigPath("/etc/pgo") // adding /etc/pgo directory as third search path
 	viper.AutomaticEnv()            // read in environment variables that match
 
 	// If a config file is found, read it in.
@@ -100,6 +102,16 @@ func initConfig() {
 	}
 
 	log.Debug("kubeconfig path is " + viper.GetString("KUBECONFIG"))
+
+	if Namespace == "" {
+		Namespace = viper.GetString("NAMESPACE")
+	}
+	if Namespace == "" {
+		log.Error("--namespace flag is not set and required")
+		os.Exit(2)
+	}
+
+	log.Debug("namespace is " + viper.GetString("NAMESPACE"))
 	ConnectToKube()
 
 }

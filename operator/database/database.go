@@ -52,8 +52,8 @@ type PodTemplateFields struct {
 }
 
 type DatabaseStrategy interface {
-	AddDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase) error
-	DeleteDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase) error
+	AddDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, string) error
+	DeleteDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, string) error
 }
 
 var strategyMap map[string]DatabaseStrategy
@@ -64,7 +64,7 @@ func init() {
 
 }
 
-func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
+func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
 	eventchan := make(chan *tpr.PgDatabase)
 
@@ -73,12 +73,12 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	createAddHandler := func(obj interface{}) {
 		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
-		addDatabase(clientset, client, db)
+		addDatabase(clientset, client, db, namespace)
 	}
 	createDeleteHandler := func(obj interface{}) {
 		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
-		deleteDatabase(clientset, client, db)
+		deleteDatabase(clientset, client, db, namespace)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
@@ -111,7 +111,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
+func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) {
 	var err error
 	var strategy DatabaseStrategy
 
@@ -119,15 +119,15 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
 			db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return
 		}
-		log.Info("created PVC =" + db.Spec.PVC_NAME)
+		log.Info("created PVC =" + db.Spec.PVC_NAME + " in namespace " + namespace)
 	}
 
-	log.Debug("creating PgDatabase object " + db.Spec.STRATEGY)
+	log.Debug("creating PgDatabase object " + db.Spec.STRATEGY + " in namespace " + namespace)
 
 	if db.Spec.STRATEGY == "" {
 		db.Spec.STRATEGY = "1"
@@ -143,12 +143,12 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		return
 	}
 
-	strategy.AddDatabase(clientset, client, db)
+	strategy.AddDatabase(clientset, client, db, namespace)
 
 }
 
-func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) {
-	log.Debug("deleting PgDatabase object with strategy " + db.Spec.STRATEGY)
+func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) {
+	log.Debug("deleting PgDatabase object with strategy " + db.Spec.STRATEGY + " in namespace " + namespace)
 
 	if db.Spec.STRATEGY == "" {
 		db.Spec.STRATEGY = "1"
@@ -163,6 +163,6 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 		return
 	}
 
-	strategy.DeleteDatabase(clientset, client, db)
+	strategy.DeleteDatabase(clientset, client, db, namespace)
 
 }

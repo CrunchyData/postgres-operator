@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"strings"
@@ -47,7 +46,7 @@ func printPVC(pvcName string) {
 	var pvc *v1.PersistentVolumeClaim
 	var err error
 
-	pvc, err = Clientset.Core().PersistentVolumeClaims(api.NamespaceDefault).Get(pvcName)
+	pvc, err = Clientset.Core().PersistentVolumeClaims(Namespace).Get(pvcName)
 	if err != nil {
 		fmt.Printf("\nPVC %s\n", pvcName+" is not found")
 		fmt.Println(err.Error())
@@ -67,14 +66,14 @@ func printPVCListing(pvcName string) {
 	var podName = "lspvc-" + pvcName
 
 	//delete lspvc pod if it was not deleted for any reason prior
-	_, err = Clientset.Core().Pods(api.NamespaceDefault).Get(podName)
+	_, err = Clientset.Core().Pods(Namespace).Get(podName)
 	if errors.IsNotFound(err) {
 		//
 	} else if err != nil {
 		log.Error(err.Error())
 	} else {
 		log.Debug("deleting prior pod " + podName)
-		err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,
+		err = Clientset.Core().Pods(Namespace).Delete(podName,
 			&v1.DeleteOptions{})
 		if err != nil {
 			log.Error("delete pod error " + err.Error()) //TODO this is debug info
@@ -128,7 +127,7 @@ func printPVCListing(pvcName string) {
 
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}
-	req := Clientset.Core().Pods(api.NamespaceDefault).GetLogs(podName, &logOptions)
+	req := Clientset.Core().Pods(Namespace).GetLogs(podName, &logOptions)
 	if req == nil {
 		log.Debug("error in get logs for " + podName)
 	} else {
@@ -162,7 +161,7 @@ func printPVCListing(pvcName string) {
 	}
 
 	//delete lspvc pod
-	err = Clientset.Core().Pods(api.NamespaceDefault).Delete(podName,
+	err = Clientset.Core().Pods(Namespace).Delete(podName,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err.Error())
