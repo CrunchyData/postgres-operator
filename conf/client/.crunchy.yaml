@@ -1,5 +1,5 @@
 database:
-  CCP_IMAGE_TAG:  centos7-9.5-1.2.8
+  CCP_IMAGE_TAG:  centos7-9.6-1.2.8
   Port:  5432
   PVC_NAME:  crunchy-pvc
   PG_MASTER_USER:  master
@@ -9,7 +9,7 @@ database:
   PG_DATABASE:  userdb
   PG_ROOT_PASSWORD:  password
 cluster:
-  CCP_IMAGE_TAG:  centos7-9.5-1.2.8
+  CCP_IMAGE_TAG:  centos7-9.6-1.2.8
   Port:  5432
   PVC_NAME:  crunchy-pvc
   PG_MASTER_USER:  master

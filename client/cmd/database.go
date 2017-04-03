@@ -41,14 +41,14 @@ func showDatabase(args []string) {
 		for _, database := range databaseList.Items {
 			if arg == "all" || database.Spec.Name == arg {
 				fmt.Println("database : " + database.Spec.Name)
-				pod, err = Clientset.Core().Pods(api.NamespaceDefault).Get(database.Spec.Name)
+				pod, err = Clientset.Core().Pods(Namespace).Get(database.Spec.Name)
 				if err != nil {
 					log.Error("error in getting database pod " + database.Spec.Name + err.Error())
 				} else {
 					fmt.Println(TREE_BRANCH + "pod : " + pod.Name + " (" + string(pod.Status.Phase) + ")")
 				}
 
-				service, err = Clientset.Core().Services(api.NamespaceDefault).Get(database.Spec.Name)
+				service, err = Clientset.Core().Services(Namespace).Get(database.Spec.Name)
 				if err != nil {
 					log.Error("error in getting database service " + database.Spec.Name + err.Error())
 				} else {
@@ -71,7 +71,7 @@ func createDatabase(args []string) {
 		// error if it already exists
 		err = Tprclient.Get().
 			Resource("pgdatabases").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Name(arg).
 			Do().
 			Into(&result)
@@ -90,7 +90,7 @@ func createDatabase(args []string) {
 
 		err = Tprclient.Post().
 			Resource("pgdatabases").
-			Namespace(api.NamespaceDefault).
+			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
@@ -136,7 +136,7 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 	str = viper.GetString("DB.PVC_NAME")
 	if str != "" {
 		spec.PVC_NAME = str
-	} 
+	}
 	str = viper.GetString("DB.PVC_SIZE")
 	if str != "" {
 		spec.PVC_SIZE = str
@@ -213,7 +213,7 @@ func deleteDatabase(args []string) {
 				log.Debug("deleting pgdatabase " + arg)
 				err = Tprclient.Delete().
 					Resource("pgdatabases").
-					Namespace(api.NamespaceDefault).
+					Namespace(Namespace).
 					Name(database.Spec.Name).
 					Do().
 					Error()

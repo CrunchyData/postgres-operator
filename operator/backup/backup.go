@@ -65,7 +65,7 @@ func init() {
 
 }
 
-func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}) {
+func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
 	eventchan := make(chan *tpr.PgBackup)
 
@@ -74,12 +74,12 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	createAddHandler := func(obj interface{}) {
 		job := obj.(*tpr.PgBackup)
 		eventchan <- job
-		addBackup(clientset, client, job)
+		addBackup(clientset, client, job, namespace)
 	}
 	createDeleteHandler := func(obj interface{}) {
 		job := obj.(*tpr.PgBackup)
 		eventchan <- job
-		deleteBackup(clientset, client, job)
+		deleteBackup(clientset, client, job, namespace)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
@@ -113,20 +113,20 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
+func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup, namespace string) {
 	var err error
-	log.Info("creating PgBackup object")
-	log.Info("created with Name=" + job.Spec.Name)
+	log.Info("creating PgBackup object" + " in namespace " + namespace)
+	log.Info("created with Name=" + job.Spec.Name + " in namespace " + namespace)
 
 	//create the PVC if necessary
 	if job.Spec.PVC_NAME == "" {
 		job.Spec.PVC_NAME = job.Spec.Name + "-backup-pvc"
-  		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE)
+  		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
                 if err != nil {
                         log.Error(err.Error())
                         return
                 }
-                log.Info("created backup PVC =" + job.Spec.PVC_NAME)
+                log.Info("created backup PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
 
 	}
 
@@ -159,7 +159,7 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	}
 
 	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
-	resultJob, err := clientset.Batch().Jobs(v1.NamespaceDefault).Create(&newjob)
+	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
 	if err != nil {
 		log.Error("error creating Job " + err.Error())
 		return
@@ -168,13 +168,13 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 
 }
 
-func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup) {
+func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup, namespace string) {
 	var jobName = "backup-" + job.Spec.Name
-	log.Debug("deleting Job with Name=" + jobName)
+	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
 	//delete the job
 	//err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(jobName,
-	err := clientset.Batch().Jobs(v1.NamespaceDefault).Delete(jobName,
+	err := clientset.Batch().Jobs(namespace).Delete(jobName,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())

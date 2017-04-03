@@ -48,7 +48,7 @@ func init() {
 	PVCTemplate = template.Must(template.New("pvc template").Parse(string(buf)))
 }
 
-func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string) error {
+func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string, namespace string) error {
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
@@ -76,25 +76,25 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 		return err
 	}
 	var result *v1.PersistentVolumeClaim
-	result, err = clientset.Core().PersistentVolumeClaims(v1.NamespaceDefault).Create(&newpvc)
+	result, err = clientset.Core().PersistentVolumeClaims(namespace).Create(&newpvc)
 	if err != nil {
-		log.Error("error creating pvc " + err.Error())
+		log.Error("error creating pvc " + err.Error() + " in namespace " + namespace)
 		return err
 	}
-	log.Debug("created PVC " + result.Name)
+	log.Debug("created PVC " + result.Name + " in namespace " + namespace )
 	time.Sleep(3000 * time.Millisecond)
 	return nil
 
 }
 
-func Delete(clientset *kubernetes.Clientset, name string) error {
+func Delete(clientset *kubernetes.Clientset, name string, namespace string) error {
 	log.Debug("in pvc.Delete")
 	var err error
 
 	var pvc *v1.PersistentVolumeClaim
 
 	//see if the PVC exists
-	pvc, err = clientset.Core().PersistentVolumeClaims(v1.NamespaceDefault).Get(name)
+	pvc, err = clientset.Core().PersistentVolumeClaims(namespace).Get(name)
 	if err != nil {
 		log.Info("\nPVC %s\n", name+" is not found, will not attempt delete")
 		return nil
@@ -104,10 +104,10 @@ func Delete(clientset *kubernetes.Clientset, name string) error {
 		//if pgremove = true remove it
 		if pvc.ObjectMeta.Labels["pgremove"] == "true" {
 			log.Info("pgremove is true on this pvc")
-			log.Debug("delete PVC " + name)
-			err = clientset.Core().PersistentVolumeClaims(v1.NamespaceDefault).Delete(name, &v1.DeleteOptions{})
+			log.Debug("delete PVC " + name  + " in namespace " + namespace)
+			err = clientset.Core().PersistentVolumeClaims(namespace).Delete(name, &v1.DeleteOptions{})
 			if err != nil {
-				log.Error("error deleting PVC " + name + err.Error())
+				log.Error("error deleting PVC " + name + err.Error() + " in namespace " + namespace)
 				return err
 			}
 		}

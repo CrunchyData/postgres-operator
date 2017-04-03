@@ -52,6 +52,11 @@ func main() {
 	flag.Parse()
 
 	var debugEnv = os.Getenv("DEBUG")
+  var namespace = os.Getenv("NAMESPACE")
+
+  if namespace == "" {
+    namespace = "default"
+  }
 
 	if *debug || debugEnv != "" {
 		log.SetLevel(log.DebugLevel)
@@ -108,9 +113,9 @@ func main() {
 
 	stopchan := make(chan struct{}, 1)
 
-	go database.Process(clientset, tprclient, stopchan)
-	go cluster.Process(clientset, tprclient, stopchan)
-	go backup.Process(clientset, tprclient, stopchan)
+	go database.Process(clientset, tprclient, stopchan, namespace)
+	go cluster.Process(clientset, tprclient, stopchan, namespace)
+	go backup.Process(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

@@ -46,9 +46,9 @@ func init() {
 }
 
 // database consists of a Service and a Pod
-func (r DatabaseStrategy1) AddDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) error {
+func (r DatabaseStrategy1) AddDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) error {
 	var err error
-	log.Info("creating PgDatabase object using Strategy 1")
+	log.Info("creating PgDatabase object using Strategy 1 in namespace " + namespace)
 
 	serviceFields := ServiceTemplateFields{
 		Name: db.Spec.Name,
@@ -72,12 +72,12 @@ func (r DatabaseStrategy1) AddDatabase(clientset *kubernetes.Clientset, client *
 		return err
 	}
 
-	svc, err := clientset.Services(v1.NamespaceDefault).Create(&service)
+	svc, err := clientset.Services(namespace).Create(&service)
 	if err != nil {
 		log.Error("error creating Service " + err.Error())
 		return err
 	}
-	log.Info("created service " + svc.Name)
+	log.Info("created service " + svc.Name + " in namespace " + namespace)
 
 	podFields := PodTemplateFields{
 		Name:               db.Spec.Name,
@@ -118,37 +118,37 @@ func (r DatabaseStrategy1) AddDatabase(clientset *kubernetes.Clientset, client *
 		return err
 	}
 
-	resultPod, err := clientset.Pods(v1.NamespaceDefault).Create(&pod)
+	resultPod, err := clientset.Pods(namespace).Create(&pod)
 	if err != nil {
 		log.Error("error creating Pod " + err.Error())
 		return err
 	}
-	log.Info("created pod " + resultPod.Name)
+	log.Info("created pod " + resultPod.Name + " in namespace " + namespace)
 	return err
 
 }
 
-func (r DatabaseStrategy1) DeleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase) error {
-	log.Debug("deleting PgDatabase object with Strategy 1")
-	log.Debug("deleting with Name=" + db.Spec.Name)
+func (r DatabaseStrategy1) DeleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) error {
+	log.Debug("deleting PgDatabase object with Strategy 1 in namespace " + namespace)
+	log.Debug("deleting with Name=" + db.Spec.Name + " in namespace " + namespace)
 
 	var err error
 
-	err = clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
+	err = clientset.Services(namespace).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting Service " + err.Error())
 		return err
 	}
-	log.Info("deleted service " + db.Spec.Name)
+	log.Info("deleted service " + db.Spec.Name + " in namespace " + namespace)
 
-	err = clientset.Pods(v1.NamespaceDefault).Delete(db.Spec.Name,
+	err = clientset.Pods(namespace).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting Pod " + err.Error())
 		return err
 	}
-	log.Info("deleted pod " + db.Spec.Name)
+	log.Info("deleted pod " + db.Spec.Name + " in namespace " + namespace)
 
 /**
 	err = pvc.Delete(clientset, db.Spec.Name+"-pvc")

@@ -48,14 +48,14 @@ func init() {
 	DeploymentTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-deployment.json")
 }
 
-func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) error {
+func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) error {
 	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
 	var err error
 	var replicaServiceResult, serviceResult *v1.Service
 	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
 
-	log.Info("creating PgCluster object using Strategy 1")
-	log.Info("created with Name=" + db.Spec.Name)
+	log.Info("creating PgCluster object using Strategy 1" + " in namespace " + namespace)
+	log.Info("created with Name=" + db.Spec.Name  + " in namespace " + namespace)
 
 	//create the master service
 	serviceFields := ServiceTemplateFields{
@@ -79,12 +79,12 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		return err
 	}
 
-	serviceResult, err = clientset.Services(v1.NamespaceDefault).Create(&service)
+	serviceResult, err = clientset.Services(namespace).Create(&service)
 	if err != nil {
 		log.Error("error creating Service " + err.Error())
 		return err
 	}
-	log.Info("created master service " + serviceResult.Name)
+	log.Info("created master service " + serviceResult.Name + " in namespace " + namespace)
 
 	//create the replica service
 	replicaServiceFields := ServiceTemplateFields{
@@ -109,12 +109,12 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		return err
 	}
 
-	replicaServiceResult, err = clientset.Services(v1.NamespaceDefault).Create(&replicaService)
+	replicaServiceResult, err = clientset.Services(namespace).Create(&replicaService)
 	if err != nil {
 		log.Error("error creating replica Service " + err.Error())
 		return err
 	}
-	log.Info("created replica service " + replicaServiceResult.Name)
+	log.Info("created replica service " + replicaServiceResult.Name + " in namespace " + namespace)
 
 	//create the master deployment
 	deploymentFields := DeploymentTemplateFields{
@@ -147,12 +147,12 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		return err
 	}
 
-	deploymentResult, err = clientset.Deployments(v1.NamespaceDefault).Create(&deployment)
+	deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
 	if err != nil {
 		log.Error("error creating master Deployment " + err.Error())
 		return err
 	}
-	log.Info("created master Deployment " + deploymentResult.Name)
+	log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
@@ -187,7 +187,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		return err
 	}
 
-	replicaDeploymentResult, err = clientset.Deployments(v1.NamespaceDefault).Create(&replicaDeployment)
+	replicaDeploymentResult, err = clientset.Deployments(namespace).Create(&replicaDeployment)
 	if err != nil {
 		log.Error("error creating replica Deployment " + err.Error())
 		return err
@@ -197,13 +197,13 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 }
 
-func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster) error {
-	log.Info("deleting PgCluster object")
-	log.Info("deleting with Name=" + db.Spec.Name)
+func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) error {
+	log.Info("deleting PgCluster object" + " in namespace " + namespace)
+	log.Info("deleting with Name=" + db.Spec.Name + " in namespace " + namespace)
 
 	//delete the master service
 
-	err := clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name,
+	err := clientset.Services(namespace).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting master Service " + err.Error())
@@ -211,21 +211,21 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, client 
 	log.Info("deleted master service " + db.Spec.Name)
 
 	//delete the replica service
-	err = clientset.Services(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
+	err = clientset.Services(namespace).Delete(db.Spec.Name+REPLICA_SUFFIX,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting replica Service " + err.Error())
 	}
-	log.Info("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX)
+	log.Info("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
 
 	//delete the master deployment
-	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name,
+	err = clientset.Deployments(namespace).Delete(db.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting master Deployment " + err.Error())
 	}
 
-	log.Info("deleted master Deployment " + db.Spec.Name)
+	log.Info("deleted master Deployment " + db.Spec.Name + " in namespace " + namespace)
 	//delete the master replicaset
 
 	//find the replicaset pod name
@@ -233,69 +233,69 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, client 
 	options.LabelSelector = "name=" + db.Spec.Name
 
 	var reps *v1beta1.ReplicaSetList
-	reps, err = clientset.ReplicaSets(v1.NamespaceDefault).List(options)
+	reps, err = clientset.ReplicaSets(namespace).List(options)
 	if err != nil {
 		log.Error("error getting master replicaset name" + err.Error())
 	} else {
 		if len(reps.Items) > 0 {
-			err = clientset.ReplicaSets(v1.NamespaceDefault).Delete(reps.Items[0].Name,
+			err = clientset.ReplicaSets(namespace).Delete(reps.Items[0].Name,
 				&v1.DeleteOptions{})
 			if err != nil {
 				log.Error("error deleting master replicaset " + err.Error())
 			}
 
-			log.Info("deleted master replicaset " + reps.Items[0].Name)
+			log.Info("deleted master replicaset " + reps.Items[0].Name + " in namespace " + namespace)
 		}
 	}
 
 	//delete the replica deployment
-	err = clientset.Deployments(v1.NamespaceDefault).Delete(db.Spec.Name+REPLICA_SUFFIX,
+	err = clientset.Deployments(namespace).Delete(db.Spec.Name+REPLICA_SUFFIX,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting replica Deployment " + err.Error())
 	}
-	log.Info("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX)
+	log.Info("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
 	//delete the replica ReplicaSet
 	options.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
 
-	reps, err = clientset.ReplicaSets(v1.NamespaceDefault).List(options)
+	reps, err = clientset.ReplicaSets(namespace).List(options)
 	if err != nil {
 		log.Error("error getting replica replicaset name" + err.Error())
 	} else {
 		if len(reps.Items) > 0 {
-			err = clientset.ReplicaSets(v1.NamespaceDefault).Delete(reps.Items[0].Name,
+			err = clientset.ReplicaSets(namespace).Delete(reps.Items[0].Name,
 				&v1.DeleteOptions{})
 			if err != nil {
 				log.Error("error deleting replica replicaset " + err.Error())
 			}
-			log.Info("deleted replica replicaset " + reps.Items[0].Name)
+			log.Info("deleted replica replicaset " + reps.Items[0].Name + " in namespace " + namespace)
 		}
 	}
 
 	//lastly, delete any remaining pods
 	listOptions := v1.ListOptions{}
 	listOptions.LabelSelector = "name=" + db.Spec.Name
-	pods, err := clientset.Core().Pods(v1.NamespaceDefault).List(listOptions)
+	pods, err := clientset.Core().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
-		log.Info("deleting pod " + pod.Name)
-		err = clientset.Pods(v1.NamespaceDefault).Delete(pod.Name,
+		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
+		err = clientset.Pods(namespace).Delete(pod.Name,
 			&v1.DeleteOptions{})
 		if err != nil {
 			log.Error("error deleting pod " + pod.Name + err.Error())
 		}
-		log.Info("deleted pod " + pod.Name)
+		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
 
 	}
 	listOptions.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
-	pods, err = clientset.Core().Pods(v1.NamespaceDefault).List(listOptions)
+	pods, err = clientset.Core().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
-		log.Info("deleting pod " + pod.Name)
-		err = clientset.Pods(v1.NamespaceDefault).Delete(pod.Name,
+		log.Info("deleting pod " + pod.Name  + " in namespace " + namespace)
+		err = clientset.Pods(namespace).Delete(pod.Name,
 			&v1.DeleteOptions{})
 		if err != nil {
 			log.Error("error deleting pod " + pod.Name + err.Error())
 		}
-		log.Info("deleted pod " + pod.Name)
+		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
 
 	}
 	return err
