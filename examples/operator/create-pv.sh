@@ -21,5 +21,5 @@ for i in {1..15}
 do
    	echo "creating PV crunchy-pv-$i"
 	export COUNTER=$i
-	envsubst < $DIR/crunchy-pv2.json | kubectl create -f -
+	envsubst < $DIR/crunchy-pv.json | kubectl create -f -
 done
