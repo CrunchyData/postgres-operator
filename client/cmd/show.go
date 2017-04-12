@@ -41,12 +41,14 @@ Valid resource types include:
 	* database
 	* cluster
 	* pvc
+	* upgrade
 	* backup`)
 		} else {
 			switch args[0] {
 			case "database":
 			case "cluster":
 			case "pvc":
+			case "upgrade":
 			case "backup":
 				break
 			default:
@@ -55,6 +57,7 @@ Valid resource types include:
 	* database
 	* cluster
 	* pvc
+	* upgrade
 	* backup`)
 			}
 		}
