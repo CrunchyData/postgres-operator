@@ -242,15 +242,15 @@ func (el *PgBackupList) UnmarshalJSON(data []byte) error {
 }
 
 type PgUpgradeSpec struct {
-	Name            string `json:"name"`
-	PVC_NAME        string `json:"pvcname"`
-	PVC_ACCESS_MODE string `json:"pvcaccessmode"`
-	PVC_SIZE        string `json:"pvcsize"`
-	CCP_IMAGE_TAG   string `json:"ccpimagetag"`
-	BACKUP_HOST     string `json:"backuphost"`
-	BACKUP_USER     string `json:"backupuser"`
-	BACKUP_PASS     string `json:"backuppass"`
-	BACKUP_PORT     string `json:"backupport"`
+	Name              string `json:"name"`
+	PVC_NAME          string `json:"pvcname"`
+	PVC_ACCESS_MODE   string `json:"pvcaccessmode"`
+	PVC_SIZE          string `json:"pvcsize"`
+	CCP_IMAGE_TAG     string `json:"ccpimagetag"`
+	OLD_DATABASE_NAME string `json:"olddatabasename"`
+	NEW_DATABASE_NAME string `json:"newdatabasename"`
+	OLD_VERSION       string `json:"oldversion"`
+	NEW_VERSION       string `json:"newversion"`
 }
 
 type PgUpgrade struct {

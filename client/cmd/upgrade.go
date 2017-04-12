@@ -205,10 +205,10 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 	spec.PVC_ACCESS_MODE = viper.GetString("DB.PVC_ACCESS_MODE")
 	spec.PVC_SIZE = viper.GetString("DB.PVC_SIZE")
 	spec.CCP_IMAGE_TAG = viper.GetString("DB.CCP_IMAGE_TAG")
-	spec.BACKUP_HOST = "basic"
-	spec.BACKUP_USER = "master"
-	spec.BACKUP_PASS = "password"
-	spec.BACKUP_PORT = "5432"
+	spec.OLD_DATABASE_NAME = "basic"
+	spec.NEW_DATABASE_NAME = "master"
+	spec.OLD_VERSION = "9.5"
+	spec.NEW_VERSION = "9.6"
 
 	//TODO see if name is a database or cluster
 	db := tpr.PgDatabase{}
@@ -220,10 +220,8 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		Into(&db)
 	if err == nil {
 		fmt.Println(name + " is a database")
-		spec.BACKUP_HOST = db.Spec.Name
-		spec.BACKUP_USER = db.Spec.PG_MASTER_USER
-		spec.BACKUP_PASS = db.Spec.PG_MASTER_PASSWORD
-		spec.BACKUP_PORT = db.Spec.Port
+		spec.OLD_DATABASE_NAME = db.Spec.Name
+		spec.NEW_DATABASE_NAME = db.Spec.Name + "-upgrade"
 	} else if errors.IsNotFound(err) {
 		log.Debug(name + " is not a database")
 		cluster := tpr.PgCluster{}
@@ -235,10 +233,8 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 			Into(&cluster)
 		if err == nil {
 			fmt.Println(name + " is a cluster")
-			spec.BACKUP_HOST = cluster.Spec.Name
-			spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
-			spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD
-			spec.BACKUP_PORT = cluster.Spec.Port
+			spec.OLD_DATABASE_NAME = cluster.Spec.Name
+			spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
 		} else if errors.IsNotFound(err) {
 			log.Debug(name + " is not a cluster")
 			return newInstance, err
