@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/database"
+	"github.com/crunchydata/postgres-operator/operator/upgrade"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
@@ -52,11 +53,11 @@ func main() {
 	flag.Parse()
 
 	var debugEnv = os.Getenv("DEBUG")
-  var namespace = os.Getenv("NAMESPACE")
+	var namespace = os.Getenv("NAMESPACE")
 
-  if namespace == "" {
-    namespace = "default"
-  }
+	if namespace == "" {
+		namespace = "default"
+	}
 
 	if *debug || debugEnv != "" {
 		log.SetLevel(log.DebugLevel)
@@ -116,6 +117,7 @@ func main() {
 	go database.Process(clientset, tprclient, stopchan, namespace)
 	go cluster.Process(clientset, tprclient, stopchan, namespace)
 	go backup.Process(clientset, tprclient, stopchan, namespace)
+	go upgrade.Process(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -235,6 +237,31 @@ func initializeResources(clientset *kubernetes.Clientset) {
 					{Name: "v1"},
 				},
 				Description: "A postgres backup ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
+	}
+
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-upgrade.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-upgrade.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres upgrade ThirdPartyResource",
 			}
 
 			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
