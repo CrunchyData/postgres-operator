@@ -16,9 +16,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-#kubectl create -f $DIR/pg-cluster-tpr.yaml
-#kubectl create -f $DIR/pg-database-tpr.yaml
-#kubectl create -f $DIR/pg-backup-tpr.yaml
+kubectl create -f $DIR/pg-cluster-tpr.yaml
+kubectl create -f $DIR/pg-database-tpr.yaml
+kubectl create -f $DIR/pg-backup-tpr.yaml
 
 #sleep 4
 #kubectl create -f $DIR/cluster-object.yaml

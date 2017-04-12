@@ -37,6 +37,24 @@ required dependencies:
 yum -y install git
 ....
 
+*NOTE* - as of Kube 1.6, RBAC security is enabled on most Kube
+installations.  With RBAC, the *postgres-operator* needs permissions
+granted to it to enable ThirdPartyResources viewing.  You can grant the
+*default* Service Account a cluster role as one way to enable
+permissions for the operator.  This course level of granting permissions
+is not recommended for production.  This command will enable
+the *default* Service Account to have the *cluster-admin* role:
+....
+kubectl create clusterrolebinding permissive-binding \
+	--clusterrole=cluster-admin \
+	--user=admin \
+	--user=kubelet \
+       	--group=system:serviceaccounts:default
+....
+
+See https://kubernetes.io/docs/admin/authorization/rbac/ for more
+details on how to enable RBAC roles.
+
 == Create Project and Clone 
 In your .bashrc file, include the following:
 ....

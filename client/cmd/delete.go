@@ -23,31 +23,35 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a database, cluster, or backup",
-	Long: `delete allows you to delete a database, cluster, or backup
+	Short: "Delete a database, cluster, backup, or upgrade",
+	Long: `delete allows you to delete a database, cluster, backup, or upgrade
 For example:
 
 pgo delete database mydatabase
 pgo delete cluster mycluster
-pgo delete backup mycluster`,
+pgo delete backup mycluster
+pgo delete upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
 	* database
 	* cluster
-	* backup`)
+	* backup
+	* upgrade`)
 		} else {
 			switch args[0] {
 			case "database":
 			case "cluster":
 			case "backup":
+			case "upgrade":
 				break
 			default:
 				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
 	* database
 	* cluster
-	* backup`)
+	* backup
+	* upgrade`)
 			}
 		}
 
@@ -59,6 +63,7 @@ func init() {
 	deleteCmd.AddCommand(deleteDatabaseCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteCmd.AddCommand(deleteBackupCmd)
+	deleteCmd.AddCommand(deleteUpgradeCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -70,6 +75,20 @@ func init() {
 	// is called directly, e.g.:
 	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
+}
+
+var deleteUpgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "delete an upgrade",
+	Long: `delete an upgrade. For example:
+	pgo delete upgrade mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("a database or cluster name is required for this command")
+		} else {
+			deleteUpgrade(args)
+		}
+	},
 }
 
 var deleteBackupCmd = &cobra.Command{

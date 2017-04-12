@@ -26,13 +26,14 @@ var BackupPath, BackupPVC string
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Database, Cluster, or Backup",
-	Long: `CREATE allows you to create a new Database, Cluster, or Backup
+	Short: "Create a Database, Cluster, Backup, or Upgrade",
+	Long: `CREATE allows you to create a new Database, Cluster, Backup, or Upgrade
 For example:
 
 pgo create database
 pgo create cluster
 pgo create backup mydatabase
+pgo create upgrade mydatabase
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
@@ -40,7 +41,24 @@ pgo create backup mydatabase
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
 	* database
 	* cluster
+	* upgrade
 	* backup`)
+		}
+	},
+}
+
+var createUpgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "Create a new upgrade",
+	Long: `Create an upgrade of a database or cluster
+For example:
+
+pgo create upgrade mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("a database or cluster name is required for this command")
+		} else {
+			createUpgrade(args)
 		}
 	},
 }
@@ -97,7 +115,7 @@ pgo create cluster mycluster`,
 
 func init() {
 	RootCmd.AddCommand(createCmd)
-	createCmd.AddCommand(createDatabaseCmd, createClusterCmd, createBackupCmd)
+	createCmd.AddCommand(createDatabaseCmd, createClusterCmd, createBackupCmd, createUpgradeCmd)
 	//createCmd.AddCommand(createClusterCmd)
 	//createCmd.AddCommand(createBackupCmd)
 

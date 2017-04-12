@@ -68,6 +68,7 @@ func init() {
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
+	ShowCmd.AddCommand(ShowUpgradeCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -91,6 +92,21 @@ var ShowPVCCmd = &cobra.Command{
 			log.Error("PVC name(s) required for this command")
 		} else {
 			showPVC(args)
+		}
+	},
+}
+
+var ShowUpgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "Show upgrade information",
+	Long: `Show upgrade information. For example:
+
+				pgo show upgrade mydatabase`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("database or cluster name(s) required for this command")
+		} else {
+			showUpgrade(args)
 		}
 	},
 }

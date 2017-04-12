@@ -175,15 +175,15 @@ func (el *PgClusterList) UnmarshalJSON(data []byte) error {
 }
 
 type PgBackupSpec struct {
-	Name          string `json:"name"`
-	PVC_NAME      string `json:"pvcname"`
-	PVC_ACCESS_MODE      string `json:"pvcaccessmode"`
-	PVC_SIZE      string `json:"pvcsize"`
-	CCP_IMAGE_TAG string `json:"ccpimagetag"`
-	BACKUP_HOST   string `json:"backuphost"`
-	BACKUP_USER   string `json:"backupuser"`
-	BACKUP_PASS   string `json:"backuppass"`
-	BACKUP_PORT   string `json:"backupport"`
+	Name            string `json:"name"`
+	PVC_NAME        string `json:"pvcname"`
+	PVC_ACCESS_MODE string `json:"pvcaccessmode"`
+	PVC_SIZE        string `json:"pvcsize"`
+	CCP_IMAGE_TAG   string `json:"ccpimagetag"`
+	BACKUP_HOST     string `json:"backuphost"`
+	BACKUP_USER     string `json:"backupuser"`
+	BACKUP_PASS     string `json:"backuppass"`
+	BACKUP_PORT     string `json:"backupport"`
 }
 
 type PgBackup struct {
@@ -237,6 +237,73 @@ func (el *PgBackupList) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	tmp2 := PgBackupList(tmp)
+	*el = tmp2
+	return nil
+}
+
+type PgUpgradeSpec struct {
+	Name            string `json:"name"`
+	PVC_NAME        string `json:"pvcname"`
+	PVC_ACCESS_MODE string `json:"pvcaccessmode"`
+	PVC_SIZE        string `json:"pvcsize"`
+	CCP_IMAGE_TAG   string `json:"ccpimagetag"`
+	BACKUP_HOST     string `json:"backuphost"`
+	BACKUP_USER     string `json:"backupuser"`
+	BACKUP_PASS     string `json:"backuppass"`
+	BACKUP_PORT     string `json:"backupport"`
+}
+
+type PgUpgrade struct {
+	unversioned.TypeMeta `json:",inline"`
+	Metadata             api.ObjectMeta `json:"metadata"`
+
+	Spec PgUpgradeSpec `json:"spec"`
+}
+
+type PgUpgradeList struct {
+	unversioned.TypeMeta `json:",inline"`
+	Metadata             unversioned.ListMeta `json:"metadata"`
+
+	Items []PgUpgrade `json:"items"`
+}
+
+func (e *PgUpgrade) GetObjectKind() unversioned.ObjectKind {
+	return &e.TypeMeta
+}
+
+func (e *PgUpgrade) GetObjectMeta() meta.Object {
+	return &e.Metadata
+}
+
+func (el *PgUpgradeList) GetObjectKind() unversioned.ObjectKind {
+	return &el.TypeMeta
+}
+
+func (el *PgUpgradeList) GetListMeta() unversioned.List {
+	return &el.Metadata
+}
+
+type PgUpgradeListCopy PgUpgradeList
+type PgUpgradeCopy PgUpgrade
+
+func (e *PgUpgrade) UnmarshalJSON(data []byte) error {
+	tmp := PgUpgradeCopy{}
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		return err
+	}
+	tmp2 := PgUpgrade(tmp)
+	*e = tmp2
+	return nil
+}
+
+func (el *PgUpgradeList) UnmarshalJSON(data []byte) error {
+	tmp := PgUpgradeListCopy{}
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		return err
+	}
+	tmp2 := PgUpgradeList(tmp)
 	*el = tmp2
 	return nil
 }
