@@ -56,7 +56,6 @@ func showUpgrade(args []string) {
 }
 
 func showUpgradeItem(name string) {
-	var pvcName string
 	//print the pgupgrades TPR
 	result := tpr.PgUpgrade{}
 	err := Tprclient.Get().
@@ -66,20 +65,9 @@ func showUpgradeItem(name string) {
 		Do().
 		Into(&result)
 	if err == nil {
-		if result.Spec.PVC_NAME == "" {
-			pvcName = name + "-upgrade-pvc"
-		} else {
-			pvcName = result.Spec.PVC_NAME
-		}
-		fmt.Printf("\npgupgrade %s\n", name+" was found PVC_NAME is "+pvcName)
+		fmt.Printf("\npgupgrade %s\n", name+" was found NEW_PVC_NAME is "+result.Spec.Name)
 	} else if errors.IsNotFound(err) {
-		configPVC := viper.GetString("DB.PVC_NAME")
-		if configPVC == "" {
-			pvcName = name + "-upgrade-pvc"
-		} else {
-			pvcName = configPVC
-		}
-		fmt.Printf("\npgupgrade %s\n", name+" was not found assuming PVC_NAME is "+pvcName)
+		fmt.Printf("\npgupgrade %s\n", name+" was not found ")
 	} else {
 		log.Errorf("\npgupgrade %s\n", name+" lookup error ")
 		log.Error(err.Error())
@@ -87,7 +75,9 @@ func showUpgradeItem(name string) {
 	}
 
 	//print the upgrade jobs if any exists
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + name}
+	lo := v1.ListOptions{
+		LabelSelector: "pg-database=" + name + ",pgupgrade=true",
+	}
 	log.Debug("label selector is " + lo.LabelSelector)
 	pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
 	if err2 != nil {
@@ -98,15 +88,15 @@ func showUpgradeItem(name string) {
 		fmt.Printf("%s%s\n", TREE_TRUNK, p.Name)
 	}
 
-	//print the database pod if it exists
+	//print the upgrade pod if it exists
 	lo = v1.ListOptions{LabelSelector: "name=" + name}
 	log.Debug("label selector is " + lo.LabelSelector)
 	dbpods, err := Clientset.Core().Pods(Namespace).List(lo)
 	if err != nil || len(dbpods.Items) == 0 {
-		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
+		fmt.Printf("\nupgrade pod %s\n", name+" is not found")
 		fmt.Println(err.Error())
 	} else {
-		fmt.Printf("\ndatabase pod %s\n", name+" is found")
+		fmt.Printf("\nupgrade pod %s\n", name+" is found")
 	}
 
 	fmt.Println("")
@@ -141,11 +131,7 @@ func createUpgrade(args []string) {
 			break
 		}
 		// Create an instance of our TPR
-		newInstance, err = getUpgradeParams(arg)
-		if err != nil {
-			log.Error("error creating upgrade")
-			break
-		}
+		newInstance = getUpgradeParams(arg)
 
 		err = Tprclient.Post().
 			Resource("pgupgrades").
@@ -153,8 +139,7 @@ func createUpgrade(args []string) {
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
-			log.Error("error in creating PgUpgrade TPR instance")
-			log.Error(err.Error())
+			log.Error("error in creating PgUpgrade TPR instance", err.Error())
 		}
 		fmt.Println("created PgUpgrade " + arg)
 
@@ -196,21 +181,22 @@ func deleteUpgrade(args []string) {
 
 }
 
-func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
-	var newInstance *tpr.PgUpgrade
+func getUpgradeParams(name string) *tpr.PgUpgrade {
 
-	spec := tpr.PgUpgradeSpec{}
-	spec.Name = name
-	spec.PVC_NAME = viper.GetString("PVC_NAME")
-	spec.PVC_ACCESS_MODE = viper.GetString("DB.PVC_ACCESS_MODE")
-	spec.PVC_SIZE = viper.GetString("DB.PVC_SIZE")
-	spec.CCP_IMAGE_TAG = viper.GetString("DB.CCP_IMAGE_TAG")
-	spec.OLD_DATABASE_NAME = "basic"
-	spec.NEW_DATABASE_NAME = "master"
-	spec.OLD_VERSION = "9.5"
-	spec.NEW_VERSION = "9.6"
+	spec := tpr.PgUpgradeSpec{
+		Name:              name,
+		RESOURCE_TYPE:     "database",
+		PVC_ACCESS_MODE:   viper.GetString("DB.PVC_ACCESS_MODE"),
+		PVC_SIZE:          viper.GetString("DB.PVC_SIZE"),
+		CCP_IMAGE_TAG:     viper.GetString("DB.CCP_IMAGE_TAG"),
+		OLD_DATABASE_NAME: "basic",
+		NEW_DATABASE_NAME: "master",
+		OLD_VERSION:       "9.5",
+		NEW_VERSION:       "9.6",
+		OLD_PVC_NAME:      viper.GetString("PVC_NAME"),
+		NEW_PVC_NAME:      viper.GetString("PVC_NAME"),
+	}
 
-	//TODO see if name is a database or cluster
 	db := tpr.PgDatabase{}
 	err := Tprclient.Get().
 		Resource("pgdatabases").
@@ -220,7 +206,10 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		Into(&db)
 	if err == nil {
 		fmt.Println(name + " is a database")
+		spec.RESOURCE_TYPE = "database"
 		spec.OLD_DATABASE_NAME = db.Spec.Name
+		spec.OLD_PVC_NAME = db.Spec.PVC_NAME
+		spec.NEW_PVC_NAME = db.Spec.PVC_NAME + "-upgrade"
 		spec.NEW_DATABASE_NAME = db.Spec.Name + "-upgrade"
 	} else if errors.IsNotFound(err) {
 		log.Debug(name + " is not a database")
@@ -233,27 +222,28 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 			Into(&cluster)
 		if err == nil {
 			fmt.Println(name + " is a cluster")
+			spec.RESOURCE_TYPE = "cluster"
 			spec.OLD_DATABASE_NAME = cluster.Spec.Name
 			spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
 		} else if errors.IsNotFound(err) {
 			log.Debug(name + " is not a cluster")
-			return newInstance, err
+			return nil
 		} else {
 			log.Error("error getting pgcluster " + name)
 			log.Error(err.Error())
-			return newInstance, err
+			return nil
 		}
 	} else {
 		log.Error("error getting pgdatabase " + name)
 		log.Error(err.Error())
-		return newInstance, err
+		return nil
 	}
 
-	newInstance = &tpr.PgUpgrade{
+	newInstance := &tpr.PgUpgrade{
 		Metadata: api.ObjectMeta{
 			Name: name,
 		},
 		Spec: spec,
 	}
-	return newInstance, nil
+	return newInstance
 }

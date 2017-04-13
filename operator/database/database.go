@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -115,6 +116,11 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	var err error
 	var strategy DatabaseStrategy
 
+	if serviceExists(clientset, client, db, namespace) {
+		log.Info("database service found, will not create database")
+		return
+	}
+
 	if db.Spec.PVC_NAME == "" {
 		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
@@ -145,6 +151,20 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 
 	strategy.AddDatabase(clientset, client, db, namespace)
 
+}
+func serviceExists(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) bool {
+	lo := v1.ListOptions{LabelSelector: "pg-database=" + db.Spec.Name}
+	log.Debug("label selector is " + lo.LabelSelector)
+	services, err2 := clientset.Core().Services(namespace).List(lo)
+	if err2 != nil {
+		log.Error("error in serviceExists " + err2.Error())
+		return false
+	}
+	if len(services.Items) > 0 {
+		return true
+	}
+
+	return false
 }
 
 func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) {

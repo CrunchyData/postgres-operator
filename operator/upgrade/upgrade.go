@@ -40,7 +40,8 @@ import (
 
 type JobTemplateFields struct {
 	Name              string
-	PVC_NAME          string
+	OLD_PVC_NAME      string
+	NEW_PVC_NAME      string
 	CCP_IMAGE_TAG     string
 	OLD_DATABASE_NAME string
 	NEW_DATABASE_NAME string
@@ -114,26 +115,44 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 }
 
 func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
-	var err error
-	log.Info("creating PgUpgrade object" + " in namespace " + namespace)
-	log.Info("created with Name=" + job.Spec.Name + " in namespace " + namespace)
+	log.Info("addUpgrade called " + " in namespace " + namespace)
+	log.Info("Name=" + job.Spec.Name + " in namespace " + namespace)
+	if true {
+		log.Info(" resource type is " + job.Spec.RESOURCE_TYPE)
+		return
+	}
+	if job.Spec.RESOURCE_TYPE == "database" {
+		addUpgradeDatabase(clientset, client, job, namespace)
+	} else if job.Spec.RESOURCE_TYPE == "cluster" {
+		addUpgradeCluster(clientset, client, job, namespace)
+	} else {
+		log.Error("error in addUpgrade. unknown RESOURCE_TYPE " + job.Spec.RESOURCE_TYPE)
+		return
+	}
 
-	//create the PVC if necessary
-	if job.Spec.PVC_NAME == "" {
-		job.Spec.PVC_NAME = job.Spec.Name + "-upgrade-pvc"
-		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
+}
+
+func addUpgradeDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
+	var err error
+	//stop old database
+
+	//create the new database PVC if necessary
+	if job.Spec.NEW_PVC_NAME == "" {
+		job.Spec.NEW_PVC_NAME = job.Spec.Name + "-upgrade-pvc"
+		err = pvc.Create(clientset, job.Spec.NEW_PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return
 		}
-		log.Info("created upgrade PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
+		log.Info("created upgrade PVC =" + job.Spec.NEW_PVC_NAME + " in namespace " + namespace)
 
 	}
 
-	//create the job -
+	//if major upgrade, create the upgrade job
 	jobFields := JobTemplateFields{
 		Name:              job.Spec.Name,
-		PVC_NAME:          job.Spec.PVC_NAME,
+		NEW_PVC_NAME:      job.Spec.NEW_PVC_NAME,
+		OLD_PVC_NAME:      job.Spec.OLD_PVC_NAME,
 		CCP_IMAGE_TAG:     job.Spec.CCP_IMAGE_TAG,
 		OLD_DATABASE_NAME: job.Spec.OLD_DATABASE_NAME,
 		NEW_DATABASE_NAME: job.Spec.NEW_DATABASE_NAME,
@@ -165,6 +184,69 @@ func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, job *t
 		return
 	}
 	log.Info("created Job " + resultJob.Name)
+
+	//create watch of job
+
+	//if success, start new database pod
+
+}
+
+func addUpgradeCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
+	var err error
+	//stop old database
+
+	//create the new database PVC if necessary
+	if job.Spec.NEW_PVC_NAME == "" {
+		job.Spec.NEW_PVC_NAME = job.Spec.Name + "-upgrade-pvc"
+		err = pvc.Create(clientset, job.Spec.NEW_PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		log.Info("created upgrade PVC =" + job.Spec.NEW_PVC_NAME + " in namespace " + namespace)
+
+	}
+
+	//if major upgrade, create the upgrade job
+	jobFields := JobTemplateFields{
+		Name:              job.Spec.Name,
+		NEW_PVC_NAME:      job.Spec.NEW_PVC_NAME,
+		OLD_PVC_NAME:      job.Spec.OLD_PVC_NAME,
+		CCP_IMAGE_TAG:     job.Spec.CCP_IMAGE_TAG,
+		OLD_DATABASE_NAME: job.Spec.OLD_DATABASE_NAME,
+		NEW_DATABASE_NAME: job.Spec.NEW_DATABASE_NAME,
+		OLD_VERSION:       job.Spec.OLD_VERSION,
+		NEW_VERSION:       job.Spec.NEW_VERSION,
+	}
+
+	var doc2 bytes.Buffer
+	err = JobTemplate.Execute(&doc2, jobFields)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	jobDocString := doc2.String()
+	log.Debug(jobDocString)
+
+	//newjob := v1beta1.Job{}
+	newjob := v1batch.Job{}
+	err = json.Unmarshal(doc2.Bytes(), &newjob)
+	if err != nil {
+		log.Error("error unmarshalling json into Job " + err.Error())
+		return
+	}
+
+	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
+	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
+	if err != nil {
+		log.Error("error creating Job " + err.Error())
+		return
+	}
+	log.Info("created Job " + resultJob.Name)
+
+	//create watch of job
+
+	//if success, start new database pod
 
 }
 

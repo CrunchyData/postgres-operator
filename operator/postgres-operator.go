@@ -166,6 +166,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&tpr.PgClusterList{},
 		&tpr.PgBackup{},
 		&tpr.PgBackupList{},
+		&tpr.PgUpgrade{},
+		&tpr.PgUpgradeList{},
 		&api.ListOptions{},
 		&api.DeleteOptions{},
 	)

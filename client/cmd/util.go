@@ -77,6 +77,12 @@ func ConnectToKube() {
 		log.Error("required pg-backup.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-upgrade.crunchydata.com")
+	if err != nil {
+		log.Error(err.Error())
+		log.Error("required pg-upgrade.crunchydata.com TPR was not found on your kube cluster")
+		os.Exit(2)
+	}
 
 	var tprconfig *rest.Config
 	tprconfig = Config
@@ -114,6 +120,8 @@ func configureTPRClient(config *rest.Config) {
 				&tpr.PgClusterList{},
 				&tpr.PgBackup{},
 				&tpr.PgBackupList{},
+				&tpr.PgUpgrade{},
+				&tpr.PgUpgradeList{},
 				&api.ListOptions{},
 				&api.DeleteOptions{},
 			)
