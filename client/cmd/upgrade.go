@@ -27,27 +27,32 @@ import (
 )
 
 func showUpgrade(args []string) {
+	var err error
 	log.Debugf("showUpgrade called %v\n", args)
 
 	//show pod information for job
 	for _, arg := range args {
 		log.Debug("show upgrade called for " + arg)
-		//pg-database=basic or
-		//pgupgrade=true
 		if arg == "all" {
-			lo := v1.ListOptions{LabelSelector: "pgupgrade=true"}
-			log.Debug("label selector is " + lo.LabelSelector)
-			pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
-			if err2 != nil {
-				log.Error(err2.Error())
+			tprs := tpr.PgUpgradeList{}
+			err = Tprclient.Get().Resource("pgupgrades").Do().Into(&tprs)
+			if err != nil {
+				log.Error("error getting list of pgupgrades " + err.Error())
 				return
 			}
-			for _, pod := range pods.Items {
-				showUpgradeItem(pod.Name)
+			for _, u := range tprs.Items {
+				showUpgradeItem(&u)
 			}
 
 		} else {
-			showUpgradeItem(arg)
+			var upgrade tpr.PgUpgrade
+
+			err = Tprclient.Get().
+				Resource("pgupgrades").
+				Namespace(Namespace).
+				Name(arg).
+				Do().Into(&upgrade)
+			showUpgradeItem(&upgrade)
 
 		}
 
@@ -55,48 +60,39 @@ func showUpgrade(args []string) {
 
 }
 
-func showUpgradeItem(name string) {
-	//print the pgupgrades TPR
-	result := tpr.PgUpgrade{}
-	err := Tprclient.Get().
-		Resource("pgupgrades").
-		Namespace(Namespace).
-		Name(name).
-		Do().
-		Into(&result)
-	if err == nil {
-		fmt.Printf("\npgupgrade %s\n", name+" was found NEW_PVC_NAME is "+result.Spec.Name)
-	} else if errors.IsNotFound(err) {
-		fmt.Printf("\npgupgrade %s\n", name+" was not found ")
-	} else {
-		log.Errorf("\npgupgrade %s\n", name+" lookup error ")
-		log.Error(err.Error())
-		return
-	}
+func showUpgradeItem(upgrade *tpr.PgUpgrade) {
+
+	//print the TPR
+	fmt.Printf("%s%s\n", "", "")
+	fmt.Printf("%s%s\n", "", "pgupgrade : "+upgrade.Spec.Name)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "resource_type : "+upgrade.Spec.RESOURCE_TYPE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_access_mode : "+upgrade.Spec.PVC_ACCESS_MODE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_size : "+upgrade.Spec.PVC_SIZE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "ccp_image_tag : "+upgrade.Spec.CCP_IMAGE_TAG)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "old_database_name : "+upgrade.Spec.OLD_DATABASE_NAME)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "new_database_name : "+upgrade.Spec.NEW_DATABASE_NAME)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "old_version : "+upgrade.Spec.OLD_VERSION)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "new_version : "+upgrade.Spec.NEW_VERSION)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "old_pvc_name : "+upgrade.Spec.OLD_PVC_NAME)
+	fmt.Printf("%s%s\n", TREE_TRUNK, "new_pvc_name : "+upgrade.Spec.NEW_PVC_NAME)
 
 	//print the upgrade jobs if any exists
 	lo := v1.ListOptions{
-		LabelSelector: "pg-database=" + name + ",pgupgrade=true",
+		LabelSelector: "pg-database=" + upgrade.Spec.Name + ",pgupgrade=true",
 	}
 	log.Debug("label selector is " + lo.LabelSelector)
 	pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
 	if err2 != nil {
 		log.Error(err2.Error())
 	}
-	fmt.Printf("\nupgrade job pods for database %s\n", name+"...")
-	for _, p := range pods.Items {
-		fmt.Printf("%s%s\n", TREE_TRUNK, p.Name)
-	}
 
-	//print the upgrade pod if it exists
-	lo = v1.ListOptions{LabelSelector: "name=" + name}
-	log.Debug("label selector is " + lo.LabelSelector)
-	dbpods, err := Clientset.Core().Pods(Namespace).List(lo)
-	if err != nil || len(dbpods.Items) == 0 {
-		fmt.Printf("\nupgrade pod %s\n", name+" is not found")
-		fmt.Println(err.Error())
+	if len(pods.Items) == 0 {
+		fmt.Printf("\nno upgrade job pods for database %s\n", upgrade.Spec.Name+" were found")
 	} else {
-		fmt.Printf("\nupgrade pod %s\n", name+" is found")
+		fmt.Printf("\nupgrade job pods for database %s\n", upgrade.Spec.Name+"...")
+		for _, p := range pods.Items {
+			fmt.Printf("%s pod : %s (%s)\n", TREE_TRUNK, p.Name, p.Status.Phase)
+		}
 	}
 
 	fmt.Println("")
