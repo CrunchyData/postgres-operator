@@ -17,9 +17,13 @@ package util
 
 import (
 	"bytes"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"text/template"
+
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/rest"
 )
 
 func CreateSecContext(FS_GROUP string, SUPP string) string {
@@ -64,5 +68,36 @@ func LoadTemplate(path string) *template.Template {
 		panic(err.Error())
 	}
 	return template.Must(template.New(path).Parse(string(buf)))
+
+}
+
+type ThingSpec struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
+}
+
+func Patch(tprclient *rest.RESTClient, path string, value string, resource string, name string, namespace string) error {
+
+	things := make([]ThingSpec, 1)
+	things[0].Op = "replace"
+	things[0].Path = path
+	things[0].Value = value
+
+	patchBytes, err4 := json.Marshal(things)
+	if err4 != nil {
+		log.Error("error in converting patch " + err4.Error())
+	}
+	log.Debug(string(patchBytes))
+
+	_, err6 := tprclient.Patch(api.JSONPatchType).
+		Namespace(api.NamespaceDefault).
+		Resource(resource).
+		Name(name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
 
 }

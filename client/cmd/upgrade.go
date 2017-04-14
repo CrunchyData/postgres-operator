@@ -52,7 +52,11 @@ func showUpgrade(args []string) {
 				Namespace(Namespace).
 				Name(arg).
 				Do().Into(&upgrade)
-			showUpgradeItem(&upgrade)
+			if errors.IsNotFound(err) {
+				fmt.Println("pgupgrade " + arg + " not found ")
+			} else {
+				showUpgradeItem(&upgrade)
+			}
 
 		}
 
