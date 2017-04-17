@@ -16,12 +16,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var BackupPath, BackupPVC string
+var UpgradeType string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -58,9 +60,24 @@ pgo create upgrade mydatabase`,
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			createUpgrade(args)
+			err := validateCreateUpdate(args)
+			if err != nil {
+				log.Error(err.Error())
+			} else {
+				createUpgrade(args)
+			}
 		}
 	},
+}
+
+func validateCreateUpdate(args []string) error {
+	var err error
+
+	if UpgradeType == "major" || UpgradeType == "minor" {
+	} else {
+		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
+	}
+	return err
 }
 
 var createBackupCmd = &cobra.Command{
@@ -95,7 +112,6 @@ pgo create database mydatabase`,
 	},
 }
 
-// createClusterCmd represents the create database command
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Create a database cluster",
@@ -130,5 +146,7 @@ func init() {
 	// is called directly, e.g.:
 	createDatabaseCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createDatabaseCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
+
+	createUpgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
 
 }

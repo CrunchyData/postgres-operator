@@ -1,0 +1,16 @@
+apiVersion: "crunchydata.com/v1"
+kind: PgUpgrade
+metadata:
+  name: "example1"
+spec:
+  name: "example1"
+  resourcetype: "crunchy-pvc"
+  pvcaccessmode: "5432"
+  pvcsize: "centos7-9.5-1.2.8"
+  ccpimagetag: "master"
+  olddatabasename: "password"
+  newdatabasename: "testuser"
+  oldversion: "password"
+  newversion: "userdb"
+  oldpvcname: "password"
+  newpvcname: "password"

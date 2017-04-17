@@ -19,6 +19,7 @@
 package cluster
 
 import (
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	"time"
 
@@ -35,6 +36,9 @@ import (
 type ClusterStrategy interface {
 	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string) error
+
+	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
+	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 }
 
 type ServiceTemplateFields struct {
@@ -133,7 +137,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 			log.Error(err.Error())
 			return
 		}
-		log.Info("created PVC =" + db.Spec.PVC_NAME  + " in namespace " + namespace)
+		log.Info("created PVC =" + db.Spec.PVC_NAME + " in namespace " + namespace)
 	}
 	log.Debug("creating PgCluster object strategy is [" + db.Spec.STRATEGY + "]")
 
@@ -170,5 +174,32 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 		return
 	}
 	strategy.DeleteCluster(clientset, client, db, namespace)
+
+}
+
+func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string, cluster *tpr.PgCluster) error {
+	var err error
+
+	//get the strategy to use
+	if cluster.Spec.STRATEGY == "" {
+		cluster.Spec.STRATEGY = "1"
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[cluster.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		return errors.New("invalid STRATEGY requested for database upgrade" + cluster.Spec.STRATEGY)
+	}
+	//invoke the strategy
+	if upgrade.Spec.UPGRADE_TYPE == "minor" {
+		err = strategy.MinorUpgrade(clientset, client, cluster, upgrade, namespace)
+	} else if upgrade.Spec.UPGRADE_TYPE == "major" {
+		err = strategy.MajorUpgrade(clientset, client, cluster, upgrade, namespace)
+	} else {
+		return errors.New("invalid UPGRADE_TYPE requested for cluster upgrade " + upgrade.Spec.UPGRADE_TYPE)
+	}
+	return err
 
 }

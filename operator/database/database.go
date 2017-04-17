@@ -55,6 +55,8 @@ type PodTemplateFields struct {
 type DatabaseStrategy interface {
 	AddDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, string) error
 	DeleteDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, string) error
+	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, *tpr.PgUpgrade, string) error
+	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, *tpr.PgUpgrade, string) error
 }
 
 var strategyMap map[string]DatabaseStrategy
@@ -184,5 +186,35 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 	}
 
 	strategy.DeleteDatabase(clientset, client, db, namespace)
+
+}
+
+func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string, db *tpr.PgDatabase) error {
+	var err error
+
+	//get the strategy to use
+	if db.Spec.STRATEGY == "" {
+		db.Spec.STRATEGY = "1"
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		log.Error("invalid STRATEGY requested for database upgrade" + db.Spec.STRATEGY)
+		return err
+	}
+
+	//invoke the strategy
+	if upgrade.Spec.UPGRADE_TYPE == "minor" {
+		err = strategy.MinorUpgrade(clientset, client, db, upgrade, namespace)
+	} else if upgrade.Spec.UPGRADE_TYPE == "major" {
+		err = strategy.MajorUpgrade(clientset, client, db, upgrade, namespace)
+	} else {
+		log.Error("invalid UPGRADE_TYPE requested for database upgrade" + upgrade.Spec.UPGRADE_TYPE)
+		return err
+	}
+	return err
 
 }

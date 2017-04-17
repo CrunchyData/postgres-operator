@@ -69,7 +69,9 @@ func showUpgradeItem(upgrade *tpr.PgUpgrade) {
 	//print the TPR
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgupgrade : "+upgrade.Spec.Name)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "upgrade_status : "+upgrade.Spec.UPGRADE_STATUS)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "resource_type : "+upgrade.Spec.RESOURCE_TYPE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "upgrade_type : "+upgrade.Spec.UPGRADE_TYPE)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_access_mode : "+upgrade.Spec.PVC_ACCESS_MODE)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_size : "+upgrade.Spec.PVC_SIZE)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "ccp_image_tag : "+upgrade.Spec.CCP_IMAGE_TAG)
@@ -186,6 +188,7 @@ func getUpgradeParams(name string) *tpr.PgUpgrade {
 	spec := tpr.PgUpgradeSpec{
 		Name:              name,
 		RESOURCE_TYPE:     "database",
+		UPGRADE_TYPE:      UpgradeType,
 		PVC_ACCESS_MODE:   viper.GetString("DB.PVC_ACCESS_MODE"),
 		PVC_SIZE:          viper.GetString("DB.PVC_SIZE"),
 		CCP_IMAGE_TAG:     viper.GetString("DB.CCP_IMAGE_TAG"),

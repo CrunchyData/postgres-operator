@@ -16,55 +16,25 @@
 package upgrade
 
 import (
-	"bytes"
-	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"io/ioutil"
-	"text/template"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/operator/database"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-
-	//	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
-type JobTemplateFields struct {
-	Name              string
-	OLD_PVC_NAME      string
-	NEW_PVC_NAME      string
-	CCP_IMAGE_TAG     string
-	OLD_DATABASE_NAME string
-	NEW_DATABASE_NAME string
-	OLD_VERSION       string
-	NEW_VERSION       string
-}
-
-const JOB_PATH = "/pgconf/postgres-operator/upgrade-job.json"
-
-var JobTemplate *template.Template
-
-func init() {
-	var err error
-	var buf []byte
-
-	buf, err = ioutil.ReadFile(JOB_PATH)
-	if err != nil {
-		log.Error(err.Error())
-		panic(err.Error())
-	}
-	JobTemplate = template.Must(template.New("upgrade job template").Parse(string(buf)))
-
-}
+const COMPLETED_STATUS = "completed"
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
@@ -114,144 +84,71 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
-	log.Info("addUpgrade called " + " in namespace " + namespace)
-	log.Info("Name=" + job.Spec.Name + " in namespace " + namespace)
-	if true {
-		log.Info(" resource type is " + job.Spec.RESOURCE_TYPE)
-		return
-	}
-	if job.Spec.RESOURCE_TYPE == "database" {
-		addUpgradeDatabase(clientset, client, job, namespace)
-	} else if job.Spec.RESOURCE_TYPE == "cluster" {
-		addUpgradeCluster(clientset, client, job, namespace)
+func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string) {
+	var err error
+	db := tpr.PgDatabase{}
+	cl := tpr.PgCluster{}
+
+	//get the pgdatabase TPR
+
+	err = client.Get().
+		Resource("pgdatabases").
+		Namespace(namespace).
+		Name(upgrade.Spec.Name).
+		Do().
+		Into(&db)
+
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Debug("pgdatabase " + upgrade.Spec.Name + " not found ")
+		} else {
+			log.Error("error getting pgdatabase " + upgrade.Spec.Name + err.Error())
+		}
 	} else {
-		log.Error("error in addUpgrade. unknown RESOURCE_TYPE " + job.Spec.RESOURCE_TYPE)
-		return
-	}
-
-}
-
-func addUpgradeDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
-	var err error
-	//stop old database
-
-	//create the new database PVC if necessary
-	if job.Spec.NEW_PVC_NAME == "" {
-		job.Spec.NEW_PVC_NAME = job.Spec.Name + "-upgrade-pvc"
-		err = pvc.Create(clientset, job.Spec.NEW_PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
+		err = database.AddUpgrade(clientset, client, upgrade, namespace, &db)
 		if err != nil {
 			log.Error(err.Error())
-			return
+		} else {
+			//update the upgrade TPR status to completed
+			err = util.Patch(client, "/spec/upgradestatus", COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+			if err != nil {
+				log.Error(err.Error())
+			}
 		}
-		log.Info("created upgrade PVC =" + job.Spec.NEW_PVC_NAME + " in namespace " + namespace)
-
+		return
 	}
 
-	//if major upgrade, create the upgrade job
-	jobFields := JobTemplateFields{
-		Name:              job.Spec.Name,
-		NEW_PVC_NAME:      job.Spec.NEW_PVC_NAME,
-		OLD_PVC_NAME:      job.Spec.OLD_PVC_NAME,
-		CCP_IMAGE_TAG:     job.Spec.CCP_IMAGE_TAG,
-		OLD_DATABASE_NAME: job.Spec.OLD_DATABASE_NAME,
-		NEW_DATABASE_NAME: job.Spec.NEW_DATABASE_NAME,
-		OLD_VERSION:       job.Spec.OLD_VERSION,
-		NEW_VERSION:       job.Spec.NEW_VERSION,
+	//not a db so get the pgcluster TPR
+	err = client.Get().
+		Resource("pgclusters").
+		Namespace(namespace).
+		Name(upgrade.Spec.Name).
+		Do().
+		Into(&cl)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Debug("pgcluster " + upgrade.Spec.Name + " not found ")
+			return
+		} else {
+			log.Error("error getting pgcluser " + upgrade.Spec.Name + err.Error())
+		}
 	}
 
-	var doc2 bytes.Buffer
-	err = JobTemplate.Execute(&doc2, jobFields)
+	err = cluster.AddUpgrade(clientset, client, upgrade, namespace, &cl)
 	if err != nil {
 		log.Error(err.Error())
-		return
-	}
-	jobDocString := doc2.String()
-	log.Debug(jobDocString)
-
-	//newjob := v1beta1.Job{}
-	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
-		log.Error("error unmarshalling json into Job " + err.Error())
-		return
-	}
-
-	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
-	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
-	if err != nil {
-		log.Error("error creating Job " + err.Error())
-		return
-	}
-	log.Info("created Job " + resultJob.Name)
-
-	//create watch of job
-
-	//if success, start new database pod
-
-}
-
-func addUpgradeCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
-	var err error
-	//stop old database
-
-	//create the new database PVC if necessary
-	if job.Spec.NEW_PVC_NAME == "" {
-		job.Spec.NEW_PVC_NAME = job.Spec.Name + "-upgrade-pvc"
-		err = pvc.Create(clientset, job.Spec.NEW_PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
+	} else {
+		//update the upgrade TPR status to completed
+		err = util.Patch(client, "/spec/upgradestatus", COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err.Error())
-			return
 		}
-		log.Info("created upgrade PVC =" + job.Spec.NEW_PVC_NAME + " in namespace " + namespace)
-
 	}
-
-	//if major upgrade, create the upgrade job
-	jobFields := JobTemplateFields{
-		Name:              job.Spec.Name,
-		NEW_PVC_NAME:      job.Spec.NEW_PVC_NAME,
-		OLD_PVC_NAME:      job.Spec.OLD_PVC_NAME,
-		CCP_IMAGE_TAG:     job.Spec.CCP_IMAGE_TAG,
-		OLD_DATABASE_NAME: job.Spec.OLD_DATABASE_NAME,
-		NEW_DATABASE_NAME: job.Spec.NEW_DATABASE_NAME,
-		OLD_VERSION:       job.Spec.OLD_VERSION,
-		NEW_VERSION:       job.Spec.NEW_VERSION,
-	}
-
-	var doc2 bytes.Buffer
-	err = JobTemplate.Execute(&doc2, jobFields)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-	jobDocString := doc2.String()
-	log.Debug(jobDocString)
-
-	//newjob := v1beta1.Job{}
-	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
-		log.Error("error unmarshalling json into Job " + err.Error())
-		return
-	}
-
-	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
-	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
-	if err != nil {
-		log.Error("error creating Job " + err.Error())
-		return
-	}
-	log.Info("created Job " + resultJob.Name)
-
-	//create watch of job
-
-	//if success, start new database pod
 
 }
 
-func deleteUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgUpgrade, namespace string) {
-	var jobName = "upgrade-" + job.Spec.Name
+func deleteUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string) {
+	var jobName = "upgrade-" + upgrade.Spec.Name
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
 	//delete the job
