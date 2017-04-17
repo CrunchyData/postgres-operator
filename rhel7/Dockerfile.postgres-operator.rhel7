@@ -1,0 +1,16 @@
+FROM rhel7.2
+
+LABEL Release="1.0.0" Vendor="Crunchy Data Solutions" 
+
+RUN yum -y install bind-utils \
+	hostname \
+	openssh-clients \
+ 	procps-ng   && yum -y clean all
+
+ADD bin/postgres-operator /usr/local/bin
+
+VOLUME ["/pgconf"]
+
+USER daemon
+
+ENTRYPOINT ["postgres-operator"]
