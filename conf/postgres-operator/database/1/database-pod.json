@@ -60,6 +60,9 @@
                 "name": "PG_DATABASE",
                 "value": "{{.PG_DATABASE}}"
             }, {
+                "name": "PGDATA_PATH_OVERRIDE",
+                "value": "{{.PGDATA_PATH_OVERRIDE}}"
+            }, {
                 "name": "PG_ROOT_PASSWORD",
                 "value": "{{.PG_ROOT_PASSWORD}}"
             }],

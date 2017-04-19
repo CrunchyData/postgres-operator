@@ -118,6 +118,7 @@ func main() {
 	go cluster.Process(clientset, tprclient, stopchan, namespace)
 	go backup.Process(clientset, tprclient, stopchan, namespace)
 	go upgrade.Process(clientset, tprclient, stopchan, namespace)
+	go upgrade.MajorUpgradeProcess(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

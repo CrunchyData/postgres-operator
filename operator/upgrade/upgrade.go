@@ -17,6 +17,7 @@ package upgrade
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"os"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/cluster"
@@ -29,12 +30,14 @@ import (
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
+	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/pkg/fields"
+	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
-const COMPLETED_STATUS = "completed"
+const SUBMITTED_STATUS = "submitted"
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
@@ -84,14 +87,14 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string) {
+func addUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string) {
 	var err error
 	db := tpr.PgDatabase{}
 	cl := tpr.PgCluster{}
 
 	//get the pgdatabase TPR
 
-	err = client.Get().
+	err = tprclient.Get().
 		Resource("pgdatabases").
 		Namespace(namespace).
 		Name(upgrade.Spec.Name).
@@ -105,12 +108,12 @@ func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 			log.Error("error getting pgdatabase " + upgrade.Spec.Name + err.Error())
 		}
 	} else {
-		err = database.AddUpgrade(clientset, client, upgrade, namespace, &db)
+		err = database.AddUpgrade(clientset, tprclient, upgrade, namespace, &db)
 		if err != nil {
 			log.Error(err.Error())
 		} else {
-			//update the upgrade TPR status to completed
-			err = util.Patch(client, "/spec/upgradestatus", COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+			//update the upgrade TPR status to submitted
+			err = util.Patch(tprclient, "/spec/upgradestatus", SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -119,7 +122,7 @@ func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 	}
 
 	//not a db so get the pgcluster TPR
-	err = client.Get().
+	err = tprclient.Get().
 		Resource("pgclusters").
 		Namespace(namespace).
 		Name(upgrade.Spec.Name).
@@ -134,12 +137,12 @@ func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 		}
 	}
 
-	err = cluster.AddUpgrade(clientset, client, upgrade, namespace, &cl)
+	err = cluster.AddUpgrade(clientset, tprclient, upgrade, namespace, &cl)
 	if err != nil {
 		log.Error(err.Error())
 	} else {
-		//update the upgrade TPR status to completed
-		err = util.Patch(client, "/spec/upgradestatus", COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		//update the upgrade TPR status to submitted
+		err = util.Patch(tprclient, "/spec/upgradestatus", SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err.Error())
 		}
@@ -147,7 +150,7 @@ func addUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 
 }
 
-func deleteUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string) {
+func deleteUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string) {
 	var jobName = "upgrade-" + upgrade.Spec.Name
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
@@ -160,4 +163,117 @@ func deleteUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upg
 		return
 	}
 	log.Debug("deleted Job " + jobName)
+}
+
+//process major upgrade completions
+//this watcher will look for completed upgrade jobs
+//and when this occurs, will update the upgrade TPR status to
+//completed and spin up the database or cluster using the newly
+//upgraded data files
+func MajorUpgradeProcess(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
+
+	lo := v1.ListOptions{LabelSelector: "pgupgrade=true"}
+	fw, err := clientset.Batch().Jobs(namespace).Watch(lo)
+	if err != nil {
+		log.Error(err.Error())
+		os.Exit(2)
+	}
+
+	_, err4 := watch.Until(0, fw, func(event watch.Event) (bool, error) {
+		log.Infoln("got a pgupgrade job watch event")
+
+		switch event.Type {
+		case watch.Added:
+			gotjob := event.Object.(*v1batch.Job)
+			log.Infof("pgupgrade job added=%d\n", gotjob.Status.Succeeded)
+		case watch.Deleted:
+			gotjob := event.Object.(*v1batch.Job)
+			log.Infof("pgupgrade job deleted=%d\n", gotjob.Status.Succeeded)
+		case watch.Error:
+			log.Infof("pgupgrade job watch error event")
+		case watch.Modified:
+			gotjob := event.Object.(*v1batch.Job)
+			log.Infof("pgupgrade job modified=%d\n", gotjob.Status.Succeeded)
+			if gotjob.Status.Succeeded == 1 {
+				log.Infoln("pgupgrade job " + gotjob.Name + " succeeded")
+				finishUpgrade(clientset, tprclient, gotjob, namespace)
+
+			}
+		default:
+			log.Infoln("unknown watch event %v\n", event.Type)
+		}
+
+		return false, nil
+	})
+
+	if err4 != nil {
+		log.Error(err4.Error())
+	}
+
+}
+
+func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, job *v1batch.Job, namespace string) {
+
+	var db tpr.PgDatabase
+	var upgrade tpr.PgUpgrade
+
+	//from the job get the db and upgrade TPRs
+	//pgdatabase name is from the pg-database label value in the job
+	//pgupgrade name is from the pg-database label value in the job
+	dbName := job.ObjectMeta.Labels["pg-database"]
+	if dbName == "" {
+		log.Error("dbName was empty in the pg-database label for the upgrade job")
+		return
+	}
+
+	err := tprclient.Get().
+		Resource("pgupgrades").
+		Namespace(namespace).
+		Name(dbName).
+		Do().Into(&upgrade)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Error(dbName + " pgupgrade tpr is not found")
+		} else {
+			log.Error(err.Error())
+		}
+	}
+	log.Info(dbName + " pgupgrade tpr is found")
+
+	err = tprclient.Get().
+		Resource("pgdatabases").
+		Namespace(namespace).
+		Name(dbName).
+		Do().Into(&db)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Error(dbName + " pgdatabase tpr is not found")
+		} else {
+			log.Error(err.Error())
+		}
+	}
+	log.Info(dbName + " pgdatabase tpr is found")
+
+	var strategy database.DatabaseStrategy
+
+	if db.Spec.STRATEGY == "" {
+		db.Spec.STRATEGY = "1"
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := database.StrategyMap[db.Spec.STRATEGY]
+
+	if ok {
+		log.Info("strategy found")
+
+	} else {
+		log.Error("invalid STRATEGY requested for Database creation" + db.Spec.STRATEGY)
+		return
+	}
+
+	err = strategy.MajorUpgradeFinalize(clientset, tprclient, &db, &upgrade, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }

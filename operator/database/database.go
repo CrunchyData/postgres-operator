@@ -37,19 +37,20 @@ type ServiceTemplateFields struct {
 }
 
 type PodTemplateFields struct {
-	Name               string
-	Port               string
-	PVC_NAME           string
-	CCP_IMAGE_TAG      string
-	PG_MASTER_USER     string
-	PG_MASTER_PASSWORD string
-	PG_USER            string
-	PG_PASSWORD        string
-	PG_DATABASE        string
-	PG_ROOT_PASSWORD   string
-	BACKUP_PVC_NAME    string
-	BACKUP_PATH        string
-	SECURITY_CONTEXT   string
+	Name                 string
+	Port                 string
+	PVC_NAME             string
+	CCP_IMAGE_TAG        string
+	PG_MASTER_USER       string
+	PG_MASTER_PASSWORD   string
+	PG_USER              string
+	PG_PASSWORD          string
+	PG_DATABASE          string
+	PG_ROOT_PASSWORD     string
+	PGDATA_PATH_OVERRIDE string
+	BACKUP_PVC_NAME      string
+	BACKUP_PATH          string
+	SECURITY_CONTEXT     string
 }
 
 type DatabaseStrategy interface {
@@ -57,13 +58,14 @@ type DatabaseStrategy interface {
 	DeleteDatabase(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, string) error
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, *tpr.PgUpgrade, string) error
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, *tpr.PgUpgrade, string) error
+	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgDatabase, *tpr.PgUpgrade, string) error
 }
 
-var strategyMap map[string]DatabaseStrategy
+var StrategyMap map[string]DatabaseStrategy
 
 func init() {
-	strategyMap = make(map[string]DatabaseStrategy)
-	strategyMap["1"] = DatabaseStrategy1{}
+	StrategyMap = make(map[string]DatabaseStrategy)
+	StrategyMap["1"] = DatabaseStrategy1{}
 
 }
 
@@ -142,7 +144,7 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		log.Info("using default strategy")
 	}
 
-	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[db.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 
@@ -177,7 +179,7 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 		log.Info("using default strategy")
 	}
 
-	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[db.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {
@@ -198,7 +200,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 		log.Info("using default strategy")
 	}
 
-	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[db.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {

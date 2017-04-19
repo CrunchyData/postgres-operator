@@ -21,6 +21,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"text/template"
 	"time"
@@ -81,7 +82,7 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 		log.Error("error creating pvc " + err.Error() + " in namespace " + namespace)
 		return err
 	}
-	log.Debug("created PVC " + result.Name + " in namespace " + namespace )
+	log.Debug("created PVC " + result.Name + " in namespace " + namespace)
 	time.Sleep(3000 * time.Millisecond)
 	return nil
 
@@ -104,7 +105,7 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 		//if pgremove = true remove it
 		if pvc.ObjectMeta.Labels["pgremove"] == "true" {
 			log.Info("pgremove is true on this pvc")
-			log.Debug("delete PVC " + name  + " in namespace " + namespace)
+			log.Debug("delete PVC " + name + " in namespace " + namespace)
 			err = clientset.Core().PersistentVolumeClaims(namespace).Delete(name, &v1.DeleteOptions{})
 			if err != nil {
 				log.Error("error deleting PVC " + name + err.Error() + " in namespace " + namespace)
@@ -115,4 +116,17 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 
 	return nil
 
+}
+
+func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
+	_, err := clientset.Core().PersistentVolumeClaims(namespace).Get(name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return false
+		} else {
+			log.Error("error getting PVC " + name + " " + err.Error() + " in namespace " + namespace)
+		}
+	}
+
+	return true
 }
