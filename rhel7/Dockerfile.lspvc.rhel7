@@ -1,0 +1,9 @@
+FROM rhel7.2
+
+LABEL Release="1.0.0" Vendor="Crunchy Data Solutions" 
+
+VOLUME ["/pgdata"]
+
+USER 26
+
+CMD ["sh", "-c", "ls /pgdata/${BACKUP_ROOT}"]
