@@ -40,7 +40,6 @@ import (
 	"k8s.io/client-go/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var (
@@ -86,29 +85,6 @@ func main() {
 
 	//wait a bit to let the resources be created
 	time.Sleep(2000 * time.Millisecond)
-
-	/**
-	exampleList := tpr.CrunchyDatabaseList{}
-	err = tprclient.Get().
-		Resource("pgdatabases").
-		Do().Into(&exampleList)
-	if err != nil {
-		panic(err.Error())
-	}
-	fmt.Printf("%#v\n", exampleList)
-
-	example := tpr.CrunchyDatabase{}
-	err = tprclient.Get().
-		Namespace("default").
-		Resource("pgdatabases").
-		Name("example1").
-		Do().Into(&example)
-	if err != nil {
-		log.Info("example1 not found")
-	} else {
-		fmt.Printf("%#v\n", example)
-	}
-	*/
 
 	log.Info("---------------------------------------------------------")
 

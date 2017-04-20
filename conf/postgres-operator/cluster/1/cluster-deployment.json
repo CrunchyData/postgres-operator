@@ -37,7 +37,7 @@
                         "value": "master"
                     }, {
                         "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.Name}}"
+                        "value": "{{.PGDATA_PATH_OVERRIDE}}"
                     }, {
                         "name": "PG_MASTER_USER",
                         "value": "{{.PG_MASTER_USER}}"

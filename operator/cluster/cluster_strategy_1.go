@@ -48,20 +48,20 @@ func init() {
 	DeploymentTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-deployment.json")
 }
 
-func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) error {
+func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
 	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
 	var err error
 	var replicaServiceResult, serviceResult *v1.Service
 	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
 
 	log.Info("creating PgCluster object using Strategy 1" + " in namespace " + namespace)
-	log.Info("created with Name=" + db.Spec.Name  + " in namespace " + namespace)
+	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
 	//create the master service
 	serviceFields := ServiceTemplateFields{
-		Name:        db.Spec.Name,
-		ClusterName: db.Spec.Name,
-		Port:        db.Spec.Port,
+		Name:        cl.Spec.Name,
+		ClusterName: cl.Spec.Name,
+		Port:        cl.Spec.Port,
 	}
 
 	err = ServiceTemplate1.Execute(&serviceDoc, serviceFields)
@@ -88,9 +88,9 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 	//create the replica service
 	replicaServiceFields := ServiceTemplateFields{
-		Name:        db.Spec.Name + REPLICA_SUFFIX,
-		ClusterName: db.Spec.Name,
-		Port:        db.Spec.Port,
+		Name:        cl.Spec.Name + REPLICA_SUFFIX,
+		ClusterName: cl.Spec.Name,
+		Port:        cl.Spec.Port,
 	}
 
 	err = ServiceTemplate1.Execute(&replicaServiceDoc, replicaServiceFields)
@@ -118,18 +118,19 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 	//create the master deployment
 	deploymentFields := DeploymentTemplateFields{
-		Name:               db.Spec.Name,
-		ClusterName:        db.Spec.Name,
-		Port:               db.Spec.Port,
-		CCP_IMAGE_TAG:      db.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:           db.Spec.PVC_NAME,
-		PG_MASTER_USER:     db.Spec.PG_MASTER_USER,
-		PG_MASTER_PASSWORD: db.Spec.PG_MASTER_PASSWORD,
-		PG_USER:            db.Spec.PG_USER,
-		PG_PASSWORD:        db.Spec.PG_PASSWORD,
-		PG_DATABASE:        db.Spec.PG_DATABASE,
-		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
-		SECURITY_CONTEXT:   util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
+		Name:                 cl.Spec.Name,
+		ClusterName:          cl.Spec.Name,
+		Port:                 cl.Spec.Port,
+		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:             cl.Spec.PVC_NAME,
+		PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
+		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
+		PG_USER:              cl.Spec.PG_USER,
+		PG_PASSWORD:          cl.Spec.PG_PASSWORD,
+		PG_DATABASE:          cl.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -156,20 +157,20 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:               db.Spec.Name + REPLICA_SUFFIX,
-		ClusterName:        db.Spec.Name,
-		Port:               db.Spec.Port,
-		CCP_IMAGE_TAG:      db.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:           db.Spec.PVC_NAME,
-		PG_MASTER_HOST:     db.Spec.PG_MASTER_HOST,
-		PG_MASTER_USER:     db.Spec.PG_MASTER_USER,
-		PG_MASTER_PASSWORD: db.Spec.PG_MASTER_PASSWORD,
-		PG_USER:            db.Spec.PG_USER,
-		PG_PASSWORD:        db.Spec.PG_PASSWORD,
-		PG_DATABASE:        db.Spec.PG_DATABASE,
-		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
-		REPLICAS:           db.Spec.REPLICAS,
-		SECURITY_CONTEXT:   util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
+		Name:               cl.Spec.Name + REPLICA_SUFFIX,
+		ClusterName:        cl.Spec.Name,
+		Port:               cl.Spec.Port,
+		CCP_IMAGE_TAG:      cl.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:           cl.Spec.PVC_NAME,
+		PG_MASTER_HOST:     cl.Spec.PG_MASTER_HOST,
+		PG_MASTER_USER:     cl.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD: cl.Spec.PG_MASTER_PASSWORD,
+		PG_USER:            cl.Spec.PG_USER,
+		PG_PASSWORD:        cl.Spec.PG_PASSWORD,
+		PG_DATABASE:        cl.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:   cl.Spec.PG_ROOT_PASSWORD,
+		REPLICAS:           cl.Spec.REPLICAS,
+		SECURITY_CONTEXT:   util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
@@ -197,84 +198,36 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 }
 
-func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) error {
+func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
 	log.Info("deleting PgCluster object" + " in namespace " + namespace)
-	log.Info("deleting with Name=" + db.Spec.Name + " in namespace " + namespace)
+	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
 	//delete the master service
 
-	err := clientset.Services(namespace).Delete(db.Spec.Name,
+	err := clientset.Services(namespace).Delete(cl.Spec.Name,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting master Service " + err.Error())
 	}
-	log.Info("deleted master service " + db.Spec.Name)
+	log.Info("deleted master service " + cl.Spec.Name)
 
 	//delete the replica service
-	err = clientset.Services(namespace).Delete(db.Spec.Name+REPLICA_SUFFIX,
+	err = clientset.Services(namespace).Delete(cl.Spec.Name+REPLICA_SUFFIX,
 		&v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting replica Service " + err.Error())
 	}
-	log.Info("deleted replica service " + db.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
+	log.Info("deleted replica service " + cl.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
 
-	//delete the master deployment
-	err = clientset.Deployments(namespace).Delete(db.Spec.Name,
-		&v1.DeleteOptions{})
+	//delete the master and replica deployments
+	err = shutdownCluster(clientset, tprclient, cl, namespace)
 	if err != nil {
 		log.Error("error deleting master Deployment " + err.Error())
 	}
 
-	log.Info("deleted master Deployment " + db.Spec.Name + " in namespace " + namespace)
-	//delete the master replicaset
-
-	//find the replicaset pod name
-	options := v1.ListOptions{}
-	options.LabelSelector = "name=" + db.Spec.Name
-
-	var reps *v1beta1.ReplicaSetList
-	reps, err = clientset.ReplicaSets(namespace).List(options)
-	if err != nil {
-		log.Error("error getting master replicaset name" + err.Error())
-	} else {
-		if len(reps.Items) > 0 {
-			err = clientset.ReplicaSets(namespace).Delete(reps.Items[0].Name,
-				&v1.DeleteOptions{})
-			if err != nil {
-				log.Error("error deleting master replicaset " + err.Error())
-			}
-
-			log.Info("deleted master replicaset " + reps.Items[0].Name + " in namespace " + namespace)
-		}
-	}
-
-	//delete the replica deployment
-	err = clientset.Deployments(namespace).Delete(db.Spec.Name+REPLICA_SUFFIX,
-		&v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting replica Deployment " + err.Error())
-	}
-	log.Info("deleted replica Deployment " + db.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
-	//delete the replica ReplicaSet
-	options.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
-
-	reps, err = clientset.ReplicaSets(namespace).List(options)
-	if err != nil {
-		log.Error("error getting replica replicaset name" + err.Error())
-	} else {
-		if len(reps.Items) > 0 {
-			err = clientset.ReplicaSets(namespace).Delete(reps.Items[0].Name,
-				&v1.DeleteOptions{})
-			if err != nil {
-				log.Error("error deleting replica replicaset " + err.Error())
-			}
-			log.Info("deleted replica replicaset " + reps.Items[0].Name + " in namespace " + namespace)
-		}
-	}
-
-	//lastly, delete any remaining pods
+	//lastly, delete any remaining pods that may be left lingering
 	listOptions := v1.ListOptions{}
-	listOptions.LabelSelector = "name=" + db.Spec.Name
+	listOptions.LabelSelector = "name=" + cl.Spec.Name
 	pods, err := clientset.Core().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
 		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
@@ -286,10 +239,10 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, client 
 		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
 
 	}
-	listOptions.LabelSelector = "name=" + db.Spec.Name + REPLICA_SUFFIX
+	listOptions.LabelSelector = "name=" + cl.Spec.Name + REPLICA_SUFFIX
 	pods, err = clientset.Core().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
-		log.Info("deleting pod " + pod.Name  + " in namespace " + namespace)
+		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
 		err = clientset.Pods(namespace).Delete(pod.Name,
 			&v1.DeleteOptions{})
 		if err != nil {

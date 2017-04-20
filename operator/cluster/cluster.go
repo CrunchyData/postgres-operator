@@ -19,7 +19,6 @@
 package cluster
 
 import (
-	"errors"
 	log "github.com/Sirupsen/logrus"
 	"time"
 
@@ -39,6 +38,7 @@ type ClusterStrategy interface {
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
+	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 }
 
 type ServiceTemplateFields struct {
@@ -48,17 +48,18 @@ type ServiceTemplateFields struct {
 }
 
 type DeploymentTemplateFields struct {
-	Name               string
-	ClusterName        string
-	Port               string
-	CCP_IMAGE_TAG      string
-	PG_MASTER_USER     string
-	PG_MASTER_PASSWORD string
-	PG_USER            string
-	PG_PASSWORD        string
-	PG_DATABASE        string
-	PG_ROOT_PASSWORD   string
-	PVC_NAME           string
+	Name                 string
+	ClusterName          string
+	Port                 string
+	CCP_IMAGE_TAG        string
+	PG_MASTER_USER       string
+	PG_MASTER_PASSWORD   string
+	PG_USER              string
+	PG_PASSWORD          string
+	PG_DATABASE          string
+	PG_ROOT_PASSWORD     string
+	PGDATA_PATH_OVERRIDE string
+	PVC_NAME             string
 	//next 2 are for the replica deployment only
 	REPLICAS         string
 	PG_MASTER_HOST   string
@@ -67,14 +68,11 @@ type DeploymentTemplateFields struct {
 
 const REPLICA_SUFFIX = "-replica"
 
-var strategyMap map[string]ClusterStrategy
-
-//var strategy1 ClusterStrategy
+var StrategyMap map[string]ClusterStrategy
 
 func init() {
-	//strategy1 = ClusterStrategy1{}
-	strategyMap = make(map[string]ClusterStrategy)
-	strategyMap["1"] = ClusterStrategy1{}
+	StrategyMap = make(map[string]ClusterStrategy)
+	StrategyMap["1"] = ClusterStrategy1{}
 }
 
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
@@ -146,7 +144,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tp
 		log.Info("using default strategy")
 	}
 
-	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[db.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {
@@ -166,7 +164,7 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 		db.Spec.STRATEGY = "1"
 	}
 
-	strategy, ok := strategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[db.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {
@@ -177,28 +175,31 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db 
 
 }
 
-func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string, cluster *tpr.PgCluster) error {
+func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *tpr.PgUpgrade, namespace string, cl *tpr.PgCluster) error {
 	var err error
 
 	//get the strategy to use
-	if cluster.Spec.STRATEGY == "" {
-		cluster.Spec.STRATEGY = "1"
-		log.Info("using default strategy")
+	if cl.Spec.STRATEGY == "" {
+		cl.Spec.STRATEGY = "1"
+		log.Info("using default cluster strategy")
 	}
 
-	strategy, ok := strategyMap[cluster.Spec.STRATEGY]
+	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		return errors.New("invalid STRATEGY requested for database upgrade" + cluster.Spec.STRATEGY)
+		log.Error("invalid STRATEGY requested for cluster upgrade" + cl.Spec.STRATEGY)
+		return err
 	}
+
 	//invoke the strategy
 	if upgrade.Spec.UPGRADE_TYPE == "minor" {
-		err = strategy.MinorUpgrade(clientset, client, cluster, upgrade, namespace)
+		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
 	} else if upgrade.Spec.UPGRADE_TYPE == "major" {
-		err = strategy.MajorUpgrade(clientset, client, cluster, upgrade, namespace)
+		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
 	} else {
-		return errors.New("invalid UPGRADE_TYPE requested for cluster upgrade " + upgrade.Spec.UPGRADE_TYPE)
+		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UPGRADE_TYPE)
+		return err
 	}
 	return err
 

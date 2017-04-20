@@ -228,6 +228,8 @@ func getUpgradeParams(name string) *tpr.PgUpgrade {
 			spec.RESOURCE_TYPE = "cluster"
 			spec.OLD_DATABASE_NAME = cluster.Spec.Name
 			spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
+			spec.OLD_PVC_NAME = cluster.Spec.PVC_NAME
+			spec.NEW_PVC_NAME = cluster.Spec.PVC_NAME + "-upgrade"
 		} else if errors.IsNotFound(err) {
 			log.Debug(name + " is not a cluster")
 			return nil

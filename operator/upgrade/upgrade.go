@@ -37,8 +37,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-const SUBMITTED_STATUS = "submitted"
-
 func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
 	eventchan := make(chan *tpr.PgUpgrade)
@@ -113,7 +111,7 @@ func addUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upg
 			log.Error(err.Error())
 		} else {
 			//update the upgrade TPR status to submitted
-			err = util.Patch(tprclient, "/spec/upgradestatus", SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+			err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -142,7 +140,7 @@ func addUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upg
 		log.Error(err.Error())
 	} else {
 		//update the upgrade TPR status to submitted
-		err = util.Patch(tprclient, "/spec/upgradestatus", SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err.Error())
 		}
@@ -214,66 +212,106 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, tprclient *rest.RESTCl
 
 func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, job *v1batch.Job, namespace string) {
 
+	var cl tpr.PgCluster
 	var db tpr.PgDatabase
 	var upgrade tpr.PgUpgrade
 
 	//from the job get the db and upgrade TPRs
 	//pgdatabase name is from the pg-database label value in the job
+	// it represents the cluster name or the database name
 	//pgupgrade name is from the pg-database label value in the job
-	dbName := job.ObjectMeta.Labels["pg-database"]
-	if dbName == "" {
-		log.Error("dbName was empty in the pg-database label for the upgrade job")
+	name := job.ObjectMeta.Labels["pg-database"]
+	if name == "" {
+		log.Error("name was empty in the pg-database label for the upgrade job")
 		return
 	}
 
 	err := tprclient.Get().
 		Resource("pgupgrades").
 		Namespace(namespace).
-		Name(dbName).
+		Name(name).
 		Do().Into(&upgrade)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Error(dbName + " pgupgrade tpr is not found")
+			log.Error(name + " pgupgrade tpr is not found")
 		} else {
 			log.Error(err.Error())
 		}
 	}
-	log.Info(dbName + " pgupgrade tpr is found")
+	log.Info(name + " pgupgrade tpr is found")
 
-	err = tprclient.Get().
-		Resource("pgdatabases").
-		Namespace(namespace).
-		Name(dbName).
-		Do().Into(&db)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Error(dbName + " pgdatabase tpr is not found")
+	if upgrade.Spec.RESOURCE_TYPE == "cluster" {
+		err = tprclient.Get().
+			Resource("pgclusters").
+			Namespace(namespace).
+			Name(name).
+			Do().Into(&cl)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				log.Error(name + " pgcluster tpr is not found")
+			} else {
+				log.Error(err.Error())
+			}
+		}
+		log.Info(name + " pgcluster tpr is found")
+
+		var clusterStrategy cluster.ClusterStrategy
+
+		if cl.Spec.STRATEGY == "" {
+			cl.Spec.STRATEGY = "1"
+			log.Info("using default strategy")
+		}
+
+		clusterStrategy, ok := cluster.StrategyMap[cl.Spec.STRATEGY]
+
+		if ok {
+			log.Info("strategy found")
+
 		} else {
+			log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
+			return
+		}
+
+		err = clusterStrategy.MajorUpgradeFinalize(clientset, tprclient, &cl, &upgrade, namespace)
+		if err != nil {
 			log.Error(err.Error())
 		}
-	}
-	log.Info(dbName + " pgdatabase tpr is found")
-
-	var strategy database.DatabaseStrategy
-
-	if db.Spec.STRATEGY == "" {
-		db.Spec.STRATEGY = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := database.StrategyMap[db.Spec.STRATEGY]
-
-	if ok {
-		log.Info("strategy found")
-
 	} else {
-		log.Error("invalid STRATEGY requested for Database creation" + db.Spec.STRATEGY)
-		return
-	}
+		err = tprclient.Get().
+			Resource("pgdatabases").
+			Namespace(namespace).
+			Name(name).
+			Do().Into(&db)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				log.Error(name + " pgdatabase tpr is not found")
+			} else {
+				log.Error(err.Error())
+			}
+		}
+		log.Info(name + " pgdatabase tpr is found")
 
-	err = strategy.MajorUpgradeFinalize(clientset, tprclient, &db, &upgrade, namespace)
-	if err != nil {
-		log.Error(err.Error())
+		var strategy database.DatabaseStrategy
+
+		if db.Spec.STRATEGY == "" {
+			db.Spec.STRATEGY = "1"
+			log.Info("using default strategy")
+		}
+
+		strategy, ok := database.StrategyMap[db.Spec.STRATEGY]
+
+		if ok {
+			log.Info("strategy found")
+
+		} else {
+			log.Error("invalid STRATEGY requested for Database creation" + db.Spec.STRATEGY)
+			return
+		}
+
+		err = strategy.MajorUpgradeFinalize(clientset, tprclient, &db, &upgrade, namespace)
+		if err != nil {
+			log.Error(err.Error())
+		}
 	}
 
 }

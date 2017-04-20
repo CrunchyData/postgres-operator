@@ -25,6 +25,9 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
+const UPGRADE_COMPLETED_STATUS = "completed"
+const UPGRADE_SUBMITTED_STATUS = "submitted"
+
 type PgUpgradeSpec struct {
 	Name              string `json:"name"`
 	RESOURCE_TYPE     string `json:"resourcetype"`

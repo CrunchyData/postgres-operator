@@ -38,12 +38,6 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v
 	}
 
 	conditions := []watch.ConditionFunc{
-		//		func(event watch.Event) (bool, error) {
-		//			log.Info("watch Added callled")
-		//			gotpod2 := event.Object.(*v1.Pod)
-		//			log.Info("pod2 phase=" + gotpod2.Status.Phase)
-		//			return event.Type == watch.Added, nil
-		//		},
 		func(event watch.Event) (bool, error) {
 			log.Info("watch Modified called")
 			gotpod2 := event.Object.(*v1.Pod)
@@ -90,6 +84,43 @@ func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, time
 		func(event watch.Event) (bool, error) {
 			if event.Type == watch.Deleted {
 				log.Info("pod delete event received in WaitUntilPodIsDeleted")
+				return true, nil
+			}
+			return false, nil
+		},
+	}
+
+	var lastEvent *watch.Event
+	lastEvent, err = watch.Until(timeout, fw, conditions...)
+	if err != nil {
+		log.Error("timeout waiting for Running " + err.Error())
+		return err
+	}
+	if lastEvent == nil {
+		log.Error("expected event")
+		return err
+	}
+	return err
+
+}
+
+//timeout := time.Minute
+func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname string, timeout time.Duration, namespace string) error {
+
+	var err error
+	var fw watch.Interface
+
+	lo := v1.ListOptions{LabelSelector: "name=" + depname}
+	fw, err = clientset.Deployments(namespace).Watch(lo)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	conditions := []watch.ConditionFunc{
+		func(event watch.Event) (bool, error) {
+			if event.Type == watch.Deleted {
+				log.Info("deployment delete event received in WaitUntilDeploymentIsDeleted")
 				return true, nil
 			}
 			return false, nil
