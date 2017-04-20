@@ -76,26 +76,29 @@ func (r DatabaseStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, client 
 	}
 	log.Info("deleted pod " + db.Spec.Name + " in namespace " + namespace)
 
-	//TODO replace this sleep with a wait
-
-	time.Sleep(5000 * time.Millisecond)
+	err = util.WaitUntilPodIsDeleted(clientset, db.Spec.Name, time.Minute, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
 
 	//start pod
 
 	podFields := PodTemplateFields{
-		Name:               db.Spec.Name,
-		Port:               db.Spec.Port,
-		PVC_NAME:           db.Spec.PVC_NAME,
-		CCP_IMAGE_TAG:      upgrade.Spec.CCP_IMAGE_TAG,
-		PG_MASTER_USER:     db.Spec.PG_MASTER_USER,
-		PG_MASTER_PASSWORD: db.Spec.PG_MASTER_PASSWORD,
-		PG_USER:            db.Spec.PG_USER,
-		PG_PASSWORD:        db.Spec.PG_PASSWORD,
-		PG_DATABASE:        db.Spec.PG_DATABASE,
-		PG_ROOT_PASSWORD:   db.Spec.PG_ROOT_PASSWORD,
-		BACKUP_PVC_NAME:    db.Spec.BACKUP_PVC_NAME,
-		BACKUP_PATH:        db.Spec.BACKUP_PATH,
-		SECURITY_CONTEXT:   util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
+		Name:                 db.Spec.Name,
+		Port:                 db.Spec.Port,
+		PVC_NAME:             db.Spec.PVC_NAME,
+		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
+		PG_MASTER_USER:       db.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD:   db.Spec.PG_MASTER_PASSWORD,
+		PGDATA_PATH_OVERRIDE: db.Spec.Name,
+		PG_USER:              db.Spec.PG_USER,
+		PG_PASSWORD:          db.Spec.PG_PASSWORD,
+		PG_DATABASE:          db.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:     db.Spec.PG_ROOT_PASSWORD,
+		BACKUP_PVC_NAME:      db.Spec.BACKUP_PVC_NAME,
+		BACKUP_PATH:          db.Spec.BACKUP_PATH,
+		SECURITY_CONTEXT:     util.CreateSecContext(db.Spec.FS_GROUP, db.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = PodTemplate1.Execute(&doc2, podFields)
