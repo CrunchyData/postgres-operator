@@ -219,7 +219,7 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 	}
 	log.Info("deleted replica service " + cl.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
 
-	//delete the master and replica deployments
+	//delete the master and replica deployments and replica sets
 	err = shutdownCluster(clientset, tprclient, cl, namespace)
 	if err != nil {
 		log.Error("error deleting master Deployment " + err.Error())
@@ -251,6 +251,7 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
 
 	}
+
 	return err
 
 }

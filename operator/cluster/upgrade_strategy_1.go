@@ -356,19 +356,19 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	if err != nil {
 		log.Error("error getting cluster replicaset name" + err.Error())
 	} else {
-		if len(reps.Items) > 0 {
-			err = clientset.ReplicaSets(namespace).Delete(reps.Items[0].Name,
+		for _, r := range reps.Items {
+			err = clientset.ReplicaSets(namespace).Delete(r.Name,
 				&v1.DeleteOptions{})
 			if err != nil {
 				log.Error("error deleting cluster replicaset " + err.Error())
 			}
 			//wait for the replicaset is deleted
-			err = util.WaitUntilReplicasetIsDeleted(clientset, reps.Items[0].Name, time.Minute, namespace)
+			err = util.WaitUntilReplicasetIsDeleted(clientset, r.Name, time.Minute, namespace)
 			if err != nil {
 				log.Error("error waiting for replicaset deletion " + err.Error())
 			}
 
-			log.Info("deleted cluster replicaset " + reps.Items[0].Name + " in namespace " + namespace)
+			log.Info("deleted cluster replicaset " + r.Name + " in namespace " + namespace)
 		}
 	}
 
