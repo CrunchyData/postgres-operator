@@ -42,7 +42,10 @@ func showUpgrade(args []string) {
 		log.Debug("show upgrade called for " + arg)
 		if arg == "all" {
 			tprs := tpr.PgUpgradeList{}
-			err = Tprclient.Get().Resource("pgupgrades").Do().Into(&tprs)
+			err = Tprclient.Get().
+				Resource("pgupgrades").
+				Namespace(Namespace).
+				Do().Into(&tprs)
 			if err != nil {
 				log.Error("error getting list of pgupgrades " + err.Error())
 				return
