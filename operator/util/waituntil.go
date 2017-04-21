@@ -55,7 +55,7 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v
 	var lastEvent *watch.Event
 	lastEvent, err = watch.Until(timeout, fw, conditions...)
 	if err != nil {
-		log.Error("timeout waiting for Running " + err.Error())
+		log.Errorf("timeout waiting for %v error=%s", podPhase, err.Error())
 		return err
 	}
 	if lastEvent == nil {
@@ -130,7 +130,7 @@ func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname strin
 	var lastEvent *watch.Event
 	lastEvent, err = watch.Until(timeout, fw, conditions...)
 	if err != nil {
-		log.Error("timeout waiting for Running " + err.Error())
+		log.Error("timeout waiting for deployment to be deleted " + depname + err.Error())
 		return err
 	}
 	if lastEvent == nil {
