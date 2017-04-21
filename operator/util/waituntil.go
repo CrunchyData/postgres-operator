@@ -26,12 +26,12 @@ import (
 //lo := v1.ListOptions{LabelSelector: "pg-database=" + "testpod"}
 //podPhase is v1.PodRunning
 //timeout := time.Minute
-func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v1.PodPhase, timeout time.Duration) error {
+func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v1.PodPhase, timeout time.Duration, namespace string) error {
 
 	var err error
 	var fw watch.Interface
 
-	fw, err = clientset.Core().Pods("default").Watch(lo)
+	fw, err = clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error(err.Error())
 		return err

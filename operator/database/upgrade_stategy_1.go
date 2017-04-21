@@ -241,7 +241,7 @@ func (r DatabaseStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset,
 	}
 
 	lo := v1.ListOptions{LabelSelector: "pg-database=" + upgrade.Spec.Name}
-	err = util.WaitUntilPod(clientset, lo, v1.PodRunning, time.Minute)
+	err = util.WaitUntilPod(clientset, lo, v1.PodRunning, time.Minute, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}

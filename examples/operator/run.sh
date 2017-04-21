@@ -17,19 +17,23 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
+if [ -z "$NAMESPACE" ]; then
+	echo "NAMESPACE not set, using default"
+	export NAMESPACE=default
+fi
+
 if [ ! -d /data ]; then
 	echo "create the HostPath directory"
 	sudo mkdir /data
 	sudo chmod 777 /data
 	echo "create the test PV and PVC using the HostPath dir"
-	kubectl create -f $DIR/crunchy-pv.json
 	$DIR/create-pv.sh
 	sleep 3
-	kubectl create -f $DIR/crunchy-pvc.json
+	kubectl --namespace=$NAMESPACE create -f $DIR/crunchy-pvc.json
 	sleep 3
 fi
 
 # copy all the operator templates to the PVC location
 sudo cp -r $COROOT/conf/postgres-operator /data
 
-kubectl create -f $DIR/deployment.json
+kubectl --namespace=$NAMESPACE create -f $DIR/deployment.json

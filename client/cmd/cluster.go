@@ -27,7 +27,10 @@ import (
 func showCluster(args []string) {
 	//get a list of all clusters
 	clusterList := tpr.PgClusterList{}
-	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
+	err := Tprclient.Get().
+		Resource("pgclusters").
+		Namespace(Namespace).
+		Do().Into(&clusterList)
 	if err != nil {
 		log.Error("error getting list of clusters" + err.Error())
 		return

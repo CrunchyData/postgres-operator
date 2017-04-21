@@ -227,7 +227,7 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 
 	//lastly, delete any remaining pods that may be left lingering
 	listOptions := v1.ListOptions{}
-	listOptions.LabelSelector = "name=" + cl.Spec.Name
+	listOptions.LabelSelector = "pg-cluster=" + cl.Spec.Name
 	pods, err := clientset.Core().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
 		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)

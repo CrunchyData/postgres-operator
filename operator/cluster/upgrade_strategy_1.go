@@ -345,6 +345,27 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	if err != nil {
 		log.Error("error waiting for master Deployment deletion " + err.Error())
 	}
+
+	//delete replica sets if they exist
+	options := v1.ListOptions{}
+	options.LabelSelector = "pg-cluster=" + cl.Spec.Name
+
+	var reps *v1beta1.ReplicaSetList
+	reps, err = clientset.ReplicaSets(namespace).List(options)
+	if err != nil {
+		log.Error("error getting cluster replicaset name" + err.Error())
+	} else {
+		if len(reps.Items) > 0 {
+			err = clientset.ReplicaSets(namespace).Delete(reps.Items[0].Name,
+				&v1.DeleteOptions{})
+			if err != nil {
+				log.Error("error deleting cluster replicaset " + err.Error())
+			}
+
+			log.Info("deleted cluster replicaset " + reps.Items[0].Name + " in namespace " + namespace)
+		}
+	}
+
 	return err
 
 }
