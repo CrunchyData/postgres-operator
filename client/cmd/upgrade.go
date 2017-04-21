@@ -17,14 +17,21 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
+	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
+	"strconv"
+	"strings"
 )
+
+const MAJOR_UPGRADE = "major"
+const MINOR_UPGRADE = "minor"
+const SEP = "-"
 
 func showUpgrade(args []string) {
 	var err error
@@ -52,7 +59,7 @@ func showUpgrade(args []string) {
 				Namespace(Namespace).
 				Name(arg).
 				Do().Into(&upgrade)
-			if errors.IsNotFound(err) {
+			if kerrors.IsNotFound(err) {
 				fmt.Println("pgupgrade " + arg + " not found ")
 			} else {
 				showUpgradeItem(&upgrade)
@@ -125,7 +132,7 @@ func createUpgrade(args []string) {
 		if err == nil {
 			fmt.Println("pgupgrade " + arg + " was found so we will not create it")
 			break
-		} else if errors.IsNotFound(err) {
+		} else if kerrors.IsNotFound(err) {
 			fmt.Println("pgupgrade " + arg + " not found so we will create it")
 		} else {
 			log.Error("error getting pgupgrade " + arg)
@@ -133,17 +140,18 @@ func createUpgrade(args []string) {
 			break
 		}
 		// Create an instance of our TPR
-		newInstance = getUpgradeParams(arg)
-
-		err = Tprclient.Post().
-			Resource("pgupgrades").
-			Namespace(Namespace).
-			Body(newInstance).
-			Do().Into(&result)
-		if err != nil {
-			log.Error("error in creating PgUpgrade TPR instance", err.Error())
+		newInstance, err = getUpgradeParams(arg)
+		if err == nil {
+			err = Tprclient.Post().
+				Resource("pgupgrades").
+				Namespace(Namespace).
+				Body(newInstance).
+				Do().Into(&result)
+			if err != nil {
+				log.Error("error in creating PgUpgrade TPR instance", err.Error())
+			}
+			fmt.Println("created PgUpgrade " + arg)
 		}
-		fmt.Println("created PgUpgrade " + arg)
 
 	}
 
@@ -183,7 +191,11 @@ func deleteUpgrade(args []string) {
 
 }
 
-func getUpgradeParams(name string) *tpr.PgUpgrade {
+func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
+
+	var err error
+	var existingImage string
+	var existingMajorVersion float64
 
 	spec := tpr.PgUpgradeSpec{
 		Name:              name,
@@ -201,7 +213,7 @@ func getUpgradeParams(name string) *tpr.PgUpgrade {
 	}
 
 	db := tpr.PgDatabase{}
-	err := Tprclient.Get().
+	err = Tprclient.Get().
 		Resource("pgdatabases").
 		Namespace(Namespace).
 		Name(name).
@@ -214,7 +226,9 @@ func getUpgradeParams(name string) *tpr.PgUpgrade {
 		spec.OLD_PVC_NAME = db.Spec.PVC_NAME
 		spec.NEW_PVC_NAME = db.Spec.PVC_NAME + "-upgrade"
 		spec.NEW_DATABASE_NAME = db.Spec.Name + "-upgrade"
-	} else if errors.IsNotFound(err) {
+		existingImage = db.Spec.CCP_IMAGE_TAG
+		existingMajorVersion = parseMajorVersion(db.Spec.CCP_IMAGE_TAG)
+	} else if kerrors.IsNotFound(err) {
 		log.Debug(name + " is not a database")
 		cluster := tpr.PgCluster{}
 		err = Tprclient.Get().
@@ -230,18 +244,38 @@ func getUpgradeParams(name string) *tpr.PgUpgrade {
 			spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
 			spec.OLD_PVC_NAME = cluster.Spec.PVC_NAME
 			spec.NEW_PVC_NAME = cluster.Spec.PVC_NAME + "-upgrade"
-		} else if errors.IsNotFound(err) {
+			existingImage = cluster.Spec.CCP_IMAGE_TAG
+			existingMajorVersion = parseMajorVersion(cluster.Spec.CCP_IMAGE_TAG)
+		} else if kerrors.IsNotFound(err) {
 			log.Debug(name + " is not a cluster")
-			return nil
+			return nil, err
 		} else {
 			log.Error("error getting pgcluster " + name)
 			log.Error(err.Error())
-			return nil
+			return nil, err
 		}
 	} else {
 		log.Error("error getting pgdatabase " + name)
 		log.Error(err.Error())
-		return nil
+		return nil, err
+	}
+
+	if viper.GetString("DB.CCP_IMAGE_TAG") == existingImage {
+		log.Error("CCP_IMAGE_TAG is the same as the database or cluster")
+		log.Error("can't upgrade to the same image version")
+
+		return nil, errors.New("invalid image tag")
+	}
+
+	if UpgradeType == MAJOR_UPGRADE {
+		requestedMajorVersion := parseMajorVersion(viper.GetString("DB.CCP_IMAGE_TAG"))
+		if requestedMajorVersion == existingMajorVersion {
+			log.Error("can't upgrade to the same major version")
+			return nil, errors.New("requested upgrade major version can not equal existing upgrade major version")
+		} else if requestedMajorVersion < existingMajorVersion {
+			log.Error("can't upgrade to a previous major version")
+			return nil, errors.New("requested upgrade major version can not be older than existing upgrade major version")
+		}
 	}
 
 	newInstance := &tpr.PgUpgrade{
@@ -250,5 +284,19 @@ func getUpgradeParams(name string) *tpr.PgUpgrade {
 		},
 		Spec: spec,
 	}
-	return newInstance
+	return newInstance, err
+}
+
+func parseMajorVersion(st string) float64 {
+	parts := strings.Split(st, SEP)
+	//OS = parts[0]
+	//PGVERSION = parts[1]
+	//CVERSION = parts[2]
+
+	f, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return f
+
 }

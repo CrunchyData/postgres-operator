@@ -73,7 +73,7 @@ pgo create upgrade mydatabase`,
 func validateCreateUpdate(args []string) error {
 	var err error
 
-	if UpgradeType == "major" || UpgradeType == "minor" {
+	if UpgradeType == MAJOR_UPGRADE || UpgradeType == MINOR_UPGRADE {
 	} else {
 		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
 	}
