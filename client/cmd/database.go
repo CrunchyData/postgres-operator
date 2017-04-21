@@ -27,7 +27,10 @@ import (
 func showDatabase(args []string) {
 	//get a list of all databases
 	databaseList := tpr.PgDatabaseList{}
-	err := Tprclient.Get().Resource("pgdatabases").Do().Into(&databaseList)
+	err := Tprclient.Get().
+		Resource("pgdatabases").
+		Namespace(Namespace).
+		Do().Into(&databaseList)
 	if err != nil {
 		log.Error("error getting list of databases" + err.Error())
 		return

@@ -140,3 +140,40 @@ func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname strin
 	return err
 
 }
+
+//timeout := time.Minute
+func WaitUntilReplicasetIsDeleted(clientset *kubernetes.Clientset, rcname string, timeout time.Duration, namespace string) error {
+
+	var err error
+	var fw watch.Interface
+
+	lo := v1.ListOptions{LabelSelector: "name=" + rcname}
+	fw, err = clientset.ReplicaSets(namespace).Watch(lo)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	conditions := []watch.ConditionFunc{
+		func(event watch.Event) (bool, error) {
+			if event.Type == watch.Deleted {
+				log.Info("ReplicaSets delete event received in WaitUntilReplicasetIsDeleted")
+				return true, nil
+			}
+			return false, nil
+		},
+	}
+
+	var lastEvent *watch.Event
+	lastEvent, err = watch.Until(timeout, fw, conditions...)
+	if err != nil {
+		log.Error("timeout waiting for Running " + err.Error())
+		return err
+	}
+	if lastEvent == nil {
+		log.Error("expected event")
+		return err
+	}
+	return err
+
+}
