@@ -115,7 +115,7 @@ func printPVCListing(pvcName string) {
 		return
 	}
 	var resultPod *v1.Pod
-	resultPod, err = Clientset.Core().Pods(v1.NamespaceDefault).Create(&newpod)
+	resultPod, err = Clientset.Core().Pods(Namespace).Create(&newpod)
 	if err != nil {
 		log.Error("error creating lspvc Pod " + err.Error())
 		return

@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"text/template"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
 )
@@ -88,10 +89,10 @@ func Patch(tprclient *rest.RESTClient, path string, value string, resource strin
 	if err4 != nil {
 		log.Error("error in converting patch " + err4.Error())
 	}
-	log.Debug(string(patchBytes))
+	log.Info(string(patchBytes))
 
 	_, err6 := tprclient.Patch(api.JSONPatchType).
-		Namespace(api.NamespaceDefault).
+		Namespace(namespace).
 		Resource(resource).
 		Name(name).
 		Body(patchBytes).
@@ -99,5 +100,30 @@ func Patch(tprclient *rest.RESTClient, path string, value string, resource strin
 		Get()
 
 	return err6
+
+}
+
+func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace string) error {
+
+	var err error
+	var patchBytes []byte
+
+	things := make([]ThingSpec, 1)
+	things[0].Op = "replace"
+	things[0].Path = "/spec/replicas"
+	things[0].Value = "0"
+
+	patchBytes, err = json.Marshal(things)
+	if err != nil {
+		log.Error("error in converting patch " + err.Error())
+	}
+	log.Debug(string(patchBytes))
+
+	_, err = clientset.Deployments(namespace).Patch(name, api.JSONPatchType, patchBytes, "")
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+	return err
 
 }

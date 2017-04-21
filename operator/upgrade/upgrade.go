@@ -27,7 +27,6 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
@@ -41,7 +40,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 	eventchan := make(chan *tpr.PgUpgrade)
 
-	source := cache.NewListWatchFromClient(client, "pgupgrades", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgupgrades", namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
 		job := obj.(*tpr.PgUpgrade)
@@ -153,7 +152,6 @@ func deleteUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
 	//delete the job
-	//err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(jobName,
 	err := clientset.Batch().Jobs(namespace).Delete(jobName,
 		&v1.DeleteOptions{})
 	if err != nil {

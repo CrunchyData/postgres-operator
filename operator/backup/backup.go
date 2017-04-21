@@ -23,12 +23,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 
@@ -69,7 +68,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 	eventchan := make(chan *tpr.PgBackup)
 
-	source := cache.NewListWatchFromClient(client, "pgbackups", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgbackups", namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
 		job := obj.(*tpr.PgBackup)
@@ -85,8 +84,6 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		job := obj.(*tpr.PgBackup)
 		eventchan <- job
-		//log.Info("updating PgBackup object")
-		//log.Info("updated with Name=" + job.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(
@@ -121,12 +118,12 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	//create the PVC if necessary
 	if job.Spec.PVC_NAME == "" {
 		job.Spec.PVC_NAME = job.Spec.Name + "-backup-pvc"
-  		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
-                if err != nil {
-                        log.Error(err.Error())
-                        return
-                }
-                log.Info("created backup PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
+		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		log.Info("created backup PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
 
 	}
 
@@ -150,7 +147,6 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	jobDocString := doc2.String()
 	log.Debug(jobDocString)
 
-	//newjob := v1beta1.Job{}
 	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc2.Bytes(), &newjob)
 	if err != nil {
@@ -158,7 +154,6 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 		return
 	}
 
-	//resultJob, err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Create(&newjob)
 	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
 	if err != nil {
 		log.Error("error creating Job " + err.Error())
@@ -173,7 +168,6 @@ func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job 
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
 	//delete the job
-	//err := clientset.ExtensionsV1beta1Client.Jobs(v1.NamespaceDefault).Delete(jobName,
 	err := clientset.Batch().Jobs(namespace).Delete(jobName,
 		&v1.DeleteOptions{})
 	if err != nil {

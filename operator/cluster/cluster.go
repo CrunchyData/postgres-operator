@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -79,7 +78,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 	eventchan := make(chan *tpr.PgCluster)
 
-	source := cache.NewListWatchFromClient(client, "pgclusters", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgclusters", namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
@@ -95,8 +94,6 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
-		//log.Info("updating PgCluster object")
-		//log.Info("updated with Name=" + cluster.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(

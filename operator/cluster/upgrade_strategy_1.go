@@ -318,24 +318,34 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 
 	var replicaName = cl.Spec.Name + REPLICA_SUFFIX
 
+	//drain the deployments
+	err = util.DrainDeployment(clientset, replicaName, namespace)
+	if err != nil {
+		log.Error("error draining replica Deployment " + err.Error())
+	}
+	err = util.DrainDeployment(clientset, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error draining master Deployment " + err.Error())
+	}
+
+	//sleep just a bit to give the drain time to work
+	time.Sleep(2000 * time.Millisecond)
+
 	//delete the replica deployment
-	err = clientset.Deployments(namespace).Delete(replicaName,
-		&v1.DeleteOptions{})
+	err = clientset.Deployments(namespace).Delete(replicaName, &v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting replica Deployment " + err.Error())
 	}
-
-	log.Info("deleted replica Deployment " + replicaName + " in namespace " + namespace)
 
 	//wait for the replica deployment to delete
 	err = util.WaitUntilDeploymentIsDeleted(clientset, replicaName, time.Minute, namespace)
 	if err != nil {
 		log.Error("error waiting for replica Deployment deletion " + err.Error())
 	}
+	log.Info("deleted replica Deployment " + replicaName + " in namespace " + namespace)
 
 	//delete the master deployment
-	err = clientset.Deployments(namespace).Delete(cl.Spec.Name,
-		&v1.DeleteOptions{})
+	err = clientset.Deployments(namespace).Delete(cl.Spec.Name, &v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting master Deployment " + err.Error())
 	}

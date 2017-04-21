@@ -24,7 +24,6 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
@@ -73,7 +72,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 	eventchan := make(chan *tpr.PgDatabase)
 
-	source := cache.NewListWatchFromClient(client, "pgdatabases", api.NamespaceAll, fields.Everything())
+	source := cache.NewListWatchFromClient(client, "pgdatabases", namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
 		db := obj.(*tpr.PgDatabase)
@@ -89,8 +88,6 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 	updateHandler := func(old interface{}, obj interface{}) {
 		db := obj.(*tpr.PgDatabase)
 		eventchan <- db
-		//log.Info("updating PgDatabase object")
-		//log.Info("updated with Name=" + db.Spec.Name)
 	}
 
 	_, controller := cache.NewInformer(

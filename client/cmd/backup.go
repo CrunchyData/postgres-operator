@@ -62,7 +62,7 @@ func showBackup(args []string) {
 	}
 
 }
-func showItem(name string ) {
+func showItem(name string) {
 	var pvcName string
 	//print the pgbackups TPR
 	result := tpr.PgBackup{}
@@ -78,7 +78,7 @@ func showItem(name string ) {
 		} else {
 			pvcName = result.Spec.PVC_NAME
 		}
-		fmt.Printf("\npgbackup %s\n", name+" was found PVC_NAME is " + pvcName)
+		fmt.Printf("\npgbackup %s\n", name+" was found PVC_NAME is "+pvcName)
 	} else if errors.IsNotFound(err) {
 		configPVC := viper.GetString("DB.PVC_NAME")
 		if configPVC == "" {
@@ -86,7 +86,7 @@ func showItem(name string ) {
 		} else {
 			pvcName = configPVC
 		}
-		fmt.Printf("\npgbackup %s\n", name+" was not found assuming PVC_NAME is " + pvcName)
+		fmt.Printf("\npgbackup %s\n", name+" was not found assuming PVC_NAME is "+pvcName)
 	} else {
 		log.Errorf("\npgbackup %s\n", name+" lookup error ")
 		log.Error(err.Error())
@@ -109,7 +109,7 @@ func showItem(name string ) {
 	lo = v1.ListOptions{LabelSelector: "name=" + name}
 	log.Debug("label selector is " + lo.LabelSelector)
 	dbpods, err := Clientset.Core().Pods(Namespace).List(lo)
-	if err != nil  || len(dbpods.Items) == 0{
+	if err != nil || len(dbpods.Items) == 0 {
 		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
 		fmt.Println(err.Error())
 	} else {
@@ -337,7 +337,7 @@ func printLog(name string, pvcName string) {
 		return
 	}
 	var resultPod *v1.Pod
-	resultPod, err = Clientset.Core().Pods(v1.NamespaceDefault).Create(&newpod)
+	resultPod, err = Clientset.Core().Pods(Namespace).Create(&newpod)
 	if err != nil {
 		log.Error("error creating lspvc Pod ")
 		log.Error(err.Error())
