@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v1.0.0, {docdate}
+v1.1.0, {docdate}
 
 == Overview
 
@@ -17,6 +17,7 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Destroy Database or Cluster
 * Backup Database or Cluster
 * Restore Database or Cluster
+* Upgrade Database or Cluster
 * View PVC
 
 What actually gets created on the Kube cluster for a *pgdatabase* or
@@ -28,6 +29,7 @@ are documented in detail here link:docs/strategies.asciidoc[Deployment Strategie
 * Kubernetes 1.5.3+
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 
 == Example Commands Usage
 
@@ -66,6 +68,18 @@ pgo create backup mydatabase
 [source,bash]
 ----
 pgo create database myrestore --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
+----
+
+.Upgrade Database (minor Postgres version upgrade)
+[source,bash]
+----
+pgo create upgrade mydatabase 
+----
+
+.Upgrade Database (major Postgres version upgrade from 9.5 to 9.6)
+[source,bash]
+----
+pgo create upgrade mydatabase --upgrade-type=major
 ----
 
 .View PVC

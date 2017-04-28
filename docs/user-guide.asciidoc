@@ -1,5 +1,5 @@
 = postgres Operator User Guide
-v1.0.0, {docdate}
+v1.1.0, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
@@ -134,6 +134,57 @@ pgo delete cluster mycluster
 *Note*, when you delete a database or cluster, the operator
 will NOT delete any associated PVCs used by the cluster or database.
 
+== Minor Database and Cluster Upgrade
+
+You can perform a minor Postgres version upgrade
+of either a database or cluster as follows:
+....
+pgo create upgrade mydatabase
+pgo create upgrade mycluster
+....
+
+When you run this command, it will cause the operator
+to delete the existing containers of the database or cluster
+and recreate them using the currently defined Postgres
+container image specified in your pgo configuration file.
+
+The database data files remain untouched, only the container
+is updated, this will upgrade your Postgres server version only.
+
+== Major Database and Cluster Upgrade
+
+You can perform a major Postgres version upgrade
+of either a database or cluster as follows:
+....
+pgo create upgrade mydatabase --upgrade-type=major
+pgo create upgrade mycluster --upgrade-type=major
+....
+
+When you run this command, it will cause the operator
+to delete the existing containers of the database or cluster
+and recreate them using the currently defined Postgres
+container image specified in your pgo configuration file.
+
+The database data files are converted to the new major Postgres
+version as specified by the current Postgres image version
+in your pgo configuration file.  Currently only a Postgres
+9.5 to 9.6 upgrade is supported.
+
+In this scenario, the upgrade is performed by the Postgres
+pg_upgrade utility which is containerized in the *crunchydata/crunchy-upgrade*
+container.  The operator will create a Job which runs the upgrade container,
+using the existing Postgres database files as input, and output
+the updated database files to a new PVC.
+
+Once the upgrade job is completed, the operator will create the
+original database or cluster container mounted with the new PVC
+which contains the upgraded database files.
+
+As the upgrade is processed, the status of the *pgupgrade* TPR is
+updated to give the user some insight into how the upgrade is
+proceeding.  Upgrades like this can take a long time if your
+database is large.  The operator creates a watch on the upgrade
+job to know when and how to proceed.
 
 == Viewing PVC Information
 

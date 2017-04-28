@@ -36,4 +36,4 @@ fi
 # copy all the operator templates to the PVC location
 sudo cp -r $COROOT/conf/postgres-operator /data
 
-kubectl --namespace=$NAMESPACE create -f $DIR/deployment.json
+envsubst < $DIR/deployment.json | kubectl --namespace=$NAMESPACE create -f -

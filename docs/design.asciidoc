@@ -1,5 +1,5 @@
 = postgres Operator Design
-v1.0.0, {docdate}
+v1.1.0, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
@@ -14,6 +14,7 @@ of the postgres Operator to define:
  * Database  - *pgdatabases*
  * Cluster - *pgclusters*
  * Backup - *pgbackups*
+ * Upgrade - *pgupgrades*
 
 A Database is made up of Pods and Services, whereas a Cluster is
 made up of multiple Pods, Services, and Proxies.
@@ -93,7 +94,7 @@ To verify the operator installed the following ThirdPartyResources:
 kubectl get thirdpartyresources
 ----
 
-You should see 3 crunchy third party resources deployed.
+You should see 4 crunchy third party resources deployed.
 
 # Command Line Interface
 

@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v1.0.0, {docdate}
+v1.1.0, {docdate}
 
 
 This document describes the configuration options
@@ -28,7 +28,7 @@ DB:
   PVC_NAME:  crunchy-pvc
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
-  CCP_IMAGE_TAG:  centos7-9.5-1.2.8
+  CCP_IMAGE_TAG:  centos7-9.5-1.4.0
   PORT:  5432
   PG_MASTER_USER:  master
   PG_MASTER_PASSWORD:  password
@@ -38,12 +38,14 @@ DB:
   PG_ROOT_PASSWORD:  password
   FSGROUP:  26
   SUPPLEMENTALGROUPS:  65534
+  STRATEGY:  1
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
-  CO_IMAGE_TAG:  centos7-1.0.0
+  CO_IMAGE_TAG:  centos7-1.1.0
   DEBUG:  false
 CLUSTER:
   REPLICAS:  2
+  STRATEGY:  1
 ....
 
 Values in the pgo configuration file have the following meaning:
@@ -56,7 +58,7 @@ Values in the pgo configuration file have the following meaning:
 |DB.PVC_NAME        |if set, the PVC to use for created databases, only makes sense when your file system is sharable
 |DB.PVC_SIZE        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |DB.PVC_ACCESS_MODE        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
-|DB.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.2.8)
+|DB.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0)
 |DB.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
 |DB.PG_MASTER_USER        | the PostgreSQL master user name
 |DB.PG_MASTER_PASSWORD        | the PostgreSQL master user password
@@ -65,10 +67,12 @@ Values in the pgo configuration file have the following meaning:
 |DB.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password
 |DB.FSGROUP        | if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
 |DB.SUPPLEMENTALGROUPS        | if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|DB.STRATEGY        | sets the deployment strategy to be used for deploying a database, currently there is only strategy *1*
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
 |CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
+|CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |======================
 
 

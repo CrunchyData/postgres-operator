@@ -1,5 +1,5 @@
 = PostgreSQL Operator Deployment Strategies
-v1.0.0, {docdate}
+v1.1.0, {docdate}
 
 
 This document describes the various deployment strategies

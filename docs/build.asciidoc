@@ -1,5 +1,5 @@
 = PostgreSQL Operator Build and Setup
-v1.0.0, {docdate}
+v1.1.0, {docdate}
 
 == Overview
 
@@ -63,7 +63,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=1.0.0
+export CO_VERSION=1.1.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
@@ -80,16 +80,16 @@ cd postgres-operator
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-1.0.0
-docker pull crunchydata/postgres-operator:centos7-1.0.0
+docker pull crunchydata/lspvc:centos7-1.1.0
+docker pull crunchydata/postgres-operator:centos7-1.1.0
 ....
 
 Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
 it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.0/postgres-operator.1.0.0.tar.gz
-tar xvzf ./postgres-operator.1.0.0.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.1.0/postgres-operator.1.1.0.tar.gz
+tar xvzf ./postgres-operator.1.1.0.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -185,7 +185,30 @@ kubectl get thirdpartyresources
 kubectl get pgdatabases
 kubectl get pgclusters
 kubectl get pgbackups
+kubectl get pgupgrades
 ....
 
 At this point, you should be ready to start using the *pgo* client!
+
+== Performing a Smoke Test
+
+A simple *smoke test* of the postgres operator includes testing
+the following:
+ 
+ * create a database
+ * show a database
+ * backup a database
+ * show backup of database
+ * delete a database
+ * restore a database
+ * create a cluster
+ * show a cluster
+ * backup a cluster
+ * show backup of cluster
+ * delete a cluster
+ * restore a cluster
+ * minor upgrade a database
+ * major upgrade a database
+ * minor upgrade a cluster
+ * major upgrade a cluster
 

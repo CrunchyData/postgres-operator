@@ -15,7 +15,7 @@
             "spec": {
                 "containers": [{
                     "name": "postgres-operator",
-                    "image": "crunchydata/postgres-operator:centos7-1.0.0",
+                    "image": "crunchydata/postgres-operator:centos7-1.1.0",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
                         "name" : "DEBUG",

@@ -26,12 +26,11 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
+	//"k8s.io/client-go/pkg/api/v1"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"text/template"
-	"time"
 )
 
 var JobTemplate1 *template.Template
@@ -312,76 +311,3 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 
 }
 
-//used by both major and minor upgrades
-func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
-	var err error
-
-	var replicaName = cl.Spec.Name + REPLICA_SUFFIX
-
-	//drain the deployments
-	err = util.DrainDeployment(clientset, replicaName, namespace)
-	if err != nil {
-		log.Error("error draining replica Deployment " + err.Error())
-	}
-	err = util.DrainDeployment(clientset, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error draining master Deployment " + err.Error())
-	}
-
-	//sleep just a bit to give the drain time to work
-	time.Sleep(2000 * time.Millisecond)
-
-	//delete the replica deployment
-	err = clientset.Deployments(namespace).Delete(replicaName, &v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting replica Deployment " + err.Error())
-	}
-
-	//wait for the replica deployment to delete
-	err = util.WaitUntilDeploymentIsDeleted(clientset, replicaName, time.Minute, namespace)
-	if err != nil {
-		log.Error("error waiting for replica Deployment deletion " + err.Error())
-	}
-	log.Info("deleted replica Deployment " + replicaName + " in namespace " + namespace)
-
-	//delete the master deployment
-	err = clientset.Deployments(namespace).Delete(cl.Spec.Name, &v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting master Deployment " + err.Error())
-	}
-
-	//wait for the master deployment to delete
-	err = util.WaitUntilDeploymentIsDeleted(clientset, cl.Spec.Name, time.Minute, namespace)
-	if err != nil {
-		log.Error("error waiting for master Deployment deletion " + err.Error())
-	}
-	log.Info("deleted master Deployment " + cl.Spec.Name + " in namespace " + namespace)
-
-	//delete replica sets if they exist
-	options := v1.ListOptions{}
-	options.LabelSelector = "pg-cluster=" + cl.Spec.Name
-
-	var reps *v1beta1.ReplicaSetList
-	reps, err = clientset.ReplicaSets(namespace).List(options)
-	if err != nil {
-		log.Error("error getting cluster replicaset name" + err.Error())
-	} else {
-		for _, r := range reps.Items {
-			err = clientset.ReplicaSets(namespace).Delete(r.Name,
-				&v1.DeleteOptions{})
-			if err != nil {
-				log.Error("error deleting cluster replicaset " + err.Error())
-			}
-			//wait for the replicaset is deleted
-			err = util.WaitUntilReplicasetIsDeleted(clientset, r.Name, time.Minute, namespace)
-			if err != nil {
-				log.Error("error waiting for replicaset deletion " + err.Error())
-			}
-
-			log.Info("deleted cluster replicaset " + r.Name + " in namespace " + namespace)
-		}
-	}
-
-	return err
-
-}
