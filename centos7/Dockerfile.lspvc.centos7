@@ -2,6 +2,8 @@ FROM centos:7
 
 LABEL Release="1.1.0" Vendor="Crunchy Data Solutions" 
 
+RUN yum -y update && yum -y clean all
+
 VOLUME ["/pgdata"]
 
 USER 26
