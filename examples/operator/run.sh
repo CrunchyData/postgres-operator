@@ -33,7 +33,10 @@ if [ ! -d /data ]; then
 	sleep 3
 fi
 
-# copy all the operator templates to the PVC location
-sudo cp -r $COROOT/conf/postgres-operator /data
+kubectl create configmap operator-conf \
+	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
+	--from-file=$COROOT/conf/postgres-operator/pvc.json \
+	--from-file=$COROOT/conf/postgres-operator/cluster/1 \
+	--from-file=$COROOT/conf/postgres-operator/database/1 
 
 envsubst < $DIR/deployment.json | kubectl --namespace=$NAMESPACE create -f -

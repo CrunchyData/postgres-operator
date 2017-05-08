@@ -47,7 +47,7 @@ type JobTemplateFields struct {
 	BACKUP_PORT   string
 }
 
-const JOB_PATH = "/pgconf/postgres-operator/backup-job.json"
+const JOB_PATH = "/operator-conf/backup-job.json"
 
 var JobTemplate *template.Template
 

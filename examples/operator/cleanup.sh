@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+kubectl delete configmap operator-conf
+
 kubectl --namespace=$NAMESPACE delete deployment postgres-operator
 
 sleep 10

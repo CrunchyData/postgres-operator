@@ -38,9 +38,9 @@ var ServiceTemplate1 *template.Template
 
 func init() {
 
-	ServiceTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/database/1/database-service.json")
-	PodTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/database/1/database-pod.json")
-	RestorePodTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/database/1/restore-database-pod.json")
+	ServiceTemplate1 = util.LoadTemplate("/operator-conf/database-service-1.json")
+	PodTemplate1 = util.LoadTemplate("/operator-conf/database-pod-1.json")
+	RestorePodTemplate1 = util.LoadTemplate("/operator-conf/restore-database-pod-1.json")
 
 }
 

@@ -46,7 +46,7 @@ type JobTemplateFields struct {
 	NEW_VERSION       string
 }
 
-const DB_UPGRADE_JOB_PATH = "/pgconf/postgres-operator/database/1/database-upgrade-job.json"
+const DB_UPGRADE_JOB_PATH = "/operator-conf/database-upgrade-job-1.json"
 
 func init() {
 

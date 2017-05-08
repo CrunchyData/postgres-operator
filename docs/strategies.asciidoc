@@ -35,10 +35,8 @@ Each strategy supplies its set of templates used by the operator
 to create new pods, services, etc.
 
 When the operator is deployed, part of the deployment process
-is to copy the required strategy templates into the mounted
-volume (*/pgconf*) used by the operator pod.  See the
-*examples/operator/run.sh* script for an example of this using
-a HostPath PV/PVC.
+is to copy the required strategy templates into a ConfigMap (*operator-conf*)
+that gets mounted into */operator-conf* within the operator pod.
 
 The directory structure of the strategy templates is as 
 follows:
@@ -46,20 +44,24 @@ follows:
 ├── backup-job.json
 ├── cluster
 │   └── 1
-│       ├── cluster-deployment.json
-│       ├── cluster-replica-deployment.json
-│       └── cluster-service.json
+│       ├── cluster-deployment-1.json
+│       ├── cluster-replica-deployment-1.json
+│       └── cluster-service-1.json
 ├── database
 │   └── 1
-│       ├── database-pod.json
-│       ├── database-service.json
-│       └── restore-database-pod.json
+│       ├── database-pod-1.json
+│       ├── database-service-1.json
+│       └── restore-database-pod-1.json
 ├── pvc.json
 ....
 
 In this structure, each strategy's templates live in a subdirectory
 that matches the strategy identifier.  The default strategy templates
 are denoted by the value of *1* in the directory structure above.
+
+If you add another strategy, the file names *must* be unique within
+the entire strategy directory.  This is due to the way the templates
+are stored within the ConfigMap.
 
 
 == Default Database Deployment Strategy (1)

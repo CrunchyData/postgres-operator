@@ -44,9 +44,9 @@ var ServiceTemplate1 *template.Template
 
 func init() {
 
-	ServiceTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-service.json")
-	ReplicaDeploymentTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-replica-deployment.json")
-	DeploymentTemplate1 = util.LoadTemplate("/pgconf/postgres-operator/cluster/1/cluster-deployment.json")
+	ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
+	ReplicaDeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
+	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
 }
 
 func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {

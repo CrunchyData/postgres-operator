@@ -18,8 +18,8 @@
                     "image": "crunchydata/postgres-operator:centos7-1.1.0",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
-                        "name" : "DEBUG",
-			"value": "true"
+                        "name": "DEBUG",
+                        "value": "true"
                     }, {
                         "name": "NAMESPACE",
                         "valueFrom": {
@@ -36,15 +36,16 @@
                         }
                     }],
                     "volumeMounts": [{
-                        "mountPath": "/pgconf",
-                        "name": "pgconf",
+                        "mountPath": "/operator-conf",
+                        "name": "operator-conf",
                         "readOnly": true
                     }]
                 }],
-                "volumes": [{
-                    "name": "pgconf",
-                    "persistentVolumeClaim": {
-                        "claimName": "crunchy-pvc"
+                "volumes": [
+                {
+                    "name": "operator-conf",
+                    "configMap": {
+                        "name": "operator-conf"
                     }
                 }]
             }
