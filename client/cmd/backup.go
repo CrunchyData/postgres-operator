@@ -367,6 +367,7 @@ func displayPVC(name string, pvcName string) {
 	readCloser, err := req.Stream()
 	if err != nil {
 		log.Error(err.Error())
+		return
 	}
 
 	defer readCloser.Close()
