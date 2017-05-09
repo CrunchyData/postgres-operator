@@ -51,20 +51,20 @@ func showBackup(args []string) {
 				return
 			}
 			for _, pod := range pods.Items {
-				showItem(pod.Name)
+				showBackupInfo(pod.ObjectMeta.Labels["pg-database"])
 			}
 
 		} else {
-			showItem(arg)
+			showBackupInfo(arg)
 
 		}
 
 	}
 
 }
-func showItem(name string) {
-	var pvcName string
-	//print the pgbackups TPR
+func showBackupInfo(name string) {
+	fmt.Println("\nbackup information for " + name + "...")
+	//print the pgbackups TPR if it exists
 	result := tpr.PgBackup{}
 	err := Tprclient.Get().
 		Resource("pgbackups").
@@ -73,20 +73,9 @@ func showItem(name string) {
 		Do().
 		Into(&result)
 	if err == nil {
-		if result.Spec.PVC_NAME == "" {
-			pvcName = name + "-backup-pvc"
-		} else {
-			pvcName = result.Spec.PVC_NAME
-		}
-		fmt.Printf("\npgbackup %s\n", name+" was found PVC_NAME is "+pvcName)
+		printBackupTPR(&result)
 	} else if errors.IsNotFound(err) {
-		configPVC := viper.GetString("DB.PVC_NAME")
-		if configPVC == "" {
-			pvcName = name + "-backup-pvc"
-		} else {
-			pvcName = configPVC
-		}
-		fmt.Printf("\npgbackup %s\n", name+" was not found assuming PVC_NAME is "+pvcName)
+		fmt.Println("\npgbackup TPR not found ")
 	} else {
 		log.Errorf("\npgbackup %s\n", name+" lookup error ")
 		log.Error(err.Error())
@@ -94,32 +83,48 @@ func showItem(name string) {
 	}
 
 	//print the backup jobs if any exists
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + name}
+	lo := v1.ListOptions{LabelSelector: "pgbackup=true,pg-database=" + name}
 	log.Debug("label selector is " + lo.LabelSelector)
 	pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
 	if err2 != nil {
 		log.Error(err2.Error())
 	}
 	fmt.Printf("\nbackup job pods for database %s\n", name+"...")
+
+	pvcMap := make(map[string]string)
+
 	for _, p := range pods.Items {
-		fmt.Printf("%s%s\n", TREE_TRUNK, p.Name)
+
+		//get the pgdata volume info
+		for _, v := range p.Spec.Volumes {
+			if v.Name == "pgdata" {
+				fmt.Printf("%s%s (pvc %s)\n\n", TREE_TRUNK, p.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+				pvcMap[v.VolumeSource.PersistentVolumeClaim.ClaimName] = v.VolumeSource.PersistentVolumeClaim.ClaimName
+			}
+		}
+		fmt.Println("")
+
 	}
 
-	//print the database pod if it exists
-	lo = v1.ListOptions{LabelSelector: "name=" + name}
-	log.Debug("label selector is " + lo.LabelSelector)
-	dbpods, err := Clientset.Core().Pods(Namespace).List(lo)
-	if err != nil || len(dbpods.Items) == 0 {
-		fmt.Printf("\ndatabase pod %s\n", name+" is not found")
-		fmt.Println(err.Error())
-	} else {
-		fmt.Printf("\ndatabase pod %s\n", name+" is found")
+	//print pvc information for all jobs
+	for key, _ := range pvcMap {
+		displayPVC(name, key)
 	}
+}
 
-	fmt.Println("")
+func printBackupTPR(result *tpr.PgBackup) {
+	fmt.Printf("%s%s\n", "", "")
+	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
-	//print the backups found in the pvc
-	printLog(name, pvcName)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Name:\t"+result.Spec.PVC_NAME)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Access Mode:\t"+result.Spec.PVC_ACCESS_MODE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Size:\t\t"+result.Spec.PVC_SIZE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "CCP_IMAGE_TAG:\t"+result.Spec.CCP_IMAGE_TAG)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Host:\t"+result.Spec.BACKUP_HOST)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup User:\t"+result.Spec.BACKUP_USER)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Pass:\t"+result.Spec.BACKUP_PASS)
+	fmt.Printf("%s%s\n", TREE_TRUNK, "Backup Port:\t"+result.Spec.BACKUP_PORT)
+
 }
 
 func createBackup(args []string) {
@@ -278,13 +283,15 @@ type PodTemplateFields struct {
 	PVC_NAME     string
 }
 
-func printLog(name string, pvcName string) {
+func displayPVC(name string, pvcName string) {
 	var POD_PATH = viper.GetString("PGO.LSPVC_TEMPLATE")
 	var PodTemplate *template.Template
 	var err error
 	var buf []byte
 	var doc2 bytes.Buffer
 	var podName = "lspvc-" + name
+
+	fmt.Println("PVC " + pvcName + " contains...")
 
 	//delete lspvc pod if it was not deleted for any reason prior
 	_, err = Clientset.Core().Pods(Namespace).Get(podName)
