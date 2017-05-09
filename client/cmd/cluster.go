@@ -259,9 +259,11 @@ func deleteCluster(args []string) {
 	//to remove a cluster, you just have to remove
 	//the pgcluster object, the operator will do the actual deletes
 	for _, arg := range args {
+		clusterFound := false
 		log.Debug("deleting cluster " + arg)
 		for _, cluster := range clusterList.Items {
 			if arg == "all" || arg == cluster.Spec.Name {
+				clusterFound = true
 				err = Tprclient.Delete().
 					Resource("pgclusters").
 					Namespace(Namespace).
@@ -275,6 +277,9 @@ func deleteCluster(args []string) {
 				}
 
 			}
+		}
+		if !clusterFound {
+			fmt.Println("cluster " + arg + " not found")
 		}
 	}
 }

@@ -189,8 +189,10 @@ func deleteBackup(args []string) {
 	// delete the pgbackup resource instance
 	// which will cause the operator to remove the related Job
 	for _, arg := range args {
+		backupFound := false
 		for _, backup := range backupList.Items {
 			if arg == "all" || backup.Spec.Name == arg {
+				backupFound = true
 				err = Tprclient.Delete().
 					Resource("pgbackups").
 					Namespace(Namespace).
@@ -204,6 +206,9 @@ func deleteBackup(args []string) {
 				fmt.Println("deleted pgbackup " + backup.Spec.Name)
 			}
 
+		}
+		if !backupFound {
+			fmt.Println("backup " + arg + " not found")
 		}
 
 	}

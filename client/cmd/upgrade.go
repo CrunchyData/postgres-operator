@@ -173,8 +173,10 @@ func deleteUpgrade(args []string) {
 	// delete the pgupgrade resource instance
 	// which will cause the operator to remove the related Job
 	for _, arg := range args {
+		upgradeFound := false
 		for _, upgrade := range upgradeList.Items {
 			if arg == "all" || upgrade.Spec.Name == arg {
+				upgradeFound = true
 				err = Tprclient.Delete().
 					Resource("pgupgrades").
 					Namespace(Namespace).
@@ -187,7 +189,9 @@ func deleteUpgrade(args []string) {
 				}
 				fmt.Println("deleted pgupgrade " + upgrade.Spec.Name)
 			}
-
+		}
+		if !upgradeFound {
+			fmt.Println("upgrade " + arg + " not found")
 		}
 
 	}

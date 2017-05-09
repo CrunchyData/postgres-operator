@@ -209,10 +209,15 @@ func deleteDatabase(args []string) {
 		log.Error("error getting database list" + err.Error())
 		return
 	}
+	if len(databaseList.Items) == 0 {
+		fmt.Println("no databases found")
+	}
 	// delete the pgdatabase resource instance
 	for _, arg := range args {
+		dbFound := false
 		for _, database := range databaseList.Items {
 			if arg == "all" || database.Spec.Name == arg {
+				dbFound = true
 				log.Debug("deleting pgdatabase " + arg)
 				err = Tprclient.Delete().
 					Resource("pgdatabases").
@@ -226,6 +231,9 @@ func deleteDatabase(args []string) {
 				fmt.Println("deleted pgdatabase " + database.Spec.Name)
 			}
 
+		}
+		if !dbFound {
+			fmt.Println("database " + arg + " not found")
 		}
 
 	}
