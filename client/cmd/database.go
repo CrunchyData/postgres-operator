@@ -48,7 +48,7 @@ func showDatabase(args []string) {
 				if err != nil {
 					log.Error("error in getting database pod " + database.Spec.Name + err.Error())
 				} else {
-					fmt.Println(TREE_BRANCH + "pod : " + pod.Name + " (" + string(pod.Status.Phase) + ")")
+					fmt.Println(TREE_BRANCH + "pod : " + pod.Name + " (" + string(pod.Status.Phase) + ")" + " (" + getReadyStatus(pod) + ")")
 				}
 
 				service, err = Clientset.Core().Services(Namespace).Get(database.Spec.Name)
@@ -229,4 +229,17 @@ func deleteDatabase(args []string) {
 		}
 
 	}
+}
+
+func getReadyStatus(pod *v1.Pod) string {
+	readyCount := 0
+	containerCount := 0
+	for _, stat := range pod.Status.ContainerStatuses {
+		containerCount++
+		if stat.Ready {
+			readyCount++
+		}
+	}
+	return fmt.Sprintf("%d/%d", readyCount, containerCount)
+
 }
