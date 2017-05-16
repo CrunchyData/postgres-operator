@@ -91,6 +91,20 @@ to meet your requirements.
 To enable DEBUG messages from the operator pod, set the *DEBUG* environment
 variable to *true* within its deployment file *deployment.json*.
 
+=== Docker Connection
+
+The operator looks up Docker images information like labels to use
+when creating databases and clusters.  For this to work, the
+Pod needs to access the Docker socket, the socket is mounted as a
+hostPath volume to the operator pod.  You will need to ensure
+that the host Docker socket's permissions are adjusted to allow
+the operator to connect to the Docker socket.  In a non-production
+environment, you can open up the Docker socket for all to read it
+as follows:
+....
+sudo chmod 777 /var/run/docker.sock
+....
+
 === Operator Templates
 
 The database and cluster Kube objects that get created by the operator
