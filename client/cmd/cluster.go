@@ -41,16 +41,18 @@ func showCluster(args []string) {
 		for _, cluster := range clusterList.Items {
 			fmt.Println("")
 			if arg == "all" || cluster.Spec.Name == arg {
-				fmt.Println("cluster : " + cluster.Spec.Name)
-				log.Debug("listing cluster " + arg)
-				//list the deployments
-				listDeployments(cluster.Spec.Name)
-				//list the replicasets
-				listReplicaSets(cluster.Spec.Name)
-				//list the pods
-				listPods(cluster.Spec.Name)
-				//list the services
-				listServices(cluster.Spec.Name)
+				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.POSTGRES_FULL_VERSION == PostgresVersion) {
+					fmt.Println("cluster : " + cluster.Spec.Name)
+					log.Debug("listing cluster " + arg)
+					//list the deployments
+					listDeployments(cluster.Spec.Name)
+					//list the replicasets
+					listReplicaSets(cluster.Spec.Name)
+					//list the pods
+					listPods(cluster.Spec.Name)
+					//list the services
+					listServices(cluster.Spec.Name)
+				}
 			}
 		}
 	}

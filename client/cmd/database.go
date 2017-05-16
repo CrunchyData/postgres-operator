@@ -25,6 +25,7 @@ import (
 )
 
 func showDatabase(args []string) {
+	log.Debug("showDatabase with PostgresVersion " + PostgresVersion)
 	//get a list of all databases
 	databaseList := tpr.PgDatabaseList{}
 	err := Tprclient.Get().
@@ -42,21 +43,25 @@ func showDatabase(args []string) {
 	for _, arg := range args {
 		log.Debug("show database " + arg)
 		for _, database := range databaseList.Items {
+
 			if arg == "all" || database.Spec.Name == arg {
-				fmt.Println("database : " + database.Spec.Name)
-				pod, err = Clientset.Core().Pods(Namespace).Get(database.Spec.Name)
-				if err != nil {
-					log.Error("error in getting database pod " + database.Spec.Name + err.Error())
-				} else {
-					fmt.Println(TREE_BRANCH + "pod : " + pod.Name + " (" + string(pod.Status.Phase) + ")" + " (" + getReadyStatus(pod) + ")")
-				}
+				if PostgresVersion == "" || (PostgresVersion != "" && database.Spec.POSTGRES_FULL_VERSION == PostgresVersion) {
+					fmt.Println("database : " + database.Spec.Name)
+					pod, err = Clientset.Core().Pods(Namespace).Get(database.Spec.Name)
+					if err != nil {
+						log.Error("error in getting database pod " + database.Spec.Name + err.Error())
+					} else {
+						fmt.Println(TREE_BRANCH + "pod : " + pod.Name + " (" + string(pod.Status.Phase) + ")" + " (" + getReadyStatus(pod) + ")")
+					}
 
-				service, err = Clientset.Core().Services(Namespace).Get(database.Spec.Name)
-				if err != nil {
-					log.Error("error in getting database service " + database.Spec.Name + err.Error())
-				} else {
-					fmt.Println(TREE_TRUNK + "service : " + service.Name + " (" + service.Spec.ClusterIP + ")")
+					service, err = Clientset.Core().Services(Namespace).Get(database.Spec.Name)
+					if err != nil {
+						log.Error("error in getting database service " + database.Spec.Name + err.Error())
+					} else {
+						fmt.Println(TREE_TRUNK + "service : " + service.Name + " (" + service.Spec.ClusterIP + ")")
 
+					}
+					log.Debug("PostgresVersion matched " + database.Spec.Name)
 				}
 			}
 		}
@@ -108,23 +113,24 @@ func getDatabaseParams(name string) *tpr.PgDatabase {
 
 	//set to internal defaults
 	spec := tpr.PgDatabaseSpec{
-		Name:                name,
-		PVC_NAME:            "",
-		PVC_SIZE:            "100M",
-		PVC_ACCESS_MODE:     "ReadWriteMany",
-		Port:                "5432",
-		CCP_IMAGE_TAG:       "centos7-9.5-1.2.8",
-		PG_MASTER_USER:      "master",
-		PG_MASTER_PASSWORD:  "password",
-		PG_USER:             "testuser",
-		PG_PASSWORD:         "password",
-		PG_DATABASE:         "userdb",
-		PG_ROOT_PASSWORD:    "password",
-		BACKUP_PVC_NAME:     "",
-		BACKUP_PATH:         "",
-		FS_GROUP:            "",
-		SUPPLEMENTAL_GROUPS: "",
-		STRATEGY:            "1",
+		Name:                  name,
+		PVC_NAME:              "",
+		PVC_SIZE:              "100M",
+		PVC_ACCESS_MODE:       "ReadWriteMany",
+		Port:                  "5432",
+		CCP_IMAGE_TAG:         "centos7-9.5-1.2.8",
+		POSTGRES_FULL_VERSION: "unknown",
+		PG_MASTER_USER:        "master",
+		PG_MASTER_PASSWORD:    "password",
+		PG_USER:               "testuser",
+		PG_PASSWORD:           "password",
+		PG_DATABASE:           "userdb",
+		PG_ROOT_PASSWORD:      "password",
+		BACKUP_PVC_NAME:       "",
+		BACKUP_PATH:           "",
+		FS_GROUP:              "",
+		SUPPLEMENTAL_GROUPS:   "",
+		STRATEGY:              "1",
 	}
 
 	//override any values from config file

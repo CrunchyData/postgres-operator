@@ -29,6 +29,11 @@ You can view *all* databases using the special keyword *all*:
 pgo show database all
 ....
 
+You can filter the results based on the Postgres Version:
+....
+pgo show database all --version=9.6.2
+....
+
 == Backup Database
 
 You can start a backup job for a database or cluster as follows:
@@ -116,6 +121,11 @@ psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'
 You can view *all* clusters using the special keyword *all*:
 ....
 pgo show cluster all
+....
+
+You can filter the results by Postgres version:
+....
+pgo show cluster all --version=9.6.2
 ....
 
 

@@ -26,23 +26,24 @@ import (
 )
 
 type PgDatabaseSpec struct {
-	Name                string `json:"name"`
-	PVC_NAME            string `json:"pvcname"`
-	PVC_ACCESS_MODE     string `json:"pvcaccessmode"`
-	PVC_SIZE            string `json:"pvcsize"`
-	Port                string `json:"port"`
-	CCP_IMAGE_TAG       string `json:"ccpimagetag"`
-	PG_MASTER_USER      string `json:"pgmasteruser"`
-	PG_MASTER_PASSWORD  string `json:"pgmasterpassword"`
-	PG_USER             string `json:"pguser"`
-	PG_PASSWORD         string `json:"pgpassword"`
-	PG_DATABASE         string `json:"pgdatabase"`
-	PG_ROOT_PASSWORD    string `json:"pgrootpassword"`
-	BACKUP_PVC_NAME     string `json:"backuppvcname"`
-	BACKUP_PATH         string `json:"backuppath"`
-	FS_GROUP            string `json:"fsgroup"`
-	SUPPLEMENTAL_GROUPS string `json:"supplementalgroups"`
-	STRATEGY            string `json:"strategy"`
+	Name                  string `json:"name"`
+	PVC_NAME              string `json:"pvcname"`
+	PVC_ACCESS_MODE       string `json:"pvcaccessmode"`
+	PVC_SIZE              string `json:"pvcsize"`
+	Port                  string `json:"port"`
+	CCP_IMAGE_TAG         string `json:"ccpimagetag"`
+	POSTGRES_FULL_VERSION string `json:"postgresfullversion"`
+	PG_MASTER_USER        string `json:"pgmasteruser"`
+	PG_MASTER_PASSWORD    string `json:"pgmasterpassword"`
+	PG_USER               string `json:"pguser"`
+	PG_PASSWORD           string `json:"pgpassword"`
+	PG_DATABASE           string `json:"pgdatabase"`
+	PG_ROOT_PASSWORD      string `json:"pgrootpassword"`
+	BACKUP_PVC_NAME       string `json:"backuppvcname"`
+	BACKUP_PATH           string `json:"backuppath"`
+	FS_GROUP              string `json:"fsgroup"`
+	SUPPLEMENTAL_GROUPS   string `json:"supplementalgroups"`
+	STRATEGY              string `json:"strategy"`
 }
 
 type PgDatabase struct {

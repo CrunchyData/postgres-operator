@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
@@ -119,37 +120,51 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 }
 
-func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) {
+func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) {
 	var err error
 
 	//create the PVC for the master if required
-	if db.Spec.PVC_NAME == "" {
-		db.Spec.PVC_NAME = db.Spec.Name + "-pvc"
+	if cl.Spec.PVC_NAME == "" {
+		cl.Spec.PVC_NAME = cl.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, db.Spec.PVC_NAME, db.Spec.PVC_ACCESS_MODE, db.Spec.PVC_SIZE, namespace)
+			cl.Spec.PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, cl.Spec.PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return
 		}
-		log.Info("created PVC =" + db.Spec.PVC_NAME + " in namespace " + namespace)
+		log.Info("created PVC =" + cl.Spec.PVC_NAME + " in namespace " + namespace)
 	}
-	log.Debug("creating PgCluster object strategy is [" + db.Spec.STRATEGY + "]")
+	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
-	if db.Spec.STRATEGY == "" {
-		db.Spec.STRATEGY = "1"
+	if cl.Spec.STRATEGY == "" {
+		cl.Spec.STRATEGY = "1"
 		log.Info("using default strategy")
 	}
 
-	strategy, ok := StrategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster creation" + db.Spec.STRATEGY)
+		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
 		return
 	}
 
-	strategy.AddCluster(clientset, client, db, namespace)
+	setFullVersion(client, cl, namespace)
+
+	strategy.AddCluster(clientset, client, cl, namespace)
+
+}
+
+func setFullVersion(tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace string) {
+	//get full version from image tag
+	fullVersion := util.GetFullVersion(cl.Spec.CCP_IMAGE_TAG)
+
+	//update the tpr
+	err := util.Patch(tprclient, "/spec/postgresfullversion", fullVersion, "pgclusters", cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 }
 

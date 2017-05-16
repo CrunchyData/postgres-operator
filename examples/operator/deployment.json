@@ -14,10 +14,16 @@
             },
             "spec": {
                 "containers": [{
+	        "securityContext": {
+			"privileged": true
+		},
                     "name": "postgres-operator",
                     "image": "crunchydata/postgres-operator:centos7-1.1.0",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
+                        "name": "DOCKER_API_VERSION",
+                        "value": "1.24"
+                    }, {
                         "name": "DEBUG",
                         "value": "true"
                     }, {
@@ -39,13 +45,21 @@
                         "mountPath": "/operator-conf",
                         "name": "operator-conf",
                         "readOnly": true
+                    }, {
+                        "mountPath": "/var/run/docker.sock",
+                        "name": "docker-socket",
+                        "readOnly": false
                     }]
                 }],
-                "volumes": [
-                {
+                "volumes": [{
                     "name": "operator-conf",
                     "configMap": {
                         "name": "operator-conf"
+                    }
+                }, {
+                    "name": "docker-socket",
+                    "hostPath": {
+                        "path": "/var/run/docker.sock"
                     }
                 }]
             }

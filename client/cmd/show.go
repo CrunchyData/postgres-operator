@@ -23,6 +23,8 @@ import (
 const TREE_BRANCH = "├── "
 const TREE_TRUNK = "└── "
 
+var PostgresVersion string
+
 // ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
 	Use:   "show",
@@ -82,6 +84,9 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// ShowCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	ShowDatabaseCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
+	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
+
 }
 
 var ShowPVCCmd = &cobra.Command{

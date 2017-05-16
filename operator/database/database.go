@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
@@ -150,9 +151,24 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		return
 	}
 
+	setFullVersion(client, db, namespace)
+
 	strategy.AddDatabase(clientset, client, db, namespace)
 
 }
+
+func setFullVersion(tprclient *rest.RESTClient, db *tpr.PgDatabase, namespace string) {
+	//get full version from image tag
+	fullVersion := util.GetFullVersion(db.Spec.CCP_IMAGE_TAG)
+
+	//update the tpr
+	err := util.Patch(tprclient, "/spec/postgresfullversion", fullVersion, "pgdatabases", db.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+}
+
 func serviceExists(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgDatabase, namespace string) bool {
 	lo := v1.ListOptions{LabelSelector: "pg-database=" + db.Spec.Name}
 	log.Debug("label selector is " + lo.LabelSelector)
