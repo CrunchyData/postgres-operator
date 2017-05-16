@@ -42,7 +42,7 @@ func showCluster(args []string) {
 			fmt.Println("")
 			if arg == "all" || cluster.Spec.Name == arg {
 				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.POSTGRES_FULL_VERSION == PostgresVersion) {
-					fmt.Println("cluster : " + cluster.Spec.Name)
+					fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.POSTGRES_FULL_VERSION + ")")
 					log.Debug("listing cluster " + arg)
 					//list the deployments
 					listDeployments(cluster.Spec.Name)
