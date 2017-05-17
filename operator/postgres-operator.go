@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/pkg/api/v1"
+	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/runtime"
 	"k8s.io/client-go/pkg/runtime/serializer"
@@ -93,6 +94,7 @@ func main() {
 	go database.Process(clientset, tprclient, stopchan, namespace)
 	go cluster.Process(clientset, tprclient, stopchan, namespace)
 	go backup.Process(clientset, tprclient, stopchan, namespace)
+	go backup.ProcessJobs(clientset, tprclient, stopchan, namespace)
 	go upgrade.Process(clientset, tprclient, stopchan, namespace)
 	go upgrade.MajorUpgradeProcess(clientset, tprclient, stopchan, namespace)
 
@@ -147,6 +149,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&tpr.PgUpgradeList{},
 		&api.ListOptions{},
 		&api.DeleteOptions{},
+		&v1batch.Job{},
+		&v1batch.JobList{},
 	)
 
 	return nil

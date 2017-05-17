@@ -8,6 +8,6 @@ ADD bin/postgres-operator /usr/local/bin
 
 VOLUME ["/pgconf"]
 
-USER daemon
+USER root
 
 ENTRYPOINT ["postgres-operator"]

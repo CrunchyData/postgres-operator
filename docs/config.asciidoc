@@ -98,12 +98,14 @@ when creating databases and clusters.  For this to work, the
 Pod needs to access the Docker socket, the socket is mounted as a
 hostPath volume to the operator pod.  You will need to ensure
 that the host Docker socket's permissions are adjusted to allow
-the operator to connect to the Docker socket.  In a non-production
-environment, you can open up the Docker socket for all to read it
-as follows:
+the operator to connect to the Docker socket.  On CentOS, the
+standard docker socket permissions are:
 ....
-sudo chmod 777 /var/run/docker.sock
+srw-rw----. 1 root docker 0 May 17 07:30 /var/run/docker.sock
 ....
+
+Since the operator runs as the *root* user, it can access the docker
+socket.  
 
 === Operator Templates
 

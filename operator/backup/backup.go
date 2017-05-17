@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
@@ -160,6 +161,12 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 		return
 	}
 	log.Info("created Job " + resultJob.Name)
+
+	//update the backup TPR status to submitted
+	err = util.Patch(client, "/spec/backupstatus", tpr.UPGRADE_SUBMITTED_STATUS, "pgbackups", job.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 }
 

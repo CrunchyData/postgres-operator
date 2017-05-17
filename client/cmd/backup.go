@@ -120,6 +120,7 @@ func printBackupTPR(result *tpr.PgBackup) {
 	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Access Mode:\t"+result.Spec.PVC_ACCESS_MODE)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Size:\t\t"+result.Spec.PVC_SIZE)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "CCP_IMAGE_TAG:\t"+result.Spec.CCP_IMAGE_TAG)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Status:\t"+result.Spec.BACKUP_STATUS)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Host:\t"+result.Spec.BACKUP_HOST)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup User:\t"+result.Spec.BACKUP_USER)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Pass:\t"+result.Spec.BACKUP_PASS)
@@ -224,6 +225,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	spec.PVC_ACCESS_MODE = viper.GetString("DB.PVC_ACCESS_MODE")
 	spec.PVC_SIZE = viper.GetString("DB.PVC_SIZE")
 	spec.CCP_IMAGE_TAG = viper.GetString("DB.CCP_IMAGE_TAG")
+	spec.BACKUP_STATUS = "initial"
 	spec.BACKUP_HOST = "basic"
 	spec.BACKUP_USER = "master"
 	spec.BACKUP_PASS = "password"

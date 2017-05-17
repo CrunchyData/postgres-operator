@@ -35,6 +35,7 @@ type PgBackupSpec struct {
 	BACKUP_USER     string `json:"backupuser"`
 	BACKUP_PASS     string `json:"backuppass"`
 	BACKUP_PORT     string `json:"backupport"`
+	BACKUP_STATUS   string `json:"backupstatus"`
 }
 
 type PgBackup struct {
