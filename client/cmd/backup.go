@@ -146,8 +146,11 @@ func createBackup(args []string) {
 			Do().
 			Into(&result)
 		if err == nil {
-			fmt.Println("pgbackup " + arg + " was found so we will not create it")
-			break
+			fmt.Println("pgbackup " + arg + " was found so we recreate it")
+			dels := make([]string, 1)
+			dels[0] = arg
+			deleteBackup(dels)
+			time.Sleep(2000 * time.Millisecond)
 		} else if errors.IsNotFound(err) {
 			fmt.Println("pgbackup " + arg + " not found so we will create it")
 		} else {

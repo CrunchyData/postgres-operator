@@ -122,9 +122,9 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
 		if err != nil {
 			log.Error(err.Error())
-			return
+		} else {
+			log.Info("created backup PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
 		}
-		log.Info("created backup PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
 
 	}
 
