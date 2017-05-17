@@ -1,0 +1,85 @@
+/*
+Copyright 2016 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package main
+
+import (
+	"flag"
+	"fmt"
+
+	"k8s.io/client-go/kubernetes"
+	//"k8s.io/client-go/pkg/api"
+	//"k8s.io/client-go/pkg/api/errors"
+
+	//"k8s.io/client-go/pkg/runtime"
+	//"k8s.io/client-go/pkg/runtime/serializer"
+
+	//"k8s.io/client-go/pkg/api/unversioned"
+	"k8s.io/client-go/pkg/api/v1"
+	//"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+var (
+	kubeconfig = flag.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
+)
+
+func main() {
+	flag.Parse()
+	// uses the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
+	pods, err := clientset.Core().Pods("default").List(lo)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
+
+	for _, pod := range pods.Items {
+		readyCount := 0
+		containerCount := 0
+		for _, stat := range pod.Status.ContainerStatuses {
+			containerCount++
+			if stat.Ready {
+				readyCount++
+			}
+			if stat.State.Waiting != nil {
+				fmt.Printf("container state is waiting")
+			} else if stat.State.Running != nil {
+				fmt.Printf("container state is running")
+			} else if stat.State.Terminated != nil {
+				fmt.Printf("container state is terminated")
+			}
+		}
+		fmt.Printf("Ready %d/%d\n", readyCount, containerCount)
+		//fmt.Printf("%v\n", pod)
+		//fmt.Printf("%v\n", pod.Spec.Volumes)
+		for _, v := range pod.Spec.Volumes {
+			if v.Name == "pgdata" {
+				fmt.Printf("pod.Name %s pgdata %s\n", pod.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+			}
+		}
+	}
+}
