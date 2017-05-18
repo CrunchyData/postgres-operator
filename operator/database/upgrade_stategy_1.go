@@ -248,10 +248,10 @@ func (r DatabaseStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset,
 	log.Info("created pod " + resultPod.Name + " in namespace " + namespace)
 
 	//update the upgrade TPR status to completed
-	err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
-	if err != nil {
-		log.Error(err.Error())
-	}
+	//err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+	//if err != nil {
+	//log.Error(err.Error())
+	//}
 
 	return err
 

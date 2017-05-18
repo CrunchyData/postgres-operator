@@ -213,6 +213,15 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UPGRADE_TYPE)
 		return err
 	}
+	if err == nil {
+		log.Info("updating the pg version after cluster upgrade")
+		fullVersion := util.GetFullVersion(upgrade.Spec.CCP_IMAGE_TAG)
+		err = util.Patch(client, "/spec/postgresfullversion", fullVersion, "pgclusters", upgrade.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}
+
 	return err
 
 }

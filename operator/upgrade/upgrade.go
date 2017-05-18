@@ -312,4 +312,13 @@ func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 		}
 	}
 
+	if err == nil {
+		//update the upgrade TPR status to completed
+		err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+	}
+
 }

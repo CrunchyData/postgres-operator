@@ -230,6 +230,16 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 		log.Error("invalid UPGRADE_TYPE requested for database upgrade" + upgrade.Spec.UPGRADE_TYPE)
 		return err
 	}
+
+	if err == nil {
+		log.Info("updating the postgres version after the db upgrade")
+		fullVersion := util.GetFullVersion(upgrade.Spec.CCP_IMAGE_TAG)
+		err = util.Patch(client, "/spec/postgresfullversion", fullVersion, "pgdatabases", upgrade.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}
+
 	return err
 
 }
