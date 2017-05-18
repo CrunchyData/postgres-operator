@@ -40,3 +40,7 @@ kubectl create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/database/1 
 
 envsubst < $DIR/deployment.json | kubectl --namespace=$NAMESPACE create -f -
+
+sleep 3
+kubectl get pod --selector=name=postgres-operator
+kubectl logs --selector=name=postgres-operator

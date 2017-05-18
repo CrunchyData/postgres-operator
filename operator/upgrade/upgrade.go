@@ -110,7 +110,7 @@ func addUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upg
 			log.Error(err.Error())
 		} else {
 			//update the upgrade TPR status to submitted
-			err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+			err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -139,7 +139,7 @@ func addUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upg
 		log.Error(err.Error())
 	} else {
 		//update the upgrade TPR status to submitted
-		err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err.Error())
 		}

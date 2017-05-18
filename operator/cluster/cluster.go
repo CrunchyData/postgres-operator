@@ -207,6 +207,9 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 	//invoke the strategy
 	if upgrade.Spec.UPGRADE_TYPE == "minor" {
 		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
+		if err == nil {
+			err = util.Patch(client, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		}
 	} else if upgrade.Spec.UPGRADE_TYPE == "major" {
 		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
 	} else {
