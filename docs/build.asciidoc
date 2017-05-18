@@ -159,7 +159,7 @@ The *pgo* client requires two configuration files be copied
 to your $HOME as follows:
 ....
 cp $COROOT/examples/.pgo.yaml $HOME
-cp $COROOT/examples/.pgo.lspvc-template.yaml $HOME
+cp $COROOT/examples/.pgo.lspvc-template.json $HOME
 vi $HOME/.pgo.yaml
 ....
 
@@ -195,20 +195,23 @@ At this point, you should be ready to start using the *pgo* client!
 A simple *smoke test* of the postgres operator includes testing
 the following:
  
- * create a database
- * show a database
- * backup a database
- * show backup of database
- * delete a database
- * restore a database
- * create a cluster
- * show a cluster
- * backup a cluster
- * show backup of cluster
- * delete a cluster
- * restore a cluster
- * minor upgrade a database
- * major upgrade a database
- * minor upgrade a cluster
- * major upgrade a cluster
+ * create a database (*pgo create database testdb*)
+ * show a database (*pgo show database testdb*)
+ * show all databases (*pgo show database all*)
+ * backup a database (*pgo create backup testdb*)
+ * show backup of database (*pgo show backup testdb*)
+ * show backup of database and list pvc(*pgo show backup testdb --show-pvc=true*)
+ * delete a database (*pgo delete database testdb*)
+ * restore a database (*pgo create database testdb2 --backup-pvc=db1-backup-pvc --backup-path=db1-backups/2017-05-18-14-37-47*)
+ * create a cluster (*pgo create cluster testcluster*)
+ * show a cluster (*pgo show cluster testcluster*)
+ * show all clusters (*pgo show cluster all*)
+ * backup a cluster (*pgo create backup testcluster*)
+ * show backup of cluster (*pgo show backup testcluster*)
+ * delete a cluster (*pgo delete cluster testcluster*)
+ * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01*)
+ * minor upgrade a database (*pgo create upgrade testdb*)
+ * major upgrade a database (*pgo create upgrade testdb --upgrade-type=major*)
+ * minor upgrade a cluster (*pgo create upgrade testcluster*)
+ * major upgrade a cluster (*pgo create upgrade testcluster --upgrade-type=major*)
 

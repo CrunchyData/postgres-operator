@@ -24,6 +24,7 @@ const TREE_BRANCH = "├── "
 const TREE_TRUNK = "└── "
 
 var PostgresVersion string
+var ShowPVC bool
 
 // ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
@@ -86,6 +87,9 @@ func init() {
 	// ShowCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	ShowDatabaseCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
+
+        ShowBackupCmd.Flags().BoolVarP(&ShowPVC, "show-pvc", "p", false, "Show backup archive PVC listing ")
+
 
 }
 

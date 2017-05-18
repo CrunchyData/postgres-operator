@@ -1,7 +1,7 @@
 KUBECONFIG:  /etc/kubernetes/admin.conf
 NAMESPACE:  default
 DB:
-  CCP_IMAGE_TAG:  centos7-9.6-1.3.0
+  CCP_IMAGE_TAG:  centos7-9.6-1.4.1
   PORT:  5432
   PG_MASTER_USER:  master
   PG_MASTER_PASSWORD:  password
@@ -17,7 +17,7 @@ DB:
   STRATEGY:  1
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
-  CO_IMAGE_TAG:  centos7-1.0.0
+  CO_IMAGE_TAG:  centos7-1.2.0
   DEBUG:  false
 CLUSTER:
   REPLICAS:  2

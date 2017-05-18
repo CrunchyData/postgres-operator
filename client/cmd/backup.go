@@ -106,10 +106,14 @@ func showBackupInfo(name string) {
 
 	}
 
+	log.Debugf("ShowPVC is %v\n" , ShowPVC)
+
+	if ShowPVC {
 	//print pvc information for all jobs
 	for key, _ := range pvcMap {
 		displayPVC(name, key)
 	}
+}
 }
 
 func printBackupTPR(result *tpr.PgBackup) {
