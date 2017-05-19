@@ -44,7 +44,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, st
 	}
 
 	_, err4 := watch.Until(0, fw, func(event watch.Event) (bool, error) {
-		log.Infoln("got a pgupgrade job watch event")
+		log.Infof("got a backup job watch event %v\n", event.Type)
 
 		switch event.Type {
 		case watch.Added:
@@ -69,7 +69,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, st
 
 			}
 		default:
-			log.Infoln("unknown watch event %v\n", event.Type)
+			log.Infoln("backup job unknown watch event %v\n", event.Type)
 		}
 
 		return false, nil

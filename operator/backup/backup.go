@@ -128,6 +128,9 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 
 	}
 
+	//update the pvc name in the TPR
+	err = util.Patch(client, "/spec/pvcname", job.Spec.PVC_NAME, "pgbackups", job.Spec.Name, namespace)
+
 	//create the job -
 	jobFields := JobTemplateFields{
 		Name:          job.Spec.Name,
