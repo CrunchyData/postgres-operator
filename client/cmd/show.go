@@ -25,6 +25,7 @@ const TREE_TRUNK = "└── "
 
 var PostgresVersion string
 var ShowPVC bool
+var ShowSecrets bool
 
 // ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
@@ -85,11 +86,13 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// ShowCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	ShowDatabaseCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "s", false, "Show secrets ")
+	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "s", false, "Show secrets ")
 	ShowDatabaseCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 
-        ShowBackupCmd.Flags().BoolVarP(&ShowPVC, "show-pvc", "p", false, "Show backup archive PVC listing ")
-
+	ShowBackupCmd.Flags().BoolVarP(&ShowPVC, "show-pvc", "p", false, "Show backup archive PVC listing ")
 
 }
 

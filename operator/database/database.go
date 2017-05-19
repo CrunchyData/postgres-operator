@@ -135,6 +135,8 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 		log.Info("created PVC =" + db.Spec.PVC_NAME + " in namespace " + namespace)
 	}
 
+	err = util.CreateDatabaseSecrets(clientset, db.Spec.Name, namespace)
+
 	log.Debug("creating PgDatabase object " + db.Spec.STRATEGY + " in namespace " + namespace)
 
 	if db.Spec.STRATEGY == "" {
