@@ -11,13 +11,11 @@ design and explains the concepts fuller.
 Kubernetes Third Party Resources are used in the design
 of the postgres Operator to define:
 
- * Database  - *pgdatabases*
  * Cluster - *pgclusters*
  * Backup - *pgbackups*
  * Upgrade - *pgupgrades*
 
-A Database is made up of Pods and Services, whereas a Cluster is
-made up of multiple Pods, Services, and Proxies.
+A Cluster is made up of multiple Pods, Services, and Proxies.
 
 
 == Command Line Interface
@@ -28,12 +26,10 @@ to create databases or clusters, or make changes to existing databases.
 The CLI interacts interacts with the Kubernetes cluster using
 the golang Kubernetes client package.  
 
-When the CLI needs to create a new database, it does so by 
-creating a new ThirdPartyResource of type *pgdatabase*.
-Likewise, the CLI can create a new cluster by creating
+The CLI can create a new cluster by creating
 a new ThirdPartyResource instance of type *pgcluster*.
 
-From the CLI, users can view existing databases and clusters that
+From the CLI, users can view existing clusters that
 were deployed using the CLI and Operator.  Objects that were
 not created by the Crunchy Operator are now viewable from the CLI.
 
@@ -45,10 +41,10 @@ using the provided script.  Once installed and running, the Operator
 pod will start watching for certain defined events.
 
 The operator watches for create/update/delete actions on 
-the *pgdatabase* and *pgcluster* third party resources.  When
-the CLI creates for example a new *pgdatabase* third party
+the *pgcluster* third party resources.  When
+the CLI creates for example a new *pgcluster* third party
 resource, the operator catches that event and creates pods and services
-for that new database request.
+for that new cluster request.
 
 == CLI Design
 
@@ -61,8 +57,8 @@ A user works with the CLI by entering verbs to indicate
 what they want to do, as follows:
 [source,bash]
 ----
-pgo show database all
-pgo delete database db1 db2 db3
+pgo show cluster all
+pgo delete cluster db1 db2 db3
 pgo create cluster mycluster
 ----
 
@@ -70,13 +66,13 @@ In the above example, the *show*, *backup*, *delete*, and *create* verbs are use
 
 === Object Types
 
-Currently the operator supports object types of *database* and *cluster*.
+Currently the operator supports object types of *backup*, *upgrade*, and *cluster*.
 The object type follows the verb as follows:
 
 [source,bash]
 ----
-pgo show database all
-pgo delete database db1 db2 db3
+pgo show cluster all
+pgo delete cluster db1 db2 db3
 pgo create cluster mycluster
 ----
 
@@ -102,6 +98,5 @@ You can view the  TPR Endpoints as follows:
 
 [source,bash]
 ----
- curl https//192.168.42.30:8443/apis/crunchydata.com/v1/pgdatabases --insecure
  curl https//192.168.42.30:8443/apis/crunchydata.com/v1/pgclusters --insecure
 ----

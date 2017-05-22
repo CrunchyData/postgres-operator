@@ -60,6 +60,8 @@ type DeploymentTemplateFields struct {
 	PG_ROOT_PASSWORD     string
 	PGDATA_PATH_OVERRIDE string
 	PVC_NAME             string
+	BACKUP_PVC_NAME      string
+	BACKUP_PATH          string
 	//next 2 are for the replica deployment only
 	REPLICAS         string
 	PG_MASTER_HOST   string
@@ -134,6 +136,18 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 			return
 		}
 		log.Info("created PVC =" + cl.Spec.PVC_NAME + " in namespace " + namespace)
+	}
+	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
+	if cl.Spec.BACKUP_PVC_NAME == "" {
+		cl.Spec.BACKUP_PVC_NAME = cl.Spec.Name + "-backup-pvc-empty"
+		log.Debug("BACKUP_PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
+			cl.Spec.BACKUP_PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, cl.Spec.BACKUP_PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+		log.Info("created PVC =" + cl.Spec.BACKUP_PVC_NAME + " in namespace " + namespace)
 	}
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 

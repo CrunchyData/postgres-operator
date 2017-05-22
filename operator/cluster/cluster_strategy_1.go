@@ -20,8 +20,8 @@ package cluster
 
 import (
 	"bytes"
-	"time"
 	"encoding/json"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"text/template"
@@ -124,6 +124,8 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             cl.Spec.PVC_NAME,
+		BACKUP_PVC_NAME:      cl.Spec.BACKUP_PVC_NAME,
+		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
 		PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
 		PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
@@ -200,7 +202,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 }
 
 func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
-	
+
 	var err error
 	log.Info("deleting PgCluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
@@ -254,8 +256,6 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 		log.Error("error deleting replica Service " + err.Error())
 	}
 	log.Info("deleted replica service " + cl.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
-
-
 
 	return err
 

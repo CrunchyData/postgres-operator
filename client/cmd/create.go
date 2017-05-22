@@ -97,22 +97,6 @@ pgo create backup mydatabase`,
 	},
 }
 
-var createDatabaseCmd = &cobra.Command{
-	Use:   "database",
-	Short: "Create a new database",
-	Long: `Create a crunchy database which consists of a Service and Pod
-For example:
-
-pgo create database mydatabase`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
-		} else {
-			createDatabase(args)
-		}
-	},
-}
-
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Create a database cluster",
@@ -132,7 +116,7 @@ pgo create cluster mycluster`,
 
 func init() {
 	RootCmd.AddCommand(createCmd)
-	createCmd.AddCommand(createDatabaseCmd, createClusterCmd, createBackupCmd, createUpgradeCmd)
+	createCmd.AddCommand(createClusterCmd, createBackupCmd, createUpgradeCmd)
 	//createCmd.AddCommand(createClusterCmd)
 	//createCmd.AddCommand(createBackupCmd)
 
@@ -145,9 +129,9 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	createDatabaseCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
-	createDatabaseCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
-	createDatabaseCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
+	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
+	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
+	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
 
 	createUpgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
 

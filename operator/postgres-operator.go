@@ -26,7 +26,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
-	"github.com/crunchydata/postgres-operator/operator/database"
 	"github.com/crunchydata/postgres-operator/operator/upgrade"
 	"github.com/crunchydata/postgres-operator/tpr"
 
@@ -91,7 +90,6 @@ func main() {
 
 	stopchan := make(chan struct{}, 1)
 
-	go database.Process(clientset, tprclient, stopchan, namespace)
 	go cluster.Process(clientset, tprclient, stopchan, namespace)
 	go backup.Process(clientset, tprclient, stopchan, namespace)
 	go backup.ProcessJobs(clientset, tprclient, stopchan, namespace)
@@ -139,8 +137,6 @@ func configFromFlags(kubeconfig string) (*rest.Config, error) {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
 		unversioned.GroupVersion{Group: "crunchydata.com", Version: "v1"},
-		&tpr.PgDatabase{},
-		&tpr.PgDatabaseList{},
 		&tpr.PgCluster{},
 		&tpr.PgClusterList{},
 		&tpr.PgBackup{},
@@ -159,32 +155,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 func initializeResources(clientset *kubernetes.Clientset) {
 	// initialize third party resources if they do not exist
 
-	tpr, err := clientset.Extensions().ThirdPartyResources().Get("pg-database.crunchydata.com")
-	if err != nil {
-		if errors.IsNotFound(err) {
-			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
-					Name: "pg-database.crunchydata.com",
-				},
-				Versions: []v1beta1.APIVersion{
-					{Name: "v1"},
-				},
-				Description: "A postgres database ThirdPartyResource",
-			}
-
-			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
-			if err != nil {
-				panic(err)
-			}
-			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
-		} else {
-			panic(err)
-		}
-	} else {
-		log.Infof("SKIPPING: already exists %#v\n", tpr)
-	}
-
-	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
+	tpr, err := clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{

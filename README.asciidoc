@@ -3,9 +3,9 @@ v1.1.0, {docdate}
 
 == Overview
 
-The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Databases and Clusters deployed within a Kubernetes.
+The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes.
 
-The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource types *pgdatabase* and *pgcluster*.
+The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource type *pgcluster*, *pgbackups*, and *pgupgrades*.
 
 Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object. 
 
@@ -13,14 +13,14 @@ The PostgreSQL Operator runs within Kubernetes detecting these new custom object
 
 Once the objects are detected, the PostgreSQL Operator enables users to perform operations across the Kubernetes environment, including:
 
-* Create Database or Cluster
-* Destroy Database or Cluster
-* Backup Database or Cluster
-* Restore Database or Cluster
-* Upgrade Database or Cluster
+* Create Cluster
+* Destroy Cluster
+* Backup Cluster
+* Restore Cluster
+* Upgrade Cluster
 * View PVC
 
-What actually gets created on the Kube cluster for a *pgdatabase* or
+What actually gets created on the Kube cluster for a 
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
 are documented in detail here link:docs/strategies.asciidoc[Deployment Strategies] 
 
@@ -35,51 +35,48 @@ are documented in detail here link:docs/strategies.asciidoc[Deployment Strategie
 
 Some examples of using the command line interface:
 
-.Display Database or Cluster Information
+.Display Cluster Information
 [source,bash]
 ----
-pgo show database all
-pgo show database db1 db2 db3
+pgo show cluster all
+pgo show cluster db1 db2 db3
 pgo show cluster mycluster
 ----
 
-.Create Database or Cluster
+.Create Cluster
 [source,bash]
 ----
-pgo create database mydatabase
 pgo create cluster mycluster
 ----
 
-.Delete a Database or Cluster
+.Delete a Cluster
 [source,bash]
 ----
-pgo delete database mydatabase
 pgo delete cluster mycluster
 ----
 
-.Backup Database or Cluster
+.Backup Cluster
 [source,bash]
 ----
 pgo create backup mycluster
-pgo create backup mydatabase
 ----
 
-.Restore Database
+.Restore Cluster
 [source,bash]
 ----
-pgo create database myrestore --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
+pgo create cluster myrestore --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
 ----
 
-.Upgrade Database (minor Postgres version upgrade)
+.Upgrade Cluster (minor Postgres version upgrade)
 [source,bash]
 ----
-pgo create upgrade mydatabase 
+pgo create upgrade mycluster 
 ----
 
-.Upgrade Database (major Postgres version upgrade from 9.5 to 9.6)
+.Upgrade Cluster (major Postgres version upgrade from 9.5 to 9.6)
 [source,bash]
 ----
-pgo create upgrade mydatabase --upgrade-type=major
+pgo create upgrade mycluster --upgrade-type=major
 ----
 
 .View PVC

@@ -4,16 +4,16 @@ v1.1.0, {docdate}
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
 
-== Create Database
+== Create Cluster
 
 To create a database, use the following:
 ....
-pgo create database mydatabase
+pgo create cluster mycluster
 ....
 
 You can then view that database as:
 ....
-pgo show database mydatabase
+pgo show cluster mydatabase
 ....
 
 The output will give you the current status of the database pod
@@ -26,40 +26,38 @@ psql -h 10.105.121.12 -U postgres postgres
 
 You can view *all* databases using the special keyword *all*:
 ....
-pgo show database all
+pgo show cluster all
 ....
 
 You can filter the results based on the Postgres Version:
 ....
-pgo show database all --version=9.6.2
+pgo show cluster all --version=9.6.2
 ....
 
-== Backup Database
+== Backup Cluster
 
 You can start a backup job for a database or cluster as follows:
 ....
-pgo create backup mydatabase
 pgo create backup mycluster
 ....
 
 You can view the backup:
 ....
-pgo show backup mydatabase
 pgo show backup mycluster
 ....
 
 The output of the backup will list the backup snapshots
 found in the backup PVC, for example:
 ....
-backup job pods for database mydatabase...
-└── backup-mydatabase-63fw1
+backup job pods for cluster mycluster...
+└── backup-mycluster-63fw1
 └── mydatabase
 
-database pod mydatabase is found
+database pod mycluster is found
 
-├── mydatabase-backups/2017-03-27-13-54-33
-├── mydatabase-backups/2017-03-27-13-56-49
-└── *mydatabase-backups/2017-03-27-14-02-38*
+├── mycluster-backups/2017-03-27-13-54-33
+├── mycluster-backups/2017-03-27-13-56-49
+└── *mycluster-backups/2017-03-27-14-02-38*
 ....
 
 This output is important in that it can let you copy/paste
@@ -68,31 +66,16 @@ essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
-pgo create database restoredb --backup-path=mydatabase-backups/2017-03-27-13-56-49 --backup-pvc=crunchy-pvc
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=crunchy-pvc
 ....
 
 This will create a new database called *restoredb* based on the
-backup found in *mydatabase-backups/2017-03-27-13-56-49*.
+backup found in *mycluster-backups/2017-03-27-13-56-49*.
 
 
-== Create Cluster
+== Cluster Replication
 
-A cluster in this case consists of a *master* and a *replica* database
-that use PostgreSQL streaming replication to form a PostgreSQL
-cluster.
-
-Use the *pgo* command to create a cluster:
-....
-pgo create cluster mycluster
-....
-
-View the cluster:
-....
-pgo show cluster mycluster
-....
-
-You will see in the output a variety of Kubernetes objects
-where created including:
+When you create a Cluster, you will see in the output a variety of Kubernetes objects were created including:
 
  * a Deployment holding the master PostgreSQL database
  * a Deployment holding the replica PostgreSQL database
@@ -129,27 +112,11 @@ pgo show cluster all --version=9.6.2
 ....
 
 
-== Delete Database and Cluster
-
-You can delete a database as follows:
-....
-pgo delete database mydatabase
-....
-
-Likewise, you can delete a cluster as follows:
-....
-pgo delete cluster mycluster
-....
-
-*Note*, when you delete a database or cluster, the operator
-will NOT delete any associated PVCs used by the cluster or database.
-
 == Minor Database and Cluster Upgrade
 
 You can perform a minor Postgres version upgrade
 of either a database or cluster as follows:
 ....
-pgo create upgrade mydatabase
 pgo create upgrade mycluster
 ....
 
@@ -166,7 +133,6 @@ is updated, this will upgrade your Postgres server version only.
 You can perform a major Postgres version upgrade
 of either a database or cluster as follows:
 ....
-pgo create upgrade mydatabase --upgrade-type=major
 pgo create upgrade mycluster --upgrade-type=major
 ....
 

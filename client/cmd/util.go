@@ -67,12 +67,6 @@ func ConnectToKube() {
 		log.Error("required pg-cluster.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
-	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-database.crunchydata.com")
-	if err != nil {
-		log.Error(err.Error())
-		log.Error("required pg-database.crunchydata.com TPR was not found on your kube cluster")
-		os.Exit(2)
-	}
 	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com")
 	if err != nil {
 		log.Error(err.Error())
@@ -116,8 +110,6 @@ func configureTPRClient(config *rest.Config) {
 		func(scheme *runtime.Scheme) error {
 			scheme.AddKnownTypes(
 				groupversion,
-				&tpr.PgDatabase{},
-				&tpr.PgDatabaseList{},
 				&tpr.PgCluster{},
 				&tpr.PgClusterList{},
 				&tpr.PgBackup{},

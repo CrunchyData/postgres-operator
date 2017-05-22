@@ -106,14 +106,14 @@ func showBackupInfo(name string) {
 
 	}
 
-	log.Debugf("ShowPVC is %v\n" , ShowPVC)
+	log.Debugf("ShowPVC is %v\n", ShowPVC)
 
 	if ShowPVC {
-	//print pvc information for all jobs
-	for key, _ := range pvcMap {
-		displayPVC(name, key)
+		//print pvc information for all jobs
+		for key, _ := range pvcMap {
+			displayPVC(name, key)
+		}
 	}
-}
 }
 
 func printBackupTPR(result *tpr.PgBackup) {
@@ -229,54 +229,32 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
 	spec.PVC_NAME = viper.GetString("PVC_NAME")
-	spec.PVC_ACCESS_MODE = viper.GetString("DB.PVC_ACCESS_MODE")
-	spec.PVC_SIZE = viper.GetString("DB.PVC_SIZE")
-	spec.CCP_IMAGE_TAG = viper.GetString("DB.CCP_IMAGE_TAG")
+	spec.PVC_ACCESS_MODE = viper.GetString("CLUSTER.PVC_ACCESS_MODE")
+	spec.PVC_SIZE = viper.GetString("CLUSTER.PVC_SIZE")
+	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
 	spec.BACKUP_STATUS = "initial"
 	spec.BACKUP_HOST = "basic"
 	spec.BACKUP_USER = "master"
 	spec.BACKUP_PASS = "password"
 	spec.BACKUP_PORT = "5432"
 
-	//TODO see if name is a database or cluster
-	db := tpr.PgDatabase{}
+	cluster := tpr.PgCluster{}
 	err := Tprclient.Get().
-		Resource("pgdatabases").
+		Resource("pgclusters").
 		Namespace(Namespace).
 		Name(name).
 		Do().
-		Into(&db)
+		Into(&cluster)
 	if err == nil {
-		fmt.Println(name + " is a database")
-		spec.BACKUP_HOST = db.Spec.Name
-		spec.BACKUP_USER = db.Spec.PG_MASTER_USER
-		spec.BACKUP_PASS = db.Spec.PG_MASTER_PASSWORD
-		spec.BACKUP_PORT = db.Spec.Port
+		spec.BACKUP_HOST = cluster.Spec.Name
+		spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
+		spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD
+		spec.BACKUP_PORT = cluster.Spec.Port
 	} else if errors.IsNotFound(err) {
-		log.Debug(name + " is not a database")
-		cluster := tpr.PgCluster{}
-		err = Tprclient.Get().
-			Resource("pgclusters").
-			Namespace(Namespace).
-			Name(name).
-			Do().
-			Into(&cluster)
-		if err == nil {
-			fmt.Println(name + " is a cluster")
-			spec.BACKUP_HOST = cluster.Spec.Name
-			spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
-			spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD
-			spec.BACKUP_PORT = cluster.Spec.Port
-		} else if errors.IsNotFound(err) {
-			log.Debug(name + " is not a cluster")
-			return newInstance, err
-		} else {
-			log.Error("error getting pgcluster " + name)
-			log.Error(err.Error())
-			return newInstance, err
-		}
+		log.Debug(name + " is not a cluster")
+		return newInstance, err
 	} else {
-		log.Error("error getting pgdatabase " + name)
+		log.Error("error getting pgcluster " + name)
 		log.Error(err.Error())
 		return newInstance, err
 	}

@@ -66,6 +66,9 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		log.Error("error in shutdownCluster " + err.Error())
 	}
 
+	if cl.Spec.BACKUP_PVC_NAME == "" {
+		cl.Spec.BACKUP_PVC_NAME = cl.Spec.Name + "-backup-pvc-empty"
+	}
 	//create the master deployment
 
 	deploymentFields := DeploymentTemplateFields{
@@ -74,6 +77,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             cl.Spec.PVC_NAME,
+		BACKUP_PVC_NAME:      cl.Spec.BACKUP_PVC_NAME,
 		PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
 		PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
@@ -310,4 +314,3 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 	return err
 
 }
-

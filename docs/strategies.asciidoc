@@ -5,7 +5,7 @@ v1.1.0, {docdate}
 This document describes the various deployment strategies
 offered by the operator.  A deployment in this case is 
 the set of objects created in Kubernetes when a 
-third party resource of type *pgdatabase* or *pgcluster* is created.
+third party resource of type *pgcluster* is created.
 TPRs are created by the pgo client command and acted upon
 by the postgres operator.
 
@@ -13,7 +13,7 @@ by the postgres operator.
 
 To support different types of deployments, the operator supports
 multiple strategy implementations.  For Release 1.0, there is
-only a default *database* strategy and a default *cluster* strategy.
+only a default *cluster* strategy.
 
 In the future, more deployment strategies will be supported
 to offer users more customization to what they see deployed
@@ -23,8 +23,8 @@ Being open source, users can also write their own strategy!
 
 == Specifying a Strategy
 
-In the pgo client configuration file, there is a *DB.STRATEGY*
-and *CLUSTER.STRATEGY* settings.  The current value of the
+In the pgo client configuration file, there is a 
+*CLUSTER.STRATEGY* setting.  The current value of the
 default strategy is *1*.  If you don't set that value, the
 default strategy is assumed.  If you set that value to something
 not supported, the operator will log an error.
@@ -47,11 +47,6 @@ follows:
 │       ├── cluster-deployment-1.json
 │       ├── cluster-replica-deployment-1.json
 │       └── cluster-service-1.json
-├── database
-│   └── 1
-│       ├── database-pod-1.json
-│       ├── database-service-1.json
-│       └── restore-database-pod-1.json
 ├── pvc.json
 ....
 
@@ -63,19 +58,6 @@ If you add another strategy, the file names *must* be unique within
 the entire strategy directory.  This is due to the way the templates
 are stored within the ConfigMap.
 
-
-== Default Database Deployment Strategy (1)
-
-Using the default database strategy, a *database* when created by the operator will create the
-following on a Kube cluster:
-
-image::operator-diagram-database.png?raw=true[]
-
-The default database strategy creates the following:
-
- * pod running Postgres container
- * service mapped to the Postgres container
- * PVC will be created if not specified in configuration
 
 == Default Cluster Deployment Strategy (1)
 

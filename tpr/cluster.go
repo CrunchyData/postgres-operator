@@ -45,6 +45,8 @@ type PgClusterSpec struct {
 	FS_GROUP              string `json:"fsgroup"`
 	SUPPLEMENTAL_GROUPS   string `json:"supplementalgroups"`
 	STRATEGY              string `json:"strategy"`
+	BACKUP_PVC_NAME       string `json:"backuppvcname"`
+	BACKUP_PATH           string `json:"backuppath"`
 }
 
 type PgCluster struct {

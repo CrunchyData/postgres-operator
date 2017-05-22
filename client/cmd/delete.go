@@ -60,7 +60,6 @@ pgo delete upgrade mycluster`,
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
-	deleteCmd.AddCommand(deleteDatabaseCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
@@ -101,20 +100,6 @@ var deleteBackupCmd = &cobra.Command{
 			log.Error("a database or cluster name is required for this command")
 		} else {
 			deleteBackup(args)
-		}
-	},
-}
-
-var deleteDatabaseCmd = &cobra.Command{
-	Use:   "database",
-	Short: "delete a database",
-	Long: `delete a crunchy database. For example:
-	pgo delete database mydatabase`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Error("a database name is required for this command")
-		} else {
-			deleteDatabase(args)
 		}
 	},
 }

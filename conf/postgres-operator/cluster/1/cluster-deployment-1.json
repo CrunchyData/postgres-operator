@@ -45,6 +45,9 @@
                         "name": "PG_MASTER_PASSWORD",
                         "value": "{{.PG_MASTER_PASSWORD}}"
                     }, {
+                        "name": "BACKUP_PATH",
+                        "value": "{{.BACKUP_PATH}}"
+                    }, {
                         "name": "PG_USER",
                         "value": "{{.PG_USER}}"
                     }, {
@@ -60,11 +63,18 @@
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],
-                    "volumeMounts": [{
+                    "volumeMounts": [
+		    {
                         "mountPath": "/pgdata",
                         "name": "pgdata",
                         "readOnly": false
-                    }],
+                    },
+		    {
+                        "mountPath": "/backup",
+                        "name": "backup",
+                        "readOnly": true
+                    }
+		    ],
 
                     "ports": [{
                         "containerPort": 5432,
@@ -73,12 +83,20 @@
                     "resources": {},
                     "imagePullPolicy": "IfNotPresent"
                 }],
-                "volumes": [{
+                "volumes": [
+		{
                     "name": "pgdata",
                     "persistentVolumeClaim": {
                         "claimName": "{{.PVC_NAME}}"
                     }
-                }],
+                },
+		{
+                    "name": "backup",
+                    "persistentVolumeClaim": {
+                        "claimName": "{{.BACKUP_PVC_NAME}}"
+                    }
+                }
+		],
 
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"

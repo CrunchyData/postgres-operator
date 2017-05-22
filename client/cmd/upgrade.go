@@ -103,9 +103,9 @@ func showUpgradeItem(upgrade *tpr.PgUpgrade) {
 	}
 
 	if len(pods.Items) == 0 {
-		fmt.Printf("\nno upgrade job pods for database %s\n", upgrade.Spec.Name+" were found")
+		fmt.Printf("\nno upgrade job pods for %s\n", upgrade.Spec.Name+" were found")
 	} else {
-		fmt.Printf("\nupgrade job pods for database %s\n", upgrade.Spec.Name+"...")
+		fmt.Printf("\nupgrade job pods for %s\n", upgrade.Spec.Name+"...")
 		for _, p := range pods.Items {
 			fmt.Printf("%s pod : %s (%s)\n", TREE_TRUNK, p.Name, p.Status.Phase)
 		}
@@ -206,11 +206,11 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 
 	spec := tpr.PgUpgradeSpec{
 		Name:              name,
-		RESOURCE_TYPE:     "database",
+		RESOURCE_TYPE:     "cluster",
 		UPGRADE_TYPE:      UpgradeType,
-		PVC_ACCESS_MODE:   viper.GetString("DB.PVC_ACCESS_MODE"),
-		PVC_SIZE:          viper.GetString("DB.PVC_SIZE"),
-		CCP_IMAGE_TAG:     viper.GetString("DB.CCP_IMAGE_TAG"),
+		PVC_ACCESS_MODE:   viper.GetString("CLUSTER.PVC_ACCESS_MODE"),
+		PVC_SIZE:          viper.GetString("CLUSTER.PVC_SIZE"),
+		CCP_IMAGE_TAG:     viper.GetString("CLUSTER.CCP_IMAGE_TAG"),
 		OLD_DATABASE_NAME: "basic",
 		NEW_DATABASE_NAME: "master",
 		OLD_VERSION:       "9.5",
@@ -219,63 +219,39 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		NEW_PVC_NAME:      viper.GetString("PVC_NAME"),
 	}
 
-	db := tpr.PgDatabase{}
+	cluster := tpr.PgCluster{}
 	err = Tprclient.Get().
-		Resource("pgdatabases").
+		Resource("pgclusters").
 		Namespace(Namespace).
 		Name(name).
 		Do().
-		Into(&db)
+		Into(&cluster)
 	if err == nil {
-		fmt.Println(name + " is a database")
-		spec.RESOURCE_TYPE = "database"
-		spec.OLD_DATABASE_NAME = db.Spec.Name
-		spec.OLD_PVC_NAME = db.Spec.PVC_NAME
-		spec.NEW_PVC_NAME = db.Spec.PVC_NAME + "-upgrade"
-		spec.NEW_DATABASE_NAME = db.Spec.Name + "-upgrade"
-		existingImage = db.Spec.CCP_IMAGE_TAG
-		existingMajorVersion = parseMajorVersion(db.Spec.CCP_IMAGE_TAG)
+		spec.RESOURCE_TYPE = "cluster"
+		spec.OLD_DATABASE_NAME = cluster.Spec.Name
+		spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
+		spec.OLD_PVC_NAME = cluster.Spec.PVC_NAME
+		spec.NEW_PVC_NAME = cluster.Spec.PVC_NAME + "-upgrade"
+		existingImage = cluster.Spec.CCP_IMAGE_TAG
+		existingMajorVersion = parseMajorVersion(cluster.Spec.CCP_IMAGE_TAG)
 	} else if kerrors.IsNotFound(err) {
-		log.Debug(name + " is not a database")
-		cluster := tpr.PgCluster{}
-		err = Tprclient.Get().
-			Resource("pgclusters").
-			Namespace(Namespace).
-			Name(name).
-			Do().
-			Into(&cluster)
-		if err == nil {
-			fmt.Println(name + " is a cluster")
-			spec.RESOURCE_TYPE = "cluster"
-			spec.OLD_DATABASE_NAME = cluster.Spec.Name
-			spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
-			spec.OLD_PVC_NAME = cluster.Spec.PVC_NAME
-			spec.NEW_PVC_NAME = cluster.Spec.PVC_NAME + "-upgrade"
-			existingImage = cluster.Spec.CCP_IMAGE_TAG
-			existingMajorVersion = parseMajorVersion(cluster.Spec.CCP_IMAGE_TAG)
-		} else if kerrors.IsNotFound(err) {
-			log.Debug(name + " is not a cluster")
-			return nil, err
-		} else {
-			log.Error("error getting pgcluster " + name)
-			log.Error(err.Error())
-			return nil, err
-		}
+		log.Debug(name + " is not a cluster")
+		return nil, err
 	} else {
-		log.Error("error getting pgdatabase " + name)
+		log.Error("error getting pgcluster " + name)
 		log.Error(err.Error())
 		return nil, err
 	}
 
-	if viper.GetString("DB.CCP_IMAGE_TAG") == existingImage {
-		log.Error("CCP_IMAGE_TAG is the same as the database or cluster")
+	if viper.GetString("CLUSTER.CCP_IMAGE_TAG") == existingImage {
+		log.Error("CCP_IMAGE_TAG is the same as the cluster")
 		log.Error("can't upgrade to the same image version")
 
 		return nil, errors.New("invalid image tag")
 	}
 
 	if UpgradeType == MAJOR_UPGRADE {
-		requestedMajorVersion := parseMajorVersion(viper.GetString("DB.CCP_IMAGE_TAG"))
+		requestedMajorVersion := parseMajorVersion(viper.GetString("CLUSTER.CCP_IMAGE_TAG"))
 		if requestedMajorVersion == existingMajorVersion {
 			log.Error("can't upgrade to the same major version")
 			return nil, errors.New("requested upgrade major version can not equal existing upgrade major version")

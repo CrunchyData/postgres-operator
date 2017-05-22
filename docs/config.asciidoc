@@ -24,7 +24,7 @@ The sample pgo client configuration file, included in
 [source,yaml]
 ....
 KUBECONFIG:  /etc/kubernetes/admin.conf
-DB:
+CLUSTER:
   PVC_NAME:  crunchy-pvc
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
@@ -39,13 +39,11 @@ DB:
   FSGROUP:  26
   SUPPLEMENTALGROUPS:  65534
   STRATEGY:  1
+  REPLICAS:  2
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.1.0
   DEBUG:  false
-CLUSTER:
-  REPLICAS:  2
-  STRATEGY:  1
 ....
 
 Values in the pgo configuration file have the following meaning:
@@ -55,24 +53,23 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |KUBECONFIG        | the path to the kubeconfig file
-|DB.PVC_NAME        |if set, the PVC to use for created databases, only makes sense when your file system is sharable
-|DB.PVC_SIZE        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|DB.PVC_ACCESS_MODE        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
-|DB.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0)
-|DB.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
-|DB.PG_MASTER_USER        | the PostgreSQL master user name
-|DB.PG_MASTER_PASSWORD        | the PostgreSQL master user password
-|DB.PG_USER        | the PostgreSQL normal user name
-|DB.PG_PASSWORD        | the PostgreSQL normal user password
-|DB.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password
-|DB.FSGROUP        | if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|DB.SUPPLEMENTALGROUPS        | if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
-|DB.STRATEGY        | sets the deployment strategy to be used for deploying a database, currently there is only strategy *1*
+|CLUSTER.PVC_NAME        |if set, the PVC to use for created databases, only makes sense when your file system is sharable
+|CLUSTER.PVC_SIZE        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|CLUSTER.PVC_ACCESS_MODE        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
+|CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0)
+|CLUSTER.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
+|CLUSTER.PG_MASTER_USER        | the PostgreSQL master user name
+|CLUSTER.PG_MASTER_PASSWORD        | the PostgreSQL master user password
+|CLUSTER.PG_USER        | the PostgreSQL normal user name
+|CLUSTER.PG_PASSWORD        | the PostgreSQL normal user password
+|CLUSTER.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password
+|CLUSTER.FSGROUP        | if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
+|CLUSTER.SUPPLEMENTALGROUPS        | if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
+|CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
-|CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
-|CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |======================
 
 
