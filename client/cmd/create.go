@@ -16,7 +16,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -24,75 +23,21 @@ import (
 
 var Password string
 var BackupPath, BackupPVC string
-var UpgradeType string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Database, Cluster, Backup, or Upgrade",
-	Long: `CREATE allows you to create a new Database, Cluster, Backup, or Upgrade
+	Short: "Create a Cluster",
+	Long: `CREATE allows you to create a new Cluster
 For example:
 
-pgo create database
 pgo create cluster
-pgo create backup mydatabase
-pgo create upgrade mydatabase
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
-	* database
-	* cluster
-	* upgrade
-	* backup`)
-		}
-	},
-}
-
-var createUpgradeCmd = &cobra.Command{
-	Use:   "upgrade",
-	Short: "Create a new upgrade",
-	Long: `Create an upgrade of a database or cluster
-For example:
-
-pgo create upgrade mydatabase`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
-		} else {
-			err := validateCreateUpdate(args)
-			if err != nil {
-				log.Error(err.Error())
-			} else {
-				createUpgrade(args)
-			}
-		}
-	},
-}
-
-func validateCreateUpdate(args []string) error {
-	var err error
-
-	if UpgradeType == MAJOR_UPGRADE || UpgradeType == MINOR_UPGRADE {
-	} else {
-		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
-	}
-	return err
-}
-
-var createBackupCmd = &cobra.Command{
-	Use:   "backup",
-	Short: "Create a new backup",
-	Long: `Create a backup of a database or cluster
-For example:
-
-pgo create backup mydatabase`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
-		} else {
-			createBackup(args)
+	* cluster`)
 		}
 	},
 }
@@ -116,9 +61,7 @@ pgo create cluster mycluster`,
 
 func init() {
 	RootCmd.AddCommand(createCmd)
-	createCmd.AddCommand(createClusterCmd, createBackupCmd, createUpgradeCmd)
-	//createCmd.AddCommand(createClusterCmd)
-	//createCmd.AddCommand(createBackupCmd)
+	createCmd.AddCommand(createClusterCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -132,7 +75,5 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
-
-	createUpgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
 
 }

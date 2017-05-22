@@ -23,6 +23,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
@@ -33,6 +34,26 @@ import (
 	"text/template"
 	"time"
 )
+
+var backupCmd = &cobra.Command{
+	Use:   "backup",
+	Short: "perform a Backup",
+	Long: `BACKUP performs a Backup, for example:
+			pgo backup mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("backup called")
+		if len(args) == 0 {
+			fmt.Println(`You must specify the cluster to backup.`)
+		} else {
+			createBackup(args)
+		}
+
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(backupCmd)
+}
 
 func showBackup(args []string) {
 	log.Debugf("showBackup called %v\n", args)

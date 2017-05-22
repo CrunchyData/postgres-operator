@@ -21,6 +21,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
@@ -32,6 +33,46 @@ import (
 const MAJOR_UPGRADE = "major"
 const MINOR_UPGRADE = "minor"
 const SEP = "-"
+
+var UpgradeType string
+
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "perform an upgrade",
+	Long: `UPGRADE performs an upgrade, for example:
+		pgo upgrade mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("upgrade called")
+		if len(args) == 0 {
+			fmt.Println(`You must specify the cluster to upgrade.`)
+		} else {
+			err := validateCreateUpdate(args)
+			if err != nil {
+				log.Error(err.Error())
+			} else {
+
+				createUpgrade(args)
+			}
+		}
+
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(upgradeCmd)
+	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
+
+}
+
+func validateCreateUpdate(args []string) error {
+	var err error
+
+	if UpgradeType == MAJOR_UPGRADE || UpgradeType == MINOR_UPGRADE {
+	} else {
+		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
+	}
+	return err
+}
 
 func showUpgrade(args []string) {
 	var err error

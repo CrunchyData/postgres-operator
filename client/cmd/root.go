@@ -33,7 +33,7 @@ var RootCmd = &cobra.Command{
 	Use:   "pgo",
 	Short: "The pgo command line interface.",
 	Long: `The pgo command line interface lets you
-create and manage both databases and clusters.`,
+create and manage PostgreSQL clusters.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
