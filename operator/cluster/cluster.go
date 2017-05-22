@@ -137,6 +137,12 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	}
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
+	err = util.CreateDatabaseSecrets(clientset, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
 	if cl.Spec.STRATEGY == "" {
 		cl.Spec.STRATEGY = "1"
 		log.Info("using default strategy")
@@ -168,22 +174,23 @@ func setFullVersion(tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace str
 
 }
 
-func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, db *tpr.PgCluster, namespace string) {
+func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) {
 
-	log.Debug("deleteCluster called with strategy " + db.Spec.STRATEGY)
+	log.Debug("deleteCluster called with strategy " + cl.Spec.STRATEGY)
 
-	if db.Spec.STRATEGY == "" {
-		db.Spec.STRATEGY = "1"
+	if cl.Spec.STRATEGY == "" {
+		cl.Spec.STRATEGY = "1"
 	}
 
-	strategy, ok := StrategyMap[db.Spec.STRATEGY]
+	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster creation" + db.Spec.STRATEGY)
+		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
 		return
 	}
-	strategy.DeleteCluster(clientset, client, db, namespace)
+	strategy.DeleteCluster(clientset, client, cl, namespace)
+	util.DeleteDatabaseSecrets(clientset, cl.Spec.Name, namespace)
 
 }
 

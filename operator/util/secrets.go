@@ -88,3 +88,30 @@ func stringWithCharset(length int, charset string) string {
 func generatePassword(length int) string {
 	return stringWithCharset(length, charset)
 }
+
+//delete pgroot, pgmaster, and pguser secrets
+func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) {
+
+	options := v1.DeleteOptions{}
+	secretName := db + "-pgmaster-secret"
+	err := clientset.Secrets(namespace).Delete(secretName, &options)
+	if err != nil {
+		log.Error(err.Error())
+	} else {
+		log.Info("deleted secret " + secretName)
+	}
+	secretName = db + "-pgroot-secret"
+	err = clientset.Secrets(namespace).Delete(secretName, &options)
+	if err != nil {
+		log.Error(err.Error())
+	} else {
+		log.Info("deleted secret " + secretName)
+	}
+	secretName = db + "-pguser-secret"
+	err = clientset.Secrets(namespace).Delete(secretName, &options)
+	if err != nil {
+		log.Error(err.Error())
+	} else {
+		log.Info("deleted secret " + secretName)
+	}
+}

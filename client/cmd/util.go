@@ -16,9 +16,11 @@
 package cmd
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
@@ -128,4 +130,23 @@ func configureTPRClient(config *rest.Config) {
 			return nil
 		})
 	schemeBuilder.AddToScheme(api.Scheme)
+}
+
+func PrintSecrets(db string) {
+
+	lo := v1.ListOptions{LabelSelector: "pg-database=" + db}
+	secrets, err := Clientset.Secrets(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return
+	}
+
+	log.Debug("secrets for " + db)
+	for _, s := range secrets.Items {
+		fmt.Println("")
+		fmt.Println("secret : " + s.ObjectMeta.Name)
+		fmt.Println(TREE_BRANCH + "username: " + string(s.Data["username"][:]))
+		fmt.Println(TREE_TRUNK + "password: " + string(s.Data["password"][:]))
+	}
+
 }

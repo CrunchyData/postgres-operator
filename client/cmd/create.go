@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Password string
 var BackupPath, BackupPVC string
 var UpgradeType string
 
@@ -144,6 +145,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
+	createDatabaseCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createDatabaseCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createDatabaseCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
 

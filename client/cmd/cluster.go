@@ -52,6 +52,9 @@ func showCluster(args []string) {
 					listPods(cluster.Spec.Name)
 					//list the services
 					listServices(cluster.Spec.Name)
+					if ShowSecrets {
+						PrintSecrets(cluster.Spec.Name)
+					}
 				}
 			}
 		}

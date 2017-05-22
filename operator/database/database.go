@@ -136,6 +136,10 @@ func addDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db *t
 	}
 
 	err = util.CreateDatabaseSecrets(clientset, db.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
 
 	log.Debug("creating PgDatabase object " + db.Spec.STRATEGY + " in namespace " + namespace)
 
@@ -203,6 +207,8 @@ func deleteDatabase(clientset *kubernetes.Clientset, client *rest.RESTClient, db
 	}
 
 	strategy.DeleteDatabase(clientset, client, db, namespace)
+
+	util.DeleteDatabaseSecrets(clientset, db.Spec.Name, namespace)
 
 }
 
