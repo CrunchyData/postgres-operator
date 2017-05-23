@@ -167,7 +167,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 		PVC_SIZE:            "100M",
 		PVC_ACCESS_MODE:     "ReadWriteMany",
 		BACKUP_PATH:         "",
-		BACKUP_PVC_NAME:     "",
+		BACKUP_PVC_NAME:     name + "-backup-pvc-empty",
 		PG_MASTER_HOST:      name,
 		PG_MASTER_USER:      "master",
 		PG_MASTER_PASSWORD:  "password",
@@ -245,7 +245,9 @@ func getClusterParams(name string) *tpr.PgCluster {
 
 	//pass along command line flags for a restore
 	spec.BACKUP_PATH = BackupPath
-	spec.BACKUP_PVC_NAME = BackupPVC
+	if BackupPVC != "" {
+		spec.BACKUP_PVC_NAME = BackupPVC
+	}
 
 	newInstance := &tpr.PgCluster{
 		Metadata: api.ObjectMeta{

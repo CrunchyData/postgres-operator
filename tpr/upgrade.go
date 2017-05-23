@@ -42,6 +42,7 @@ type PgUpgradeSpec struct {
 	NEW_VERSION       string `json:"newversion"`
 	OLD_PVC_NAME      string `json:"oldpvcname"`
 	NEW_PVC_NAME      string `json:"newpvcname"`
+	BACKUP_PVC_NAME   string `json:"backuppvcname"`
 }
 
 type PgUpgrade struct {

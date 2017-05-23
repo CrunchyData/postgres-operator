@@ -138,7 +138,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 		log.Info("created PVC =" + cl.Spec.PVC_NAME + " in namespace " + namespace)
 	}
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
-	if cl.Spec.BACKUP_PVC_NAME == "" {
+	if cl.Spec.BACKUP_PVC_NAME == cl.Spec.Name+"-backup-pvc-empty" {
 		cl.Spec.BACKUP_PVC_NAME = cl.Spec.Name + "-backup-pvc-empty"
 		log.Debug("BACKUP_PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
 			cl.Spec.BACKUP_PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
@@ -149,6 +149,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 		}
 		log.Info("created PVC =" + cl.Spec.BACKUP_PVC_NAME + " in namespace " + namespace)
 	}
+
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
 	err = util.CreateDatabaseSecrets(clientset, cl.Spec.Name, namespace)
