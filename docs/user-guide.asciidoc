@@ -36,14 +36,19 @@ pgo show cluster all --version=9.6.2
 
 == Backup Cluster
 
-You can start a backup job for a database or cluster as follows:
+You can start a backup job for a cluster as follows:
 ....
-pgo create backup mycluster
+pgo backup mycluster
 ....
 
 You can view the backup:
 ....
 pgo show backup mycluster
+....
+
+You can view the backup along with a PVC listing:
+....
+pgo show backup mycluster --show-pvc=true
 ....
 
 The output of the backup will list the backup snapshots
@@ -57,7 +62,7 @@ database pod mycluster is found
 
 ├── mycluster-backups/2017-03-27-13-54-33
 ├── mycluster-backups/2017-03-27-13-56-49
-└── *mycluster-backups/2017-03-27-14-02-38*
+└── mycluster-backups/2017-03-27-14-02-38
 ....
 
 This output is important in that it can let you copy/paste
@@ -72,6 +77,17 @@ pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49
 This will create a new database called *restoredb* based on the
 backup found in *mycluster-backups/2017-03-27-13-56-49*.
 
+
+== Cluster Removal
+
+You can remove a cluster by running:
+....
+pgo delete cluster restoredb
+....
+
+Note, that this command will not remove the PVC associated with
+this cluster.  If you want to remove the cluster's old data files,
+you will need to remove it manually.
 
 == Cluster Replication
 
@@ -112,7 +128,7 @@ pgo show cluster all --version=9.6.2
 ....
 
 
-== Minor Database and Cluster Upgrade
+== Minor Cluster Upgrade
 
 You can perform a minor Postgres version upgrade
 of either a database or cluster as follows:
@@ -128,7 +144,7 @@ container image specified in your pgo configuration file.
 The database data files remain untouched, only the container
 is updated, this will upgrade your Postgres server version only.
 
-== Major Database and Cluster Upgrade
+== Major Cluster Upgrade
 
 You can perform a major Postgres version upgrade
 of either a database or cluster as follows:

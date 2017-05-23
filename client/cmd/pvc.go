@@ -137,9 +137,14 @@ func printPVCListing(pvcName string) {
 	readCloser, err := req.Stream()
 	if err != nil {
 		log.Error(err.Error())
+		return
 	}
 
-	defer readCloser.Close()
+	defer func() {
+		if readCloser != nil {
+			readCloser.Close()
+		}
+	}()
 	var buf2 bytes.Buffer
 	_, err = io.Copy(&buf2, readCloser)
 	log.Debugf("backups are... \n%s", buf2.String())

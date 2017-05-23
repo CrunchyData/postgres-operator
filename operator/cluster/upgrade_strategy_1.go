@@ -46,7 +46,7 @@ type JobTemplateFields struct {
 	NEW_VERSION       string
 }
 
-const DB_UPGRADE_JOB_PATH = "/operator-conf/database-upgrade-job-1.json"
+const DB_UPGRADE_JOB_PATH = "/operator-conf/cluster-upgrade-job-1.json"
 
 func init() {
 
