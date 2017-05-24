@@ -39,32 +39,28 @@
                         "name": "PG_MODE",
                         "value": "slave"
                     }, {
-                        "name": "PG_MASTER_USER",
-                        "value": "{{.PG_MASTER_USER}}"
-                    }, {
-                        "name": "PG_MASTER_PASSWORD",
-                        "value": "{{.PG_MASTER_PASSWORD}}"
-                    }, {
-                        "name": "PG_USER",
-                        "value": "{{.PG_USER}}"
-                    }, {
-                        "name": "PG_PASSWORD",
-                        "value": "{{.PG_PASSWORD}}"
-                    }, {
                         "name": "PG_DATABASE",
                         "value": "{{.PG_DATABASE}}"
-                    }, {
-                        "name": "PG_ROOT_PASSWORD",
-                        "value": "{{.PG_ROOT_PASSWORD}}"
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],
-                    "volumeMounts": [{
+                    "volumeMounts": [
+		    {
                         "mountPath": "/pgdata",
                         "name": "pgdata",
                         "readOnly": false
-                    }],
+                    }, {
+			"mountPath": "/pguser",
+			"name": "pguser-volume"
+			}, {
+			"mountPath": "/pgmaster",
+			"name": "pgmaster-volume"
+			}, {
+			"mountPath": "/pgroot",
+			"name": "pgroot-volume"
+			}
+		    ],
 
                     "ports": [{
                         "containerPort": 5432,
@@ -73,12 +69,29 @@
                     "resources": {},
                     "imagePullPolicy": "IfNotPresent"
                 }],
-                "volumes": [{
+                "volumes": [
+		{
                     "name": "pgdata",
             		"persistentVolumeClaim": {
                 		"claimName": "{{.PVC_NAME}}"
             		}
-                }],
+                }, {
+		  	"name": "pguser-volume",
+			"secret": {
+			"secretName": "{{.PGUSER_SECRET_NAME}}"
+			}
+		}, {
+			"name": "pgmaster-volume",
+			"secret": {
+			"secretName": "{{.PGMASTER_SECRET_NAME}}"
+			}
+		}, {
+			"name": "pgroot-volume",
+			"secret": {
+			"secretName": "{{.PGROOT_SECRET_NAME}}"
+			}
+		}
+		],
 
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"

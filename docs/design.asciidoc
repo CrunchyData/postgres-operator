@@ -100,3 +100,12 @@ You can view the  TPR Endpoints as follows:
 ----
  curl https//192.168.42.30:8443/apis/crunchydata.com/v1/pgclusters --insecure
 ----
+
+== Persistent Volumes
+
+Currently the operator does not delete persistent volumes, it will
+delete the claims on the volumes.  The cleanup and allocation of 
+PV (persistent volumes) is up to the administrator and insures that
+no data is deleted by the operator.
+
+

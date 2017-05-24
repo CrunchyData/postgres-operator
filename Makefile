@@ -2,6 +2,8 @@
 RELTMPDIR=/tmp/release.$(CO_VERSION)
 RELFILE=/tmp/postgres-operator.$(CO_VERSION).tar.gz
 
+run:
+	cd examples/operator && ./run.sh
 pgo:
 	cd client && go build -o $(GOBIN)/pgo pgo.go
 clean:

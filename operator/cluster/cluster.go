@@ -48,16 +48,16 @@ type ServiceTemplateFields struct {
 }
 
 type DeploymentTemplateFields struct {
-	Name                 string
-	ClusterName          string
-	Port                 string
-	CCP_IMAGE_TAG        string
-	PG_MASTER_USER       string
-	PG_MASTER_PASSWORD   string
-	PG_USER              string
-	PG_PASSWORD          string
-	PG_DATABASE          string
-	PG_ROOT_PASSWORD     string
+	Name          string
+	ClusterName   string
+	Port          string
+	CCP_IMAGE_TAG string
+	//	PG_MASTER_USER       string
+	//	PG_MASTER_PASSWORD   string
+	//	PG_USER              string
+	//	PG_PASSWORD          string
+	PG_DATABASE string
+	//	PG_ROOT_PASSWORD     string
 	PGDATA_PATH_OVERRIDE string
 	PVC_NAME             string
 	BACKUP_PVC_NAME      string
