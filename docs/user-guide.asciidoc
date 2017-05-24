@@ -187,3 +187,12 @@ pgo show pvc crunchy-pvc
 
 In this example, the PVC is *crunchy-pvc*.  This command is useful
 in some cases to examine what files are on a given PVC.
+
+== Viewing Passwords
+
+You can view the passwords used by the cluster as follows:
+....
+pgo show cluster mycluster --show-secrets=true
+....
+
+Passwords are generated if not specified in your *pgo* configuration.

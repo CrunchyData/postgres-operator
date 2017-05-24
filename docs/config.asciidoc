@@ -59,10 +59,10 @@ Values in the pgo configuration file have the following meaning:
 |CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0)
 |CLUSTER.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
 |CLUSTER.PG_MASTER_USER        | the PostgreSQL master user name
-|CLUSTER.PG_MASTER_PASSWORD        | the PostgreSQL master user password
+|CLUSTER.PG_MASTER_PASSWORD        | the PostgreSQL master user password, when specified, it will be stored in the secret holding the master user credentials, if not specified the value will be generated
 |CLUSTER.PG_USER        | the PostgreSQL normal user name
-|CLUSTER.PG_PASSWORD        | the PostgreSQL normal user password
-|CLUSTER.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password
+|CLUSTER.PG_PASSWORD        | the PostgreSQL normal user password, when specified, it will be stored in the secret holding the normal user credentials, if not specified the value will be generated
+|CLUSTER.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password, when specified, it will be stored in the secret holding the root user credentials, if not specified the value will be generated
 |CLUSTER.FSGROUP        | if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
 |CLUSTER.SUPPLEMENTALGROUPS        | if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
