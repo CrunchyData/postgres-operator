@@ -62,6 +62,9 @@ type DeploymentTemplateFields struct {
 	PVC_NAME             string
 	BACKUP_PVC_NAME      string
 	BACKUP_PATH          string
+	PGROOT_SECRET_NAME   string
+	PGUSER_SECRET_NAME   string
+	PGMASTER_SECRET_NAME string
 	//next 2 are for the replica deployment only
 	REPLICAS         string
 	PG_MASTER_HOST   string
@@ -152,7 +155,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
-	err = util.CreateDatabaseSecrets(clientset, cl.Spec.Name, namespace)
+	err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error(err.Error())
 		return

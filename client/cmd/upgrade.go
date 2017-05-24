@@ -292,14 +292,20 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		return nil, errors.New("invalid image tag")
 	}
 
+	requestedMajorVersion := parseMajorVersion(viper.GetString("CLUSTER.CCP_IMAGE_TAG"))
 	if UpgradeType == MAJOR_UPGRADE {
-		requestedMajorVersion := parseMajorVersion(viper.GetString("CLUSTER.CCP_IMAGE_TAG"))
 		if requestedMajorVersion == existingMajorVersion {
 			log.Error("can't upgrade to the same major version")
 			return nil, errors.New("requested upgrade major version can not equal existing upgrade major version")
 		} else if requestedMajorVersion < existingMajorVersion {
 			log.Error("can't upgrade to a previous major version")
 			return nil, errors.New("requested upgrade major version can not be older than existing upgrade major version")
+		}
+	} else {
+		//minor upgrade
+		if requestedMajorVersion > existingMajorVersion {
+			log.Error("can't do minor upgrade to a newer major version")
+			return nil, errors.New("requested minor upgrade to major version is not allowed")
 		}
 	}
 

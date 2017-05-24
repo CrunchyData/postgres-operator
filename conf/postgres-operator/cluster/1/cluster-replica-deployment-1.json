@@ -23,6 +23,9 @@
                 }
             },
             "spec": {
+
+	    	{{.SECURITY_CONTEXT}}
+
                 "containers": [{
                     "name": "database",
                     "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG}}",

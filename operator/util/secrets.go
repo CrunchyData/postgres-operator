@@ -18,7 +18,10 @@ package util
 import (
 	//"encoding/base64"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
 	"k8s.io/client-go/pkg/api/v1"
 	"math/rand"
 	"time"
@@ -31,34 +34,68 @@ var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
 //create pgroot, pgmaster, and pguser secrets
-func CreateDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) error {
-
-	var username string
-	var err error
+func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
 
 	//pgroot
-	username = "postgres"
-	err = CreateSecret(clientset, db, "pgroot-secret", username, namespace)
+	username := "postgres"
+	suffix := "-pgroot-secret"
+	secretName := cl.Spec.Name + suffix
+	err := CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_ROOT_PASSWORD, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	cl.Spec.PGROOT_SECRET_NAME = secretName
+	err = Patch(tprclient, "/spec/pgrootsecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	///pgmaster
 	username = "master"
-	err = CreateSecret(clientset, db, "pgmaster-secret", username, namespace)
+	suffix = "-pgmaster-secret"
+	secretName = cl.Spec.Name + suffix
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_MASTER_PASSWORD, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	cl.Spec.PGMASTER_SECRET_NAME = secretName
+	err = Patch(tprclient, "/spec/pgmastersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	///pguser
 	username = "testuser"
-	err = CreateSecret(clientset, db, "pguser-secret", username, namespace)
+	suffix = "-pguser-secret"
+	secretName = cl.Spec.Name + suffix
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_PASSWORD, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+	cl.Spec.PGUSER_SECRET_NAME = secretName
+	err = Patch(tprclient, "/spec/pgusersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	return err
 }
 
 //create the secret, user, and master secrets
-func CreateSecret(clientset *kubernetes.Clientset, db, suffix, username, namespace string) error {
+func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, password, namespace string) error {
 
 	//var enUsername = base64.StdEncoding.EncodeToString([]byte(username))
 	var enUsername = username
 	//var enPassword = base64.StdEncoding.EncodeToString([]byte(generatePassword(10)))
 	var enPassword = generatePassword(10)
+	if password != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		enPassword = password
+	}
 
 	secret := v1.Secret{}
 
-	secret.Name = db + "-" + suffix
+	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels["pg-database"] = db
 	secret.Data = make(map[string][]byte)

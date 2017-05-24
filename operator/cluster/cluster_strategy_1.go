@@ -134,6 +134,9 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
+		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
+		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -160,20 +163,23 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:               cl.Spec.Name + REPLICA_SUFFIX,
-		ClusterName:        cl.Spec.Name,
-		Port:               cl.Spec.Port,
-		CCP_IMAGE_TAG:      cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:           cl.Spec.PVC_NAME,
-		PG_MASTER_HOST:     cl.Spec.PG_MASTER_HOST,
-		PG_MASTER_USER:     cl.Spec.PG_MASTER_USER,
-		PG_MASTER_PASSWORD: cl.Spec.PG_MASTER_PASSWORD,
-		PG_USER:            cl.Spec.PG_USER,
-		PG_PASSWORD:        cl.Spec.PG_PASSWORD,
-		PG_DATABASE:        cl.Spec.PG_DATABASE,
-		PG_ROOT_PASSWORD:   cl.Spec.PG_ROOT_PASSWORD,
-		REPLICAS:           cl.Spec.REPLICAS,
-		SECURITY_CONTEXT:   util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		Name:                 cl.Spec.Name + REPLICA_SUFFIX,
+		ClusterName:          cl.Spec.Name,
+		Port:                 cl.Spec.Port,
+		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:             cl.Spec.PVC_NAME,
+		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
+		PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
+		PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
+		PG_USER:              cl.Spec.PG_USER,
+		PG_PASSWORD:          cl.Spec.PG_PASSWORD,
+		PG_DATABASE:          cl.Spec.PG_DATABASE,
+		PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
+		REPLICAS:             cl.Spec.REPLICAS,
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
+		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
+		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 	}
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)

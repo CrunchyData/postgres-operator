@@ -47,6 +47,9 @@ type PgClusterSpec struct {
 	STRATEGY              string `json:"strategy"`
 	BACKUP_PVC_NAME       string `json:"backuppvcname"`
 	BACKUP_PATH           string `json:"backuppath"`
+	PGUSER_SECRET_NAME    string `json:"pgusersecretname"`
+	PGROOT_SECRET_NAME    string `json:"pgrootsecretname"`
+	PGMASTER_SECRET_NAME  string `json:"pgmastersecretname"`
 }
 
 type PgCluster struct {

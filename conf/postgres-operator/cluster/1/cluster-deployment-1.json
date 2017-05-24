@@ -24,7 +24,7 @@
             },
             "spec": {
 
-	    	{{.SECURITY_CONTEXT}}
+                    {{.SECURITY_CONTEXT}}
 
                 "containers": [{
                     "name": "database",
@@ -63,18 +63,26 @@
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],
-                    "volumeMounts": [
-		    {
-                        "mountPath": "/pgdata",
-                        "name": "pgdata",
-                        "readOnly": false
-                    },
-		    {
-                        "mountPath": "/backup",
-                        "name": "backup",
-                        "readOnly": true
-                    }
-		    ],
+                    "volumeMounts": [{
+                            "mountPath": "/pgdata",
+                            "name": "pgdata",
+                            "readOnly": false
+                        }, {
+                            "mountPath": "/backup",
+                            "name": "backup",
+                            "readOnly": true
+                        }, {
+                            "mountPath": "/pguser",
+                            "name": "pguser-volume"
+                        }, {
+                            "mountPath": "/pgmaster",
+                            "name": "pgmaster-volume"
+                        }, {
+                            "mountPath": "/pgroot",
+                            "name": "pgroot-volume"
+                        }
+
+                    ],
 
                     "ports": [{
                         "containerPort": 5432,
@@ -83,20 +91,35 @@
                     "resources": {},
                     "imagePullPolicy": "IfNotPresent"
                 }],
-                "volumes": [
-		{
-                    "name": "pgdata",
-                    "persistentVolumeClaim": {
-                        "claimName": "{{.PVC_NAME}}"
+                "volumes": [{
+                        "name": "pgdata",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.PVC_NAME}}"
+                        }
+                    }, {
+                        "name": "backup",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.BACKUP_PVC_NAME}}"
+                        }
+                    }, {
+                        "name": "pguser-volume",
+                        "secret": {
+                            "secretName": "{{.PGUSER_SECRET_NAME}}"
+                        }
+                    }, {
+                        "name": "pgmaster-volume",
+                        "secret": {
+                            "secretName": "{{.PGMASTER_SECRET_NAME}}"
+                        }
+                    }, {
+                        "name": "pgroot-volume",
+                        "secret": {
+                            "secretName": "{{.PGROOT_SECRET_NAME}}"
+                        }
                     }
-                },
-		{
-                    "name": "backup",
-                    "persistentVolumeClaim": {
-                        "claimName": "{{.BACKUP_PVC_NAME}}"
-                    }
-                }
-		],
+
+
+                ],
 
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
