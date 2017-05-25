@@ -202,3 +202,20 @@ pgo show cluster mycluster --show-secrets=true
 ....
 
 Passwords are generated if not specified in your *pgo* configuration.
+
+== Overriding CCP_IMAGE_TAG
+
+New clusters typically pick up the container image version to use
+based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
+can override this value using the *--ccp-image-tag* command line
+flag:
+....
+pgo create cluster mycluster --ccp-image-tag=centos7-9.6-1.4.1
+....
+
+Likewise, you can upgrade the cluster using a command line flag:
+....
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6-1.4.1
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6-1.4.1
+....
+

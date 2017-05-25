@@ -56,7 +56,7 @@ Values in the pgo configuration file have the following meaning:
 |CLUSTER.PVC_NAME        |if set, the PVC to use for created databases, only makes sense when your file system is sharable
 |CLUSTER.PVC_SIZE        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |CLUSTER.PVC_ACCESS_MODE        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
-|CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0)
+|CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0), unless you override it using the --ccp-image-tag command line flag
 |CLUSTER.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
 |CLUSTER.PG_MASTER_USER        | the PostgreSQL master user name
 |CLUSTER.PG_MASTER_PASSWORD        | the PostgreSQL master user password, when specified, it will be stored in the secret holding the master user credentials, if not specified the value will be generated
