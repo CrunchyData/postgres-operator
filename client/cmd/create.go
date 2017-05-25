@@ -35,7 +35,7 @@ pgo create cluster
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
-		if len(args) == 0 {
+		if len(args) == 0 || args[0] != "cluster" {
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
 	* cluster`)
 		}

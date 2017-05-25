@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
@@ -51,13 +52,13 @@ func printPVC(pvcName string) {
 		fmt.Printf("\nPVC %s\n", pvcName+" is not found")
 		fmt.Println(err.Error())
 	} else {
-		fmt.Printf("\nPVC %s\n", pvc.Name+" is found")
-		printPVCListing(pvc.Name)
+		log.Debug("\nPVC %s\n", pvc.Name+" is found")
+		PrintPVCListing(pvc.Name)
 	}
 
 }
 
-func printPVCListing(pvcName string) {
+func PrintPVCListing(pvcName string) {
 	var POD_PATH = viper.GetString("PGO.LSPVC_TEMPLATE")
 	var PodTemplate *template.Template
 	var err error
@@ -91,10 +92,19 @@ func printPVCListing(pvcName string) {
 	}
 	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
 
+	pvcRoot := "/"
+	if PVCRoot != "" {
+		log.Debug("using " + PVCRoot + " as the PVC listing root")
+		pvcRoot = PVCRoot
+		fmt.Println(pvcName + "/" + pvcRoot)
+	} else {
+		fmt.Println(pvcName)
+	}
+
 	podFields := PodTemplateFields{
 		Name:         podName,
 		CO_IMAGE_TAG: viper.GetString("PGO.CO_IMAGE_TAG"),
-		BACKUP_ROOT:  "/",
+		BACKUP_ROOT:  pvcRoot,
 		PVC_NAME:     pvcName,
 	}
 
@@ -122,8 +132,13 @@ func printPVCListing(pvcName string) {
 	}
 	log.Debug("created pod " + resultPod.Name)
 
-	//sleep a bit for the pod to finish, replace later with watch or better
-	time.Sleep(3000 * time.Millisecond)
+	timeout := time.Duration(6 * time.Second)
+	lo := v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
+	podPhase := v1.PodSucceeded
+	err = util.WaitUntilPod(Clientset, lo, podPhase, timeout, Namespace)
+	if err != nil {
+		log.Error("error waiting on lspvc pod to complete" + err.Error())
+	}
 
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}

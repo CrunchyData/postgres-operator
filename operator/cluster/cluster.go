@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
+	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -209,6 +210,27 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 	}
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 	util.DeleteDatabaseSecrets(clientset, cl.Spec.Name, namespace)
+	//remove the backup PVC if exists
+	pvcName := cl.Spec.Name + "-backup-pvc-empty"
+	err := pvc.Delete(clientset, pvcName, namespace)
+	if err != nil {
+		log.Error("error deleting pvc " + pvcName)
+	}
+	//delete any upgrade for this cluster
+	err = client.Delete().
+		Resource("pgupgrades").
+		Namespace(namespace).
+		Name(cl.Spec.Name).
+		Do().
+		Error()
+	if err == nil {
+		log.Info("deleted pgupgrade " + cl.Spec.Name)
+	} else if kerrors.IsNotFound(err) {
+		log.Info("will not delete pgupgrade, not found for " + cl.Spec.Name)
+	} else {
+		log.Error("error deleting pgupgrade " + cl.Spec.Name)
+		log.Error(err.Error())
+	}
 
 }
 

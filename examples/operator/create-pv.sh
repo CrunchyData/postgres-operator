@@ -16,7 +16,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "create the test PV and PVC using the HostPath dir"
-for i in {16..20}
+for i in {1..60}
 do
    	echo "creating PV crunchy-pv-$i"
 	export COUNTER=$i

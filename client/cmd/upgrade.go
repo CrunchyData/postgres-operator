@@ -174,15 +174,16 @@ func createUpgrade(args []string) {
 			Do().
 			Into(&result)
 		if err == nil {
-			fmt.Println("pgupgrade " + arg + " was found so we will not create it")
+			log.Debug("pgupgrade " + arg + " was found so we will not create it")
 			break
 		} else if kerrors.IsNotFound(err) {
-			fmt.Println("pgupgrade " + arg + " not found so we will create it")
+			log.Debug("pgupgrade " + arg + " not found so we will create it")
 		} else {
 			log.Error("error getting pgupgrade " + arg)
 			log.Error(err.Error())
 			break
 		}
+
 		// Create an instance of our TPR
 		newInstance, err = getUpgradeParams(arg)
 		if err == nil {
@@ -193,8 +194,9 @@ func createUpgrade(args []string) {
 				Do().Into(&result)
 			if err != nil {
 				log.Error("error in creating PgUpgrade TPR instance", err.Error())
+			} else {
+				fmt.Println("created PgUpgrade " + arg)
 			}
-			fmt.Println("created PgUpgrade " + arg)
 		}
 
 	}

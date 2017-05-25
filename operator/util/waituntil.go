@@ -39,9 +39,9 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v
 
 	conditions := []watch.ConditionFunc{
 		func(event watch.Event) (bool, error) {
-			log.Info("watch Modified called")
+			log.Debug("watch Modified called")
 			gotpod2 := event.Object.(*v1.Pod)
-			log.Info("pod2 phase=" + gotpod2.Status.Phase)
+			log.Debug("pod2 phase=" + gotpod2.Status.Phase)
 			if gotpod2.Status.Phase == podPhase {
 				return true, nil
 			}
@@ -50,7 +50,7 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v
 		},
 	}
 
-	log.Info("before watch.Until")
+	log.Debug("before watch.Until")
 
 	var lastEvent *watch.Event
 	lastEvent, err = watch.Until(timeout, fw, conditions...)
@@ -62,7 +62,7 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v
 		log.Error("expected event")
 		return err
 	}
-	log.Info("after watch.Until")
+	log.Debug("after watch.Until")
 	return err
 
 }
@@ -83,7 +83,7 @@ func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, time
 	conditions := []watch.ConditionFunc{
 		func(event watch.Event) (bool, error) {
 			if event.Type == watch.Deleted {
-				log.Info("pod delete event received in WaitUntilPodIsDeleted")
+				log.Debug("pod delete event received in WaitUntilPodIsDeleted")
 				return true, nil
 			}
 			return false, nil

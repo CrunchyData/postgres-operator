@@ -26,6 +26,7 @@ const TREE_TRUNK = "└── "
 var PostgresVersion string
 var ShowPVC bool
 var ShowSecrets bool
+var PVCRoot string
 
 // ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
@@ -84,6 +85,7 @@ func init() {
 
 	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "s", false, "Show secrets ")
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
+	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
 
 	ShowBackupCmd.Flags().BoolVarP(&ShowPVC, "show-pvc", "p", false, "Show backup archive PVC listing ")
 

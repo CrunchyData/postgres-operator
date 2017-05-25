@@ -36,11 +36,19 @@ func showCluster(args []string) {
 		return
 	}
 
+	if len(clusterList.Items) == 0 {
+		fmt.Println("no clusters found")
+		return
+	}
+
+	itemFound := false
+
 	//each arg represents a cluster name or the special 'all' value
 	for _, arg := range args {
 		for _, cluster := range clusterList.Items {
 			fmt.Println("")
 			if arg == "all" || cluster.Spec.Name == arg {
+				itemFound = true
 				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.POSTGRES_FULL_VERSION == PostgresVersion) {
 					fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.POSTGRES_FULL_VERSION + ")")
 					log.Debug("listing cluster " + arg)
@@ -58,6 +66,10 @@ func showCluster(args []string) {
 				}
 			}
 		}
+		if !itemFound {
+			fmt.Println(arg + " was not found")
+		}
+		itemFound = false
 	}
 
 }
