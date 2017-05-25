@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var CCP_IMAGE_TAG string
 var Password string
 var BackupPath, BackupPVC string
 
@@ -73,5 +74,6 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
+	createClusterCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for cluster creation, if specified overrides the .pgo.yaml setting")
 
 }

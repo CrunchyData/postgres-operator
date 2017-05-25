@@ -61,6 +61,7 @@ var upgradeCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(upgradeCmd)
 	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
+	upgradeCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
 
 }
 
@@ -262,6 +263,11 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		NEW_PVC_NAME:      viper.GetString("PVC_NAME"),
 	}
 
+	if CCP_IMAGE_TAG != "" {
+		log.Debug("using CCP_IMAGE_TAG from command line " + CCP_IMAGE_TAG)
+		spec.CCP_IMAGE_TAG = CCP_IMAGE_TAG
+	}
+
 	cluster := tpr.PgCluster{}
 	err = Tprclient.Get().
 		Resource("pgclusters").
@@ -287,14 +293,25 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		return nil, err
 	}
 
-	if viper.GetString("CLUSTER.CCP_IMAGE_TAG") == existingImage {
+	var requestedMajorVersion float64
+
+	if CCP_IMAGE_TAG != "" {
+		if CCP_IMAGE_TAG == existingImage {
+			log.Error("CCP_IMAGE_TAG is the same as the cluster")
+			log.Error("can't upgrade to the same image version")
+
+			return nil, errors.New("invalid image tag")
+		}
+		requestedMajorVersion = parseMajorVersion(CCP_IMAGE_TAG)
+	} else if viper.GetString("CLUSTER.CCP_IMAGE_TAG") == existingImage {
 		log.Error("CCP_IMAGE_TAG is the same as the cluster")
 		log.Error("can't upgrade to the same image version")
 
 		return nil, errors.New("invalid image tag")
+	} else {
+		requestedMajorVersion = parseMajorVersion(viper.GetString("CLUSTER.CCP_IMAGE_TAG"))
 	}
 
-	requestedMajorVersion := parseMajorVersion(viper.GetString("CLUSTER.CCP_IMAGE_TAG"))
 	if UpgradeType == MAJOR_UPGRADE {
 		if requestedMajorVersion == existingMajorVersion {
 			log.Error("can't upgrade to the same major version")

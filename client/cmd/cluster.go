@@ -169,42 +169,36 @@ func createCluster(args []string) {
 
 func getClusterParams(name string) *tpr.PgCluster {
 
-	//set to internal defaults
-	spec := tpr.PgClusterSpec{
-		Name:                name,
-		ClusterName:         name,
-		CCP_IMAGE_TAG:       "centos7-9.5-1.2.8",
-		Port:                "5432",
-		PVC_NAME:            "",
-		PVC_SIZE:            "100M",
-		PVC_ACCESS_MODE:     "ReadWriteMany",
-		BACKUP_PATH:         "",
-		BACKUP_PVC_NAME:     "",
-		PG_MASTER_HOST:      name,
-		PG_MASTER_USER:      "master",
-		PG_MASTER_PASSWORD:  "password",
-		PG_USER:             "testuser",
-		PG_PASSWORD:         "password",
-		PG_DATABASE:         "userdb",
-		PG_ROOT_PASSWORD:    "password",
-		REPLICAS:            "2",
-		FS_GROUP:            "",
-		SUPPLEMENTAL_GROUPS: "",
-		STRATEGY:            "1",
+	spec := tpr.PgClusterSpec{}
+	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
+	if CCP_IMAGE_TAG != "" {
+		spec.CCP_IMAGE_TAG = CCP_IMAGE_TAG
+		log.Debug("using CCP_IMAGE_TAG from command line " + CCP_IMAGE_TAG)
 	}
+	spec.Name = name
+	spec.ClusterName = name
+	spec.Port = "5432"
+	spec.PVC_NAME = viper.GetString("CLUSTER.PVC_NAME")
+	spec.PVC_SIZE = "100M"
+	spec.PVC_ACCESS_MODE = "ReadWriteMany"
+	spec.BACKUP_PATH = ""
+	spec.BACKUP_PVC_NAME = ""
+	spec.PG_MASTER_HOST = name
+	spec.PG_MASTER_USER = "master"
+	spec.PG_MASTER_PASSWORD = viper.GetString("CLUSTER.PG_MASTER_PASSWORD")
+	spec.PG_USER = "testuser"
+	spec.PG_PASSWORD = viper.GetString("CLUSTER.PG_PASSWORD")
+	spec.PG_DATABASE = "userdb"
+	spec.PG_ROOT_PASSWORD = viper.GetString("CLUSTER.PG_ROOT_PASSWORD")
+	spec.REPLICAS = "0"
+	spec.FS_GROUP = ""
+	spec.SUPPLEMENTAL_GROUPS = ""
+	spec.STRATEGY = "1"
 
 	//override any values from config file
-	str := viper.GetString("CLUSTER.CCP_IMAGE_TAG")
-	if str != "" {
-		spec.CCP_IMAGE_TAG = str
-	}
-	str = viper.GetString("CLUSTER.PORT")
+	str := viper.GetString("CLUSTER.PORT")
 	if str != "" {
 		spec.Port = str
-	}
-	str = viper.GetString("CLUSTER.PVC_NAME")
-	if str != "" {
-		spec.PVC_NAME = str
 	}
 	str = viper.GetString("CLUSTER.PVC_SIZE")
 	if str != "" {
@@ -218,25 +212,13 @@ func getClusterParams(name string) *tpr.PgCluster {
 	if str != "" {
 		spec.PG_MASTER_USER = str
 	}
-	str = viper.GetString("CLUSTER.PG_MASTER_PASSWORD")
-	if str != "" {
-		spec.PG_MASTER_PASSWORD = str
-	}
 	str = viper.GetString("CLUSTER.PG_USER")
 	if str != "" {
 		spec.PG_USER = str
 	}
-	str = viper.GetString("CLUSTER.PG_PASSWORD")
-	if str != "" {
-		spec.PG_PASSWORD = str
-	}
 	str = viper.GetString("CLUSTER.PG_DATABASE")
 	if str != "" {
 		spec.PG_DATABASE = str
-	}
-	str = viper.GetString("CLUSTER.PG_ROOT_PASSWORD")
-	if str != "" {
-		spec.PG_ROOT_PASSWORD = str
 	}
 	str = viper.GetString("CLUSTER.FSGROUP")
 	if str != "" {
