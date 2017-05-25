@@ -49,16 +49,11 @@ type ServiceTemplateFields struct {
 }
 
 type DeploymentTemplateFields struct {
-	Name          string
-	ClusterName   string
-	Port          string
-	CCP_IMAGE_TAG string
-	//	PG_MASTER_USER       string
-	//	PG_MASTER_PASSWORD   string
-	//	PG_USER              string
-	//	PG_PASSWORD          string
-	PG_DATABASE string
-	//	PG_ROOT_PASSWORD     string
+	Name                 string
+	ClusterName          string
+	Port                 string
+	CCP_IMAGE_TAG        string
+	PG_DATABASE          string
 	PGDATA_PATH_OVERRIDE string
 	PVC_NAME             string
 	BACKUP_PVC_NAME      string
@@ -66,10 +61,10 @@ type DeploymentTemplateFields struct {
 	PGROOT_SECRET_NAME   string
 	PGUSER_SECRET_NAME   string
 	PGMASTER_SECRET_NAME string
+	SECURITY_CONTEXT     string
 	//next 2 are for the replica deployment only
-	REPLICAS         string
-	PG_MASTER_HOST   string
-	SECURITY_CONTEXT string
+	REPLICAS       string
+	PG_MASTER_HOST string
 }
 
 const REPLICA_SUFFIX = "-replica"
@@ -142,19 +137,6 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 		log.Info("created PVC =" + cl.Spec.PVC_NAME + " in namespace " + namespace)
 	}
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
-	if cl.Spec.BACKUP_PVC_NAME == cl.Spec.Name+"-backup-pvc-empty" {
-		cl.Spec.BACKUP_PVC_NAME = cl.Spec.Name + "-backup-pvc-empty"
-		log.Debug("BACKUP_PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			cl.Spec.BACKUP_PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, cl.Spec.BACKUP_PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-		log.Info("created PVC =" + cl.Spec.BACKUP_PVC_NAME + " in namespace " + namespace)
-	}
-
-	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
 	err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
@@ -210,14 +192,7 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 	}
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 	util.DeleteDatabaseSecrets(clientset, cl.Spec.Name, namespace)
-	//remove the backup PVC if exists
-	pvcName := cl.Spec.Name + "-backup-pvc-empty"
-	err := pvc.Delete(clientset, pvcName, namespace)
-	if err != nil {
-		log.Error("error deleting pvc " + pvcName)
-	}
-	//delete any upgrade for this cluster
-	err = client.Delete().
+	err := client.Delete().
 		Resource("pgupgrades").
 		Namespace(namespace).
 		Name(cl.Spec.Name).

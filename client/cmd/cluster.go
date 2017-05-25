@@ -179,7 +179,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 		PVC_SIZE:            "100M",
 		PVC_ACCESS_MODE:     "ReadWriteMany",
 		BACKUP_PATH:         "",
-		BACKUP_PVC_NAME:     name + "-backup-pvc-empty",
+		BACKUP_PVC_NAME:     "",
 		PG_MASTER_HOST:      name,
 		PG_MASTER_USER:      "master",
 		PG_MASTER_PASSWORD:  "password",

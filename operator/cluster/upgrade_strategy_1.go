@@ -72,23 +72,18 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 	//create the master deployment
 
 	deploymentFields := DeploymentTemplateFields{
-		Name:            cl.Spec.Name,
-		ClusterName:     cl.Spec.Name,
-		Port:            cl.Spec.Port,
-		CCP_IMAGE_TAG:   upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:        cl.Spec.PVC_NAME,
-		BACKUP_PVC_NAME: cl.Spec.BACKUP_PVC_NAME,
-		//PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
-		//PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
+		Name:                 cl.Spec.Name,
+		ClusterName:          cl.Spec.Name,
+		Port:                 cl.Spec.Port,
+		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:             cl.Spec.PVC_NAME,
+		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
-		//PG_USER:              cl.Spec.PG_USER,
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		//PG_PASSWORD:          cl.Spec.PG_PASSWORD,
-		PG_DATABASE: cl.Spec.PG_DATABASE,
-		//PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
-		SECURITY_CONTEXT: util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		PG_DATABASE:          cl.Spec.PG_DATABASE,
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -115,23 +110,18 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:           replicaName,
-		ClusterName:    cl.Spec.Name,
-		Port:           cl.Spec.Port,
-		CCP_IMAGE_TAG:  upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:       cl.Spec.PVC_NAME,
-		PG_MASTER_HOST: cl.Spec.PG_MASTER_HOST,
-		//PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
-		//PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
-		//PG_USER:              cl.Spec.PG_USER,
-		//PG_PASSWORD:          cl.Spec.PG_PASSWORD,
+		Name:                 replicaName,
+		ClusterName:          cl.Spec.Name,
+		Port:                 cl.Spec.Port,
+		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:             cl.Spec.PVC_NAME,
+		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		//PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
-		REPLICAS:         cl.Spec.REPLICAS,
-		SECURITY_CONTEXT: util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		REPLICAS:             cl.Spec.REPLICAS,
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
@@ -240,23 +230,18 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 
 	//start the master deployment
 	deploymentFields := DeploymentTemplateFields{
-		Name:            cl.Spec.Name,
-		ClusterName:     cl.Spec.Name,
-		Port:            cl.Spec.Port,
-		CCP_IMAGE_TAG:   upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:        upgrade.Spec.NEW_PVC_NAME,
-		BACKUP_PVC_NAME: upgrade.Spec.BACKUP_PVC_NAME,
-		//PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
-		//PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
+		Name:                 cl.Spec.Name,
+		ClusterName:          cl.Spec.Name,
+		Port:                 cl.Spec.Port,
+		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:             upgrade.Spec.NEW_PVC_NAME,
+		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(upgrade.Spec.BACKUP_PVC_NAME),
 		PGDATA_PATH_OVERRIDE: upgrade.Spec.NEW_DATABASE_NAME,
-		//PG_USER:              cl.Spec.PG_USER,
-		//PG_PASSWORD:          cl.Spec.PG_PASSWORD,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		//PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
-		SECURITY_CONTEXT: util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -284,23 +269,18 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 	//start the replica deployment
 
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:           cl.Spec.Name + REPLICA_SUFFIX,
-		ClusterName:    cl.Spec.Name,
-		Port:           cl.Spec.Port,
-		CCP_IMAGE_TAG:  upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:       cl.Spec.PVC_NAME,
-		PG_MASTER_HOST: cl.Spec.PG_MASTER_HOST,
-		//PG_MASTER_USER:       cl.Spec.PG_MASTER_USER,
-		//PG_MASTER_PASSWORD:   cl.Spec.PG_MASTER_PASSWORD,
-		//PG_USER:              cl.Spec.PG_USER,
-		//PG_PASSWORD:          cl.Spec.PG_PASSWORD,
+		Name:                 cl.Spec.Name + REPLICA_SUFFIX,
+		ClusterName:          cl.Spec.Name,
+		Port:                 cl.Spec.Port,
+		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
+		PVC_NAME:             cl.Spec.PVC_NAME,
+		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		//PG_ROOT_PASSWORD:     cl.Spec.PG_ROOT_PASSWORD,
-		REPLICAS:         cl.Spec.REPLICAS,
-		SECURITY_CONTEXT: util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		REPLICAS:             cl.Spec.REPLICAS,
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)

@@ -83,9 +83,7 @@
                         }
                     }, {
                         "name": "backup",
-                        "persistentVolumeClaim": {
-                            "claimName": "{{.BACKUP_PVC_NAME}}"
-                        }
+                        {{.BACKUP_PVC_NAME}}
                     }, {
                         "name": "pguser-volume",
                         "secret": {

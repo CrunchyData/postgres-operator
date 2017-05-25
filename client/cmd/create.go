@@ -67,8 +67,6 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	//createCmd.PersistentFlags().String("from-pvc", "", "The PVC which contains a backup archive to restore from")
-	//createCmd.PersistentFlags().String("from-backup", "", "The backup archive path to restore from")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

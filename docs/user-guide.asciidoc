@@ -188,6 +188,12 @@ pgo show pvc crunchy-pvc
 In this example, the PVC is *crunchy-pvc*.  This command is useful
 in some cases to examine what files are on a given PVC.
 
+In the case where you want to list a specific path on a PVC
+you can specify the path option as follows:
+....
+pgo show pvc crunchy-pvc --pvc-root=mycluster-backups
+....
+
 == Viewing Passwords
 
 You can view the passwords used by the cluster as follows:

@@ -19,19 +19,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"os"
 
-	//"github.com/crunchydata/postgres-operator/operator/database"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
-
 	"k8s.io/client-go/kubernetes"
-
-	//"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-	//"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/cache"
 )
 
 func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
