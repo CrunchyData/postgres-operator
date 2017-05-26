@@ -175,8 +175,10 @@ func createUpgrade(args []string) {
 			Do().
 			Into(&result)
 		if err == nil {
-			log.Debug("pgupgrade " + arg + " was found so we will not create it")
-			break
+			log.Warn("previous pgupgrade " + arg + " was found so we will remove it.")
+			forDeletion := make([]string, 1)
+			forDeletion[0] = arg
+			deleteUpgrade(forDeletion)
 		} else if kerrors.IsNotFound(err) {
 			log.Debug("pgupgrade " + arg + " not found so we will create it")
 		} else {
