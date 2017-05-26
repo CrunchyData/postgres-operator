@@ -197,7 +197,7 @@ the following:
  * create a cluster (*pgo create cluster testcluster*)
  * show a cluster (*pgo show cluster testcluster*)
  * show all clusters (*pgo show cluster all*)
- * backup a cluster (*pgo create backup testcluster*)
+ * backup a cluster (*pgo backup testcluster*)
  * show backup of cluster (*pgo show backup testcluster*)
  * delete a cluster (*pgo delete cluster testcluster*)
  * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01*)

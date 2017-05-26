@@ -142,3 +142,27 @@ func PrintSecrets(db string) {
 	}
 
 }
+
+func GetMasterSecretPassword(db string) string {
+
+	lo := v1.ListOptions{LabelSelector: "pg-database=" + db}
+	secrets, err := Clientset.Secrets(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return "error"
+	}
+
+	log.Debug("secrets for " + db)
+	secretName := db + "-pgmaster-secret"
+	for _, s := range secrets.Items {
+		log.Debug("secret : " + s.ObjectMeta.Name)
+		if s.ObjectMeta.Name == secretName {
+			log.Debug("pgmaster password found")
+			return string(s.Data["password"][:])
+		}
+	}
+
+	log.Error("master secret not found for " + db)
+	return "error"
+
+}
