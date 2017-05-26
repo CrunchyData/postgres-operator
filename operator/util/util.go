@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
+	"strconv"
 	"text/template"
 
 	"k8s.io/client-go/kubernetes"
@@ -144,4 +145,29 @@ func CreateBackupPVCSnippet(BACKUP_PVC_NAME string) string {
 	sc.WriteString("}")
 
 	return sc.String()
+}
+
+func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace string, replicaCount int) error {
+	var err error
+
+	things := make([]ThingSpec, 1)
+	things[0].Op = "replace"
+	things[0].Path = "/spec/replicas"
+	things[0].Value = strconv.Itoa(replicaCount)
+
+	var patchBytes []byte
+	patchBytes, err = json.Marshal(things)
+	if err != nil {
+		log.Error("error in converting patch " + err.Error())
+		return err
+	}
+	log.Debug(string(patchBytes))
+
+	_, err = clientset.Deployments(namespace).Patch(deploymentName, api.JSONPatchType, patchBytes)
+	if err != nil {
+		log.Error("error creating master Deployment " + err.Error())
+		return err
+	}
+	log.Debug("replica count patch succeeded")
+	return err
 }

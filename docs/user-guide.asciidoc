@@ -1,5 +1,5 @@
 = postgres Operator User Guide
-v1.1.0, {docdate}
+v1.2.0, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
@@ -101,18 +101,22 @@ When you create a Cluster, you will see in the output a variety of Kubernetes ob
 Since Postgres is a single-master database by design, the master
 Deployment is set to a replica count of 1, it can not scale beyond 1.
 
-The replica Deployment is set to an initial value of 2, you will
-see there are 2 replica databases running.  Those replica databases
+The replica Deployment is set to an initial value of 0, you will
+see there are 0 replica databases running.  Those replica databases
 are in read-only mode, but you can scale up the number of replicas
-beyond 2 if you need higher read scaling.
+beyond 0 if you need higher read scaling.  To set the number of 
+replicas issue the following command:
+....
+pgo scale mycluster --replica-count=1
+....
 
-There are 2 connections available to the postgres cluster, one is
+There are 2 service connections available to the postgres cluster, one is
 to the master database which allows read-write SQL processing, and
 the other is to the set of read-only replica databases.  The replica
-service performs round-robin load balancing to the 2 replica databases.
+service performs round-robin load balancing to the replica databases.
 
 You can connect to the master database and verify that it is replicating
-to the 2 replica databases as follows:
+to the replica databases as follows:
 ....
 psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'
 ....

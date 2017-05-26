@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v1.1.0, {docdate}
+v1.2.0, {docdate}
 
 == Overview
 
@@ -16,6 +16,7 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Create Cluster
 * Destroy Cluster
 * Backup Cluster
+* Scale a Cluster
 * Restore Cluster
 * Upgrade Cluster
 * View PVC
@@ -41,12 +42,19 @@ Some examples of using the command line interface:
 pgo show cluster all
 pgo show cluster db1 db2 db3
 pgo show cluster mycluster
+pgo show cluster mycluster --show-secrets=true
 ----
 
 .Create Cluster
 [source,bash]
 ----
 pgo create cluster mycluster
+----
+
+.Scale Cluster
+[source,bash]
+----
+pgo scale mycluster --replica-count=2
 ----
 
 .Delete a Cluster

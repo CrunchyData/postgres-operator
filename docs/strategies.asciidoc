@@ -1,5 +1,5 @@
 = PostgreSQL Operator Deployment Strategies
-v1.1.0, {docdate}
+v1.2.0, {docdate}
 
 
 This document describes the various deployment strategies
@@ -12,7 +12,7 @@ by the postgres operator.
 == Strategies
 
 To support different types of deployments, the operator supports
-multiple strategy implementations.  For Release 1.0, there is
+multiple strategy implementations.  Currently there is
 only a default *cluster* strategy.
 
 In the future, more deployment strategies will be supported

@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v1.1.0, {docdate}
+v1.2.0, {docdate}
 
 
 This document describes the configuration options
@@ -28,7 +28,7 @@ CLUSTER:
   PVC_NAME:  crunchy-pvc
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
-  CCP_IMAGE_TAG:  centos7-9.5-1.4.0
+  CCP_IMAGE_TAG:  centos7-9.5-1.4.1
   PORT:  5432
   PG_MASTER_USER:  master
   PG_MASTER_PASSWORD:  password
@@ -41,8 +41,8 @@ CLUSTER:
   STRATEGY:  1
   REPLICAS:  2
 PGO:
-  LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
-  CO_IMAGE_TAG:  centos7-1.1.0
+  LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
+  CO_IMAGE_TAG:  centos7-1.2.0
   DEBUG:  false
 ....
 
@@ -132,7 +132,7 @@ The operator will create new PVCs using this naming convention:
 *dbname-pvc* where *dbname* is the database name you have specified.  For
 example, if you run:
 ....
-pgo create database example1
+pgo create cluster example1
 ....
 
 It will result in a PVC being created named *example1-pvc*.
