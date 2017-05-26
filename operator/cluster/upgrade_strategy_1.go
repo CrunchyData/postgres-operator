@@ -66,9 +66,6 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		log.Error("error in shutdownCluster " + err.Error())
 	}
 
-	if cl.Spec.BACKUP_PVC_NAME == "" {
-		cl.Spec.BACKUP_PVC_NAME = cl.Spec.Name + "-backup-pvc-empty"
-	}
 	//create the master deployment
 
 	deploymentFields := DeploymentTemplateFields{
