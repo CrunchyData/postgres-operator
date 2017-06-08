@@ -20,6 +20,7 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Restore Cluster
 * Upgrade Cluster
 * View PVC
+* Test Connections
 
 What actually gets created on the Kube cluster for a 
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
@@ -91,6 +92,12 @@ pgo create upgrade mycluster --upgrade-type=major
 [source,bash]
 ----
 pgo show pvc mypvc
+----
+
+.Test Connections
+[source,bash]
+----
+pgo test mycluster
 ----
 
 Details on the *pgo* commands are found in the 

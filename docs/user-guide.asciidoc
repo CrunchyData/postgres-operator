@@ -223,3 +223,15 @@ pgo upgrade mycluster --ccp-image-tag=centos7-9.6-1.4.1
 pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6-1.4.1
 ....
 
+== Testing Database Connections
+
+You can test the database connections to a cluster:
+....
+pgo test mycluster
+....
+
+This command will test each service defined for the cluster using
+the postgres, master, and normal user accounts defined for the
+cluster.  The cluster credentials are accessed and used to test
+the database connections.  The equivalent *psql* command is printed
+out as connections are tried, along with the connection status.
