@@ -19,11 +19,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
-	"github.com/fatih/color"
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
-	//	"k8s.io/client-go/pkg/api"
-	//	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -88,8 +85,6 @@ func showTest(args []string) {
 }
 
 func testServices(cluster *tpr.PgCluster) {
-	green := color.New(color.FgGreen).SprintFunc()
-	red := color.New(color.FgRed).SprintFunc()
 
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
 	services, err := Clientset.Core().Services(Namespace).List(lo)
@@ -116,9 +111,9 @@ func testServices(cluster *tpr.PgCluster) {
 			fmt.Print("psql -p " + cluster.Spec.Port + " -h " + service.Spec.ClusterIP + " -U " + username + " " + database)
 			status := query(username, service.Spec.ClusterIP, cluster.Spec.Port, database, password)
 			if status {
-				fmt.Print(" is " + green("working"))
+				fmt.Print(" is " + GREEN("working"))
 			} else {
-				fmt.Print(" is " + red("NOT working"))
+				fmt.Print(" is " + RED("NOT working"))
 			}
 			fmt.Println("")
 		}

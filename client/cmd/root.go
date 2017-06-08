@@ -18,9 +18,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var RED, GREEN func(a ...interface{}) string
 
 var cfgFile string
 var KubeconfigPath string
@@ -50,6 +53,9 @@ func Execute() {
 }
 
 func init() {
+	GREEN = color.New(color.FgGreen).SprintFunc()
+	RED = color.New(color.FgRed).SprintFunc()
+
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
