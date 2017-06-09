@@ -120,11 +120,14 @@ func initConfig() {
 
 	log.Debug("namespace is " + viper.GetString("NAMESPACE"))
 	ConnectToKube()
-	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
-	if err2 != nil {
-		log.Error(err2.Error())
-	}
-	defer file.Close()
-	RootCmd.GenBashCompletion(file)
+
+	/*
+		file, err2 := os.Create("/tmp/pgo-bash-completion.out")
+		if err2 != nil {
+			log.Error(err2.Error())
+		}
+		defer file.Close()
+		RootCmd.GenBashCompletion(file)
+	*/
 
 }
