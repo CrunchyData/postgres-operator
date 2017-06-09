@@ -28,7 +28,6 @@ var ShowPVC bool
 var ShowSecrets bool
 var PVCRoot string
 
-// ShowCmd represents the show command
 var ShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "show a description of a cluster",
