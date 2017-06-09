@@ -235,3 +235,10 @@ the postgres, master, and normal user accounts defined for the
 cluster.  The cluster credentials are accessed and used to test
 the database connections.  The equivalent *psql* command is printed
 out as connections are tried, along with the connection status.
+
+== bash Completion
+
+There is a bash completion file that is included for users to try, this
+is located in the repo at *example/pgo-bash-completion*.  To use it, copy
+that file to /etc/bash_completion.d/pgo, and log out and back into your
+bash shell to try it out.   
