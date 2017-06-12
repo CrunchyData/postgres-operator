@@ -73,7 +73,7 @@ pgo create backup mycluster
 .Restore Cluster
 [source,bash]
 ----
-pgo create cluster myrestore --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
+pgo create cluster myrestore --secret-from=foo --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
 ----
 
 .Upgrade Cluster (minor Postgres version upgrade)

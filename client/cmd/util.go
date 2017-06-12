@@ -153,7 +153,7 @@ func GetMasterSecretPassword(db string) string {
 	}
 
 	log.Debug("secrets for " + db)
-	secretName := db + "-pgmaster-secret"
+	secretName := db + tpr.PGMASTER_SECRET_SUFFIX
 	for _, s := range secrets.Items {
 		log.Debug("secret : " + s.ObjectMeta.Name)
 		if s.ObjectMeta.Name == secretName {

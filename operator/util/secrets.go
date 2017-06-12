@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/rest"
 
 	"k8s.io/client-go/pkg/api/v1"
@@ -38,12 +39,17 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 
 	//pgroot
 	username := "postgres"
-	suffix := "-pgroot-secret"
-	secretName := cl.Spec.Name + suffix
-	err := CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_ROOT_PASSWORD, namespace)
+	suffix := tpr.PGROOT_SECRET_SUFFIX
+
+	var secretName string
+	var err error
+
+	secretName = cl.Spec.Name + suffix
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_ROOT_PASSWORD, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}
+
 	cl.Spec.PGROOT_SECRET_NAME = secretName
 	err = Patch(tprclient, "/spec/pgrootsecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
@@ -52,12 +58,14 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 
 	///pgmaster
 	username = "master"
-	suffix = "-pgmaster-secret"
+	suffix = tpr.PGMASTER_SECRET_SUFFIX
+
 	secretName = cl.Spec.Name + suffix
 	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_MASTER_PASSWORD, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}
+
 	cl.Spec.PGMASTER_SECRET_NAME = secretName
 	err = Patch(tprclient, "/spec/pgmastersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
@@ -66,12 +74,14 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 
 	///pguser
 	username = "testuser"
-	suffix = "-pguser-secret"
+	suffix = tpr.PGUSER_SECRET_SUFFIX
+
 	secretName = cl.Spec.Name + suffix
 	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_PASSWORD, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}
+
 	cl.Spec.PGUSER_SECRET_NAME = secretName
 	err = Patch(tprclient, "/spec/pgusersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
@@ -130,25 +140,36 @@ func generatePassword(length int) string {
 func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) {
 
 	options := v1.DeleteOptions{}
-	secretName := db + "-pgmaster-secret"
+	secretName := db + tpr.PGMASTER_SECRET_SUFFIX
 	err := clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error(err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
-	secretName = db + "-pgroot-secret"
+	secretName = db + tpr.PGROOT_SECRET_SUFFIX
 	err = clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error(err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
-	secretName = db + "-pguser-secret"
+	secretName = db + tpr.PGUSER_SECRET_SUFFIX
 	err = clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error(err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
+}
+
+func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, secretName string) (string, error) {
+	secret, err := clientset.Secrets(namespace).Get(secretName)
+	if errors.IsNotFound(err) {
+		log.Error("not found error secret " + secretName)
+		return "", err
+	}
+
+	return string(secret.Data["password"][:]), err
+
 }

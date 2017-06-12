@@ -15,12 +15,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
+	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -144,11 +145,19 @@ func createCluster(args []string) {
 		if err == nil {
 			log.Debug("pgcluster " + arg + " was found so we will not create it")
 			break
-		} else if errors.IsNotFound(err) {
+		} else if kerrors.IsNotFound(err) {
 			log.Debug("pgcluster " + arg + " not found so we will create it")
 		} else {
 			log.Error("error getting pgcluster " + arg + err.Error())
 			break
+		}
+
+		if SecretFrom != "" {
+			err = validateSecretFrom(SecretFrom)
+			if err != nil {
+				log.Error(SecretFrom + " secret was not found ")
+				return
+			}
 		}
 
 		// Create an instance of our TPR
@@ -181,6 +190,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.PVC_NAME = viper.GetString("CLUSTER.PVC_NAME")
 	spec.PVC_SIZE = "100M"
 	spec.PVC_ACCESS_MODE = "ReadWriteMany"
+	spec.SECRET_FROM = ""
 	spec.BACKUP_PATH = ""
 	spec.BACKUP_PVC_NAME = ""
 	spec.PG_MASTER_HOST = name
@@ -238,6 +248,9 @@ func getClusterParams(name string) *tpr.PgCluster {
 	}
 
 	//pass along command line flags for a restore
+	if SecretFrom != "" {
+		spec.SECRET_FROM = SecretFrom
+	}
 	spec.BACKUP_PATH = BackupPath
 	if BackupPVC != "" {
 		spec.BACKUP_PVC_NAME = BackupPVC
@@ -300,4 +313,42 @@ func getReadyStatus(pod *v1.Pod) string {
 	}
 	return fmt.Sprintf("%d/%d", readyCount, containerCount)
 
+}
+
+func validateSecretFrom(secretname string) error {
+	var err error
+	lo := v1.ListOptions{LabelSelector: "pg-database=" + secretname}
+	secrets, err := Clientset.Secrets(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return err
+	}
+
+	log.Debug("secrets for " + secretname)
+	pgmasterFound := false
+	pgrootFound := false
+	pguserFound := false
+
+	for _, s := range secrets.Items {
+		fmt.Println("")
+		fmt.Println("secret : " + s.ObjectMeta.Name)
+		if s.ObjectMeta.Name == secretname+tpr.PGMASTER_SECRET_SUFFIX {
+			pgmasterFound = true
+		} else if s.ObjectMeta.Name == secretname+tpr.PGROOT_SECRET_SUFFIX {
+			pgrootFound = true
+		} else if s.ObjectMeta.Name == secretname+tpr.PGUSER_SECRET_SUFFIX {
+			pguserFound = true
+		}
+	}
+	if !pgmasterFound {
+		return errors.New(secretname + tpr.PGMASTER_SECRET_SUFFIX + " not found")
+	}
+	if !pgrootFound {
+		return errors.New(secretname + tpr.PGROOT_SECRET_SUFFIX + " not found")
+	}
+	if !pguserFound {
+		return errors.New(secretname + tpr.PGUSER_SECRET_SUFFIX + " not found")
+	}
+
+	return err
 }

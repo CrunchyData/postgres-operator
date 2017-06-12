@@ -71,12 +71,12 @@ essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
-pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=crunchy-pvc
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=crunchy-pvc --secret-from=mycluster
 ....
 
 This will create a new database called *restoredb* based on the
-backup found in *mycluster-backups/2017-03-27-13-56-49*.
-
+backup found in *mycluster-backups/2017-03-27-13-56-49* and the
+secrets of the *mycluster* cluster.
 
 == Cluster Removal
 

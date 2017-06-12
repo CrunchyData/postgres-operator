@@ -138,6 +138,17 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	}
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
+	var err1, err2, err3 error
+	if cl.Spec.SECRET_FROM != "" {
+		cl.Spec.PG_ROOT_PASSWORD, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SECRET_FROM+tpr.PGROOT_SECRET_SUFFIX)
+		cl.Spec.PG_PASSWORD, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SECRET_FROM+tpr.PGUSER_SECRET_SUFFIX)
+		cl.Spec.PG_MASTER_PASSWORD, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SECRET_FROM+tpr.PGMASTER_SECRET_SUFFIX)
+		if err1 != nil || err2 != nil || err3 != nil {
+			log.Error("error getting secrets using SECRET_FROM " + cl.Spec.SECRET_FROM)
+			return
+		}
+	}
+
 	err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error(err.Error())

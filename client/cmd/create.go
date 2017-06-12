@@ -23,7 +23,7 @@ import (
 
 var CCP_IMAGE_TAG string
 var Password string
-var BackupPath, BackupPVC string
+var SecretFrom, BackupPath, BackupPVC string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -52,6 +52,13 @@ master and a number of replica backends. For example:
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create cluster called")
+		if SecretFrom != "" || BackupPath != "" || BackupPVC != "" {
+			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
+				log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
+				return
+			}
+		}
+
 		if len(args) == 0 {
 			log.Error("a cluster name is required for this command")
 		} else {
@@ -72,6 +79,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
+	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
 	createClusterCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for cluster creation, if specified overrides the .pgo.yaml setting")
