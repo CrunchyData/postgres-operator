@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/backup"
+	"github.com/crunchydata/postgres-operator/operator/clone"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/upgrade"
 	"github.com/crunchydata/postgres-operator/tpr"
@@ -95,6 +96,7 @@ func main() {
 	go backup.ProcessJobs(clientset, tprclient, stopchan, namespace)
 	go upgrade.Process(clientset, tprclient, stopchan, namespace)
 	go upgrade.MajorUpgradeProcess(clientset, tprclient, stopchan, namespace)
+	go clone.Process(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -139,6 +141,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		unversioned.GroupVersion{Group: "crunchydata.com", Version: "v1"},
 		&tpr.PgCluster{},
 		&tpr.PgClusterList{},
+		&tpr.PgClone{},
+		&tpr.PgCloneList{},
 		&tpr.PgBackup{},
 		&tpr.PgBackupList{},
 		&tpr.PgUpgrade{},
@@ -216,6 +220,31 @@ func initializeResources(clientset *kubernetes.Clientset) {
 					{Name: "v1"},
 				},
 				Description: "A postgres upgrade ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
+	}
+
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-clone.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-clone.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres clone ThirdPartyResource",
 			}
 
 			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
