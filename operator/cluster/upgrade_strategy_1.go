@@ -85,7 +85,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in DeploymentTemplate Execute" + err.Error())
 		return err
 	}
 	deploymentDocString := masterDoc.String()
@@ -123,7 +123,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in ReplicaDeployment Execute " + err.Error())
 		return err
 	}
 	replicaDeploymentDocString := replicaDoc.String()
@@ -146,7 +146,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 	//update the upgrade TPR status to completed
 	err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in upgradestatus patch " + err.Error())
 	}
 
 	return err
@@ -170,7 +170,7 @@ func (r ClusterStrategy1) MajorUpgrade(clientset *kubernetes.Clientset, tprclien
 			log.Info("creating pvc " + upgrade.Spec.NEW_PVC_NAME)
 			err = pvc.Create(clientset, upgrade.Spec.NEW_PVC_NAME, upgrade.Spec.PVC_ACCESS_MODE, upgrade.Spec.PVC_SIZE, namespace)
 			if err != nil {
-				log.Error(err.Error())
+				log.Error("error in pvc create " + err.Error())
 				return err
 			}
 			log.Info("created PVC =" + upgrade.Spec.NEW_PVC_NAME + " in namespace " + namespace)
@@ -192,7 +192,7 @@ func (r ClusterStrategy1) MajorUpgrade(clientset *kubernetes.Clientset, tprclien
 	var doc bytes.Buffer
 	err = JobTemplate1.Execute(&doc, jobFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in job template execute " + err.Error())
 		return err
 	}
 	jobDocString := doc.String()
@@ -243,7 +243,7 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in dep template execute " + err.Error())
 		return err
 	}
 	deploymentDocString := masterDoc.String()
@@ -282,7 +282,7 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in replica depl templ exec" + err.Error())
 		return err
 	}
 	replicaDeploymentDocString := replicaDoc.String()

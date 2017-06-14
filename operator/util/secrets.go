@@ -47,13 +47,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 	secretName = cl.Spec.Name + suffix
 	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_ROOT_PASSWORD, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error creating secret" + err.Error())
 	}
 
 	cl.Spec.PGROOT_SECRET_NAME = secretName
 	err = Patch(tprclient, "/spec/pgrootsecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error patching cluster" + err.Error())
 	}
 
 	///pgmaster
@@ -63,13 +63,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 	secretName = cl.Spec.Name + suffix
 	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_MASTER_PASSWORD, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error creating secret2" + err.Error())
 	}
 
 	cl.Spec.PGMASTER_SECRET_NAME = secretName
 	err = Patch(tprclient, "/spec/pgmastersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error patching cluster " + err.Error())
 	}
 
 	///pguser
@@ -79,13 +79,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 	secretName = cl.Spec.Name + suffix
 	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_PASSWORD, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error creating secret " + err.Error())
 	}
 
 	cl.Spec.PGUSER_SECRET_NAME = secretName
 	err = Patch(tprclient, "/spec/pgusersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error patching cluster " + err.Error())
 	}
 
 	return err
@@ -114,7 +114,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 
 	_, err := clientset.Secrets(namespace).Create(&secret)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error creating secret" + err.Error())
 	} else {
 		log.Info("created secret secret")
 	}
@@ -143,21 +143,21 @@ func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string
 	secretName := db + tpr.PGMASTER_SECRET_SUFFIX
 	err := clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error deleting secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
 	secretName = db + tpr.PGROOT_SECRET_SUFFIX
 	err = clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error deleting secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
 	secretName = db + tpr.PGUSER_SECRET_SUFFIX
 	err = clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error deleting secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}

@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/operator/backup"
-	"github.com/crunchydata/postgres-operator/operator/clone"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/upgrade"
 	"github.com/crunchydata/postgres-operator/tpr"
@@ -96,7 +95,7 @@ func main() {
 	go backup.ProcessJobs(clientset, tprclient, stopchan, namespace)
 	go upgrade.Process(clientset, tprclient, stopchan, namespace)
 	go upgrade.MajorUpgradeProcess(clientset, tprclient, stopchan, namespace)
-	go clone.Process(clientset, tprclient, stopchan, namespace)
+	go cluster.ProcessClone(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

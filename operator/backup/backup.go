@@ -58,7 +58,7 @@ func init() {
 
 	buf, err = ioutil.ReadFile(JOB_PATH)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in backup.go init " + err.Error())
 		panic(err.Error())
 	}
 	JobTemplate = template.Must(template.New("backup job template").Parse(string(buf)))

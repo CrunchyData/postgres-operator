@@ -40,6 +40,7 @@ type ClusterStrategy interface {
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
+	PrepareClone(*kubernetes.Clientset, *rest.RESTClient, string, *tpr.PgCluster, string) error
 }
 
 type ServiceTemplateFields struct {
@@ -131,7 +132,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 			cl.Spec.PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
 		err = pvc.Create(clientset, cl.Spec.PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("error in pvc create " + err.Error())
 			return
 		}
 		log.Info("created PVC =" + cl.Spec.PVC_NAME + " in namespace " + namespace)
@@ -151,7 +152,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 
 	err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in create secrets " + err.Error())
 		return
 	}
 
@@ -181,7 +182,7 @@ func setFullVersion(tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace str
 	//update the tpr
 	err := util.Patch(tprclient, "/spec/postgresfullversion", fullVersion, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in version patch " + err.Error())
 	}
 
 }
@@ -214,8 +215,7 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 	} else if kerrors.IsNotFound(err) {
 		log.Info("will not delete pgupgrade, not found for " + cl.Spec.Name)
 	} else {
-		log.Error("error deleting pgupgrade " + cl.Spec.Name)
-		log.Error(err.Error())
+		log.Error("error deleting pgupgrade " + cl.Spec.Name + err.Error())
 	}
 
 }

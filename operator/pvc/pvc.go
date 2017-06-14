@@ -43,7 +43,7 @@ func init() {
 
 	buf, err = ioutil.ReadFile(PVC_PATH)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in pvc init" + err.Error())
 		panic(err.Error())
 	}
 	PVCTemplate = template.Must(template.New("pvc template").Parse(string(buf)))
@@ -62,7 +62,7 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 
 	err = PVCTemplate.Execute(&doc2, pvcFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in pvc create exec" + err.Error())
 		return err
 	}
 	pvcDocString := doc2.String()

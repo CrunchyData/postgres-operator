@@ -34,7 +34,7 @@ func GetFullVersion(imageTag string) string {
 	log.Debug(time.Now())
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error getting full version" + err.Error())
 		return fullVersion
 	}
 
@@ -47,7 +47,7 @@ func GetFullVersion(imageTag string) string {
 	var images []types.ImageSummary
 	images, err = cli.ImageList(context.Background(), options)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error getting full version" + err.Error())
 		return fullVersion
 	}
 	for _, image := range images {

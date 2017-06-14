@@ -105,12 +105,12 @@ func addUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, upg
 
 	err = cluster.AddUpgrade(clientset, tprclient, upgrade, namespace, &cl)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error adding upgrade" + err.Error())
 	} else {
 		//update the upgrade TPR status to submitted
 		err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("error patching upgrade" + err.Error())
 		}
 	}
 
@@ -140,7 +140,7 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, tprclient *rest.RESTCl
 	lo := v1.ListOptions{LabelSelector: "pgupgrade=true"}
 	fw, err := clientset.Batch().Jobs(namespace).Watch(lo)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error watching upgrade job" + err.Error())
 		os.Exit(2)
 	}
 
@@ -172,7 +172,7 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, tprclient *rest.RESTCl
 	})
 
 	if err4 != nil {
-		log.Error(err4.Error())
+		log.Error("erro in major upgrade " + err4.Error())
 	}
 
 }
@@ -201,7 +201,7 @@ func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 		if errors.IsNotFound(err) {
 			log.Error(name + " pgupgrade tpr is not found")
 		} else {
-			log.Error(err.Error())
+			log.Error("error in tpr get upgrade" + err.Error())
 		}
 	}
 	log.Info(name + " pgupgrade tpr is found")
@@ -215,7 +215,7 @@ func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 		if errors.IsNotFound(err) {
 			log.Error(name + " pgcluster tpr is not found")
 		} else {
-			log.Error(err.Error())
+			log.Error("error in tpr get cluster" + err.Error())
 		}
 	}
 	log.Info(name + " pgcluster tpr is found")
@@ -239,14 +239,14 @@ func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 
 	err = clusterStrategy.MajorUpgradeFinalize(clientset, tprclient, &cl, &upgrade, namespace)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("erro in major upgrade finalize" + err.Error())
 	}
 
 	if err == nil {
 		//update the upgrade TPR status to completed
 		err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
-			log.Error(err.Error())
+			log.Error("error in patch upgrade " + err.Error())
 		}
 
 	}

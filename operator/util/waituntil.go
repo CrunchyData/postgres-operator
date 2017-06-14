@@ -33,7 +33,7 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v
 
 	fw, err = clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error watching pods " + err.Error())
 		return err
 	}
 
@@ -76,7 +76,7 @@ func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, time
 	lo := v1.ListOptions{LabelSelector: "pg-database=" + podname}
 	fw, err = clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error watching pods 2 " + err.Error())
 		return err
 	}
 
@@ -113,7 +113,7 @@ func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname strin
 	lo := v1.ListOptions{LabelSelector: "name=" + depname}
 	fw, err = clientset.Deployments(namespace).Watch(lo)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error watching deployments " + err.Error())
 		return err
 	}
 
@@ -150,7 +150,7 @@ func WaitUntilReplicasetIsDeleted(clientset *kubernetes.Clientset, rcname string
 	lo := v1.ListOptions{LabelSelector: "name=" + rcname}
 	fw, err = clientset.ReplicaSets(namespace).Watch(lo)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error watching replicasets" + err.Error())
 		return err
 	}
 

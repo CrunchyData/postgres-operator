@@ -66,7 +66,7 @@ func CreateSecContext(FS_GROUP string, SUPP string) string {
 func LoadTemplate(path string) *template.Template {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error loading template" + err.Error())
 		panic(err.Error())
 	}
 	return template.Must(template.New(path).Parse(string(buf)))
@@ -122,7 +122,7 @@ func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace str
 
 	_, err = clientset.Deployments(namespace).Patch(name, api.JSONPatchType, patchBytes, "")
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error patching deployment " + err.Error())
 	}
 
 	return err

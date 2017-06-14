@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
+	//kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"k8s.io/client-go/kubernetes"
@@ -325,123 +326,23 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 
 }
 
-func (r ClusterStrategy1) CloneCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
-	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
+func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, cloneName string, cl *tpr.PgCluster, namespace string) error {
+	var replicaDoc bytes.Buffer
 	var err error
-	var replicaServiceResult, serviceResult *v1.Service
-	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
+	var replicaDeploymentResult *v1beta1.Deployment
 
-	log.Info("creating clone object using Strategy 1" + " in namespace " + namespace)
-	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
+	log.Info("creating clone deployment using Strategy 1 in namespace " + namespace)
 
-	//create the master service
-	serviceFields := ServiceTemplateFields{
-		Name:        cl.Spec.Name,
-		ClusterName: cl.Spec.Name,
-		Port:        cl.Spec.Port,
-	}
-
-	err = ServiceTemplate1.Execute(&serviceDoc, serviceFields)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	serviceDocString := serviceDoc.String()
-	log.Info(serviceDocString)
-
-	service := v1.Service{}
-	err = json.Unmarshal(serviceDoc.Bytes(), &service)
-	if err != nil {
-		log.Error("error unmarshalling json into Service " + err.Error())
-		return err
-	}
-
-	serviceResult, err = clientset.Services(namespace).Create(&service)
-	if err != nil {
-		log.Error("error creating Service " + err.Error())
-		return err
-	}
-	log.Info("created master service " + serviceResult.Name + " in namespace " + namespace)
-
-	//create the replica service
-	replicaServiceFields := ServiceTemplateFields{
-		Name:        cl.Spec.Name + REPLICA_SUFFIX,
-		ClusterName: cl.Spec.Name,
-		Port:        cl.Spec.Port,
-	}
-
-	err = ServiceTemplate1.Execute(&replicaServiceDoc, replicaServiceFields)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	replicaServiceDocString := replicaServiceDoc.String()
-	log.Info(replicaServiceDocString)
-
-	replicaService := v1.Service{}
-	err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)
-	if err != nil {
-		log.Error("error unmarshalling json into replica Service " + err.Error())
-		return err
-	}
-
-	replicaServiceResult, err = clientset.Services(namespace).Create(&replicaService)
-	if err != nil {
-		log.Error("error creating replica Service " + err.Error())
-		return err
-	}
-	log.Info("created replica service " + replicaServiceResult.Name + " in namespace " + namespace)
-
-	//create the master deployment
-	deploymentFields := DeploymentTemplateFields{
-		Name:                 cl.Spec.Name,
-		ClusterName:          cl.Spec.Name,
-		Port:                 cl.Spec.Port,
-		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.PVC_NAME,
-		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
-		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
-		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
-		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
-		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
-		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-	}
-
-	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	deploymentDocString := masterDoc.String()
-	log.Info(deploymentDocString)
-
-	deployment := v1beta1.Deployment{}
-	err = json.Unmarshal(masterDoc.Bytes(), &deployment)
-	if err != nil {
-		log.Error("error unmarshalling master json into Deployment " + err.Error())
-		return err
-	}
-
-	deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
-	if err != nil {
-		log.Error("error creating master Deployment " + err.Error())
-		return err
-	}
-	log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
-
-	//create the replica deployment
+	//create the clone replica deployment and set replicas to 1
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:                 cl.Spec.Name + REPLICA_SUFFIX,
+		Name:                 cloneName + REPLICA_SUFFIX,
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             cl.Spec.PVC_NAME,
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		REPLICAS:             cl.Spec.REPLICAS,
+		REPLICAS:             "1",
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
@@ -450,25 +351,26 @@ func (r ClusterStrategy1) CloneCluster(clientset *kubernetes.Clientset, client *
 
 	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("error in clone rep dep tem exec " + err.Error())
 		return err
 	}
+
 	replicaDeploymentDocString := replicaDoc.String()
 	log.Info(replicaDeploymentDocString)
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
-		log.Error("error unmarshalling replica json into Deployment " + err.Error())
+		log.Error("error unmarshalling clone replica json into Deployment " + err.Error())
 		return err
 	}
 
 	replicaDeploymentResult, err = clientset.Deployments(namespace).Create(&replicaDeployment)
 	if err != nil {
-		log.Error("error creating replica Deployment " + err.Error())
+		log.Error("error creating clone replica Deployment " + err.Error())
 		return err
 	}
-	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
+	log.Info("created clone replica Deployment " + replicaDeploymentResult.Name)
 	return err
 
 }

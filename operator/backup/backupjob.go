@@ -33,7 +33,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, st
 	lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
 	fw, err := clientset.Batch().Jobs(namespace).Watch(lo)
 	if err != nil {
-		log.Error(err.Error())
+		log.Error("fatal error in ProcessJobs " + err.Error())
 		os.Exit(2)
 	}
 
@@ -58,7 +58,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, st
 				//update the backup TPR status to completed
 				err = util.Patch(tprclient, "/spec/backupstatus", tpr.UPGRADE_COMPLETED_STATUS, "pgbackups", dbname, namespace)
 				if err != nil {
-					log.Error(err.Error())
+					log.Error("error in backup ProcessJobs " + err.Error())
 				}
 
 			}
@@ -70,7 +70,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, st
 	})
 
 	if err4 != nil {
-		log.Error(err4.Error())
+		log.Error("error in ProcessJobs " + err4.Error())
 	}
 
 }
