@@ -335,16 +335,18 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 
 	log.Info("creating clone deployment using Strategy 1 in namespace " + namespace)
 
+	//TODO copy the secrets here instead of using existing secrets
+
 	//create the clone replica deployment and set replicas to 1
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:                 cloneName + REPLICA_SUFFIX,
-		ClusterName:          cl.Spec.Name,
+		ClusterName:          cloneName,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             cl.Spec.PVC_NAME,
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, true),
+		OPERATOR_LABELS:      util.GetLabels(cloneName, cloneName, true),
 		REPLICAS:             "1",
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
