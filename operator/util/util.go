@@ -18,6 +18,7 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"strconv"
@@ -170,4 +171,14 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace 
 	}
 	log.Debug("replica count patch succeeded")
 	return err
+}
+
+func GetLabels(name, clustername string, clone bool) string {
+	var output string
+	if clone {
+		output += fmt.Sprintf("\"clone\": \"%s\",\n", "true")
+	}
+	output += fmt.Sprintf("\"name\": \"%s\",\n", name)
+	output += fmt.Sprintf("\"pg-cluster\": \"%s\"\n", clustername)
+	return output
 }

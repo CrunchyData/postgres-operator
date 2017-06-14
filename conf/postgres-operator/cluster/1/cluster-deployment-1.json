@@ -4,8 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            "name": "{{.Name}}",
-            "pg-cluster": "{{.ClusterName}}"
+	{{.OPERATOR_LABELS}}
         }
     },
     "spec": {

@@ -55,6 +55,7 @@ type DeploymentTemplateFields struct {
 	Port                 string
 	CCP_IMAGE_TAG        string
 	PG_DATABASE          string
+	OPERATOR_LABELS      string
 	PGDATA_PATH_OVERRIDE string
 	PVC_NAME             string
 	BACKUP_PVC_NAME      string

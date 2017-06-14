@@ -125,6 +125,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             cl.Spec.PVC_NAME,
+		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
 		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
@@ -167,6 +168,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		REPLICAS:             cl.Spec.REPLICAS,
+		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false),
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
@@ -342,6 +344,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 		PVC_NAME:             cl.Spec.PVC_NAME,
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
+		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, true),
 		REPLICAS:             "1",
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
@@ -371,6 +374,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 		return err
 	}
 	log.Info("created clone replica Deployment " + replicaDeploymentResult.Name)
+
 	return err
 
 }
