@@ -29,7 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
-	//kerrors "k8s.io/client-go/pkg/api/errors"
+	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"k8s.io/client-go/kubernetes"
@@ -151,12 +151,16 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		return err
 	}
 
-	deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
-	if err != nil {
-		log.Error("error creating master Deployment " + err.Error())
-		return err
+	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
+		deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
+		if err != nil {
+			log.Error("error creating master Deployment " + err.Error())
+			return err
+		}
+		log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
+	} else {
+		log.Info("master Deployment " + deploymentResult.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
-	log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
@@ -339,7 +343,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 
 	//create the clone replica deployment and set replicas to 1
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:                 cloneName + REPLICA_SUFFIX,
+		Name:                 cloneName,
 		ClusterName:          cloneName,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
@@ -379,4 +383,16 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 
 	return err
 
+}
+func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName string) bool {
+
+	_, err := clientset.Deployments(namespace).Get(clusterName)
+	if kerrors.IsNotFound(err) {
+		return false
+	} else if err != nil {
+		log.Error("deployment " + clusterName + " error " + err.Error())
+		return false
+	}
+
+	return true
 }
