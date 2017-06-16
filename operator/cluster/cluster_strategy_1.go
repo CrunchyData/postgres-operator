@@ -159,7 +159,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		}
 		log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
 	} else {
-		log.Info("master Deployment " + deploymentResult.Name + " in namespace " + namespace + " already existed so not creating it ")
+		log.Info("master Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
 
 	//create the replica deployment

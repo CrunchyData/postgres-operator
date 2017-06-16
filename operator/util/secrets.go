@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/client-go/pkg/api/v1"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -171,5 +172,37 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 	}
 
 	return string(secret.Data["password"][:]), err
+
+}
+
+func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
+
+	log.Debug("CopySecrets " + fromCluster + " to " + toCluster)
+	lo := v1.ListOptions{LabelSelector: "pg-database=" + fromCluster}
+	secrets, err := clientset.Secrets(namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return err
+	}
+
+	for _, s := range secrets.Items {
+		log.Debug("found secret : " + s.ObjectMeta.Name)
+		secret := v1.Secret{}
+		secret.Name = strings.Replace(s.ObjectMeta.Name, fromCluster, toCluster, 1)
+		secret.ObjectMeta.Labels = make(map[string]string)
+		secret.ObjectMeta.Labels["pg-database"] = toCluster
+		secret.Data = make(map[string][]byte)
+		secret.Data["username"] = s.Data["username"][:]
+		secret.Data["password"] = s.Data["password"][:]
+
+		_, err := clientset.Secrets(namespace).Create(&secret)
+		if err != nil {
+			log.Error("error creating secret" + err.Error())
+		} else {
+			log.Info("created secret " + secret.Name)
+		}
+
+	}
+	return err
 
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/gorilla/websocket"
 	"io"
 	"k8s.io/client-go/rest"
+	//"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"net/url"
 )
@@ -34,13 +35,7 @@ type WebsocketRoundTripper struct {
 }
 
 //execs the cmd
-func Exec(namespace, podname, containername, cmd string) error {
-
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
+func Exec(config *rest.Config, namespace, podname, containername string, cmd []string) error {
 
 	wrappedRoundTripper, err := roundTripperFromConfig(config)
 	if err != nil {
@@ -98,8 +93,9 @@ func roundTripperFromConfig(config *rest.Config) (http.RoundTripper, error) {
 	return rest.HTTPWrappersForConfig(config, rt)
 }
 
-func requestFromConfig(config *rest.Config, pod string, container string, namespace string, cmd string) (*http.Request, error) {
+func requestFromConfig(config *rest.Config, pod string, container string, namespace string, cmd []string) (*http.Request, error) {
 
+	log.Info("config.Host is " + config.Host)
 	u, err := url.Parse(config.Host)
 	if err != nil {
 		return nil, err
@@ -115,11 +111,18 @@ func requestFromConfig(config *rest.Config, pod string, container string, namesp
 	}
 
 	u.Path = fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/exec", namespace, pod)
-	if container != "" {
-		u.RawQuery = "command=" + cmd +
-			"&container=" + container +
-			"&stderr=true&stdout=true"
+	params := url.Values{}
+	for _, v := range cmd {
+		params.Add("command", v)
 	}
+	params.Add("container", container)
+	params.Add("stderr", "true")
+	params.Add("stdout", "true")
+
+	u.RawQuery = params.Encode()
+
+	log.Info(u.String())
+
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL:    u,
