@@ -73,23 +73,6 @@ func main() {
 	if restclient != nil {
 	}
 
-	/**
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    u,
-	}
-
-	resp, err4 := restclient.Get(u.String())
-	if err4 != nil {
-		fmt.Println(err4.Error())
-	}
-	body, err5 := ioutil.ReadAll(resp.Body)
-	fmt.Printf("%s is the body\n", body)
-	if err5 != nil {
-		fmt.Println("err5 is " + err5.Error())
-	}
-	*/
-
 	// Create a round tripper with all necessary kubernetes security details
 	wrappedRoundTripper, err := roundTripperFromConfig(config)
 	if err != nil {
