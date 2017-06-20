@@ -20,6 +20,6 @@ for i in {1..60}
 do
    	echo "creating PV crunchy-pv$i"
 	export COUNTER=$i
-	kubectl --namespace=$NAMESPACE delete pv crunchy-pv$i
-	envsubst < $DIR/crunchy-pv.json | kubectl --namespace=$NAMESPACE create -f -
+	kubectl --namespace=$CO_NAMESPACE delete pv crunchy-pv$i
+	envsubst < $DIR/crunchy-pv.json | kubectl --namespace=$CO_NAMESPACE create -f -
 done

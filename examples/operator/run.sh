@@ -16,23 +16,23 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
-if [ -z "$NAMESPACE" ]; then
-	echo "NAMESPACE not set, using default"
-	export NAMESPACE=default
+if [ -z "$CO_NAMESPACE" ]; then
+	echo "CO_NAMESPACE not set, using default"
+	export CO_NAMESPACE=default
 fi
-if [ -z "$CMD" ]; then
-	echo "CMD not set, using kubectl"
-	export CMD=kubectl
+if [ -z "$CO_CMD" ]; then
+	echo "CO_CMD not set, using kubectl"
+	export CO_CMD=kubectl
 fi
 
 $DIR/cleanup.sh
 
-$CMD --namespace=$NAMESPACE get pvc crunchy-pvc
+$CO_CMD --namespace=$CO_NAMESPACE get pvc crunchy-pvc
 rc=$?
 
 if [ ! $rc -eq 0 ]; then
 	echo "crunchy-pvc does not exist...creating crunchy-pvc "
-	$CMD --namespace=$NAMESPACE create -f $DIR/crunchy-pvc.json
+	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/crunchy-pvc.json
 	$DIR/create-pv.sh
 else
 	echo "crunchy-pvc already exists..."
@@ -44,12 +44,12 @@ if [ ! -d /data ]; then
 	sudo chmod 777 /data
 fi
 
-$CMD create configmap operator-conf \
+$CO_CMD create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
-envsubst < $DIR/deployment.json | $CMD --namespace=$NAMESPACE create -f -
+envsubst < $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
 
 sleep 3
-$CMD get pod --selector=name=postgres-operator
+$CO_CMD get pod --selector=name=postgres-operator

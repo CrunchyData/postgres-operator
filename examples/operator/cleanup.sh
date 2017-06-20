@@ -14,7 +14,7 @@
 
 $CMD delete configmap operator-conf
 
-$CMD --namespace=$NAMESPACE delete deployment postgres-operator
+$CMD --namespace=$CO_NAMESPACE delete deployment postgres-operator
 
 sleep 10
 
