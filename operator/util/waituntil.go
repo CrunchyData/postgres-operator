@@ -119,6 +119,7 @@ func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname strin
 
 	conditions := []watch.ConditionFunc{
 		func(event watch.Event) (bool, error) {
+			log.Infof("waiting for deployment to be deleted got event=%v\n", event.Type)
 			if event.Type == watch.Deleted {
 				log.Info("deployment delete event received in WaitUntilDeploymentIsDeleted")
 				return true, nil

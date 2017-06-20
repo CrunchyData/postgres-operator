@@ -13,6 +13,7 @@ from source, you can download them from the following:
 == Requirements
 
 * Kubernetes 1.5.3+
+* Openshif Origin 1.5.1+
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 
@@ -54,6 +55,46 @@ kubectl create clusterrolebinding permissive-binding \
 
 See https://kubernetes.io/docs/admin/authorization/rbac/ for more
 details on how to enable RBAC roles.
+
+To test the *postgres-operator* you will need a Kubernetes cluster
+
+== Openshift Origin Environment
+
+The postgres operator has been tested using Openshift Origin 1.5.1.
+
+The operator works the same as in a Kubernetes environment except
+that you have to configure the Origin permissions to allow 
+the operator to function.
+
+The HostPath volume is by default restricted in Origin, so you
+will have to grant access to the HostPath volume plugin for the
+operator to access the Docker socket as a HostPath volume.
+
+There is more than one way to alter the HostPath access, see:
+
+....
+oc edit scc restricted set allowHostDirVolumePlugin: true to let
+....
+
+This command will allow *all* pods to access HostPath volumes which
+may not be permissible in your environment.
+
+Alternatively you can create a service account, have the operator
+use that service account, and grant the service account access
+to use a HostPath volume.
+
+see the following links for examples:
+https://gitlab.com/gitlab-org/gitlab-ce/issues/24557
+https://docs.openshift.org/latest/admin_guide/manage_scc.html#use-the-hostpath-volume-plugin
+
+To test on an Origin system, you will need to specify
+a CMD environment variable with the value of *oc* as follows:
+....
+export CMD=oc
+....
+
+This will cause the *oc* command to be used within the operator
+startup script.
 
 == Create Project and Clone 
 In your .bashrc file, include the following:

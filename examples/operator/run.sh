@@ -15,19 +15,24 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$DIR/cleanup.sh
 
 if [ -z "$NAMESPACE" ]; then
 	echo "NAMESPACE not set, using default"
 	export NAMESPACE=default
 fi
+if [ -z "$CMD" ]; then
+	echo "CMD not set, using kubectl"
+	export CMD=kubectl
+fi
 
-kubectl --namespace=$NAMESPACE get pvc crunchy-pvc
+$DIR/cleanup.sh
+
+$CMD --namespace=$NAMESPACE get pvc crunchy-pvc
 rc=$?
 
 if [ ! $rc -eq 0 ]; then
 	echo "crunchy-pvc does not exist...creating crunchy-pvc "
-	kubectl --namespace=$NAMESPACE create -f $DIR/crunchy-pvc.json
+	$CMD --namespace=$NAMESPACE create -f $DIR/crunchy-pvc.json
 	$DIR/create-pv.sh
 else
 	echo "crunchy-pvc already exists..."
@@ -39,14 +44,12 @@ if [ ! -d /data ]; then
 	sudo chmod 777 /data
 fi
 
-kubectl create configmap operator-conf \
+$CMD create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
-envsubst < $DIR/deployment.json | kubectl --namespace=$NAMESPACE create -f -
+envsubst < $DIR/deployment.json | $CMD --namespace=$NAMESPACE create -f -
 
 sleep 3
-kubectl get pod --selector=name=postgres-operator
-sleep 3
-kubectl logs --selector=name=postgres-operator
+$CMD get pod --selector=name=postgres-operator

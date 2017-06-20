@@ -15,7 +15,6 @@
             "spec": {
                 "containers": [{
 	        "securityContext": {
-			"privileged": true
 		},
                     "name": "postgres-operator",
                     "image": "crunchydata/postgres-operator:centos7-1.2.0",
