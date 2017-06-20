@@ -13,7 +13,7 @@ from source, you can download them from the following:
 == Requirements
 
 * Kubernetes 1.5.3+
-* Openshif Origin 1.5.1+
+* Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 

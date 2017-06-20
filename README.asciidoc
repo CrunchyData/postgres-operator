@@ -21,6 +21,7 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Upgrade Cluster
 * View PVC
 * Test Connections
+* Clone a Cluster
 
 What actually gets created on the Kube cluster for a 
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
@@ -29,6 +30,7 @@ are documented in detail here link:docs/strategies.asciidoc[Deployment Strategie
 == Requirements
 
 * Kubernetes 1.5.3+
+* Openshift Origin 1.5.1+ or Openshift Container Platform 3.5
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
@@ -98,6 +100,12 @@ pgo show pvc mypvc
 [source,bash]
 ----
 pgo test mycluster
+----
+
+.Clone Cluster
+[source,bash]
+----
+pgo clone mycluster --name=myclone
 ----
 
 Details on the *pgo* commands are found in the 

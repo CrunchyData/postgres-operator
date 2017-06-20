@@ -236,6 +236,25 @@ cluster.  The cluster credentials are accessed and used to test
 the database connections.  The equivalent *psql* command is printed
 out as connections are tried, along with the connection status.
 
+== Clone Cluster
+
+To create a cluster clone from an existing cluster, use the following:
+....
+pgo clone mycluster --name=myclone
+....
+
+When you execute the *clone*, it will orchestrate the following
+actions:
+
+ * create a PgClone TPR to start the cloning workflow
+ * create a replica on *mycluster* that will become the clone master
+ * watch for cloned replicas to complete their replication
+ * copy the original cluster's secrets for the clone to use
+ * create a PgCluster TPR for the new clone cluster
+ * create the Postgres trigger file on the clone to cause it to recover
+   and become a valid read-write master
+ * remove the PgClone TPR
+
 == bash Completion
 
 There is a bash completion file that is included for users to try, this

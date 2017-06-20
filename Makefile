@@ -7,7 +7,9 @@ run:
 pgo:
 	cd client && go build -o $(GOBIN)/pgo pgo.go
 clean:
-	rm $(GOBIN)/pgo $(GOBIN)/postgres-operator
+	rm -rf $(GOPATH)/pkg/* $(GOBIN)/*
+	go get -u github.com/FiloSottile/gvt
+	gvt restore
 operatorimage:
 	cd operator && go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator
