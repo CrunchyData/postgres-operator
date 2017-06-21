@@ -17,6 +17,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 for i in {1..15}
 do
-   	echo "deleting PV crunchy-pv-$i"
-	kubectl delete pv crunchy-pv-$i
+   	echo "deleting PV crunchy-pv$i"
+	kubectl delete pv crunchy-pv$i
 done
