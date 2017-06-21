@@ -289,11 +289,13 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	}
 
 	//wait for the replica deployment to delete
-	err = util.WaitUntilDeploymentIsDeleted(clientset, replicaName, time.Minute, namespace)
+	/**
+	err = util.WaitUntilDeploymentIsDeleted(clientset, replicaName, 2 * time.Minute, namespace)
 	if err != nil {
 		log.Error("error waiting for replica Deployment deletion " + err.Error())
 	}
 	log.Info("deleted replica Deployment " + replicaName + " in namespace " + namespace)
+	*/
 
 	//delete the master deployment
 	err = clientset.Deployments(namespace).Delete(cl.Spec.Name, &v1.DeleteOptions{})
@@ -302,7 +304,8 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	}
 
 	//wait for the master deployment to delete
-	err = util.WaitUntilDeploymentIsDeleted(clientset, cl.Spec.Name, time.Minute, namespace)
+	/**
+	err = util.WaitUntilDeploymentIsDeleted(clientset, cl.Spec.Name, 2 * time.Minute, namespace)
 	if err != nil {
 		log.Error("error waiting for master Deployment deletion " + err.Error())
 	}
@@ -327,6 +330,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 			log.Info("deleted cluster replicaset " + r.Name + " in namespace " + namespace)
 		}
 	}
+	*/
 
 	return err
 
