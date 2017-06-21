@@ -95,10 +95,13 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 		deleteCluster(clientset, client, cluster, namespace)
 	}
 
+	/**
 	updateHandler := func(old interface{}, obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
 		eventchan <- cluster
+		log.Info("updateHandler called")
 	}
+	*/
 
 	_, controller := cache.NewInformer(
 		source,
@@ -106,7 +109,6 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 		time.Second*10,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    createAddHandler,
-			UpdateFunc: updateHandler,
 			DeleteFunc: createDeleteHandler,
 		})
 
@@ -125,6 +127,11 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) {
 	var err error
+
+	if cl.Spec.STATUS == tpr.UPGRADE_COMPLETED_STATUS {
+		log.Warn("tpr pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
+		return
+	}
 
 	//create the PVC for the master if required
 	if cl.Spec.PVC_NAME == "" {
@@ -173,6 +180,11 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	setFullVersion(client, cl, namespace)
 
 	strategy.AddCluster(clientset, client, cl, namespace)
+
+	err = util.Patch(client, "/spec/status", tpr.UPGRADE_COMPLETED_STATUS, "pgclusters", cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in status patch " + err.Error())
+	}
 
 }
 

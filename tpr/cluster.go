@@ -51,6 +51,7 @@ type PgClusterSpec struct {
 	PGUSER_SECRET_NAME    string `json:"pgusersecretname"`
 	PGROOT_SECRET_NAME    string `json:"pgrootsecretname"`
 	PGMASTER_SECRET_NAME  string `json:"pgmastersecretname"`
+	STATUS                string `json:"status"`
 }
 
 type PgCluster struct {

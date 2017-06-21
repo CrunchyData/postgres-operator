@@ -113,6 +113,12 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup, namespace string) {
 	var err error
+
+	if job.Spec.BACKUP_STATUS == tpr.UPGRADE_COMPLETED_STATUS {
+		log.Warn("pgbackup " + job.Spec.Name + " already completed, not recreating it")
+		return
+	}
+
 	log.Info("creating PgBackup object" + " in namespace " + namespace)
 	log.Info("created with Name=" + job.Spec.Name + " in namespace " + namespace)
 
