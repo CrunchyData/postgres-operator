@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2016 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ -z "$CO_NAMESPACE" ]; then
+	echo "CO_NAMESPACE not set, using default"
+	export CO_NAMESPACE=default
+fi
+if [ -z "$CO_CMD" ]; then
+	echo "CO_CMD not set, using kubectl"
+	export CO_CMD=kubectl
+fi
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
-
-for i in {1..15}
-do
-   	echo "deleting PV crunchy-pv$i"
-	$CO_CMD delete pv crunchy-pv$i
-done

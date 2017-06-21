@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright 2016 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$CMD delete configmap operator-conf
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CMD --namespace=$CO_NAMESPACE delete deployment postgres-operator
+source $DIR/setup.sh
+
+$CO_CMD delete configmap operator-conf
+
+$CO_CMD --namespace=$CO_NAMESPACE delete deployment postgres-operator
 
 sleep 10
 

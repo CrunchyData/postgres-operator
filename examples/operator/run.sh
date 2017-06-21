@@ -15,15 +15,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-
-if [ -z "$CO_NAMESPACE" ]; then
-	echo "CO_NAMESPACE not set, using default"
-	export CO_NAMESPACE=default
-fi
-if [ -z "$CO_CMD" ]; then
-	echo "CO_CMD not set, using kubectl"
-	export CO_CMD=kubectl
-fi
+source $DIR/setup.sh
 
 $DIR/cleanup.sh
 

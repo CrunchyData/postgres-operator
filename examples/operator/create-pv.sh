@@ -15,11 +15,13 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+source $DIR/setup.sh
+
 echo "create the test PV and PVC using the HostPath dir"
 for i in {1..60}
 do
    	echo "creating PV crunchy-pv$i"
 	export COUNTER=$i
-	kubectl --namespace=$CO_NAMESPACE delete pv crunchy-pv$i
-	envsubst < $DIR/crunchy-pv.json | kubectl --namespace=$CO_NAMESPACE create -f -
+	$CO_CMD --namespace=$CO_NAMESPACE delete pv crunchy-pv$i
+	envsubst < $DIR/crunchy-pv.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
 done
