@@ -36,7 +36,7 @@ func main() {
 		fmt.Println("error waiting on lspvc pod to complete" + err.Error())
 	}
 	logOptions := v1.PodLogOptions{}
-	podName := "lspvc-mycluster"
+	podName := "lspvc-donut"
 	req := clientset.Core().Pods("default").GetLogs(podName, &logOptions)
 	if req == nil {
 		fmt.Println("error in get logs for " + podName)
