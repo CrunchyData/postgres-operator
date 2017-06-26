@@ -1,6 +1,6 @@
 FROM centos:7
 
-LABEL Release="1.2.0" Vendor="Crunchy Data Solutions" 
+LABEL Release="1.3.0" Vendor="Crunchy Data Solutions" 
 
 RUN yum -y update && yum -y install hostname && yum -y clean all
 

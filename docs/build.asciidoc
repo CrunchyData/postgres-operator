@@ -1,5 +1,5 @@
 = PostgreSQL Operator Build and Setup
-v1.2.0, {docdate}
+v1.3.0, {docdate}
 
 == Overview
 
@@ -117,7 +117,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=1.2.0
+export CO_VERSION=1.3.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
@@ -134,16 +134,16 @@ cd postgres-operator
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-1.2.0
-docker pull crunchydata/postgres-operator:centos7-1.2.0
+docker pull crunchydata/lspvc:centos7-1.3.0
+docker pull crunchydata/postgres-operator:centos7-1.3.0
 ....
 
 Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
 it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.2.0/postgres-operator.1.2.0.tar.gz
-tar xvzf ./postgres-operator.1.2.0.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.3.0/postgres-operator.1.3.0.tar.gz
+tar xvzf ./postgres-operator.1.3.0.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -253,8 +253,11 @@ the following:
  * show all clusters (*pgo show cluster all*)
  * backup a cluster (*pgo backup testcluster*)
  * show backup of cluster (*pgo show backup testcluster*)
+ * show backup pvc of cluster (*pgo show backup testcluster --show-pvc-true*)
+ * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01 --secret-from=testcluster*)
+ * test a cluster (*pgo test restoredcluster*)
+ * minor upgrade a cluster (*pgo upgrade testcluster*)
+ * major upgrade a cluster (*pgo upgrade testcluster --upgrade-type=major*)
+ * clone a cluster (*pgo clone testcluster --name=cloneexample*)
  * delete a cluster (*pgo delete cluster testcluster*)
- * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01*)
- * minor upgrade a cluster (*pgo create upgrade testcluster*)
- * major upgrade a cluster (*pgo create upgrade testcluster --upgrade-type=major*)
 

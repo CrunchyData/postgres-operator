@@ -245,6 +245,31 @@ _pgo_backup()
     noun_aliases=()
 }
 
+_pgo_clone()
+{
+    last_command="pgo_clone"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--name=")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--name=")
+    flags+=("--config=")
+    flags+=("--debug")
+    flags+=("--kubeconfig=")
+    flags+=("--namespace=")
+    flags+=("--selector=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_create_cluster()
 {
     last_command="pgo_create_cluster"
@@ -268,6 +293,9 @@ _pgo_create_cluster()
     flags+=("--password=")
     two_word_flags+=("-w")
     local_nonpersistent_flags+=("--password=")
+    flags+=("--secret-from=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--secret-from=")
     flags+=("--config=")
     flags+=("--debug")
     flags+=("--kubeconfig=")
@@ -599,6 +627,7 @@ _pgo()
     last_command="pgo"
     commands=()
     commands+=("backup")
+    commands+=("clone")
     commands+=("create")
     commands+=("delete")
     commands+=("scale")

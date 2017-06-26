@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v1.2.0, {docdate}
+v1.3.0, {docdate}
 
 == Overview
 
