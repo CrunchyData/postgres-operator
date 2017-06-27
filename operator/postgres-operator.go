@@ -145,6 +145,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&tpr.PgCloneList{},
 		&tpr.PgBackup{},
 		&tpr.PgBackupList{},
+		&tpr.PgPolicy{},
+		&tpr.PgPolicyList{},
 		&tpr.PgUpgrade{},
 		&tpr.PgUpgradeList{},
 		&api.ListOptions{},
@@ -220,6 +222,31 @@ func initializeResources(clientset *kubernetes.Clientset) {
 					{Name: "v1"},
 				},
 				Description: "A postgres upgrade ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
+	}
+
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-policy.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-policy.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres policy ThirdPartyResource",
 			}
 
 			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
