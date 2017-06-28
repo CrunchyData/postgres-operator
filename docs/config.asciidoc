@@ -40,6 +40,7 @@ CLUSTER:
   SUPPLEMENTALGROUPS:  65534
   STRATEGY:  1
   REPLICAS:  2
+  POLICIES:  policy1,policy2
 PGO:
   LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.3.0
@@ -63,10 +64,11 @@ Values in the pgo configuration file have the following meaning:
 |CLUSTER.PG_USER        | the PostgreSQL normal user name
 |CLUSTER.PG_PASSWORD        | the PostgreSQL normal user password, when specified, it will be stored in the secret holding the normal user credentials, if not specified the value will be generated
 |CLUSTER.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password, when specified, it will be stored in the secret holding the root user credentials, if not specified the value will be generated
-|CLUSTER.FSGROUP        | if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|CLUSTER.SUPPLEMENTALGROUPS        | if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|CLUSTER.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
+|CLUSTER.SUPPLEMENTALGROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
+|CLUSTER.POLICIES        | optional, list of policies to apply to a newly created cluster
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client

@@ -26,9 +26,10 @@ import (
 )
 
 type PgPolicySpec struct {
-	Name string `json:"name"`
-	Repo string `json:"repo"`
-	Sql  string `json:"sql"`
+	Name   string `json:"name"`
+	Repo   string `json:"repo"`
+	Sql    string `json:"sql"`
+	Status string `json:"status"`
 }
 
 type PgPolicy struct {

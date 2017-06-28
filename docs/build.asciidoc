@@ -239,6 +239,8 @@ kubectl get thirdpartyresources
 kubectl get pgclusters
 kubectl get pgbackups
 kubectl get pgupgrades
+kubectl get pgpolicies
+kubectl get pgclones
 ....
 
 At this point, you should be ready to start using the *pgo* client!
@@ -260,4 +262,6 @@ the following:
  * major upgrade a cluster (*pgo upgrade testcluster --upgrade-type=major*)
  * clone a cluster (*pgo clone testcluster --name=cloneexample*)
  * delete a cluster (*pgo delete cluster testcluster*)
+ * create a policy from local file (*pgo create policy policy1 --in-file=./examples/policy/policy1.sql*)
+ * create a policy from git repo (*pgo create policy gitpolicy --repo=https://github.com/CrunchyData/postgres-operator/blob/master/examples/policy/gitpolicy.sql*)
 
