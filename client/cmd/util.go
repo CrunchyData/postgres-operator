@@ -122,6 +122,8 @@ func configureTPRClient(config *rest.Config) {
 				&tpr.PgClusterList{},
 				&tpr.PgBackup{},
 				&tpr.PgBackupList{},
+				&tpr.PgPolicy{},
+				&tpr.PgPolicyList{},
 				&tpr.PgUpgrade{},
 				&tpr.PgUpgradeList{},
 				&api.ListOptions{},

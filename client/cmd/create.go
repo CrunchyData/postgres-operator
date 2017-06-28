@@ -77,7 +77,7 @@ var createPolicyCmd = &cobra.Command{
 pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create policy called")
-		if PolicyFile != "" || PolicyRepo != "" {
+		if PolicyFile != "" && PolicyRepo != "" {
 			log.Error("in-file or repo is required to create a policy")
 			return
 		}
