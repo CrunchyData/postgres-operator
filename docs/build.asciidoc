@@ -27,6 +27,9 @@ from source, you can download them from the following:
  * Dockerhub (crunchydata/lspvc and crunchydata/postgres-operator images)
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]  (pgo client and client configuration files, extracted to your $HOME)
 
+Further details can be found in the link:design.asciidoc[PostgreSQL Operator Design] document on
+how the operator is built and how it operates.
+
 [#Requirements]
 == Requirements
 
@@ -215,7 +218,7 @@ docker images | grep crunchydata
 
 [#Deploy the PostgreSQL Operator]
 === Deploy the PostgreSQL Operator
-note that this will create and use */data* on your
+NOTE: This will create and use */data* on your
 local system as the persistent store for the operator to use
 for its persistent volume:
 ....
@@ -231,6 +234,8 @@ desired PVC to use when databases and clusters are created.
 
 When you first run the operator, it will create the required
 ThirdPartyResources.
+
+Strategies for deploying the operator can be found in the link:strategies.asciidoc[PostgreSQL Operator Deployment Strategies] document.
 
 [#Configuration]
 == Configuration
