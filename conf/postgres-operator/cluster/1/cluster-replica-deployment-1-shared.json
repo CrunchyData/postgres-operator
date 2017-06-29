@@ -71,7 +71,9 @@
                 "volumes": [
 		{
                     "name": "pgdata",
-		    "emptyDir": {}
+            		"persistentVolumeClaim": {
+                		"claimName": "{{.PVC_NAME}}"
+            		}
                 }, {
 		  	"name": "pguser-volume",
 			"secret": {

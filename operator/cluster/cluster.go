@@ -34,7 +34,7 @@ import (
 )
 
 type ClusterStrategy interface {
-	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string) error
+	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, string) error
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
@@ -134,16 +134,18 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	}
 
 	//create the PVC for the master if required
+	var pvcName = cl.Spec.PVC_NAME
+
 	if cl.Spec.PVC_NAME == "" {
-		cl.Spec.PVC_NAME = cl.Spec.Name + "-pvc"
+		pvcName = cl.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			cl.Spec.PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, cl.Spec.PVC_NAME, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
+			pvcName, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
+		err = pvc.Create(clientset, pvcName, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
 			return
 		}
-		log.Info("created PVC =" + cl.Spec.PVC_NAME + " in namespace " + namespace)
+		log.Info("created PVC =" + pvcName + " in namespace " + namespace)
 	}
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
@@ -179,7 +181,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 
 	setFullVersion(client, cl, namespace)
 
-	strategy.AddCluster(clientset, client, cl, namespace)
+	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
 
 	err = util.Patch(client, "/spec/status", tpr.UPGRADE_COMPLETED_STATUS, "pgclusters", cl.Spec.Name, namespace)
 	if err != nil {

@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v1.3.0, {docdate}
+v1.3.2, {docdate}
 
 
 This document describes the configuration options
@@ -43,7 +43,7 @@ CLUSTER:
   POLICIES:  policy1,policy2
 PGO:
   LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
-  CO_IMAGE_TAG:  centos7-1.3.0
+  CO_IMAGE_TAG:  centos7-1.3.2
   DEBUG:  false
 ....
 

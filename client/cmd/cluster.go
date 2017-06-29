@@ -94,8 +94,10 @@ func listDeployments(name string) {
 		log.Error("error getting list of deployments" + err.Error())
 		return
 	}
+
 	for _, d := range deployments.Items {
 		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
+		//fmt.Printf("labels : %v\n", d.ObjectMeta)
 	}
 
 }

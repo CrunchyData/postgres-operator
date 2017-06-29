@@ -1,5 +1,5 @@
 = postgres Operator User Guide
-v1.3.0, {docdate}
+v1.3.2, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
@@ -254,6 +254,13 @@ actions:
  * create the Postgres trigger file on the clone to cause it to recover
    and become a valid read-write master
  * remove the PgClone TPR
+
+NOTE:  if you are cloning a cluster that has replica(s) which 
+specify a /pgdata volume using emptyDir volume type, then the cloned
+master will inherit that same emptydir volume for the new cloned
+master.  If this is not the behavior you want, you will need to specify
+a volume type for the replica(s) that is based on either shared
+volume types or dynamic volumes.
 
 == bash Completion
 
