@@ -97,6 +97,7 @@ func main() {
 	go upgrade.MajorUpgradeProcess(clientset, tprclient, stopchan, namespace)
 	go cluster.ProcessClone(clientset, tprclient, stopchan, namespace)
 	go cluster.CompleteClone(config, clientset, tprclient, stopchan, namespace)
+	go cluster.ProcessPolicies(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

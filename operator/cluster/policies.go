@@ -17,19 +17,19 @@ package cluster
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"os"
-
-	//"github.com/crunchydata/postgres-operator/operator/util"
+	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/client-go/kubernetes"
+	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := v1.ListOptions{LabelSelector: "pg-cluster"}
+	lo := v1.ListOptions{LabelSelector: "pg-cluster,!replica"}
 	fw, err := clientset.Deployments(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())
@@ -41,16 +41,20 @@ func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient
 
 		switch event.Type {
 		case watch.Added:
-			deployment := event.Object.(*v1beta1.Deployment)
-			log.Infof("deployment processpolicy added=%s\n", deployment.Name)
+			//deployment := event.Object.(*v1beta1.Deployment)
+			//log.Infof("deployment processpolicy added=%s\n", dep.Name)
 		case watch.Deleted:
-			deployment := event.Object.(*v1beta1.Deployment)
-			log.Infof("deployment processpolicy deleted=%s\n", deployment.Name)
+			//deployment := event.Object.(*v1beta1.Deployment)
+			//log.Infof("deployment processpolicy deleted=%s\n", deployment.Name)
 		case watch.Error:
 			log.Infof("deployment processpolicy error event")
 		case watch.Modified:
 			deployment := event.Object.(*v1beta1.Deployment)
-			log.Infof("deployment processpolicy modified=%s\n", deployment.Name)
+			//log.Infof("deployment processpolicy modified=%s\n", deployment.Name)
+			log.Infof("status available replicas=%d\n", deployment.Status.AvailableReplicas)
+			if deployment.Status.AvailableReplicas > 0 {
+				applyPolicies(namespace, clientset, tprclient, deployment)
+			}
 		default:
 			log.Infoln("processpolices unknown watch event %v\n", event.Type)
 		}
@@ -62,4 +66,32 @@ func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient
 		log.Error("error in ProcessPolicies " + err4.Error())
 	}
 
+}
+
+func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient *rest.RESTClient, dep *v1beta1.Deployment) {
+	//get the tpr which holds the requested labels if any
+	cl := tpr.PgCluster{}
+	err := tprclient.Get().
+		Resource("pgclusters").
+		Namespace(namespace).
+		Name(dep.Name).
+		Do().
+		Into(&cl)
+	if err == nil {
+	} else if kerrors.IsNotFound(err) {
+		log.Error("could not get cluster in policy processing using " + dep.Name)
+		return
+	} else {
+		log.Error("error in policy processing " + err.Error())
+		return
+	}
+
+	if cl.Spec.Policies == "" {
+		log.Debug("no policies to apply to " + dep.Name)
+		return
+	}
+	log.Debug("policies to apply to " + dep.Name + " are " + cl.Spec.Policies)
+
+	//apply the policies
+	//update the deployment's labels to show applied policies
 }

@@ -208,6 +208,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.BACKUP_PVC_NAME = ""
 	spec.PG_MASTER_HOST = name
 	spec.PG_MASTER_USER = "master"
+	spec.Policies = viper.GetString("CLUSTER.POLICIES")
 	spec.PG_MASTER_PASSWORD = viper.GetString("CLUSTER.PG_MASTER_PASSWORD")
 	spec.PG_USER = "testuser"
 	spec.PG_PASSWORD = viper.GetString("CLUSTER.PG_PASSWORD")

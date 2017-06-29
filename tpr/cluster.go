@@ -28,6 +28,7 @@ import (
 type PgClusterSpec struct {
 	Name                  string `json:"name"`
 	ClusterName           string `json:"clustername"`
+	Policies              string `json:"policies"`
 	CCP_IMAGE_TAG         string `json:"ccpimagetag"`
 	POSTGRES_FULL_VERSION string `json:"postgresfullversion"`
 	Port                  string `json:"port"`
