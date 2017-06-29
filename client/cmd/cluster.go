@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -97,10 +99,19 @@ func listDeployments(name string) {
 
 	for _, d := range deployments.Items {
 		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
-		//fmt.Printf("labels : %v\n", d.ObjectMeta)
 	}
+	printPolicies(&deployments.Items[0])
 
 }
+func printPolicies(d *v1beta1.Deployment) {
+	labels := d.ObjectMeta.Labels
+	for k, v := range labels {
+		if v == "pgpolicy" {
+			fmt.Printf("%spolicy: %s\n", TREE_BRANCH, k)
+		}
+	}
+}
+
 func listPods(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	pods, err := Clientset.Core().Pods(Namespace).List(lo)
