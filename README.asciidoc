@@ -1,4 +1,5 @@
 = PostgreSQL Operator
+:toc:
 v1.3.0, {docdate}
 
 == Overview
