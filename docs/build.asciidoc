@@ -1,6 +1,23 @@
 = PostgreSQL Operator Build and Setup
 v1.3.2, {docdate}
 
+== Table of Contents
+
+* <<Overview>>
+* <<Requirements>>
+* <<Kubernetes Environment>>
+* <<Openshift Origin Environment>>
+* <<Create Project and Clone>>
+* <<Get Packaged Dependencies>>
+* <<Build from Source>>
+** <<Compiling the PostgreSQL Operator>>
+** <<Build the Docker Images>>
+** <<Deploy the PostgreSQL Operator>>
+** <<Configuration>>
+** <<Viewing Operator Resources>>
+* <<Performing a Smoke Test>>
+
+[#Overview]
 == Overview
 
 This document describes how to build from source code the
@@ -10,6 +27,10 @@ from source, you can download them from the following:
  * Dockerhub (crunchydata/lspvc and crunchydata/postgres-operator images)
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]  (pgo client and client configuration files, extracted to your $HOME)
 
+Further details can be found in the link:design.asciidoc[PostgreSQL Operator Design] document on
+how the operator is built and how it operates.
+
+[#Requirements]
 == Requirements
 
 * Kubernetes 1.5.3+
@@ -17,6 +38,7 @@ from source, you can download them from the following:
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 
+[#Kubernetes Environment]
 == Kubernetes Environment
 
 To test the *postgres-operator* you will need a Kubernetes cluster
@@ -32,7 +54,7 @@ the permissions:
 sudo chmod +r /etc/kubernetes/admin.conf
 ....
 
-Once you have your Kube VM created, install some of the 
+Once you have your Kube VM created, install some of the
 required dependencies:
 ....
 yum -y install git
@@ -58,12 +80,13 @@ details on how to enable RBAC roles.
 
 To test the *postgres-operator* you will need a Kubernetes cluster
 
+[#Openshift Origin Environment]
 == Openshift Origin Environment
 
 The postgres operator has been tested using Openshift Origin 1.5.1.
 
 The operator works the same as in a Kubernetes environment except
-that you have to configure the Origin permissions to allow 
+that you have to configure the Origin permissions to allow
 the operator to function.
 
 The HostPath volume is by default restricted in Origin, so you
@@ -109,7 +132,8 @@ export CO_NAMESPACE=myproject
 This will cause the *oc* command to be used within the operator
 startup script and deploy the operator to the *myproject* namespace or project.
 
-== Create Project and Clone 
+[#Create Project and Clone]
+== Create Project and Clone
 In your .bashrc file, include the following:
 ....
 export GOPATH=$HOME/odev
@@ -130,7 +154,9 @@ git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ....
 
-== Get Pre-built Images
+[#Get Packaged Dependencies]
+== Get Packaged Dependencies
+
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
@@ -148,8 +174,8 @@ tar xvzf ./postgres-operator.1.3.2.tar.gz
 
 Lastly, add the *pgo* client into your PATH.
 
-
-== Source Dependencies
+[#Build from Source]
+== Build from Source
 
 Install a golang compiler, this can be done with either
 your package manager or by following directions
@@ -162,25 +188,27 @@ go get -u github.com/FiloSottile/gvt
 gvt restore
 ....
 
-In a development environment you will likely want to create a 
-*docker* group and add your user ID to that group, this allows 
-you as your normal user ID to access the *docker* daemon and 
+In a development environment you will likely want to create a
+*docker* group and add your user ID to that group, this allows
+you as your normal user ID to access the *docker* daemon and
 issue commands to it:
 ....
 sudo groupadd docker
 sudo usermod -a -G docker youruserID
 sudo systemctl restart docker
-newgrp docker 
+newgrp docker
 ....
 
-== Compile *pgo*
+[#Compiling the PostgreSQL Operator]
+=== Compiling the PostgreSQL Operator
 ....
 cd $COROOT
 make pgo
 which pgo
 ....
 
-== Build the Docker Images
+[#Build the Docker Images]
+=== Build the Docker Images
 ....
 cd $COROOT
 make operatorimage
@@ -188,9 +216,9 @@ make lsimage
 docker images | grep crunchydata
 ....
 
-
-== Deploy the PostgreSQL Operator
-note that this will create and use */data* on your
+[#Deploy the PostgreSQL Operator]
+=== Deploy the PostgreSQL Operator
+NOTE: This will create and use */data* on your
 local system as the persistent store for the operator to use
 for its persistent volume:
 ....
@@ -207,7 +235,10 @@ desired PVC to use when databases and clusters are created.
 When you first run the operator, it will create the required
 ThirdPartyResources.
 
-== Setup *pgo* Configuration File 
+Strategies for deploying the operator can be found in the link:strategies.asciidoc[PostgreSQL Operator Deployment Strategies] document.
+
+[#Configuration]
+== Configuration
 
 The *pgo* client requires two configuration files be copied
 to your $HOME as follows:
@@ -229,7 +260,11 @@ located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kube config file location.  Also, update
 the location of the LSPVC_TEMPLATE value to match your $HOME value.
 
-== Viewing Operator Resources
+More in-depth explanations of postgres operator configurations are available
+in the link:config.asciidoc[Configuration] document.
+
+[#Viewing Operator Resources]
+=== Viewing Operator Resources
 
 When you first run the operator, it will look for the presence
 of its third party resources, and create them if not found.  You can view the various resources created and used by the
@@ -243,11 +278,12 @@ kubectl get pgupgrades
 
 At this point, you should be ready to start using the *pgo* client!
 
+[#Performing a Smoke Test]
 == Performing a Smoke Test
 
 A simple *smoke test* of the postgres operator includes testing
 the following:
- 
+
  * create a cluster (*pgo create cluster testcluster*)
  * show a cluster (*pgo show cluster testcluster*)
  * show all clusters (*pgo show cluster all*)
@@ -261,3 +297,4 @@ the following:
  * clone a cluster (*pgo clone testcluster --name=cloneexample*)
  * delete a cluster (*pgo delete cluster testcluster*)
 
+More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].
