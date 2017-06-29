@@ -41,16 +41,18 @@ type ClusterStrategy1 struct{}
 
 var DeploymentTemplate1 *template.Template
 var ReplicaDeploymentTemplate1 *template.Template
+var ReplicaDeploymentTemplate1Shared *template.Template
 var ServiceTemplate1 *template.Template
 
 func init() {
 
 	ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
 	ReplicaDeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
+	ReplicaDeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
 	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
 }
 
-func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string) error {
+func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string, masterPvcName string) error {
 	var serviceDoc, replicaServiceDoc, masterDoc, replicaDoc bytes.Buffer
 	var err error
 	var replicaServiceResult, serviceResult *v1.Service
@@ -124,7 +126,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.PVC_NAME,
+		PVC_NAME:             masterPvcName,
 		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
 		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
@@ -179,7 +181,14 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 	}
 
-	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+	if cl.Spec.PVC_NAME == "" {
+		//if no PVC_NAME then assume a non-shared volume type
+		log.Debug("using the dynamic replica template ")
+		err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+	} else {
+		log.Debug("using the shared replica template ")
+		err = ReplicaDeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+	}
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -367,7 +376,14 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 	}
 
-	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+	if cl.Spec.PVC_NAME == "" {
+		//if PVC_NAME is blank, assume a non-shared volume type
+		log.Debug("using the dynamic replica template ")
+		err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+	} else {
+		log.Debug("using the shared replica template ")
+		err = ReplicaDeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+	}
 	if err != nil {
 		log.Error("error in clone rep dep tem exec " + err.Error())
 		return err
