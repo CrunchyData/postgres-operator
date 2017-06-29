@@ -1,7 +1,16 @@
 = PostgreSQL Operator
-:toc:
 v1.3.0, {docdate}
 
+== Table of Contents
+
+* <<Overview>>
+* <<Requirements>>
+* <<Build and Setup Instructions>>
+* <<Configuration>>
+* <<Examples>>
+* <<PostgreSQL Operator Container>>
+
+[#Overview]
 == Overview
 
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes.
@@ -28,6 +37,7 @@ What actually gets created on the Kube cluster for a
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
 are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies].
 
+[#Requirements]
 == Requirements
 
 * Kubernetes 1.5.3+
@@ -36,6 +46,7 @@ are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 
+[#Build and Setup Instructions]
 == Build and Setup Instructions
 
 With the operator deployed, the *pgo* command line
@@ -46,12 +57,14 @@ You can download a pre-built *pgo* CLI binary from
 the link:https://github.com/CrunchyData/postgres-operator/releases[Releases] page on the github repository or build
 it yourself using the build instructions, documented on the link:docs/build.asciidoc[Build and Setup] page.
 
+[#Configuration]
 == Configuration
 
 You can configure both the client and the operator.  The
 configuration options are documented on the link:docs/config.asciidoc[Configuration] page.
 
-== Example Commands Usage
+[#Examples]
+== Examples
 
 Some examples of using the *pgo* command line interface are as follows.
 
@@ -127,8 +140,8 @@ pgo clone mycluster --name=myclone
 Details on the above *pgo* command examples are found in the
 link:docs/user-guide.asciidoc[User Guide].
 
-
-== postgres-operator Container
+[#PostgreSQL Operator Container]
+== PostgreSQL Operator Container
 
 In the following diagram, the postgres operator client, *pgo*, is
 shown interacting with the postgres operator that runs within
