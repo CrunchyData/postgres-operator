@@ -68,7 +68,7 @@ Values in the pgo configuration file have the following meaning:
 |CLUSTER.SUPPLEMENTALGROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
-|CLUSTER.POLICIES        | optional, list of policies to apply to a newly created cluster
+|CLUSTER.POLICIES        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client

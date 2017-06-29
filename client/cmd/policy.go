@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
+	"strings"
 )
 
 const POLICY_RESOURCE = "pgpolicies"
@@ -189,4 +190,38 @@ func deletePolicy(args []string) {
 			fmt.Println("policy " + arg + " not found")
 		}
 	}
+}
+
+func validateConfigPolicies() error {
+	var err error
+	configPolicies := viper.GetString("CLUSTER.POLICIES")
+	if configPolicies == "" {
+		return err
+	}
+
+	policies := strings.Split(configPolicies, ",")
+
+	for _, v := range policies {
+		result := tpr.PgPolicy{}
+
+		// error if it already exists
+		err = Tprclient.Get().
+			Resource(POLICY_RESOURCE).
+			Namespace(Namespace).
+			Name(v).
+			Do().
+			Into(&result)
+		if err == nil {
+			log.Debug("policy " + v + " was found in catalog")
+		} else if kerrors.IsNotFound(err) {
+			log.Error("policy " + v + " specified in configuration was not found")
+			return err
+		} else {
+			log.Error("error getting pgpolicy " + v + err.Error())
+			return err
+		}
+
+	}
+
+	return err
 }

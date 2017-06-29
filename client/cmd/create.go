@@ -55,6 +55,10 @@ master and a number of replica backends. For example:
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create cluster called")
+		err := validateConfigPolicies()
+		if err != nil {
+			return
+		}
 		if SecretFrom != "" || BackupPath != "" || BackupPVC != "" {
 			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
 				log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
