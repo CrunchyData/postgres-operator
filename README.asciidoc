@@ -1,15 +1,25 @@
 = PostgreSQL Operator
 v1.3.2, {docdate}
 
+== Table of Contents
+
+* <<Overview>>
+* <<Requirements>>
+* <<Build and Setup Instructions>>
+* <<Configuration>>
+* <<Examples>>
+* <<PostgreSQL Operator Container>>
+
+[#Overview]
 == Overview
 
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes.
 
 The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource type *pgcluster*, *pgbackups*, and *pgupgrades*.
 
-Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object. 
+Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object.
 
-The PostgreSQL Operator runs within Kubernetes detecting these new custom object types being created or removed. 
+The PostgreSQL Operator runs within Kubernetes detecting these new custom object types being created or removed.
 
 Once the objects are detected, the PostgreSQL Operator enables users to perform operations across the Kubernetes environment, including:
 
@@ -23,10 +33,11 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Test Connections
 * Clone a Cluster
 
-What actually gets created on the Kube cluster for a 
+What actually gets created on the Kube cluster for a
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
-are documented in detail here link:docs/strategies.asciidoc[Deployment Strategies] 
+are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies].
 
+[#Requirements]
 == Requirements
 
 * Kubernetes 1.5.3+
@@ -35,9 +46,27 @@ are documented in detail here link:docs/strategies.asciidoc[Deployment Strategie
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 
-== Example Commands Usage
+[#Build and Setup Instructions]
+== Build and Setup Instructions
 
-Some examples of using the command line interface:
+With the operator deployed, the *pgo* command line
+interface can execute commands that the *postgres-operator* understands
+and reacts to.
+
+You can download a pre-built *pgo* CLI binary from
+the link:https://github.com/CrunchyData/postgres-operator/releases[Releases] page on the github repository or build
+it yourself using the build instructions, documented on the link:docs/build.asciidoc[Build and Setup] page.
+
+[#Configuration]
+== Configuration
+
+You can configure both the client and the operator.  The
+configuration options are documented on the link:docs/config.asciidoc[Configuration] page.
+
+[#Examples]
+== Examples
+
+Some examples of using the *pgo* command line interface are as follows.
 
 .Display Cluster Information
 [source,bash]
@@ -81,7 +110,7 @@ pgo create cluster myrestore --secret-from=foo --backup-pvc=mypvc --backup-path=
 .Upgrade Cluster (minor Postgres version upgrade)
 [source,bash]
 ----
-pgo create upgrade mycluster 
+pgo create upgrade mycluster
 ----
 
 .Upgrade Cluster (major Postgres version upgrade from 9.5 to 9.6)
@@ -108,11 +137,11 @@ pgo test mycluster
 pgo clone mycluster --name=myclone
 ----
 
-Details on the *pgo* commands are found in the 
-link:docs/user-guide.asciidoc[User Guide] 
+Details on the above *pgo* command examples are found in the
+link:docs/user-guide.asciidoc[User Guide].
 
-
-== postgres-operator Container
+[#PostgreSQL Operator Container]
+== PostgreSQL Operator Container
 
 In the following diagram, the postgres operator client, *pgo*, is
 shown interacting with the postgres operator that runs within
@@ -123,31 +152,7 @@ image::docs/operator-diagram.png?raw=true[]
 
 The operator funtionality runs in a Pod deployed to your
 Kubernetes cluster.  The *postgres-operator* Docker container
-is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub].  
+is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub].
 
 You can also build the Docker image for *postgres-operator* using
-the build instructions link:docs/build.asciidoc[Build and Setup].
-
-== Command Line Interface
-
-With the operator deployed, you can then use the *pgo* command line 
-interface to execute commands that the *postgres-operator* understands 
-and reacts to.
-
-You can download a pre-built *pgo* CLI binary from 
-the Releases page on the github repository or build
-it yourself using the build instructions.
-
-
-== Build and Setup Instructions
-
-Build instructions are documented here.
-link:docs/build.asciidoc[Build and Setup] 
-
-== Configuration
-
-You can configure both the client and the operator.  The
-configuration options are documented here.
-link:docs/config.asciidoc[Configuration]
-
-
+the build instructions located on the link:docs/build.asciidoc[Build and Setup] page.
