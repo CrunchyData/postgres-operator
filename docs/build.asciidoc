@@ -255,6 +255,9 @@ located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kube config file location.  Also, update
 the location of the LSPVC_TEMPLATE value to match your $HOME value.
 
+More in-depth explanations of postgres operator configurations are available
+in the link:config.asciidoc[Configuration] document.
+
 [#Viewing Operator Resources]
 === Viewing Operator Resources
 
