@@ -255,6 +255,13 @@ actions:
    and become a valid read-write master
  * remove the PgClone TPR
 
+NOTE:  if you are cloning a cluster that has replica(s) which 
+specify a /pgdata volume using emptyDir volume type, then the cloned
+master will inherit that same emptydir volume for the new cloned
+master.  If this is not the behavior you want, you will need to specify
+a volume type for the replica(s) that is based on either shared
+volume types or dynamic volumes.
+
 == bash Completion
 
 There is a bash completion file that is included for users to try, this
