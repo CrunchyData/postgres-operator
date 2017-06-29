@@ -1881,6 +1881,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/evanphx/json-patch",
+			"repository": "https://github.com/evanphx/json-patch",
+			"vcs": "git",
+			"revision": "c3740aa533c8ac9463b1428e3f964f66733135af",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/fatih/color",
 			"repository": "https://github.com/fatih/color",
 			"vcs": "git",
@@ -1935,6 +1943,14 @@
 			"repository": "https://github.com/inconshreveable/mousetrap",
 			"vcs": "git",
 			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jessevdk/go-flags",
+			"repository": "https://github.com/jessevdk/go-flags",
+			"vcs": "git",
+			"revision": "5695738f733662da3e9afc2283bba6f3c879002d",
 			"branch": "master",
 			"notests": true
 		},
