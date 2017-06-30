@@ -4,7 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-	{{.OPERATOR_LABELS}}
+            {{.OPERATOR_LABELS }}
         }
     },
     "spec": {
@@ -23,11 +23,20 @@
             },
             "spec": {
 
-                    {{.SECURITY_CONTEXT}}
+                {{.SECURITY_CONTEXT }}
 
                 "containers": [{
                     "name": "database",
                     "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG}}",
+                    "readinessProbe": {
+                        "exec": {
+                            "command": [
+                                "/opt/cpm/bin/readiness.sh"
+                            ]
+                        },
+                        "initialDelaySeconds": 5,
+                        "timeoutSeconds": 2
+                    },
                     "env": [{
                         "name": "PG_MASTER_PORT",
                         "value": "{{.Port}}"

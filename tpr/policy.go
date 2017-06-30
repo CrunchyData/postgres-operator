@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
+const POLICY_RESOURCE = "pgpolicies"
+
 type PgPolicySpec struct {
 	Name   string `json:"name"`
 	Repo   string `json:"repo"`

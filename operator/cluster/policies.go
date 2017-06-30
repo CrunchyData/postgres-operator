@@ -17,6 +17,7 @@ package cluster
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/client-go/kubernetes"
 	kerrors "k8s.io/client-go/pkg/api/errors"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
 	"os"
+	"strings"
 )
 
 func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
@@ -91,7 +93,53 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 		return
 	}
 	log.Debug("policies to apply to " + dep.Name + " are " + cl.Spec.Policies)
+	policies := strings.Split(cl.Spec.Policies, ",")
 
 	//apply the policies
+	var sqlString, password, secretName string
+
+	for _, v := range policies {
+		//fetch the policy sql
+		sqlString, err = getPolicySQL(tprclient, namespace, v)
+		if err != nil {
+			break
+		}
+		secretName = cl.Spec.Name + "-pgroot-secret"
+		//get the postgres user password
+		password, err = util.GetPasswordFromSecret(clientset, namespace, secretName)
+		if err != nil {
+			break
+		}
+		//get the host ip address
+		service, err2 := clientset.Services(namespace).Get(cl.Spec.Name)
+		if err2 != nil {
+			log.Error(err2)
+			break
+		}
+
+		//lastly, run the psql script
+		log.Debugf("running psql password=%s ip=%s sql=[%s]\n", password, service.Spec.ClusterIP, sqlString)
+		util.RunPsql(password, service.Spec.ClusterIP, sqlString)
+	}
+
 	//update the deployment's labels to show applied policies
+}
+
+func getPolicySQL(tprclient *rest.RESTClient, namespace, policyName string) (string, error) {
+	p := tpr.PgPolicy{}
+	err := tprclient.Get().
+		Resource(tpr.POLICY_RESOURCE).
+		Namespace(namespace).
+		Name(policyName).
+		Do().
+		Into(&p)
+	if err == nil {
+		return p.Spec.Sql, err
+	} else if kerrors.IsNotFound(err) {
+		log.Error("getPolicySQL policy not found using " + policyName)
+		return "", err
+	} else {
+		log.Error(err)
+		return "", err
+	}
 }

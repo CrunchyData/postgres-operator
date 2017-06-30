@@ -25,13 +25,11 @@ import (
 	"strings"
 )
 
-const POLICY_RESOURCE = "pgpolicies"
-
 func showPolicy(args []string) {
 	//get a list of all policies
 	policyList := tpr.PgPolicyList{}
 	err := Tprclient.Get().
-		Resource(POLICY_RESOURCE).
+		Resource(tpr.POLICY_RESOURCE).
 		Namespace(Namespace).
 		Do().Into(&policyList)
 	if err != nil {
@@ -76,7 +74,7 @@ func createPolicy(args []string) {
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource(POLICY_RESOURCE).
+			Resource(tpr.POLICY_RESOURCE).
 			Namespace(Namespace).
 			Name(arg).
 			Do().
@@ -100,7 +98,7 @@ func createPolicy(args []string) {
 		}
 
 		err = Tprclient.Post().
-			Resource(POLICY_RESOURCE).
+			Resource(tpr.POLICY_RESOURCE).
 			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
@@ -158,7 +156,7 @@ func getPolicyString(filename string) (string, error) {
 func deletePolicy(args []string) {
 	// Fetch a list of our policy TPRs
 	policyList := tpr.PgPolicyList{}
-	err := Tprclient.Get().Resource(POLICY_RESOURCE).Do().Into(&policyList)
+	err := Tprclient.Get().Resource(tpr.POLICY_RESOURCE).Do().Into(&policyList)
 	if err != nil {
 		log.Error("error getting policy list" + err.Error())
 		return
@@ -173,7 +171,7 @@ func deletePolicy(args []string) {
 			if arg == "all" || arg == policy.Spec.Name {
 				policyFound = true
 				err = Tprclient.Delete().
-					Resource(POLICY_RESOURCE).
+					Resource(tpr.POLICY_RESOURCE).
 					Namespace(Namespace).
 					Name(policy.Spec.Name).
 					Do().
@@ -206,7 +204,7 @@ func validateConfigPolicies() error {
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource(POLICY_RESOURCE).
+			Resource(tpr.POLICY_RESOURCE).
 			Namespace(Namespace).
 			Name(v).
 			Do().
