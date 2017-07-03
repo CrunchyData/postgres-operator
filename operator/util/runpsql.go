@@ -9,7 +9,7 @@ import (
 
 func RunPsql(password string, hostip string, sqlstring string) {
 
-	cmd := exec.Command("/usr/local/bin/runpsql.sh", password, hostip)
+	cmd := exec.Command("runpsql.sh", password, hostip)
 
 	cmd.Stdin = strings.NewReader(sqlstring)
 

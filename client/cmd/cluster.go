@@ -100,7 +100,9 @@ func listDeployments(name string) {
 	for _, d := range deployments.Items {
 		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
 	}
-	printPolicies(&deployments.Items[0])
+	if len(deployments.Items) > 0 {
+		printPolicies(&deployments.Items[0])
+	}
 
 }
 func printPolicies(d *v1beta1.Deployment) {

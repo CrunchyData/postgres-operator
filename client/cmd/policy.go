@@ -17,11 +17,13 @@ package cmd
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/pkg/api/v1"
 	"strings"
 )
 
@@ -225,9 +227,48 @@ func validateConfigPolicies() error {
 }
 
 func applyPolicy(policies []string) {
-	//var err error
-
+	var err error
+	//validate policies
+	labels := make(map[string]string)
 	for _, p := range policies {
-		log.Info("apply policy called for " + p)
+		err = util.ValidatePolicy(Tprclient, Namespace, p)
+		if err != nil {
+			log.Error("policy " + p + " is not found, cancelling request")
+			return
+		}
+
+		labels[p] = "pgpolicy"
 	}
+
+	//get filtered list of Deployments
+	sel := Selector + ",!replica"
+	log.Debug("selector string=[" + sel + "]")
+	lo := v1.ListOptions{LabelSelector: sel}
+	deployments, err := Clientset.Deployments(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of deployments" + err.Error())
+		return
+	}
+
+	for _, d := range deployments.Items {
+		fmt.Println("deployment : " + d.ObjectMeta.Name)
+		for _, p := range policies {
+			log.Info("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
+			//apply the policy
+			err = util.ExecPolicy(Clientset, Tprclient, Namespace, p, d.ObjectMeta.Name)
+			if err != nil {
+				log.Error("error applying policy " + p)
+				return
+			}
+		}
+
+		//update the deployment labels
+		err = util.UpdateDeploymentLabels(Clientset, d.ObjectMeta.Name, Namespace, labels)
+		if err != nil {
+			log.Error("error applying policy labels to deployment " + err.Error())
+		} else {
+			log.Debugf("applied policy labels %v to deployment %s\n", labels, d.ObjectMeta.Name)
+		}
+	}
+
 }
