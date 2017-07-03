@@ -166,7 +166,8 @@ func ProcessPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClien
 }
 
 func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, policylog *tpr.PgPolicylog, namespace string) {
-	log.Infof("policylog added=%s\n", policylog.Spec.PolicyName+policylog.Spec.ClusterName)
+	policylogname := policylog.Spec.PolicyName + policylog.Spec.ClusterName
+	log.Infof("policylog added=%s\n", policylogname)
 
 	labels := make(map[string]string)
 
@@ -182,4 +183,17 @@ func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, p
 	if err != nil {
 		log.Error(err)
 	}
+
+	//update the policylog with applydate and status
+	err = util.Patch(tprclient, "/spec/status", tpr.UPGRADE_COMPLETED_STATUS, tpr.POLICY_LOG_RESOURCE, policylogname, namespace)
+	if err != nil {
+		log.Error("error in policylog status patch " + err.Error())
+	}
+
+	t := time.Now()
+	err = util.Patch(tprclient, "/spec/applydate", t.Format("2006-01-02-15:04:05"), tpr.POLICY_LOG_RESOURCE, policylogname, namespace)
+	if err != nil {
+		log.Error("error in policylog applydate patch " + err.Error())
+	}
+
 }
