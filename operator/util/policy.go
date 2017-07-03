@@ -20,9 +20,11 @@ import (
 	kerrors "k8s.io/client-go/pkg/api/errors"
 
 	log "github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
+	"net/http"
 )
 
 // execute a sql policy against a deployment
@@ -65,7 +67,11 @@ func GetPolicySQL(tprclient *rest.RESTClient, namespace, policyName string) (str
 		Do().
 		Into(&p)
 	if err == nil {
-		return p.Spec.Sql, err
+		if p.Spec.Repo != "" {
+			return readSQLFromURL(p.Spec.Repo)
+		} else {
+			return p.Spec.Sql, err
+		}
 	} else if kerrors.IsNotFound(err) {
 		log.Error("getPolicySQL policy not found using " + policyName)
 		return "", err
@@ -73,6 +79,26 @@ func GetPolicySQL(tprclient *rest.RESTClient, namespace, policyName string) (str
 		log.Error(err)
 		return "", err
 	}
+}
+
+func readSQLFromURL(urlstring string) (string, error) {
+	var bodyBytes []byte
+	response, err := http.Get(urlstring)
+	if err != nil {
+		log.Error(err)
+		return "", err
+	} else {
+		bodyBytes, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			log.Error(err)
+			return "", err
+		}
+
+		defer response.Body.Close()
+	}
+
+	return string(bodyBytes), err
+
 }
 
 func ValidatePolicy(tprclient *rest.RESTClient, namespace string, policyName string) error {
