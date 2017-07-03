@@ -262,6 +262,40 @@ master.  If this is not the behavior you want, you will need to specify
 a volume type for the replica(s) that is based on either shared
 volume types or dynamic volumes.
 
+== Create Policy
+
+To create a policy use the following syntax:
+....
+pgo create policy policy1 --in-file=/tmp/policy1.sql
+....
+
+When you execute this command, it will create a policy named *policy1*
+using the input file */tmp/policy1.sql* as input.  It will create
+on the server a PgPolicy TPR with the name *policy1* that you can 
+examine as follows:
+
+....
+kubectl get pgpolicies policy1 -o json
+....
+
+Policies get automatically applied to any cluster you create if 
+you define in your *.pgo.yaml* configuration a CLUSTER.POLICIES
+value.
+
+== Apply Policy
+
+To apply an existing policy to a set of clusters, issue
+a command like this:
+....
+pgo apply policy1 --selector=name=mycluster
+....
+
+When you execute this command, it will look up clusters that
+have a label value of *name=mycluster* and then it will apply
+the *policy1* label to that cluster and execute the policy
+SQL against that cluster using the *postgres* user account.
+
+
 == bash Completion
 
 There is a bash completion file that is included for users to try, this

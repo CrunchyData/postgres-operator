@@ -23,10 +23,13 @@ import (
 	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"os"
 	"strings"
+	"time"
 )
 
 func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
@@ -110,6 +113,72 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 
 	//update the deployment's labels to show applied policies
 	err = util.UpdateDeploymentLabels(clientset, dep.Name, namespace, labels)
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func ProcessPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
+
+	eventchan := make(chan *tpr.PgPolicylog)
+
+	source := cache.NewListWatchFromClient(tprclient, tpr.POLICY_LOG_RESOURCE, namespace, fields.Everything())
+
+	createAddHandler := func(obj interface{}) {
+		job := obj.(*tpr.PgPolicylog)
+		eventchan <- job
+		addPolicylog(clientset, tprclient, job, namespace)
+	}
+	createDeleteHandler := func(obj interface{}) {
+		//job := obj.(*tpr.PgUpgrade)
+		//eventchan <- job
+		//deleteUpgrade(clientset, client, job, namespace)
+	}
+
+	updateHandler := func(old interface{}, obj interface{}) {
+		//job := obj.(*tpr.PgUpgrade)
+		//eventchan <- job
+		//log.Info("updating PgUpgrade object")
+		//log.Info("updated with Name=" + job.Spec.Name)
+	}
+	_, controller := cache.NewInformer(
+		source,
+		&tpr.PgPolicylog{},
+		time.Second*10,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    createAddHandler,
+			UpdateFunc: updateHandler,
+			DeleteFunc: createDeleteHandler,
+		})
+
+	go controller.Run(stopchan)
+
+	for {
+		select {
+		case event := <-eventchan:
+			//log.Infof("%#v\n", event)
+			if event == nil {
+				log.Info("event was null")
+			}
+		}
+	}
+
+}
+
+func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, policylog *tpr.PgPolicylog, namespace string) {
+	log.Infof("policylog added=%s\n", policylog.Spec.PolicyName+policylog.Spec.ClusterName)
+
+	labels := make(map[string]string)
+
+	err := util.ExecPolicy(clientset, tprclient, namespace, policylog.Spec.PolicyName, policylog.Spec.ClusterName)
+	if err != nil {
+		log.Error(err)
+	} else {
+		labels[policylog.Spec.PolicyName] = "pgpolicy"
+	}
+
+	//update the deployment's labels to show applied policies
+	err = util.UpdateDeploymentLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
 	if err != nil {
 		log.Error(err)
 	}

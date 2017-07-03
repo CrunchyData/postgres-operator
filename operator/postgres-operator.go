@@ -98,6 +98,7 @@ func main() {
 	go cluster.ProcessClone(clientset, tprclient, stopchan, namespace)
 	go cluster.CompleteClone(config, clientset, tprclient, stopchan, namespace)
 	go cluster.ProcessPolicies(clientset, tprclient, stopchan, namespace)
+	go cluster.ProcessPolicylog(clientset, tprclient, stopchan, namespace)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -148,6 +149,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&tpr.PgBackupList{},
 		&tpr.PgPolicy{},
 		&tpr.PgPolicyList{},
+		&tpr.PgPolicylog{},
+		&tpr.PgPolicylogList{},
 		&tpr.PgUpgrade{},
 		&tpr.PgUpgradeList{},
 		&api.ListOptions{},
@@ -273,6 +276,31 @@ func initializeResources(clientset *kubernetes.Clientset) {
 					{Name: "v1"},
 				},
 				Description: "A postgres clone ThirdPartyResource",
+			}
+
+			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
+			if err != nil {
+				panic(err)
+			}
+			log.Infof("CREATED: %#v\nFROM: %#v\n", result, tpr)
+		} else {
+			panic(err)
+		}
+	} else {
+		log.Infof("SKIPPING: already exists %#v\n", tpr)
+	}
+
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-policylog.crunchydata.com")
+	if err != nil {
+		if errors.IsNotFound(err) {
+			tpr := &v1beta1.ThirdPartyResource{
+				ObjectMeta: v1.ObjectMeta{
+					Name: "pg-policylog.crunchydata.com",
+				},
+				Versions: []v1beta1.APIVersion{
+					{Name: "v1"},
+				},
+				Description: "A postgres policy log ThirdPartyResource",
 			}
 
 			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)

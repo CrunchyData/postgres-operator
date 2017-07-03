@@ -22,6 +22,8 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * View PVC
 * Test Connections
 * Clone a Cluster
+* Create a Policy
+* Apply a Policy
 
 What actually gets created on the Kube cluster for a 
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
@@ -106,6 +108,18 @@ pgo test mycluster
 [source,bash]
 ----
 pgo clone mycluster --name=myclone
+----
+
+.Create a Policy
+[source,bash]
+----
+pgo create policy policy1 --in-file=./policy1.sql
+----
+
+.Apply a Policy
+[source,bash]
+----
+pgo apply policy1 --selector=name=mycluster
 ----
 
 Details on the *pgo* commands are found in the 

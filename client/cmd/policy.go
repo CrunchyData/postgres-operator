@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
+	"os/user"
 	"strings"
 )
 
@@ -250,25 +251,49 @@ func applyPolicy(policies []string) {
 		return
 	}
 
+	var newInstance *tpr.PgPolicylog
 	for _, d := range deployments.Items {
 		fmt.Println("deployment : " + d.ObjectMeta.Name)
 		for _, p := range policies {
 			log.Info("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
-			//apply the policy
-			err = util.ExecPolicy(Clientset, Tprclient, Namespace, p, d.ObjectMeta.Name)
+
+			newInstance, err = getPolicylog(p, d.ObjectMeta.Name)
+
+			result := tpr.PgPolicylog{}
+			err = Tprclient.Post().
+				Resource(tpr.POLICY_LOG_RESOURCE).
+				Namespace(Namespace).
+				Body(newInstance).
+				Do().Into(&result)
 			if err != nil {
-				log.Error("error applying policy " + p)
-				return
+				log.Error("error in creating PgPolicylog TPR instance", err.Error())
+			} else {
+				fmt.Println("created PgPolicylog " + result.Metadata.Name)
 			}
+
 		}
 
-		//update the deployment labels
-		err = util.UpdateDeploymentLabels(Clientset, d.ObjectMeta.Name, Namespace, labels)
-		if err != nil {
-			log.Error("error applying policy labels to deployment " + err.Error())
-		} else {
-			log.Debugf("applied policy labels %v to deployment %s\n", labels, d.ObjectMeta.Name)
-		}
 	}
+
+}
+
+func getPolicylog(policyname, clustername string) (*tpr.PgPolicylog, error) {
+	u, err := user.Current()
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+	spec := tpr.PgPolicylogSpec{}
+	spec.PolicyName = policyname
+	spec.Username = u.Name
+	spec.ClusterName = clustername
+
+	newInstance := &tpr.PgPolicylog{
+		Metadata: api.ObjectMeta{
+			Name: policyname + clustername,
+		},
+		Spec: spec,
+	}
+	return newInstance, err
 
 }

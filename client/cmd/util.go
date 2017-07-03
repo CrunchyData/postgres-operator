@@ -85,6 +85,12 @@ func ConnectToKube() {
 		log.Error("required pg-clone.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-policylog.crunchydata.com")
+	if err != nil {
+		log.Error(err.Error())
+		log.Error("required pg-policylog.crunchydata.com TPR was not found on your kube cluster")
+		os.Exit(2)
+	}
 
 	var tprconfig *rest.Config
 	tprconfig = Config
@@ -124,6 +130,8 @@ func configureTPRClient(config *rest.Config) {
 				&tpr.PgBackupList{},
 				&tpr.PgPolicy{},
 				&tpr.PgPolicyList{},
+				&tpr.PgPolicylog{},
+				&tpr.PgPolicylogList{},
 				&tpr.PgUpgrade{},
 				&tpr.PgUpgradeList{},
 				&api.ListOptions{},

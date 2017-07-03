@@ -217,13 +217,12 @@ func UpdateDeploymentLabels(clientset *kubernetes.Clientset, depName, namespace 
 	if objLabels == nil {
 		objLabels = make(map[string]string)
 	}
-	log.Debug("current labels are %v\n", objLabels)
 
 	//update the deployment labels
 	for key, value := range newLabels {
 		objLabels[key] = value
 	}
-	log.Debug("updated labels are %v\n", objLabels)
+	log.Debugf("updated labels are %v\n", objLabels)
 
 	accessor.SetLabels(objLabels)
 
