@@ -97,6 +97,7 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 
 	//apply the policies
 	var sqlString, password, secretName string
+	labels := make(map[string]string)
 
 	for _, v := range policies {
 		//fetch the policy sql
@@ -120,9 +121,15 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 		//lastly, run the psql script
 		log.Debugf("running psql password=%s ip=%s sql=[%s]\n", password, service.Spec.ClusterIP, sqlString)
 		util.RunPsql(password, service.Spec.ClusterIP, sqlString)
+		labels[v] = "pgpolicy"
+
 	}
 
 	//update the deployment's labels to show applied policies
+	err = util.UpdateDeploymentLabels(clientset, dep.Name, namespace, labels)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func getPolicySQL(tprclient *rest.RESTClient, namespace, policyName string) (string, error) {
