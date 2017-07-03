@@ -223,3 +223,11 @@ func validateConfigPolicies() error {
 
 	return err
 }
+
+func applyPolicy(policies []string) {
+	//var err error
+
+	for _, p := range policies {
+		log.Info("apply policy called for " + p)
+	}
+}

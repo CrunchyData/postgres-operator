@@ -13,7 +13,7 @@ CLUSTER:
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
   STRATEGY:  1
-  REPLICAS:  2
+  REPLICAS:  0
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.3.2

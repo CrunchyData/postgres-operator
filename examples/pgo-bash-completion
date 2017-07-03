@@ -223,6 +223,30 @@ __handle_word()
     __handle_word
 }
 
+_pgo_apply()
+{
+    last_command="pgo_apply"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--config=")
+    flags+=("--debug")
+    flags+=("--kubeconfig=")
+    flags+=("--namespace=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_backup()
 {
     last_command="pgo_backup"
@@ -307,11 +331,40 @@ _pgo_create_cluster()
     noun_aliases=()
 }
 
+_pgo_create_policy()
+{
+    last_command="pgo_create_policy"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--in-file=")
+    two_word_flags+=("-i")
+    local_nonpersistent_flags+=("--in-file=")
+    flags+=("--repo=")
+    two_word_flags+=("-r")
+    local_nonpersistent_flags+=("--repo=")
+    flags+=("--config=")
+    flags+=("--debug")
+    flags+=("--kubeconfig=")
+    flags+=("--namespace=")
+    flags+=("--selector=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_create()
 {
     last_command="pgo_create"
     commands=()
     commands+=("cluster")
+    commands+=("policy")
 
     flags=()
     two_word_flags=()
@@ -374,6 +427,28 @@ _pgo_delete_cluster()
     noun_aliases=()
 }
 
+_pgo_delete_policy()
+{
+    last_command="pgo_delete_policy"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config=")
+    flags+=("--debug")
+    flags+=("--kubeconfig=")
+    flags+=("--namespace=")
+    flags+=("--selector=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_delete_upgrade()
 {
     last_command="pgo_delete_upgrade"
@@ -402,6 +477,7 @@ _pgo_delete()
     commands=()
     commands+=("backup")
     commands+=("cluster")
+    commands+=("policy")
     commands+=("upgrade")
 
     flags=()
@@ -499,6 +575,28 @@ _pgo_show_cluster()
     noun_aliases=()
 }
 
+_pgo_show_policy()
+{
+    last_command="pgo_show_policy"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config=")
+    flags+=("--debug")
+    flags+=("--kubeconfig=")
+    flags+=("--namespace=")
+    flags+=("--selector=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_show_pvc()
 {
     last_command="pgo_show_pvc"
@@ -552,6 +650,7 @@ _pgo_show()
     commands=()
     commands+=("backup")
     commands+=("cluster")
+    commands+=("policy")
     commands+=("pvc")
     commands+=("upgrade")
 
@@ -626,6 +725,7 @@ _pgo()
 {
     last_command="pgo"
     commands=()
+    commands+=("apply")
     commands+=("backup")
     commands+=("clone")
     commands+=("create")
