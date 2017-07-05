@@ -405,6 +405,27 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 		return err
 	}
 	log.Info("created clone replica Deployment " + replicaDeploymentResult.Name)
+	//get the original deployment
+	d, err := clientset.Deployments(namespace).Get(cl.Spec.ClusterName)
+	if err != nil {
+		log.Error("getPolicyLabels deployment " + cl.Spec.ClusterName + " error " + err.Error())
+		return err
+	}
+
+	//get the policy labels from it
+	labels := d.ObjectMeta.Labels
+	polyLabels := make(map[string]string)
+	for key, value := range labels {
+		if value == "pgpolicy" {
+			polyLabels[key] = value
+		}
+	}
+
+	//apply policy labels to new clone deployment
+	err = r.UpdatePolicyLabels(clientset, cloneName, namespace, polyLabels)
+	if err != nil {
+		log.Error("getPolicyLabels error updating poly labels")
+	}
 
 	return err
 
@@ -422,7 +443,7 @@ func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName st
 	return true
 }
 
-func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, clusterName string, namespace string, newLabels map[string]string) error {
+func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
 
 	var err error
 	var deployment *v1beta1.Deployment

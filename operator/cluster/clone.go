@@ -177,8 +177,6 @@ func finishClone(config *rest.Config, clientset *kubernetes.Clientset, tprclient
 	cmd := []string{"touch", "/tmp/pg-failover-trigger"}
 	err = util.Exec(config, namespace, podname, containername, cmd)
 
-	//create the pgcluster tpr which creates the services and replica dep
-
 	clone := tpr.PgClone{}
 	err = tprclient.Get().
 		Resource(tpr.CLONE_RESOURCE).

@@ -125,7 +125,7 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 		return
 	}
 
-	err = strategy.UpdatePolicyLabels(clientset, tprclient, clusterName, namespace, labels)
+	err = strategy.UpdatePolicyLabels(clientset, clusterName, namespace, labels)
 
 	//err = util.UpdateDeploymentLabels(clientset, clusterName, namespace, labels)
 	if err != nil {
@@ -206,7 +206,7 @@ func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, p
 		return
 	}
 
-	err = strategy.UpdatePolicyLabels(clientset, tprclient, policylog.Spec.ClusterName, namespace, labels)
+	err = strategy.UpdatePolicyLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
 
 	//update the deployment's labels to show applied policies
 	//err = util.UpdateDeploymentLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
