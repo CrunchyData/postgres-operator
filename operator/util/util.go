@@ -18,7 +18,7 @@ package util
 import (
 	"bytes"
 	"encoding/json"
-	jsonpatch "github.com/evanphx/json-patch"
+	//jsonpatch "github.com/evanphx/json-patch"
 	//kjson "k8s.io/client-go/pkg/util/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -28,8 +28,8 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	//"k8s.io/client-go/pkg/api/meta"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 )
 
@@ -190,6 +190,7 @@ func GetLabels(name, clustername string, clone, replica bool) string {
 	return output
 }
 
+/**
 func UpdateDeploymentLabels(clientset *kubernetes.Clientset, depName, namespace string, newLabels map[string]string) error {
 
 	var err error
@@ -247,3 +248,4 @@ func UpdateDeploymentLabels(clientset *kubernetes.Clientset, depName, namespace 
 	return err
 
 }
+*/

@@ -21,20 +21,20 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"time"
-
 	log "github.com/Sirupsen/logrus"
-	"text/template"
-
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
-
-	kerrors "k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-
+	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
+	kerrors "k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/pkg/api/meta"
 	"k8s.io/client-go/pkg/api/v1"
+
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
+	"text/template"
+	"time"
 )
 
 type ClusterStrategy1 struct{}
@@ -420,4 +420,62 @@ func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName st
 	}
 
 	return true
+}
+
+func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, clusterName string, namespace string, newLabels map[string]string) error {
+
+	var err error
+	var deployment *v1beta1.Deployment
+
+	//get the deployment
+	deployment, err = clientset.Deployments(namespace).Get(clusterName)
+	if err != nil {
+		return err
+	}
+	log.Debug("got the deployment" + deployment.Name)
+
+	var patchBytes, newData, origData []byte
+	origData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	accessor, err2 := meta.Accessor(deployment)
+	if err2 != nil {
+		return err2
+	}
+
+	objLabels := accessor.GetLabels()
+	if objLabels == nil {
+		objLabels = make(map[string]string)
+	}
+
+	//update the deployment labels
+	for key, value := range newLabels {
+		objLabels[key] = value
+	}
+	log.Debugf("updated labels are %v\n", objLabels)
+
+	accessor.SetLabels(objLabels)
+
+	newData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	createdPatch := err == nil
+	if err != nil {
+		return err
+	}
+	if createdPatch {
+		log.Debug("created merge patch")
+	}
+
+	_, err = clientset.Deployments(namespace).Patch(clusterName, api.MergePatchType, patchBytes, "")
+	if err != nil {
+		log.Debug("error patching deployment " + err.Error())
+	}
+	return err
+
 }

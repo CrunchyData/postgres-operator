@@ -22,7 +22,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
@@ -34,8 +34,8 @@ import (
 
 func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := v1.ListOptions{LabelSelector: "pg-cluster,!replica"}
-	fw, err := clientset.Deployments(namespace).Watch(lo)
+	lo := v1.ListOptions{LabelSelector: "pg-cluster,master"}
+	fw, err := clientset.Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())
 		os.Exit(2)
@@ -54,12 +54,17 @@ func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient
 		case watch.Error:
 			log.Infof("deployment processpolicy error event")
 		case watch.Modified:
-			deployment := event.Object.(*v1beta1.Deployment)
+			pod := event.Object.(*v1.Pod)
 			//log.Infof("deployment processpolicy modified=%s\n", deployment.Name)
-			log.Infof("status available replicas=%d\n", deployment.Status.AvailableReplicas)
-			if deployment.Status.AvailableReplicas > 0 {
-				applyPolicies(namespace, clientset, tprclient, deployment)
+			//log.Infof("status available replicas=%d\n", deployment.Status.AvailableReplicas)
+			ready, restarts := podReady(pod)
+			if restarts > 0 {
+				log.Info("restarts > 0, will not apply policies again to " + pod.Name)
+			} else if ready {
+				clusterName := getClusterName(pod)
+				applyPolicies(namespace, clientset, tprclient, clusterName)
 			}
+
 		default:
 			log.Infoln("processpolices unknown watch event %v\n", event.Type)
 		}
@@ -73,18 +78,19 @@ func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient
 
 }
 
-func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient *rest.RESTClient, dep *v1beta1.Deployment) {
+func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient *rest.RESTClient, clusterName string) {
+	//dep *v1beta1.Deployment
 	//get the tpr which holds the requested labels if any
 	cl := tpr.PgCluster{}
 	err := tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(namespace).
-		Name(dep.Name).
+		Name(clusterName).
 		Do().
 		Into(&cl)
 	if err == nil {
 	} else if kerrors.IsNotFound(err) {
-		log.Error("could not get cluster in policy processing using " + dep.Name)
+		log.Error("could not get cluster in policy processing using " + clusterName)
 		return
 	} else {
 		log.Error("error in policy processing " + err.Error())
@@ -92,10 +98,10 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 	}
 
 	if cl.Spec.Policies == "" {
-		log.Debug("no policies to apply to " + dep.Name)
+		log.Debug("no policies to apply to " + clusterName)
 		return
 	}
-	log.Debug("policies to apply to " + dep.Name + " are " + cl.Spec.Policies)
+	log.Debug("policies to apply to " + clusterName + " are " + cl.Spec.Policies)
 	policies := strings.Split(cl.Spec.Policies, ",")
 
 	//apply the policies
@@ -111,8 +117,17 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 
 	}
 
-	//update the deployment's labels to show applied policies
-	err = util.UpdateDeploymentLabels(clientset, dep.Name, namespace, labels)
+	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		log.Error("invalid STRATEGY found in policy apply for " + clusterName)
+		return
+	}
+
+	err = strategy.UpdatePolicyLabels(clientset, tprclient, clusterName, namespace, labels)
+
+	//err = util.UpdateDeploymentLabels(clientset, clusterName, namespace, labels)
 	if err != nil {
 		log.Error(err)
 	}
@@ -178,8 +193,30 @@ func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, p
 		labels[policylog.Spec.PolicyName] = "pgpolicy"
 	}
 
+	cl := tpr.PgCluster{}
+	err = tprclient.Get().
+		Resource(tpr.CLUSTER_RESOURCE).
+		Namespace(namespace).
+		Name(policylog.Spec.ClusterName).
+		Do().
+		Into(&cl)
+	if err != nil {
+		log.Error("error getting cluster tpr in addPolicylog " + policylog.Spec.ClusterName)
+		return
+
+	}
+	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
+		return
+	}
+
+	err = strategy.UpdatePolicyLabels(clientset, tprclient, policylog.Spec.ClusterName, namespace, labels)
+
 	//update the deployment's labels to show applied policies
-	err = util.UpdateDeploymentLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
+	//err = util.UpdateDeploymentLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
 	if err != nil {
 		log.Error(err)
 	}
@@ -196,4 +233,34 @@ func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, p
 		log.Error("error in policylog applydate patch " + err.Error())
 	}
 
+}
+
+func podReady(pod *v1.Pod) (bool, int32) {
+	var restartCount int32
+	readyCount := 0
+	containerCount := 0
+	for _, stat := range pod.Status.ContainerStatuses {
+		restartCount = restartCount + stat.RestartCount
+		containerCount++
+		if stat.Ready {
+			readyCount++
+		}
+	}
+	log.Debugf(" %s %d/%d", pod.Name, readyCount, containerCount)
+	if readyCount > 0 && readyCount == containerCount {
+		return true, restartCount
+	}
+	return false, restartCount
+
+}
+func getClusterName(pod *v1.Pod) string {
+	var clusterName string
+	labels := pod.ObjectMeta.Labels
+	for k, v := range labels {
+		if k == "pg-cluster" {
+			clusterName = v
+		}
+	}
+
+	return clusterName
 }

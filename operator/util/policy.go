@@ -27,7 +27,7 @@ import (
 	"net/http"
 )
 
-// execute a sql policy against a deployment
+// execute a sql policy against a cluster
 func ExecPolicy(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, namespace string, policyName string, clusterName string) error {
 	//fetch the policy sql
 	sqlString, err := GetPolicySQL(tprclient, namespace, policyName)

@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
+const CLUSTER_RESOURCE = "pgclusters"
+
 type PgClusterSpec struct {
 	Name                  string `json:"name"`
 	ClusterName           string `json:"clustername"`

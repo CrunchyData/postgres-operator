@@ -41,6 +41,7 @@ type ClusterStrategy interface {
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	PrepareClone(*kubernetes.Clientset, *rest.RESTClient, string, *tpr.PgCluster, string) error
+	UpdatePolicyLabels(*kubernetes.Clientset, *rest.RESTClient, string, string, map[string]string) error
 }
 
 type ServiceTemplateFields struct {
