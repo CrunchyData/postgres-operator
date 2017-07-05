@@ -88,7 +88,7 @@ func showBackupInfo(name string) {
 	//print the pgbackups TPR if it exists
 	result := tpr.PgBackup{}
 	err := Tprclient.Get().
-		Resource("pgbackups").
+		Resource(tpr.BACKUP_RESOURCE).
 		Namespace(Namespace).
 		Name(name).
 		Do().
@@ -165,7 +165,7 @@ func createBackup(args []string) {
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource("pgbackups").
+			Resource(tpr.BACKUP_RESOURCE).
 			Namespace(Namespace).
 			Name(arg).
 			Do().
@@ -191,7 +191,7 @@ func createBackup(args []string) {
 		}
 
 		err = Tprclient.Post().
-			Resource("pgbackups").
+			Resource(tpr.BACKUP_RESOURCE).
 			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
@@ -209,7 +209,7 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 	var err error
 	backupList := tpr.PgBackupList{}
-	err = Tprclient.Get().Resource("pgbackups").Do().Into(&backupList)
+	err = Tprclient.Get().Resource(tpr.BACKUP_RESOURCE).Do().Into(&backupList)
 	if err != nil {
 		log.Error("error getting backup list")
 		log.Error(err.Error())
@@ -223,7 +223,7 @@ func deleteBackup(args []string) {
 			if arg == "all" || backup.Spec.Name == arg {
 				backupFound = true
 				err = Tprclient.Delete().
-					Resource("pgbackups").
+					Resource(tpr.BACKUP_RESOURCE).
 					Namespace(Namespace).
 					Name(backup.Spec.Name).
 					Do().
@@ -261,7 +261,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 
 	cluster := tpr.PgCluster{}
 	err := Tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
 		Name(name).
 		Do().

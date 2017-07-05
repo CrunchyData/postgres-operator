@@ -56,7 +56,7 @@ func scaleCluster(args []string) {
 	//get a list of all clusters
 	clusterList := tpr.PgClusterList{}
 	err := Tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
 		Do().Into(&clusterList)
 	if err != nil {

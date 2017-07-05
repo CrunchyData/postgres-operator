@@ -144,7 +144,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
 
 	//update the upgrade TPR status to completed
-	err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+	err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, tpr.UPGRADE_RESOURCE, upgrade.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in upgradestatus patch " + err.Error())
 	}

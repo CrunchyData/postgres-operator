@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
+const BACKUP_RESOURCE = "pgbackups"
+
 type PgBackupSpec struct {
 	Name            string `json:"name"`
 	PVC_NAME        string `json:"pvcname"`

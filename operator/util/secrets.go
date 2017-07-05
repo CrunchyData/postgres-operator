@@ -52,7 +52,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 	}
 
 	cl.Spec.PGROOT_SECRET_NAME = secretName
-	err = Patch(tprclient, "/spec/pgrootsecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
+	err = Patch(tprclient, "/spec/pgrootsecretname", secretName, tpr.CLUSTER_RESOURCE, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster" + err.Error())
 	}
@@ -68,7 +68,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 	}
 
 	cl.Spec.PGMASTER_SECRET_NAME = secretName
-	err = Patch(tprclient, "/spec/pgmastersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
+	err = Patch(tprclient, "/spec/pgmastersecretname", secretName, tpr.CLUSTER_RESOURCE, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster " + err.Error())
 	}
@@ -84,7 +84,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, tprclient *rest.REST
 	}
 
 	cl.Spec.PGUSER_SECRET_NAME = secretName
-	err = Patch(tprclient, "/spec/pgusersecretname", secretName, "pgclusters", cl.Spec.Name, namespace)
+	err = Patch(tprclient, "/spec/pgusersecretname", secretName, tpr.CLUSTER_RESOURCE, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster " + err.Error())
 	}

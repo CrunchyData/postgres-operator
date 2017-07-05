@@ -64,7 +64,7 @@ func createClone(clusterName string) {
 
 	// error if it already exists
 	err = Tprclient.Get().
-		Resource("pgclones").
+		Resource(tpr.CLONE_RESOURCE).
 		Namespace(Namespace).
 		Name(clusterName).
 		Do().
@@ -98,7 +98,7 @@ func createClone(clusterName string) {
 	}
 
 	err = Tprclient.Post().
-		Resource("pgclones").
+		Resource(tpr.CLONE_RESOURCE).
 		Namespace(Namespace).
 		Body(newInstance).
 		Do().Into(&result)
@@ -115,7 +115,7 @@ func deleteClone(args []string) {
 	log.Debugf("deleteClone called %v\n", args)
 	var err error
 	cloneList := tpr.PgCloneList{}
-	err = Tprclient.Get().Resource("pgclones").Do().Into(&cloneList)
+	err = Tprclient.Get().Resource(tpr.CLONE_RESOURCE).Do().Into(&cloneList)
 	if err != nil {
 		log.Error("error getting clone list")
 		log.Error(err.Error())
@@ -128,7 +128,7 @@ func deleteClone(args []string) {
 			if arg == "all" || clone.Spec.Name == arg {
 				cloneFound = true
 				err = Tprclient.Delete().
-					Resource("pgclones").
+					Resource(tpr.CLONE_RESOURCE).
 					Namespace(Namespace).
 					Name(clone.Spec.Name).
 					Do().

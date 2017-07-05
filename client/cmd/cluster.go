@@ -31,7 +31,7 @@ func showCluster(args []string) {
 	//get a list of all clusters
 	clusterList := tpr.PgClusterList{}
 	err := Tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
 		Do().Into(&clusterList)
 	if err != nil {
@@ -152,7 +152,7 @@ func createCluster(args []string) {
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource("pgclusters").
+			Resource(tpr.CLUSTER_RESOURCE).
 			Namespace(Namespace).
 			Name(arg).
 			Do().
@@ -179,7 +179,7 @@ func createCluster(args []string) {
 		newInstance := getClusterParams(arg)
 
 		err = Tprclient.Post().
-			Resource("pgclusters").
+			Resource(tpr.CLUSTER_RESOURCE).
 			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
@@ -284,7 +284,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 func deleteCluster(args []string) {
 	// Fetch a list of our cluster TPRs
 	clusterList := tpr.PgClusterList{}
-	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
+	err := Tprclient.Get().Resource(tpr.CLUSTER_RESOURCE).Do().Into(&clusterList)
 	if err != nil {
 		log.Error("error getting cluster list" + err.Error())
 		return
@@ -299,7 +299,7 @@ func deleteCluster(args []string) {
 			if arg == "all" || arg == cluster.Spec.Name {
 				clusterFound = true
 				err = Tprclient.Delete().
-					Resource("pgclusters").
+					Resource(tpr.CLUSTER_RESOURCE).
 					Namespace(Namespace).
 					Name(cluster.Spec.Name).
 					Do().

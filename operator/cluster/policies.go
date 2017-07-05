@@ -140,21 +140,14 @@ func ProcessPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClien
 	source := cache.NewListWatchFromClient(tprclient, tpr.POLICY_LOG_RESOURCE, namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
-		job := obj.(*tpr.PgPolicylog)
-		eventchan <- job
-		addPolicylog(clientset, tprclient, job, namespace)
+		policylog := obj.(*tpr.PgPolicylog)
+		eventchan <- policylog
+		addPolicylog(clientset, tprclient, policylog, namespace)
 	}
 	createDeleteHandler := func(obj interface{}) {
-		//job := obj.(*tpr.PgUpgrade)
-		//eventchan <- job
-		//deleteUpgrade(clientset, client, job, namespace)
 	}
 
 	updateHandler := func(old interface{}, obj interface{}) {
-		//job := obj.(*tpr.PgUpgrade)
-		//eventchan <- job
-		//log.Info("updating PgUpgrade object")
-		//log.Info("updated with Name=" + job.Spec.Name)
 	}
 	_, controller := cache.NewInformer(
 		source,

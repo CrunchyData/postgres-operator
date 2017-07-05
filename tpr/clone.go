@@ -25,6 +25,8 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
+const CLONE_RESOURCE = "pgclones"
+
 type PgCloneSpec struct {
 	Name        string `json:"name"`
 	ClusterName string `json:"clustername"`
