@@ -24,7 +24,7 @@ import (
 var CCP_IMAGE_TAG string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
-var PolicyFile, PolicyRepo string
+var PoliciesFlag, PolicyFile, PolicyRepo string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -82,7 +82,7 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create policy called")
 		if PolicyFile != "" && PolicyRepo != "" {
-			log.Error("in-file or repo is required to create a policy")
+			log.Error("--in-file or --url is required to create a policy")
 			return
 		}
 
@@ -110,6 +110,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
+	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated")
 	createClusterCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for cluster creation, if specified overrides the .pgo.yaml setting")
 	createPolicyCmd.Flags().StringVarP(&PolicyRepo, "repo", "r", "", "The git repo to use for the policy , if specified overrides the .pgo.yaml setting")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for the policy , if specified overrides the .pgo.yaml setting")

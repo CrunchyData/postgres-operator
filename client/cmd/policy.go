@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/operator/util"
@@ -195,9 +196,15 @@ func deletePolicy(args []string) {
 
 func validateConfigPolicies() error {
 	var err error
-	configPolicies := viper.GetString("CLUSTER.POLICIES")
+	var configPolicies string
+	if PoliciesFlag == "" {
+		configPolicies = viper.GetString("CLUSTER.POLICIES")
+	} else {
+		configPolicies = PoliciesFlag
+	}
 	if configPolicies == "" {
-		return err
+		log.Error("policies are not specified")
+		return errors.New("policies are not specified")
 	}
 
 	policies := strings.Split(configPolicies, ",")
