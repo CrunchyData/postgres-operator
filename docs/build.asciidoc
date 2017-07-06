@@ -1,5 +1,5 @@
 = PostgreSQL Operator Build and Setup
-v1.3.2, {docdate}
+v1.4, {docdate}
 
 == Overview
 
@@ -117,7 +117,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=1.3.2
+export CO_VERSION=1.4
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
@@ -134,16 +134,16 @@ cd postgres-operator
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-1.3.2
-docker pull crunchydata/postgres-operator:centos7-1.3.2
+docker pull crunchydata/lspvc:centos7-1.4
+docker pull crunchydata/postgres-operator:centos7-1.4
 ....
 
 Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
 it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.3.2/postgres-operator.1.3.2.tar.gz
-tar xvzf ./postgres-operator.1.3.2.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.4/postgres-operator.1.4.tar.gz
+tar xvzf ./postgres-operator.1.4.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
