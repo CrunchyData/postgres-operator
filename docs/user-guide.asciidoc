@@ -262,11 +262,12 @@ master.  If this is not the behavior you want, you will need to specify
 a volume type for the replica(s) that is based on either shared
 volume types or dynamic volumes.
 
-== Create Policy
+== Create and View Policy
 
 To create a policy use the following syntax:
 ....
 pgo create policy policy1 --in-file=/tmp/policy1.sql
+pgo create policy policy1 --url=https://someurl/policy1.sql
 ....
 
 When you execute this command, it will create a policy named *policy1*
@@ -280,7 +281,13 @@ kubectl get pgpolicies policy1 -o json
 
 Policies get automatically applied to any cluster you create if 
 you define in your *.pgo.yaml* configuration a CLUSTER.POLICIES
-value.
+value.  Policy SQL is executed as the *postgres* user.  
+
+To view policies:
+....
+pgo show policy all
+....
+
 
 == Apply Policy
 
@@ -302,3 +309,22 @@ There is a bash completion file that is included for users to try, this
 is located in the repo at *example/pgo-bash-completion*.  To use it, copy
 that file to /etc/bash_completion.d/pgo, and log out and back into your
 bash shell to try it out.   
+
+== Label Selectors on Cluster Listing
+
+You can create and assign a label to a *pgcluster* TPR object
+as follows:
+....
+kubectl label pgclusters mycluster name=thebest
+kubectl get pgclusters --show-lables
+....
+
+This allows the user to define any user metadata they desire
+for any set of *pgcluster* objects.  You can then select a
+subset of *pgcluster* objects using a command like this:
+....
+pgo show cluster all --selector=name=thebest
+....
+
+This gives user another way to query the clusters using their
+own metadata labeling scheme applied to *pgcluster* objects.

@@ -23,17 +23,30 @@ import (
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/labels"
 
 	"k8s.io/client-go/pkg/api/v1"
 )
 
 func showCluster(args []string) {
+	var err error
 	//get a list of all clusters
 	clusterList := tpr.PgClusterList{}
-	err := Tprclient.Get().
+	myselector := labels.Everything()
+	log.Info("selector is " + Labelselector)
+	if Labelselector != "" {
+		myselector, err = labels.Parse(Labelselector)
+		if err != nil {
+			log.Error("could not parse --selector value " + err.Error())
+			return
+		}
+	}
+	err = Tprclient.Get().
 		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
-		Do().Into(&clusterList)
+		LabelsSelectorParam(myselector).
+		Do().
+		Into(&clusterList)
 	if err != nil {
 		log.Error("error getting list of clusters" + err.Error())
 		return

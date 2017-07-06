@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/operator/util"
@@ -56,7 +55,7 @@ func showPolicy(args []string) {
 				itemFound = true
 				log.Debug("listing policy " + arg)
 				fmt.Println("policy : " + policy.Spec.Name)
-				fmt.Println(TREE_BRANCH + "repo : " + policy.Spec.Repo)
+				fmt.Println(TREE_BRANCH + "url : " + policy.Spec.Url)
 				fmt.Println(TREE_BRANCH + "status : " + policy.Spec.Status)
 				fmt.Println(TREE_TRUNK + "sql : " + policy.Spec.Sql)
 			}
@@ -120,13 +119,10 @@ func getPolicyParams(name string) (*tpr.PgPolicy, error) {
 	var err error
 
 	spec := tpr.PgPolicySpec{}
-	spec.Sql = viper.GetString("CLUSTER.POLICY")
-	spec.Repo = viper.GetString("CLUSTER.POLICY_REPO")
 	spec.Name = name
 
-	//pass along command line flags for a restore
-	if PolicyRepo != "" {
-		spec.Repo = PolicyRepo
+	if PolicyURL != "" {
+		spec.Url = PolicyURL
 	}
 	if PolicyFile != "" {
 		spec.Sql, err = getPolicyString(PolicyFile)
@@ -203,8 +199,8 @@ func validateConfigPolicies() error {
 		configPolicies = PoliciesFlag
 	}
 	if configPolicies == "" {
-		log.Error("policies are not specified")
-		return errors.New("policies are not specified")
+		log.Debug("no policies are specified")
+		return err
 	}
 
 	policies := strings.Split(configPolicies, ",")

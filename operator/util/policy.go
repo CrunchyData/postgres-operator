@@ -67,8 +67,8 @@ func GetPolicySQL(tprclient *rest.RESTClient, namespace, policyName string) (str
 		Do().
 		Into(&p)
 	if err == nil {
-		if p.Spec.Repo != "" {
-			return readSQLFromURL(p.Spec.Repo)
+		if p.Spec.Url != "" {
+			return readSQLFromURL(p.Spec.Url)
 		} else {
 			return p.Spec.Sql, err
 		}

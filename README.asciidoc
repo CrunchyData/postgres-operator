@@ -114,6 +114,7 @@ pgo clone mycluster --name=myclone
 [source,bash]
 ----
 pgo create policy policy1 --in-file=./policy1.sql
+pgo create policy policy1 --url=https://someurl/policy1.sql
 ----
 
 .Apply a Policy

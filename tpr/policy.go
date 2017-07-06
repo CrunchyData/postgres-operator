@@ -29,7 +29,7 @@ const POLICY_RESOURCE = "pgpolicies"
 
 type PgPolicySpec struct {
 	Name   string `json:"name"`
-	Repo   string `json:"repo"`
+	Url    string `json:"url"`
 	Sql    string `json:"sql"`
 	Status string `json:"status"`
 }
