@@ -41,10 +41,10 @@ are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies]
 == Requirements
 
 * Kubernetes 1.5.3+
-* Openshift Origin 1.5.1+ or Openshift Container Platform 3.5
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
+* For OpenShift deployments, Openshift Origin 1.5.1+ or Openshift Container Platform 3.5
 
 [#Build and Setup Instructions]
 == Build and Setup Instructions
