@@ -16,7 +16,7 @@ run:
 pgo:	check-go-vars
 	cd client && go build -o $(GOBIN)/pgo pgo.go
 clean:	check-go-vars
-	echo "rm -rf $(GOPATH)/pkg/* $(GOBIN)/*"
+	rm -rf $(GOPATH)/pkg/* $(GOBIN)/*
 	go get -u github.com/FiloSottile/gvt
 	gvt restore
 operatorimage:	check-go-vars
