@@ -33,7 +33,7 @@ func showCluster(args []string) {
 	//get a list of all clusters
 	clusterList := tpr.PgClusterList{}
 	myselector := labels.Everything()
-	log.Info("selector is " + Labelselector)
+	log.Debug("selector is " + Labelselector)
 	if Labelselector != "" {
 		myselector, err = labels.Parse(Labelselector)
 		if err != nil {
