@@ -31,9 +31,10 @@ var PVCRoot string
 var ShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "show a description of a cluster",
-	Long: `show allows you to show the details of a backup, pvc, or cluster.
+	Long: `show allows you to show the details of a policy, backup, pvc, or cluster.
 For example:
 
+	pgo show policy policy1
 	pgo show pvc mypvc
 	pgo show backup mycluster
 	pgo show cluster mycluster`,
@@ -43,12 +44,14 @@ For example:
 Valid resource types include:
 	* cluster
 	* pvc
+	* policy
 	* upgrade
 	* backup`)
 		} else {
 			switch args[0] {
 			case "cluster":
 			case "pvc":
+			case "policy":
 			case "upgrade":
 			case "backup":
 				break
@@ -57,6 +60,7 @@ Valid resource types include:
 Valid resource types include:
 	* cluster
 	* pvc
+	* policy
 	* upgrade
 	* backup`)
 			}
@@ -69,6 +73,7 @@ func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
+	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 
@@ -88,6 +93,21 @@ func init() {
 
 	ShowBackupCmd.Flags().BoolVarP(&ShowPVC, "show-pvc", "p", false, "Show backup archive PVC listing ")
 
+}
+
+var ShowPolicyCmd = &cobra.Command{
+	Use:   "policy",
+	Short: "Show policy information",
+	Long: `Show policy information. For example:
+
+				pgo show policy policy1`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("policy name(s) required for this command")
+		} else {
+			showPolicy(args)
+		}
+	},
 }
 
 var ShowPVCCmd = &cobra.Command{

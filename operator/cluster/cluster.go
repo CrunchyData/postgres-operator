@@ -41,6 +41,7 @@ type ClusterStrategy interface {
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *tpr.PgCluster, *tpr.PgUpgrade, string) error
 	PrepareClone(*kubernetes.Clientset, *rest.RESTClient, string, *tpr.PgCluster, string) error
+	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
 }
 
 type ServiceTemplateFields struct {
@@ -82,7 +83,7 @@ func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan 
 
 	eventchan := make(chan *tpr.PgCluster)
 
-	source := cache.NewListWatchFromClient(client, "pgclusters", namespace, fields.Everything())
+	source := cache.NewListWatchFromClient(client, tpr.CLUSTER_RESOURCE, namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
 		cluster := obj.(*tpr.PgCluster)
@@ -183,7 +184,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 
 	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
 
-	err = util.Patch(client, "/spec/status", tpr.UPGRADE_COMPLETED_STATUS, "pgclusters", cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/status", tpr.UPGRADE_COMPLETED_STATUS, tpr.CLUSTER_RESOURCE, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
@@ -195,7 +196,7 @@ func setFullVersion(tprclient *rest.RESTClient, cl *tpr.PgCluster, namespace str
 	fullVersion := util.GetFullVersion(cl.Spec.CCP_IMAGE_TAG)
 
 	//update the tpr
-	err := util.Patch(tprclient, "/spec/postgresfullversion", fullVersion, "pgclusters", cl.Spec.Name, namespace)
+	err := util.Patch(tprclient, "/spec/postgresfullversion", fullVersion, tpr.CLUSTER_RESOURCE, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in version patch " + err.Error())
 	}
@@ -220,7 +221,7 @@ func deleteCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 	util.DeleteDatabaseSecrets(clientset, cl.Spec.Name, namespace)
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 	err := client.Delete().
-		Resource("pgupgrades").
+		Resource(tpr.UPGRADE_RESOURCE).
 		Namespace(namespace).
 		Name(cl.Spec.Name).
 		Do().
@@ -256,7 +257,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 	if upgrade.Spec.UPGRADE_TYPE == "minor" {
 		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
 		if err == nil {
-			err = util.Patch(client, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+			err = util.Patch(client, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, tpr.UPGRADE_RESOURCE, upgrade.Spec.Name, namespace)
 		}
 	} else if upgrade.Spec.UPGRADE_TYPE == "major" {
 		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
@@ -267,7 +268,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 	if err == nil {
 		log.Info("updating the pg version after cluster upgrade")
 		fullVersion := util.GetFullVersion(upgrade.Spec.CCP_IMAGE_TAG)
-		err = util.Patch(client, "/spec/postgresfullversion", fullVersion, "pgclusters", upgrade.Spec.Name, namespace)
+		err = util.Patch(client, "/spec/postgresfullversion", fullVersion, tpr.CLUSTER_RESOURCE, upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err.Error())
 		}

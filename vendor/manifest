@@ -2,6 +2,15 @@
 	"version": 0,
 	"dependencies": [
 		{
+			"importpath": "cloud.google.com/go/compute/metadata",
+			"repository": "https://code.googlesource.com/gocloud",
+			"vcs": "git",
+			"revision": "558b56dfa3c56acc26fef35cb07f97df0bb18b39",
+			"branch": "master",
+			"path": "/compute/metadata",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/Sirupsen/logrus",
 			"repository": "https://github.com/Sirupsen/logrus",
 			"vcs": "git",
@@ -1881,6 +1890,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/evanphx/json-patch",
+			"repository": "https://github.com/evanphx/json-patch",
+			"vcs": "git",
+			"revision": "c3740aa533c8ac9463b1428e3f964f66733135af",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/fatih/color",
 			"repository": "https://github.com/fatih/color",
 			"vcs": "git",
@@ -1915,6 +1932,23 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/google/go-github",
+			"repository": "https://github.com/google/go-github",
+			"vcs": "git",
+			"revision": "4c4aea2b66bd1d26305d40a307bfa377d24f9c8c",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/google/go-querystring/query",
+			"repository": "https://github.com/google/go-querystring",
+			"vcs": "git",
+			"revision": "53e6ce116135b80d037921a7fdd5138cf32d7a8a",
+			"branch": "master",
+			"path": "/query",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/gorilla/websocket",
 			"repository": "https://github.com/gorilla/websocket",
 			"vcs": "git",
@@ -1935,6 +1969,14 @@
 			"repository": "https://github.com/inconshreveable/mousetrap",
 			"vcs": "git",
 			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jessevdk/go-flags",
+			"repository": "https://github.com/jessevdk/go-flags",
+			"vcs": "git",
+			"revision": "5695738f733662da3e9afc2283bba6f3c879002d",
 			"branch": "master",
 			"notests": true
 		},
@@ -2146,6 +2188,14 @@
 			"revision": "d379faa25cbdc04d653984913a2ceb43b0bc46d7",
 			"branch": "master",
 			"path": "/context",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/oauth2",
+			"repository": "https://go.googlesource.com/oauth2",
+			"vcs": "git",
+			"revision": "cce311a261e6fcf29de72ca96827bdb0b7d9c9e6",
+			"branch": "master",
 			"notests": true
 		},
 		{

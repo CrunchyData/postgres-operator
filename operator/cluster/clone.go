@@ -45,7 +45,7 @@ func ProcessClone(clientset *kubernetes.Clientset, client *rest.RESTClient, stop
 
 	eventchan := make(chan *tpr.PgClone)
 
-	source := cache.NewListWatchFromClient(client, "pgclones", namespace, fields.Everything())
+	source := cache.NewListWatchFromClient(client, tpr.CLONE_RESOURCE, namespace, fields.Everything())
 
 	createAddHandler := func(obj interface{}) {
 		clone := obj.(*tpr.PgClone)
@@ -99,7 +99,7 @@ func addClone(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, clone
 	//lookup the cluster
 	cl := tpr.PgCluster{}
 	err := tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(namespace).
 		Name(clone.Spec.ClusterName).
 		Do().
@@ -177,11 +177,9 @@ func finishClone(config *rest.Config, clientset *kubernetes.Clientset, tprclient
 	cmd := []string{"touch", "/tmp/pg-failover-trigger"}
 	err = util.Exec(config, namespace, podname, containername, cmd)
 
-	//create the pgcluster tpr which creates the services and replica dep
-
 	clone := tpr.PgClone{}
 	err = tprclient.Get().
-		Resource("pgclones").
+		Resource(tpr.CLONE_RESOURCE).
 		Namespace(namespace).
 		Name(dep.Name).
 		Do().
@@ -196,7 +194,7 @@ func finishClone(config *rest.Config, clientset *kubernetes.Clientset, tprclient
 
 	cluster := tpr.PgCluster{}
 	err = tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(namespace).
 		Name(clone.Spec.ClusterName).
 		Do().
@@ -225,7 +223,7 @@ func finishClone(config *rest.Config, clientset *kubernetes.Clientset, tprclient
 	result := tpr.PgCluster{}
 
 	err = tprclient.Post().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(namespace).
 		Body(newcluster).
 		Do().Into(&result)
@@ -235,7 +233,7 @@ func finishClone(config *rest.Config, clientset *kubernetes.Clientset, tprclient
 
 	//delete the pgclone after the cloning
 	err = tprclient.Delete().
-		Resource("pgclones").
+		Resource(tpr.CLONE_RESOURCE).
 		Namespace(namespace).
 		Name(dep.Name).
 		Do().

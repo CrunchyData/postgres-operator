@@ -85,7 +85,7 @@ func showUpgrade(args []string) {
 		if arg == "all" {
 			tprs := tpr.PgUpgradeList{}
 			err = Tprclient.Get().
-				Resource("pgupgrades").
+				Resource(tpr.UPGRADE_RESOURCE).
 				Namespace(Namespace).
 				Do().Into(&tprs)
 			if err != nil {
@@ -100,7 +100,7 @@ func showUpgrade(args []string) {
 			var upgrade tpr.PgUpgrade
 
 			err = Tprclient.Get().
-				Resource("pgupgrades").
+				Resource(tpr.UPGRADE_RESOURCE).
 				Namespace(Namespace).
 				Name(arg).
 				Do().Into(&upgrade)
@@ -169,7 +169,7 @@ func createUpgrade(args []string) {
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource("pgupgrades").
+			Resource(tpr.UPGRADE_RESOURCE).
 			Namespace(Namespace).
 			Name(arg).
 			Do().
@@ -191,7 +191,7 @@ func createUpgrade(args []string) {
 		newInstance, err = getUpgradeParams(arg)
 		if err == nil {
 			err = Tprclient.Post().
-				Resource("pgupgrades").
+				Resource(tpr.UPGRADE_RESOURCE).
 				Namespace(Namespace).
 				Body(newInstance).
 				Do().Into(&result)
@@ -210,7 +210,7 @@ func deleteUpgrade(args []string) {
 	log.Debugf("deleteUpgrade called %v\n", args)
 	var err error
 	upgradeList := tpr.PgUpgradeList{}
-	err = Tprclient.Get().Resource("pgupgrades").Do().Into(&upgradeList)
+	err = Tprclient.Get().Resource(tpr.UPGRADE_RESOURCE).Do().Into(&upgradeList)
 	if err != nil {
 		log.Error("error getting upgrade list")
 		log.Error(err.Error())
@@ -224,7 +224,7 @@ func deleteUpgrade(args []string) {
 			if arg == "all" || upgrade.Spec.Name == arg {
 				upgradeFound = true
 				err = Tprclient.Delete().
-					Resource("pgupgrades").
+					Resource(tpr.UPGRADE_RESOURCE).
 					Namespace(Namespace).
 					Name(upgrade.Spec.Name).
 					Do().
@@ -272,7 +272,7 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 
 	cluster := tpr.PgCluster{}
 	err = Tprclient.Get().
-		Resource("pgclusters").
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
 		Name(name).
 		Do().

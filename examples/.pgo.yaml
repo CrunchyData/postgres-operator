@@ -12,10 +12,8 @@ CLUSTER:
   PVC_NAME:  crunchy-pvc
   PVC_SIZE:  100M
   PVC_ACCESS_MODE:  ReadWriteMany
-  FSGROUP:  26
-  SUPPLEMENTALGROUPS:  65534
   STRATEGY:  1
-  REPLICAS:  2
+  REPLICAS:  0
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.3.2

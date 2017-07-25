@@ -20,5 +20,6 @@ $CO_CMD delete thirdpartyresources pg-backup.crunchydata.com \
 	pg-clone.crunchydata.com \
 	pg-cluster.crunchydata.com  \
 	pg-policy.crunchydata.com   \
+	pg-policylog.crunchydata.com   \
 	pg-upgrade.crunchydata.com
 

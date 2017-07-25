@@ -22,16 +22,31 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/pkg/api"
 	kerrors "k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/pkg/labels"
+
 	"k8s.io/client-go/pkg/api/v1"
 )
 
 func showCluster(args []string) {
+	var err error
 	//get a list of all clusters
 	clusterList := tpr.PgClusterList{}
-	err := Tprclient.Get().
-		Resource("pgclusters").
+	myselector := labels.Everything()
+	log.Debug("selector is " + Labelselector)
+	if Labelselector != "" {
+		myselector, err = labels.Parse(Labelselector)
+		if err != nil {
+			log.Error("could not parse --selector value " + err.Error())
+			return
+		}
+	}
+	err = Tprclient.Get().
+		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
-		Do().Into(&clusterList)
+		LabelsSelectorParam(myselector).
+		Do().
+		Into(&clusterList)
 	if err != nil {
 		log.Error("error getting list of clusters" + err.Error())
 		return
@@ -97,10 +112,21 @@ func listDeployments(name string) {
 
 	for _, d := range deployments.Items {
 		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
-		//fmt.Printf("labels : %v\n", d.ObjectMeta)
+	}
+	if len(deployments.Items) > 0 {
+		printPolicies(&deployments.Items[0])
 	}
 
 }
+func printPolicies(d *v1beta1.Deployment) {
+	labels := d.ObjectMeta.Labels
+	for k, v := range labels {
+		if v == "pgpolicy" {
+			fmt.Printf("%spolicy: %s\n", TREE_BRANCH, k)
+		}
+	}
+}
+
 func listPods(name string) {
 	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	pods, err := Clientset.Core().Pods(Namespace).List(lo)
@@ -139,7 +165,7 @@ func createCluster(args []string) {
 
 		// error if it already exists
 		err = Tprclient.Get().
-			Resource("pgclusters").
+			Resource(tpr.CLUSTER_RESOURCE).
 			Namespace(Namespace).
 			Name(arg).
 			Do().
@@ -166,7 +192,7 @@ func createCluster(args []string) {
 		newInstance := getClusterParams(arg)
 
 		err = Tprclient.Post().
-			Resource("pgclusters").
+			Resource(tpr.CLUSTER_RESOURCE).
 			Namespace(Namespace).
 			Body(newInstance).
 			Do().Into(&result)
@@ -197,6 +223,11 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.BACKUP_PVC_NAME = ""
 	spec.PG_MASTER_HOST = name
 	spec.PG_MASTER_USER = "master"
+	if PoliciesFlag == "" {
+		spec.Policies = viper.GetString("CLUSTER.POLICIES")
+	} else {
+		spec.Policies = PoliciesFlag
+	}
 	spec.PG_MASTER_PASSWORD = viper.GetString("CLUSTER.PG_MASTER_PASSWORD")
 	spec.PG_USER = "testuser"
 	spec.PG_PASSWORD = viper.GetString("CLUSTER.PG_PASSWORD")
@@ -270,7 +301,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 func deleteCluster(args []string) {
 	// Fetch a list of our cluster TPRs
 	clusterList := tpr.PgClusterList{}
-	err := Tprclient.Get().Resource("pgclusters").Do().Into(&clusterList)
+	err := Tprclient.Get().Resource(tpr.CLUSTER_RESOURCE).Do().Into(&clusterList)
 	if err != nil {
 		log.Error("error getting cluster list" + err.Error())
 		return
@@ -285,7 +316,7 @@ func deleteCluster(args []string) {
 			if arg == "all" || arg == cluster.Spec.Name {
 				clusterFound = true
 				err = Tprclient.Delete().
-					Resource("pgclusters").
+					Resource(tpr.CLUSTER_RESOURCE).
 					Namespace(Namespace).
 					Name(cluster.Spec.Name).
 					Do().

@@ -18,6 +18,8 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	//jsonpatch "github.com/evanphx/json-patch"
+	//kjson "k8s.io/client-go/pkg/util/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
@@ -26,6 +28,8 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
+	//"k8s.io/client-go/pkg/api/meta"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 )
 
@@ -185,3 +189,63 @@ func GetLabels(name, clustername string, clone, replica bool) string {
 	output += fmt.Sprintf("\"pg-cluster\": \"%s\"\n", clustername)
 	return output
 }
+
+/**
+func UpdateDeploymentLabels(clientset *kubernetes.Clientset, depName, namespace string, newLabels map[string]string) error {
+
+	var err error
+	var deployment *v1beta1.Deployment
+
+	//get the deployment
+	deployment, err = clientset.Deployments(namespace).Get(depName)
+	if err != nil {
+		return err
+	}
+	log.Debug("got the deployment" + deployment.Name)
+
+	var patchBytes, newData, origData []byte
+	origData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	accessor, err2 := meta.Accessor(deployment)
+	if err2 != nil {
+		return err2
+	}
+
+	objLabels := accessor.GetLabels()
+	if objLabels == nil {
+		objLabels = make(map[string]string)
+	}
+
+	//update the deployment labels
+	for key, value := range newLabels {
+		objLabels[key] = value
+	}
+	log.Debugf("updated labels are %v\n", objLabels)
+
+	accessor.SetLabels(objLabels)
+
+	newData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	createdPatch := err == nil
+	if err != nil {
+		return err
+	}
+	if createdPatch {
+		log.Debug("created merge patch")
+	}
+
+	_, err = clientset.Deployments(namespace).Patch(depName, api.MergePatchType, patchBytes, "")
+	if err != nil {
+		log.Debug("error patching deployment " + err.Error())
+	}
+	return err
+
+}
+*/

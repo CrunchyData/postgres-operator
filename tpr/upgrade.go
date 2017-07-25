@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
+const UPGRADE_RESOURCE = "pgupgrades"
 const UPGRADE_COMPLETED_STATUS = "completed"
 const UPGRADE_SUBMITTED_STATUS = "submitted"
 

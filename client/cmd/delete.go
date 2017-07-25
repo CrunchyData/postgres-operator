@@ -23,10 +23,11 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a database, cluster, backup, or upgrade",
-	Long: `delete allows you to delete a database, cluster, backup, or upgrade
+	Short: "Delete a policy, database, cluster, backup, or upgrade",
+	Long: `delete allows you to delete a policy, database, cluster, backup, or upgrade
 For example:
 
+pgo delete policy mypolicy
 pgo delete database mydatabase
 pgo delete cluster mycluster
 pgo delete backup mycluster
@@ -35,12 +36,14 @@ pgo delete upgrade mycluster`,
 
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
+	* policy
 	* database
 	* cluster
 	* backup
 	* upgrade`)
 		} else {
 			switch args[0] {
+			case "policy":
 			case "database":
 			case "cluster":
 			case "backup":
@@ -48,6 +51,7 @@ pgo delete upgrade mycluster`,
 				break
 			default:
 				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
+	* policy
 	* database
 	* cluster
 	* backup
@@ -60,19 +64,10 @@ pgo delete upgrade mycluster`,
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
+	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
 
@@ -114,6 +109,20 @@ var deleteClusterCmd = &cobra.Command{
 			log.Error("a cluster name is required for this command")
 		} else {
 			deleteCluster(args)
+		}
+	},
+}
+
+var deletePolicyCmd = &cobra.Command{
+	Use:   "policy",
+	Short: "delete a policy",
+	Long: `delete a policy. For example:
+	pgo delete policy mypolicy`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("a policy name is required for this command")
+		} else {
+			deletePolicy(args)
 		}
 	},
 }

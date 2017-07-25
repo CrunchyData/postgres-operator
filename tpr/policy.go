@@ -14,7 +14,7 @@
 */
 
 // Package tpr defines the ThirdPartyResources used within
-// the crunchy operator, namely the PgDatabase and PgClone
+// the crunchy operator, namely the PgDatabase and PgCluster
 // types.
 package tpr
 
@@ -25,64 +25,66 @@ import (
 	"k8s.io/client-go/pkg/api/unversioned"
 )
 
-const CLONE_RESOURCE = "pgclones"
+const POLICY_RESOURCE = "pgpolicies"
 
-type PgCloneSpec struct {
-	Name        string `json:"name"`
-	ClusterName string `json:"clustername"`
-	Status      string `json:"status"`
+type PgPolicySpec struct {
+	Name   string `json:"name"`
+	Url    string `json:"url"`
+	Sql    string `json:"sql"`
+	Status string `json:"status"`
 }
 
-type PgClone struct {
+type PgPolicy struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             api.ObjectMeta `json:"metadata"`
 
-	Spec PgCloneSpec `json:"spec"`
+	Spec PgPolicySpec `json:"spec"`
 }
 
-type PgCloneList struct {
+type PgPolicyList struct {
 	unversioned.TypeMeta `json:",inline"`
 	Metadata             unversioned.ListMeta `json:"metadata"`
 
-	Items []PgClone `json:"items"`
+	Items []PgPolicy `json:"items"`
 }
 
-func (e *PgClone) GetObjectKind() unversioned.ObjectKind {
+func (e *PgPolicy) GetObjectKind() unversioned.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgClone) GetObjectMeta() meta.Object {
+func (e *PgPolicy) GetObjectMeta() meta.Object {
 	return &e.Metadata
 }
 
-func (el *PgCloneList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgPolicyList) GetObjectKind() unversioned.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *PgCloneList) GetListMeta() unversioned.List {
+func (el *PgPolicyList) GetListMeta() unversioned.List {
 	return &el.Metadata
 }
 
-type PgCloneListCopy PgCloneList
-type PgCloneCopy PgClone
+type PgPolicyListCopy PgPolicyList
+type PgPolicyCopy PgPolicy
 
-func (e *PgClone) UnmarshalJSON(data []byte) error {
-	tmp := PgCloneCopy{}
+func (e *PgPolicy) UnmarshalJSON(data []byte) error {
+	tmp := PgPolicyCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := PgClone(tmp)
+	tmp2 := PgPolicy(tmp)
 	*e = tmp2
 	return nil
 }
-func (el *PgCloneList) UnmarshalJSON(data []byte) error {
-	tmp := PgCloneListCopy{}
+
+func (el *PgPolicyList) UnmarshalJSON(data []byte) error {
+	tmp := PgPolicyListCopy{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	tmp2 := PgCloneList(tmp)
+	tmp2 := PgPolicyList(tmp)
 	*el = tmp2
 	return nil
 }
