@@ -123,24 +123,24 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	log.Info("created with Name=" + job.Spec.Name + " in namespace " + namespace)
 
 	//create the PVC if necessary
-	if job.Spec.PVC_NAME == "" {
-		job.Spec.PVC_NAME = job.Spec.Name + "-backup-pvc"
-		err = pvc.Create(clientset, job.Spec.PVC_NAME, job.Spec.PVC_ACCESS_MODE, job.Spec.PVC_SIZE, namespace)
+	if job.Spec.StorageSpec.PvcName == "" {
+		job.Spec.StorageSpec.PvcName = job.Spec.Name + "-backup-pvc"
+		err = pvc.Create(clientset, job.Spec.StorageSpec.PvcName, job.Spec.StorageSpec.PvcAccessMode, job.Spec.StorageSpec.PvcSize, job.Spec.StorageSpec.StorageType, job.Spec.StorageSpec.StorageClass, namespace)
 		if err != nil {
 			log.Error(err.Error())
 		} else {
-			log.Info("created backup PVC =" + job.Spec.PVC_NAME + " in namespace " + namespace)
+			log.Info("created backup PVC =" + job.Spec.StorageSpec.PvcName + " in namespace " + namespace)
 		}
 
 	}
 
 	//update the pvc name in the TPR
-	err = util.Patch(client, "/spec/pvcname", job.Spec.PVC_NAME, "pgbackups", job.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/pvcname", job.Spec.StorageSpec.PvcName, "pgbackups", job.Spec.Name, namespace)
 
 	//create the job -
 	jobFields := JobTemplateFields{
 		Name:          job.Spec.Name,
-		PVC_NAME:      job.Spec.PVC_NAME,
+		PVC_NAME:      job.Spec.StorageSpec.PvcName,
 		CCP_IMAGE_TAG: job.Spec.CCP_IMAGE_TAG,
 		BACKUP_HOST:   job.Spec.BACKUP_HOST,
 		BACKUP_USER:   job.Spec.BACKUP_USER,

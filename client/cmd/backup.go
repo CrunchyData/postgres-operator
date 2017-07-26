@@ -141,9 +141,9 @@ func printBackupTPR(result *tpr.PgBackup) {
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Name:\t"+result.Spec.PVC_NAME)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Access Mode:\t"+result.Spec.PVC_ACCESS_MODE)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Size:\t\t"+result.Spec.PVC_SIZE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Name:\t"+result.Spec.StorageSpec.PvcName)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Access Mode:\t"+result.Spec.StorageSpec.PvcAccessMode)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Size:\t\t"+result.Spec.StorageSpec.PvcSize)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "CCP_IMAGE_TAG:\t"+result.Spec.CCP_IMAGE_TAG)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Status:\t"+result.Spec.BACKUP_STATUS)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Host:\t"+result.Spec.BACKUP_HOST)
@@ -247,11 +247,13 @@ func deleteBackup(args []string) {
 func getBackupParams(name string) (*tpr.PgBackup, error) {
 	var newInstance *tpr.PgBackup
 
+	storageSpec := tpr.PgStorageSpec{}
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
-	spec.PVC_NAME = viper.GetString("PVC_NAME")
-	spec.PVC_ACCESS_MODE = viper.GetString("CLUSTER.PVC_ACCESS_MODE")
-	spec.PVC_SIZE = viper.GetString("CLUSTER.PVC_SIZE")
+	spec.StorageSpec = storageSpec
+	spec.StorageSpec.PvcName = viper.GetString("MASTER_STORAGE.PVC_NAME")
+	spec.StorageSpec.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
+	spec.StorageSpec.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
 	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
 	spec.BACKUP_STATUS = "initial"
 	spec.BACKUP_HOST = "basic"

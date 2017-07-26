@@ -207,9 +207,9 @@ func createCluster(args []string) {
 func getClusterParams(name string) *tpr.PgCluster {
 
 	spec := tpr.PgClusterSpec{}
-	masterStorageSpec := tpr.PgClusterStorageSpec{}
+	masterStorageSpec := tpr.PgStorageSpec{}
 	spec.MasterStorage = masterStorageSpec
-	replicaStorageSpec := tpr.PgClusterStorageSpec{}
+	replicaStorageSpec := tpr.PgStorageSpec{}
 	spec.ReplicaStorage = replicaStorageSpec
 	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
 	if CCP_IMAGE_TAG != "" {

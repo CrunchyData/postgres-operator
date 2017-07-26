@@ -23,3 +23,11 @@ import ()
 const PGROOT_SECRET_SUFFIX = "-pgroot-secret"
 const PGUSER_SECRET_SUFFIX = "-pguser-secret"
 const PGMASTER_SECRET_SUFFIX = "-pgmaster-secret"
+
+type PgStorageSpec struct {
+	PvcName       string `json:"pvcname"`
+	StorageClass  string `json:"storageclass"`
+	PvcAccessMode string `json:"pvcaccessmode"`
+	PvcSize       string `json:"pvcsize"`
+	StorageType   string `json:"storagetype"`
+}

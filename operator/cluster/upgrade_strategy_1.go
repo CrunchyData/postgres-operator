@@ -168,7 +168,7 @@ func (r ClusterStrategy1) MajorUpgrade(clientset *kubernetes.Clientset, tprclien
 			log.Info("pvc " + upgrade.Spec.NEW_PVC_NAME + " already exists, will not create")
 		} else {
 			log.Info("creating pvc " + upgrade.Spec.NEW_PVC_NAME)
-			err = pvc.Create(clientset, upgrade.Spec.NEW_PVC_NAME, upgrade.Spec.PVC_ACCESS_MODE, upgrade.Spec.PVC_SIZE, namespace)
+			err = pvc.Create(clientset, upgrade.Spec.NEW_PVC_NAME, upgrade.Spec.StorageSpec.PvcAccessMode, upgrade.Spec.StorageSpec.PvcSize, upgrade.Spec.StorageSpec.StorageType, upgrade.Spec.StorageSpec.StorageClass, namespace)
 			if err != nil {
 				log.Error("error in pvc create " + err.Error())
 				return err

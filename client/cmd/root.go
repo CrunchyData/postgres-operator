@@ -119,6 +119,12 @@ func initConfig() {
 	}
 
 	log.Debug("namespace is " + viper.GetString("NAMESPACE"))
+	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "dynamic" ||
+		viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") == "dynamic" {
+		log.Error("STORAGE_TYPE dynamic is not supported yet")
+		os.Exit(2)
+	}
+
 	ConnectToKube()
 
 	/**

@@ -39,6 +39,7 @@ fi
 $CO_CMD create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
+	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
 envsubst < $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -

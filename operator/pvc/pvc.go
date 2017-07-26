@@ -28,18 +28,20 @@ import (
 )
 
 const PVC_PATH = "/operator-conf/pvc.json"
+const PVC_SC_PATH = "/operator-conf/pvc-storageclass.json"
 
-var PVCTemplate *template.Template
+var PVCTemplate, PVCStorageClassTemplate *template.Template
 
 type PVCTemplateFields struct {
 	PVC_NAME        string
 	PVC_ACCESS_MODE string
 	PVC_SIZE        string
+	STORAGE_CLASS   string
 }
 
 func init() {
 	var err error
-	var buf []byte
+	var buf, buf2 []byte
 
 	buf, err = ioutil.ReadFile(PVC_PATH)
 	if err != nil {
@@ -47,9 +49,16 @@ func init() {
 		panic(err.Error())
 	}
 	PVCTemplate = template.Must(template.New("pvc template").Parse(string(buf)))
+
+	buf2, err = ioutil.ReadFile(PVC_SC_PATH)
+	if err != nil {
+		log.Error("error in pvc storage class init" + err.Error())
+		panic(err.Error())
+	}
+	PVCStorageClassTemplate = template.Must(template.New("pvc sc template").Parse(string(buf2)))
 }
 
-func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string, namespace string) error {
+func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string, storageType string, storageClass string, namespace string) error {
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
@@ -57,10 +66,16 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 	pvcFields := PVCTemplateFields{
 		PVC_NAME:        name,
 		PVC_ACCESS_MODE: accessMode,
+		STORAGE_CLASS:   storageClass,
 		PVC_SIZE:        pvcSize,
 	}
 
-	err = PVCTemplate.Execute(&doc2, pvcFields)
+	if storageType == "dynamic" {
+		log.Debug("using dynamic PVC template")
+		err = PVCStorageClassTemplate.Execute(&doc2, pvcFields)
+	} else {
+		err = PVCTemplate.Execute(&doc2, pvcFields)
+	}
 	if err != nil {
 		log.Error("error in pvc create exec" + err.Error())
 		return err
@@ -83,6 +98,7 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 		return err
 	}
 	log.Debug("created PVC " + result.Name + " in namespace " + namespace)
+	//TODO replace sleep with proper wait
 	time.Sleep(3000 * time.Millisecond)
 	return nil
 

@@ -124,8 +124,8 @@ func showUpgradeItem(upgrade *tpr.PgUpgrade) {
 	fmt.Printf("%s%s\n", TREE_BRANCH, "upgrade_status : "+upgrade.Spec.UPGRADE_STATUS)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "resource_type : "+upgrade.Spec.RESOURCE_TYPE)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "upgrade_type : "+upgrade.Spec.UPGRADE_TYPE)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_access_mode : "+upgrade.Spec.PVC_ACCESS_MODE)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_size : "+upgrade.Spec.PVC_SIZE)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_access_mode : "+upgrade.Spec.StorageSpec.PvcAccessMode)
+	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_size : "+upgrade.Spec.StorageSpec.PvcSize)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "ccp_image_tag : "+upgrade.Spec.CCP_IMAGE_TAG)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "old_database_name : "+upgrade.Spec.OLD_DATABASE_NAME)
 	fmt.Printf("%s%s\n", TREE_BRANCH, "new_database_name : "+upgrade.Spec.NEW_DATABASE_NAME)
@@ -254,16 +254,18 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		Name:              name,
 		RESOURCE_TYPE:     "cluster",
 		UPGRADE_TYPE:      UpgradeType,
-		PVC_ACCESS_MODE:   viper.GetString("CLUSTER.PVC_ACCESS_MODE"),
-		PVC_SIZE:          viper.GetString("CLUSTER.PVC_SIZE"),
 		CCP_IMAGE_TAG:     viper.GetString("CLUSTER.CCP_IMAGE_TAG"),
+		StorageSpec:       tpr.PgStorageSpec{},
 		OLD_DATABASE_NAME: "basic",
 		NEW_DATABASE_NAME: "master",
 		OLD_VERSION:       "9.5",
 		NEW_VERSION:       "9.6",
-		OLD_PVC_NAME:      viper.GetString("PVC_NAME"),
-		NEW_PVC_NAME:      viper.GetString("PVC_NAME"),
+		OLD_PVC_NAME:      viper.GetString("MASTER_STORAGE.PVC_NAME"),
+		NEW_PVC_NAME:      viper.GetString("MASTER_STORAGE.PVC_NAME"),
 	}
+
+	spec.StorageSpec.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
+	spec.StorageSpec.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
 
 	if CCP_IMAGE_TAG != "" {
 		log.Debug("using CCP_IMAGE_TAG from command line " + CCP_IMAGE_TAG)

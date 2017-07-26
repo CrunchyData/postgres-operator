@@ -30,20 +30,19 @@ const UPGRADE_COMPLETED_STATUS = "completed"
 const UPGRADE_SUBMITTED_STATUS = "submitted"
 
 type PgUpgradeSpec struct {
-	Name              string `json:"name"`
-	RESOURCE_TYPE     string `json:"resourcetype"`
-	UPGRADE_TYPE      string `json:"upgradetype"`
-	UPGRADE_STATUS    string `json:"upgradestatus"`
-	PVC_ACCESS_MODE   string `json:"pvcaccessmode"`
-	PVC_SIZE          string `json:"pvcsize"`
-	CCP_IMAGE_TAG     string `json:"ccpimagetag"`
-	OLD_DATABASE_NAME string `json:"olddatabasename"`
-	NEW_DATABASE_NAME string `json:"newdatabasename"`
-	OLD_VERSION       string `json:"oldversion"`
-	NEW_VERSION       string `json:"newversion"`
-	OLD_PVC_NAME      string `json:"oldpvcname"`
-	NEW_PVC_NAME      string `json:"newpvcname"`
-	BACKUP_PVC_NAME   string `json:"backuppvcname"`
+	Name              string        `json:"name"`
+	RESOURCE_TYPE     string        `json:"resourcetype"`
+	UPGRADE_TYPE      string        `json:"upgradetype"`
+	UPGRADE_STATUS    string        `json:"upgradestatus"`
+	StorageSpec       PgStorageSpec `json:"storagespec"`
+	CCP_IMAGE_TAG     string        `json:"ccpimagetag"`
+	OLD_DATABASE_NAME string        `json:"olddatabasename"`
+	NEW_DATABASE_NAME string        `json:"newdatabasename"`
+	OLD_VERSION       string        `json:"oldversion"`
+	NEW_VERSION       string        `json:"newversion"`
+	OLD_PVC_NAME      string        `json:"oldpvcname"`
+	NEW_PVC_NAME      string        `json:"newpvcname"`
+	BACKUP_PVC_NAME   string        `json:"backuppvcname"`
 }
 
 type PgUpgrade struct {
