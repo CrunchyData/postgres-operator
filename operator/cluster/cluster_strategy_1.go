@@ -170,7 +170,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.PVC_NAME,
+		PVC_NAME:             cl.Spec.ReplicaStorage.PvcName,
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		REPLICAS:             cl.Spec.REPLICAS,
@@ -181,7 +181,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 	}
 
-	if cl.Spec.PVC_NAME == "" {
+	if cl.Spec.ReplicaStorage.PvcName == "" {
 		//if no PVC_NAME then assume a non-shared volume type
 		log.Debug("using the dynamic replica template ")
 		err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
@@ -365,7 +365,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 		ClusterName:          cloneName,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.PVC_NAME,
+		PVC_NAME:             cl.Spec.ReplicaStorage.PvcName,
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		OPERATOR_LABELS:      util.GetLabels(cloneName, cloneName, true, false),
@@ -376,7 +376,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 	}
 
-	if cl.Spec.PVC_NAME == "" {
+	if cl.Spec.ReplicaStorage.PvcName == "" {
 		//if PVC_NAME is blank, assume a non-shared volume type
 		log.Debug("using the dynamic replica template ")
 		err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)

@@ -281,8 +281,8 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 		spec.RESOURCE_TYPE = "cluster"
 		spec.OLD_DATABASE_NAME = cluster.Spec.Name
 		spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
-		spec.OLD_PVC_NAME = cluster.Spec.PVC_NAME
-		spec.NEW_PVC_NAME = cluster.Spec.PVC_NAME + "-upgrade"
+		spec.OLD_PVC_NAME = cluster.Spec.MasterStorage.PvcName
+		spec.NEW_PVC_NAME = cluster.Spec.MasterStorage.PvcName + "-upgrade"
 		spec.BACKUP_PVC_NAME = cluster.Spec.BACKUP_PVC_NAME
 		existingImage = cluster.Spec.CCP_IMAGE_TAG
 		existingMajorVersion = parseMajorVersion(cluster.Spec.CCP_IMAGE_TAG)

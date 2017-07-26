@@ -277,9 +277,10 @@ func copyTPR(cluster *tpr.PgCluster, clone *tpr.PgClone) *tpr.PgCluster {
 
 	spec.CCP_IMAGE_TAG = cluster.Spec.CCP_IMAGE_TAG
 	spec.Port = cluster.Spec.Port
-	spec.PVC_NAME = cluster.Spec.PVC_NAME
-	spec.PVC_SIZE = cluster.Spec.PVC_SIZE
-	spec.PVC_ACCESS_MODE = cluster.Spec.PVC_ACCESS_MODE
+
+	spec.MasterStorage = cluster.Spec.MasterStorage
+	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
+
 	spec.SECRET_FROM = cluster.Spec.SECRET_FROM
 	spec.BACKUP_PATH = cluster.Spec.BACKUP_PATH
 	spec.BACKUP_PVC_NAME = cluster.Spec.BACKUP_PVC_NAME

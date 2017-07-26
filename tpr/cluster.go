@@ -27,34 +27,41 @@ import (
 
 const CLUSTER_RESOURCE = "pgclusters"
 
+type PgClusterStorageSpec struct {
+	PvcName       string `json:"pvcname"`
+	StorageClass  string `json:"storageclass"`
+	PvcAccessMode string `json:"pvcaccessmode"`
+	PvcSize       string `json:"pvcsize"`
+	StorageType   string `json:"storagetype"`
+}
+
 type PgClusterSpec struct {
-	Name                  string `json:"name"`
-	ClusterName           string `json:"clustername"`
-	Policies              string `json:"policies"`
-	CCP_IMAGE_TAG         string `json:"ccpimagetag"`
-	POSTGRES_FULL_VERSION string `json:"postgresfullversion"`
-	Port                  string `json:"port"`
-	PVC_NAME              string `json:"pvcname"`
-	PVC_SIZE              string `json:"pvcsize"`
-	PVC_ACCESS_MODE       string `json:"pvcaccessmode"`
-	PG_MASTER_HOST        string `json:"pgmasterhost"`
-	PG_MASTER_USER        string `json:"pgmasteruser"`
-	PG_MASTER_PASSWORD    string `json:"pgmasterpassword"`
-	PG_USER               string `json:"pguser"`
-	PG_PASSWORD           string `json:"pgpassword"`
-	PG_DATABASE           string `json:"pgdatabase"`
-	PG_ROOT_PASSWORD      string `json:"pgrootpassword"`
-	REPLICAS              string `json:"replicas"`
-	FS_GROUP              string `json:"fsgroup"`
-	SUPPLEMENTAL_GROUPS   string `json:"supplementalgroups"`
-	STRATEGY              string `json:"strategy"`
-	SECRET_FROM           string `json:"secretfrom"`
-	BACKUP_PVC_NAME       string `json:"backuppvcname"`
-	BACKUP_PATH           string `json:"backuppath"`
-	PGUSER_SECRET_NAME    string `json:"pgusersecretname"`
-	PGROOT_SECRET_NAME    string `json:"pgrootsecretname"`
-	PGMASTER_SECRET_NAME  string `json:"pgmastersecretname"`
-	STATUS                string `json:"status"`
+	Name                  string               `json:"name"`
+	ClusterName           string               `json:"clustername"`
+	Policies              string               `json:"policies"`
+	CCP_IMAGE_TAG         string               `json:"ccpimagetag"`
+	POSTGRES_FULL_VERSION string               `json:"postgresfullversion"`
+	Port                  string               `json:"port"`
+	MasterStorage         PgClusterStorageSpec `json:masterstorage`
+	ReplicaStorage        PgClusterStorageSpec `json:replicastorage`
+	PG_MASTER_HOST        string               `json:"pgmasterhost"`
+	PG_MASTER_USER        string               `json:"pgmasteruser"`
+	PG_MASTER_PASSWORD    string               `json:"pgmasterpassword"`
+	PG_USER               string               `json:"pguser"`
+	PG_PASSWORD           string               `json:"pgpassword"`
+	PG_DATABASE           string               `json:"pgdatabase"`
+	PG_ROOT_PASSWORD      string               `json:"pgrootpassword"`
+	REPLICAS              string               `json:"replicas"`
+	FS_GROUP              string               `json:"fsgroup"`
+	SUPPLEMENTAL_GROUPS   string               `json:"supplementalgroups"`
+	STRATEGY              string               `json:"strategy"`
+	SECRET_FROM           string               `json:"secretfrom"`
+	BACKUP_PVC_NAME       string               `json:"backuppvcname"`
+	BACKUP_PATH           string               `json:"backuppath"`
+	PGUSER_SECRET_NAME    string               `json:"pgusersecretname"`
+	PGROOT_SECRET_NAME    string               `json:"pgrootsecretname"`
+	PGMASTER_SECRET_NAME  string               `json:"pgmastersecretname"`
+	STATUS                string               `json:"status"`
 }
 
 type PgCluster struct {

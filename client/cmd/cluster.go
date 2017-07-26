@@ -207,17 +207,31 @@ func createCluster(args []string) {
 func getClusterParams(name string) *tpr.PgCluster {
 
 	spec := tpr.PgClusterSpec{}
+	masterStorageSpec := tpr.PgClusterStorageSpec{}
+	spec.MasterStorage = masterStorageSpec
+	replicaStorageSpec := tpr.PgClusterStorageSpec{}
+	spec.ReplicaStorage = replicaStorageSpec
 	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
 	if CCP_IMAGE_TAG != "" {
 		spec.CCP_IMAGE_TAG = CCP_IMAGE_TAG
 		log.Debug("using CCP_IMAGE_TAG from command line " + CCP_IMAGE_TAG)
 	}
+
+	spec.MasterStorage.PvcName = viper.GetString("MASTER_STORAGE.PVC_NAME")
+	spec.MasterStorage.StorageClass = viper.GetString("MASTER_STORAGE.STORAGE_CLASS")
+	spec.MasterStorage.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
+	spec.MasterStorage.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
+	spec.MasterStorage.StorageType = viper.GetString("MASTER_STORAGE.STORAGE_TYPE")
+
+	spec.ReplicaStorage.PvcName = viper.GetString("REPLICA_STORAGE.PVC_NAME")
+	spec.ReplicaStorage.StorageClass = viper.GetString("REPLICA_STORAGE.STORAGE_CLASS")
+	spec.ReplicaStorage.PvcAccessMode = viper.GetString("REPLICA_STORAGE.PVC_ACCESS_MODE")
+	spec.ReplicaStorage.PvcSize = viper.GetString("REPLICA_STORAGE.PVC_SIZE")
+	spec.ReplicaStorage.StorageType = viper.GetString("REPLICA_STORAGE.STORAGE_TYPE")
+
 	spec.Name = name
 	spec.ClusterName = name
 	spec.Port = "5432"
-	spec.PVC_NAME = viper.GetString("CLUSTER.PVC_NAME")
-	spec.PVC_SIZE = "100M"
-	spec.PVC_ACCESS_MODE = "ReadWriteMany"
 	spec.SECRET_FROM = ""
 	spec.BACKUP_PATH = ""
 	spec.BACKUP_PVC_NAME = ""
@@ -242,14 +256,6 @@ func getClusterParams(name string) *tpr.PgCluster {
 	str := viper.GetString("CLUSTER.PORT")
 	if str != "" {
 		spec.Port = str
-	}
-	str = viper.GetString("CLUSTER.PVC_SIZE")
-	if str != "" {
-		spec.PVC_SIZE = str
-	}
-	str = viper.GetString("CLUSTER.PVC_ACCESS_MODE")
-	if str != "" {
-		spec.PVC_ACCESS_MODE = str
 	}
 	str = viper.GetString("CLUSTER.PG_MASTER_USER")
 	if str != "" {

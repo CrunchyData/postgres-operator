@@ -135,13 +135,13 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	}
 
 	//create the PVC for the master if required
-	var pvcName = cl.Spec.PVC_NAME
+	var pvcName = cl.Spec.MasterStorage.PvcName
 
-	if cl.Spec.PVC_NAME == "" {
+	if cl.Spec.MasterStorage.PvcName == "" {
 		pvcName = cl.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			pvcName, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE)
-		err = pvc.Create(clientset, pvcName, cl.Spec.PVC_ACCESS_MODE, cl.Spec.PVC_SIZE, namespace)
+			pvcName, cl.Spec.MasterStorage.PvcAccessMode, cl.Spec.MasterStorage.PvcSize)
+		err = pvc.Create(clientset, pvcName, cl.Spec.MasterStorage.PvcAccessMode, cl.Spec.MasterStorage.PvcSize, namespace)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
 			return
