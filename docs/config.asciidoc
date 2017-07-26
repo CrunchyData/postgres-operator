@@ -79,12 +79,12 @@ Values in the pgo configuration file have the following meaning:
 |MASTER_STORAGE.STORAGE_CLASS        |for the master postgres deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |MASTER_STORAGE.PVC_ACCESS_MODE        |for the master postgres deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |MASTER_STORAGE.PVC_SIZE        |for the master postgres deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|MASTER_STORAGE.STORAGE_TYPE        |for the master postgres deployment, supported values are either *dynamic*, *shared*, or *emptydir*, if not supplied, *emptydir* is used
+|MASTER_STORAGE.STORAGE_TYPE        |for the master postgres deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |REPLICA_STORAGE.PVC_NAME        |for the replica postgres deployments, if set, the PVC to use for created databases, used when the storage type is *existing*
 |REPLICA_STORAGE.STORAGE_CLASS        |for the replica postgres deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |REPLICA_STORAGE.PVC_ACCESS_MODE        |for the replica postgres deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |REPLICA_STORAGE.PVC_SIZE        |for the replica postgres deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|REPLICA_STORAGE.STORAGE_TYPE        |for the replica postgres deployment, supported values are either *dynamic*, *shared*, *existing*, or *emptydir*, if not supplied, *emptydir* is used
+|REPLICA_STORAGE.STORAGE_TYPE        |for the replica postgres deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
@@ -139,12 +139,22 @@ file.
 
 === Persistence
 
-The operator will create PVCs for new databases if a PVC_NAME is not
-set in the user's pgo client configuration or specified via a command
-line.  This model of PVC creation supports a persistent file system
-that is not shareable (e.g. Amazon EBS storage).  In this model, since
-PVCs can not be shared between Pods, you need to create a unique
-PVC for each database to use.
+Different ways of handling storage are specified by a user in
+the *.pgo.yaml* configuration file by specifying values within
+the REPLICA_STORAGE and MASTER_STORAGE settings.
+
+The following STORAGE_TYPE values are possible:
+ * *dynamic* - currently not implemented, this will allow for dynamic
+ provisioning of storage using a StorageClass
+ * *existing* - this setting allows you to use a PVC that already exists,
+ for example if you have a NFS volume mounted to a PVC, all Postgres clusters
+ can write to that NFS volume mount via a common PVC, when set, the PVC_NAME
+ setting is used for the PVC
+ * *create* - this setting allows for the creation of a new PVC for
+ each Postgres cluster using a naming convention of *clustername*-pvc*, 
+ when set, the *PVC_SIZE*, *PVC_ACCESS_MODE* settings are used in
+ constructing the new PVC
+ * *emptydir*, if not supplied, *emptydir* is used
 
 The operator will create new PVCs using this naming convention:
 *dbname-pvc* where *dbname* is the database name you have specified.  For
@@ -155,7 +165,3 @@ pgo create cluster example1
 
 It will result in a PVC being created named *example1-pvc*.
 
-If however, you are using a shared persistent file system such as NFS or HostPath, 
-and you want to share a single PVC, the pgo user can define the *DB.PVC_NAME*
-configuration setting.  When set, that value will be used for all
-databases created by the operator.

@@ -135,9 +135,18 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	}
 
 	//create the PVC for the master if required
-	var pvcName = cl.Spec.MasterStorage.PvcName
+	var pvcName string
 
-	if cl.Spec.MasterStorage.PvcName == "" {
+	switch cl.Spec.MasterStorage.StorageType {
+	case "":
+		log.Debug("MasterStorage.StorageType is empty")
+	case "emptydir":
+		log.Debug("MasterStorage.StorageType is emptydir")
+	case "existing":
+		log.Debug("MasterStorage.StorageType is existing")
+		pvcName = cl.Spec.MasterStorage.PvcName
+	case "create":
+		log.Debug("MasterStorage.StorageType is create")
 		pvcName = cl.Spec.Name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
 			pvcName, cl.Spec.MasterStorage.PvcAccessMode, cl.Spec.MasterStorage.PvcSize)
@@ -147,7 +156,10 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 			return
 		}
 		log.Info("created PVC =" + pvcName + " in namespace " + namespace)
+	case "dynamic":
+		log.Debug("MasterStorage.StorageType is dynamic, not supported yet")
 	}
+
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
 
 	var err1, err2, err3 error

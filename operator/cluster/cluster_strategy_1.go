@@ -126,7 +126,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             masterPvcName,
+		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, masterPvcName),
 		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
 		BACKUP_PATH:          cl.Spec.BACKUP_PATH,

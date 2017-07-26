@@ -134,6 +134,24 @@ func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace str
 
 }
 
+func CreatePVCSnippet(storageType string, PVC_NAME string) string {
+
+	var sc bytes.Buffer
+
+	if storageType != "emptydir" {
+		sc.WriteString("\"persistentVolumeClaim\": {\n")
+		sc.WriteString("\t \"claimName\": \"" + PVC_NAME + "\"")
+		sc.WriteString("\n")
+	} else {
+		sc.WriteString("\"emptyDir\": {")
+		sc.WriteString("\n")
+	}
+
+	sc.WriteString("}")
+
+	return sc.String()
+}
+
 func CreateBackupPVCSnippet(BACKUP_PVC_NAME string) string {
 
 	var sc bytes.Buffer

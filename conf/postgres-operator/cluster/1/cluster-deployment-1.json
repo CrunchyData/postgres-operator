@@ -87,9 +87,7 @@
                 }],
                 "volumes": [{
                         "name": "pgdata",
-                        "persistentVolumeClaim": {
-                            "claimName": "{{.PVC_NAME}}"
-                        }
+                        {{.PVC_NAME}}
                     }, {
                         "name": "backup",
                         {{.BACKUP_PVC_NAME}}
