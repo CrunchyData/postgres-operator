@@ -147,6 +147,8 @@ pgo create policy policy1 --url=https://someurl/policy1.sql
 ----
 
 .Apply a Policy
+WARNING:  policies are POWERFUL and executed as the superuser in PostgreSQL
+which allows for any sort of SQL to be executed.
 [source,bash]
 ----
 pgo apply policy1 --selector=name=mycluster

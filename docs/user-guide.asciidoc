@@ -302,6 +302,9 @@ have a label value of *name=mycluster* and then it will apply
 the *policy1* label to that cluster and execute the policy
 SQL against that cluster using the *postgres* user account.
 
+WARNING:  policies are executed as the superuser in PostgreSQL therefore
+take caution when using them.
+
 
 == bash Completion
 
