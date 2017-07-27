@@ -2,24 +2,14 @@
     "kind": "Deployment",
     "apiVersion": "extensions/v1beta1",
     "metadata": {
-        "name": "{{.Name}}",
-        "labels": {
-	{{.OPERATOR_LABELS}}
-        }
+        "name": "{{.Name}}"
     },
     "spec": {
         "replicas": {{.REPLICAS}},
-        "selector": {
-            "matchLabels": {
-                "name": "{{.Name}}"
-            }
-        },
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "{{.Name}}",
-                    "replica": "true",
-                    "pg-cluster": "{{.ClusterName}}"
+	        {{.OPERATOR_LABELS}}
                 }
             },
             "spec": {

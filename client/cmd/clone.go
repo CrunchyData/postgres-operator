@@ -77,7 +77,7 @@ func createClone(clusterName string) {
 		//TODO replace sleep with proper wait
 		time.Sleep(6000 * time.Millisecond)
 	} else if errors.IsNotFound(err) {
-		fmt.Println("pgclone " + clusterName + " not found so we will create it")
+		log.Debug("pgclone " + clusterName + " not found so we will create it")
 	} else {
 		log.Error("error getting pgclone " + clusterName)
 		log.Error(err.Error())

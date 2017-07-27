@@ -187,6 +187,25 @@ func createUpgrade(args []string) {
 			break
 		}
 
+		cl := tpr.PgCluster{}
+
+		err = Tprclient.Get().
+			Resource(tpr.CLUSTER_RESOURCE).
+			Namespace(Namespace).
+			Name(arg).
+			Do().
+			Into(&cl)
+		if kerrors.IsNotFound(err) {
+			log.Error("error getting pgupgrade " + arg)
+			break
+		}
+
+		if cl.Spec.MasterStorage.StorageType == "emptydir" {
+			fmt.Println("cluster " + arg + " uses emptydir storage and can not be upgraded")
+			break
+		}
+		fmt.Println("after break")
+
 		// Create an instance of our TPR
 		newInstance, err = getUpgradeParams(arg)
 		if err == nil {

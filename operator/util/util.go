@@ -95,7 +95,7 @@ func Patch(tprclient *rest.RESTClient, path string, value string, resource strin
 	if err4 != nil {
 		log.Error("error in converting patch " + err4.Error())
 	}
-	log.Info(string(patchBytes))
+	log.Debug(string(patchBytes))
 
 	_, err6 := tprclient.Patch(api.JSONPatchType).
 		Namespace(namespace).

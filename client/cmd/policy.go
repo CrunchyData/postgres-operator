@@ -258,7 +258,7 @@ func applyPolicy(policies []string) {
 	for _, d := range deployments.Items {
 		fmt.Println("deployment : " + d.ObjectMeta.Name)
 		for _, p := range policies {
-			log.Info("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
+			log.Debug("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
 
 			newInstance, err = getPolicylog(p, d.ObjectMeta.Name)
 

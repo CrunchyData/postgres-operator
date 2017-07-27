@@ -55,9 +55,8 @@ func init() {
 
 func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, cl *tpr.PgCluster, upgrade *tpr.PgUpgrade, namespace string) error {
 	var err error
-	var replicaDoc, masterDoc bytes.Buffer
-	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
-	var replicaName = cl.Spec.Name + REPLICA_SUFFIX
+	var masterDoc bytes.Buffer
+	var deploymentResult *v1beta1.Deployment
 
 	log.Info("minor cluster upgrade using Strategy 1 in namespace " + namespace)
 
@@ -73,8 +72,10 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.MasterStorage.PvcName,
+		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, cl.Spec.MasterStorage.PvcName),
+		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
+		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
@@ -104,44 +105,6 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		return err
 	}
 	log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
-
-	//create the replica deployment
-	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:                 replicaName,
-		ClusterName:          cl.Spec.Name,
-		Port:                 cl.Spec.Port,
-		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.ReplicaStorage.PvcName,
-		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
-		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
-		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		REPLICAS:             cl.Spec.REPLICAS,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
-	}
-
-	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
-	if err != nil {
-		log.Error("error in ReplicaDeployment Execute " + err.Error())
-		return err
-	}
-	replicaDeploymentDocString := replicaDoc.String()
-	log.Info(replicaDeploymentDocString)
-
-	replicaDeployment := v1beta1.Deployment{}
-	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
-	if err != nil {
-		log.Error("error unmarshalling replica json into Deployment " + err.Error())
-		return err
-	}
-
-	replicaDeploymentResult, err = clientset.Deployments(namespace).Create(&replicaDeployment)
-	if err != nil {
-		log.Error("error creating replica Deployment " + err.Error())
-		return err
-	}
-	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
 
 	//update the upgrade TPR status to completed
 	err = util.Patch(tprclient, "/spec/upgradestatus", tpr.UPGRADE_COMPLETED_STATUS, tpr.UPGRADE_RESOURCE, upgrade.Spec.Name, namespace)
@@ -220,8 +183,8 @@ func (r ClusterStrategy1) MajorUpgrade(clientset *kubernetes.Clientset, tprclien
 
 func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, upgrade *tpr.PgUpgrade, namespace string) error {
 	var err error
-	var masterDoc, replicaDoc bytes.Buffer
-	var replicaDeploymentResult, deploymentResult *v1beta1.Deployment
+	var masterDoc bytes.Buffer
+	var deploymentResult *v1beta1.Deployment
 
 	log.Info("major cluster upgrade finalize using Strategy 1 in namespace " + namespace)
 
@@ -231,7 +194,8 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             upgrade.Spec.NEW_PVC_NAME,
+		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, upgrade.Spec.NEW_PVC_NAME),
+		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(upgrade.Spec.BACKUP_PVC_NAME),
 		PGDATA_PATH_OVERRIDE: upgrade.Spec.NEW_DATABASE_NAME,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
@@ -262,44 +226,6 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 		return err
 	}
 	log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
-
-	//start the replica deployment
-
-	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:                 cl.Spec.Name + REPLICA_SUFFIX,
-		ClusterName:          cl.Spec.Name,
-		Port:                 cl.Spec.Port,
-		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             cl.Spec.ReplicaStorage.PvcName,
-		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
-		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
-		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		REPLICAS:             cl.Spec.REPLICAS,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
-	}
-
-	err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
-	if err != nil {
-		log.Error("error in replica depl templ exec" + err.Error())
-		return err
-	}
-	replicaDeploymentDocString := replicaDoc.String()
-	log.Info(replicaDeploymentDocString)
-
-	replicaDeployment := v1beta1.Deployment{}
-	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
-	if err != nil {
-		log.Error("error unmarshalling replica json into Deployment " + err.Error())
-		return err
-	}
-	replicaDeploymentResult, err = clientset.Deployments(namespace).Create(&replicaDeployment)
-	if err != nil {
-		log.Error("error creating replica Deployment " + err.Error())
-		return err
-	}
-	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
 
 	return err
 
