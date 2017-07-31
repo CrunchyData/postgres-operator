@@ -30,6 +30,7 @@ import (
 	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/meta"
 	"k8s.io/client-go/pkg/api/v1"
+	"strconv"
 
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
@@ -116,6 +117,13 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
 	} else {
 		log.Info("master Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
+	}
+
+	newReplicas, err := strconv.Atoi(cl.Spec.REPLICAS)
+	if err != nil {
+		log.Error("could not convert REPLICAS config setting")
+	} else {
+		ScaleReplicas(clientset, cl, newReplicas, namespace)
 	}
 
 	return err

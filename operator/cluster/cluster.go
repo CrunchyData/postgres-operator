@@ -300,23 +300,35 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 
 func updateCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, oldcluster *tpr.PgCluster, namespace string) {
 
+	log.Debug("updateCluster on pgcluster called..something changed")
+
 	if oldcluster.Spec.REPLICAS != cl.Spec.REPLICAS {
 		log.Debug("detected change to REPLICAS for " + cl.Spec.Name + " from " + oldcluster.Spec.REPLICAS + " to " + cl.Spec.REPLICAS)
-		ScaleReplicas(clientset, client, cl, oldcluster, namespace)
+		oldCount, err := strconv.Atoi(oldcluster.Spec.REPLICAS)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		newCount, err := strconv.Atoi(cl.Spec.REPLICAS)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if oldCount > newCount {
+			log.Error("scale down is not implemented yet")
+			return
+		}
+		newReps := newCount - oldCount
+		if newReps > 0 {
+			ScaleReplicas(clientset, cl, newReps, namespace)
+		} else {
+			log.Error("scale to the same number does nothing")
+		}
 	}
 
 }
 
-func ScaleReplicas(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, oldcluster *tpr.PgCluster, namespace string) {
-
-	oldCount, err := strconv.Atoi(oldcluster.Spec.REPLICAS)
-	if err != nil {
-		log.Error(err)
-	}
-	newCount, err := strconv.Atoi(cl.Spec.REPLICAS)
-	if err != nil {
-		log.Error(err)
-	}
+func ScaleReplicas(clientset *kubernetes.Clientset, cl *tpr.PgCluster, newReplicas int, namespace string) {
 
 	//get the strategy to use
 	if cl.Spec.STRATEGY == "" {
@@ -332,39 +344,33 @@ func ScaleReplicas(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 		return
 	}
 
-	if oldCount > newCount {
-		log.Debug("scale down not implemented yet")
-	} else {
-		//scale up
-		log.Debug("scale up called ")
-		newReplicas := newCount - oldCount
+	log.Debug("scale up called ")
 
-		for i := 0; i < newReplicas; i++ {
-			//generate a unique name suffix
-			uniqueName := RandStringBytesRmndr(4)
-			depName := cl.Spec.Name + "-replica-" + uniqueName
+	for i := 0; i < newReplicas; i++ {
+		//generate a unique name suffix
+		uniqueName := RandStringBytesRmndr(4)
+		depName := cl.Spec.Name + "-replica-" + uniqueName
 
-			//create a PVC
-			pvcName, err := createPVC(clientset, depName, &cl.Spec.ReplicaStorage, namespace)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			//create a Deployment and its service
-			serviceName := depName + "-replica"
-			replicaServiceFields := ServiceTemplateFields{
-				Name:        serviceName,
-				ClusterName: cl.Spec.Name,
-				Port:        cl.Spec.Port,
-			}
-
-			err = CreateService(clientset, &replicaServiceFields, namespace)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
+		//create a PVC
+		pvcName, err := createPVC(clientset, depName, &cl.Spec.ReplicaStorage, namespace)
+		if err != nil {
+			log.Error(err)
+			return
 		}
+		//create a Deployment and its service
+		serviceName := depName + "-replica"
+		replicaServiceFields := ServiceTemplateFields{
+			Name:        serviceName,
+			ClusterName: cl.Spec.Name,
+			Port:        cl.Spec.Port,
+		}
+
+		err = CreateService(clientset, &replicaServiceFields, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
 	}
 }
 
