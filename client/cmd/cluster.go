@@ -79,9 +79,9 @@ func showCluster(args []string) {
 					if ShowSecrets {
 						PrintSecrets(cluster.Spec.Name)
 					}
+					fmt.Println("")
 				}
 			}
-			fmt.Println("")
 		}
 		if !itemFound {
 			fmt.Println(arg + " was not found")
