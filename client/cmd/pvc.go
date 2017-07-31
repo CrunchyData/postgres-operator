@@ -140,6 +140,8 @@ func PrintPVCListing(pvcName string) {
 		log.Error("error waiting on lspvc pod to complete" + err.Error())
 	}
 
+	time.Sleep(5000 * time.Millisecond)
+
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}
 	req := Clientset.Core().Pods(Namespace).GetLogs(podName, &logOptions)
