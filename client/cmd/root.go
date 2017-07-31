@@ -17,10 +17,15 @@ package cmd
 import (
 	log "github.com/Sirupsen/logrus"
 	"os"
+	"strconv"
 
+	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/resource"
 )
 
 var RED, GREEN func(a ...interface{}) string
@@ -119,11 +124,8 @@ func initConfig() {
 	}
 
 	log.Debug("namespace is " + viper.GetString("NAMESPACE"))
-	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "dynamic" ||
-		viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") == "dynamic" {
-		log.Error("STORAGE_TYPE dynamic is not supported yet")
-		os.Exit(2)
-	}
+
+	validateConfig()
 
 	ConnectToKube()
 
@@ -135,5 +137,81 @@ func initConfig() {
 	defer file.Close()
 	RootCmd.GenBashCompletion(file)
 	*/
+
+}
+
+func validateConfig() {
+	switch viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE") {
+	case string(api.ReadWriteOnce), string(api.ReadWriteMany), string(api.ReadOnlyMany):
+	default:
+		log.Error("invalid MASTER_STORAGE.PVC_ACCESS_MODE specified")
+		os.Exit(2)
+	}
+	switch viper.GetString("REPLICA_STORAGE.PVC_ACCESS_MODE") {
+	case string(api.ReadWriteOnce), string(api.ReadWriteMany), string(api.ReadOnlyMany):
+	default:
+		log.Error("invalid REPLICA_STORAGE.PVC_ACCESS_MODE specified")
+		os.Exit(2)
+	}
+	switch viper.GetString("MASTER_STORAGE.STORAGE_TYPE") {
+	case tpr.STORAGE_EXISTING, tpr.STORAGE_CREATE, tpr.STORAGE_EMPTYDIR, tpr.STORAGE_DYNAMIC:
+	default:
+		log.Error("invalid MASTER_STORAGE.STORAGE_TYPE specified")
+		os.Exit(2)
+	}
+	switch viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") {
+	case tpr.STORAGE_EXISTING, tpr.STORAGE_CREATE, tpr.STORAGE_EMPTYDIR, tpr.STORAGE_DYNAMIC:
+	default:
+		log.Error("invalid REPLICA_STORAGE.STORAGE_TYPE specified")
+		os.Exit(2)
+	}
+
+	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "dynamic" ||
+		viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") == "dynamic" {
+		log.Error("STORAGE_TYPE dynamic is not supported yet")
+		os.Exit(2)
+	}
+
+	rep := viper.GetString("CLUSTER.REPLICAS")
+	if rep != "" {
+		_, err := strconv.Atoi(rep)
+		if err != nil {
+			log.Error("CLUSTER.REPLICAS not a valid integer")
+			os.Exit(2)
+		}
+	}
+	port := viper.GetString("CLUSTER.PORT")
+	if port != "" {
+		_, err := strconv.Atoi(port)
+		if err != nil {
+			log.Error("CLUSTER.PORT not a valid integer")
+			os.Exit(2)
+		}
+	}
+	strategy := viper.GetString("CLUSTER.STRATEGY")
+	if strategy != "" {
+		_, err := strconv.Atoi(strategy)
+		if err != nil {
+			log.Error("CLUSTER.STRATEGY not a valid integer")
+			os.Exit(2)
+		}
+	}
+
+	pvcsize := viper.GetString("MASTER_STORAGE.PVC_SIZE")
+	if pvcsize != "" {
+		_, err := resource.ParseQuantity(pvcsize)
+		if err != nil {
+			log.Error("MASTER_STORAGE.PVC_SIZE not a valid quantity")
+			os.Exit(2)
+		}
+	}
+	pvcsize = viper.GetString("REPLICA_STORAGE.PVC_SIZE")
+	if pvcsize != "" {
+		_, err := resource.ParseQuantity(pvcsize)
+		if err != nil {
+			log.Error("REPLICA_STORAGE.PVC_SIZE not a valid quantity")
+			os.Exit(2)
+		}
+	}
 
 }
