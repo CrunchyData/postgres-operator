@@ -17,21 +17,14 @@
 package cmd
 
 import (
-	//"bufio"
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io"
-	"io/ioutil"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
-	"strings"
-	"text/template"
 	"time"
 )
 
@@ -177,7 +170,7 @@ func createBackup(args []string) {
 			deleteBackup(dels)
 			time.Sleep(2000 * time.Millisecond)
 		} else if errors.IsNotFound(err) {
-			fmt.Println("pgbackup " + arg + " not found so we will create it")
+			log.Debug("pgbackup " + arg + " not found so we will create it")
 		} else {
 			log.Error("error getting pgbackup " + arg)
 			log.Error(err.Error())

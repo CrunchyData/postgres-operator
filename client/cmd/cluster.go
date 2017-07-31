@@ -159,6 +159,14 @@ func listServices(name string) {
 func createCluster(args []string) {
 	var err error
 
+	//validate configuration
+	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "existing" {
+		if BackupPVC != "" {
+			log.Error("storage type of existing not allowed when doing a restore")
+			return
+		}
+	}
+
 	for _, arg := range args {
 		log.Debug("create cluster called for " + arg)
 		result := tpr.PgCluster{}
@@ -369,8 +377,8 @@ func validateSecretFrom(secretname string) error {
 	pguserFound := false
 
 	for _, s := range secrets.Items {
-		fmt.Println("")
-		fmt.Println("secret : " + s.ObjectMeta.Name)
+		//fmt.Println("")
+		//fmt.Println("secret : " + s.ObjectMeta.Name)
 		if s.ObjectMeta.Name == secretname+tpr.PGMASTER_SECRET_SUFFIX {
 			pgmasterFound = true
 		} else if s.ObjectMeta.Name == secretname+tpr.PGROOT_SECRET_SUFFIX {

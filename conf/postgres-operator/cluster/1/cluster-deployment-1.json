@@ -9,11 +9,6 @@
     },
     "spec": {
         "replicas": 1,
-        "selector": {
-            "matchLabels": {
-                "name": "{{.Name}}"
-            }
-        },
         "template": {
             "metadata": {
                 "labels": {
