@@ -123,7 +123,20 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 	if err != nil {
 		log.Error("could not convert REPLICAS config setting")
 	} else {
-		ScaleReplicas(clientset, cl, newReplicas, namespace)
+		//create the replica service
+		serviceName := cl.Spec.Name + "-replica"
+		repserviceFields := ServiceTemplateFields{
+			Name:        serviceName,
+			ClusterName: cl.Spec.Name,
+			Port:        cl.Spec.Port,
+		}
+
+		err = CreateService(clientset, &repserviceFields, namespace)
+		if err != nil {
+			log.Error("error in creating replica service " + err.Error())
+			return err
+		}
+		ScaleReplicas(serviceName, clientset, cl, newReplicas, namespace)
 	}
 
 	return err

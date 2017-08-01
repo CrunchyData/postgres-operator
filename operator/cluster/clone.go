@@ -128,6 +128,8 @@ func addClone(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, clone
 
 func CompleteClone(config *rest.Config, clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
+	log.Debug("setting up clone Deployment watch")
+
 	lo := v1.ListOptions{LabelSelector: "clone"}
 	fw, err := clientset.Extensions().Deployments(namespace).Watch(lo)
 	if err != nil {

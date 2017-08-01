@@ -254,6 +254,14 @@ func applyPolicy(policies []string) {
 		return
 	}
 
+	if DryRun {
+		fmt.Println("policy would be applied to the following clusters:")
+		for _, d := range deployments.Items {
+			fmt.Println("deployment : " + d.ObjectMeta.Name)
+		}
+		return
+	}
+
 	var newInstance *tpr.PgPolicylog
 	for _, d := range deployments.Items {
 		fmt.Println("deployment : " + d.ObjectMeta.Name)
@@ -263,6 +271,23 @@ func applyPolicy(policies []string) {
 			newInstance, err = getPolicylog(p, d.ObjectMeta.Name)
 
 			result := tpr.PgPolicylog{}
+			err = Tprclient.Get().
+				Resource(tpr.POLICY_LOG_RESOURCE).
+				Namespace(Namespace).
+				Name(newInstance.Metadata.Name).
+				Do().Into(&result)
+			if err == nil {
+				fmt.Println(p + " already applied to " + d.ObjectMeta.Name)
+				break
+			} else {
+				if kerrors.IsNotFound(err) {
+				} else {
+					log.Error(err)
+					break
+				}
+			}
+
+			result = tpr.PgPolicylog{}
 			err = Tprclient.Post().
 				Resource(tpr.POLICY_LOG_RESOURCE).
 				Namespace(Namespace).

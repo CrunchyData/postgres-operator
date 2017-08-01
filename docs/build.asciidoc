@@ -287,6 +287,7 @@ A simple *smoke test* of the postgres operator includes testing
 the following:
 
  * create a cluster (*pgo create cluster testcluster*)
+ * scale a cluster (*pgo scale testcluster --replica-count=1*)
  * show a cluster (*pgo show cluster testcluster*)
  * show all clusters (*pgo show cluster all*)
  * backup a cluster (*pgo backup testcluster*)
@@ -299,6 +300,9 @@ the following:
  * clone a cluster (*pgo clone testcluster --name=cloneexample*)
  * delete a cluster (*pgo delete cluster testcluster*)
  * create a policy from local file (*pgo create policy policy1 --in-file=./examples/policy/policy1.sql*)
- * create a policy from git repo (*pgo create policy gitpolicy --repo=https://github.com/CrunchyData/postgres-operator/blob/master/examples/policy/gitpolicy.sql*)
+ * create a policy from git repo (*pgo create policy gitpolicy --url=https://github.com/CrunchyData/postgres-operator/blob/master/examples/policy/gitpolicy.sql*)
+ * repeat testing using emptydir storage type
+ * repeat testing using create storage type
+ * repeat testing using existing storage type
 
 More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].

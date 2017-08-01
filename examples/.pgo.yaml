@@ -25,5 +25,5 @@ REPLICA_STORAGE:
   STORAGE_TYPE:  emptydir
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
-  CO_IMAGE_TAG:  centos7-1.3.2
+  CO_IMAGE_TAG:  centos7-1.4
   DEBUG:  false

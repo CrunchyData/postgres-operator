@@ -21,6 +21,7 @@ import (
 )
 
 var Selector string
+var DryRun bool
 
 var applyCmd = &cobra.Command{
 	Use:   "apply",
@@ -30,6 +31,7 @@ For example:
 
 pgo apply mypolicy1 --selector=name=mycluster
 pgo apply mypolicy1 --selector=someotherpolicy
+pgo apply mypolicy1 --selector=someotherpolicy --dry-run
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("apply called")
@@ -49,5 +51,6 @@ func init() {
 	RootCmd.AddCommand(applyCmd)
 
 	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters that policy would be applied to but does not actually apply them")
 
 }

@@ -137,34 +137,6 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 		return
 	}
 
-	//create the PVC for the master if required
-	//var pvcName string
-	/**
-
-	switch cl.Spec.MasterStorage.StorageType {
-	case "":
-		log.Debug("MasterStorage.StorageType is empty")
-	case "emptydir":
-		log.Debug("MasterStorage.StorageType is emptydir")
-	case "existing":
-		log.Debug("MasterStorage.StorageType is existing")
-		pvcName = cl.Spec.MasterStorage.PvcName
-	case "create":
-		log.Debug("MasterStorage.StorageType is create")
-		pvcName = cl.Spec.Name + "-pvc"
-		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			pvcName, cl.Spec.MasterStorage.PvcAccessMode, cl.Spec.MasterStorage.PvcSize)
-		err = pvc.Create(clientset, pvcName, cl.Spec.MasterStorage.PvcAccessMode, cl.Spec.MasterStorage.PvcSize, cl.Spec.MasterStorage.StorageType, cl.Spec.MasterStorage.StorageClass, namespace)
-		if err != nil {
-			log.Error("error in pvc create " + err.Error())
-			return
-		}
-		log.Info("created PVC =" + pvcName + " in namespace " + namespace)
-	case "dynamic":
-		log.Debug("MasterStorage.StorageType is dynamic, not supported yet")
-	}
-	*/
-
 	pvcName, err := createPVC(clientset, cl.Spec.Name, &cl.Spec.MasterStorage, namespace)
 	log.Debug("created master pvc [" + pvcName + "]")
 
@@ -300,7 +272,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrad
 
 func updateCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, oldcluster *tpr.PgCluster, namespace string) {
 
-	log.Debug("updateCluster on pgcluster called..something changed")
+	//log.Debug("updateCluster on pgcluster called..something changed")
 
 	if oldcluster.Spec.REPLICAS != cl.Spec.REPLICAS {
 		log.Debug("detected change to REPLICAS for " + cl.Spec.Name + " from " + oldcluster.Spec.REPLICAS + " to " + cl.Spec.REPLICAS)
@@ -320,7 +292,8 @@ func updateCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 		}
 		newReps := newCount - oldCount
 		if newReps > 0 {
-			ScaleReplicas(clientset, cl, newReps, namespace)
+			serviceName := cl.Spec.Name + "-replica"
+			ScaleReplicas(serviceName, clientset, cl, newReps, namespace)
 		} else {
 			log.Error("scale to the same number does nothing")
 		}
@@ -328,7 +301,20 @@ func updateCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl 
 
 }
 
-func ScaleReplicas(clientset *kubernetes.Clientset, cl *tpr.PgCluster, newReplicas int, namespace string) {
+func ScaleReplicas(serviceName string, clientset *kubernetes.Clientset, cl *tpr.PgCluster, newReplicas int, namespace string) {
+
+	//create the service if it doesn't exist
+	serviceFields := ServiceTemplateFields{
+		Name:        serviceName,
+		ClusterName: cl.Spec.Name,
+		Port:        cl.Spec.Port,
+	}
+
+	err := CreateService(clientset, &serviceFields, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	//get the strategy to use
 	if cl.Spec.STRATEGY == "" {
@@ -357,19 +343,19 @@ func ScaleReplicas(clientset *kubernetes.Clientset, cl *tpr.PgCluster, newReplic
 			log.Error(err)
 			return
 		}
-		//create a Deployment and its service
-		serviceName := depName + "-replica"
-		replicaServiceFields := ServiceTemplateFields{
-			Name:        serviceName,
-			ClusterName: cl.Spec.Name,
-			Port:        cl.Spec.Port,
-		}
+		//create a Deployment
+		//serviceName := depName + "-replica"
+		//replicaServiceFields := ServiceTemplateFields{
+		//Name:        serviceName,
+		//ClusterName: cl.Spec.Name,
+		//Port:        cl.Spec.Port,
+		//}
 
-		err = CreateService(clientset, &replicaServiceFields, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
+		//err = CreateService(clientset, &replicaServiceFields, namespace)
+		//if err != nil {
+		//log.Error(err)
+		//return
+		//}
 		strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
 	}
 }

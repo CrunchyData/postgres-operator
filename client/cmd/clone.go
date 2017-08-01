@@ -107,7 +107,7 @@ func createClone(clusterName string) {
 		log.Error(err.Error())
 		return
 	}
-	fmt.Println("created PgClone " + clusterName)
+	fmt.Println("cloned " + clusterName + " as " + CloneName)
 
 }
 
