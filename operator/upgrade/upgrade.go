@@ -174,7 +174,7 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, tprclient *rest.RESTCl
 	})
 
 	if err4 != nil {
-		log.Error("erro in major upgrade " + err4.Error())
+		log.Error("error in major upgrade " + err4.Error())
 	}
 
 }
@@ -241,7 +241,7 @@ func finishUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 
 	err = clusterStrategy.MajorUpgradeFinalize(clientset, tprclient, &cl, &upgrade, namespace)
 	if err != nil {
-		log.Error("erro in major upgrade finalize" + err.Error())
+		log.Error("error in major upgrade finalize" + err.Error())
 	}
 
 	if err == nil {
