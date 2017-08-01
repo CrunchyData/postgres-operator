@@ -14,8 +14,10 @@ of the postgres Operator to define:
  * Cluster - *pgclusters*
  * Backup - *pgbackups*
  * Upgrade - *pgupgrades*
+ * Clones - *pgclones*
+ * Policy - *pgpolicies*
 
-A Cluster is made up of multiple Pods, Services, and Proxies.
+A PostgreSQL Cluster is made up of multiple Deployments, Services, and Proxies.
 
 
 == Command Line Interface
@@ -35,8 +37,8 @@ not created by the Crunchy Operator are now viewable from the CLI.
 
 == Operator Deployment
 
-The postgres Operator runs within a Pod Deployment in the Kubernetes
-cluster.  An administrator will deploy the postgres Operator pod
+The postgres Operator runs within a Deployment in the Kubernetes
+cluster.  An administrator will deploy the postgres Operator Deployment
 using the provided script.  Once installed and running, the Operator
 pod will start watching for certain defined events.
 

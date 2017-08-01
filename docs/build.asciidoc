@@ -78,7 +78,14 @@ kubectl create clusterrolebinding permissive-binding \
 See https://kubernetes.io/docs/admin/authorization/rbac/ for more
 details on how to enable RBAC roles.
 
-To test the *postgres-operator* you will need a Kubernetes cluster
+To test the *postgres-operator* you will need a Kubernetes cluster.
+
+In testing, I've found that specifying GOMAXPROCS to equal your number
+of CPUs when executing Kubernetes is preferable, for example:
+
+....
+export GOMAXPROCS=4
+....
 
 [#Openshift Origin Environment]
 == Openshift Origin Environment
