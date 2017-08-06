@@ -1,10 +1,13 @@
-FROM rhel7.2
+FROM registry.access.redhat.com/rhel7.3
 
-LABEL Release="1.3.2" Vendor="Crunchy Data Solutions" 
+LABEL Release="1.4" Vendor="Crunchy Data Solutions" 
 
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 
-RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+# Crunchy Postgres repo
+ADD conf/CRUNCHY-GPG-KEY.public  /
+ADD conf/crunchypg96.repo /etc/yum.repos.d/
+RUN rpm --import CRUNCHY-GPG-KEY.public
 
 RUN yum -y update && yum -y install postgresql96 && yum -y clean all
 
