@@ -15,6 +15,8 @@ v1.4, {docdate}
 
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes.
 
+image::docs/tty.gif?raw=true[]
+
 The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource types such as:
 
  * *pgcluster* 
