@@ -20,9 +20,8 @@ package tpr
 
 import (
 	"encoding/json"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const UPGRADE_RESOURCE = "pgupgrades"
@@ -46,32 +45,32 @@ type PgUpgradeSpec struct {
 }
 
 type PgUpgrade struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec PgUpgradeSpec `json:"spec"`
 }
 
 type PgUpgradeList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []PgUpgrade `json:"items"`
 }
 
-func (f *PgUpgrade) GetObjectKind() unversioned.ObjectKind {
+func (f *PgUpgrade) GetObjectKind() schema.ObjectKind {
 	return &f.TypeMeta
 }
 
-func (f *PgUpgrade) GetObjectMeta() meta.Object {
+func (f *PgUpgrade) GetObjectMeta() metav1.Object {
 	return &f.Metadata
 }
 
-func (fl *PgUpgradeList) GetObjectKind() unversioned.ObjectKind {
+func (fl *PgUpgradeList) GetObjectKind() schema.ObjectKind {
 	return &fl.TypeMeta
 }
 
-func (fl *PgUpgradeList) GetListMeta() unversioned.List {
+func (fl *PgUpgradeList) GetListMeta() metav1.List {
 	return &fl.Metadata
 }
 

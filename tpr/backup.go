@@ -20,9 +20,9 @@ package tpr
 
 import (
 	"encoding/json"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
 )
 
 const BACKUP_RESOURCE = "pgbackups"
@@ -39,32 +39,32 @@ type PgBackupSpec struct {
 }
 
 type PgBackup struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        api.ObjectMeta `json:"metadata"`
 
 	Spec PgBackupSpec `json:"spec"`
 }
 
 type PgBackupList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        unversioned.ListMeta `json:"metadata"`
 
 	Items []PgBackup `json:"items"`
 }
 
-func (e *PgBackup) GetObjectKind() unversioned.ObjectKind {
+func (e *PgBackup) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgBackup) GetObjectMeta() meta.Object {
+func (e *PgBackup) GetObjectMeta() metav1.Object {
 	return &e.Metadata
 }
 
-func (el *PgBackupList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgBackupList) GetObjectKind() schema.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *PgBackupList) GetListMeta() unversioned.List {
+func (el *PgBackupList) GetListMeta() metav1.List {
 	return &el.Metadata
 }
 

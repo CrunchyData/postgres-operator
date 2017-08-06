@@ -27,11 +27,10 @@ import (
 
 	//for TPR client
 	"github.com/crunchydata/postgres-operator/tpr"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/unversioned"
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/runtime/serializer"
 )
 
 var Config *rest.Config
@@ -108,7 +107,7 @@ func ConnectToKube() {
 }
 
 func configureTPRClient(config *rest.Config) {
-	groupversion := unversioned.GroupVersion{
+	groupversion := schema.GroupVersion{
 		Group:   "crunchydata.com",
 		Version: "v1",
 	}

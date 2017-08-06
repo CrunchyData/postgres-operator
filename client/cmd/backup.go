@@ -22,8 +22,8 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"time"
 )

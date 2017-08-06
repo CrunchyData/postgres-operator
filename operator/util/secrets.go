@@ -19,8 +19,8 @@ import (
 	//"encoding/base64"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/rest"
 
 	"k8s.io/client-go/pkg/api/v1"

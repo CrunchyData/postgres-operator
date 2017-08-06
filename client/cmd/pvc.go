@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
-	"k8s.io/client-go/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"strings"
 	"text/template"

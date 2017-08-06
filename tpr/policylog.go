@@ -20,9 +20,8 @@ package tpr
 
 import (
 	"encoding/json"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const POLICY_LOG_RESOURCE = "pgpolicylogs"
@@ -36,32 +35,32 @@ type PgPolicylogSpec struct {
 }
 
 type PgPolicylog struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec PgPolicylogSpec `json:"spec"`
 }
 
 type PgPolicylogList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []PgPolicylog `json:"items"`
 }
 
-func (e *PgPolicylog) GetObjectKind() unversioned.ObjectKind {
+func (e *PgPolicylog) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgPolicylog) GetObjectMeta() meta.Object {
+func (e *PgPolicylog) GetObjectMeta() metav1.Object {
 	return &e.Metadata
 }
 
-func (el *PgPolicylogList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgPolicylogList) GetObjectKind() schema.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *PgPolicylogList) GetListMeta() unversioned.List {
+func (el *PgPolicylogList) GetListMeta() metav1.List {
 	return &el.Metadata
 }
 

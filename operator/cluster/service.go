@@ -23,8 +23,8 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/operator/util"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
-	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 
 	"text/template"

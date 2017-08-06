@@ -17,7 +17,7 @@ package util
 
 import (
 	"github.com/crunchydata/postgres-operator/tpr"
-	kerrors "k8s.io/client-go/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"

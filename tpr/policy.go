@@ -20,9 +20,8 @@ package tpr
 
 import (
 	"encoding/json"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const POLICY_RESOURCE = "pgpolicies"
@@ -35,32 +34,32 @@ type PgPolicySpec struct {
 }
 
 type PgPolicy struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec PgPolicySpec `json:"spec"`
 }
 
 type PgPolicyList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []PgPolicy `json:"items"`
 }
 
-func (e *PgPolicy) GetObjectKind() unversioned.ObjectKind {
+func (e *PgPolicy) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgPolicy) GetObjectMeta() meta.Object {
+func (e *PgPolicy) GetObjectMeta() schema.Object {
 	return &e.Metadata
 }
 
-func (el *PgPolicyList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgPolicyList) GetObjectKind() schema.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *PgPolicyList) GetListMeta() unversioned.List {
+func (el *PgPolicyList) GetListMeta() metav1.List {
 	return &el.Metadata
 }
 

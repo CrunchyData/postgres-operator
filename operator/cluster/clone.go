@@ -29,8 +29,8 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/pkg/api"
-	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 

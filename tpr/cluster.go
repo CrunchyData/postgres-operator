@@ -20,9 +20,8 @@ package tpr
 
 import (
 	"encoding/json"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const CLUSTER_RESOURCE = "pgclusters"
@@ -57,32 +56,32 @@ type PgClusterSpec struct {
 }
 
 type PgCluster struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec PgClusterSpec `json:"spec"`
 }
 
 type PgClusterList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []PgCluster `json:"items"`
 }
 
-func (e *PgCluster) GetObjectKind() unversioned.ObjectKind {
+func (e *PgCluster) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgCluster) GetObjectMeta() meta.Object {
+func (e *PgCluster) GetObjectMeta() metav1.Object {
 	return &e.Metadata
 }
 
-func (el *PgClusterList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgClusterList) GetObjectKind() schema.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *PgClusterList) GetListMeta() unversioned.List {
+func (el *PgClusterList) GetListMeta() metav1.List {
 	return &el.Metadata
 }
 

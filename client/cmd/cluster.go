@@ -20,10 +20,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/pkg/api"
-	kerrors "k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/labels"
 
 	"k8s.io/client-go/pkg/api/v1"
 )

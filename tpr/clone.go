@@ -20,9 +20,9 @@ package tpr
 
 import (
 	"encoding/json"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const CLONE_RESOURCE = "pgclones"
@@ -34,32 +34,32 @@ type PgCloneSpec struct {
 }
 
 type PgClone struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec PgCloneSpec `json:"spec"`
 }
 
 type PgCloneList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []PgClone `json:"items"`
 }
 
-func (e *PgClone) GetObjectKind() unversioned.ObjectKind {
+func (e *PgClone) GetObjectKind() metav1.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgClone) GetObjectMeta() meta.Object {
+func (e *PgClone) GetObjectMeta() schema.Object {
 	return &e.Metadata
 }
 
-func (el *PgCloneList) GetObjectKind() unversioned.ObjectKind {
+func (el *PgCloneList) GetObjectKind() schema.ObjectKind {
 	return &el.TypeMeta
 }
 
-func (el *PgCloneList) GetListMeta() unversioned.List {
+func (el *PgCloneList) GetListMeta() metav1.List {
 	return &el.Metadata
 }
 
