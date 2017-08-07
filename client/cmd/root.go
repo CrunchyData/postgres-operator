@@ -166,11 +166,13 @@ func validateConfig() {
 		os.Exit(2)
 	}
 
+	/**
 	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "dynamic" ||
 		viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") == "dynamic" {
 		log.Error("STORAGE_TYPE dynamic is not supported yet")
 		os.Exit(2)
 	}
+	*/
 
 	rep := viper.GetString("CLUSTER.REPLICAS")
 	if rep != "" {

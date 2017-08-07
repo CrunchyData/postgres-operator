@@ -372,7 +372,7 @@ func createPVC(clientset *kubernetes.Clientset, name string, storageSpec *tpr.Pg
 	case "existing":
 		log.Debug("StorageType is existing")
 		pvcName = storageSpec.PvcName
-	case "create":
+	case "create", "dynamic":
 		log.Debug("StorageType is create")
 		pvcName = name + "-pvc"
 		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
@@ -383,8 +383,6 @@ func createPVC(clientset *kubernetes.Clientset, name string, storageSpec *tpr.Pg
 			return pvcName, err
 		}
 		log.Info("created PVC =" + pvcName + " in namespace " + namespace)
-	case "dynamic":
-		log.Debug("StorageType is dynamic, not supported yet")
 	}
 
 	return pvcName, err

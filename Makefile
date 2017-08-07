@@ -17,8 +17,8 @@ pgo:	check-go-vars
 	cd client && go build -o $(GOBIN)/pgo pgo.go
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/*
-	go get -u github.com/FiloSottile/gvt
-	gvt restore
+	go get github.com/tools/godep
+	godep restore
 operatorimage:	check-go-vars
 	cd operator && go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator

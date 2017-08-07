@@ -125,20 +125,22 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 	if err != nil {
 		log.Error("could not convert REPLICAS config setting")
 	} else {
-		//create the replica service
-		serviceName := cl.Spec.Name + "-replica"
-		repserviceFields := ServiceTemplateFields{
-			Name:        serviceName,
-			ClusterName: cl.Spec.Name,
-			Port:        cl.Spec.Port,
-		}
+		if newReplicas > 0 {
+			//create the replica service
+			serviceName := cl.Spec.Name + "-replica"
+			repserviceFields := ServiceTemplateFields{
+				Name:        serviceName,
+				ClusterName: cl.Spec.Name,
+				Port:        cl.Spec.Port,
+			}
 
-		err = CreateService(clientset, &repserviceFields, namespace)
-		if err != nil {
-			log.Error("error in creating replica service " + err.Error())
-			return err
+			err = CreateService(clientset, &repserviceFields, namespace)
+			if err != nil {
+				log.Error("error in creating replica service " + err.Error())
+				return err
+			}
+			ScaleReplicas(serviceName, clientset, cl, newReplicas, namespace)
 		}
-		ScaleReplicas(serviceName, clientset, cl, newReplicas, namespace)
 	}
 
 	return err
@@ -429,9 +431,8 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("MasterStorage.StorageType is emptydir")
-		log.Debug("using the dynamic replica template ")
 		err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
-	case "existing", "create":
+	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
 		err = ReplicaDeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 	}
