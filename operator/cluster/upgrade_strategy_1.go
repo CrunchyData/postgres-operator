@@ -99,7 +99,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		return err
 	}
 
-	deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
+	deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
 	if err != nil {
 		log.Error("error creating master Deployment " + err.Error())
 		return err
@@ -220,7 +220,7 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 		return err
 	}
 
-	deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
+	deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
 	if err != nil {
 		log.Error("error creating master Deployment " + err.Error())
 		return err

@@ -23,8 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
@@ -57,9 +56,9 @@ func showBackup(args []string) {
 		//pg-database=basic or
 		//pgbackup=true
 		if arg == "all" {
-			lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
+			lo := meta_v1.ListOptions{LabelSelector: "pgbackup=true"}
 			log.Debug("label selector is " + lo.LabelSelector)
-			pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
+			pods, err2 := Clientset.CoreV1().Pods(Namespace).List(lo)
 			if err2 != nil {
 				log.Error(err2.Error())
 				return
@@ -97,9 +96,9 @@ func showBackupInfo(name string) {
 	}
 
 	//print the backup jobs if any exists
-	lo := v1.ListOptions{LabelSelector: "pgbackup=true,pg-database=" + name}
+	lo := meta_v1.ListOptions{LabelSelector: "pgbackup=true,pg-database=" + name}
 	log.Debug("label selector is " + lo.LabelSelector)
-	pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
+	pods, err2 := Clientset.CoreV1().Pods(Namespace).List(lo)
 	if err2 != nil {
 		log.Error(err2.Error())
 	}
@@ -277,7 +276,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	}
 
 	newInstance = &tpr.PgBackup{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: name,
 		},
 		Spec: spec,

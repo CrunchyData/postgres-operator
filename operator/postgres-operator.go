@@ -29,15 +29,15 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/upgrade"
 	"github.com/crunchydata/postgres-operator/tpr"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -117,7 +117,7 @@ func buildClientFromFlags(kubeconfig string) (*rest.RESTClient, error) {
 		return nil, err
 	}
 
-	config.GroupVersion = &unversioned.GroupVersion{
+	config.GroupVersion = &schema.GroupVersion{
 		Group:   "crunchydata.com",
 		Version: "v1",
 	}
@@ -140,7 +140,7 @@ func configFromFlags(kubeconfig string) (*rest.Config, error) {
 
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(
-		unversioned.GroupVersion{Group: "crunchydata.com", Version: "v1"},
+		schema.GroupVersion{Group: "crunchydata.com", Version: "v1"},
 		&tpr.PgCluster{},
 		&tpr.PgClusterList{},
 		&tpr.PgClone{},
@@ -165,11 +165,11 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 func initializeResources(clientset *kubernetes.Clientset) {
 	// initialize third party resources if they do not exist
 
-	tpr, err := clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
+	tpr, err := clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name: "pg-cluster.crunchydata.com",
 				},
 				Versions: []v1beta1.APIVersion{
@@ -190,11 +190,11 @@ func initializeResources(clientset *kubernetes.Clientset) {
 		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
-	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com")
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name: "pg-backup.crunchydata.com",
 				},
 				Versions: []v1beta1.APIVersion{
@@ -215,11 +215,11 @@ func initializeResources(clientset *kubernetes.Clientset) {
 		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
-	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-upgrade.crunchydata.com")
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-upgrade.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name: "pg-upgrade.crunchydata.com",
 				},
 				Versions: []v1beta1.APIVersion{
@@ -240,11 +240,11 @@ func initializeResources(clientset *kubernetes.Clientset) {
 		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
-	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-policy.crunchydata.com")
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-policy.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name: "pg-policy.crunchydata.com",
 				},
 				Versions: []v1beta1.APIVersion{
@@ -265,11 +265,11 @@ func initializeResources(clientset *kubernetes.Clientset) {
 		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
-	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-clone.crunchydata.com")
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-clone.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name: "pg-clone.crunchydata.com",
 				},
 				Versions: []v1beta1.APIVersion{
@@ -290,11 +290,11 @@ func initializeResources(clientset *kubernetes.Clientset) {
 		log.Infof("SKIPPING: already exists %#v\n", tpr)
 	}
 
-	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-policylog.crunchydata.com")
+	tpr, err = clientset.Extensions().ThirdPartyResources().Get("pg-policylog.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			tpr := &v1beta1.ThirdPartyResource{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name: "pg-policylog.crunchydata.com",
 				},
 				Versions: []v1beta1.APIVersion{

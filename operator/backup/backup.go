@@ -29,11 +29,10 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/client-go/pkg/api/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 
-	//	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -185,7 +184,7 @@ func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job 
 
 	//delete the job
 	err := clientset.Batch().Jobs(namespace).Delete(jobName,
-		&v1.DeleteOptions{})
+		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())
 		return

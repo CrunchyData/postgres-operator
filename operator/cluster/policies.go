@@ -20,11 +20,12 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"os"
@@ -34,7 +35,7 @@ import (
 
 func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := v1.ListOptions{LabelSelector: "pg-cluster,master"}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster,master"}
 	fw, err := clientset.Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())

@@ -21,7 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/pkg/api/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var testCmd = &cobra.Command{
@@ -86,14 +86,14 @@ func showTest(args []string) {
 
 func testServices(cluster *tpr.PgCluster) {
 
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	services, err := Clientset.Core().Services(Namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
+	services, err := Clientset.CoreV1().Services(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of services" + err.Error())
 		return
 	}
 
-	lo = v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
+	lo = meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
 	secrets, err := Clientset.Secrets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())

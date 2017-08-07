@@ -25,7 +25,9 @@ import (
 	"io"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
+
 	"strings"
 	"text/template"
 	"time"
@@ -47,7 +49,7 @@ func printPVC(pvcName string) {
 	var pvc *v1.PersistentVolumeClaim
 	var err error
 
-	pvc, err = Clientset.Core().PersistentVolumeClaims(Namespace).Get(pvcName)
+	pvc, err = Clientset.CoreV1().PersistentVolumeClaims(Namespace).Get(pvcName, meta_v1.GetOptions{})
 	if err != nil {
 		fmt.Printf("\nPVC %s\n", pvcName+" is not found")
 		fmt.Println(err.Error())
@@ -67,7 +69,7 @@ func PrintPVCListing(pvcName string) {
 	var podName = "lspvc-" + pvcName
 
 	//delete lspvc pod if it was not deleted for any reason prior
-	_, err = Clientset.Core().Pods(Namespace).Get(podName)
+	_, err = Clientset.CoreV1().Pods(Namespace).Get(podName, meta_v1.GetOptions{})
 	if errors.IsNotFound(err) {
 		//
 	} else if err != nil {
@@ -75,7 +77,7 @@ func PrintPVCListing(pvcName string) {
 	} else {
 		log.Debug("deleting prior pod " + podName)
 		err = Clientset.Core().Pods(Namespace).Delete(podName,
-			&v1.DeleteOptions{})
+			&meta_v1.DeleteOptions{})
 		if err != nil {
 			log.Error("delete pod error " + err.Error()) //TODO this is debug info
 		}
@@ -125,7 +127,7 @@ func PrintPVCListing(pvcName string) {
 		return
 	}
 	var resultPod *v1.Pod
-	resultPod, err = Clientset.Core().Pods(Namespace).Create(&newpod)
+	resultPod, err = Clientset.CoreV1().Pods(Namespace).Create(&newpod)
 	if err != nil {
 		log.Error("error creating lspvc Pod " + err.Error())
 		return
@@ -133,7 +135,7 @@ func PrintPVCListing(pvcName string) {
 	log.Debug("created pod " + resultPod.Name)
 
 	timeout := time.Duration(6 * time.Second)
-	lo := v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
+	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
 	podPhase := v1.PodSucceeded
 	err = util.WaitUntilPod(Clientset, lo, podPhase, timeout, Namespace)
 	if err != nil {
@@ -144,7 +146,7 @@ func PrintPVCListing(pvcName string) {
 
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}
-	req := Clientset.Core().Pods(Namespace).GetLogs(podName, &logOptions)
+	req := Clientset.CoreV1().Pods(Namespace).GetLogs(podName, &logOptions)
 	if req == nil {
 		log.Debug("error in get logs for " + podName)
 	} else {
@@ -183,8 +185,8 @@ func PrintPVCListing(pvcName string) {
 	}
 
 	//delete lspvc pod
-	err = Clientset.Core().Pods(Namespace).Delete(podName,
-		&v1.DeleteOptions{})
+	err = Clientset.CoreV1().Pods(Namespace).Delete(podName,
+		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("error deleting lspvc pod " + podName)

@@ -26,11 +26,12 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/watch"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -122,7 +123,7 @@ func deleteUpgrade(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, 
 
 	//delete the job
 	err := clientset.Batch().Jobs(namespace).Delete(jobName,
-		&v1.DeleteOptions{})
+		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())
 		return
@@ -139,7 +140,7 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, tprclient *rest.RESTCl
 
 	log.Info("MajorUpgradeProcess watch starting...")
 
-	lo := v1.ListOptions{LabelSelector: "pgupgrade=true"}
+	lo := meta_v1.ListOptions{LabelSelector: "pgupgrade=true"}
 	fw, err := clientset.Batch().Jobs(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching upgrade job" + err.Error())

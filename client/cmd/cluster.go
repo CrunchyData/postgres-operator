@@ -21,11 +21,10 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func showCluster(args []string) {
@@ -92,7 +91,7 @@ func showCluster(args []string) {
 }
 
 func listReplicaSets(name string) {
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
 	reps, err := Clientset.ReplicaSets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of replicasets" + err.Error())
@@ -104,8 +103,8 @@ func listReplicaSets(name string) {
 
 }
 func listDeployments(name string) {
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	deployments, err := Clientset.Deployments(Namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
+	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
 		return
@@ -129,8 +128,8 @@ func printPolicies(d *v1beta1.Deployment) {
 }
 
 func listPods(name string) {
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	pods, err := Clientset.Core().Pods(Namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
+	pods, err := Clientset.CoreV1().Pods(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of pods" + err.Error())
 		return
@@ -142,8 +141,8 @@ func listPods(name string) {
 
 }
 func listServices(name string) {
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	services, err := Clientset.Core().Services(Namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
+	services, err := Clientset.CoreV1().Services(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of services" + err.Error())
 		return
@@ -305,7 +304,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 	}
 
 	newInstance := &tpr.PgCluster{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: name,
 		},
 		Spec: spec,
@@ -365,7 +364,7 @@ func getReadyStatus(pod *v1.Pod) string {
 
 func validateSecretFrom(secretname string) error {
 	var err error
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + secretname}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + secretname}
 	secrets, err := Clientset.Secrets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())

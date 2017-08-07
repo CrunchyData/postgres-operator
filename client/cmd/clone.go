@@ -21,7 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/pkg/api"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
@@ -91,7 +91,7 @@ func createClone(clusterName string) {
 	spec.Status = ""
 
 	newInstance = &tpr.PgClone{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: CloneName,
 		},
 		Spec: spec,

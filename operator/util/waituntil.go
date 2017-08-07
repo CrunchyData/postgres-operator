@@ -17,21 +17,23 @@ package util
 
 import (
 	log "github.com/Sirupsen/logrus"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+
 	"time"
 )
 
 //lo := v1.ListOptions{LabelSelector: "pg-database=" + "testpod"}
 //podPhase is v1.PodRunning
 //timeout := time.Minute
-func WaitUntilPod(clientset *kubernetes.Clientset, lo v1.ListOptions, podPhase v1.PodPhase, timeout time.Duration, namespace string) error {
+func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPhase v1.PodPhase, timeout time.Duration, namespace string) error {
 
 	var err error
 	var fw watch.Interface
 
-	fw, err = clientset.Core().Pods(namespace).Watch(lo)
+	fw, err = clientset.CoreV1().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching pods " + err.Error())
 		return err
@@ -73,8 +75,8 @@ func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, time
 	var err error
 	var fw watch.Interface
 
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + podname}
-	fw, err = clientset.Core().Pods(namespace).Watch(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + podname}
+	fw, err = clientset.CoreV1().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching pods 2 " + err.Error())
 		return err
@@ -110,8 +112,8 @@ func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname strin
 	var err error
 	var fw watch.Interface
 
-	lo := v1.ListOptions{LabelSelector: "name=" + depname}
-	fw, err = clientset.Deployments(namespace).Watch(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "name=" + depname}
+	fw, err = clientset.ExtensionsV1beta1().Deployments(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching deployments " + err.Error())
 		return err
@@ -148,7 +150,7 @@ func WaitUntilReplicasetIsDeleted(clientset *kubernetes.Clientset, rcname string
 	var err error
 	var fw watch.Interface
 
-	lo := v1.ListOptions{LabelSelector: "name=" + rcname}
+	lo := meta_v1.ListOptions{LabelSelector: "name=" + rcname}
 	fw, err = clientset.ReplicaSets(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching replicasets" + err.Error())

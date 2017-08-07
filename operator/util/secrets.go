@@ -20,6 +20,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -140,7 +142,7 @@ func generatePassword(length int) string {
 //delete pgroot, pgmaster, and pguser secrets
 func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) {
 
-	options := v1.DeleteOptions{}
+	options := meta_v1.DeleteOptions{}
 	secretName := db + tpr.PGMASTER_SECRET_SUFFIX
 	err := clientset.Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
@@ -165,7 +167,9 @@ func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string
 }
 
 func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, secretName string) (string, error) {
-	secret, err := clientset.Secrets(namespace).Get(secretName)
+
+	options := meta_v1.GetOptions{}
+	secret, err := clientset.Secrets(namespace).Get(secretName, options)
 	if errors.IsNotFound(err) {
 		log.Error("not found error secret " + secretName)
 		return "", err
@@ -178,7 +182,7 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
 
 	log.Debug("CopySecrets " + fromCluster + " to " + toCluster)
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + fromCluster}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + fromCluster}
 	secrets, err := clientset.Secrets(namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())

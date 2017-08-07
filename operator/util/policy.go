@@ -18,6 +18,7 @@ package util
 import (
 	"github.com/crunchydata/postgres-operator/tpr"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
@@ -43,7 +44,8 @@ func ExecPolicy(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, nam
 	}
 	//get the host ip address
 	var service *v1.Service
-	service, err = clientset.Services(namespace).Get(clusterName)
+	options := meta_v1.GetOptions{}
+	service, err = clientset.Services(namespace).Get(clusterName, options)
 	if err != nil {
 		log.Error(err)
 		return err

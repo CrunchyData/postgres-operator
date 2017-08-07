@@ -19,8 +19,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
@@ -60,31 +60,31 @@ func ConnectToKube() {
 
 	//verify that the TPRs exist in the Kube
 	//var tpr *v1beta1.ThirdPartyResource
-	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com")
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-cluster.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("required pg-cluster.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
-	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com")
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-backup.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("required pg-backup.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
-	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-upgrade.crunchydata.com")
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-upgrade.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("required pg-upgrade.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
-	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-clone.crunchydata.com")
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-clone.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("required pg-clone.crunchydata.com TPR was not found on your kube cluster")
 		os.Exit(2)
 	}
-	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-policylog.crunchydata.com")
+	_, err = Clientset.Extensions().ThirdPartyResources().Get("pg-policylog.crunchydata.com", meta_v1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("required pg-policylog.crunchydata.com TPR was not found on your kube cluster")
@@ -143,7 +143,7 @@ func configureTPRClient(config *rest.Config) {
 
 func PrintSecrets(db string) {
 
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + db}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
 	secrets, err := Clientset.Secrets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
@@ -162,7 +162,7 @@ func PrintSecrets(db string) {
 
 func GetMasterSecretPassword(db string) string {
 
-	lo := v1.ListOptions{LabelSelector: "pg-database=" + db}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
 	secrets, err := Clientset.Secrets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())

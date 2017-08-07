@@ -22,8 +22,7 @@ import (
 	"github.com/spf13/viper"
 	"io/ioutil"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/user"
 	"strings"
 )
@@ -133,7 +132,7 @@ func getPolicyParams(name string) (*tpr.PgPolicy, error) {
 	}
 
 	newInstance := &tpr.PgPolicy{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: name,
 		},
 		Spec: spec,
@@ -247,8 +246,8 @@ func applyPolicy(policies []string) {
 	//get filtered list of Deployments
 	sel := Selector + ",!replica"
 	log.Debug("selector string=[" + sel + "]")
-	lo := v1.ListOptions{LabelSelector: sel}
-	deployments, err := Clientset.Deployments(Namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: sel}
+	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
 		return
@@ -317,7 +316,7 @@ func getPolicylog(policyname, clustername string) (*tpr.PgPolicylog, error) {
 	spec.ClusterName = clustername
 
 	newInstance := &tpr.PgPolicylog{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: policyname + clustername,
 		},
 		Spec: spec,

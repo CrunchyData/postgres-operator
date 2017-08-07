@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/pkg/api"
 )
 
 const BACKUP_RESOURCE = "pgbackups"
@@ -40,14 +39,14 @@ type PgBackupSpec struct {
 
 type PgBackup struct {
 	metav1.TypeMeta `json:",inline"`
-	Metadata        api.ObjectMeta `json:"metadata"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
 
 	Spec PgBackupSpec `json:"spec"`
 }
 
 type PgBackupList struct {
 	metav1.TypeMeta `json:",inline"`
-	Metadata        unversioned.ListMeta `json:"metadata"`
+	Metadata        metav1.ListMeta `json:"metadata"`
 
 	Items []PgBackup `json:"items"`
 }

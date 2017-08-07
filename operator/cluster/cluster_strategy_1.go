@@ -24,12 +24,14 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/v1"
+
 	"strconv"
 
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -109,7 +111,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 	}
 
 	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
-		deploymentResult, err = clientset.Deployments(namespace).Create(&deployment)
+		deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
 		if err != nil {
 			log.Error("error creating master Deployment " + err.Error())
 			return err
@@ -156,13 +158,13 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 	}
 
 	//delete any remaining pods that may be left lingering
-	listOptions := v1.ListOptions{}
+	listOptions := meta_v1.ListOptions{}
 	listOptions.LabelSelector = "pg-cluster=" + cl.Spec.Name
-	pods, err := clientset.Core().Pods(namespace).List(listOptions)
+	pods, err := clientset.CoreV1().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
 		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
 		err = clientset.Pods(namespace).Delete(pod.Name,
-			&v1.DeleteOptions{})
+			&meta_v1.DeleteOptions{})
 		if err != nil {
 			log.Error("error deleting pod " + pod.Name + err.Error())
 		}
@@ -170,11 +172,11 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 
 	}
 	listOptions.LabelSelector = "name=" + cl.Spec.Name + REPLICA_SUFFIX
-	pods, err = clientset.Core().Pods(namespace).List(listOptions)
+	pods, err = clientset.CoreV1().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
 		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
 		err = clientset.Pods(namespace).Delete(pod.Name,
-			&v1.DeleteOptions{})
+			&meta_v1.DeleteOptions{})
 		if err != nil {
 			log.Error("error deleting pod " + pod.Name + err.Error())
 		}
@@ -185,7 +187,7 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 	//delete the master service
 
 	err = clientset.Services(namespace).Delete(cl.Spec.Name,
-		&v1.DeleteOptions{})
+		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting master Service " + err.Error())
 	}
@@ -193,7 +195,7 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, tprclie
 
 	//delete the replica service
 	err = clientset.Services(namespace).Delete(cl.Spec.Name+REPLICA_SUFFIX,
-		&v1.DeleteOptions{})
+		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting replica Service " + err.Error())
 	}
@@ -209,8 +211,8 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	//var replicaName = cl.Spec.Name + REPLICA_SUFFIX
 
 	//get the deployments
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + cl.Spec.Name}
-	deployments, err := clientset.Deployments(namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cl.Spec.Name}
+	deployments, err := clientset.ExtensionsV1beta1().Deployments(namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
 		return err
@@ -233,7 +235,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	//delete the deployments
 	for _, d := range deployments.Items {
 		log.Debug("deleting deployment " + d.ObjectMeta.Name)
-		err = clientset.Deployments(namespace).Delete(d.ObjectMeta.Name, &v1.DeleteOptions{})
+		err = clientset.ExtensionsV1beta1().Deployments(namespace).Delete(d.ObjectMeta.Name, &meta_v1.DeleteOptions{})
 		if err != nil {
 			log.Error("error deleting replica Deployment " + err.Error())
 		}
@@ -242,7 +244,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	//TODO for k8s 1.6 and client-go 3.0 we can use propagation_policy
 	// to have the replica sets removed as part of the deployment remove
 	//delete replica sets if they exist
-	options := v1.ListOptions{}
+	options := meta_v1.ListOptions{}
 	options.LabelSelector = "pg-cluster=" + cl.Spec.Name
 
 	var reps *v1beta1.ReplicaSetList
@@ -252,7 +254,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	} else {
 		for _, r := range reps.Items {
 			err = clientset.ReplicaSets(namespace).Delete(r.Name,
-				&v1.DeleteOptions{})
+				&meta_v1.DeleteOptions{})
 			if err != nil {
 				log.Error("error deleting cluster replicaset " + err.Error())
 			}
@@ -301,7 +303,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 	r.CreateReplica(cloneName, clientset, cl, cloneName, pvcName, namespace, true)
 
 	//get the original deployment
-	d, err := clientset.Deployments(namespace).Get(cl.Spec.ClusterName)
+	d, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(cl.Spec.ClusterName, meta_v1.GetOptions{})
 	if err != nil {
 		log.Error("getPolicyLabels deployment " + cl.Spec.ClusterName + " error " + err.Error())
 		return err
@@ -327,7 +329,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 }
 func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName string) bool {
 
-	_, err := clientset.Deployments(namespace).Get(clusterName)
+	_, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(clusterName, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return false
 	} else if err != nil {
@@ -344,7 +346,7 @@ func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, cl
 	var deployment *v1beta1.Deployment
 
 	//get the deployment
-	deployment, err = clientset.Deployments(namespace).Get(clusterName)
+	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(clusterName, meta_v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -388,7 +390,7 @@ func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, cl
 		log.Debug("created merge patch")
 	}
 
-	_, err = clientset.Deployments(namespace).Patch(clusterName, api.MergePatchType, patchBytes, "")
+	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debug("error patching deployment " + err.Error())
 	}
@@ -448,7 +450,7 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		return err
 	}
 
-	replicaDeploymentResult, err = clientset.Deployments(namespace).Create(&replicaDeployment)
+	replicaDeploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&replicaDeployment)
 	if err != nil {
 		log.Error("error creating replica Deployment " + err.Error())
 		return err

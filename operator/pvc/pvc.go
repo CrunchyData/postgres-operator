@@ -20,8 +20,9 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/v1"
 	"text/template"
 	"time"
@@ -92,7 +93,7 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 		return err
 	}
 	var result *v1.PersistentVolumeClaim
-	result, err = clientset.Core().PersistentVolumeClaims(namespace).Create(&newpvc)
+	result, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Create(&newpvc)
 	if err != nil {
 		log.Error("error creating pvc " + err.Error() + " in namespace " + namespace)
 		return err
@@ -111,7 +112,8 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 	var pvc *v1.PersistentVolumeClaim
 
 	//see if the PVC exists
-	pvc, err = clientset.Core().PersistentVolumeClaims(namespace).Get(name)
+	options := meta_v1.GetOptions{}
+	pvc, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
 	if err != nil {
 		log.Info("\nPVC %s\n", name+" is not found, will not attempt delete")
 		return nil
@@ -122,7 +124,7 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 		if pvc.ObjectMeta.Labels["pgremove"] == "true" {
 			log.Info("pgremove is true on this pvc")
 			log.Debug("delete PVC " + name + " in namespace " + namespace)
-			err = clientset.Core().PersistentVolumeClaims(namespace).Delete(name, &v1.DeleteOptions{})
+			err = clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
 			if err != nil {
 				log.Error("error deleting PVC " + name + err.Error() + " in namespace " + namespace)
 				return err
@@ -135,7 +137,8 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 }
 
 func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
-	_, err := clientset.Core().PersistentVolumeClaims(namespace).Get(name)
+	options := meta_v1.GetOptions{}
+	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return false

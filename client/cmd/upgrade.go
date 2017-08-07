@@ -24,8 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"strings"
 )
@@ -135,11 +134,11 @@ func showUpgradeItem(upgrade *tpr.PgUpgrade) {
 	fmt.Printf("%s%s\n", TREE_TRUNK, "new_pvc_name : "+upgrade.Spec.NEW_PVC_NAME)
 
 	//print the upgrade jobs if any exists
-	lo := v1.ListOptions{
+	lo := meta_v1.ListOptions{
 		LabelSelector: "pg-database=" + upgrade.Spec.Name + ",pgupgrade=true",
 	}
 	log.Debug("label selector is " + lo.LabelSelector)
-	pods, err2 := Clientset.Core().Pods(Namespace).List(lo)
+	pods, err2 := Clientset.CoreV1().Pods(Namespace).List(lo)
 	if err2 != nil {
 		log.Error(err2.Error())
 	}
@@ -352,7 +351,7 @@ func getUpgradeParams(name string) (*tpr.PgUpgrade, error) {
 	}
 
 	newInstance := &tpr.PgUpgrade{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: name,
 		},
 		Spec: spec,

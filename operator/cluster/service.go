@@ -24,6 +24,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
@@ -43,7 +45,7 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 	var replicaServiceResult *v1.Service
 
 	//create the replica service if it doesn't exist
-	_, err = clientset.Core().Services(namespace).Get(fields.Name)
+	_, err = clientset.CoreV1().Services(namespace).Get(fields.Name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 
 		err = ServiceTemplate1.Execute(&replicaServiceDoc, fields)

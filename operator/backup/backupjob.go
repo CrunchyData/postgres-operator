@@ -21,16 +21,17 @@ import (
 
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"k8s.io/client-go/pkg/watch"
+
 	"k8s.io/client-go/rest"
 )
 
 func ProcessJobs(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
+	lo := meta_v1.ListOptions{LabelSelector: "pgbackup=true"}
 	fw, err := clientset.Batch().Jobs(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessJobs " + err.Error())

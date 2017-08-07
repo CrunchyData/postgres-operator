@@ -47,11 +47,11 @@ type PgCloneList struct {
 	Items []PgClone `json:"items"`
 }
 
-func (e *PgClone) GetObjectKind() metav1.ObjectKind {
+func (e *PgClone) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgClone) GetObjectMeta() schema.Object {
+func (e *PgClone) GetObjectMeta() metav1.Object {
 	return &e.Metadata
 }
 

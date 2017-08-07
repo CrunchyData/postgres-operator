@@ -51,7 +51,7 @@ func (e *PgPolicy) GetObjectKind() schema.ObjectKind {
 	return &e.TypeMeta
 }
 
-func (e *PgPolicy) GetObjectMeta() schema.Object {
+func (e *PgPolicy) GetObjectMeta() metav1.Object {
 	return &e.Metadata
 }
 

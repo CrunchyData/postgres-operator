@@ -16,27 +16,22 @@
 package cluster
 
 import (
-	"strings"
-	//"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"os"
-	//"text/template"
+	"strings"
 	"time"
 
-	//"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 
 	"k8s.io/client-go/kubernetes"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
-	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
@@ -130,8 +125,8 @@ func CompleteClone(config *rest.Config, clientset *kubernetes.Clientset, client 
 
 	log.Debug("setting up clone Deployment watch")
 
-	lo := v1.ListOptions{LabelSelector: "clone"}
-	fw, err := clientset.Extensions().Deployments(namespace).Watch(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "clone"}
+	fw, err := clientset.ExtensionsV1beta1().Deployments(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching pg-cluster deployments" + err.Error())
 		os.Exit(2)
@@ -252,8 +247,8 @@ func finishClone(config *rest.Config, clientset *kubernetes.Clientset, tprclient
 }
 
 func getMasterPodName(clientset *kubernetes.Clientset, clusterName, namespace string) (string, error) {
-	lo := v1.ListOptions{LabelSelector: "pg-cluster=" + clusterName}
-	pods, err := clientset.Core().Pods(namespace).List(lo)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + clusterName}
+	pods, err := clientset.CoreV1().Pods(namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of pods" + err.Error())
 		return "", err
@@ -300,7 +295,7 @@ func copyTPR(cluster *tpr.PgCluster, clone *tpr.PgClone) *tpr.PgCluster {
 	spec.BACKUP_PATH = cluster.Spec.BACKUP_PATH
 
 	newInstance := &tpr.PgCluster{
-		Metadata: api.ObjectMeta{
+		Metadata: meta_v1.ObjectMeta{
 			Name: clone.Spec.Name,
 		},
 		Spec: spec,

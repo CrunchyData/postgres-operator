@@ -1,5 +1,5 @@
 = PostgreSQL Operator Build and Setup
-v1.4, {docdate}
+v1.4.1, {docdate}
 
 == Table of Contents
 
@@ -188,11 +188,15 @@ Install a golang compiler, this can be done with either
 your package manager or by following directions
 from https://golang.org/dl/
 
-Then install the project library dependencies:
+Then install the project library dependencies, starting
+with version 1.4.1 the godep dependency manager is used
+as follows:
 ....
 cd $COROOT
-go get -u github.com/FiloSottile/gvt
-gvt restore
+go get github.com/tools/godep
+godep restore
+go get github.com/spf13/cobra github.com/spf13/viper
+go get github.com/docker/docker/api github.com/docker/docker/client
 ....
 
 In a development environment you will likely want to create a
