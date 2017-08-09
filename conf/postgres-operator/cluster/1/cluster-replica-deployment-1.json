@@ -81,6 +81,23 @@
 		}
 		],
 
+               "affinity": {
+                    "nodeAffinity": {
+                        "preferredDuringSchedulingIgnoredDuringExecution": [{
+                            "weight": 1,
+                            "preference": {
+                                "matchExpressions": [{
+                                    "key": "kubernetes.io/hostname",
+                                    "operator": "NotIn",
+                                    "values": [
+                                        "{{.NODE_SELECTOR}}"
+                                    ]
+                                }]
+                            }
+                        }]
+                    }
+                },
+
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
             }

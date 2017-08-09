@@ -135,7 +135,7 @@ func listPods(name string) {
 		return
 	}
 	for _, pod := range pods.Items {
-		fmt.Println(TREE_BRANCH + "pod : " + pod.ObjectMeta.Name + " (" + string(pod.Status.Phase) + ") (" + getReadyStatus(&pod) + ")")
+		fmt.Println(TREE_BRANCH + "pod : " + pod.ObjectMeta.Name + " (" + string(pod.Status.Phase) + " on " + pod.Spec.NodeName + ") (" + getReadyStatus(&pod) + ")")
 		//fmt.Println(TREE_TRUNK + " phase : " + pod.Status.Phase)
 	}
 

@@ -68,6 +68,7 @@ type DeploymentTemplateFields struct {
 	PGUSER_SECRET_NAME   string
 	PGMASTER_SECRET_NAME string
 	SECURITY_CONTEXT     string
+	NODE_SELECTOR        string
 	//next 2 are for the replica deployment only
 	REPLICAS       string
 	PG_MASTER_HOST string
