@@ -293,6 +293,7 @@ func copyTPR(cluster *tpr.PgCluster, clone *tpr.PgClone) *tpr.PgCluster {
 	spec.SUPPLEMENTAL_GROUPS = cluster.Spec.SUPPLEMENTAL_GROUPS
 	spec.STRATEGY = cluster.Spec.STRATEGY
 	spec.BACKUP_PATH = cluster.Spec.BACKUP_PATH
+	spec.NodeName = cluster.Spec.NodeName
 
 	newInstance := &tpr.PgCluster{
 		Metadata: meta_v1.ObjectMeta{

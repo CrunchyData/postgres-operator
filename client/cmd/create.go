@@ -25,6 +25,7 @@ var CCP_IMAGE_TAG string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
+var NodeName string
 
 // createCmd represents the create command
 var createCmd = &cobra.Command{
@@ -64,6 +65,18 @@ pgo create cluster mycluster`,
 				log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
 				return
 			}
+		}
+
+		//always have a valid NodeName
+		if NodeName == "" {
+			NodeName = getValidNodeName()
+		} else {
+			err = validateNodeName(NodeName)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
 		}
 
 		if len(args) == 0 {
@@ -106,6 +119,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
+	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the master database")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")

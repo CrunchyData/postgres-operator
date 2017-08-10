@@ -93,7 +93,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		NODE_SELECTOR:        "operator",
+		NODE_SELECTOR:        cl.Spec.NodeName,
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -140,6 +140,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 				log.Error("error in creating replica service " + err.Error())
 				return err
 			}
+
 			ScaleReplicas(serviceName, clientset, cl, newReplicas, namespace)
 		}
 	}
@@ -427,7 +428,7 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		NODE_SELECTOR:        "operator",
+		NODE_SELECTOR:        cl.Spec.NodeName,
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {

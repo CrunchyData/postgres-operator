@@ -259,6 +259,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.FS_GROUP = ""
 	spec.SUPPLEMENTAL_GROUPS = ""
 	spec.STRATEGY = "1"
+	spec.NodeName = NodeName
 
 	//override any values from config file
 	str := viper.GetString("CLUSTER.PORT")
@@ -359,6 +360,49 @@ func getReadyStatus(pod *v1.Pod) string {
 		}
 	}
 	return fmt.Sprintf("%d/%d", readyCount, containerCount)
+
+}
+
+func getValidNodeName() string {
+	var err error
+	nodes, err := Clientset.CoreV1().Nodes().List(meta_v1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+
+	//TODO randomize the node selection
+	for _, node := range nodes.Items {
+		return node.Name
+	}
+
+	panic("no nodes found")
+
+	return "error here"
+
+}
+func validateNodeName(nodeName string) error {
+	var err error
+	lo := meta_v1.ListOptions{}
+	nodes, err := Clientset.CoreV1().Nodes().List(lo)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	found := false
+	allNodes := ""
+
+	for _, node := range nodes.Items {
+		if node.Name == nodeName {
+			found = true
+		}
+		allNodes += node.Name + " "
+	}
+
+	if found == false {
+		return errors.New("node name was not found...valid nodes include " + allNodes)
+	}
+
+	return err
 
 }
 

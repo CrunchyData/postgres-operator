@@ -33,6 +33,7 @@ type PgClusterSpec struct {
 	CCP_IMAGE_TAG         string        `json:"ccpimagetag"`
 	POSTGRES_FULL_VERSION string        `json:"postgresfullversion"`
 	Port                  string        `json:"port"`
+	NodeName              string        `json:"nodename"`
 	MasterStorage         PgStorageSpec `json:masterstorage`
 	ReplicaStorage        PgStorageSpec `json:replicastorage`
 	PG_MASTER_HOST        string        `json:"pgmasterhost"`

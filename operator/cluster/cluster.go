@@ -344,19 +344,6 @@ func ScaleReplicas(serviceName string, clientset *kubernetes.Clientset, cl *tpr.
 			log.Error(err)
 			return
 		}
-		//create a Deployment
-		//serviceName := depName + "-replica"
-		//replicaServiceFields := ServiceTemplateFields{
-		//Name:        serviceName,
-		//ClusterName: cl.Spec.Name,
-		//Port:        cl.Spec.Port,
-		//}
-
-		//err = CreateService(clientset, &replicaServiceFields, namespace)
-		//if err != nil {
-		//log.Error(err)
-		//return
-		//}
 		strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
 	}
 }
