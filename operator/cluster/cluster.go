@@ -181,6 +181,10 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
+	err = util.Patch(client, "/spec/MasterStorage/pvcname", pvcName, tpr.CLUSTER_RESOURCE, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in pvcname patch " + err.Error())
+	}
 
 }
 

@@ -81,6 +81,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
+		NODE_SELECTOR:        cl.Spec.NodeName,
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.MasterStorage.FSGROUP, cl.Spec.MasterStorage.SUPPLEMENTAL_GROUPS),
 	}
 
@@ -199,6 +200,7 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(upgrade.Spec.BACKUP_PVC_NAME),
 		PGDATA_PATH_OVERRIDE: upgrade.Spec.NEW_DATABASE_NAME,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
+		NODE_SELECTOR:        cl.Spec.NodeName,
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
