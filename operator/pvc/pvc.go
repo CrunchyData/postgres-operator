@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/tpr"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +58,34 @@ func init() {
 		panic(err.Error())
 	}
 	PVCStorageClassTemplate = template.Must(template.New("pvc sc template").Parse(string(buf2)))
+}
+
+func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *tpr.PgStorageSpec, namespace string) (string, error) {
+	var pvcName string
+	var err error
+
+	switch storageSpec.StorageType {
+	case "":
+		log.Debug("StorageType is empty")
+	case "emptydir":
+		log.Debug("StorageType is emptydir")
+	case "existing":
+		log.Debug("StorageType is existing")
+		pvcName = storageSpec.PvcName
+	case "create", "dynamic":
+		log.Debug("StorageType is create")
+		pvcName = name + "-pvc"
+		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
+			pvcName, storageSpec.PvcAccessMode, storageSpec.PvcSize)
+		err = Create(clientset, pvcName, storageSpec.PvcAccessMode, storageSpec.PvcSize, storageSpec.StorageType, storageSpec.StorageClass, namespace)
+		if err != nil {
+			log.Error("error in pvc create " + err.Error())
+			return pvcName, err
+		}
+		log.Info("created PVC =" + pvcName + " in namespace " + namespace)
+	}
+
+	return pvcName, err
 }
 
 func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string, storageType string, storageClass string, namespace string) error {

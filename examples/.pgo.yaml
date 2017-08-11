@@ -23,6 +23,12 @@ REPLICA_STORAGE:
   PVC_ACCESS_MODE:  ReadWriteMany
   PVC_SIZE:  100M
   STORAGE_TYPE:  emptydir
+BACKUP_STORAGE:
+  PVC_NAME:  crunchy-pvc
+  STORAGE_CLASS:  standard
+  PVC_ACCESS_MODE:  ReadWriteMany
+  PVC_SIZE:  100M
+  STORAGE_TYPE:  emptydir
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CO_IMAGE_TAG:  centos7-1.4

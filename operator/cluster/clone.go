@@ -289,8 +289,6 @@ func copyTPR(cluster *tpr.PgCluster, clone *tpr.PgClone) *tpr.PgCluster {
 	spec.PG_DATABASE = cluster.Spec.PG_DATABASE
 	spec.PG_ROOT_PASSWORD = cluster.Spec.PG_ROOT_PASSWORD
 	spec.REPLICAS = cluster.Spec.REPLICAS
-	spec.FS_GROUP = cluster.Spec.FS_GROUP
-	spec.SUPPLEMENTAL_GROUPS = cluster.Spec.SUPPLEMENTAL_GROUPS
 	spec.STRATEGY = cluster.Spec.STRATEGY
 	spec.BACKUP_PATH = cluster.Spec.BACKUP_PATH
 	spec.NodeName = cluster.Spec.NodeName

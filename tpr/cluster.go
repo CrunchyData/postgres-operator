@@ -44,8 +44,6 @@ type PgClusterSpec struct {
 	PG_DATABASE           string        `json:"pgdatabase"`
 	PG_ROOT_PASSWORD      string        `json:"pgrootpassword"`
 	REPLICAS              string        `json:"replicas"`
-	FS_GROUP              string        `json:"fsgroup"`
-	SUPPLEMENTAL_GROUPS   string        `json:"supplementalgroups"`
 	STRATEGY              string        `json:"strategy"`
 	SECRET_FROM           string        `json:"secretfrom"`
 	BACKUP_PVC_NAME       string        `json:"backuppvcname"`

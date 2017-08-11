@@ -81,7 +81,7 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.MasterStorage.FSGROUP, cl.Spec.MasterStorage.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -202,7 +202,7 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.MasterStorage.FSGROUP, cl.Spec.MasterStorage.SUPPLEMENTAL_GROUPS),
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)

@@ -230,12 +230,16 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.MasterStorage.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
 	spec.MasterStorage.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
 	spec.MasterStorage.StorageType = viper.GetString("MASTER_STORAGE.STORAGE_TYPE")
+	spec.MasterStorage.FSGROUP = viper.GetString("MASTER_STORAGE.FSGROUP")
+	spec.MasterStorage.SUPPLEMENTAL_GROUPS = viper.GetString("MASTER_STORAGE.SUPPLEMENTAL_GROUPS")
 
 	spec.ReplicaStorage.PvcName = viper.GetString("REPLICA_STORAGE.PVC_NAME")
 	spec.ReplicaStorage.StorageClass = viper.GetString("REPLICA_STORAGE.STORAGE_CLASS")
 	spec.ReplicaStorage.PvcAccessMode = viper.GetString("REPLICA_STORAGE.PVC_ACCESS_MODE")
 	spec.ReplicaStorage.PvcSize = viper.GetString("REPLICA_STORAGE.PVC_SIZE")
 	spec.ReplicaStorage.StorageType = viper.GetString("REPLICA_STORAGE.STORAGE_TYPE")
+	spec.ReplicaStorage.FSGROUP = viper.GetString("REPLICA_STORAGE.FSGROUP")
+	spec.ReplicaStorage.SUPPLEMENTAL_GROUPS = viper.GetString("REPLICA_STORAGE.SUPPLEMENTAL_GROUPS")
 
 	spec.Name = name
 	spec.ClusterName = name
@@ -256,8 +260,6 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.PG_DATABASE = "userdb"
 	spec.PG_ROOT_PASSWORD = viper.GetString("CLUSTER.PG_ROOT_PASSWORD")
 	spec.REPLICAS = "0"
-	spec.FS_GROUP = ""
-	spec.SUPPLEMENTAL_GROUPS = ""
 	spec.STRATEGY = "1"
 	spec.NodeName = NodeName
 
@@ -277,14 +279,6 @@ func getClusterParams(name string) *tpr.PgCluster {
 	str = viper.GetString("CLUSTER.PG_DATABASE")
 	if str != "" {
 		spec.PG_DATABASE = str
-	}
-	str = viper.GetString("CLUSTER.FSGROUP")
-	if str != "" {
-		spec.FS_GROUP = str
-	}
-	str = viper.GetString("CLUSTER.SUPPLEMENTALGROUPS")
-	if str != "" {
-		spec.SUPPLEMENTAL_GROUPS = str
 	}
 	str = viper.GetString("CLUSTER.STRATEGY")
 	if str != "" {

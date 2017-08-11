@@ -138,7 +138,7 @@ func addCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tp
 		return
 	}
 
-	pvcName, err := createPVC(clientset, cl.Spec.Name, &cl.Spec.MasterStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name, &cl.Spec.MasterStorage, namespace)
 	log.Debug("created master pvc [" + pvcName + "]")
 
 	log.Debug("creating PgCluster object strategy is [" + cl.Spec.STRATEGY + "]")
@@ -339,41 +339,13 @@ func ScaleReplicas(serviceName string, clientset *kubernetes.Clientset, cl *tpr.
 		depName := cl.Spec.Name + "-replica-" + uniqueName
 
 		//create a PVC
-		pvcName, err := createPVC(clientset, depName, &cl.Spec.ReplicaStorage, namespace)
+		pvcName, err := pvc.CreatePVC(clientset, depName, &cl.Spec.ReplicaStorage, namespace)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 		strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
 	}
-}
-
-func createPVC(clientset *kubernetes.Clientset, name string, storageSpec *tpr.PgStorageSpec, namespace string) (string, error) {
-	var pvcName string
-	var err error
-
-	switch storageSpec.StorageType {
-	case "":
-		log.Debug("StorageType is empty")
-	case "emptydir":
-		log.Debug("StorageType is emptydir")
-	case "existing":
-		log.Debug("StorageType is existing")
-		pvcName = storageSpec.PvcName
-	case "create", "dynamic":
-		log.Debug("StorageType is create")
-		pvcName = name + "-pvc"
-		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			pvcName, storageSpec.PvcAccessMode, storageSpec.PvcSize)
-		err = pvc.Create(clientset, pvcName, storageSpec.PvcAccessMode, storageSpec.PvcSize, storageSpec.StorageType, storageSpec.StorageClass, namespace)
-		if err != nil {
-			log.Error("error in pvc create " + err.Error())
-			return pvcName, err
-		}
-		log.Info("created PVC =" + pvcName + " in namespace " + namespace)
-	}
-
-	return pvcName, err
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"

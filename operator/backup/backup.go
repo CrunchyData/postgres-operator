@@ -38,13 +38,14 @@ import (
 )
 
 type JobTemplateFields struct {
-	Name          string
-	PVC_NAME      string
-	CCP_IMAGE_TAG string
-	BACKUP_HOST   string
-	BACKUP_USER   string
-	BACKUP_PASS   string
-	BACKUP_PORT   string
+	Name             string
+	PVC_NAME         string
+	CCP_IMAGE_TAG    string
+	SECURITY_CONTEXT string
+	BACKUP_HOST      string
+	BACKUP_USER      string
+	BACKUP_PASS      string
+	BACKUP_PORT      string
 }
 
 const JOB_PATH = "/operator-conf/backup-job.json"
@@ -122,29 +123,27 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	log.Info("created with Name=" + job.Spec.Name + " in namespace " + namespace)
 
 	//create the PVC if necessary
-	if job.Spec.StorageSpec.PvcName == "" {
-		job.Spec.StorageSpec.PvcName = job.Spec.Name + "-backup-pvc"
-		err = pvc.Create(clientset, job.Spec.StorageSpec.PvcName, job.Spec.StorageSpec.PvcAccessMode, job.Spec.StorageSpec.PvcSize, job.Spec.StorageSpec.StorageType, job.Spec.StorageSpec.StorageClass, namespace)
-		if err != nil {
-			log.Error(err.Error())
-		} else {
-			log.Info("created backup PVC =" + job.Spec.StorageSpec.PvcName + " in namespace " + namespace)
-		}
-
+	var pvcName string
+	pvcName, err = pvc.CreatePVC(clientset, job.Spec.Name+"-backup", &job.Spec.StorageSpec, namespace)
+	if err != nil {
+		log.Error(err.Error())
+	} else {
+		log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
 	}
 
 	//update the pvc name in the TPR
-	err = util.Patch(client, "/spec/pvcname", job.Spec.StorageSpec.PvcName, "pgbackups", job.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/pvcname", pvcName, "pgbackups", job.Spec.Name, namespace)
 
 	//create the job -
 	jobFields := JobTemplateFields{
-		Name:          job.Spec.Name,
-		PVC_NAME:      job.Spec.StorageSpec.PvcName,
-		CCP_IMAGE_TAG: job.Spec.CCP_IMAGE_TAG,
-		BACKUP_HOST:   job.Spec.BACKUP_HOST,
-		BACKUP_USER:   job.Spec.BACKUP_USER,
-		BACKUP_PASS:   job.Spec.BACKUP_PASS,
-		BACKUP_PORT:   job.Spec.BACKUP_PORT,
+		Name:             job.Spec.Name,
+		PVC_NAME:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
+		CCP_IMAGE_TAG:    job.Spec.CCP_IMAGE_TAG,
+		SECURITY_CONTEXT: util.CreateSecContext(job.Spec.StorageSpec.FSGROUP, job.Spec.StorageSpec.SUPPLEMENTAL_GROUPS),
+		BACKUP_HOST:      job.Spec.BACKUP_HOST,
+		BACKUP_USER:      job.Spec.BACKUP_USER,
+		BACKUP_PASS:      job.Spec.BACKUP_PASS,
+		BACKUP_PORT:      job.Spec.BACKUP_PORT,
 	}
 
 	var doc2 bytes.Buffer

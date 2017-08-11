@@ -243,9 +243,13 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 	spec := tpr.PgBackupSpec{}
 	spec.Name = name
 	spec.StorageSpec = storageSpec
-	spec.StorageSpec.PvcName = viper.GetString("MASTER_STORAGE.PVC_NAME")
-	spec.StorageSpec.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
-	spec.StorageSpec.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
+	spec.StorageSpec.PvcName = viper.GetString("BACKUP_STORAGE.PVC_NAME")
+	spec.StorageSpec.PvcAccessMode = viper.GetString("BACKUP_STORAGE.PVC_ACCESS_MODE")
+	spec.StorageSpec.PvcSize = viper.GetString("BACKUP_STORAGE.PVC_SIZE")
+	spec.StorageSpec.StorageClass = viper.GetString("BACKUP_STORAGE.STORAGE_CLASS")
+	spec.StorageSpec.StorageType = viper.GetString("BACKUP_STORAGE.STORAGE_TYPE")
+	spec.StorageSpec.SUPPLEMENTAL_GROUPS = viper.GetString("BACKUP_STORAGE.SUPPLEMENTAL_GROUPS")
+	spec.StorageSpec.FSGROUP = viper.GetString("BACKUP_STORAGE.FSGROUP")
 	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
 	spec.BACKUP_STATUS = "initial"
 	spec.BACKUP_HOST = "basic"

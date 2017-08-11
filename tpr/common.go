@@ -30,9 +30,11 @@ const STORAGE_EMPTYDIR = "emptydir"
 const STORAGE_DYNAMIC = "dynamic"
 
 type PgStorageSpec struct {
-	PvcName       string `json:"pvcname"`
-	StorageClass  string `json:"storageclass"`
-	PvcAccessMode string `json:"pvcaccessmode"`
-	PvcSize       string `json:"pvcsize"`
-	StorageType   string `json:"storagetype"`
+	PvcName             string `json:"pvcname"`
+	StorageClass        string `json:"storageclass"`
+	PvcAccessMode       string `json:"pvcaccessmode"`
+	PvcSize             string `json:"pvcsize"`
+	StorageType         string `json:"storagetype"`
+	FSGROUP             string `json:"fsgroup"`
+	SUPPLEMENTAL_GROUPS string `json:"supplementalgroups"`
 }

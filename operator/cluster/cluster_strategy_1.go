@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/operator/util"
 	"github.com/crunchydata/postgres-operator/tpr"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,7 +90,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.MasterStorage.FSGROUP, cl.Spec.MasterStorage.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
@@ -285,7 +286,7 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, tprclien
 	log.Info("creating clone deployment using Strategy 1 in namespace " + namespace)
 
 	//create a PVC
-	pvcName, err := createPVC(clientset, cloneName, &cl.Spec.ReplicaStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, cloneName, &cl.Spec.ReplicaStorage, namespace)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -424,7 +425,7 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		REPLICAS:             "1",
 		OPERATOR_LABELS:      util.GetLabels(serviceName, clusterName, cloneFlag, true),
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.FS_GROUP, cl.Spec.SUPPLEMENTAL_GROUPS),
+		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.ReplicaStorage.FSGROUP, cl.Spec.ReplicaStorage.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,

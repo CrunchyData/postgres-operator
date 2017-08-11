@@ -15,14 +15,12 @@
             },
             "spec": {
                 "volumes": [{
-                    "name": "pgdata",
-                    "persistentVolumeClaim": {
-                        "claimName": "{{.PVC_NAME}}"
-                    }
+                    	"name": "pgdata",
+			{{.PVC_NAME}}
                 }],
-                "securityContext": {
-                    "supplementalGroups": [65534]
-                },
+
+		{{.SECURITY_CONTEXT}}
+
                 "containers": [{
                     "name": "backup",
                     "image": "crunchydata/crunchy-backup:{{.CCP_IMAGE_TAG}}",
