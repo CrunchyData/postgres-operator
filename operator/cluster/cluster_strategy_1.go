@@ -238,9 +238,14 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	//in the delete options to also delete the replica sets
 
 	//delete the deployments
+	delOptions := meta_v1.DeleteOptions{}
+	var delProp meta_v1.DeletionPropagation
+	delProp = meta_v1.DeletePropagationForeground
+	delOptions.PropagationPolicy = &delProp
+
 	for _, d := range deployments.Items {
 		log.Debug("deleting deployment " + d.ObjectMeta.Name)
-		err = clientset.ExtensionsV1beta1().Deployments(namespace).Delete(d.ObjectMeta.Name, &meta_v1.DeleteOptions{})
+		err = clientset.ExtensionsV1beta1().Deployments(namespace).Delete(d.ObjectMeta.Name, &delOptions)
 		if err != nil {
 			log.Error("error deleting replica Deployment " + err.Error())
 		}

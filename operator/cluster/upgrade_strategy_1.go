@@ -44,6 +44,7 @@ type JobTemplateFields struct {
 	NEW_DATABASE_NAME string
 	OLD_VERSION       string
 	NEW_VERSION       string
+	SECURITY_CONTEXT  string
 }
 
 const DB_UPGRADE_JOB_PATH = "/operator-conf/cluster-upgrade-job-1.json"
@@ -127,30 +128,20 @@ func (r ClusterStrategy1) MajorUpgrade(clientset *kubernetes.Clientset, tprclien
 	}
 
 	//create the PVC if necessary
-	if upgrade.Spec.NEW_PVC_NAME != upgrade.Spec.OLD_PVC_NAME {
-		if pvc.Exists(clientset, upgrade.Spec.NEW_PVC_NAME, namespace) {
-			log.Info("pvc " + upgrade.Spec.NEW_PVC_NAME + " already exists, will not create")
-		} else {
-			log.Info("creating pvc " + upgrade.Spec.NEW_PVC_NAME)
-			err = pvc.Create(clientset, upgrade.Spec.NEW_PVC_NAME, upgrade.Spec.StorageSpec.PvcAccessMode, upgrade.Spec.StorageSpec.PvcSize, upgrade.Spec.StorageSpec.StorageType, upgrade.Spec.StorageSpec.StorageClass, namespace)
-			if err != nil {
-				log.Error("error in pvc create " + err.Error())
-				return err
-			}
-			log.Info("created PVC =" + upgrade.Spec.NEW_PVC_NAME + " in namespace " + namespace)
-		}
-	}
+	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name+"-upgrade", &cl.Spec.MasterStorage, namespace)
+	log.Debug("created pvc for upgrade as [" + pvcName + "]")
 
 	//upgrade the master data
 	jobFields := JobTemplateFields{
 		Name:              upgrade.Spec.Name,
-		NEW_PVC_NAME:      upgrade.Spec.NEW_PVC_NAME,
+		NEW_PVC_NAME:      pvcName,
 		OLD_PVC_NAME:      upgrade.Spec.OLD_PVC_NAME,
 		CCP_IMAGE_TAG:     upgrade.Spec.CCP_IMAGE_TAG,
 		OLD_DATABASE_NAME: upgrade.Spec.OLD_DATABASE_NAME,
 		NEW_DATABASE_NAME: upgrade.Spec.NEW_DATABASE_NAME,
 		OLD_VERSION:       upgrade.Spec.OLD_VERSION,
 		NEW_VERSION:       upgrade.Spec.NEW_VERSION,
+		SECURITY_CONTEXT:  util.CreateSecContext(cl.Spec.MasterStorage.FSGROUP, cl.Spec.MasterStorage.SUPPLEMENTAL_GROUPS),
 	}
 
 	var doc bytes.Buffer
@@ -175,6 +166,13 @@ func (r ClusterStrategy1) MajorUpgrade(clientset *kubernetes.Clientset, tprclien
 		return err
 	}
 	log.Info("created Job " + resultJob.Name)
+
+	//patch the upgrade tpr with the new pvc name
+	err = util.Patch(tprclient, "/spec/newpvcname", pvcName, tpr.UPGRADE_RESOURCE, upgrade.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	//the remainder of the major upgrade is done via the upgrade watcher
 

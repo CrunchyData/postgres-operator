@@ -25,9 +25,9 @@
                         "claimName": "{{.NEW_PVC_NAME}}"
                     }
                 }],
-                "securityContext": {
-                    "supplementalGroups": [65534]
-                },
+
+		{{.SECURITY_CONTEXT}}
+
                 "containers": [{
                     "name": "upgrade",
                     "image": "crunchydata/crunchy-upgrade:{{.CCP_IMAGE_TAG}}",

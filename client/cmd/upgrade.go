@@ -203,7 +203,6 @@ func createUpgrade(args []string) {
 			fmt.Println("cluster " + arg + " uses emptydir storage and can not be upgraded")
 			break
 		}
-		fmt.Println("after break")
 
 		// Create an instance of our TPR
 		newInstance, err = getUpgradeParams(arg)

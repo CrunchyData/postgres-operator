@@ -163,6 +163,7 @@ the *.pgo.yaml* configuration file by specifying values within
 the REPLICA_STORAGE, MASTER_STORAGE, and BACKUP_STORAGE settings.
 
 The following STORAGE_TYPE values are possible:
+
  * *dynamic* - currently not implemented, this will allow for dynamic
  provisioning of storage using a StorageClass
  * *existing* - this setting allows you to use a PVC that already exists,
