@@ -1,5 +1,5 @@
 = PostgreSQL Operator Build and Setup
-v1.4.1, {docdate}
+v1.5, {docdate}
 
 == Table of Contents
 
@@ -148,7 +148,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=1.4
+export CO_VERSION=1.5
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
@@ -167,16 +167,16 @@ cd postgres-operator
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-1.4
-docker pull crunchydata/postgres-operator:centos7-1.4
+docker pull crunchydata/lspvc:centos7-1.5
+docker pull crunchydata/postgres-operator:centos7-1.5
 ....
 
 Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
 it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.4/postgres-operator.1.4.tar.gz
-tar xvzf ./postgres-operator.1.4.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/v1.5/postgres-operator.1.5.tar.gz
+tar xvzf ./postgres-operator.1.5.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -189,7 +189,7 @@ your package manager or by following directions
 from https://golang.org/dl/
 
 Then install the project library dependencies, starting
-with version 1.4.1 the godep dependency manager is used
+with version 1.5 the godep dependency manager is used
 as follows:
 ....
 cd $COROOT

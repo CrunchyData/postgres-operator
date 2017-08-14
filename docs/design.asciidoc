@@ -1,5 +1,5 @@
 = postgres Operator Design
-v1.4, {docdate}
+v1.5, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
@@ -111,3 +111,85 @@ PV (persistent volumes) is up to the administrator and insures that
 no data is deleted by the operator.
 
 
+== PostgreSQL Operator Deployment Strategies
+
+
+This section describes the various deployment strategies
+offered by the operator.  A deployment in this case is 
+the set of objects created in Kubernetes when a 
+third party resource of type *pgcluster* is created.
+TPRs are created by the pgo client command and acted upon
+by the postgres operator.
+
+=== Strategies
+
+To support different types of deployments, the operator supports
+multiple strategy implementations.  Currently there is
+only a default *cluster* strategy.
+
+In the future, more deployment strategies will be supported
+to offer users more customization to what they see deployed
+in their Kube cluster.
+
+Being open source, users can also write their own strategy!
+
+=== Specifying a Strategy
+
+In the pgo client configuration file, there is a 
+*CLUSTER.STRATEGY* setting.  The current value of the
+default strategy is *1*.  If you don't set that value, the
+default strategy is assumed.  If you set that value to something
+not supported, the operator will log an error.
+
+=== Strategy Template Files
+
+Each strategy supplies its set of templates used by the operator
+to create new pods, services, etc.
+
+When the operator is deployed, part of the deployment process
+is to copy the required strategy templates into a ConfigMap (*operator-conf*)
+that gets mounted into */operator-conf* within the operator pod.
+
+The directory structure of the strategy templates is as 
+follows:
+....
+├── backup-job.json
+├── cluster
+│   └── 1
+│       ├── cluster-deployment-1.json
+│       ├── cluster-replica-deployment-1.json
+│       └── cluster-service-1.json
+├── pvc.json
+....
+
+In this structure, each strategy's templates live in a subdirectory
+that matches the strategy identifier.  The default strategy templates
+are denoted by the value of *1* in the directory structure above.
+
+If you add another strategy, the file names *must* be unique within
+the entire strategy directory.  This is due to the way the templates
+are stored within the ConfigMap.
+
+
+=== Default Cluster Deployment Strategy (1)
+
+Using the default cluster strategy, a *cluster* when created by the operator will create the
+following on a Kube cluster:
+
+image::operator-diagram-cluster.png?raw=true[]
+
+The default cluster strategy creates the following:
+
+ * deployment running a Postgres *master* container with replica count of 1
+ * service mapped to the *master* Postgres database
+ * service mapped to the *replica* Postgres database
+ * PVC for the *master* will be created if not specified in configuration, this
+   assumes you are using a non-shared volume technology (e.g. Amazon EBS), 
+   if the CLUSTER.PVC_NAME value is set in your configuration then a 
+   shared volume technology is assumed (e.g. HostPath or NFS), if a PVC
+   is created for the master, the naming convention is *clustername-pvc*
+   where clustername is the name of your cluster.
+
+If you want to add a Postgres replica to a cluster, you will 
+*scale* the cluster, for each *replica-count*, a Deployment
+will be created that acts as a Postgres replica.

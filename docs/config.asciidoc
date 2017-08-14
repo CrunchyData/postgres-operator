@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v1.4, {docdate}
+v1.5, {docdate}
 
 
 This document describes the configuration options
@@ -64,7 +64,7 @@ BACKUP_STORAGE:
   SUPPLEMENTALGROUPS:  65534
 PGO:
   LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
-  CO_IMAGE_TAG:  centos7-1.4
+  CO_IMAGE_TAG:  centos7-1.5
   DEBUG:  false
 ....
 
@@ -75,7 +75,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |KUBECONFIG        | the path to the kubeconfig file
-|CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.0), unless you override it using the --ccp-image-tag command line flag
+|CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.1), unless you override it using the --ccp-image-tag command line flag
 |CLUSTER.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
 |CLUSTER.PG_MASTER_USER        | the PostgreSQL master user name
 |CLUSTER.PG_MASTER_PASSWORD        | the PostgreSQL master user password, when specified, it will be stored in the secret holding the master user credentials, if not specified the value will be generated
