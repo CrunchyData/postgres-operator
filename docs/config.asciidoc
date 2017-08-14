@@ -7,7 +7,9 @@ for the *postgres operator*.
 
 == pgo Client Configuration
 
-There is a configuration file named *.pgo.yaml* for the operator client.  It
+Sample pgo configuration files are located in the $COROOT/examples directory.
+
+You will need to copy a sample to your $HOME/.pgo.yaml location.  It
 can be defined in the following locations:
  
  * . (current directory)
@@ -19,7 +21,7 @@ The .pgo.yaml file location is checked in that order.
 === pgo Configuration Format
 
 The sample pgo client configuration file, included in
-*examples/sample.pgo.yaml*, looks like this:
+*examples/pgo.yaml.emptydir*, looks like this:
 
 [source,yaml]
 ....
@@ -34,14 +36,14 @@ CLUSTER:
   PG_DATABASE:  userdb
   PG_ROOT_PASSWORD:  password
   STRATEGY:  1
-  REPLICAS:  2
+  REPLICAS:  0
   POLICIES:  policy1,policy2
 MASTER_STORAGE:
   PVC_NAME:  crunchy-pvc
   STORAGE_CLASS:  standard
   PVC_ACCESS_MODE:  ReadWriteMany
   PVC_SIZE:  100M
-  STORAGE_TYPE:  shared
+  STORAGE_TYPE:  emptydir
   FSGROUP:  26
   SUPPLEMENTALGROUPS:  65534
 REPLICA_STORAGE:
@@ -49,7 +51,7 @@ REPLICA_STORAGE:
   STORAGE_CLASS:  standard
   PVC_ACCESS_MODE:  ReadWriteMany
   PVC_SIZE:  100M
-  STORAGE_TYPE:  shared
+  STORAGE_TYPE:  emptydir
   FSGROUP:  26
   SUPPLEMENTALGROUPS:  65534
 BACKUP_STORAGE:
@@ -89,21 +91,21 @@ Values in the pgo configuration file have the following meaning:
 |MASTER_STORAGE.PVC_SIZE        |for the master postgres deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |MASTER_STORAGE.STORAGE_TYPE        |for the master postgres deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |MASTER_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|MASTER_STORAGE.SUPPLEMENTALGROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|MASTER_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |REPLICA_STORAGE.PVC_NAME        |for the replica postgres deployments, if set, the PVC to use for created databases, used when the storage type is *existing*
 |REPLICA_STORAGE.STORAGE_CLASS        |for the replica postgres deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |REPLICA_STORAGE.PVC_ACCESS_MODE        |for the replica postgres deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |REPLICA_STORAGE.PVC_SIZE        |for the replica postgres deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |REPLICA_STORAGE.STORAGE_TYPE        |for the replica postgres deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |REPLICA_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|REPLICA_STORAGE.SUPPLEMENTALGROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|REPLICA_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |BACKUP_STORAGE.PVC_NAME        |for the backup job, if set, the PVC to use for holding backup files, used when the storage type is *existing*
 |BACKUP_STORAGE.STORAGE_CLASS        |for the backup job, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |BACKUP_STORAGE.PVC_ACCESS_MODE        |for the backup job, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |BACKUP_STORAGE.PVC_SIZE        |for the backup job, the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |BACKUP_STORAGE.STORAGE_TYPE        |for the backup job , supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |BACKUP_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|BACKUP_STORAGE.SUPPLEMENTALGROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|BACKUP_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
@@ -121,6 +123,8 @@ deployment on your Kube cluster.
 That script will also create a PV named *crunchy-pv* using a HostPath of */data*  and a PVC named *crunchy-pvc* on your local system.  This is 
 only for testing the operator, edit or remove the PV/PVC creation
 to meet your requirements.
+
+You can also create NFS PV(s) using the create-pv-nfs.sh script.
 
 To enable DEBUG messages from the operator pod, set the *DEBUG* environment
 variable to *true* within its deployment file *deployment.json*.
@@ -185,4 +189,16 @@ pgo create cluster example1
 
 It will result in a PVC being created named *example1-pvc* and in
 the case of a backup job, the pvc is named *example1-backup-pvc*
+
+There are currently 3 sample pgo configuration files provided
+for users to use as a starting configuration:
+
+ * pgo.yaml.emptydir - this configuration specifies *emptydir* storage
+ to be used for databases
+ * pgo.yaml.nfs - this configuration specifies *create* storage to
+ be used, this is used for NFS storage for example where you want to
+ have a unique PVC created for each database
+ * pgo.yaml.dynamic - this configuration specifies *dynamic* storage
+ to be used, namely a *storageclass* that refers to a dynamic provisioning
+ strorage such as StorageOS or Portworx, or GCE.
 

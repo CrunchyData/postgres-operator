@@ -30,8 +30,8 @@
                                 "/opt/cpm/bin/readiness.sh"
                             ]
                         },
-                        "initialDelaySeconds": 5,
-                        "timeoutSeconds": 2
+                        "initialDelaySeconds": 15,
+                        "timeoutSeconds": 8
                     },
                     "env": [{
                         "name": "PG_MASTER_PORT",

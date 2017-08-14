@@ -254,8 +254,8 @@ Strategies for deploying the operator can be found in the link:strategies.asciid
 The *pgo* client requires two configuration files be copied
 to your $HOME as follows:
 ....
-cp $COROOT/examples/.pgo.yaml $HOME
-cp $COROOT/examples/.pgo.lspvc-template.json $HOME
+cp $COROOT/examples/pgo.yaml.emptydir $HOME/.pgo.yaml
+cp $COROOT/examples/pgo.lspvc-template.json $HOME/.pgo.lspvc-template.json
 vi $HOME/.pgo.yaml
 ....
 

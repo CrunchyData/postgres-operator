@@ -19,17 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
-
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api"
-	//"k8s.io/client-go/pkg/api/errors"
-
-	//"k8s.io/client-go/pkg/runtime"
-	//"k8s.io/client-go/pkg/runtime/serializer"
-
-	//"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -50,8 +41,8 @@ func main() {
 		panic(err.Error())
 	}
 
-	lo := v1.ListOptions{LabelSelector: "pgbackup=true"}
-	pods, err := clientset.Core().Pods("default").List(lo)
+	lo := meta_v1.ListOptions{}
+	pods, err := clientset.CoreV1().Pods("default").List(lo)
 	if err != nil {
 		panic(err.Error())
 	}
