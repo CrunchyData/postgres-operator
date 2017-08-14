@@ -38,8 +38,8 @@ release:	check-go-vars
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)
-	cp $(COROOT)/examples/.pgo.yaml $(RELTMPDIR)
-	cp $(COROOT)/examples/.pgo.lspvc-template.json $(RELTMPDIR)
+	cp $(COROOT)/examples/*pgo.yaml* $(RELTMPDIR)
+	cp $(COROOT)/examples/*pgo.lspvc-template.json $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 default:
 	all
