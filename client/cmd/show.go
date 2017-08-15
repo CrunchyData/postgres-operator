@@ -72,6 +72,7 @@ Valid resource types include:
 func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
+	ShowCmd.AddCommand(ShowETLCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)

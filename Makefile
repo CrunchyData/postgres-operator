@@ -11,6 +11,9 @@ ifndef GOBIN
 endif
 
 #======= Main functions =======
+etlclient:      check-go-vars
+	        go build -buildmode=plugin -o client/etlclient.so client/etlclient.go
+#======= Main functions =======
 run:
 	cd examples/operator && ./run.sh
 pgo:	check-go-vars
