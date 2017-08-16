@@ -27,8 +27,8 @@ var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var NodeName string
 
-// createCmd represents the create command
-var createCmd = &cobra.Command{
+// CreateCmd represents the create command
+var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Cluster or Policy",
 	Long: `CREATE allows you to create a new Cluster or Policy
@@ -108,9 +108,9 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 }
 
 func init() {
-	RootCmd.AddCommand(createCmd)
-	createCmd.AddCommand(createClusterCmd)
-	createCmd.AddCommand(createPolicyCmd)
+	RootCmd.AddCommand(CreateCmd)
+	CreateCmd.AddCommand(createClusterCmd)
+	CreateCmd.AddCommand(createPolicyCmd)
 
 	// Here you will define your flags and configuration settings.
 
