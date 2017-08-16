@@ -19,23 +19,6 @@ source $DIR/setup.sh
 
 $DIR/cleanup.sh
 
-$CO_CMD --namespace=$CO_NAMESPACE get pvc crunchy-pvc
-rc=$?
-
-if [ ! $rc -eq 0 ]; then
-	echo "crunchy-pvc does not exist...creating crunchy-pvc "
-	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/crunchy-pvc.json
-	$DIR/create-pv.sh
-else
-	echo "crunchy-pvc already exists..."
-fi
-
-if [ ! -d /data ]; then
-	echo "create the HostPath directory"
-	sudo mkdir /data
-	sudo chmod 777 /data
-fi
-
 $CO_CMD create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
@@ -44,5 +27,3 @@ $CO_CMD create configmap operator-conf \
 
 envsubst < $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
 
-sleep 3
-$CO_CMD get pod --selector=name=postgres-operator

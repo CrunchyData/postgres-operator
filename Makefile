@@ -14,8 +14,8 @@ endif
 etlclient:      check-go-vars
 	        go build -buildmode=plugin -o client/etlclient.so client/etlclient.go
 #======= Main functions =======
-run:
-	cd examples/operator && ./run.sh
+deploy:
+	cd examples/operator && ./deploy.sh
 pgo:	check-go-vars
 	cd client && go build -o $(GOBIN)/pgo pgo.go
 clean:	check-go-vars

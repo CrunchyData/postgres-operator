@@ -234,7 +234,7 @@ local system as the persistent store for the operator to use
 for its persistent volume:
 ....
 cd $COROOT/examples/operator
-./run.sh
+./deploy.sh
 kubectl get pod -l 'name=postgres-operator'
 kubectl get thirdpartyresources
 ....

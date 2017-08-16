@@ -61,6 +61,11 @@ are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies]
 [#Build and Setup Instructions]
 == Build and Setup Instructions
 
+You deploy the Postgres Operator to your Kube cluster  by running the following command:
+....
+make deploy
+....
+
 With the operator deployed, the *pgo* command line
 interface can execute commands that the *postgres-operator* understands
 and reacts to.

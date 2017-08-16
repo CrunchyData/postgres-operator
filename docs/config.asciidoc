@@ -117,7 +117,7 @@ Values in the pgo configuration file have the following meaning:
 The operator is run as a Kube Deployment on the Kube cluster
 within a namespace.  
 
-The script *example/operator/run.sh* will create the operator
+The script *example/operator/deploy.sh* will create the operator
 deployment on your Kube cluster.  
 
 That script will also create a PV named *crunchy-pv* using a HostPath of */data*  and a PVC named *crunchy-pvc* on your local system.  This is 
@@ -152,9 +152,7 @@ are based on json templates that are added into the operator deployment
 by means of a mounted volume.
 
 The templates are located in the *$COROOT/conf/postgres-operator* directory
-and get added into the mounted volume directory when the operator
-is started.  The templates are copied to a HostPath location by the *example/operator/run.sh* script, that HostPath location if mounted as a volume into
-the operator pod.
+and get added into a config map which is mounted by the operator deployment.
 
 For your persistent file system, you might need to adjust the templates
 to add *fsGroup* or *supplementalGroup* attributes to your *pgo* configuration
