@@ -58,21 +58,15 @@ are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 * For OpenShift deployments, Openshift Origin 1.5.1+ or Openshift Container Platform 3.5
 
-[#Build and Setup Instructions]
-== Build and Setup Instructions
+[#Build and Install Instructions]
+== Build and Install Instructions
 
-You deploy the Postgres Operator to your Kube cluster  by running the following command:
-....
-make deploy
-....
+To build and deploy the Operator on your Kube system, follow
+the instructions documented on the link:docs/build.asciidoc[Build and Install] page.
 
 With the operator deployed, the *pgo* command line
 interface can execute commands that the *postgres-operator* understands
 and reacts to.
-
-You can download a pre-built *pgo* CLI binary from
-the link:https://github.com/CrunchyData/postgres-operator/releases[Releases] page on the github repository or build
-it yourself using the build instructions, documented on the link:docs/build.asciidoc[Build and Setup] page.
 
 [#Configuration]
 == Configuration

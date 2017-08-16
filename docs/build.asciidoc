@@ -57,7 +57,7 @@ sudo chmod +r /etc/kubernetes/admin.conf
 Once you have your Kube VM created, install some of the
 required dependencies:
 ....
-yum -y install git
+yum -y install git gettext
 ....
 
 *NOTE* - as of Kube 1.6, RBAC security is enabled on most Kube
@@ -237,6 +237,19 @@ cd $COROOT/examples/operator
 ./deploy.sh
 kubectl get pod -l 'name=postgres-operator'
 kubectl get thirdpartyresources
+....
+
+You can also deploy the operator by running the following command:
+....
+make deploy
+....
+
+There are example scripts that will create PV and PVC resources
+that can be used in your testing. See the following scripts:
+....
+examples/operator/create-pv-nfs.sh
+examples/operator/create-pv.sh
+kubectl create -f examples/operator/crunchy-pvc.json
 ....
 
 Note that this example will create a PVC called *crunchy-pvc* that is
