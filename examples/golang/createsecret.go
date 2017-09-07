@@ -62,7 +62,7 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {
-		fmt.Printf("careated secret")
+		fmt.Printf("Created secret")
 	}
 
 }
