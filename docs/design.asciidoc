@@ -26,7 +26,7 @@ The pgo command line interface (CLI) is used by a normal end-user
 to create databases or clusters, or make changes to existing databases.
 
 The CLI interacts interacts with the Kubernetes cluster using
-the golang Kubernetes client package.  
+the golang Kubernetes client package.
 
 The CLI can create a new cluster by creating
 a new ThirdPartyResource instance of type *pgcluster*.
@@ -42,7 +42,7 @@ cluster.  An administrator will deploy the postgres Operator Deployment
 using the provided script.  Once installed and running, the Operator
 pod will start watching for certain defined events.
 
-The operator watches for create/update/delete actions on 
+The operator watches for create/update/delete actions on
 the *pgcluster* third party resources.  When
 the CLI creates for example a new *pgcluster* third party
 resource, the operator catches that event and creates pods and services
@@ -92,7 +92,16 @@ To verify the operator installed the following ThirdPartyResources:
 kubectl get thirdpartyresources
 ----
 
-You should see 4 crunchy third party resources deployed.
+You should see six Crunchy third party resources deployed -
+
+....
+pg-backup.crunchydata.com      A postgres backup ThirdPartyResource       v1
+pg-clone.crunchydata.com       A postgres clone ThirdPartyResource        v1
+pg-cluster.crunchydata.com     A postgres cluster ThirdPartyResource      v1
+pg-policy.crunchydata.com      A postgres policy ThirdPartyResource       v1
+pg-policylog.crunchydata.com   A postgres policy log ThirdPartyResource   v1
+pg-upgrade.crunchydata.com     A postgres upgrade ThirdPartyResource      v1
+....
 
 # Command Line Interface
 
@@ -106,7 +115,7 @@ You can view the  TPR Endpoints as follows:
 == Persistent Volumes
 
 Currently the operator does not delete persistent volumes, it will
-delete the claims on the volumes.  The cleanup and allocation of 
+delete the claims on the volumes.  The cleanup and allocation of
 PV (persistent volumes) is up to the administrator and insures that
 no data is deleted by the operator.
 
@@ -115,8 +124,8 @@ no data is deleted by the operator.
 
 
 This section describes the various deployment strategies
-offered by the operator.  A deployment in this case is 
-the set of objects created in Kubernetes when a 
+offered by the operator.  A deployment in this case is
+the set of objects created in Kubernetes when a
 third party resource of type *pgcluster* is created.
 TPRs are created by the pgo client command and acted upon
 by the postgres operator.
@@ -135,7 +144,7 @@ Being open source, users can also write their own strategy!
 
 === Specifying a Strategy
 
-In the pgo client configuration file, there is a 
+In the pgo client configuration file, there is a
 *CLUSTER.STRATEGY* setting.  The current value of the
 default strategy is *1*.  If you don't set that value, the
 default strategy is assumed.  If you set that value to something
@@ -150,7 +159,7 @@ When the operator is deployed, part of the deployment process
 is to copy the required strategy templates into a ConfigMap (*operator-conf*)
 that gets mounted into */operator-conf* within the operator pod.
 
-The directory structure of the strategy templates is as 
+The directory structure of the strategy templates is as
 follows:
 ....
 ├── backup-job.json
@@ -184,12 +193,12 @@ The default cluster strategy creates the following:
  * service mapped to the *master* Postgres database
  * service mapped to the *replica* Postgres database
  * PVC for the *master* will be created if not specified in configuration, this
-   assumes you are using a non-shared volume technology (e.g. Amazon EBS), 
-   if the CLUSTER.PVC_NAME value is set in your configuration then a 
+   assumes you are using a non-shared volume technology (e.g. Amazon EBS),
+   if the CLUSTER.PVC_NAME value is set in your configuration then a
    shared volume technology is assumed (e.g. HostPath or NFS), if a PVC
    is created for the master, the naming convention is *clustername-pvc*
    where clustername is the name of your cluster.
 
-If you want to add a Postgres replica to a cluster, you will 
+If you want to add a Postgres replica to a cluster, you will
 *scale* the cluster, for each *replica-count*, a Deployment
 will be created that acts as a Postgres replica.

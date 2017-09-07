@@ -37,6 +37,7 @@ how the operator is built and how it operates.
 * Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 
 [#Kubernetes Environment]
 == Kubernetes Environment
@@ -100,11 +101,14 @@ The HostPath volume is by default restricted in Origin, so you
 will have to grant access to the HostPath volume plugin for the
 operator to access the Docker socket as a HostPath volume.
 
-There is more than one way to alter the HostPath access, see:
+There is more than one way to alter the HostPath access, but the best method would be
+to issue this command:
 
 ....
-oc edit scc restricted set allowHostDirVolumePlugin: true to let
+oc edit scc restricted
 ....
+
+At this point, inside the file you'll want to set the value allowHostDirVolumePlugin to 'true'.
 
 This command will allow *all* pods to access HostPath volumes which
 may not be permissible in your environment.
@@ -259,7 +263,7 @@ desired PVC to use when databases and clusters are created.
 When you first run the operator, it will create the required
 ThirdPartyResources.
 
-Strategies for deploying the operator can be found in the link:strategies.asciidoc[PostgreSQL Operator Deployment Strategies] document.
+Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
 
 [#Configuration]
 == Configuration
@@ -269,17 +273,24 @@ to your $HOME as follows:
 ....
 cp $COROOT/examples/pgo.yaml.emptydir $HOME/.pgo.yaml
 cp $COROOT/examples/pgo.lspvc-template.json $HOME/.pgo.lspvc-template.json
-vi $HOME/.pgo.yaml
 ....
 
-Edit the $HOME/.pgo.yaml file changing the following
-settings:
+If you are disinterested in having the configuration files in your $HOME folder,
+you do have the option of hosting them in three different locations:
+
+* . (current directory)
+* $HOME
+* /etc/pgo/
+
+The .pgo.yaml file location is checked in that order.
+
+Edit the .pgo.yaml file and change the following settings to match your current configuration:
 ....
 KUBECONFIG:  /etc/kubernetes/admin.conf
 LSPVC_TEMPLATE:  /home/yourid/.pgo.lspvc-template.json
 ....
 
-Note that this config file assumes your Kubernetes config file is
+Note that this configuration file assumes your Kubernetes config file is
 located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kube config file location.  Also, update
 the location of the LSPVC_TEMPLATE value to match your $HOME value.
@@ -293,6 +304,7 @@ in the link:config.asciidoc[Configuration] document.
 When you first run the operator, it will look for the presence
 of its third party resources, and create them if not found.  You can view the various resources created and used by the
 operator as follows:
+
 ....
 kubectl get thirdpartyresources
 kubectl get pgclusters
