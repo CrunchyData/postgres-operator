@@ -262,7 +262,7 @@ desired PVC to use when databases and clusters are created.
 When you first run the operator, it will create the required
 ThirdPartyResources.
 
-Strategies for deploying the operator can be found in the link:strategies.asciidoc[PostgreSQL Operator Deployment Strategies] document.
+Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
 
 [#Configuration]
 == Configuration
@@ -303,6 +303,7 @@ in the link:config.asciidoc[Configuration] document.
 When you first run the operator, it will look for the presence
 of its third party resources, and create them if not found.  You can view the various resources created and used by the
 operator as follows:
+
 ....
 kubectl get thirdpartyresources
 kubectl get pgclusters
