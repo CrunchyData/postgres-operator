@@ -37,6 +37,7 @@ how the operator is built and how it operates.
 * Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 
 [#Kubernetes Environment]
 == Kubernetes Environment
