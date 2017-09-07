@@ -272,17 +272,24 @@ to your $HOME as follows:
 ....
 cp $COROOT/examples/pgo.yaml.emptydir $HOME/.pgo.yaml
 cp $COROOT/examples/pgo.lspvc-template.json $HOME/.pgo.lspvc-template.json
-vi $HOME/.pgo.yaml
 ....
 
-Edit the $HOME/.pgo.yaml file changing the following
-settings:
+If you are disinterested in having the configuration files in your $HOME folder,
+you do have the option of hosting them in three different locations:
+
+* . (current directory)
+* $HOME
+* /etc/pgo/
+
+The .pgo.yaml file location is checked in that order.
+
+Edit the .pgo.yaml file and change the following settings to match your current configuration:
 ....
 KUBECONFIG:  /etc/kubernetes/admin.conf
 LSPVC_TEMPLATE:  /home/yourid/.pgo.lspvc-template.json
 ....
 
-Note that this config file assumes your Kubernetes config file is
+Note that this configuration file assumes your Kubernetes config file is
 located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kube config file location.  Also, update
 the location of the LSPVC_TEMPLATE value to match your $HOME value.
