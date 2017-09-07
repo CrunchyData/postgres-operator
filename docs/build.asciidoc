@@ -100,11 +100,14 @@ The HostPath volume is by default restricted in Origin, so you
 will have to grant access to the HostPath volume plugin for the
 operator to access the Docker socket as a HostPath volume.
 
-There is more than one way to alter the HostPath access, see:
+There is more than one way to alter the HostPath access, but the best method would be
+to issue this command:
 
 ....
-oc edit scc restricted set allowHostDirVolumePlugin: true to let
+oc edit scc restricted
 ....
+
+At this point, inside the file you'll want to set the value allowHostDirVolumePlugin to 'true'.
 
 This command will allow *all* pods to access HostPath volumes which
 may not be permissible in your environment.
