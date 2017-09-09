@@ -108,7 +108,7 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a cluster name is required for this command")
 		} else {
-			deleteCluster(args)
+			showCluster(true, args)
 		}
 	},
 }

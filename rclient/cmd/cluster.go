@@ -33,12 +33,16 @@ import (
 	"net/http"
 )
 
-func showCluster(args []string) {
+func showCluster(deleteFlag bool, args []string) {
 	var err error
 
 	url := "http://localhost:8080/clusters/somename?showsecrets=true&other=thing"
 
-	req, err := http.NewRequest("GET", url, nil)
+	action := "GET"
+	if deleteFlag {
+		action = "DELETE"
+	}
+	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
 		log.Fatal("NewRequest: ", err)
 		return

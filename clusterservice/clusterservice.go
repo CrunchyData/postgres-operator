@@ -39,6 +39,7 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgo show cluster
+// pgo delete mycluster
 // parameters showsecrets
 // parameters selector
 // parameters namespace
@@ -49,6 +50,14 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
 	log.Infof(" vars are %v\n", vars)
+
+	switch r.Method {
+	case "GET":
+		log.Infoln("clusterservice.ShowClusterHandler GET called")
+	case "DELETE":
+		log.Infoln("clusterservice.ShowClusterHandler DELETE called")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 

@@ -12,7 +12,8 @@ func main() {
 	log.Infoln("restserver starts")
 	r := mux.NewRouter()
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler)
-	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler)
+	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
+	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

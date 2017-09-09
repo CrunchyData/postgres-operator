@@ -17,9 +17,10 @@ func main() {
 	// QueryEscape escapes the phone string so
 	// it can be safely placed inside a URL query
 	//safePhone := url.QueryEscape(phone)
-	//testShowCluster()
+	//testShowCluster(false)
 	//testTestGet()
-	testPost()
+	//testPost()
+	testShowCluster(true)
 
 }
 
@@ -55,10 +56,15 @@ func testPost() {
 
 }
 
-func testShowCluster() {
+func testShowCluster(deleteFlag bool) {
 	url := "http://localhost:8080/clusters/somename?showsecrets=true&other=thing"
 
-	req, err := http.NewRequest("GET", url, nil)
+	action := "GET"
+	if deleteFlag {
+		action = "DELETE"
+		fmt.Println("doing delete")
+	}
+	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
 		log.Fatal("NewRequest: ", err)
 		return

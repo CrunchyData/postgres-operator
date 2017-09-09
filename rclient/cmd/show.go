@@ -167,7 +167,7 @@ var ShowClusterCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("cluster name(s) required for this command")
 		} else {
-			showCluster(args)
+			showCluster(false, args)
 		}
 	},
 }
