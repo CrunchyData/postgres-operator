@@ -18,6 +18,8 @@ deploy:
 	cd examples/operator && ./deploy.sh
 pgo:	check-go-vars
 	cd client && go build -o $(GOBIN)/pgo pgo.go
+rpgo:	check-go-vars
+	cd rclient && go build -o $(GOBIN)/rpgo rpgo.go
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/*
 	go get github.com/tools/godep
