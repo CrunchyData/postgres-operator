@@ -17,14 +17,18 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
+	"github.com/crunchydata/postgres-operator/upgradeservice"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -78,40 +82,32 @@ func showUpgrade(args []string) {
 	var err error
 	log.Debugf("showUpgrade called %v\n", args)
 
-	//show pod information for job
-	for _, arg := range args {
-		log.Debug("show upgrade called for " + arg)
-		if arg == "all" {
-			tprs := tpr.PgUpgradeList{}
-			err = Tprclient.Get().
-				Resource(tpr.UPGRADE_RESOURCE).
-				Namespace(Namespace).
-				Do().Into(&tprs)
-			if err != nil {
-				log.Error("error getting list of pgupgrades " + err.Error())
-				return
-			}
-			for _, u := range tprs.Items {
-				showUpgradeItem(&u)
-			}
+	url := "http://localhost:8080/upgrades/somename?showsecrets=true&other=thing"
 
-		} else {
-			var upgrade tpr.PgUpgrade
-
-			err = Tprclient.Get().
-				Resource(tpr.UPGRADE_RESOURCE).
-				Namespace(Namespace).
-				Name(arg).
-				Do().Into(&upgrade)
-			if kerrors.IsNotFound(err) {
-				fmt.Println("pgupgrade " + arg + " not found ")
-			} else {
-				showUpgradeItem(&upgrade)
-			}
-
-		}
-
+	action := "GET"
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
 	}
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var response upgradeservice.ShowUpgradeResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Println(err)
+	}
+
+	fmt.Println("Name = ", response.Items[0].Name)
 
 }
 
@@ -159,65 +155,30 @@ func showUpgradeItem(upgrade *tpr.PgUpgrade) {
 func createUpgrade(args []string) {
 	log.Debugf("createUpgrade called %v\n", args)
 
-	var err error
-	var newInstance *tpr.PgUpgrade
+	//var err error
+	//var newInstance *tpr.PgUpgrade
 
 	for _, arg := range args {
 		log.Debug("create upgrade called for " + arg)
-		result := tpr.PgUpgrade{}
+		url := "http://localhost:8080/upgrades"
 
-		// error if it already exists
-		err = Tprclient.Get().
-			Resource(tpr.UPGRADE_RESOURCE).
-			Namespace(Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
-		if err == nil {
-			log.Warn("previous pgupgrade " + arg + " was found so we will remove it.")
-			forDeletion := make([]string, 1)
-			forDeletion[0] = arg
-			deleteUpgrade(forDeletion)
-		} else if kerrors.IsNotFound(err) {
-			log.Debug("pgupgrade " + arg + " not found so we will create it")
-		} else {
-			log.Error("error getting pgupgrade " + arg)
-			log.Error(err.Error())
-			break
+		cl := new(upgradeservice.CreateUpgradeRequest)
+		cl.Name = "newupgrae"
+		jsonValue, _ := json.Marshal(cl)
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
 
-		cl := tpr.PgCluster{}
-
-		err = Tprclient.Get().
-			Resource(tpr.CLUSTER_RESOURCE).
-			Namespace(Namespace).
-			Name(arg).
-			Do().
-			Into(&cl)
-		if kerrors.IsNotFound(err) {
-			log.Error("error getting pgupgrade " + arg)
-			break
+		req.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
-
-		if cl.Spec.MasterStorage.StorageType == "emptydir" {
-			fmt.Println("cluster " + arg + " uses emptydir storage and can not be upgraded")
-			break
-		}
-
-		// Create an instance of our TPR
-		newInstance, err = getUpgradeParams(arg)
-		if err == nil {
-			err = Tprclient.Post().
-				Resource(tpr.UPGRADE_RESOURCE).
-				Namespace(Namespace).
-				Body(newInstance).
-				Do().Into(&result)
-			if err != nil {
-				log.Error("error in creating PgUpgrade TPR instance", err.Error())
-			} else {
-				fmt.Println("created PgUpgrade " + arg)
-			}
-		}
+		fmt.Printf("%v\n", resp)
 
 	}
 
@@ -225,37 +186,35 @@ func createUpgrade(args []string) {
 
 func deleteUpgrade(args []string) {
 	log.Debugf("deleteUpgrade called %v\n", args)
-	var err error
-	upgradeList := tpr.PgUpgradeList{}
-	err = Tprclient.Get().Resource(tpr.UPGRADE_RESOURCE).Do().Into(&upgradeList)
-	if err != nil {
-		log.Error("error getting upgrade list")
-		log.Error(err.Error())
-		return
-	}
-	// delete the pgupgrade resource instance
-	// which will cause the operator to remove the related Job
+	//var err error
 	for _, arg := range args {
-		upgradeFound := false
-		for _, upgrade := range upgradeList.Items {
-			if arg == "all" || upgrade.Spec.Name == arg {
-				upgradeFound = true
-				err = Tprclient.Delete().
-					Resource(tpr.UPGRADE_RESOURCE).
-					Namespace(Namespace).
-					Name(upgrade.Spec.Name).
-					Do().
-					Error()
-				if err != nil {
-					log.Error("error deleting pgupgrade " + arg)
-					log.Error(err.Error())
-				}
-				fmt.Println("deleted pgupgrade " + upgrade.Spec.Name)
-			}
+		fmt.Println("deleting upgrade " + arg)
+		url := "http://localhost:8080/upgrades/somename?showsecrets=true&other=thing"
+
+		action := "DELETE"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
-		if !upgradeFound {
-			fmt.Println("upgrade " + arg + " not found")
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
+
+		defer resp.Body.Close()
+
+		var response upgradeservice.ShowUpgradeResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Println(err)
+		}
+
+		fmt.Println("Name = ", response.Items[0].Name)
 
 	}
 
