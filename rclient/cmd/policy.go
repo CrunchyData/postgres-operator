@@ -15,130 +15,90 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/operator/util"
+	//"github.com/crunchydata/postgres-operator/operator/util"
+	"github.com/crunchydata/postgres-operator/policyservice"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os/user"
+	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/http"
+	//"os/user"
 	"strings"
 )
 
 func showPolicy(args []string) {
-	//get a list of all policies
-	policyList := tpr.PgPolicyList{}
-	err := Tprclient.Get().
-		Resource(tpr.POLICY_RESOURCE).
-		Namespace(Namespace).
-		Do().Into(&policyList)
-	if err != nil {
-		log.Error("error getting list of policies" + err.Error())
-		return
-	}
-
-	if len(policyList.Items) == 0 {
-		fmt.Println("no policies found")
-		return
-	}
-
-	itemFound := false
+	//itemFound := false
 
 	//each arg represents a policy name or the special 'all' value
 	for _, arg := range args {
-		for _, policy := range policyList.Items {
-			fmt.Println("")
-			if arg == "all" || policy.Spec.Name == arg {
-				itemFound = true
-				log.Debug("listing policy " + arg)
-				fmt.Println("policy : " + policy.Spec.Name)
-				fmt.Println(TREE_BRANCH + "url : " + policy.Spec.Url)
-				fmt.Println(TREE_BRANCH + "status : " + policy.Spec.Status)
-				fmt.Println(TREE_TRUNK + "sql : " + policy.Spec.Sql)
-			}
+		fmt.Println("showing policy " + arg)
+		url := "http://localhost:8080/policies/somename?showsecrets=true&other=thing"
+
+		action := "GET"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
-		if !itemFound {
-			fmt.Println(arg + " was not found")
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
-		itemFound = false
+
+		defer resp.Body.Close()
+
+		var response policyservice.ShowPolicyResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Println(err)
+		}
+
+		fmt.Println("Name = ", response.Items[0].Name)
+
 	}
 }
 
 func createPolicy(args []string) {
 
-	var err error
+	//var err error
 
 	for _, arg := range args {
 		log.Debug("create policy called for " + arg)
-		result := tpr.PgPolicy{}
 
-		// error if it already exists
-		err = Tprclient.Get().
-			Resource(tpr.POLICY_RESOURCE).
-			Namespace(Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
-		if err == nil {
-			log.Debug("pgpolicy " + arg + " was found so we will not create it")
-			break
-		} else if kerrors.IsNotFound(err) {
-			log.Debug("pgpolicy " + arg + " not found so we will create it")
-		} else {
-			log.Error("error getting pgpolicy " + arg + err.Error())
-			break
-		}
+		url := "http://localhost:8080/policies"
 
-		// Create an instance of our TPR
-		newInstance, err := getPolicyParams(arg)
+		cl := new(policyservice.CreatePolicyRequest)
+		cl.Name = "newpolicy"
+		jsonValue, _ := json.Marshal(cl)
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 		if err != nil {
-			log.Error(" error in policy parameters ")
-			log.Error(err.Error())
+			log.Fatal("NewRequest: ", err)
 			return
 		}
 
-		err = Tprclient.Post().
-			Resource(tpr.POLICY_RESOURCE).
-			Namespace(Namespace).
-			Body(newInstance).
-			Do().Into(&result)
+		req.Header.Set("Content-Type", "application/json")
 
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
 		if err != nil {
-			log.Error(" in creating PgPolicy instance" + err.Error())
+			log.Fatal("Do: ", err)
+			return
 		}
+		fmt.Printf("%v\n", resp)
+
 		fmt.Println("created PgPolicy " + arg)
 
 	}
-}
-
-func getPolicyParams(name string) (*tpr.PgPolicy, error) {
-
-	var err error
-
-	spec := tpr.PgPolicySpec{}
-	spec.Name = name
-
-	if PolicyURL != "" {
-		spec.Url = PolicyURL
-	}
-	if PolicyFile != "" {
-		spec.Sql, err = getPolicyString(PolicyFile)
-
-		if err != nil {
-			return &tpr.PgPolicy{}, err
-		}
-	}
-
-	newInstance := &tpr.PgPolicy{
-		Metadata: meta_v1.ObjectMeta{
-			Name: name,
-		},
-		Spec: spec,
-	}
-
-	return newInstance, err
 }
 
 func getPolicyString(filename string) (string, error) {
@@ -153,39 +113,36 @@ func getPolicyString(filename string) (string, error) {
 }
 
 func deletePolicy(args []string) {
-	// Fetch a list of our policy TPRs
-	policyList := tpr.PgPolicyList{}
-	err := Tprclient.Get().Resource(tpr.POLICY_RESOURCE).Do().Into(&policyList)
-	if err != nil {
-		log.Error("error getting policy list" + err.Error())
-		return
-	}
 
-	//to remove a policy, you just have to remove
-	//the pgpolicy object, the operator will do the actual deletes
 	for _, arg := range args {
-		policyFound := false
-		log.Debug("deleting policy " + arg)
-		for _, policy := range policyList.Items {
-			if arg == "all" || arg == policy.Spec.Name {
-				policyFound = true
-				err = Tprclient.Delete().
-					Resource(tpr.POLICY_RESOURCE).
-					Namespace(Namespace).
-					Name(policy.Spec.Name).
-					Do().
-					Error()
-				if err != nil {
-					log.Error("error deleting pgpolicy " + arg + err.Error())
-				} else {
-					fmt.Println("deleted pgpolicy " + policy.Spec.Name)
-				}
+		fmt.Println("deleting policy " + arg)
+		url := "http://localhost:8080/policies/somename?showsecrets=true&other=thing"
 
-			}
+		action := "DELETE"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
-		if !policyFound {
-			fmt.Println("policy " + arg + " not found")
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
+
+		defer resp.Body.Close()
+
+		var response policyservice.ShowPolicyResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Println(err)
+		}
+
+		fmt.Println("Name = ", response.Items[0].Name)
+
 	}
 }
 
@@ -231,96 +188,31 @@ func validateConfigPolicies() error {
 
 func applyPolicy(policies []string) {
 	var err error
-	//validate policies
-	labels := make(map[string]string)
-	for _, p := range policies {
-		err = util.ValidatePolicy(Tprclient, Namespace, p)
-		if err != nil {
-			log.Error("policy " + p + " is not found, cancelling request")
-			return
-		}
 
-		labels[p] = "pgpolicy"
-	}
+	url := "http://localhost:8080/policies/apply/somename"
 
-	//get filtered list of Deployments
-	sel := Selector + ",!replica"
-	log.Debug("selector string=[" + sel + "]")
-	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
+		log.Fatal("NewRequest: ", err)
 		return
 	}
 
-	if DryRun {
-		fmt.Println("policy would be applied to the following clusters:")
-		for _, d := range deployments.Items {
-			fmt.Println("deployment : " + d.ObjectMeta.Name)
-		}
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
 		return
 	}
 
-	var newInstance *tpr.PgPolicylog
-	for _, d := range deployments.Items {
-		fmt.Println("deployment : " + d.ObjectMeta.Name)
-		for _, p := range policies {
-			log.Debug("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
+	defer resp.Body.Close()
 
-			newInstance, err = getPolicylog(p, d.ObjectMeta.Name)
+	var response policyservice.ApplyResults
 
-			result := tpr.PgPolicylog{}
-			err = Tprclient.Get().
-				Resource(tpr.POLICY_LOG_RESOURCE).
-				Namespace(Namespace).
-				Name(newInstance.Metadata.Name).
-				Do().Into(&result)
-			if err == nil {
-				fmt.Println(p + " already applied to " + d.ObjectMeta.Name)
-				break
-			} else {
-				if kerrors.IsNotFound(err) {
-				} else {
-					log.Error(err)
-					break
-				}
-			}
-
-			result = tpr.PgPolicylog{}
-			err = Tprclient.Post().
-				Resource(tpr.POLICY_LOG_RESOURCE).
-				Namespace(Namespace).
-				Body(newInstance).
-				Do().Into(&result)
-			if err != nil {
-				log.Error("error in creating PgPolicylog TPR instance", err.Error())
-			} else {
-				fmt.Println("created PgPolicylog " + result.Metadata.Name)
-			}
-
-		}
-
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Println(err)
 	}
 
-}
-
-func getPolicylog(policyname, clustername string) (*tpr.PgPolicylog, error) {
-	u, err := user.Current()
-	if err != nil {
-		log.Error(err.Error())
-	}
-
-	spec := tpr.PgPolicylogSpec{}
-	spec.PolicyName = policyname
-	spec.Username = u.Name
-	spec.ClusterName = clustername
-
-	newInstance := &tpr.PgPolicylog{
-		Metadata: meta_v1.ObjectMeta{
-			Name: policyname + clustername,
-		},
-		Spec: spec,
-	}
-	return newInstance, err
+	fmt.Printf("apply results %v\n", response.Results)
 
 }

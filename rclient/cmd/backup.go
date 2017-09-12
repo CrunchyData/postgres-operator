@@ -17,14 +17,16 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/backupservice"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
+	"net/http"
 )
 
 var backupCmd = &cobra.Command{
@@ -52,145 +54,42 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, arg := range args {
+
+		url := "http://localhost:8080/backups/somename?showsecrets=true&other=thing"
+		action := "GET"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
+		}
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
+		}
+		defer resp.Body.Close()
+		var response backupservice.ShowBackupResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Println(err)
+		}
+		fmt.Println("Name = ", response.Items[0].Name)
+
 		log.Debug("show backup called for " + arg)
-		//pg-database=basic or
-		//pgbackup=true
-		if arg == "all" {
-			lo := meta_v1.ListOptions{LabelSelector: "pgbackup=true"}
-			log.Debug("label selector is " + lo.LabelSelector)
-			pods, err2 := Clientset.CoreV1().Pods(Namespace).List(lo)
-			if err2 != nil {
-				log.Error(err2.Error())
-				return
-			}
-			for _, pod := range pods.Items {
-				showBackupInfo(pod.ObjectMeta.Labels["pg-database"])
-			}
-
-		} else {
-			showBackupInfo(arg)
-
-		}
 
 	}
-
-}
-func showBackupInfo(name string) {
-	fmt.Println("\nbackup information for " + name + "...")
-	//print the pgbackups TPR if it exists
-	result := tpr.PgBackup{}
-	err := Tprclient.Get().
-		Resource(tpr.BACKUP_RESOURCE).
-		Namespace(Namespace).
-		Name(name).
-		Do().
-		Into(&result)
-	if err == nil {
-		printBackupTPR(&result)
-	} else if errors.IsNotFound(err) {
-		fmt.Println("\npgbackup TPR not found ")
-	} else {
-		log.Errorf("\npgbackup %s\n", name+" lookup error ")
-		log.Error(err.Error())
-		return
-	}
-
-	//print the backup jobs if any exists
-	lo := meta_v1.ListOptions{LabelSelector: "pgbackup=true,pg-database=" + name}
-	log.Debug("label selector is " + lo.LabelSelector)
-	pods, err2 := Clientset.CoreV1().Pods(Namespace).List(lo)
-	if err2 != nil {
-		log.Error(err2.Error())
-	}
-	fmt.Printf("\nbackup job pods for database %s\n", name+"...")
-
-	pvcMap := make(map[string]string)
-
-	for _, p := range pods.Items {
-
-		//get the pgdata volume info
-		for _, v := range p.Spec.Volumes {
-			if v.Name == "pgdata" {
-				fmt.Printf("%s%s (pvc %s)\n\n", TREE_TRUNK, p.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
-				pvcMap[v.VolumeSource.PersistentVolumeClaim.ClaimName] = v.VolumeSource.PersistentVolumeClaim.ClaimName
-			}
-		}
-		fmt.Println("")
-
-	}
-
-	log.Debugf("ShowPVC is %v\n", ShowPVC)
-
-	if ShowPVC {
-		//print pvc information for all jobs
-		for key, _ := range pvcMap {
-			PrintPVCListing(key)
-		}
-	}
-}
-
-func printBackupTPR(result *tpr.PgBackup) {
-	fmt.Printf("%s%s\n", "", "")
-	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
-
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Name:\t"+result.Spec.StorageSpec.PvcName)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Access Mode:\t"+result.Spec.StorageSpec.PvcAccessMode)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Size:\t\t"+result.Spec.StorageSpec.PvcSize)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "CCP_IMAGE_TAG:\t"+result.Spec.CCP_IMAGE_TAG)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Status:\t"+result.Spec.BACKUP_STATUS)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Host:\t"+result.Spec.BACKUP_HOST)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup User:\t"+result.Spec.BACKUP_USER)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Pass:\t"+result.Spec.BACKUP_PASS)
-	fmt.Printf("%s%s\n", TREE_TRUNK, "Backup Port:\t"+result.Spec.BACKUP_PORT)
 
 }
 
 func createBackup(args []string) {
 	log.Debugf("createBackup called %v\n", args)
 
-	var err error
-	var newInstance *tpr.PgBackup
+	//var err error
 
 	for _, arg := range args {
 		log.Debug("create backup called for " + arg)
-		result := tpr.PgBackup{}
 
-		// error if it already exists
-		err = Tprclient.Get().
-			Resource(tpr.BACKUP_RESOURCE).
-			Namespace(Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
-		if err == nil {
-			fmt.Println("pgbackup " + arg + " was found so we recreate it")
-			dels := make([]string, 1)
-			dels[0] = arg
-			deleteBackup(dels)
-			time.Sleep(2000 * time.Millisecond)
-		} else if errors.IsNotFound(err) {
-			log.Debug("pgbackup " + arg + " not found so we will create it")
-		} else {
-			log.Error("error getting pgbackup " + arg)
-			log.Error(err.Error())
-			break
-		}
-		// Create an instance of our TPR
-		newInstance, err = getBackupParams(arg)
-		if err != nil {
-			log.Error("error creating backup")
-			break
-		}
-
-		err = Tprclient.Post().
-			Resource(tpr.BACKUP_RESOURCE).
-			Namespace(Namespace).
-			Body(newInstance).
-			Do().Into(&result)
-		if err != nil {
-			log.Error("error in creating PgBackup TPR instance")
-			log.Error(err.Error())
-		}
 		fmt.Println("created PgBackup " + arg)
 
 	}
