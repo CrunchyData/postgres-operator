@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/crunchydata/postgres-operator/backupservice"
+	"github.com/crunchydata/postgres-operator/cloneservice"
 	"github.com/crunchydata/postgres-operator/clusterservice"
 	"github.com/crunchydata/postgres-operator/policyservice"
+	"github.com/crunchydata/postgres-operator/upgradeservice"
 	//"github.com/crunchydata/postgres-operator/tpr"
 	"log"
 	"net/http"
@@ -25,7 +27,11 @@ func main() {
 	//testShowCluster(true)
 	//testShowBackup(true)
 	//testShowPolicy(true)
-	testCreatePolicy()
+	//testCreatePolicy()
+	//testCreateClone()
+	//testScale()
+	testShowUpgrade(true)
+	testCreateUpgrade()
 
 }
 
@@ -224,6 +230,110 @@ func testCreatePolicy() {
 	// Send the request via a client
 	// Do sends an HTTP request and
 	// returns an HTTP response
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	fmt.Printf("%v\n", resp)
+
+}
+func testCreateClone() {
+	url := "http://localhost:8080/clones"
+
+	cl := new(cloneservice.CreateCloneRequest)
+	cl.Name = "newclone"
+	jsonValue, _ := json.Marshal(cl)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	fmt.Printf("%v\n", resp)
+
+}
+
+func testScale() {
+	url := "http://localhost:8080/clusters/scale/somename"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var response clusterservice.ScaleResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Println(err)
+	}
+
+	fmt.Printf("test results %s\n", response.Results)
+
+}
+func testShowUpgrade(deleteFlag bool) {
+	url := "http://localhost:8080/upgrades/somename?showsecrets=true&other=thing"
+
+	action := "GET"
+	if deleteFlag {
+		action = "DELETE"
+		fmt.Println("doing delete")
+	}
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var response upgradeservice.ShowUpgradeResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Println(err)
+	}
+
+	fmt.Println("Name = ", response.Items[0].Name)
+
+}
+func testCreateUpgrade() {
+	url := "http://localhost:8080/upgrades"
+
+	cl := new(upgradeservice.CreateUpgradeRequest)
+	cl.Name = "newupgrae"
+	jsonValue, _ := json.Marshal(cl)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal("Do: ", err)
