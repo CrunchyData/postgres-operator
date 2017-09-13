@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"time"
 )
 
 func showCluster(args []string) {
@@ -67,6 +68,7 @@ func showCluster(args []string) {
 				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.POSTGRES_FULL_VERSION == PostgresVersion) {
 					fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.POSTGRES_FULL_VERSION + ")")
 					log.Debug("listing cluster " + arg)
+					fmt.Printf("last password update %v\n", cluster.Spec.PSW_LAST_UPDATE)
 					//list the deployments
 					listDeployments(cluster.Spec.Name)
 					//list the replicasets
@@ -199,6 +201,8 @@ func createCluster(args []string) {
 		// Create an instance of our TPR
 		newInstance := getClusterParams(arg)
 
+		newInstance.Spec.PSW_LAST_UPDATE = time.Now()
+
 		err = Tprclient.Post().
 			Resource(tpr.CLUSTER_RESOURCE).
 			Namespace(Namespace).
@@ -293,6 +297,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 	if SecretFrom != "" {
 		spec.SECRET_FROM = SecretFrom
 	}
+
 	spec.BACKUP_PATH = BackupPath
 	if BackupPVC != "" {
 		spec.BACKUP_PVC_NAME = BackupPVC

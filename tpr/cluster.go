@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"time"
 )
 
 const CLUSTER_RESOURCE = "pgclusters"
@@ -52,6 +53,7 @@ type PgClusterSpec struct {
 	PGROOT_SECRET_NAME    string        `json:"pgrootsecretname"`
 	PGMASTER_SECRET_NAME  string        `json:"pgmastersecretname"`
 	STATUS                string        `json:"status"`
+	PSW_LAST_UPDATE       time.Time     `json:"pswlastupdate"`
 }
 
 type PgCluster struct {
