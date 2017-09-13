@@ -35,6 +35,8 @@ var KubeconfigPath string
 var Labelselector string
 var DebugFlag bool
 var Namespace string
+var Selector string
+var DryRun bool
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{

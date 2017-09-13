@@ -20,9 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Selector string
-var DryRun bool
-
 var applyCmd = &cobra.Command{
 	Use:   "apply",
 	Short: "apply a Policy",
