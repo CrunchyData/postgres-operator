@@ -53,6 +53,8 @@ const DEFAULT_PSW_LEN = 8
 
 var PasswordAgeDays, PasswordLength int
 
+var ChangePasswordForUser string
+var DeleteUser string
 var AddUser string
 var Expired string
 var UpdatePasswords bool
@@ -66,6 +68,7 @@ For example:
 pgo user --selector=name=mycluster --update
 pgo user --expired=7 --selector=name=mycluster
 pgo user --add-user=bob --selector=sname=mycluster
+pgo user --change-password=bob --selector=sname=mycluster
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
@@ -79,6 +82,8 @@ func init() {
 	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
 	userCmd.Flags().StringVarP(&AddUser, "add-user", "a", "", "--add-user=bob adds a new user to selective clusters")
+	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
+	userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
 	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
 	getDefaults()
 
@@ -108,6 +113,20 @@ func userManager() {
 		fmt.Println("deployment : " + d.ObjectMeta.Name)
 		info := getPostgresUserInfo(d.ObjectMeta.Name)
 
+		if ChangePasswordForUser != "" {
+			fmt.Println("changing password of user " + ChangePasswordForUser)
+			newPassword := util.GeneratePassword(PasswordLength)
+			newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
+			err = updatePassword(info, ChangePasswordForUser, newPassword, newExpireDate)
+			if err != nil {
+				log.Error(err.Error())
+				os.Exit(2)
+			}
+		}
+		if DeleteUser != "" {
+			fmt.Println("deleting user " + DeleteUser)
+			deleteUser(info, DeleteUser)
+		}
 		if AddUser != "" {
 			fmt.Println("adding new user " + AddUser)
 			addUser(info, AddUser)
@@ -324,6 +343,36 @@ func addUser(info ConnInfo, newUser string) {
 	}
 
 	querystr = "grant all on database userdb to  " + newUser
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+}
+func deleteUser(info ConnInfo, user string) {
+	var conn *sql.DB
+	var err error
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
+
+	var rows *sql.Rows
+
+	querystr := "drop user if exists " + user
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
