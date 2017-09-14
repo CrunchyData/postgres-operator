@@ -100,7 +100,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	//var enUsername = base64.StdEncoding.EncodeToString([]byte(username))
 	var enUsername = username
 	//var enPassword = base64.StdEncoding.EncodeToString([]byte(generatePassword(10)))
-	var enPassword = generatePassword(10)
+	var enPassword = GeneratePassword(10)
 	if password != "" {
 		log.Debug("using user specified password for secret " + secretName)
 		enPassword = password
@@ -135,7 +135,7 @@ func stringWithCharset(length int, charset string) string {
 }
 
 //generate a password of a given length
-func generatePassword(length int) string {
+func GeneratePassword(length int) string {
 	return stringWithCharset(length, charset)
 }
 

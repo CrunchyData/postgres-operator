@@ -20,8 +20,10 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	_ "github.com/lib/pq"
+	"strconv"
+	"time"
 	//"k8s.io/apimachinery/pkg/labels"
-	//"github.com/crunchydata/postgres-operator/operator/util"
+	"github.com/crunchydata/postgres-operator/operator/util"
 	//"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	//"github.com/spf13/viper"
@@ -32,10 +34,21 @@ import (
 	//"strings"
 )
 
+type ConnInfo struct {
+	Username string
+	Hostip   string
+	StrPort  string
+	Database string
+	Password string
+}
 type PswResult struct {
 	Rolname       string
 	Rolvaliduntil string
+	ConnDetails   ConnInfo
 }
+
+var Expired string
+var UpdatePasswords bool
 
 var pswCmd = &cobra.Command{
 	Use:   "psw",
@@ -44,11 +57,11 @@ var pswCmd = &cobra.Command{
 For example:
 
 pgo psw --selector=name=mycluster --update
-pgo psw --dry-run --selector=someotherpolicy
+pgo psw --expired=7 --selector=someotherpolicy
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("psw called")
-		updatePasswords()
+		passwordManager()
 	},
 }
 
@@ -56,11 +69,12 @@ func init() {
 	RootCmd.AddCommand(pswCmd)
 
 	pswCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	pswCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters and passwords that would be updated to but does not actually apply them")
+	pswCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
+	pswCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
 
 }
 
-func updatePasswords() {
+func passwordManager() {
 	//build the selector based on the selector parameter
 	//get the clusters list
 
@@ -80,26 +94,27 @@ func updatePasswords() {
 		return
 	}
 
-	if DryRun {
-		fmt.Println("dry run only....")
-	}
-
 	for _, d := range deployments.Items {
-		fmt.Println("deployment : " + d.ObjectMeta.Name)
-		getExpiredInfo(d.ObjectMeta.Name, "7")
-		if !DryRun {
+		if Expired != "" {
+			results := callDB(d.ObjectMeta.Name, Expired)
+			if len(results) > 0 {
+				fmt.Println("deployment : " + d.ObjectMeta.Name)
+				fmt.Println("expired passwords....")
+				for _, v := range results {
+					fmt.Printf("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
+					if UpdatePasswords {
+						newPassword := util.GeneratePassword(8)
+						newExpireDate := GeneratePasswordExpireDate(60)
+						err = updatePassword(v, newPassword, newExpireDate)
+						if err != nil {
+							fmt.Println("error in updating password")
+						}
+						fmt.Printf("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
+					}
+				}
+			}
 		}
 
-	}
-
-}
-
-func getExpiredInfo(clusterName, MAX_DAYS string) {
-	//var err error
-
-	results := callDB(clusterName, MAX_DAYS)
-	for _, v := range results {
-		fmt.Printf("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
 	}
 
 }
@@ -167,6 +182,9 @@ func callDB(clusterName, maxdays string) []PswResult {
 
 	for rows.Next() {
 		p := PswResult{}
+		c := ConnInfo{Username: username, Hostip: hostip, StrPort: strPort, Database: database, Password: password}
+		p.ConnDetails = c
+
 		if err = rows.Scan(&p.Rolname, &p.Rolvaliduntil); err != nil {
 			log.Debug(err.Error())
 			return results
@@ -176,5 +194,55 @@ func callDB(clusterName, maxdays string) []PswResult {
 	}
 
 	return results
+
+}
+
+func updatePassword(p PswResult, newPassword, passwordExpireDate string) error {
+	var err error
+	var conn *sql.DB
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.ConnDetails.Username+" host="+p.ConnDetails.Hostip+" port="+p.ConnDetails.StrPort+" dbname="+p.ConnDetails.Database+" password="+p.ConnDetails.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	//var ts string
+	var rows *sql.Rows
+
+	querystr := "ALTER user " + p.Rolname + " PASSWORD '" + newPassword + "'"
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+	querystr = "ALTER user " + p.Rolname + " VALID UNTIL '" + passwordExpireDate + "'"
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	return err
+}
+
+func GeneratePasswordExpireDate(daysFromNow int) string {
+
+	now := time.Now()
+	totalHours := daysFromNow * 24
+	diffDays, _ := time.ParseDuration(strconv.Itoa(totalHours) + "h")
+	futureTime := now.Add(diffDays)
+	return futureTime.Format("2006-01-02")
 
 }
