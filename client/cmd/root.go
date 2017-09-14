@@ -217,5 +217,21 @@ func validateConfig() {
 			os.Exit(2)
 		}
 	}
+	passwordAge := viper.GetString("CLUSTER.PASSWORD_AGE_DAYS")
+	if passwordAge != "" {
+		_, err := resource.ParseQuantity(passwordAge)
+		if err != nil {
+			log.Error("CLUSTER.PASSWORD_AGE not a valid quantity")
+			os.Exit(2)
+		}
+	}
+	passwordLen := viper.GetString("CLUSTER.PASSWORD_LENGTH")
+	if passwordLen != "" {
+		_, err := resource.ParseQuantity(passwordLen)
+		if err != nil {
+			log.Error("CLUSTER.PASSWORD_LENGTH not a valid quantity")
+			os.Exit(2)
+		}
+	}
 
 }

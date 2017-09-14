@@ -38,6 +38,8 @@ CLUSTER:
   STRATEGY:  1
   REPLICAS:  0
   POLICIES:  policy1,policy2
+  PASSWORD_AGE_DAYS:  60
+  PASSWORD_LENGTH:  8
 MASTER_STORAGE:
   PVC_NAME:  crunchy-pvc
   STORAGE_CLASS:  standard
@@ -85,6 +87,8 @@ Values in the pgo configuration file have the following meaning:
 |CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
 |CLUSTER.POLICIES        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
+|CLUSTER.PASSWORD_AGE_DAYS        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
+|CLUSTER.PASSWORD_LENGTH        | optional, if set, will determine the password length used when creating passwords, defaults to 8
 |MASTER_STORAGE.PVC_NAME        |for the master postgres deployment, if set, the PVC to use for created databases, used when the storage type is *existing*
 |MASTER_STORAGE.STORAGE_CLASS        |for the master postgres deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |MASTER_STORAGE.PVC_ACCESS_MODE        |for the master postgres deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)

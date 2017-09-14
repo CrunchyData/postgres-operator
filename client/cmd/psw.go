@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/util"
 	//"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
-	//"github.com/spf13/viper"
+	"github.com/spf13/viper"
 	//"io/ioutil"
 	//kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +46,11 @@ type PswResult struct {
 	Rolvaliduntil string
 	ConnDetails   ConnInfo
 }
+
+const DEFAULT_AGE_DAYS = 365
+const DEFAULT_PSW_LEN = 8
+
+var PasswordAgeDays, PasswordLength int
 
 var Expired string
 var UpdatePasswords bool
@@ -71,6 +76,7 @@ func init() {
 	pswCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	pswCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
 	pswCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
+	getDefaults()
 
 }
 
@@ -103,8 +109,8 @@ func passwordManager() {
 				for _, v := range results {
 					fmt.Printf("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
 					if UpdatePasswords {
-						newPassword := util.GeneratePassword(8)
-						newExpireDate := GeneratePasswordExpireDate(60)
+						newPassword := util.GeneratePassword(PasswordLength)
+						newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
 						err = updatePassword(v, newPassword, newExpireDate)
 						if err != nil {
 							fmt.Println("error in updating password")
@@ -244,5 +250,22 @@ func GeneratePasswordExpireDate(daysFromNow int) string {
 	diffDays, _ := time.ParseDuration(strconv.Itoa(totalHours) + "h")
 	futureTime := now.Add(diffDays)
 	return futureTime.Format("2006-01-02")
+
+}
+
+func getDefaults() {
+	PasswordAgeDays = DEFAULT_AGE_DAYS
+	PasswordLength = DEFAULT_PSW_LEN
+	str := viper.GetString("CLUSTER.PASSWORD_AGE_DAYS")
+	if str != "" {
+		PasswordAgeDays, _ = strconv.Atoi(str)
+		log.Debugf("PasswordAgeDays set to %d\n", PasswordAgeDays)
+
+	}
+	str = viper.GetString("CLUSTER.PASSWORD_LENGTH")
+	if str != "" {
+		PasswordLength, _ = strconv.Atoi(str)
+		log.Debugf("PasswordLength set to %d\n", PasswordLength)
+	}
 
 }
