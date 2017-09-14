@@ -305,6 +305,68 @@ SQL against that cluster using the *postgres* user account.
 WARNING:  policies are executed as the superuser in PostgreSQL therefore
 take caution when using them.
 
+== User Management - Add a User
+
+To create a new Postgres user to the *mycluster* cluster, execute:
+....
+pgo user --add-user=sally --selector=name=mycluster
+....
+
+To add that user to a all clusters:
+....
+pgo user --add-user=sally 
+....
+
+== User Management - Delete a User
+
+To delete a Postgres user in the *mycluster* cluster, execute:
+....
+pgo user --delete-user=sally --selector=name=mycluster
+....
+
+To delete that user in all clusters:
+....
+pgo user --delete-user=sally 
+....
+
+== User Management - Change Password
+
+To change the password for a user in the *mycluster* cluster:
+....
+pgo user --change-password=sally --selector=name=mycluster
+....
+
+To change the password for the *sally* user in all clusters:
+....
+pgo user --change-password=sally 
+....
+
+The password is generated and printed in cleartext on your screen.
+
+== User Management - Show Expired Passwords
+
+To see user passwords that have expired past a certain number
+of days in the *mycluster* cluster:
+....
+pgo user --expired=7 --selector=name=mycluster
+....
+
+The same command across all clusters:
+....
+pgo user --expired=7 
+....
+
+== User Management - Update Expired Passwords
+
+To update expired passwords in a cluster:
+....
+pgo user --update-passwords --selector=name=mycluster
+....
+
+The same command across all clusters:
+....
+pgo user --update-passwords
+....
 
 == bash Completion
 
