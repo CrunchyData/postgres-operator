@@ -20,6 +20,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	_ "github.com/lib/pq"
+	"os"
 	"strconv"
 	"time"
 	//"k8s.io/apimachinery/pkg/labels"
@@ -37,7 +38,7 @@ import (
 type ConnInfo struct {
 	Username string
 	Hostip   string
-	StrPort  string
+	Port     string
 	Database string
 	Password string
 }
@@ -52,35 +53,38 @@ const DEFAULT_PSW_LEN = 8
 
 var PasswordAgeDays, PasswordLength int
 
+var AddUser string
 var Expired string
 var UpdatePasswords bool
 
-var pswCmd = &cobra.Command{
-	Use:   "psw",
-	Short: "manage passwords",
-	Long: `PSW allows you to manage passwords across a set of clusters
+var userCmd = &cobra.Command{
+	Use:   "user",
+	Short: "manage users",
+	Long: `USER allows you to manage users and passwords across a set of clusters
 For example:
 
-pgo psw --selector=name=mycluster --update
-pgo psw --expired=7 --selector=someotherpolicy
+pgo user --selector=name=mycluster --update
+pgo user --expired=7 --selector=name=mycluster
+pgo user --add-user=bob --selector=sname=mycluster
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("psw called")
-		passwordManager()
+		log.Debug("user called")
+		userManager()
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(pswCmd)
+	RootCmd.AddCommand(userCmd)
 
-	pswCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	pswCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
-	pswCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
+	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
+	userCmd.Flags().StringVarP(&AddUser, "add-user", "a", "", "--add-user=bob adds a new user to selective clusters")
+	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
 	getDefaults()
 
 }
 
-func passwordManager() {
+func userManager() {
 	//build the selector based on the selector parameter
 	//get the clusters list
 
@@ -101,17 +105,31 @@ func passwordManager() {
 	}
 
 	for _, d := range deployments.Items {
+		fmt.Println("deployment : " + d.ObjectMeta.Name)
+		info := getPostgresUserInfo(d.ObjectMeta.Name)
+
+		if AddUser != "" {
+			fmt.Println("adding new user " + AddUser)
+			addUser(info, AddUser)
+			newPassword := util.GeneratePassword(PasswordLength)
+			newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
+			err = updatePassword(info, AddUser, newPassword, newExpireDate)
+			if err != nil {
+				log.Error(err.Error())
+				os.Exit(2)
+			}
+		}
+
 		if Expired != "" {
-			results := callDB(d.ObjectMeta.Name, Expired)
+			results := callDB(info, d.ObjectMeta.Name, Expired)
 			if len(results) > 0 {
-				fmt.Println("deployment : " + d.ObjectMeta.Name)
 				fmt.Println("expired passwords....")
 				for _, v := range results {
 					fmt.Printf("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
 					if UpdatePasswords {
 						newPassword := util.GeneratePassword(PasswordLength)
 						newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-						err = updatePassword(v, newPassword, newExpireDate)
+						err = updatePassword(v.ConnDetails, v.Rolname, newPassword, newExpireDate)
 						if err != nil {
 							fmt.Println("error in updating password")
 						}
@@ -125,42 +143,13 @@ func passwordManager() {
 
 }
 
-func callDB(clusterName, maxdays string) []PswResult {
+func callDB(info ConnInfo, clusterName, maxdays string) []PswResult {
 	var conn *sql.DB
+	var err error
 
 	results := []PswResult{}
 
-	//get the service for the cluster
-	service, err := Clientset.CoreV1().Services(Namespace).Get(clusterName, meta_v1.GetOptions{})
-	if err != nil {
-		log.Error("error getting list of services" + err.Error())
-		return results
-	}
-
-	//get the secrets for this cluster
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + clusterName}
-	secrets, err := Clientset.Secrets(Namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
-		return results
-	}
-
-	//get the postgres user secret info
-	var username, password, database, hostip string
-	for _, s := range secrets.Items {
-		username = string(s.Data["username"][:])
-		password = string(s.Data["password"][:])
-		database = "postgres"
-		hostip = service.Spec.ClusterIP
-		if username == "postgres" {
-			log.Debug("got postgres user secrets")
-			break
-		}
-	}
-
-	//query the database for users that have expired
-	strPort := fmt.Sprint(service.Spec.Ports[0].Port)
-	conn, err = sql.Open("postgres", "sslmode=disable user="+username+" host="+hostip+" port="+strPort+" dbname="+database+" password="+password)
+	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
 	if err != nil {
 		log.Debug(err.Error())
 		return results
@@ -188,7 +177,7 @@ func callDB(clusterName, maxdays string) []PswResult {
 
 	for rows.Next() {
 		p := PswResult{}
-		c := ConnInfo{Username: username, Hostip: hostip, StrPort: strPort, Database: database, Password: password}
+		c := ConnInfo{Username: info.Username, Hostip: info.Hostip, Port: info.Port, Database: info.Database, Password: info.Password}
 		p.ConnDetails = c
 
 		if err = rows.Scan(&p.Rolname, &p.Rolvaliduntil); err != nil {
@@ -203,11 +192,11 @@ func callDB(clusterName, maxdays string) []PswResult {
 
 }
 
-func updatePassword(p PswResult, newPassword, passwordExpireDate string) error {
+func updatePassword(p ConnInfo, username, newPassword, passwordExpireDate string) error {
 	var err error
 	var conn *sql.DB
 
-	conn, err = sql.Open("postgres", "sslmode=disable user="+p.ConnDetails.Username+" host="+p.ConnDetails.Hostip+" port="+p.ConnDetails.StrPort+" dbname="+p.ConnDetails.Database+" password="+p.ConnDetails.Password)
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
@@ -216,14 +205,14 @@ func updatePassword(p PswResult, newPassword, passwordExpireDate string) error {
 	//var ts string
 	var rows *sql.Rows
 
-	querystr := "ALTER user " + p.Rolname + " PASSWORD '" + newPassword + "'"
+	querystr := "ALTER user " + username + " PASSWORD '" + newPassword + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
 	}
-	querystr = "ALTER user " + p.Rolname + " VALID UNTIL '" + passwordExpireDate + "'"
+	querystr = "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -267,5 +256,88 @@ func getDefaults() {
 		PasswordLength, _ = strconv.Atoi(str)
 		log.Debugf("PasswordLength set to %d\n", PasswordLength)
 	}
+
+}
+
+func getPostgresUserInfo(clusterName string) ConnInfo {
+	info := ConnInfo{}
+
+	//get the service for the cluster
+	service, err := Clientset.CoreV1().Services(Namespace).Get(clusterName, meta_v1.GetOptions{})
+	if err != nil {
+		log.Error("error getting list of services" + err.Error())
+		os.Exit(2)
+		return info
+	}
+
+	//get the secrets for this cluster
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + clusterName}
+	secrets, err := Clientset.Secrets(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		os.Exit(2)
+		return info
+	}
+
+	//get the postgres user secret info
+	var username, password, database, hostip string
+	for _, s := range secrets.Items {
+		username = string(s.Data["username"][:])
+		password = string(s.Data["password"][:])
+		database = "postgres"
+		hostip = service.Spec.ClusterIP
+		if username == "postgres" {
+			log.Debug("got postgres user secrets")
+			break
+		}
+	}
+
+	//query the database for users that have expired
+	strPort := fmt.Sprint(service.Spec.Ports[0].Port)
+	info.Username = username
+	info.Password = password
+	info.Database = database
+	info.Hostip = hostip
+	info.Port = strPort
+
+	return info
+}
+
+func addUser(info ConnInfo, newUser string) {
+	var conn *sql.DB
+	var err error
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
+
+	var rows *sql.Rows
+
+	querystr := "create user " + newUser
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
+
+	querystr = "grant all on database userdb to  " + newUser
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
 
 }
