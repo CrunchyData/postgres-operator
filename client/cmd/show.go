@@ -164,7 +164,7 @@ var ShowClusterCmd = &cobra.Command{
 
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
+		if Labelselector == "" && len(args) == 0 {
 			log.Error("cluster name(s) required for this command")
 		} else {
 			showCluster(args)

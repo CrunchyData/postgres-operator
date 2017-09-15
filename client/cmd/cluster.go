@@ -36,12 +36,16 @@ func showCluster(args []string) {
 	myselector := labels.Everything()
 	log.Debug("selector is " + Labelselector)
 	if Labelselector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
 		myselector, err = labels.Parse(Labelselector)
 		if err != nil {
 			log.Error("could not parse --selector value " + err.Error())
 			return
 		}
 	}
+
+	log.Debugf("label selector is [%v]\n", myselector)
 	err = Tprclient.Get().
 		Resource(tpr.CLUSTER_RESOURCE).
 		Namespace(Namespace).
@@ -69,7 +73,7 @@ func showCluster(args []string) {
 				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.POSTGRES_FULL_VERSION == PostgresVersion) {
 					fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.POSTGRES_FULL_VERSION + ")")
 					log.Debug("listing cluster " + arg)
-					fmt.Printf("last password update %v\n", cluster.Spec.PSW_LAST_UPDATE)
+					log.Debugf("last password update %v\n", cluster.Spec.PSW_LAST_UPDATE)
 					//list the deployments
 					listDeployments(cluster.Spec.Name)
 					//list the replicasets
@@ -310,9 +314,13 @@ func getClusterParams(name string) *tpr.PgCluster {
 		spec.BACKUP_PVC_NAME = BackupPVC
 	}
 
+	labels := make(map[string]string)
+	labels["name"] = name
+
 	newInstance := &tpr.PgCluster{
 		Metadata: meta_v1.ObjectMeta{
-			Name: name,
+			Name:   name,
+			Labels: labels,
 		},
 		Spec: spec,
 	}
