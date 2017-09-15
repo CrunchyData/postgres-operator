@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"strconv"
 	"time"
 )
 
@@ -170,48 +171,54 @@ func createCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		log.Debug("create cluster called for " + arg)
-		result := tpr.PgCluster{}
-
-		// error if it already exists
-		err = Tprclient.Get().
-			Resource(tpr.CLUSTER_RESOURCE).
-			Namespace(Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
-		if err == nil {
-			log.Debug("pgcluster " + arg + " was found so we will not create it")
-			break
-		} else if kerrors.IsNotFound(err) {
-			log.Debug("pgcluster " + arg + " not found so we will create it")
-		} else {
-			log.Error("error getting pgcluster " + arg + err.Error())
-			break
-		}
-
-		if SecretFrom != "" {
-			err = validateSecretFrom(SecretFrom)
-			if err != nil {
-				log.Error(SecretFrom + " secret was not found ")
-				return
+		clusterName := arg
+		for i := 0; i < Series; i++ {
+			if Series > 1 {
+				clusterName = arg + strconv.Itoa(i)
 			}
+			log.Debug("create cluster called for " + clusterName)
+			result := tpr.PgCluster{}
+
+			// error if it already exists
+			err = Tprclient.Get().
+				Resource(tpr.CLUSTER_RESOURCE).
+				Namespace(Namespace).
+				Name(clusterName).
+				Do().
+				Into(&result)
+			if err == nil {
+				log.Debug("pgcluster " + clusterName + " was found so we will not create it")
+				break
+			} else if kerrors.IsNotFound(err) {
+				log.Debug("pgcluster " + clusterName + " not found so we will create it")
+			} else {
+				log.Error("error getting pgcluster " + clusterName + err.Error())
+				break
+			}
+
+			if SecretFrom != "" {
+				err = validateSecretFrom(SecretFrom)
+				if err != nil {
+					log.Error(SecretFrom + " secret was not found ")
+					return
+				}
+			}
+
+			// Create an instance of our TPR
+			newInstance := getClusterParams(clusterName)
+
+			newInstance.Spec.PSW_LAST_UPDATE = time.Now()
+
+			err = Tprclient.Post().
+				Resource(tpr.CLUSTER_RESOURCE).
+				Namespace(Namespace).
+				Body(newInstance).
+				Do().Into(&result)
+			if err != nil {
+				log.Error(" in creating PgCluster instance" + err.Error())
+			}
+			fmt.Println("created PgCluster " + clusterName)
 		}
-
-		// Create an instance of our TPR
-		newInstance := getClusterParams(arg)
-
-		newInstance.Spec.PSW_LAST_UPDATE = time.Now()
-
-		err = Tprclient.Post().
-			Resource(tpr.CLUSTER_RESOURCE).
-			Namespace(Namespace).
-			Body(newInstance).
-			Do().Into(&result)
-		if err != nil {
-			log.Error(" in creating PgCluster instance" + err.Error())
-		}
-		fmt.Println("created PgCluster " + arg)
 
 	}
 }
