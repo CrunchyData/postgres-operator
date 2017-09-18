@@ -1,0 +1,41 @@
+FROM centos:7
+
+LABEL name="crunchydata/csvload" \
+        vendor="crunchy data" \
+      	PostgresVersion="9.6" \
+      	PostgresFullVersion="9.6.5" \
+        version="7.3" \
+        release="1.5.1" \
+        build-date="2017-09-28" \
+        url="https://crunchydata.com" \
+        summary="loads a CSV file into a database" \
+        description="executed by the operator, loads a CSV file." \
+        io.k8s.description="cvsload container" \
+        io.k8s.display-name="Crunchy cvsload container" \
+        io.openshift.expose-services="" \
+        io.openshift.tags="crunchy,database"
+
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+
+# PGDG Postgres repo
+RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+
+RUN yum -y update &&  \
+ yum install -y \
+	gettext \
+	hostname \
+ 	nss_wrapper \
+	openssh-clients \
+	procps-ng \
+ && yum -y install postgresql96 \
+ && yum clean all -y
+
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
+ADD bin/csvload/ /opt/cpm/bin
+#RUN chown -R 26:26 /opt/cpm /pgdata
+
+VOLUME ["/pgdata"]
+
+USER 26
+
+CMD ["/opt/cpm/bin/start.sh"]

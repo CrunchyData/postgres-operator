@@ -32,6 +32,9 @@ operatorimage:	check-go-vars
 lsimage:
 	docker build -t lspvc -f $(CO_BASEOS)/Dockerfile.lspvc.$(CO_BASEOS) .
 	docker tag lspvc crunchydata/lspvc:$(CO_BASEOS)-$(CO_VERSION)
+csvloadimage:
+	docker build -t csvload -f $(CO_BASEOS)/Dockerfile.csvload.$(CO_BASEOS) .
+	docker tag csvload crunchydata/csvload:$(CO_BASEOS)-$(CO_VERSION)
 all:
 	make operatorimage
 	make lsimage
