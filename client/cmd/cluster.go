@@ -331,12 +331,41 @@ func getClusterParams(name string) *tpr.PgCluster {
 }
 
 func deleteCluster(args []string) {
+
 	// Fetch a list of our cluster TPRs
 	clusterList := tpr.PgClusterList{}
-	err := Tprclient.Get().Resource(tpr.CLUSTER_RESOURCE).Do().Into(&clusterList)
-	if err != nil {
-		log.Error("error getting cluster list" + err.Error())
-		return
+
+	if Selector != "" {
+		//use the selector instead of an argument list to filter on
+
+		myselector, err := labels.Parse(Selector)
+		if err != nil {
+			log.Error("could not parse selector flag")
+			return
+		}
+
+		//get the clusters list
+		err = Tprclient.Get().
+			Resource(tpr.CLUSTER_RESOURCE).
+			Namespace(Namespace).
+			LabelsSelectorParam(myselector).
+			Do().
+			Into(&clusterList)
+		if err != nil {
+			log.Error("error getting cluster list" + err.Error())
+			return
+		}
+
+		if len(clusterList.Items) == 0 {
+			log.Debug("no clusters found")
+		} else {
+			newargs := make([]string, 0)
+			for _, cluster := range clusterList.Items {
+				newargs = append(newargs, cluster.Spec.Name)
+			}
+			args = newargs
+		}
+
 	}
 
 	//to remove a cluster, you just have to remove
@@ -347,10 +376,10 @@ func deleteCluster(args []string) {
 		for _, cluster := range clusterList.Items {
 			if arg == "all" || arg == cluster.Spec.Name {
 				clusterFound = true
-				err = Tprclient.Delete().
+				err := Tprclient.Delete().
 					Resource(tpr.CLUSTER_RESOURCE).
 					Namespace(Namespace).
-					Name(cluster.Spec.Name).
+					Name(arg).
 					Do().
 					Error()
 				if err != nil {

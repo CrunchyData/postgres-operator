@@ -66,6 +66,8 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
+	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
 
@@ -105,8 +107,8 @@ var deleteClusterCmd = &cobra.Command{
 	Long: `delete a crunchy cluster. For example:
 	pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Error("a cluster name is required for this command")
+		if len(args) == 0 && Selector == "" {
+			log.Error("a cluster name or selector is required for this command")
 		} else {
 			deleteCluster(args)
 		}
