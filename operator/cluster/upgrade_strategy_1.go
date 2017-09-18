@@ -68,13 +68,15 @@ func (r ClusterStrategy1) MinorUpgrade(clientset *kubernetes.Clientset, tprclien
 
 	//create the master deployment
 
+	masterLabels := getMasterLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+
 	deploymentFields := DeploymentTemplateFields{
 		Name:                 cl.Spec.Name,
 		ClusterName:          cl.Spec.Name,
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, cl.Spec.MasterStorage.PvcName),
-		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
+		OPERATOR_LABELS:      util.GetLabelsFromMap(masterLabels),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
 		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
@@ -187,6 +189,8 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 
 	log.Info("major cluster upgrade finalize using Strategy 1 in namespace " + namespace)
 
+	masterLabels := getMasterLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+
 	//start the master deployment
 	deploymentFields := DeploymentTemplateFields{
 		Name:                 cl.Spec.Name,
@@ -194,7 +198,7 @@ func (r ClusterStrategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, 
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        upgrade.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, upgrade.Spec.NEW_PVC_NAME),
-		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
+		OPERATOR_LABELS:      util.GetLabelsFromMap(masterLabels),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(upgrade.Spec.BACKUP_PVC_NAME),
 		PGDATA_PATH_OVERRIDE: upgrade.Spec.NEW_DATABASE_NAME,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,

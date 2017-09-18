@@ -125,6 +125,12 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		log.Info("master Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
 
+	err = util.PatchClusterTPR(client, masterLabels, cl, namespace)
+	if err != nil {
+		log.Error("could not patch master tpr with labels")
+		return err
+	}
+
 	newReplicas, err := strconv.Atoi(cl.Spec.REPLICAS)
 	if err != nil {
 		log.Error("could not convert REPLICAS config setting")

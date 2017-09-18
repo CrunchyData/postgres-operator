@@ -24,9 +24,11 @@ import (
 	"strconv"
 	"text/template"
 
+	"github.com/crunchydata/postgres-operator/tpr"
+	jsonpatch "github.com/evanphx/json-patch"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	//extensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 )
 
@@ -219,4 +221,40 @@ func GetLabelsFromMap(labels map[string]string) string {
 		i++
 	}
 	return output
+}
+
+func PatchClusterTPR(tprclient *rest.RESTClient, labelMap map[string]string, oldTpr *tpr.PgCluster, namespace string) error {
+
+	oldData, err := json.Marshal(oldTpr)
+	if err != nil {
+		return err
+	}
+	if oldTpr.Metadata.Labels == nil {
+		oldTpr.Metadata.Labels = make(map[string]string)
+	}
+	for k, v := range labelMap {
+		oldTpr.Metadata.Labels[k] = v
+	}
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldTpr)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+
+	_, err6 := tprclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(tpr.CLUSTER_RESOURCE).
+		Name(oldTpr.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
 }

@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
+	"os"
 	//"github.com/crunchydata/postgres-operator/operator/util"
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/tpr"
@@ -38,6 +39,7 @@ import (
 )
 
 var LabelCmdLabel string
+var LabelMap map[string]string
 var DeleteLabel bool
 
 var labelCmd = &cobra.Command{
@@ -60,6 +62,7 @@ pgo label --label=environment=prod --selector=status=final --dry-run
 		if LabelCmdLabel == "" {
 			log.Error(`You must specify the label to apply.`)
 		} else {
+			validateLabel()
 			labelClusters(args)
 		}
 	},
@@ -156,13 +159,12 @@ func addLabels(items []tpr.PgCluster) {
 			return
 		}
 
-		newLabels := make(map[string]string)
 		for _, d := range deployments.Items {
 			//update Deployment with the label
 			//fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
 			if DryRun {
 			} else {
-				err := updateLabels(&d, Clientset, items[i].Spec.Name, Namespace, newLabels)
+				err := updateLabels(&d, Clientset, items[i].Spec.Name, Namespace, LabelMap)
 				if err != nil {
 					log.Error(err.Error())
 				}
@@ -175,6 +177,8 @@ func addLabels(items []tpr.PgCluster) {
 func updateLabels(deployment *v1beta1.Deployment, clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
 
 	var err error
+
+	log.Debugf("%v is the labels to apply\n", newLabels)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)
@@ -253,4 +257,18 @@ func PatchPgCluster(tprclient *rest.RESTClient, newLabel string, oldTpr tpr.PgCl
 
 	return err6
 
+}
+
+func validateLabel() {
+	//TODO use  the k8s label parser for this validation
+	LabelMap = make(map[string]string)
+	userValues := strings.Split(LabelCmdLabel, ",")
+	for _, v := range userValues {
+		pair := strings.Split(v, "=")
+		if len(pair) != 2 {
+			log.Error("label format incorrect, requires name=value")
+			os.Exit(2)
+		}
+		LabelMap[pair[0]] = pair[1]
+	}
 }
