@@ -19,15 +19,15 @@ import (
 	"database/sql"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/operator/util"
+	"github.com/crunchydata/postgres-operator/tpr"
 	_ "github.com/lib/pq"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/labels"
 	"os"
 	"strconv"
 	"time"
-	//"k8s.io/apimachinery/pkg/labels"
-	"github.com/crunchydata/postgres-operator/operator/util"
-	//"github.com/crunchydata/postgres-operator/tpr"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	//"io/ioutil"
 	//kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,9 +55,12 @@ var PasswordAgeDays, PasswordLength int
 
 var ChangePasswordForUser string
 var DeleteUser string
+var ValidDays string
+var UserDBAccess string
 var AddUser string
 var Expired string
 var UpdatePasswords bool
+var ManagedUser bool
 
 var userCmd = &cobra.Command{
 	Use:   "user",
@@ -81,83 +84,115 @@ func init() {
 
 	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
+	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
 	userCmd.Flags().StringVarP(&AddUser, "add-user", "a", "", "--add-user=bob adds a new user to selective clusters")
 	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
+	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
 	userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
 	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
+	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
 	getDefaults()
 
 }
 
 func userManager() {
 	//build the selector based on the selector parameter
-	//get the clusters list
 
-	//get filtered list of Deployments
+	//set up the selector
 	var sel string
 	if Selector != "" {
 		sel = Selector + ",pg-cluster,!replica"
 	} else {
-		sel = "pg-cluster,!replica"
+		log.Error("--selector is required")
+		return
+
 	}
 	log.Infoln("selector string=[" + sel + "]")
 
-	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
+	myselector, err := labels.Parse(sel)
 	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
+		log.Error("could not parse --selector value " + err.Error())
 		return
 	}
 
-	for _, d := range deployments.Items {
-		fmt.Println("deployment : " + d.ObjectMeta.Name)
-		info := getPostgresUserInfo(d.ObjectMeta.Name)
+	//get the clusters list
+	clusterList := tpr.PgClusterList{}
+	err = Tprclient.Get().
+		Resource(tpr.CLUSTER_RESOURCE).
+		Namespace(Namespace).
+		LabelsSelectorParam(myselector).
+		Do().
+		Into(&clusterList)
+	if err != nil {
+		log.Error("error getting cluster list" + err.Error())
+		return
+	}
 
-		if ChangePasswordForUser != "" {
-			fmt.Println("changing password of user " + ChangePasswordForUser)
-			newPassword := util.GeneratePassword(PasswordLength)
-			newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-			err = updatePassword(info, ChangePasswordForUser, newPassword, newExpireDate)
-			if err != nil {
-				log.Error(err.Error())
-				os.Exit(2)
-			}
-		}
-		if DeleteUser != "" {
-			fmt.Println("deleting user " + DeleteUser)
-			deleteUser(info, DeleteUser)
-		}
-		if AddUser != "" {
-			fmt.Println("adding new user " + AddUser)
-			addUser(info, AddUser)
-			newPassword := util.GeneratePassword(PasswordLength)
-			newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-			err = updatePassword(info, AddUser, newPassword, newExpireDate)
-			if err != nil {
-				log.Error(err.Error())
-				os.Exit(2)
-			}
+	if len(clusterList.Items) == 0 {
+		fmt.Println("no clusters found")
+		return
+	}
+
+	for _, cluster := range clusterList.Items {
+
+		sel = "pg-cluster=" + cluster.Spec.Name + ",!replica"
+		lo := meta_v1.ListOptions{LabelSelector: sel}
+		deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
+		if err != nil {
+			log.Error("error getting list of deployments" + err.Error())
+			return
 		}
 
-		if Expired != "" {
-			results := callDB(info, d.ObjectMeta.Name, Expired)
-			if len(results) > 0 {
-				fmt.Println("expired passwords....")
-				for _, v := range results {
-					fmt.Printf("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
-					if UpdatePasswords {
-						newPassword := util.GeneratePassword(PasswordLength)
-						newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-						err = updatePassword(v.ConnDetails, v.Rolname, newPassword, newExpireDate)
-						if err != nil {
-							fmt.Println("error in updating password")
+		for _, d := range deployments.Items {
+			fmt.Println("deployment : " + d.ObjectMeta.Name)
+			info := getPostgresUserInfo(d.ObjectMeta.Name)
+
+			if ChangePasswordForUser != "" {
+				fmt.Println("changing password of user " + ChangePasswordForUser)
+				newPassword := util.GeneratePassword(PasswordLength)
+				newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
+				err = updatePassword(info, ChangePasswordForUser, newPassword, newExpireDate)
+				if err != nil {
+					log.Error(err.Error())
+					os.Exit(2)
+				}
+			}
+			if DeleteUser != "" {
+				fmt.Println("deleting user " + DeleteUser)
+				deleteUser(info, DeleteUser)
+			}
+			if AddUser != "" {
+				fmt.Println("adding new user " + AddUser)
+				addUser(d.ObjectMeta.Name, info, AddUser)
+				newPassword := util.GeneratePassword(PasswordLength)
+				newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
+				err = updatePassword(info, AddUser, newPassword, newExpireDate)
+				if err != nil {
+					log.Error(err.Error())
+					os.Exit(2)
+				}
+			}
+
+			if Expired != "" {
+				results := callDB(info, d.ObjectMeta.Name, Expired)
+				if len(results) > 0 {
+					fmt.Println("expired passwords....")
+					for _, v := range results {
+						fmt.Printf("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
+						if UpdatePasswords {
+							newPassword := util.GeneratePassword(PasswordLength)
+							newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
+							err = updatePassword(v.ConnDetails, v.Rolname, newPassword, newExpireDate)
+							if err != nil {
+								fmt.Println("error in updating password")
+							}
+							fmt.Printf("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 						}
-						fmt.Printf("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 					}
 				}
 			}
-		}
 
+		}
 	}
 
 }
@@ -322,7 +357,7 @@ func getPostgresUserInfo(clusterName string) ConnInfo {
 	return info
 }
 
-func addUser(info ConnInfo, newUser string) {
+func addUser(clusterName string, info ConnInfo, newUser string) {
 	var conn *sql.DB
 	var err error
 
@@ -342,7 +377,11 @@ func addUser(info ConnInfo, newUser string) {
 		os.Exit(2)
 	}
 
-	querystr = "grant all on database userdb to  " + newUser
+	if UserDBAccess != "" {
+		querystr = "grant all on database " + UserDBAccess + " to  " + newUser
+	} else {
+		querystr = "grant all on database userdb to  " + newUser
+	}
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -358,6 +397,13 @@ func addUser(info ConnInfo, newUser string) {
 			rows.Close()
 		}
 	}()
+
+	//add a secret if managed
+	if ManagedUser {
+		err = util.CreateUserSecret(Clientset, clusterName, newUser, info.Password, Namespace)
+		if err != nil {
+		}
+	}
 
 }
 func deleteUser(info ConnInfo, user string) {

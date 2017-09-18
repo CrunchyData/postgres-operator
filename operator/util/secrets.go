@@ -119,7 +119,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	if err != nil {
 		log.Error("error creating secret" + err.Error())
 	} else {
-		log.Info("created secret secret")
+		log.Info("created secret " + secret.Name)
 	}
 
 	return err
@@ -209,4 +209,17 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 	}
 	return err
 
+}
+
+func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+
+	var err error
+
+	secretName := clustername + "-" + username + "-secret"
+	err = CreateSecret(clientset, clustername, secretName, username, password, namespace)
+	if err != nil {
+		log.Error("error creating secret" + err.Error())
+	}
+
+	return err
 }
