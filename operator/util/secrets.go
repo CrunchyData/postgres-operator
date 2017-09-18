@@ -223,3 +223,30 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 
 	return err
 }
+
+func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+
+	var err error
+
+	secretName := clustername + "-" + username + "-secret"
+
+	//delete current secret
+	options := meta_v1.DeleteOptions{}
+	err = clientset.Secrets(namespace).Delete(secretName, &options)
+	if err != nil {
+		log.Error("error deleting secret" + err.Error())
+		return err
+	} else {
+		log.Info("deleted secret " + secretName)
+	}
+	//create secret with updated password
+	err = CreateUserSecret(clientset, clustername, username, password, namespace)
+	if err != nil {
+		log.Error("error creating secret" + err.Error())
+		return err
+	} else {
+		log.Info("created secret " + secretName)
+	}
+
+	return err
+}

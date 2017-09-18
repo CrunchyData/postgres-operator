@@ -151,7 +151,7 @@ func userManager() {
 				fmt.Println("changing password of user " + ChangePasswordForUser)
 				newPassword := util.GeneratePassword(PasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-				err = updatePassword(info, ChangePasswordForUser, newPassword, newExpireDate)
+				err = updatePassword(cluster.Spec.Name, info, ChangePasswordForUser, newPassword, newExpireDate)
 				if err != nil {
 					log.Error(err.Error())
 					os.Exit(2)
@@ -166,7 +166,7 @@ func userManager() {
 				addUser(d.ObjectMeta.Name, info, AddUser)
 				newPassword := util.GeneratePassword(PasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-				err = updatePassword(info, AddUser, newPassword, newExpireDate)
+				err = updatePassword(cluster.Spec.Name, info, AddUser, newPassword, newExpireDate)
 				if err != nil {
 					log.Error(err.Error())
 					os.Exit(2)
@@ -182,7 +182,7 @@ func userManager() {
 						if UpdatePasswords {
 							newPassword := util.GeneratePassword(PasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
-							err = updatePassword(v.ConnDetails, v.Rolname, newPassword, newExpireDate)
+							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate)
 							if err != nil {
 								fmt.Println("error in updating password")
 							}
@@ -246,7 +246,7 @@ func callDB(info ConnInfo, clusterName, maxdays string) []PswResult {
 
 }
 
-func updatePassword(p ConnInfo, username, newPassword, passwordExpireDate string) error {
+func updatePassword(clusterName string, p ConnInfo, username, newPassword, passwordExpireDate string) error {
 	var err error
 	var conn *sql.DB
 
@@ -283,6 +283,11 @@ func updatePassword(p ConnInfo, username, newPassword, passwordExpireDate string
 		}
 	}()
 
+	err = util.UpdateUserSecret(Clientset, clusterName, username, newPassword, Namespace)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
 	return err
 }
 
