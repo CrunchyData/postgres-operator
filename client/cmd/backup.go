@@ -21,6 +21,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,8 +36,8 @@ var backupCmd = &cobra.Command{
 			pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("backup called")
-		if len(args) == 0 {
-			fmt.Println(`You must specify the cluster to backup.`)
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
 		} else {
 			createBackup(args)
 		}
@@ -45,6 +47,8 @@ var backupCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(backupCmd)
+
+	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 }
 
 func showBackup(args []string) {
@@ -150,6 +154,40 @@ func createBackup(args []string) {
 
 	var err error
 	var newInstance *tpr.PgBackup
+
+	if Selector != "" {
+		//use the selector instead of an argument list to filter on
+
+		myselector, err := labels.Parse(Selector)
+		if err != nil {
+			log.Error("could not parse selector flag")
+			return
+		}
+
+		//get the clusters list
+		clusterList := tpr.PgClusterList{}
+		err = Tprclient.Get().
+			Resource(tpr.CLUSTER_RESOURCE).
+			Namespace(Namespace).
+			LabelsSelectorParam(myselector).
+			Do().
+			Into(&clusterList)
+		if err != nil {
+			log.Error("error getting cluster list" + err.Error())
+			return
+		}
+
+		if len(clusterList.Items) == 0 {
+			log.Debug("no clusters found")
+		} else {
+			newargs := make([]string, 0)
+			for _, cluster := range clusterList.Items {
+				newargs = append(newargs, cluster.Spec.Name)
+			}
+			args = newargs
+		}
+
+	}
 
 	for _, arg := range args {
 		log.Debug("create backup called for " + arg)
