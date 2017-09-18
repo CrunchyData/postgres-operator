@@ -250,3 +250,18 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 
 	return err
 }
+
+func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, namespace string) error {
+	//delete current secret
+	secretName := clustername + "-" + username + "-secret"
+
+	options := meta_v1.DeleteOptions{}
+	err := clientset.Secrets(namespace).Delete(secretName, &options)
+	if err != nil {
+		log.Error("error deleting secret" + err.Error())
+		return err
+	} else {
+		log.Info("deleted secret " + secretName)
+	}
+	return err
+}

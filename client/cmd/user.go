@@ -159,7 +159,7 @@ func userManager() {
 			}
 			if DeleteUser != "" {
 				fmt.Println("deleting user " + DeleteUser)
-				deleteUser(info, DeleteUser)
+				deleteUser(cluster.Spec.Name, info, DeleteUser)
 			}
 			if AddUser != "" {
 				fmt.Println("adding new user " + AddUser)
@@ -411,7 +411,7 @@ func addUser(clusterName string, info ConnInfo, newUser string) {
 	}
 
 }
-func deleteUser(info ConnInfo, user string) {
+func deleteUser(clusterName string, info ConnInfo, user string) {
 	var conn *sql.DB
 	var err error
 
@@ -423,7 +423,14 @@ func deleteUser(info ConnInfo, user string) {
 
 	var rows *sql.Rows
 
-	querystr := "drop user if exists " + user
+	querystr := "drop owned by  " + user + " cascade"
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
+	querystr = "drop user if exists " + user
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -439,5 +446,11 @@ func deleteUser(info ConnInfo, user string) {
 			rows.Close()
 		}
 	}()
+
+	err = util.DeleteUserSecret(Clientset, clusterName, user, Namespace)
+	if err != nil {
+		log.Debug(err.Error())
+		os.Exit(2)
+	}
 
 }
