@@ -44,6 +44,9 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Clone a PostgreSQL Cluster
 * Create a SQL-based Policy
 * Apply a SQL-based Policy to a PostgreSQL Cluster
+* Perform User Management
+* Apply User Defined Labels to PostgreSQL Clusters
+* Perform Password Management
 
 What actually gets created on the Kube cluster for a
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
@@ -52,8 +55,8 @@ are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies]
 [#Requirements]
 == Requirements
 
-* Kubernetes 1.5.3+
-* Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
+* greater than Kubernetes 1.5.3+
+* greater than Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
@@ -163,7 +166,7 @@ which allows for any sort of SQL to be executed.
 pgo apply policy1 --selector=name=mycluster
 ----
 
-Details on the *pgo* commands are found in the
+Details on the *pgo* commands and complex examples are found in the
 link:docs/user-guide.asciidoc[User Guide]
 
 [#PostgreSQL Operator Container]

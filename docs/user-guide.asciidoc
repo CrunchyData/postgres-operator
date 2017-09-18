@@ -11,6 +11,17 @@ To create a database, use the following:
 pgo create cluster mycluster
 ....
 
+A more complex example is to create a *series* of clusters such
+as:
+....
+pgo create cluster xraydb --series=3 --labels=project=xray --policies=xrayapp,rlspolicy
+....
+
+In the example above, we provision 3 clusters that have a number appended
+into their resulting cluster name, apply a user defined label to each
+cluster, and also apply user defined policies to each cluster after
+they are created.
+
 You can then view that database as:
 ....
 pgo show cluster mydatabase
@@ -78,6 +89,15 @@ This will create a new database called *restoredb* based on the
 backup found in *mycluster-backups/2017-03-27-13-56-49* and the
 secrets of the *mycluster* cluster.
 
+Selectors can be used to perform backups as well, for example:
+....
+pgo backup  --selector=project=xray
+....
+
+In this example, any cluster that matches the selector will cause
+a backup job to be created.
+
+
 == Cluster Removal
 
 You can remove a cluster by running:
@@ -88,6 +108,15 @@ pgo delete cluster restoredb
 Note, that this command will not remove the PVC associated with
 this cluster.  If you want to remove the cluster's old data files,
 you will need to remove it manually.
+
+Selectors also apply to the delete command as follows:
+....
+pgo delete cluster  --selector=project=xray
+....
+
+This command will cause any cluster matching the selector
+to be removed. 
+
 
 == Cluster Replication
 
@@ -358,6 +387,40 @@ pgo user --expired=7
 
 == User Management - Update Expired Passwords
 
+To assign users to a cluster:
+....
+pgo user --add-user=user1 --valid-days=30 --managed --db=userdb --selector=name=xraydb1
+....
+
+In this example, a user named *user1* is created with a *valid until* password date set to expire in 30 days.  That user will be granted access to the *userdb* database.  This user account also will have an associated *secret* created to hold the password that was generated for this user.  Any clusters that match the selector value will have this user created on it.
+
+To change a user password:
+....
+pgo user --change-password=user1 --valid-days=10 --selector=name=xray1
+....
+
+In this example, a user named *user1* has its password changed to a generated
+value and the *valid until* expiration date set to 10 days from now, this
+command will take effect across all clusters that match the selector.
+
+To drop a user:
+....
+pgo user --delete-user=user3   --selector=project=xray
+....
+
+To see which passwords are set to expire in a given number of days:
+....
+pgo user --expired=10  --selector=project=xray
+....
+
+To check password age:
+....
+pgo user --expired=10  --selector=project=xray
+....
+
+In this example, any clusters that match the selector are queried to see
+if any users are set to expire in 10 days.
+
 To update expired passwords in a cluster:
 ....
 pgo user --update-passwords --selector=name=mycluster
@@ -367,6 +430,16 @@ The same command across all clusters:
 ....
 pgo user --update-passwords
 ....
+
+== Label Management
+
+You can apply a user defined label to a cluster as follows:
+....
+pgo label --label=env=research  --selector=project=xray
+....
+
+In this example, we apply a label of *env=research* to any
+clusters that have an existing label of *project=xray* applied.
 
 == bash Completion
 
