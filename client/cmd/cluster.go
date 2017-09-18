@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -210,6 +211,7 @@ func createCluster(args []string) {
 
 			// Create an instance of our TPR
 			newInstance := getClusterParams(clusterName)
+			validateConfigPolicies()
 
 			newInstance.Spec.PSW_LAST_UPDATE = time.Now()
 
@@ -277,6 +279,7 @@ func getClusterParams(name string) *tpr.PgCluster {
 	spec.REPLICAS = "0"
 	spec.STRATEGY = "1"
 	spec.NodeName = NodeName
+	spec.UserLabels = UserLabelsMap
 
 	//override any values from config file
 	str := viper.GetString("CLUSTER.PORT")
@@ -394,6 +397,24 @@ func getValidNodeName() string {
 	return "error here"
 
 }
+func validateUserLabels() error {
+
+	var err error
+	labels := strings.Split(UserLabels, ",")
+
+	for _, v := range labels {
+		fmt.Printf("%s\n", v)
+		p := strings.Split(v, "=")
+		if len(p) < 2 {
+			return errors.New("invalid labels format")
+		} else {
+			UserLabelsMap[p[0]] = p[1]
+		}
+	}
+	return err
+
+}
+
 func validateNodeName(nodeName string) error {
 	var err error
 	lo := meta_v1.ListOptions{}

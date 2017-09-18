@@ -78,6 +78,8 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		return err
 	}
 
+	masterLabels := getMasterLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+
 	//create the master deployment
 	deploymentFields := DeploymentTemplateFields{
 		Name:                 cl.Spec.Name,
@@ -85,7 +87,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		Port:                 cl.Spec.Port,
 		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
 		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, masterPvcName),
-		OPERATOR_LABELS:      util.GetLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false),
+		OPERATOR_LABELS:      util.GetLabelsFromMap(masterLabels),
 		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
 		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
 		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
@@ -419,6 +421,7 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		clusterName = depName
 	}
 
+	replicaLabels := getMasterLabels(serviceName, clusterName, cloneFlag, true, cl.Spec.UserLabels)
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:                 depName,
@@ -429,7 +432,7 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
 		PG_DATABASE:          cl.Spec.PG_DATABASE,
 		REPLICAS:             "1",
-		OPERATOR_LABELS:      util.GetLabels(serviceName, clusterName, cloneFlag, true),
+		OPERATOR_LABELS:      util.GetLabelsFromMap(replicaLabels),
 		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.ReplicaStorage.FSGROUP, cl.Spec.ReplicaStorage.SUPPLEMENTAL_GROUPS),
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
@@ -468,4 +471,22 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 
 	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
 	return err
+}
+
+func getMasterLabels(Name string, ClusterName string, cloneFlag bool, replicaFlag bool, userLabels map[string]string) map[string]string {
+	masterLabels := make(map[string]string)
+	if cloneFlag {
+		masterLabels["clone"] = "true"
+	}
+	if replicaFlag {
+		masterLabels["replica"] = "true"
+	}
+
+	masterLabels["name"] = Name
+	masterLabels["pg-cluster"] = ClusterName
+
+	for key, value := range userLabels {
+		masterLabels[key] = value
+	}
+	return masterLabels
 }

@@ -204,3 +204,19 @@ func GetLabels(name, clustername string, clone, replica bool) string {
 	output += fmt.Sprintf("\"pg-cluster\": \"%s\"\n", clustername)
 	return output
 }
+func GetLabelsFromMap(labels map[string]string) string {
+	var output string
+
+	mapLen := len(labels)
+	i := 1
+	for key, value := range labels {
+		fmt.Println("Key:", key, "Value:", value)
+		if i < mapLen {
+			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
+		} else {
+			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\"")
+		}
+		i++
+	}
+	return output
+}
