@@ -1,5 +1,5 @@
 = postgres Operator User Guide
-v1.5, {docdate}
+v1.5.1, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
