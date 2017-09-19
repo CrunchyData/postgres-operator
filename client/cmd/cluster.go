@@ -332,40 +332,43 @@ func getClusterParams(name string) *tpr.PgCluster {
 
 func deleteCluster(args []string) {
 
+	var err error
+
 	// Fetch a list of our cluster TPRs
 	clusterList := tpr.PgClusterList{}
+	myselector := labels.Everything()
 
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
-
-		myselector, err := labels.Parse(Selector)
+		myselector, err = labels.Parse(Selector)
 		if err != nil {
 			log.Error("could not parse selector flag")
 			return
 		}
+	}
 
-		//get the clusters list
-		err = Tprclient.Get().
-			Resource(tpr.CLUSTER_RESOURCE).
-			Namespace(Namespace).
-			LabelsSelectorParam(myselector).
-			Do().
-			Into(&clusterList)
-		if err != nil {
-			log.Error("error getting cluster list" + err.Error())
-			return
-		}
+	//get the clusters list
+	err = Tprclient.Get().
+		Resource(tpr.CLUSTER_RESOURCE).
+		Namespace(Namespace).
+		LabelsSelectorParam(myselector).
+		Do().
+		Into(&clusterList)
+	if err != nil {
+		log.Error("error getting cluster list" + err.Error())
+		return
+	}
 
-		if len(clusterList.Items) == 0 {
-			log.Debug("no clusters found")
-		} else {
+	if len(clusterList.Items) == 0 {
+		log.Debug("no clusters found")
+	} else {
+		if Selector != "" {
 			newargs := make([]string, 0)
 			for _, cluster := range clusterList.Items {
 				newargs = append(newargs, cluster.Spec.Name)
 			}
 			args = newargs
 		}
-
 	}
 
 	//to remove a cluster, you just have to remove
