@@ -149,8 +149,8 @@ func getLoadConfigFile() {
 	if err == nil {
 		log.Debugf("Using load config file: %s\n", viper.ConfigFileUsed())
 	} else {
-		log.Debug("load config file not found")
-		return
+		log.Error("load config file not found")
+		os.Exit(2)
 	}
 
 	//LoadConfigTemplate.Name = viper.GetString("Name")

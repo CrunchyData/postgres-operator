@@ -20,8 +20,8 @@ ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 # PGDG Postgres repo
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
-RUN yum -y update &&  \
- yum install -y \
+RUN yum -y update &&  yum -y install epel-release \
+ && yum install -y \
 	gettext \
 	hostname \
  	nss_wrapper \
@@ -30,11 +30,12 @@ RUN yum -y update &&  \
  && yum -y install postgresql96 \
  && yum clean all -y
 
-RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf 
 ADD bin/csvload/ /opt/cpm/bin
-#RUN chown -R 26:26 /opt/cpm /pgdata
+ADD conf/csvload/ /opt/cpm/conf
+RUN chown -R 26:26 /opt/cpm 
 
-VOLUME ["/pgdata"]
+VOLUME /pgdata
 
 USER 26
 

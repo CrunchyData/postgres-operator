@@ -17,14 +17,23 @@
 # start the csv load job
 #
 # /pgdata is a volume that gets mapped into this container
-# $TABLE_TO_LOAD postgres table to copy data into
-# $CSV_FILE_PATH path to csv file
+# $CSV_PATH host we are connecting to
 # $DB_HOST host we are connecting to
 # $DB_USER pg user we are connecting with
 # $DB_PASS pg user password we are connecting with
 # $DB_PORT pg port we are connecting to
 #
 
+function create_pgpass() {
+cd /tmp
+cat >> ".pgpass" <<-EOF
+*:*:*:*:${DB_PASS}
+EOF
+chmod 0600 .pgpass
+export PGPASSFILE=/tmp/.pgpass
+#chown $UID:$UID $PGPASSFILE
+cat $PGPASSFILE
+}
 function ose_hack() {
         export USER_ID=$(id -u)
         export GROUP_ID=$(id -g)
@@ -39,23 +48,10 @@ ose_hack
 
 echo $CSVFILE_PATH
 
-export PGPASSFILE=/tmp/pgpass
+create_pgpass
 
-echo "*:*:*:"$DB_USER":"$DB_PASS  >> $PGPASSFILE
 
-chmod 600 $PGPASSFILE
 
-chown $UID:$UID $PGPASSFILE
-
-# cat $PGPASSFILE
-
-#pg_basebackup --label=$BACKUP_LABEL --xlog --pgdata $CSVFILE_PATH --host=$DB_HOST --port=$DB_PORT -U $DB_USER
-
-#chown -R $UID:$UID $CSVFILE_PATH
-# 
-# open up permissions for the OSE Dedicated random UID scenario
-#
-#chmod -R o+rx $CSVFILE_PATH
 echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$CSV_FILE_PATH' WITH (FORMAT csv);" > /tmp/copycommand
 psql -U $DB_USER -h $DB_HOST $DB_DATABASE -f /tmp/copycommand
 echo "csvload has ended!"
