@@ -17,10 +17,12 @@
 # start the csv load job
 #
 # /pgdata is a volume that gets mapped into this container
-# $BACKUP_HOST host we are connecting to
-# $BACKUP_USER pg user we are connecting with
-# $BACKUP_PASS pg user password we are connecting with
-# $BACKUP_PORT pg port we are connecting to
+# $TABLE_TO_LOAD postgres table to copy data into
+# $CSV_FILE_PATH path to csv file
+# $DB_HOST host we are connecting to
+# $DB_USER pg user we are connecting with
+# $DB_PASS pg user password we are connecting with
+# $DB_PORT pg port we are connecting to
 #
 
 function ose_hack() {
@@ -35,26 +37,11 @@ function ose_hack() {
 
 ose_hack
 
-BACKUPBASE=/pgdata/$BACKUP_HOST-backups
-if [ ! -d "$BACKUPBASE" ]; then
-	echo "creating BACKUPBASE directory..."
-	mkdir -p $BACKUPBASE
-fi
-
-if [[ ! -v "BACKUP_LABEL" ]]; then
-	BACKUP_LABEL="crunchybackup"
-fi
-echo "BACKUP_LABEL is set to " $BACKUP_LABEL
-
-TS=`date +%Y-%m-%d-%H-%M-%S`
-BACKUP_PATH=$BACKUPBASE/$TS
-mkdir $BACKUP_PATH
-
-echo $BACKUP_PATH
+echo $CSVFILE_PATH
 
 export PGPASSFILE=/tmp/pgpass
 
-echo "*:*:*:"$BACKUP_USER":"$BACKUP_PASS  >> $PGPASSFILE
+echo "*:*:*:"$DB_USER":"$DB_PASS  >> $PGPASSFILE
 
 chmod 600 $PGPASSFILE
 
@@ -62,12 +49,13 @@ chown $UID:$UID $PGPASSFILE
 
 # cat $PGPASSFILE
 
-pg_basebackup --label=$BACKUP_LABEL --xlog --pgdata $BACKUP_PATH --host=$BACKUP_HOST --port=$BACKUP_PORT -U $BACKUP_USER
+#pg_basebackup --label=$BACKUP_LABEL --xlog --pgdata $CSVFILE_PATH --host=$DB_HOST --port=$DB_PORT -U $DB_USER
 
-chown -R $UID:$UID $BACKUP_PATH
+#chown -R $UID:$UID $CSVFILE_PATH
 # 
 # open up permissions for the OSE Dedicated random UID scenario
 #
-chmod -R o+rx $BACKUP_PATH
-
-echo "backup has ended!"
+#chmod -R o+rx $CSVFILE_PATH
+echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$CSV_FILE_PATH' WITH (FORMAT csv);" > /tmp/copycommand
+psql -U $DB_USER -h $DB_HOST $DB_DATABASE -f /tmp/copycommand
+echo "csvload has ended!"
