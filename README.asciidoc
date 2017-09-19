@@ -50,7 +50,7 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 
 What actually gets created on the Kube cluster for a
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
-are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies].
+are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
 
 [#Requirements]
 == Requirements
