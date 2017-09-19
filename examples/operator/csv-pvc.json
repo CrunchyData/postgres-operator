@@ -1,0 +1,17 @@
+  {
+      "kind": "PersistentVolumeClaim",
+      "apiVersion": "v1",
+      "metadata": {
+          "name": "csv-pvc"
+      },
+      "spec": {
+          "accessModes": [
+              "ReadWriteMany"
+          ],
+          "resources": {
+              "requests": {
+                  "storage": "100M"
+              }
+          }
+      }
+  }

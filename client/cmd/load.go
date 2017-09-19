@@ -17,12 +17,19 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
+	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	"os"
+	"text/template"
 	//"k8s.io/apimachinery/pkg/api/errors"
 	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"time"
@@ -66,15 +73,27 @@ var loadCmd = &cobra.Command{
 	},
 }
 
+var CSVLOAD_TEMPLATE_PATH string
+
+var JobTemplate *template.Template
+
 func init() {
 	RootCmd.AddCommand(loadCmd)
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
-	getLoadConfigFile()
+	fmt.Println(" config is " + viper.GetString("PGO.CSVLOAD_TEMPLATE"))
 }
 
 func createLoad(args []string) {
+	CSVLOAD_TEMPLATE_PATH = viper.GetString("PGO.CSVLOAD_TEMPLATE")
+	if CSVLOAD_TEMPLATE_PATH == "" {
+		log.Error("PGO.CSVLOAD_TEMPLATE not defined in pgo config.")
+		os.Exit(2)
+	}
+	getLoadConfigFile()
+	fmt.Println("using csvload template from " + CSVLOAD_TEMPLATE_PATH)
+	getJobTemplate()
 	log.Debugf("createLoad called %v\n", args)
 
 	//var err error
@@ -117,17 +136,18 @@ func createLoad(args []string) {
 		log.Debug("load called for " + arg)
 
 		fmt.Println("created load for " + arg)
+		createJob(Clientset, arg, Namespace)
 
 	}
 
 }
 
 func getLoadConfigFile() {
-	LoadConfigTemplate := LoadJobTemplateFields{}
+	LoadConfigTemplate = LoadJobTemplateFields{}
 	viper.SetConfigFile(LoadConfig)
 	err := viper.ReadInConfig()
 	if err == nil {
-		log.Debugf("Using load config file:", viper.ConfigFileUsed())
+		log.Debugf("Using load config file: %s\n", viper.ConfigFileUsed())
 	} else {
 		log.Debug("load config file not found")
 		return
@@ -144,5 +164,49 @@ func getLoadConfigFile() {
 	LoadConfigTemplate.CSV_FILE_PATH = viper.GetString("CSV_FILE_PATH")
 	LoadConfigTemplate.PVC_NAME = viper.GetString("PVC_NAME")
 	LoadConfigTemplate.SECURITY_CONTEXT = viper.GetString("SECURITY_CONTEXT")
+
+}
+
+func getJobTemplate() {
+	var err error
+	var buf []byte
+
+	buf, err = ioutil.ReadFile(CSVLOAD_TEMPLATE_PATH)
+	if err != nil {
+		log.Error("error loading csvload job template..." + err.Error())
+		os.Exit(2)
+	}
+	JobTemplate = template.Must(template.New("csvload job template").Parse(string(buf)))
+
+}
+
+func createJob(clientset *kubernetes.Clientset, clusterName string, namespace string) {
+	var err error
+
+	LoadConfigTemplate.Name = "csvload-" + clusterName
+	LoadConfigTemplate.DB_HOST = clusterName
+
+	var doc2 bytes.Buffer
+	err = JobTemplate.Execute(&doc2, LoadConfigTemplate)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+	jobDocString := doc2.String()
+	log.Debug(jobDocString)
+
+	newjob := v1batch.Job{}
+	err = json.Unmarshal(doc2.Bytes(), &newjob)
+	if err != nil {
+		log.Error("error unmarshalling json into Job " + err.Error())
+		return
+	}
+
+	resultJob, err := Clientset.Batch().Jobs(Namespace).Create(&newjob)
+	if err != nil {
+		log.Error("error creating Job " + err.Error())
+		return
+	}
+	log.Info("created load Job " + resultJob.Name)
 
 }

@@ -66,6 +66,7 @@ BACKUP_STORAGE:
   SUPPLEMENTALGROUPS:  65534
 PGO:
   LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
+  CSVLOAD_TEMPLATE:  /home/youruserid/.pgo.csvload-template.json
   CO_IMAGE_TAG:  centos7-1.5.1
   DEBUG:  false
 ....
@@ -111,6 +112,7 @@ Values in the pgo configuration file have the following meaning:
 |BACKUP_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
 |BACKUP_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
 |PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
+|PGO.CSVLOAD_TEMPLATE        | the CSV load template file used for load jobs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
 |======================
