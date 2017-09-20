@@ -1,0 +1,16 @@
+                "affinity": {
+                        "nodeAffinity": {
+                        "preferredDuringSchedulingIgnoredDuringExecution": {
+                                "nodeSelectorTerms": [{
+                                "matchExpressions": [{
+                                        "key": "kubernetes.io/hostname",
+                                        "operator": "{{.OPERATOR}}",
+                                        "values": [
+                                                "{{.NODE}}"
+                                        ]
+                                }]
+                                }]
+                        }
+                        }
+                },
+

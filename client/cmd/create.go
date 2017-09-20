@@ -72,7 +72,7 @@ pgo create cluster mycluster`,
 
 		//always have a valid NodeName
 		if NodeName == "" {
-			NodeName = getValidNodeName()
+			//NodeName = getValidNodeName()
 		} else {
 			err = validateNodeName(NodeName)
 			if err != nil {
