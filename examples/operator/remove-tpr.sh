@@ -16,6 +16,13 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 source $DIR/setup.sh
 
+$CO_CMD delete pgbackups --all
+$CO_CMD delete pgclones --all
+$CO_CMD delete pgclusters --all
+$CO_CMD delete pgpolicies --all
+$CO_CMD delete pgpolicylogs --all
+$CO_CMD delete pgupgrades --all
+
 $CO_CMD delete thirdpartyresources pg-backup.crunchydata.com \
 	pg-clone.crunchydata.com \
 	pg-cluster.crunchydata.com  \

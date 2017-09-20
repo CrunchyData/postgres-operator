@@ -107,7 +107,7 @@ func userManager() {
 		return
 
 	}
-	log.Infoln("selector string=[" + sel + "]")
+	log.Debug("selector string=[" + sel + "]")
 
 	myselector, err := labels.Parse(sel)
 	if err != nil {
@@ -135,6 +135,8 @@ func userManager() {
 
 	for _, cluster := range clusterList.Items {
 
+		//log.Infoln("working on cluster " + cluster.Spec.Name)
+		//log.Infof("clusters %v\n", clusterList.Items)
 		sel = "pg-cluster=" + cluster.Spec.Name + ",!replica"
 		lo := meta_v1.ListOptions{LabelSelector: sel}
 		deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
@@ -144,11 +146,10 @@ func userManager() {
 		}
 
 		for _, d := range deployments.Items {
-			fmt.Println("deployment : " + d.ObjectMeta.Name)
 			info := getPostgresUserInfo(d.ObjectMeta.Name)
 
 			if ChangePasswordForUser != "" {
-				fmt.Println("changing password of user " + ChangePasswordForUser)
+				fmt.Println("changing password of user " + ChangePasswordForUser + " on " + d.ObjectMeta.Name)
 				newPassword := util.GeneratePassword(PasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
 				err = updatePassword(cluster.Spec.Name, info, ChangePasswordForUser, newPassword, newExpireDate)
@@ -158,11 +159,11 @@ func userManager() {
 				}
 			}
 			if DeleteUser != "" {
-				fmt.Println("deleting user " + DeleteUser)
+				fmt.Println("deleting user " + DeleteUser + " from " + d.ObjectMeta.Name)
 				deleteUser(cluster.Spec.Name, info, DeleteUser)
 			}
 			if AddUser != "" {
-				fmt.Println("adding new user " + AddUser)
+				fmt.Println("adding new user " + AddUser + " to " + d.ObjectMeta.Name)
 				addUser(d.ObjectMeta.Name, info, AddUser)
 				newPassword := util.GeneratePassword(PasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(PasswordAgeDays)
@@ -418,7 +419,7 @@ func deleteUser(clusterName string, info ConnInfo, user string) {
 	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
 	if err != nil {
 		log.Debug(err.Error())
-		os.Exit(2)
+		//os.Exit(2)
 	}
 
 	var rows *sql.Rows
@@ -428,14 +429,14 @@ func deleteUser(clusterName string, info ConnInfo, user string) {
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Debug(err.Error())
-		os.Exit(2)
+		//os.Exit(2)
 	}
 	querystr = "drop user if exists " + user
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Debug(err.Error())
-		os.Exit(2)
+		//os.Exit(2)
 	}
 
 	defer func() {
@@ -450,7 +451,7 @@ func deleteUser(clusterName string, info ConnInfo, user string) {
 	err = util.DeleteUserSecret(Clientset, clusterName, user, Namespace)
 	if err != nil {
 		log.Debug(err.Error())
-		os.Exit(2)
+		//os.Exit(2)
 	}
 
 }

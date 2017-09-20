@@ -23,6 +23,8 @@ import (
 	"github.com/crunchydata/postgres-operator/tpr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/labels"
+
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
@@ -42,8 +44,8 @@ var upgradeCmd = &cobra.Command{
 		pgo upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("upgrade called")
-		if len(args) == 0 {
-			fmt.Println(`You must specify the cluster to upgrade.`)
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`You must specify the cluster to upgrade or a selector value.`)
 		} else {
 			err := validateCreateUpdate(args)
 			if err != nil {
@@ -59,6 +61,8 @@ var upgradeCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(upgradeCmd)
+	upgradeCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+
 	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
 	upgradeCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
 
@@ -161,6 +165,40 @@ func createUpgrade(args []string) {
 
 	var err error
 	var newInstance *tpr.PgUpgrade
+
+	if Selector != "" {
+		//use the selector instead of an argument list to filter on
+
+		myselector, err := labels.Parse(Selector)
+		if err != nil {
+			log.Error("could not parse selector flag")
+			return
+		}
+
+		//get the clusters list
+		clusterList := tpr.PgClusterList{}
+		err = Tprclient.Get().
+			Resource(tpr.CLUSTER_RESOURCE).
+			Namespace(Namespace).
+			LabelsSelectorParam(myselector).
+			Do().
+			Into(&clusterList)
+		if err != nil {
+			log.Error("error getting cluster list" + err.Error())
+			return
+		}
+
+		if len(clusterList.Items) == 0 {
+			log.Debug("no clusters found")
+		} else {
+			newargs := make([]string, 0)
+			for _, cluster := range clusterList.Items {
+				newargs = append(newargs, cluster.Spec.Name)
+			}
+			args = newargs
+		}
+
+	}
 
 	for _, arg := range args {
 		log.Debug("create upgrade called for " + arg)

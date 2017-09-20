@@ -82,7 +82,7 @@ func init() {
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
-	fmt.Println(" config is " + viper.GetString("PGO.CSVLOAD_TEMPLATE"))
+	log.Debug(" csvload config is " + viper.GetString("PGO.CSVLOAD_TEMPLATE"))
 }
 
 func createLoad(args []string) {

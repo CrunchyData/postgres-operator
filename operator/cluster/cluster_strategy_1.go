@@ -240,7 +240,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	}
 
 	//sleep just a bit to give the drain time to work
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(9000 * time.Millisecond)
 
 	//TODO when client-go 3.0 is ready, use propagation_policy
 	//in the delete options to also delete the replica sets
@@ -259,6 +259,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 		}
 	}
 
+	/**
 	//TODO for k8s 1.6 and client-go 3.0 we can use propagation_policy
 	// to have the replica sets removed as part of the deployment remove
 	//delete replica sets if they exist
@@ -280,12 +281,13 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 			log.Info("deleted cluster replicaset " + r.Name + " in namespace " + namespace)
 		}
 	}
+	*/
 
 	for _, d := range deployments.Items {
 		log.Debug("making sure deployment " + d.ObjectMeta.Name + " is deleted")
-		err := util.WaitUntilDeploymentIsDeleted(clientset, d.ObjectMeta.Name, time.Second*3, namespace)
+		err := util.WaitUntilDeploymentIsDeleted(clientset, d.ObjectMeta.Name, time.Second*39, namespace)
 		if err != nil {
-			log.Error("timeout waiting for deployment " + d.ObjectMeta.Name + " to delete")
+			log.Error("timeout waiting for deployment " + d.ObjectMeta.Name + " to delete " + err.Error())
 		}
 	}
 
