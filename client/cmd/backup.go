@@ -306,7 +306,7 @@ func getBackupParams(name string) (*tpr.PgBackup, error) {
 		spec.BACKUP_HOST = cluster.Spec.Name
 		//spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
 		//spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD
-		spec.BACKUP_PASS = GetMasterSecretPassword(cluster.Spec.Name)
+		spec.BACKUP_PASS = GetSecretPassword(cluster.Spec.Name, tpr.PGMASTER_SECRET_SUFFIX)
 		spec.BACKUP_PORT = cluster.Spec.Port
 	} else if errors.IsNotFound(err) {
 		log.Debug(name + " is not a cluster")

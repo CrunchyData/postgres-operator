@@ -32,7 +32,6 @@ EOF
 chmod 0600 .pgpass
 export PGPASSFILE=/tmp/.pgpass
 #chown $UID:$UID $PGPASSFILE
-cat $PGPASSFILE
 }
 function ose_hack() {
         export USER_ID=$(id -u)
@@ -50,7 +49,7 @@ echo $CSVFILE_PATH
 
 create_pgpass
 
-
+cat $PGPASSFILE
 
 echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$CSV_FILE_PATH' WITH (FORMAT csv);" > /tmp/copycommand
 psql -U $DB_USER -h $DB_HOST $DB_DATABASE -f /tmp/copycommand

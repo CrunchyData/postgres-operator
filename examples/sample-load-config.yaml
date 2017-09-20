@@ -1,7 +1,6 @@
 CO_IMAGE_TAG:  centos7-1.5.1
 DB_DATABASE:  userdb
 DB_USER:  postgres
-DB_PASS:  password
 DB_PORT:  5432
 TABLE_TO_LOAD:  xraycsvtable
 CSV_FILE_PATH:  sample.csv

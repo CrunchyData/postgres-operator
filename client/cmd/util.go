@@ -160,7 +160,7 @@ func PrintSecrets(db string) {
 
 }
 
-func GetMasterSecretPassword(db string) string {
+func GetSecretPassword(db, suffix string) string {
 
 	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
 	secrets, err := Clientset.Secrets(Namespace).List(lo)
@@ -170,7 +170,7 @@ func GetMasterSecretPassword(db string) string {
 	}
 
 	log.Debug("secrets for " + db)
-	secretName := db + tpr.PGMASTER_SECRET_SUFFIX
+	secretName := db + suffix
 	for _, s := range secrets.Items {
 		log.Debug("secret : " + s.ObjectMeta.Name)
 		if s.ObjectMeta.Name == secretName {

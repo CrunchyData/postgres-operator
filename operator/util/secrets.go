@@ -119,7 +119,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	if err != nil {
 		log.Error("error creating secret" + err.Error())
 	} else {
-		log.Info("created secret " + secret.Name)
+		log.Debug("created secret " + secret.Name)
 	}
 
 	return err
@@ -203,7 +203,7 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 		if err != nil {
 			log.Error("error creating secret" + err.Error())
 		} else {
-			log.Info("created secret " + secret.Name)
+			log.Debug("created secret " + secret.Name)
 		}
 
 	}
@@ -237,7 +237,7 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 		log.Error("error deleting secret" + err.Error())
 		return err
 	} else {
-		log.Info("deleted secret " + secretName)
+		log.Debug("deleted secret " + secretName)
 	}
 	//create secret with updated password
 	err = CreateUserSecret(clientset, clustername, username, password, namespace)
@@ -245,7 +245,7 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 		log.Error("error creating secret" + err.Error())
 		return err
 	} else {
-		log.Info("created secret " + secretName)
+		log.Debug("created secret " + secretName)
 	}
 
 	return err
@@ -261,7 +261,7 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 		log.Error("error deleting secret" + err.Error())
 		return err
 	} else {
-		log.Info("deleted secret " + secretName)
+		log.Debug("deleted secret " + secretName)
 	}
 	return err
 }

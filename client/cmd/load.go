@@ -158,7 +158,7 @@ func getLoadConfigFile() {
 	//LoadConfigTemplate.DB_HOST = viper.GetString("DB_HOST")
 	LoadConfigTemplate.DB_DATABASE = viper.GetString("DB_DATABASE")
 	LoadConfigTemplate.DB_USER = viper.GetString("DB_USER")
-	LoadConfigTemplate.DB_PASS = viper.GetString("DB_PASS")
+	//LoadConfigTemplate.DB_PASS = viper.GetString("DB_PASS")
 	LoadConfigTemplate.DB_PORT = viper.GetString("DB_PORT")
 	LoadConfigTemplate.TABLE_TO_LOAD = viper.GetString("TABLE_TO_LOAD")
 	LoadConfigTemplate.CSV_FILE_PATH = viper.GetString("CSV_FILE_PATH")
@@ -185,6 +185,7 @@ func createJob(clientset *kubernetes.Clientset, clusterName string, namespace st
 
 	LoadConfigTemplate.Name = "csvload-" + clusterName
 	LoadConfigTemplate.DB_HOST = clusterName
+	LoadConfigTemplate.DB_PASS = GetSecretPassword(clusterName, tpr.PGROOT_SECRET_SUFFIX)
 
 	var doc2 bytes.Buffer
 	err = JobTemplate.Execute(&doc2, LoadConfigTemplate)
