@@ -1,5 +1,5 @@
 = postgres Operator Design
-v1.5.1, {docdate}
+v1.5.2, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 

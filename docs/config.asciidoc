@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v1.5.1, {docdate}
+v1.5.2, {docdate}
 
 
 This document describes the configuration options
@@ -67,7 +67,7 @@ BACKUP_STORAGE:
 PGO:
   LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
   CSVLOAD_TEMPLATE:  /home/youruserid/.pgo.csvload-template.json
-  CO_IMAGE_TAG:  centos7-1.5.1
+  CO_IMAGE_TAG:  centos7-1.5.2
   DEBUG:  false
 ....
 

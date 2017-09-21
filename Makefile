@@ -41,6 +41,7 @@ all:
 	make pgo
 push:
 	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
+	docker push crunchydata/csvload:$(CO_IMAGE_TAG)
 	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
 release:	check-go-vars
 	rm -rf $(RELTMPDIR) $(RELFILE)

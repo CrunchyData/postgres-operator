@@ -1,5 +1,5 @@
 = postgres Operator User Guide
-v1.5.1, {docdate}
+v1.5.2, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
@@ -440,6 +440,7 @@ pgo label --label=env=research  --selector=project=xray
 
 In this example, we apply a label of *env=research* to any
 clusters that have an existing label of *project=xray* applied.
+
 
 == bash Completion
 
