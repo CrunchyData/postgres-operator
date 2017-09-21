@@ -212,7 +212,7 @@ func GetLabelsFromMap(labels map[string]string) string {
 	mapLen := len(labels)
 	i := 1
 	for key, value := range labels {
-		fmt.Println("Key:", key, "Value:", value)
+		//fmt.Println("Key:", key, "Value:", value)
 		if i < mapLen {
 			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
 		} else {

@@ -1,16 +1,16 @@
-                "affinity": {
-                        "nodeAffinity": {
-                        "preferredDuringSchedulingIgnoredDuringExecution": {
-                                "nodeSelectorTerms": [{
-                                "matchExpressions": [{
-                                        "key": "kubernetes.io/hostname",
-                                        "operator": "{{.OPERATOR}}",
-                                        "values": [
-                                                "{{.NODE}}"
-                                        ]
-                                }]
-                                }]
-                        }
-                        }
-                },
-
+		"affinity": {
+		    "nodeAffinity": {
+			"preferredDuringSchedulingIgnoredDuringExecution": [{
+			    "weight": 1,
+			    "preference": {
+				"matchExpressions": [{
+				    "key": "kubernetes.io/hostname",
+				    "operator": "{{.OPERATOR}}",
+				    "values": [
+					"{{.NODE}}"
+				    ]   
+				}]  
+			    }   
+			}]  
+		    }   
+		},

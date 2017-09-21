@@ -35,14 +35,24 @@ import (
 
 	"strconv"
 
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"text/template"
 	"time"
 )
 
+const AFFINITY_IN_OPERATOR = "In"
+const AFFINITY_NOTIN_OPERATOR = "NotIn"
+
+type AffinityTemplateFields struct {
+	NODE     string
+	OPERATOR string
+}
+
 type ClusterStrategy1 struct{}
 
+var AffinityTemplate1 *template.Template
 var DeploymentTemplate1 *template.Template
 var ReplicaDeploymentTemplate1 *template.Template
 var ReplicaDeploymentTemplate1Shared *template.Template
@@ -55,6 +65,7 @@ func init() {
 	ReplicaDeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
 	ReplicaDeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
 	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
+	AffinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
 }
 
 func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *tpr.PgCluster, namespace string, masterPvcName string) error {
@@ -96,7 +107,7 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		NODE_SELECTOR:        cl.Spec.NodeName,
+		NODE_SELECTOR:        GetAffinity(cl.Spec.NodeName, string(api.NodeSelectorOpIn)),
 	}
 
 	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
@@ -445,7 +456,7 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
 		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
 		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		NODE_SELECTOR:        cl.Spec.NodeName,
+		NODE_SELECTOR:        GetAffinity(cl.Spec.NodeName, string(api.NodeSelectorOpNotIn)),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -497,4 +508,27 @@ func getMasterLabels(Name string, ClusterName string, cloneFlag bool, replicaFla
 		masterLabels[key] = value
 	}
 	return masterLabels
+}
+
+func GetAffinity(nodeName string, operator string) string {
+	output := ""
+	if nodeName == "" {
+		return output
+	}
+
+	affinityTemplateFields := AffinityTemplateFields{}
+	affinityTemplateFields.NODE = nodeName
+	affinityTemplateFields.OPERATOR = operator
+
+	var affinityDoc bytes.Buffer
+	err := AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
+	if err != nil {
+		log.Error(err.Error())
+		return output
+	}
+
+	affinityDocString := affinityDoc.String()
+	log.Info(affinityDocString)
+
+	return affinityDocString
 }
