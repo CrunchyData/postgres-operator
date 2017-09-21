@@ -55,8 +55,15 @@ are documented in detail in link:docs/strategies.asciidoc[Deployment Strategies]
 [#Requirements]
 == Requirements
 
+Version requirements, these versions of Kubernetes and Openshift are
+required due to the use of ThirdPartyResources which first emerged in
+these versions.
+
 * greater than Kubernetes 1.5.3+
 * greater than Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
+
+The Operator makes use of the following containers:
+
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
