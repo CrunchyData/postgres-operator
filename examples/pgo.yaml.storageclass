@@ -34,5 +34,5 @@ REPLICA_STORAGE:
 PGO:
   LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
   CSVLOAD_TEMPLATE:  /home/jeffmc/.pgo.csvload-template.json
-  CO_IMAGE_TAG:  centos7-1.5.1
+  CO_IMAGE_TAG:  centos7-1.5.2
   DEBUG:  false
