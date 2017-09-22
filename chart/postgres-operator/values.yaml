@@ -1,0 +1,21 @@
+# Default values for postgres-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 1
+
+image:
+  repository: crunchydata/postgres-operator
+  tag: centos7-1.5.2
+  pullPolicy: IfNotPresent
+
+env:
+  dockerApiVersion: "1.24"
+  debug: "true"
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

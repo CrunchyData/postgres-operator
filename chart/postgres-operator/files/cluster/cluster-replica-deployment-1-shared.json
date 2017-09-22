@@ -1,0 +1,100 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "extensions/v1beta1",
+    "metadata": {
+        "name": "{{.Name}}"
+    },
+    "spec": {
+        "replicas": {{.REPLICAS}},
+        "template": {
+            "metadata": {
+                "labels": {
+	        {{.OPERATOR_LABELS}}
+                }
+            },
+            "spec": {
+
+	    	{{.SECURITY_CONTEXT}}
+
+                "containers": [{
+                    "name": "database",
+                    "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG}}",
+                    "env": [{
+                        "name": "PG_MASTER_PORT",
+                        "value": "{{.Port}}"
+                    }, {
+                        "name": "PG_MASTER_HOST",
+                        "value": "{{.PG_MASTER_HOST}}"
+                    }, {
+                        "name": "PG_MODE",
+                        "value": "slave"
+                    }, {
+                        "name": "PG_DATABASE",
+                        "value": "{{.PG_DATABASE}}"
+                    }, {
+                        "name": "PGHOST",
+                        "value": "/tmp"
+                    }],
+                    "volumeMounts": [
+		    {
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }, {
+			"mountPath": "/pguser",
+			"name": "pguser-volume"
+			}, {
+			"mountPath": "/pgmaster",
+			"name": "pgmaster-volume"
+			}, {
+			"mountPath": "/pgroot",
+			"name": "pgroot-volume"
+			}
+		    ],
+
+                    "ports": [{
+                        "containerPort": 5432,
+                        "protocol": "TCP"
+                    }],
+                    "resources": {},
+                    "imagePullPolicy": "IfNotPresent"
+                }],
+                "volumes": [
+		{
+                    "name": "pgdata",
+            		"persistentVolumeClaim": {
+                		"claimName": "{{.PVC_NAME}}"
+            		}
+                }, {
+		  	"name": "pguser-volume",
+			"secret": {
+			"secretName": "{{.PGUSER_SECRET_NAME}}"
+			}
+		}, {
+			"name": "pgmaster-volume",
+			"secret": {
+			"secretName": "{{.PGMASTER_SECRET_NAME}}"
+			}
+		}, {
+			"name": "pgroot-volume",
+			"secret": {
+			"secretName": "{{.PGROOT_SECRET_NAME}}"
+			}
+		}
+		],
+
+		{{.NODE_SELECTOR}}
+
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

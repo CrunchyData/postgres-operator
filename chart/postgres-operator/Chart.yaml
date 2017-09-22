@@ -1,0 +1,17 @@
+apiVersion: v1
+description: CrunchyData Postgres Operator Helm chart
+name: postgres-operator
+version: 0.1.0
+keywords:
+- postgresql
+- postgres
+- database
+- sql
+home: https://www.crunchydata.com/
+icon: http://trusted-charts-logos.stackpoint.io/crunchy_logo.png
+sources:
+- https://github.com/CrunchyData/postgres-operator
+- https://github.com/CrunchyData/crunchy-containers
+maintainers:
+- name: rimusz
+  email: rimas@stackpoint.io

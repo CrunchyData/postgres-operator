@@ -1,0 +1,50 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "backup-{{.Name}}"
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.Name}}",
+                "labels": {
+                    "pgbackup": "true",
+                    "pg-database": "{{.Name}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    	"name": "pgdata",
+			{{.PVC_NAME}}
+                }],
+
+		{{.SECURITY_CONTEXT}}
+
+                "containers": [{
+                    "name": "backup",
+                    "image": "crunchydata/crunchy-backup:{{.CCP_IMAGE_TAG}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }],
+                    "env": [{
+                        "name": "BACKUP_HOST",
+                        "value": "{{.BACKUP_HOST}}"
+                    }, {
+                        "name": "BACKUP_USER",
+                        "value": "{{.BACKUP_USER}}"
+                    }, {
+                        "name": "BACKUP_PASS",
+                        "value": "{{.BACKUP_PASS}}"
+                    }, {
+                        "name": "BACKUP_PORT",
+                        "value": "{{.BACKUP_PORT}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

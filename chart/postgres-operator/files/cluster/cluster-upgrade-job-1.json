@@ -1,0 +1,61 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "upgrade-{{.Name}}"
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.Name}}",
+                "labels": {
+                    "pgupgrade": "true",
+                    "pg-database": "{{.Name}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    "name": "pgolddata",
+                    "persistentVolumeClaim": {
+                        "claimName": "{{.OLD_PVC_NAME}}"
+                    }
+                }, {
+                    "name": "pgnewdata",
+                    "persistentVolumeClaim": {
+                        "claimName": "{{.NEW_PVC_NAME}}"
+                    }
+                }],
+
+		{{.SECURITY_CONTEXT}}
+
+                "containers": [{
+                    "name": "upgrade",
+                    "image": "crunchydata/crunchy-upgrade:{{.CCP_IMAGE_TAG}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgolddata",
+                        "name": "pgolddata",
+                        "readOnly": false
+                    }, {
+                        "mountPath": "/pgnewdata",
+                        "name": "pgnewdata",
+                        "readOnly": false
+                    }],
+                    "env": [{
+                        "name": "OLD_DATABASE_NAME",
+                        "value": "{{.OLD_DATABASE_NAME}}"
+                    }, {
+                        "name": "NEW_DATABASE_NAME",
+                        "value": "{{.NEW_DATABASE_NAME}}"
+                    }, {
+                        "name": "OLD_VERSION",
+                        "value": "{{.OLD_VERSION}}"
+                    }, {
+                        "name": "NEW_VERSION",
+                        "value": "{{.NEW_VERSION}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}
