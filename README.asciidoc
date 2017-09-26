@@ -5,7 +5,7 @@ v1.5.2, {docdate}
 
 * <<Overview>>
 * <<Requirements>>
-* <<Build and Setup Instructions>>
+* <<Build and Install Instructions>>
 * <<Configuration>>
 * <<Examples>>
 * <<PostgreSQL Operator Container>>
