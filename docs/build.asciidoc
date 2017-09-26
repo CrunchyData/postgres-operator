@@ -218,6 +218,12 @@ git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ....
 
+At this point, you can choose one of two options to install the postgres-operator
+itself:
+
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#get-packaged-dependencies[Get packaged dependencies]
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#build-from-source[Build from source]
+
 === Get Packaged Dependencies
 
 At this point if you want to avoid building the images and binary
@@ -236,6 +242,10 @@ tar xvzf ./postgres-operator.1.5.2.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
+
+At this point, you'll want to head to the
+link:https://github.com/xenophenes/postgres-operator/blob/master/docs/build.asciidoc#deploy-the-postgresql-operator[Deploy the PostgreSQL Operator]
+section in order to complete installation.
 
 === Build from Source
 
@@ -280,14 +290,13 @@ docker images | grep crunchydata
 ....
 
 === Deploy the PostgreSQL Operator
-NOTE: This will create and use */data* on your
+*NOTE*: This will create and use */data* on your
 local system as the persistent store for the operator to use
-for its persistent volume:
+for its persistent volume.
 ....
 cd $COROOT/examples/operator
 ./deploy.sh
 kubectl get pod -l 'name=postgres-operator'
-kubectl get thirdpartyresources
 ....
 
 You can also deploy the operator by running the following command:
@@ -295,8 +304,20 @@ You can also deploy the operator by running the following command:
 make deploy
 ....
 
-There are example scripts that will create PV and PVC resources
-that can be used in your testing. See the following scripts:
+When you first run the operator, it will create the required
+ThirdPartyResources. You can view these as follows:
+
+....
+kubectl get thirdpartyresources
+....
+
+There are example scripts provided that will create PV and PVC resources
+that can be used in your testing. These utilize HostPath and NFS volume
+types. Other types are not currently supported, but can be manually defined.
+If you do elect to use dynamic storage, it is not necessary to create the
+PersistentVolume object in Kubernetes.
+
+See the following scripts:
 ....
 examples/operator/create-pv-nfs.sh
 examples/operator/create-pv.sh
@@ -306,9 +327,6 @@ kubectl create -f examples/operator/crunchy-pvc.json
 Note that this example will create a PVC called *crunchy-pvc* that is
 referenced in the examples and *pgo* configuration file as the
 desired PVC to use when databases and clusters are created.
-
-When you first run the operator, it will create the required
-ThirdPartyResources.
 
 Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
 
@@ -333,7 +351,7 @@ The .pgo.yaml file location is checked in that order.
 Edit the .pgo.yaml file and change the following settings to match your current configuration:
 ....
 KUBECONFIG:  /etc/kubernetes/admin.conf
-LSPVC_TEMPLATE:  /home/yourid/.pgo.lspvc-template.json
+LSPVC_TEMPLATE:  /home/*yourid*/.pgo.lspvc-template.json
 ....
 
 Note that this configuration file assumes your Kubernetes configuration file is
