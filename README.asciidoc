@@ -13,7 +13,7 @@ v1.5.2, {docdate}
 [#Overview]
 == Overview
 
-The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes.
+The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes environment.
 
 image::docs/tty.gif?raw=true[]
 
@@ -48,30 +48,43 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Apply User Defined Labels to PostgreSQL Clusters
 * Perform Password Management
 
-What actually gets created on the Kube cluster for a
+What actually gets created on the Kubernetes cluster for a
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
 are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
 
 [#Requirements]
 == Requirements
 
-Version requirements, these versions of Kubernetes and Openshift are
-required due to the use of ThirdPartyResources which first emerged in
+These versions of Kubernetes and OpenShift are required due to the use of ThirdPartyResources which first emerged in
 these versions.
 
-* greater than Kubernetes 1.5.3+
-* greater than Openshift Origin 1.5.1+ and Openshift Container Platform 3.5
+* *Kubernetes 1.5.3+*
+* *OpenShift Origin 1.5.1+*
+* *OpenShift Container Platform 3.5*
+
+The operator is developed with the following specific version of Golang; you can find this distribution on the official
+link:https://golang.org/dl/[Golang website]. Because Go binaries essentially have Go runtime bundled with them, it is
+important to build on a platform that is compatible with the target deployment platform.
+
+* *Golang 1.8.x*
 
 The Operator makes use of the following containers:
 
 * link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
+* link:https://hub.docker.com/r/crunchydata/lspvc/[PostgreSQL PVC Listing Container]
+* link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
+
+This Operator has also been tested on the following operating systems:
+
+* *CentOS 7*
+* *RHEL 7*
 
 [#Build and Install Instructions]
 == Build and Install Instructions
 
-To build and deploy the Operator on your Kube system, follow
+To build and deploy the Operator on your Kubernetes system, follow
 the instructions documented on the link:docs/build.asciidoc[Build and Install] page.
 
 With the operator deployed, the *pgo* command line
@@ -81,7 +94,7 @@ and reacts to.
 [#Configuration]
 == Configuration
 
-You can configure both the client and the operator.  The
+The operator is template-driven; this makes it simple to configure both the client and the operator. The
 configuration options are documented on the link:docs/config.asciidoc[Configuration] page.
 
 [#Examples]
@@ -179,10 +192,10 @@ link:docs/user-guide.asciidoc[User Guide]
 [#PostgreSQL Operator Container]
 == PostgreSQL Operator Container
 
-In the following diagram, the postgres operator client, *pgo*, is
-shown interacting with the postgres operator that runs within
+In the following diagram, the PostgreSQL operator client, *pgo*, is
+shown interacting with the PostgreSQL operator that runs within
 a Kubernetes cluster.  The operator is responsible for creating
-or modifying PostgreSQL databases deployed within the Kube cluster.
+or modifying PostgreSQL databases deployed within the Kubernetes cluster.
 
 image::docs/operator-diagram.png?raw=true[]
 

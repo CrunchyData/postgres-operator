@@ -11,7 +11,7 @@ Sample pgo configuration files are located in the $COROOT/examples directory.
 
 You will need to copy a sample to your $HOME/.pgo.yaml location.  It
 can be defined in the following locations:
- 
+
  * . (current directory)
  * $HOME
  * /etc/pgo/
@@ -95,23 +95,23 @@ Values in the pgo configuration file have the following meaning:
 |MASTER_STORAGE.PVC_ACCESS_MODE        |for the master postgres deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |MASTER_STORAGE.PVC_SIZE        |for the master postgres deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |MASTER_STORAGE.STORAGE_TYPE        |for the master postgres deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|MASTER_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|MASTER_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|MASTER_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|MASTER_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |REPLICA_STORAGE.PVC_NAME        |for the replica postgres deployments, if set, the PVC to use for created databases, used when the storage type is *existing*
 |REPLICA_STORAGE.STORAGE_CLASS        |for the replica postgres deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |REPLICA_STORAGE.PVC_ACCESS_MODE        |for the replica postgres deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |REPLICA_STORAGE.PVC_SIZE        |for the replica postgres deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |REPLICA_STORAGE.STORAGE_TYPE        |for the replica postgres deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|REPLICA_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|REPLICA_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
+|REPLICA_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|REPLICA_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |BACKUP_STORAGE.PVC_NAME        |for the backup job, if set, the PVC to use for holding backup files, used when the storage type is *existing*
 |BACKUP_STORAGE.STORAGE_CLASS        |for the backup job, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |BACKUP_STORAGE.PVC_ACCESS_MODE        |for the backup job, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce)
 |BACKUP_STORAGE.PVC_SIZE        |for the backup job, the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |BACKUP_STORAGE.STORAGE_TYPE        |for the backup job , supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|BACKUP_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions 
-|BACKUP_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions 
-|PGO.LSPVC_TEMPLATE        | the PVC lspvc template file used to view PVCs
+|BACKUP_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|BACKUP_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|PGO.LSPVC_TEMPLATE        | the PVC lspvc template file that lists PVC contents
 |PGO.CSVLOAD_TEMPLATE        | the CSV load template file used for load jobs
 |PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
 |PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
@@ -120,13 +120,13 @@ Values in the pgo configuration file have the following meaning:
 
 == Operator Configuration (Server)
 
-The operator is run as a Kube Deployment on the Kube cluster
-within a namespace.  
+The operator is run as a Kubernetes Deployment on the Kubernetes cluster
+within a namespace.
 
 The script *example/operator/deploy.sh* will create the operator
-deployment on your Kube cluster.  
+deployment on your Kubernetes cluster.
 
-That script will also create a PV named *crunchy-pv* using a HostPath of */data*  and a PVC named *crunchy-pvc* on your local system.  This is 
+That script will also create a PV named *crunchy-pv* using a HostPath of */data*  and a PVC named *crunchy-pvc* on your local system.  This is
 only for testing the operator, edit or remove the PV/PVC creation
 to meet your requirements.
 
@@ -149,11 +149,11 @@ srw-rw----. 1 root docker 0 May 17 07:30 /var/run/docker.sock
 ....
 
 Since the operator runs as the *root* user, it can access the docker
-socket.  
+socket.
 
 === Operator Templates
 
-The database and cluster Kube objects that get created by the operator
+The database and cluster Kubernetes objects that get created by the operator
 are based on json templates that are added into the operator deployment
 by means of a mounted volume.
 
@@ -179,7 +179,7 @@ The following STORAGE_TYPE values are possible:
  can write to that NFS volume mount via a common PVC, when set, the PVC_NAME
  setting is used for the PVC
  * *create* - this setting allows for the creation of a new PVC for
- each Postgres cluster using a naming convention of *clustername*-pvc*, 
+ each Postgres cluster using a naming convention of *clustername*-pvc*,
  when set, the *PVC_SIZE*, *PVC_ACCESS_MODE* settings are used in
  constructing the new PVC
  * *emptydir*, if not supplied, *emptydir* is used
@@ -205,4 +205,3 @@ for users to use as a starting configuration:
  * pgo.yaml.dynamic - this configuration specifies *dynamic* storage
  to be used, namely a *storageclass* that refers to a dynamic provisioning
  strorage such as StorageOS or Portworx, or GCE.
-
