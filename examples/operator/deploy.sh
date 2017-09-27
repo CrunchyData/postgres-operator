@@ -19,7 +19,7 @@ source $DIR/setup.sh
 
 $DIR/cleanup.sh
 
-$CO_CMD create configmap operator-conf \
+$CO_CMD --namespace=$CO_NAMESPACE create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
