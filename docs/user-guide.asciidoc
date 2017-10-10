@@ -166,7 +166,7 @@ pgo show cluster all --version=9.6.2
 You can perform a minor Postgres version upgrade
 of either a database or cluster as follows:
 ....
-pgo create upgrade mycluster
+pgo upgrade mycluster
 ....
 
 When you run this command, it will cause the operator
