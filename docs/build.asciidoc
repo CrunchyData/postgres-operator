@@ -186,16 +186,16 @@ section in order to complete installation.
 
 Install a golang compiler, this can be done with either
 your package manager or by following directions
-from https://golang.org/dl/
+from https://golang.org/dl/.  The operator is currenlty built
+using golang version 1.8.X
+
 
 Then install the project library dependencies, the godep dependency manager is used
 as follows:
 ....
 cd $COROOT
 go get github.com/tools/godep
-godep restore
-go get github.com/spf13/cobra github.com/spf13/viper
-go get github.com/docker/docker/api github.com/docker/docker/client
+./bin/get-deps.sh
 ....
 
 In a development environment you will likely want to create a
