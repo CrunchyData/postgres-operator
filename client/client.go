@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
 func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {

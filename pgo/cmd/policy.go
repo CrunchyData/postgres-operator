@@ -17,9 +17,9 @@ package cmd
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//"github.com/crunchydata/kraken/util"
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	"github.com/crunchydata/kraken/util"
+	//"github.com/crunchydata/postgres-operator/util"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/util"
 
 	"github.com/spf13/viper"
 	"io/ioutil"

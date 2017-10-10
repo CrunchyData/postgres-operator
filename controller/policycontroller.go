@@ -11,8 +11,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	//policycontroller "github.com/crunchydata/kraken/operator/policy"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//policycontroller "github.com/crunchydata/postgres-operator/operator/policy"
 )
 
 // Watcher is an policy of watching on resource create/update/delete events

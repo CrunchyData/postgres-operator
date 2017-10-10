@@ -23,7 +23,7 @@ import (
 	"os"
 	//"github.com/crunchydata/postgres-operator/operator/util"
 	"encoding/json"
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"

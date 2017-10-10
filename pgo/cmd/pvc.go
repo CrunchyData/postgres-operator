@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/kraken/util"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"

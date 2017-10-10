@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/crunchydata/kraken",
+	"ImportPath": "github.com/crunchydata/postgres-operator",
 	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
 	"Deps": [

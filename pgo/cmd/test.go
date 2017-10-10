@@ -18,7 +18,7 @@ import (
 	"database/sql"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

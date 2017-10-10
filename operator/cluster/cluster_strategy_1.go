@@ -22,9 +22,9 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	"github.com/crunchydata/kraken/operator/pvc"
-	"github.com/crunchydata/kraken/util"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/util"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	jsonpatch "github.com/evanphx/json-patch"

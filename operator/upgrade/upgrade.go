@@ -20,9 +20,9 @@ import (
 	"os"
 	//"time"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	"github.com/crunchydata/kraken/operator/cluster"
-	"github.com/crunchydata/kraken/util"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/util"
 
 	"k8s.io/client-go/kubernetes"
 

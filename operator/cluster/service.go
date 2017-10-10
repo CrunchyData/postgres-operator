@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/kraken/util"
+	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

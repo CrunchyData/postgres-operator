@@ -19,8 +19,8 @@ import (
 	"os"
 	"strconv"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	"github.com/crunchydata/kraken/client"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/client"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

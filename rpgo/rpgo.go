@@ -16,7 +16,7 @@
 package main
 
 import (
-	"github.com/crunchydata/kraken/rpgo/cmd"
+	"github.com/crunchydata/postgres-operator/rpgo/cmd"
 )
 
 func main() {

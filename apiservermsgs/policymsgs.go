@@ -1,7 +1,7 @@
 package apiservermsgs
 
 import (
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
 type CreatePolicyRequest struct {

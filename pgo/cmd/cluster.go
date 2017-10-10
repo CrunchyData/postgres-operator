@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 
 	"github.com/spf13/viper"
 	//"k8s.io/api/core/v1"

@@ -11,8 +11,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	backupoperator "github.com/crunchydata/kraken/operator/backup"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 )
 
 // Watcher is an backup of watching on resource create/update/delete events

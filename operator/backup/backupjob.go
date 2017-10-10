@@ -19,8 +19,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"os"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	"github.com/crunchydata/kraken/util"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/util"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"

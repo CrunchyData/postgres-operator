@@ -2,11 +2,11 @@ package main
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/kraken/apiserver/backupservice"
-	"github.com/crunchydata/kraken/apiserver/cloneservice"
-	"github.com/crunchydata/kraken/apiserver/clusterservice"
-	"github.com/crunchydata/kraken/apiserver/policyservice"
-	"github.com/crunchydata/kraken/apiserver/upgradeservice"
+	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
+	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
+	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
+	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
+	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/gorilla/mux"
 	"net/http"
 )

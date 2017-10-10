@@ -13,8 +13,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	policylogoperator "github.com/crunchydata/kraken/operator/cluster"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	policylogoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
 // Watcher is an policylog of watching on resource create/update/delete events
