@@ -182,7 +182,7 @@ is updated, this will upgrade your Postgres server version only.
 You can perform a major Postgres version upgrade
 of either a database or cluster as follows:
 ....
-pgo create upgrade mycluster --upgrade-type=major
+pgo upgrade mycluster --upgrade-type=major
 ....
 
 When you run this command, it will cause the operator
