@@ -130,29 +130,12 @@ are as follows:
 The operator is run as a Kubernetes Deployment on the Kubernetes cluster
 within a namespace.
 
-The script *example/operator/deploy.sh* will create the operator
-deployment on your Kubernetes cluster.
+Execute the Makefile target *deployoperator* to deploy the Operator.
 
 You can also create NFS PV(s) using the create-pv-nfs.sh script.
 
 To enable DEBUG messages from the operator pod, set the *DEBUG* environment
 variable to *true* within its deployment file *deployment.json*.
-
-=== Docker Connection
-
-The operator looks up Docker image information such as labels to use
-when creating databases and clusters.  For this to work, the
-Pod needs to access the Docker socket. The socket is mounted as a
-hostPath volume within the operator pod.  You will need to ensure
-that the host Docker socket's permissions are adjusted to allow
-the operator to connect to the Docker socket. On CentOS 7, the
-standard Docker socket permissions are:
-....
-srw-rw----. 1 root docker 0 May 17 07:30 /var/run/docker.sock
-....
-
-Since the operator runs as the *root* user, it can access the Docker
-socket.
 
 === Operator Templates
 

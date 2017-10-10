@@ -22,12 +22,13 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/operator/util"
+	"github.com/crunchydata/kraken/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+	//"k8s.io/api/core/v1"
 
 	"text/template"
 )
@@ -64,7 +65,7 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 			return err
 		}
 
-		replicaServiceResult, err = clientset.Services(namespace).Create(&replicaService)
+		replicaServiceResult, err = clientset.Core().Services(namespace).Create(&replicaService)
 		if err != nil {
 			log.Error("error creating replica Service " + err.Error())
 			return err

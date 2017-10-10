@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build and Setup
 :toc:
-v1.5.2, {docdate}
+v1.7.0, {docdate}
 
 == Table of Contents
 
@@ -23,9 +23,9 @@ how the operator is built and how it operates.
 These versions of Kubernetes and OpenShift are required due to the use of ThirdPartyResources which first emerged in
 these versions.
 
-* *Kubernetes 1.5.3+*
-* *OpenShift Origin 1.5.1+*
-* *OpenShift Container Platform 3.5*
+* *Kubernetes 1.7.0+*
+* *OpenShift Origin 1.7.0+*
+* *OpenShift Container Platform 3.6*
 
 The operator is developed with the following specific version of Golang; you can find this distribution on the official
 link:https://golang.org/dl/[Golang website]. Because Go binaries essentially have Go runtime bundled with them, it is
@@ -100,19 +100,6 @@ kubectl create clusterrolebinding permissive-binding \
 See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
 details on how to enable RBAC roles.
 
-==== GOMAXPROCS
-
-GOMAXPROCS is a variable defined with Golang which limits the number of operating
-system threads that can execute user-level Go code simultaneously. For effective
-optimization, specifying GOMAXPROCS in your .bashrc file to equal your number of CPUs
-when executing Kubernetes is preferable.
-
-For example:
-
-....
-export GOMAXPROCS=4
-....
-
 ==== Namespace
 
 You can set the namespace to use for deploying the operator
@@ -122,59 +109,6 @@ link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/opera
 ....
 export CO_NAMESPACE=myproject
 ....
-
-=== OpenShift Origin Environment
-
-The PostgreSQL operator has been tested using OpenShift Origin 1.5.1.
-
-The operator in this environment functions similarly to Kubernetes;
-the primary difference is that the Origin permissions must be configured
-in order to allow the operator to work properly.
-
-==== HostPath
-
-The HostPath volume is *restricted* by default in Origin, so access must
-be granted to the HostPath volume plugin to let the operator access the Docker
-socket as a HostPath volume.
-
-There is more than one way to alter the HostPath access, but the best method would be
-to issue this command:
-
-....
-oc edit scc restricted
-....
-
-At this point, inside the file set the value *allowHostDirVolumePlugin* to 'true'.
-
-This command will allow *all* pods to access HostPath volumes which
-may not be permissible in your environment.
-
-Alternatively, a service account can be created which the operator has exclusive
-use of, which can then be granted access to use a HostPath volume.
-
-View the following links for examples:
-https://gitlab.com/gitlab-org/gitlab-ce/issues/24557
-https://docs.openshift.org/latest/admin_guide/manage_scc.html#use-the-hostpath-volume-plugin
-
-==== Permissions
-
-You will need to allow your OpenShift user (e.g. jeff)  permissions to view
-the ThirdPartyResources. This is done through the following command performed
-as the OpenShift administrator:
-....
-oc adm policy add-cluster-role-to-user cluster-admin jeff
-....
-
-==== *oc* Command
-
-To test on an Origin system, you will need to specify
-a CO_CMD environment variable with the value of *oc* as follows:
-....
-export CO_CMD=oc
-....
-
-This will cause the *oc* command to be used within the operator
-startup script.
 
 ==== Namespace
 
@@ -202,7 +136,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=1.5.2
+export CO_VERSION=1.7.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
@@ -229,16 +163,17 @@ itself:
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-1.5.2
-docker pull crunchydata/postgres-operator:centos7-1.5.2
+docker pull crunchydata/lspvc:centos7-1.7.0
+docker pull crunchydata/csvload:centos7-1.7.0
+docker pull crunchydata/postgres-operator:centos7-1.7.0
 ....
 
 Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
 it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/1.5.2/postgres-operator.1.5.2.tar.gz
-tar xvzf ./postgres-operator.1.5.2.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/1.7.0/postgres-operator.1.7.0.tar.gz
+tar xvzf ./postgres-operator.1.7.0.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -305,10 +240,10 @@ make deploy
 ....
 
 When you first run the operator, it will create the required
-ThirdPartyResources. You can view these as follows:
+CustomResourceDefinitions. You can view these as follows:
 
 ....
-kubectl get thirdpartyresources
+kubectl get crd
 ....
 
 There are example scripts provided that will create PV and PVC resources
@@ -337,6 +272,7 @@ to your $HOME as follows:
 ....
 cp $COROOT/examples/pgo.yaml.emptydir $HOME/.pgo.yaml
 cp $COROOT/examples/pgo.lspvc-template.json $HOME/.pgo.lspvc-template.json
+cp $COROOT/examples/pgo.csvload-template.json $HOME/.pgo.csvload-template.json
 ....
 
 If you are disinterested in having the configuration files in your $HOME folder,
@@ -369,12 +305,12 @@ of the predefined third party resources, and create them if not found. The best 
 verify pgo is up and running successfully is by viewing these third party resources.
 
 ....
-kubectl get thirdpartyresources
+kubectl get crd
 kubectl get pgclusters
 kubectl get pgbackups
 kubectl get pgupgrades
 kubectl get pgpolicies
-kubectl get pgclones
+kubectl get pgpolicylogs
 ....
 
 At this point, you should be ready to start using the *pgo* client!
@@ -390,17 +326,26 @@ the following:
  * show all clusters (*pgo show cluster all*)
  * backup a cluster (*pgo backup testcluster*)
  * show backup of cluster (*pgo show backup testcluster*)
- * show backup pvc of cluster (*pgo show backup testcluster --show-pvc-true*)
+ * show backup pvc of cluster (*pgo show backup testcluster --show-pvc*)
  * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01 --secret-from=testcluster*)
  * test a cluster (*pgo test restoredcluster*)
  * minor upgrade a cluster (*pgo upgrade testcluster*)
  * major upgrade a cluster (*pgo upgrade testcluster --upgrade-type=major*)
- * clone a cluster (*pgo clone testcluster --name=cloneexample*)
  * delete a cluster (*pgo delete cluster testcluster*)
  * create a policy from local file (*pgo create policy policy1 --in-file=./examples/policy/policy1.sql*)
  * create a policy from git repo (*pgo create policy gitpolicy --url=https://github.com/CrunchyData/postgres-operator/blob/master/examples/policy/gitpolicy.sql*)
  * repeat testing using emptydir storage type
  * repeat testing using create storage type
  * repeat testing using existing storage type
+ * create a series of clusters  (*pgo create cluster myseries --series=2*)
+ * apply policies at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray --policies=xrayapp,rlspolicy*)
+ * apply a label to an existing set of clusters (*pgo label --label=env=research --selector=project=xray*)
+ * create a user for a given cluster (*pgo user --add-user=user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
+ * load a csv file into a cluster (*pgo load --load-config=./sample-load-config.json --selector=project=xray*)
+ * extend a user's password allowed age (*pgo user --change-password=user1 --valid-days=10 --selector=name=xraydb1*)
+ * drop user access (*pgo user --delete-user=user2 --selector=project=xray*)
+ * check password age (*pgo user --expired=10 --selector=project=xray*)
+ * backup an entire project (*pgo backup --selector=project=xray*)
+ * delete an entire project (*pgo delete cluster --selector=project=xray*)
 
 More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].

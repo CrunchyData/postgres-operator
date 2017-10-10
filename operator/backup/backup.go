@@ -21,20 +21,21 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"text/template"
-	"time"
+	//"time"
 
-	"github.com/crunchydata/postgres-operator/operator/pvc"
-	"github.com/crunchydata/postgres-operator/operator/util"
-	"github.com/crunchydata/postgres-operator/tpr"
+	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	"github.com/crunchydata/kraken/operator/pvc"
+	"github.com/crunchydata/kraken/util"
 
 	"k8s.io/client-go/kubernetes"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
+	//"k8s.io/apimachinery/pkg/fields"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	//v1batch "k8s.io/api/batch/v1"
 
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
+	//"k8s.io/client-go/tools/cache"
 )
 
 type JobTemplateFields struct {
@@ -65,61 +66,15 @@ func init() {
 
 }
 
-func Process(clientset *kubernetes.Clientset, client *rest.RESTClient, stopchan chan struct{}, namespace string) {
-
-	eventchan := make(chan *tpr.PgBackup)
-
-	source := cache.NewListWatchFromClient(client, "pgbackups", namespace, fields.Everything())
-
-	createAddHandler := func(obj interface{}) {
-		job := obj.(*tpr.PgBackup)
-		eventchan <- job
-		addBackup(clientset, client, job, namespace)
-	}
-	createDeleteHandler := func(obj interface{}) {
-		job := obj.(*tpr.PgBackup)
-		eventchan <- job
-		deleteBackup(clientset, client, job, namespace)
-	}
-
-	updateHandler := func(old interface{}, obj interface{}) {
-		job := obj.(*tpr.PgBackup)
-		eventchan <- job
-	}
-
-	_, controller := cache.NewInformer(
-		source,
-		&tpr.PgBackup{},
-		time.Second*10,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    createAddHandler,
-			UpdateFunc: updateHandler,
-			DeleteFunc: createDeleteHandler,
-		})
-
-	go controller.Run(stopchan)
-
-	for {
-		select {
-		case event := <-eventchan:
-			//log.Infof("%#v\n", event)
-			if event == nil {
-				log.Info("event was null")
-			}
-		}
-	}
-
-}
-
-func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup, namespace string) {
+func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var err error
 
-	if job.Spec.BACKUP_STATUS == tpr.UPGRADE_COMPLETED_STATUS {
+	if job.Spec.BACKUP_STATUS == crv1.UPGRADE_COMPLETED_STATUS {
 		log.Warn("pgbackup " + job.Spec.Name + " already completed, not recreating it")
 		return
 	}
 
-	log.Info("creating PgBackup object" + " in namespace " + namespace)
+	log.Info("creating Pgbackup object" + " in namespace " + namespace)
 	log.Info("created with Name=" + job.Spec.Name + " in namespace " + namespace)
 
 	//create the PVC if necessary
@@ -170,14 +125,14 @@ func addBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tp
 	log.Info("created Job " + resultJob.Name)
 
 	//update the backup TPR status to submitted
-	err = util.Patch(client, "/spec/backupstatus", tpr.UPGRADE_SUBMITTED_STATUS, "pgbackups", job.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/backupstatus", crv1.UPGRADE_SUBMITTED_STATUS, "pgbackups", job.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}
 
 }
 
-func deleteBackup(clientset *kubernetes.Clientset, client *rest.RESTClient, job *tpr.PgBackup, namespace string) {
+func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var jobName = "backup-" + job.Spec.Name
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 

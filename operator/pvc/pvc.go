@@ -19,12 +19,13 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/tpr"
+	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
+	//v1 "k8s.io/api/core/v1"
 	"text/template"
 	"time"
 )
@@ -60,7 +61,7 @@ func init() {
 	PVCStorageClassTemplate = template.Must(template.New("pvc sc template").Parse(string(buf2)))
 }
 
-func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *tpr.PgStorageSpec, namespace string) (string, error) {
+func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.PgStorageSpec, namespace string) (string, error) {
 	var pvcName string
 	var err error
 

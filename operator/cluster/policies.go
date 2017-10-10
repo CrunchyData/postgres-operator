@@ -17,26 +17,28 @@ package cluster
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/operator/util"
-	"github.com/crunchydata/postgres-operator/tpr"
+	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
+	"github.com/crunchydata/kraken/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/apimachinery/pkg/fields"
+	//"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
+	//"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
+
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
+	//"k8s.io/client-go/tools/cache"
 	"os"
 	"strings"
 	"time"
 )
 
-func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
+func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster,master"}
-	fw, err := clientset.Pods(namespace).Watch(lo)
+	fw, err := clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())
 		os.Exit(2)
@@ -63,7 +65,7 @@ func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient
 				log.Info("restarts > 0, will not apply policies again to " + pod.Name)
 			} else if ready {
 				clusterName := getClusterName(pod)
-				applyPolicies(namespace, clientset, tprclient, clusterName)
+				applyPolicies(namespace, clientset, restclient, clusterName)
 			}
 
 		default:
@@ -79,12 +81,12 @@ func ProcessPolicies(clientset *kubernetes.Clientset, tprclient *rest.RESTClient
 
 }
 
-func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient *rest.RESTClient, clusterName string) {
+func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName string) {
 	//dep *v1beta1.Deployment
-	//get the tpr which holds the requested labels if any
-	cl := tpr.PgCluster{}
-	err := tprclient.Get().
-		Resource(tpr.CLUSTER_RESOURCE).
+	//get the crv1 which holds the requested labels if any
+	cl := crv1.Pgcluster{}
+	err := restclient.Get().
+		Resource(crv1.PgclusterResourcePlural).
 		Namespace(namespace).
 		Name(clusterName).
 		Do().
@@ -109,7 +111,7 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 	labels := make(map[string]string)
 
 	for _, v := range policies {
-		err = util.ExecPolicy(clientset, tprclient, namespace, v, cl.Spec.Name)
+		err = util.ExecPolicy(clientset, restclient, namespace, v, cl.Spec.Name)
 		if err != nil {
 			log.Error(err)
 		} else {
@@ -134,68 +136,28 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, tprclient 
 	}
 }
 
-func ProcessPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
-
-	eventchan := make(chan *tpr.PgPolicylog)
-
-	source := cache.NewListWatchFromClient(tprclient, tpr.POLICY_LOG_RESOURCE, namespace, fields.Everything())
-
-	createAddHandler := func(obj interface{}) {
-		policylog := obj.(*tpr.PgPolicylog)
-		eventchan <- policylog
-		addPolicylog(clientset, tprclient, policylog, namespace)
-	}
-	createDeleteHandler := func(obj interface{}) {
-	}
-
-	updateHandler := func(old interface{}, obj interface{}) {
-	}
-	_, controller := cache.NewInformer(
-		source,
-		&tpr.PgPolicylog{},
-		time.Second*10,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    createAddHandler,
-			UpdateFunc: updateHandler,
-			DeleteFunc: createDeleteHandler,
-		})
-
-	go controller.Run(stopchan)
-
-	for {
-		select {
-		case event := <-eventchan:
-			//log.Infof("%#v\n", event)
-			if event == nil {
-				log.Info("event was null")
-			}
-		}
-	}
-
-}
-
-func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, policylog *tpr.PgPolicylog, namespace string) {
+func AddPolicylog(clientset *kubernetes.Clientset, restclient *rest.RESTClient, policylog *crv1.Pgpolicylog, namespace string) {
 	policylogname := policylog.Spec.PolicyName + policylog.Spec.ClusterName
 	log.Infof("policylog added=%s\n", policylogname)
 
 	labels := make(map[string]string)
 
-	err := util.ExecPolicy(clientset, tprclient, namespace, policylog.Spec.PolicyName, policylog.Spec.ClusterName)
+	err := util.ExecPolicy(clientset, restclient, namespace, policylog.Spec.PolicyName, policylog.Spec.ClusterName)
 	if err != nil {
 		log.Error(err)
 	} else {
 		labels[policylog.Spec.PolicyName] = "pgpolicy"
 	}
 
-	cl := tpr.PgCluster{}
-	err = tprclient.Get().
-		Resource(tpr.CLUSTER_RESOURCE).
+	cl := crv1.Pgcluster{}
+	err = restclient.Get().
+		Resource(crv1.PgclusterResourcePlural).
 		Namespace(namespace).
 		Name(policylog.Spec.ClusterName).
 		Do().
 		Into(&cl)
 	if err != nil {
-		log.Error("error getting cluster tpr in addPolicylog " + policylog.Spec.ClusterName)
+		log.Error("error getting cluster crv1 in addPolicylog " + policylog.Spec.ClusterName)
 		return
 
 	}
@@ -216,13 +178,13 @@ func addPolicylog(clientset *kubernetes.Clientset, tprclient *rest.RESTClient, p
 	}
 
 	//update the policylog with applydate and status
-	err = util.Patch(tprclient, "/spec/status", tpr.UPGRADE_COMPLETED_STATUS, tpr.POLICY_LOG_RESOURCE, policylogname, namespace)
+	err = util.Patch(restclient, "/spec/status", crv1.UPGRADE_COMPLETED_STATUS, crv1.PgpolicylogResourcePlural, policylogname, namespace)
 	if err != nil {
 		log.Error("error in policylog status patch " + err.Error())
 	}
 
 	t := time.Now()
-	err = util.Patch(tprclient, "/spec/applydate", t.Format("2006-01-02-15:04:05"), tpr.POLICY_LOG_RESOURCE, policylogname, namespace)
+	err = util.Patch(restclient, "/spec/applydate", t.Format("2006-01-02-15:04:05"), crv1.PgpolicylogResourcePlural, policylogname, namespace)
 	if err != nil {
 		log.Error("error in policylog applydate patch " + err.Error())
 	}

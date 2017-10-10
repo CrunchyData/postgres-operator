@@ -1,0 +1,55 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+        "name": "postgres-operator"
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "postgres-operator"
+                }
+            },
+            "spec": {
+                "containers": [{
+	        "securityContext": {
+		},
+                    "name": "postgres-operator",
+                    "image": "crunchydata/postgres-operator:$CO_IMAGE_TAG",
+                    "imagePullPolicy": "IfNotPresent",
+                    "env": [{
+                        "name": "DEBUG",
+                        "value": "true"
+                    }, {
+                        "name": "NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    }, {
+                        "name": "MY_POD_NAME",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.name"
+                            }
+                        }
+                    }],
+                    "volumeMounts": [{
+                        "mountPath": "/operator-conf",
+                        "name": "operator-conf",
+                        "readOnly": true
+                    }]
+                }],
+                "volumes": [{
+                    "name": "operator-conf",
+                    "configMap": {
+                        "name": "operator-conf"
+                    }
+                }]
+            }
+        }
+    }
+}
