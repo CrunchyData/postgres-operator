@@ -16,14 +16,17 @@
 echo "getting project dependencies...."
 godep restore
 
-checkout be41f5093e2b05c7a0befe35b04b715eb325ab43 of apiextensions-apiserver
+cd $GOPATH/src/k8s.io/apiextensions-apiserver
+git checkout be41f5093e2b05c7a0befe35b04b715eb325ab43
 
 rm -rf $GOPATH/src/k8s.io/apiextensions-apiserver/vendor
 rm -rf $GOPATH/src/k8s.io/apiextensions-apiserver/examples
 
-checkout v4.0.0 of client-go
+cd $GOPATH/src/k8s.io/client-go
+git checkout v4.0.0
 
-checkout release-1.7 of apimachinery
+cd $GOPATH/src/k8s.io/apimachinery
+git checkout release-1.7
 
 go get github.com/lib/pq
 go get github.com/fatih/color

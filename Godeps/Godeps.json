@@ -655,6 +655,46 @@
 			"ImportPath": "k8s.io/client-go/util/integer",
 			"Comment": "v4.0.0",
 			"Rev": "d92e8497f71b7b4e0494e5bd204b48d34bd6f254"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "master",
+			"Rev": "017e4c14d80628353eaee677a1aeffe47a10c0dc"
+		},
+		{
+			"ImportPath": "github.com/fatih/color",
+			"Comment": "v1.5.0",
+			"Rev": "570b54cabe6b8eb0bc2dfce68d964677d63b5260"
+		},
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v1.0.3",
+			"Rev": "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
+		},
+		{
+			"ImportPath": "github.com/evanphx/json-patch",
+			"Comment": "master",
+			"Rev": "944e07253867aacae43c04b2e6a239005443f33a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Comment": "v1.2.0",
+			"Rev": "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Comment": "v1.5.0",
+			"Rev": "24fca303ac6da784b9e8269f724ddeb0b2eea5e7"
+		},
+		{
+			"ImportPath": "github.com/spf13/cobra",
+			"Comment": "master",
+			"Rev": "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
+		},
+		{
+			"ImportPath": "github.com/spf13/viper",
+			"Comment": "master",
+			"Rev": "d9cca5ef33035202efb1586825bdbb15ff9ec3ba"
 		}
 	]
 }
