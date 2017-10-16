@@ -13,6 +13,11 @@ v1.5.2, {docdate}
 [#Overview]
 == Overview
 
+NOTE:  The 1.5.X branch is based on Third Party Resources which have
+been deprecated in Kubernetes 1.7.  The master branch will move
+forward with a Custom Resource Definition implementation which is
+supported starting with Kube 1.7.  TPRs will be removed in Kube 1.8.
+
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes environment.
 
 image::docs/tty.gif?raw=true[]
