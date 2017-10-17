@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-package cmd
 
 import (
 	"fmt"
@@ -75,8 +75,8 @@ func PrintSecrets(db string) {
 	for _, s := range secrets.Items {
 		fmt.Println("")
 		fmt.Println("secret : " + s.ObjectMeta.Name)
-		fmt.Println(TREE_BRANCH + "username: " + string(s.Data["username"][:]))
-		fmt.Println(TREE_TRUNK + "password: " + string(s.Data["password"][:]))
+		fmt.Println(TreeBranch + "username: " + string(s.Data["username"][:]))
+		fmt.Println(TreeTrunk + "password: " + string(s.Data["password"][:]))
 	}
 
 }
@@ -95,12 +95,12 @@ func GetSecretPassword(db, suffix string) string {
 	for _, s := range secrets.Items {
 		log.Debug("secret : " + s.ObjectMeta.Name)
 		if s.ObjectMeta.Name == secretName {
-			log.Debug("pgmaster password found")
+			log.Debug("pgprimary password found")
 			return string(s.Data["password"][:])
 		}
 	}
 
-	log.Error("master secret not found for " + db)
+	log.Error("primary secret not found for " + db)
 	return "error"
 
 }

@@ -16,14 +16,14 @@
             "spec": {
                 "volumes": [{
                     	"name": "pgdata",
-			{{.PVC_NAME}}
+			{{.PvcName}}
                 }],
 
-		{{.SECURITY_CONTEXT}}
+		{{.SecurityContext}}
 
                 "containers": [{
                     "name": "backup",
-                    "image": "crunchydata/crunchy-backup:{{.CCP_IMAGE_TAG}}",
+                    "image": "crunchydata/crunchy-backup:{{.CCPImageTag}}",
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",
@@ -31,16 +31,16 @@
                     }],
                     "env": [{
                         "name": "BACKUP_HOST",
-                        "value": "{{.BACKUP_HOST}}"
+                        "value": "{{.BackupHost}}"
                     }, {
                         "name": "BACKUP_USER",
-                        "value": "{{.BACKUP_USER}}"
+                        "value": "{{.BackupUser}}"
                     }, {
                         "name": "BACKUP_PASS",
-                        "value": "{{.BACKUP_PASS}}"
+                        "value": "{{.BackupPass}}"
                     }, {
                         "name": "BACKUP_PORT",
-                        "value": "{{.BACKUP_PORT}}"
+                        "value": "{{.BackupPort}}"
                     }]
                 }],
                 "restartPolicy": "Never"

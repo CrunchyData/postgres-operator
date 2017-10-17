@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,35 +15,28 @@
  limitations under the License.
 */
 
-package cmd
-
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/rest"
-	"os"
-	//"github.com/crunchydata/postgres-operator/operator/util"
-	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/client-go/kubernetes"
-	//"github.com/spf13/viper"
-	//"io/ioutil"
-	//kerrors "k8s.io/apimachinery/pkg/api/errors"
-	//"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	//"os/user"
+	"k8s.io/client-go/rest"
+	"os"
 	"strings"
 )
 
+// LabelCmdLabel is the label flag
 var LabelCmdLabel string
-var LabelMap map[string]string
-var DeleteLabel bool
+var labelMap map[string]string
+var deleteLabel bool
 
 var labelCmd = &cobra.Command{
 	Use:   "label",
@@ -75,7 +70,7 @@ func init() {
 	labelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "l", "", "The new label to apply for any selected or specified clusters")
 	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters that label would be applied to but does not actually label them")
-	labelCmd.Flags().BoolVarP(&DeleteLabel, "delete-label", "x", false, "--delete-label deletes a label from matching clusters")
+	labelCmd.Flags().BoolVarP(&deleteLabel, "delete-label", "x", false, "--delete-label deletes a label from matching clusters")
 
 }
 
@@ -165,7 +160,7 @@ func addLabels(items []crv1.Pgcluster) {
 			//fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
 			if DryRun {
 			} else {
-				err := updateLabels(&d, Clientset, items[i].Spec.Name, Namespace, LabelMap)
+				err := updateLabels(&d, Clientset, items[i].Spec.Name, Namespace, labelMap)
 				if err != nil {
 					log.Error(err.Error())
 				}
@@ -223,6 +218,7 @@ func updateLabels(deployment *v1beta1.Deployment, clientset *kubernetes.Clientse
 
 }
 
+// PatchPgcluster ....
 func PatchPgcluster(RestClient *rest.RESTClient, newLabel string, oldTpr crv1.Pgcluster, namespace string) error {
 
 	fields := strings.Split(newLabel, "=")
@@ -262,7 +258,7 @@ func PatchPgcluster(RestClient *rest.RESTClient, newLabel string, oldTpr crv1.Pg
 
 func validateLabel() {
 	//TODO use  the k8s label parser for this validation
-	LabelMap = make(map[string]string)
+	labelMap = make(map[string]string)
 	userValues := strings.Split(LabelCmdLabel, ",")
 	for _, v := range userValues {
 		pair := strings.Split(v, "=")
@@ -270,6 +266,6 @@ func validateLabel() {
 			log.Error("label format incorrect, requires name=value")
 			os.Exit(2)
 		}
-		LabelMap[pair[0]] = pair[1]
+		labelMap[pair[0]] = pair[1]
 	}
 }

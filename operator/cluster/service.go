@@ -1,3 +1,8 @@
+// Package cluster holds the cluster TPR logic and definitions
+// A cluster is comprised of a primary service, replica service,
+// primary deployment, and replica deployment
+package cluster
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,11 +18,6 @@
  limitations under the License.
 */
 
-// Package cluster holds the cluster TPR logic and definitions
-// A cluster is comprised of a master service, replica service,
-// master deployment, and replica deployment
-package cluster
-
 import (
 	"bytes"
 	"encoding/json"
@@ -25,14 +25,12 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/api/core/v1"
-
 	"text/template"
 )
 
+// ServiceTemplate1 ...
 var ServiceTemplate1 *template.Template
 
 func init() {
@@ -40,6 +38,7 @@ func init() {
 
 }
 
+// CreateService ...
 func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateFields, namespace string) error {
 	var err error
 	var replicaServiceDoc bytes.Buffer

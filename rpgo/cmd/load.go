@@ -1,3 +1,6 @@
+// Package cmd provides the command line functions of the crunchy CLI
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +16,6 @@
  limitations under the License.
 */
 
-// Package cmd provides the command line functions of the crunchy CLI
-package cmd
-
 import (
 	"bytes"
 	"encoding/json"
@@ -25,29 +25,25 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
-	//v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"os"
 	"text/template"
-	//"k8s.io/apimachinery/pkg/api/errors"
-	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"time"
 )
 
 type LoadJobTemplateFields struct {
-	Name             string
-	CO_IMAGE_TAG     string
-	DB_HOST          string
-	DB_DATABASE      string
-	DB_USER          string
-	DB_PASS          string
-	DB_PORT          string
-	TABLE_TO_LOAD    string
-	CSV_FILE_PATH    string
-	PVC_NAME         string
-	SECURITY_CONTEXT string
+	Name            string
+	COImageTag      string
+	Host            string
+	Database        string
+	User            string
+	Pass            string
+	Port            string
+	TableToLoad     string
+	CSVFilePath     string
+	PVCName         string
+	SecurityContext string
 }
 
 var LoadConfig string
@@ -74,8 +70,10 @@ var loadCmd = &cobra.Command{
 	},
 }
 
-var CSVLOAD_TEMPLATE_PATH string
+// CSVLoadTemplatePath ....
+var CSVLoadTemplatePath string
 
+// JobTemplate ...
 var JobTemplate *template.Template
 
 func init() {
@@ -83,17 +81,17 @@ func init() {
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
-	log.Debug(" csvload config is " + viper.GetString("PGO.CSVLOAD_TEMPLATE"))
+	log.Debug(" csvload config is " + viper.GetString("Pgo.CSVLoadTemplate"))
 }
 
 func createLoad(args []string) {
-	CSVLOAD_TEMPLATE_PATH = viper.GetString("PGO.CSVLOAD_TEMPLATE")
-	if CSVLOAD_TEMPLATE_PATH == "" {
-		log.Error("PGO.CSVLOAD_TEMPLATE not defined in pgo config.")
+	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
+	if CSVLoadTemplatePath == "" {
+		log.Error("Pgo.CSVLoadTemplate not defined in pgo config.")
 		os.Exit(2)
 	}
 	getLoadConfigFile()
-	fmt.Println("using csvload template from " + CSVLOAD_TEMPLATE_PATH)
+	fmt.Println("using csvload template from " + CSVLoadTemplatePath)
 	getJobTemplate()
 	log.Debugf("createLoad called %v\n", args)
 
@@ -155,16 +153,16 @@ func getLoadConfigFile() {
 	}
 
 	//LoadConfigTemplate.Name = viper.GetString("Name")
-	LoadConfigTemplate.CO_IMAGE_TAG = viper.GetString("CO_IMAGE_TAG")
-	//LoadConfigTemplate.DB_HOST = viper.GetString("DB_HOST")
-	LoadConfigTemplate.DB_DATABASE = viper.GetString("DB_DATABASE")
-	LoadConfigTemplate.DB_USER = viper.GetString("DB_USER")
-	//LoadConfigTemplate.DB_PASS = viper.GetString("DB_PASS")
-	LoadConfigTemplate.DB_PORT = viper.GetString("DB_PORT")
-	LoadConfigTemplate.TABLE_TO_LOAD = viper.GetString("TABLE_TO_LOAD")
-	LoadConfigTemplate.CSV_FILE_PATH = viper.GetString("CSV_FILE_PATH")
-	LoadConfigTemplate.PVC_NAME = viper.GetString("PVC_NAME")
-	LoadConfigTemplate.SECURITY_CONTEXT = viper.GetString("SECURITY_CONTEXT")
+	LoadConfigTemplate.COImageTag = viper.GetString("COImageTag")
+	//LoadConfigTemplate.DbHost = viper.GetString("DbHost")
+	LoadConfigTemplate.Database = viper.GetString("Database")
+	LoadConfigTemplate.User = viper.GetString("User")
+	//LoadConfigTemplate.DbPass = viper.GetString("DbPass")
+	LoadConfigTemplate.Port = viper.GetString("Port")
+	LoadConfigTemplate.TableToLoad = viper.GetString("TableToLoad")
+	LoadConfigTemplate.CSVFilePath = viper.GetString("CSVFilePath")
+	LoadConfigTemplate.PVCName = viper.GetString("PVCName")
+	LoadConfigTemplate.SecurityContext = viper.GetString("SecurityContext")
 
 }
 
@@ -172,7 +170,7 @@ func getJobTemplate() {
 	var err error
 	var buf []byte
 
-	buf, err = ioutil.ReadFile(CSVLOAD_TEMPLATE_PATH)
+	buf, err = ioutil.ReadFile(CSVLoadTemplatePath)
 	if err != nil {
 		log.Error("error loading csvload job template..." + err.Error())
 		os.Exit(2)
@@ -185,8 +183,8 @@ func createJob(clientset *kubernetes.Clientset, clusterName string, namespace st
 	var err error
 
 	LoadConfigTemplate.Name = "csvload-" + clusterName
-	LoadConfigTemplate.DB_HOST = clusterName
-	LoadConfigTemplate.DB_PASS = GetSecretPassword(clusterName, crv1.PGROOT_SECRET_SUFFIX)
+	LoadConfigTemplate.Host = clusterName
+	LoadConfigTemplate.Pass = GetSecretPassword(clusterName, crv1.RootSecretSuffix)
 
 	var doc2 bytes.Buffer
 	err = JobTemplate.Execute(&doc2, LoadConfigTemplate)

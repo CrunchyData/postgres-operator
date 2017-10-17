@@ -1,3 +1,5 @@
+package pvc
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +15,6 @@
  limitations under the License.
 */
 
-package pvc
-
 import (
 	"bytes"
 	"encoding/json"
@@ -25,35 +25,42 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	//v1 "k8s.io/api/core/v1"
 	"text/template"
 	"time"
 )
 
-const PVC_PATH = "/operator-conf/pvc.json"
-const PVC_SC_PATH = "/operator-conf/pvc-storageclass.json"
+// PVCPath ...
+const PVCPath = "/operator-conf/pvc.json"
 
-var PVCTemplate, PVCStorageClassTemplate *template.Template
+// PVCSCPath ...
+const PVCSCPath = "/operator-conf/pvc-storageclass.json"
 
-type PVCTemplateFields struct {
-	PVC_NAME        string
-	PVC_ACCESS_MODE string
-	PVC_SIZE        string
-	STORAGE_CLASS   string
+// PVCTemplate ...
+var PVCTemplate *template.Template
+
+// PVCStorageClassTemplate ...
+var PVCStorageClassTemplate *template.Template
+
+// TemplateFields ...
+type TemplateFields struct {
+	Name         string
+	AccessMode   string
+	Size         string
+	StorageClass string
 }
 
 func init() {
 	var err error
 	var buf, buf2 []byte
 
-	buf, err = ioutil.ReadFile(PVC_PATH)
+	buf, err = ioutil.ReadFile(PVCPath)
 	if err != nil {
 		log.Error("error in pvc init" + err.Error())
 		panic(err.Error())
 	}
 	PVCTemplate = template.Must(template.New("pvc template").Parse(string(buf)))
 
-	buf2, err = ioutil.ReadFile(PVC_SC_PATH)
+	buf2, err = ioutil.ReadFile(PVCSCPath)
 	if err != nil {
 		log.Error("error in pvc storage class init" + err.Error())
 		panic(err.Error())
@@ -61,6 +68,7 @@ func init() {
 	PVCStorageClassTemplate = template.Must(template.New("pvc sc template").Parse(string(buf2)))
 }
 
+// CreatePVC create a pvc
 func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.PgStorageSpec, namespace string) (string, error) {
 	var pvcName string
 	var err error
@@ -72,13 +80,13 @@ func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.P
 		log.Debug("StorageType is emptydir")
 	case "existing":
 		log.Debug("StorageType is existing")
-		pvcName = storageSpec.PvcName
+		pvcName = storageSpec.Name
 	case "create", "dynamic":
 		log.Debug("StorageType is create")
 		pvcName = name + "-pvc"
-		log.Debug("PVC_NAME=%s PVC_SIZE=%s PVC_ACCESS_MODE=%s\n",
-			pvcName, storageSpec.PvcAccessMode, storageSpec.PvcSize)
-		err = Create(clientset, pvcName, storageSpec.PvcAccessMode, storageSpec.PvcSize, storageSpec.StorageType, storageSpec.StorageClass, namespace)
+		log.Debug("Name=%s Size=%s AccessMode=%s\n",
+			pvcName, storageSpec.AccessMode, storageSpec.Size)
+		err = Create(clientset, pvcName, storageSpec.AccessMode, storageSpec.Size, storageSpec.StorageType, storageSpec.StorageClass, namespace)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
 			return pvcName, err
@@ -89,16 +97,17 @@ func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.P
 	return pvcName, err
 }
 
+// Create a pvc
 func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string, storageType string, storageClass string, namespace string) error {
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
 
-	pvcFields := PVCTemplateFields{
-		PVC_NAME:        name,
-		PVC_ACCESS_MODE: accessMode,
-		STORAGE_CLASS:   storageClass,
-		PVC_SIZE:        pvcSize,
+	pvcFields := TemplateFields{
+		Name:         name,
+		AccessMode:   accessMode,
+		StorageClass: storageClass,
+		Size:         pvcSize,
 	}
 
 	if storageType == "dynamic" {
@@ -135,6 +144,7 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 
 }
 
+// Delete a pvc
 func Delete(clientset *kubernetes.Clientset, name string, namespace string) error {
 	log.Debug("in pvc.Delete")
 	var err error
@@ -147,18 +157,18 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 	if err != nil {
 		log.Info("\nPVC %s\n", name+" is not found, will not attempt delete")
 		return nil
-	} else {
-		log.Info("\nPVC %s\n", pvc.Name+" is found")
-		log.Info("%v\n", pvc)
-		//if pgremove = true remove it
-		if pvc.ObjectMeta.Labels["pgremove"] == "true" {
-			log.Info("pgremove is true on this pvc")
-			log.Debug("delete PVC " + name + " in namespace " + namespace)
-			err = clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
-			if err != nil {
-				log.Error("error deleting PVC " + name + err.Error() + " in namespace " + namespace)
-				return err
-			}
+	}
+
+	log.Info("\nPVC %s\n", pvc.Name+" is found")
+	log.Info("%v\n", pvc)
+	//if pgremove = true remove it
+	if pvc.ObjectMeta.Labels["pgremove"] == "true" {
+		log.Info("pgremove is true on this pvc")
+		log.Debug("delete PVC " + name + " in namespace " + namespace)
+		err = clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
+		if err != nil {
+			log.Error("error deleting PVC " + name + err.Error() + " in namespace " + namespace)
+			return err
 		}
 	}
 
@@ -166,16 +176,18 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 
 }
 
+// Exists test to see if pvc exists
 func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
 	options := meta_v1.GetOptions{}
 	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return false
-		} else {
-			log.Error("error getting PVC " + name + " " + err.Error() + " in namespace " + namespace)
-		}
+	if err == nil {
+		return true
 	}
 
-	return true
+	if errors.IsNotFound(err) {
+		return false
+	}
+	log.Error("error getting PVC " + name + " " + err.Error() + " in namespace " + namespace)
+
+	return false
 }

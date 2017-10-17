@@ -1,3 +1,8 @@
+// Package cluster holds the cluster TPR logic and definitions
+// A cluster is comprised of a primary service, replica service,
+// primary deployment, and replica deployment
+package cluster
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,11 +17,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-// Package cluster holds the cluster TPR logic and definitions
-// A cluster is comprised of a master service, replica service,
-// master deployment, and replica deployment
-package cluster
 
 import (
 	"bytes"
@@ -33,51 +33,50 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	"strconv"
-
-	//"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	//"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/rest"
+	"strconv"
 	"text/template"
 	"time"
 )
 
-const AFFINITY_IN_OPERATOR = "In"
-const AFFINITY_NOTIN_OPERATOR = "NotIn"
+//const AffinityInOperator = "In"
+//const AFFINITY_NOTINOperator = "NotIn"
 
-type AffinityTemplateFields struct {
+type affinityTemplateFields struct {
 	NODE     string
 	OPERATOR string
 }
 
-type ClusterStrategy1 struct{}
+// Strategy1  ...
+type Strategy1 struct{}
 
-var AffinityTemplate1 *template.Template
-var DeploymentTemplate1 *template.Template
-var ReplicaDeploymentTemplate1 *template.Template
-var ReplicaDeploymentTemplate1Shared *template.Template
+var affinityTemplate1 *template.Template
+var deploymentTemplate1 *template.Template
+var replicadeploymentTemplate1 *template.Template
+var replicadeploymentTemplate1Shared *template.Template
 
 //var ServiceTemplate1 *template.Template
 
 func init() {
 
 	//ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
-	ReplicaDeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
-	ReplicaDeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
-	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
-	AffinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
+	replicadeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
+	replicadeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
+	deploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
+	affinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
 }
 
-func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, masterPvcName string) error {
-	var masterDoc bytes.Buffer
+// AddCluster ...
+func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, primaryPVCName string) error {
+	var primaryDoc bytes.Buffer
 	var err error
 	var deploymentResult *v1beta1.Deployment
 
 	log.Info("creating Pgcluster object using Strategy 1" + " in namespace " + namespace)
 	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	//create the master service
+	//create the primary service
 	serviceFields := ServiceTemplateFields{
 		Name:        cl.Spec.Name,
 		ClusterName: cl.Spec.Name,
@@ -86,66 +85,66 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 	err = CreateService(clientset, &serviceFields, namespace)
 	if err != nil {
-		log.Error("error in creating master service " + err.Error())
+		log.Error("error in creating primary service " + err.Error())
 		return err
 	}
 
-	masterLabels := getMasterLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
 
-	//create the master deployment
+	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
-		Name:                 cl.Spec.Name,
-		ClusterName:          cl.Spec.Name,
-		Port:                 cl.Spec.Port,
-		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             util.CreatePVCSnippet(cl.Spec.MasterStorage.StorageType, masterPvcName),
-		OPERATOR_LABELS:      util.GetLabelsFromMap(masterLabels),
-		BACKUP_PVC_NAME:      util.CreateBackupPVCSnippet(cl.Spec.BACKUP_PVC_NAME),
-		BACKUP_PATH:          cl.Spec.BACKUP_PATH,
-		PGDATA_PATH_OVERRIDE: cl.Spec.Name,
-		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.MasterStorage.FSGROUP, cl.Spec.MasterStorage.SUPPLEMENTAL_GROUPS),
-		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
-		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		NODE_SELECTOR:        GetAffinity(cl.Spec.NodeName, "In"),
+		Name:              cl.Spec.Name,
+		ClusterName:       cl.Spec.Name,
+		Port:              cl.Spec.Port,
+		CCPImageTag:       cl.Spec.CCPImageTag,
+		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
+		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
+		BackupPVCName:     util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
+		BackupPath:        cl.Spec.BackupPath,
+		DataPathOverride:  cl.Spec.Name,
+		Database:          cl.Spec.Database,
+		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:    cl.Spec.RootSecretName,
+		PrimarySecretName: cl.Spec.PrimarySecretName,
+		UserSecretName:    cl.Spec.UserSecretName,
+		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
 	}
 
-	err = DeploymentTemplate1.Execute(&masterDoc, deploymentFields)
+	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
-	deploymentDocString := masterDoc.String()
+	deploymentDocString := primaryDoc.String()
 	log.Info(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
-	err = json.Unmarshal(masterDoc.Bytes(), &deployment)
+	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
-		log.Error("error unmarshalling master json into Deployment " + err.Error())
+		log.Error("error unmarshalling primary json into Deployment " + err.Error())
 		return err
 	}
 
 	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
 		deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
 		if err != nil {
-			log.Error("error creating master Deployment " + err.Error())
+			log.Error("error creating primary Deployment " + err.Error())
 			return err
 		}
-		log.Info("created master Deployment " + deploymentResult.Name + " in namespace " + namespace)
+		log.Info("created primary Deployment " + deploymentResult.Name + " in namespace " + namespace)
 	} else {
-		log.Info("master Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
+		log.Info("primary Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
 
-	err = util.PatchClusterTPR(client, masterLabels, cl, namespace)
+	err = util.PatchClusterCRD(client, primaryLabels, cl, namespace)
 	if err != nil {
-		log.Error("could not patch master crv1 with labels")
+		log.Error("could not patch primary crv1 with labels")
 		return err
 	}
 
-	newReplicas, err := strconv.Atoi(cl.Spec.REPLICAS)
+	newReplicas, err := strconv.Atoi(cl.Spec.Replicas)
 	if err != nil {
-		log.Error("could not convert REPLICAS config setting")
+		log.Error("could not convert Replicas config setting")
 	} else {
 		if newReplicas > 0 {
 			//create the replica service
@@ -170,16 +169,17 @@ func (r ClusterStrategy1) AddCluster(clientset *kubernetes.Clientset, client *re
 
 }
 
-func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
+// DeleteCluster ...
+func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	//delete the master and replica deployments and replica sets
+	//delete the primary and replica deployments and replica sets
 	err = shutdownCluster(clientset, restclient, cl, namespace)
 	if err != nil {
-		log.Error("error deleting master Deployment " + err.Error())
+		log.Error("error deleting primary Deployment " + err.Error())
 	}
 
 	//delete any remaining pods that may be left lingering
@@ -196,7 +196,7 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, restcli
 		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
 
 	}
-	listOptions.LabelSelector = "name=" + cl.Spec.Name + REPLICA_SUFFIX
+	listOptions.LabelSelector = "name=" + cl.Spec.Name + ReplicaSuffix
 	pods, err = clientset.CoreV1().Pods(namespace).List(listOptions)
 	for _, pod := range pods.Items {
 		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
@@ -209,31 +209,32 @@ func (r ClusterStrategy1) DeleteCluster(clientset *kubernetes.Clientset, restcli
 
 	}
 
-	//delete the master service
+	//delete the primary service
 
 	err = clientset.Core().Services(namespace).Delete(cl.Spec.Name,
 		&meta_v1.DeleteOptions{})
 	if err != nil {
-		log.Error("error deleting master Service " + err.Error())
+		log.Error("error deleting primary Service " + err.Error())
 	}
-	log.Info("deleted master service " + cl.Spec.Name)
+	log.Info("deleted primary service " + cl.Spec.Name)
 
 	//delete the replica service
-	err = clientset.Core().Services(namespace).Delete(cl.Spec.Name+REPLICA_SUFFIX,
+	err = clientset.Core().Services(namespace).Delete(cl.Spec.Name+ReplicaSuffix,
 		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting replica Service " + err.Error())
 	}
-	log.Info("deleted replica service " + cl.Spec.Name + REPLICA_SUFFIX + " in namespace " + namespace)
+	log.Info("deleted replica service " + cl.Spec.Name + ReplicaSuffix + " in namespace " + namespace)
 
 	return err
 
 }
 
+// shutdownCluster ...
 func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 	var err error
 
-	//var replicaName = cl.Spec.Name + REPLICA_SUFFIX
+	//var replicaName = cl.Spec.Name + ReplicaSuffix
 
 	//get the deployments
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cl.Spec.Name}
@@ -307,7 +308,8 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 
 }
 
-func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cloneName string, cl *crv1.Pgcluster, namespace string) error {
+// PrepareClone ...
+func (r Strategy1) PrepareClone(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cloneName string, cl *crv1.Pgcluster, namespace string) error {
 	var err error
 
 	log.Info("creating clone deployment using Strategy 1 in namespace " + namespace)
@@ -359,6 +361,8 @@ func (r ClusterStrategy1) PrepareClone(clientset *kubernetes.Clientset, restclie
 	return err
 
 }
+
+// deploymentExists ...
 func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName string) bool {
 
 	_, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(clusterName, meta_v1.GetOptions{})
@@ -372,7 +376,8 @@ func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName st
 	return true
 }
 
-func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
+// UpdatePolicyLabels ...
+func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
 
 	var err error
 	var deployment *v1beta1.Deployment
@@ -430,7 +435,8 @@ func (r ClusterStrategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, cl
 
 }
 
-func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string, cloneFlag bool) error {
+// CreateReplica ...
+func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string, cloneFlag bool) error {
 	var replicaDoc bytes.Buffer
 	var err error
 	var replicaDeploymentResult *v1beta1.Deployment
@@ -441,32 +447,32 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 		clusterName = depName
 	}
 
-	replicaLabels := getMasterLabels(serviceName, clusterName, cloneFlag, true, cl.Spec.UserLabels)
+	replicaLabels := getPrimaryLabels(serviceName, clusterName, cloneFlag, true, cl.Spec.UserLabels)
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:                 depName,
-		ClusterName:          clusterName,
-		Port:                 cl.Spec.Port,
-		CCP_IMAGE_TAG:        cl.Spec.CCP_IMAGE_TAG,
-		PVC_NAME:             pvcName,
-		PG_MASTER_HOST:       cl.Spec.PG_MASTER_HOST,
-		PG_DATABASE:          cl.Spec.PG_DATABASE,
-		REPLICAS:             "1",
-		OPERATOR_LABELS:      util.GetLabelsFromMap(replicaLabels),
-		SECURITY_CONTEXT:     util.CreateSecContext(cl.Spec.ReplicaStorage.FSGROUP, cl.Spec.ReplicaStorage.SUPPLEMENTAL_GROUPS),
-		PGROOT_SECRET_NAME:   cl.Spec.PGROOT_SECRET_NAME,
-		PGMASTER_SECRET_NAME: cl.Spec.PGMASTER_SECRET_NAME,
-		PGUSER_SECRET_NAME:   cl.Spec.PGUSER_SECRET_NAME,
-		NODE_SELECTOR:        GetAffinity(cl.Spec.NodeName, "NotIn"),
+		Name:              depName,
+		ClusterName:       clusterName,
+		Port:              cl.Spec.Port,
+		CCPImageTag:       cl.Spec.CCPImageTag,
+		PVCName:           pvcName,
+		PrimaryHost:       cl.Spec.PrimaryHost,
+		Database:          cl.Spec.Database,
+		Replicas:          "1",
+		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
+		SecurityContext:   util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:    cl.Spec.RootSecretName,
+		PrimarySecretName: cl.Spec.PrimarySecretName,
+		UserSecretName:    cl.Spec.UserSecretName,
+		NodeSelector:      GetAffinity(cl.Spec.NodeName, "NotIn"),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
-		log.Debug("MasterStorage.StorageType is emptydir")
-		err = ReplicaDeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		log.Debug("PrimaryStorage.StorageType is emptydir")
+		err = replicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = ReplicaDeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = replicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {
@@ -493,36 +499,38 @@ func (r ClusterStrategy1) CreateReplica(serviceName string, clientset *kubernete
 	return err
 }
 
-func getMasterLabels(Name string, ClusterName string, cloneFlag bool, replicaFlag bool, userLabels map[string]string) map[string]string {
-	masterLabels := make(map[string]string)
+// getPrimaryLabels ...
+func getPrimaryLabels(Name string, ClusterName string, cloneFlag bool, replicaFlag bool, userLabels map[string]string) map[string]string {
+	primaryLabels := make(map[string]string)
 	if cloneFlag {
-		masterLabels["clone"] = "true"
+		primaryLabels["clone"] = "true"
 	}
 	if replicaFlag {
-		masterLabels["replica"] = "true"
+		primaryLabels["replica"] = "true"
 	}
 
-	masterLabels["name"] = Name
-	masterLabels["pg-cluster"] = ClusterName
+	primaryLabels["name"] = Name
+	primaryLabels["pg-cluster"] = ClusterName
 
 	for key, value := range userLabels {
-		masterLabels[key] = value
+		primaryLabels[key] = value
 	}
-	return masterLabels
+	return primaryLabels
 }
 
+// GetAffinity ...
 func GetAffinity(nodeName string, operator string) string {
 	output := ""
 	if nodeName == "" {
 		return output
 	}
 
-	affinityTemplateFields := AffinityTemplateFields{}
+	affinityTemplateFields := affinityTemplateFields{}
 	affinityTemplateFields.NODE = nodeName
 	affinityTemplateFields.OPERATOR = operator
 
 	var affinityDoc bytes.Buffer
-	err := AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
+	err := affinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return output

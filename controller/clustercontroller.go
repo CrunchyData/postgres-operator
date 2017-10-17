@@ -1,5 +1,20 @@
 package controller
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"context"
 	"fmt"
@@ -15,18 +30,17 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
-// Watcher is an cluster of watching on resource create/update/delete events
+// PgclusterController holds the connections for the controller
 type PgclusterController struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
 }
 
-// Run starts an Example resource controller
+// Run starts an pgcluster resource controller
 func (c *PgclusterController) Run(ctx context.Context) error {
 	fmt.Print("Watch Pgcluster objects\n")
 
-	// Watch Example objects
 	_, err := c.watchPgclusters(ctx)
 	if err != nil {
 		fmt.Printf("Failed to register watch for Pgcluster resource: %v\n", err)
@@ -37,6 +51,7 @@ func (c *PgclusterController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// watchPgclusters is the event loop for pgcluster resources
 func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		c.PgclusterClient,
@@ -66,6 +81,7 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 	return controller, nil
 }
 
+// onAdd is called when a pgcluster is added
 func (c *PgclusterController) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
 	fmt.Printf("[PgclusterCONTROLLER] OnAdd %s\n", cluster.ObjectMeta.SelfLink)
@@ -106,16 +122,16 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
 
+// onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	oldExample := oldObj.(*crv1.Pgcluster)
 	newExample := newObj.(*crv1.Pgcluster)
-	//fmt.Printf("[PgclusterCONTROLLER] OnUpdate oldObj: %s\n", oldExample.ObjectMeta.SelfLink)
-	//fmt.Printf("[PgclusterCONTROLLER] OnUpdate newObj: %s\n", newExample.ObjectMeta.SelfLink)
 
 	//look for scale commands
 	clusteroperator.ScaleCluster(c.PgclusterClientset, c.PgclusterClient, newExample, oldExample, oldExample.ObjectMeta.Namespace)
 }
 
+// onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
 	fmt.Printf("[PgclusterCONTROLLER] OnDelete %s\n", cluster.ObjectMeta.SelfLink)

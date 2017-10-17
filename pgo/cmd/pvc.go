@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-package cmd
 
 import (
 	"bytes"
@@ -45,6 +45,7 @@ func showPVC(args []string) {
 	}
 
 }
+
 func printPVC(pvcName string) {
 
 	var pvc *v1.PersistentVolumeClaim
@@ -61,8 +62,9 @@ func printPVC(pvcName string) {
 
 }
 
+// PrintPVCListing ...
 func PrintPVCListing(pvcName string) {
-	var POD_PATH = viper.GetString("PGO.LSPVC_TEMPLATE")
+	var podPath = viper.GetString("Pgo.LspvcTemplate")
 	var PodTemplate *template.Template
 	var err error
 	var buf []byte
@@ -86,7 +88,7 @@ func PrintPVCListing(pvcName string) {
 		time.Sleep(2000 * time.Millisecond)
 	}
 
-	buf, err = ioutil.ReadFile(POD_PATH)
+	buf, err = ioutil.ReadFile(podPath)
 	if err != nil {
 		log.Error("error reading lspvc_template file")
 		log.Error("make sure it is specified in your .pgo.yaml config")
@@ -105,10 +107,10 @@ func PrintPVCListing(pvcName string) {
 	}
 
 	podFields := PodTemplateFields{
-		Name:         podName,
-		CO_IMAGE_TAG: viper.GetString("PGO.CO_IMAGE_TAG"),
-		BACKUP_ROOT:  pvcRoot,
-		PVC_NAME:     pvcName,
+		Name:       podName,
+		COImageTag: viper.GetString("Pgo.COImageTag"),
+		BackupRoot: pvcRoot,
+		PVCName:    pvcName,
 	}
 
 	err = PodTemplate.Execute(&doc2, podFields)
@@ -179,9 +181,9 @@ func PrintPVCListing(pvcName string) {
 
 	for k, v := range newlines {
 		if k == len(newlines)-1 {
-			fmt.Printf("%s%s\n", TREE_TRUNK, "/"+v)
+			fmt.Printf("%s%s\n", TreeTrunk, "/"+v)
 		} else {
-			fmt.Printf("%s%s\n", TREE_BRANCH, "/"+v)
+			fmt.Printf("%s%s\n", TreeBranch, "/"+v)
 		}
 	}
 

@@ -1,14 +1,14 @@
 = postgres Operator Design
-v1.5.2, {docdate}
+v2.0, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
 This document goes a bit deeper into the postgres Operator
 design and explains the concepts fuller.
 
-== Third Party Resources
+== Custom Resource Definitions
 
-Kubernetes Third Party Resources are used in the design
+Kubernetes Custom Resource Definitions are used in the design
 of the postgres Operator to define:
 
  * Cluster - *pgclusters*
@@ -43,9 +43,9 @@ using the provided script.  Once installed and running, the Operator
 pod will start watching for certain defined events.
 
 The operator watches for create/update/delete actions on
-the *pgcluster* third party resources.  When
-the CLI creates for example a new *pgcluster* third party
-resource, the operator catches that event and creates pods and services
+the *pgcluster* custom resource definitions.  When
+the CLI creates for example a new *pgcluster* custom resource
+definition, the operator catches that event and creates pods and services
 for that new cluster request.
 
 == CLI Design
@@ -86,13 +86,13 @@ To see if the operator pod is running enter the following:
 kubectl get pod -l 'name=postgres-operator'
 ----
 
-To verify the operator installed the following ThirdPartyResources:
+To verify the operator installed the following Custom Resources:
 [source,bash]
 ----
-kubectl get thirdpartyresources
+kubectl get crd
 ----
 
-You should see six Crunchy third party resources deployed -
+You should see six Crunchy custom resource definitions deployed -
 
 ....
 pg-backup.crunchydata.com      A postgres backup ThirdPartyResource       v1
@@ -105,7 +105,7 @@ pg-upgrade.crunchydata.com     A postgres upgrade ThirdPartyResource      v1
 
 # Command Line Interface
 
-You can view the  TPR Endpoints as follows:
+You can view the  CRD Endpoints as follows:
 
 [source,bash]
 ----
@@ -126,8 +126,8 @@ no data is deleted by the operator.
 This section describes the various deployment strategies
 offered by the operator.  A deployment in this case is
 the set of objects created in Kubernetes when a
-third party resource of type *pgcluster* is created.
-TPRs are created by the pgo client command and acted upon
+custom resource definition of type *pgcluster* is created.
+CRDs are created by the pgo client command and acted upon
 by the postgres operator.
 
 === Strategies

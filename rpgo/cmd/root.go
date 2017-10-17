@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
@@ -20,34 +21,35 @@ import (
 	"strconv"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"github.com/crunchydata/postgres-operator/client"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	//"k8s.io/client-go/tools/clientcmd"
-
 	"k8s.io/api/core/v1"
-	//apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-var RED, GREEN func(a ...interface{}) string
+// RED ...
+var RED func(a ...interface{}) string
+
+// GREEN ...
+var GREEN func(a ...interface{}) string
 
 var cfgFile string
-var APISERVER_URL, KubeconfigPath string
+var APIServerURL, KubeconfigPath string
 var Labelselector string
 var DebugFlag bool
 var Namespace string
 var Selector string
 var DryRun bool
 
+// RestClient ...
 var RestClient *rest.RESTClient
 
-//var Clientset *apiextensionsclient.Clientset
+// Clientset ...
 var Clientset *kubernetes.Clientset
 
 // RootCmd represents the base command when called without any subcommands
@@ -114,15 +116,15 @@ func initConfig() {
 		log.Debug("config file not found")
 	}
 
-	APISERVER_URL = viper.GetString("PGO.APISERVER_URL")
-	if APISERVER_URL == "" {
-		APISERVER_URL = os.Getenv("APISERVER_URL")
+	APIServerURL = viper.GetString("Pgo.APIServerURL")
+	if APIServerURL == "" {
+		APIServerURL = os.Getenv("APIServerURL")
 	}
-	if APISERVER_URL == "" {
-		log.Debug("PGO.APISERVER_URL or APISERVER_URL env var is required")
+	if APIServerURL == "" {
+		log.Debug("Pgo.APIServerURL or APIServerURL env var is required")
 		os.Exit(2)
 	}
-	if DebugFlag || viper.GetBool("PGO.DEBUG") {
+	if DebugFlag || viper.GetBool("Pgo.Debug") {
 		log.Debug("debug flag is set to true")
 		log.SetLevel(log.DebugLevel)
 	}
@@ -163,93 +165,93 @@ func initConfig() {
 }
 
 func validateConfig() {
-	switch viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE") {
+	switch viper.GetString("PrimaryStorage.PVCAccessMode") {
 	case string(v1.ReadWriteOnce), string(v1.ReadWriteMany), string(v1.ReadOnlyMany):
 	default:
-		log.Error("invalid MASTER_STORAGE.PVC_ACCESS_MODE specified")
+		log.Error("invalid PrimaryStorage.PVCAccessMode specified")
 		os.Exit(2)
 	}
-	switch viper.GetString("REPLICA_STORAGE.PVC_ACCESS_MODE") {
+	switch viper.GetString("ReplicaStorage.PVCAccessMode") {
 	case string(v1.ReadWriteOnce), string(v1.ReadWriteMany), string(v1.ReadOnlyMany):
 	default:
-		log.Error("invalid REPLICA_STORAGE.PVC_ACCESS_MODE specified")
+		log.Error("invalid ReplicaStorage.PVCAccessMode specified")
 		os.Exit(2)
 	}
-	switch viper.GetString("MASTER_STORAGE.STORAGE_TYPE") {
-	case crv1.STORAGE_EXISTING, crv1.STORAGE_CREATE, crv1.STORAGE_EMPTYDIR, crv1.STORAGE_DYNAMIC:
+	switch viper.GetString("PrimaryStorage.StorageType") {
+	case crv1.StorageExisting, crv1.StorageCreate, crv1.StorageEmptydir, crv1.StorageDynamic:
 	default:
-		log.Error("invalid MASTER_STORAGE.STORAGE_TYPE specified")
+		log.Error("invalid PrimaryStorage.StorageType specified")
 		os.Exit(2)
 	}
-	switch viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") {
-	case crv1.STORAGE_EXISTING, crv1.STORAGE_CREATE, crv1.STORAGE_EMPTYDIR, crv1.STORAGE_DYNAMIC:
+	switch viper.GetString("ReplicaStorage.StorageType") {
+	case crv1.StorageExisting, crv1.StorageCreate, crv1.StorageEmptydir, crv1.StorageDynamic:
 	default:
-		log.Error("invalid REPLICA_STORAGE.STORAGE_TYPE specified")
+		log.Error("invalid ReplicaStorage.StorageType specified")
 		os.Exit(2)
 	}
 
 	/**
-	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "dynamic" ||
-		viper.GetString("REPLICA_STORAGE.STORAGE_TYPE") == "dynamic" {
+	if viper.GetString("PrimaryStorage.STORAGE_TYPE") == "dynamic" ||
+		viper.GetString("ReplicaStorage.STORAGE_TYPE") == "dynamic" {
 		log.Error("STORAGE_TYPE dynamic is not supported yet")
 		os.Exit(2)
 	}
 	*/
 
-	rep := viper.GetString("CLUSTER.REPLICAS")
+	rep := viper.GetString("Cluster.Replicas")
 	if rep != "" {
 		_, err := strconv.Atoi(rep)
 		if err != nil {
-			log.Error("CLUSTER.REPLICAS not a valid integer")
+			log.Error("Cluster.Replicas not a valid integer")
 			os.Exit(2)
 		}
 	}
-	port := viper.GetString("CLUSTER.PORT")
+	port := viper.GetString("Cluster.Port")
 	if port != "" {
 		_, err := strconv.Atoi(port)
 		if err != nil {
-			log.Error("CLUSTER.PORT not a valid integer")
+			log.Error("Cluster.Port not a valid integer")
 			os.Exit(2)
 		}
 	}
-	strategy := viper.GetString("CLUSTER.STRATEGY")
+	strategy := viper.GetString("Cluster.Strategy")
 	if strategy != "" {
 		_, err := strconv.Atoi(strategy)
 		if err != nil {
-			log.Error("CLUSTER.STRATEGY not a valid integer")
+			log.Error("Cluster.Strategy not a valid integer")
 			os.Exit(2)
 		}
 	}
 
-	pvcsize := viper.GetString("MASTER_STORAGE.PVC_SIZE")
+	pvcsize := viper.GetString("PrimaryStorage.PVCSize")
 	if pvcsize != "" {
 		_, err := resource.ParseQuantity(pvcsize)
 		if err != nil {
-			log.Error("MASTER_STORAGE.PVC_SIZE not a valid quantity")
+			log.Error("PrimaryStorage.PVCSize not a valid quantity")
 			os.Exit(2)
 		}
 	}
-	pvcsize = viper.GetString("REPLICA_STORAGE.PVC_SIZE")
+	pvcsize = viper.GetString("ReplicaStorage.PVCSize")
 	if pvcsize != "" {
 		_, err := resource.ParseQuantity(pvcsize)
 		if err != nil {
-			log.Error("REPLICA_STORAGE.PVC_SIZE not a valid quantity")
+			log.Error("ReplicaStorage.PVCSize not a valid quantity")
 			os.Exit(2)
 		}
 	}
-	passwordAge := viper.GetString("CLUSTER.PASSWORD_AGE_DAYS")
+	passwordAge := viper.GetString("Cluster.PasswordAgeDays")
 	if passwordAge != "" {
 		_, err := resource.ParseQuantity(passwordAge)
 		if err != nil {
-			log.Error("CLUSTER.PASSWORD_AGE not a valid quantity")
+			log.Error("Cluster.PasswordAGE not a valid quantity")
 			os.Exit(2)
 		}
 	}
-	passwordLen := viper.GetString("CLUSTER.PASSWORD_LENGTH")
+	passwordLen := viper.GetString("Cluster.PasswordLength")
 	if passwordLen != "" {
 		_, err := resource.ParseQuantity(passwordLen)
 		if err != nil {
-			log.Error("CLUSTER.PASSWORD_LENGTH not a valid quantity")
+			log.Error("Cluster.PasswordLength not a valid quantity")
 			os.Exit(2)
 		}
 	}

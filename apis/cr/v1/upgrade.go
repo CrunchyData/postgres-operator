@@ -1,3 +1,5 @@
+package v1
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,34 +15,37 @@
  limitations under the License.
 */
 
-package v1
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const UPGRADE_COMPLETED_STATUS = "completed"
-const UPGRADE_SUBMITTED_STATUS = "submitted"
+// UpgradeCompletedStatus ....
+const UpgradeCompletedStatus = "completed"
 
+// UpgradeSubmittedStatus ....
+const UpgradeSubmittedStatus = "submitted"
+
+// PgupgradeResourcePlural ...
 const PgupgradeResourcePlural = "pgupgrades"
 
+// PgupgradeSpec ...
 type PgupgradeSpec struct {
-	Name              string        `json:"name"`
-	RESOURCE_TYPE     string        `json:"resourcetype"`
-	UPGRADE_TYPE      string        `json:"upgradetype"`
-	UPGRADE_STATUS    string        `json:"upgradestatus"`
-	StorageSpec       PgStorageSpec `json:"storagespec"`
-	CCP_IMAGE_TAG     string        `json:"ccpimagetag"`
-	OLD_DATABASE_NAME string        `json:"olddatabasename"`
-	NEW_DATABASE_NAME string        `json:"newdatabasename"`
-	OLD_VERSION       string        `json:"oldversion"`
-	NEW_VERSION       string        `json:"newversion"`
-	OLD_PVC_NAME      string        `json:"oldpvcname"`
-	NEW_PVC_NAME      string        `json:"newpvcname"`
-	BACKUP_PVC_NAME   string        `json:"backuppvcname"`
+	Name            string        `json:"name"`
+	ResourceType    string        `json:"resourcetype"`
+	UpgradeType     string        `json:"upgradetype"`
+	UpgradeStatus   string        `json:"upgradestatus"`
+	StorageSpec     PgStorageSpec `json:"storagespec"`
+	CCPImageTag     string        `json:"ccpimagetag"`
+	OldDatabaseName string        `json:"olddatabasename"`
+	NewDatabaseName string        `json:"newdatabasename"`
+	OldVersion      string        `json:"oldversion"`
+	NewVersion      string        `json:"newversion"`
+	OldPVCName      string        `json:"oldpvcname"`
+	NewPVCName      string        `json:"newpvcname"`
+	BackupPVCName   string        `json:"backuppvcname"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// Pgupgrade ...
 type Pgupgrade struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -49,7 +54,7 @@ type Pgupgrade struct {
 	Status PgupgradeStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// PgupgradeList ...
 type PgupgradeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -57,14 +62,17 @@ type PgupgradeList struct {
 	Items []Pgupgrade `json:"items"`
 }
 
+// PgupgradeStatus  ...
 type PgupgradeStatus struct {
 	State   PgupgradeState `json:"state,omitempty"`
 	Message string         `json:"message,omitempty"`
 }
 
+// PgupgradeState ...
 type PgupgradeState string
 
-const (
-	PgupgradeStateCreated   PgupgradeState = "Created"
-	PgupgradeStateProcessed PgupgradeState = "Processed"
-)
+// PgupgradeStateCreated  ...
+const PgupgradeStateCreated PgupgradeState = "Created"
+
+// PgupgradeStateProcessed ...
+const PgupgradeStateProcessed PgupgradeState = "Processed"

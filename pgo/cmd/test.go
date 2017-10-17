@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +14,13 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-package cmd
 
 import (
 	"database/sql"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	// libpq uses a blank import
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +73,7 @@ func showTest(args []string) {
 			fmt.Println("")
 			if arg == "all" || cluster.Spec.Name == arg {
 				itemFound = true
-				fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.CCP_IMAGE_TAG + ")")
+				fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.CCPImageTag + ")")
 				log.Debug("listing cluster " + arg)
 				//list the services
 				testServices(&cluster)
@@ -105,8 +107,8 @@ func testServices(cluster *crv1.Pgcluster) {
 			username := string(s.Data["username"][:])
 			password := string(s.Data["password"][:])
 			database := "postgres"
-			if username == cluster.Spec.PG_USER {
-				database = cluster.Spec.PG_DATABASE
+			if username == cluster.Spec.User {
+				database = cluster.Spec.Database
 			}
 			fmt.Print("psql -p " + cluster.Spec.Port + " -h " + service.Spec.ClusterIP + " -U " + username + " " + database)
 			status := query(username, service.Spec.ClusterIP, cluster.Spec.Port, database, password)

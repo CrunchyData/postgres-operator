@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build and Setup
 :toc:
-v1.7.0, {docdate}
+v2.0.0, {docdate}
 
 == Table of Contents
 
@@ -20,12 +20,11 @@ how the operator is built and how it operates.
 
 === Prerequisites
 
-These versions of Kubernetes and OpenShift are required due to the use of ThirdPartyResources which first emerged in
+These versions of Kubernetes and OpenShift are required due to the use of CustomResourceDefinitions which first emerged in
 these versions.
 
 * *Kubernetes 1.7.0+*
 * *OpenShift Origin 1.7.0+*
-* *OpenShift Container Platform 3.6*
 
 The operator is developed with the following specific version of Golang; you can find this distribution on the official
 link:https://golang.org/dl/[Golang website]. Because Go binaries essentially have Go runtime bundled with them, it is
@@ -84,7 +83,7 @@ sudo chmod +r /etc/kubernetes/admin.conf
 
 *NOTE* - as of Kubernetes 1.6, RBAC security is enabled on most Kubernetes
 installations.  With RBAC, the *postgres-operator* needs permissions
-granted to it to enable ThirdPartyResources viewing.  You can grant the
+granted to it to enable CustomResourceDefinitions viewing.  You can grant the
 *default* Service Account a cluster role as one way to enable
 permissions for the operator. This coarse level of granting permissions
 is not recommended for production. This command will enable
@@ -136,7 +135,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=1.7.0
+export CO_VERSION=2.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 ....
 
@@ -163,17 +162,17 @@ itself:
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-1.7.0
-docker pull crunchydata/csvload:centos7-1.7.0
-docker pull crunchydata/postgres-operator:centos7-1.7.0
+docker pull crunchydata/lspvc:centos7-2.0
+docker pull crunchydata/csvload:centos7-2.0
+docker pull crunchydata/postgres-operator:centos7-2.0
 ....
 
 Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
 it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/1.7.0/postgres-operator.1.7.0.tar.gz
-tar xvzf ./postgres-operator.1.7.0.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/2.0/postgres-operator.2.0.tar.gz
+tar xvzf ./postgres-operator.2.0.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -301,8 +300,8 @@ in the link:config.asciidoc[Configuration] document.
 === Verify Installation
 
 When you first run the operator, it will look for the presence
-of the predefined third party resources, and create them if not found. The best way to
-verify pgo is up and running successfully is by viewing these third party resources.
+of the predefined custom resource definitions, and create them if not found. The best way to
+verify pgo is up and running successfully is by viewing these custom resource definitions:
 
 ....
 kubectl get crd

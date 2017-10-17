@@ -1,3 +1,5 @@
+package backup
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-package backup
 
 import (
 	log "github.com/Sirupsen/logrus"
@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// ProcessJobs processes a backup job lifecycle
 func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace string) {
 
 	lo := meta_v1.ListOptions{LabelSelector: "pgbackup=true"}
@@ -58,7 +59,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, n
 				dbname := gotjob.ObjectMeta.Labels["pg-database"]
 				log.Infoln("pgbackup job " + gotjob.Name + " succeeded" + " marking " + dbname + " completed")
 				//update the backup TPR status to completed
-				err = util.Patch(restclient, "/spec/backupstatus", crv1.UPGRADE_COMPLETED_STATUS, "pgbackups", dbname, namespace)
+				err = util.Patch(restclient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, namespace)
 				if err != nil {
 					log.Error("error in backup ProcessJobs " + err.Error())
 				}

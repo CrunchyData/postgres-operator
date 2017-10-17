@@ -1,3 +1,5 @@
+package cluster
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,30 +15,20 @@
  limitations under the License.
 */
 
-package upgrade
-
 import (
 	log "github.com/Sirupsen/logrus"
-	"os"
-	//"time"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
-
-	"k8s.io/client-go/kubernetes"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-	//v1batch "k8s.io/api/batch/v1"
-
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/cache"
+	"os"
 )
 
+// AddUpgrade creates a pgupgrade job
 func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string) {
 	var err error
 	cl := crv1.Pgcluster{}
@@ -51,18 +43,18 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Debug("pgcluster " + upgrade.Spec.Name + " not found ")
-			return
 		} else {
-			log.Error("error getting pgcluser " + upgrade.Spec.Name + err.Error())
+			log.Error("error getting pgcluster " + upgrade.Spec.Name + err.Error())
 		}
+		return
 	}
 
-	err = cluster.AddUpgradeBase(clientset, restclient, upgrade, namespace, &cl)
+	err = AddUpgradeBase(clientset, restclient, upgrade, namespace, &cl)
 	if err != nil {
 		log.Error("error adding upgrade" + err.Error())
 	} else {
 		//update the upgrade CRD status to submitted
-		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UPGRADE_SUBMITTED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeSubmittedStatus, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error("error patching upgrade" + err.Error())
 		}
@@ -70,6 +62,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 
 }
 
+// DeleteUpgrade deletes a pgupgrade job
 func DeleteUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string) {
 	var jobName = "upgrade-" + upgrade.Spec.Name
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
@@ -84,11 +77,11 @@ func DeleteUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	log.Debug("deleted Job " + jobName)
 }
 
-//process major upgrade completions
-//this watcher will look for completed upgrade jobs
-//and when this occurs, will update the upgrade TPR status to
-//completed and spin up the database or cluster using the newly
-//upgraded data files
+// MajorUpgradeProcess process major upgrade completions
+// this watcher will look for completed upgrade jobs
+// and when this occurs, will update the upgrade TPR status to
+// completed and spin up the database or cluster using the newly
+// upgraded data files
 func MajorUpgradeProcess(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace string) {
 
 	log.Info("MajorUpgradeProcess watch starting...")
@@ -133,6 +126,7 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, restclient *rest.RESTC
 
 }
 
+// finishUpgrade performs the final part of a major upgrade
 func finishUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, job *v1batch.Job, namespace string) {
 
 	var cl crv1.Pgcluster
@@ -176,20 +170,20 @@ func finishUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	}
 	log.Info(name + " pgcluster crv1 is found")
 
-	var clusterStrategy cluster.ClusterStrategy
+	var clusterStrategy Strategy
 
-	if cl.Spec.STRATEGY == "" {
-		cl.Spec.STRATEGY = "1"
+	if cl.Spec.Strategy == "" {
+		cl.Spec.Strategy = "1"
 		log.Info("using default strategy")
 	}
 
-	clusterStrategy, ok := cluster.StrategyMap[cl.Spec.STRATEGY]
+	clusterStrategy, ok := strategyMap[cl.Spec.Strategy]
 
 	if ok {
 		log.Info("strategy found")
 
 	} else {
-		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
+		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
 	}
 
@@ -200,7 +194,7 @@ func finishUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 	if err == nil {
 		//update the upgrade CRD status to completed
-		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UPGRADE_COMPLETED_STATUS, "pgupgrades", upgrade.Spec.Name, namespace)
+		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error("error in patch upgrade " + err.Error())
 		}

@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-package cmd
 
 import (
 	"errors"
@@ -21,10 +22,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 
 	"github.com/spf13/viper"
-	//"k8s.io/api/core/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/api/extensions/v1beta1"
-
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -76,10 +74,10 @@ func showCluster(args []string) {
 			//fmt.Println("")
 			if arg == "all" || cluster.Spec.Name == arg {
 				itemFound = true
-				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.CCP_IMAGE_TAG == PostgresVersion) {
-					fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.CCP_IMAGE_TAG + ")")
+				if PostgresVersion == "" || (PostgresVersion != "" && cluster.Spec.CCPImageTag == PostgresVersion) {
+					fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.CCPImageTag + ")")
 					log.Debug("listing cluster " + arg)
-					log.Debugf("last password update %v\n", cluster.Spec.PSW_LAST_UPDATE)
+					log.Debugf("last password update %v\n", cluster.Spec.PswLastUpdate)
 					//list the deployments
 					listDeployments(cluster.Spec.Name)
 					//list the replicasets
@@ -111,7 +109,7 @@ func listReplicaSets(name string) {
 		return
 	}
 	for _, r := range reps.Items {
-		fmt.Println(TREE_BRANCH + "replicaset : " + r.ObjectMeta.Name)
+		fmt.Println(TreeBranch + "replicaset : " + r.ObjectMeta.Name)
 	}
 
 }
@@ -124,7 +122,7 @@ func listDeployments(name string) {
 	}
 
 	for _, d := range deployments.Items {
-		fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
+		fmt.Println(TreeBranch + "deployment : " + d.ObjectMeta.Name)
 	}
 	if len(deployments.Items) > 0 {
 		printPolicies(&deployments.Items[0])
@@ -136,7 +134,7 @@ func printPolicies(d *v1beta1.Deployment) {
 	labels := d.ObjectMeta.Labels
 	for k, v := range labels {
 		if v == "pgpolicy" {
-			fmt.Printf("%spolicy: %s\n", TREE_BRANCH, k)
+			fmt.Printf("%spolicy: %s\n", TreeBranch, k)
 		}
 	}
 }
@@ -149,8 +147,8 @@ func listPods(name string) {
 		return
 	}
 	for _, pod := range pods.Items {
-		fmt.Println(TREE_BRANCH + "pod : " + pod.ObjectMeta.Name + " (" + string(pod.Status.Phase) + " on " + pod.Spec.NodeName + ") (" + getReadyStatus(&pod) + ")")
-		//fmt.Println(TREE_TRUNK + " phase : " + pod.Status.Phase)
+		fmt.Println(TreeBranch + "pod : " + pod.ObjectMeta.Name + " (" + string(pod.Status.Phase) + " on " + pod.Spec.NodeName + ") (" + getReadyStatus(&pod) + ")")
+		//fmt.Println(TreeTrunk + " phase : " + pod.Status.Phase)
 	}
 
 }
@@ -163,9 +161,9 @@ func listServices(name string) {
 	}
 	for i, service := range services.Items {
 		if i == len(services.Items)-1 {
-			fmt.Println(TREE_TRUNK + "service : " + service.ObjectMeta.Name + " (" + service.Spec.ClusterIP + ")")
+			fmt.Println(TreeTrunk + "service : " + service.ObjectMeta.Name + " (" + service.Spec.ClusterIP + ")")
 		} else {
-			fmt.Println(TREE_BRANCH + "service : " + service.ObjectMeta.Name + " (" + service.Spec.ClusterIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.ObjectMeta.Name + " (" + service.Spec.ClusterIP + ")")
 		}
 	}
 }
@@ -174,7 +172,7 @@ func createCluster(args []string) {
 	var err error
 
 	//validate configuration
-	if viper.GetString("MASTER_STORAGE.STORAGE_TYPE") == "existing" {
+	if viper.GetString("PrimaryStorage.StorageType") == "existing" {
 		if BackupPVC != "" {
 			log.Error("storage type of existing not allowed when doing a restore")
 			return
@@ -220,7 +218,7 @@ func createCluster(args []string) {
 			validateConfigPolicies()
 
 			t := time.Now()
-			newInstance.Spec.PSW_LAST_UPDATE = t.Format(time.RFC3339)
+			newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
 
 			err = RestClient.Post().
 				Resource(crv1.PgclusterResourcePlural).
@@ -239,89 +237,89 @@ func createCluster(args []string) {
 func getClusterParams(name string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{}
-	masterStorageSpec := crv1.PgStorageSpec{}
-	spec.MasterStorage = masterStorageSpec
+	primaryStorageSpec := crv1.PgStorageSpec{}
+	spec.PrimaryStorage = primaryStorageSpec
 	replicaStorageSpec := crv1.PgStorageSpec{}
 	spec.ReplicaStorage = replicaStorageSpec
-	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
-	if CCP_IMAGE_TAG != "" {
-		spec.CCP_IMAGE_TAG = CCP_IMAGE_TAG
-		log.Debug("using CCP_IMAGE_TAG from command line " + CCP_IMAGE_TAG)
+	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
+	if CCPImageTag != "" {
+		spec.CCPImageTag = CCPImageTag
+		log.Debug("using CCPImageTag from command line " + CCPImageTag)
 	}
 
-	spec.MasterStorage.PvcName = viper.GetString("MASTER_STORAGE.PVC_NAME")
-	spec.MasterStorage.StorageClass = viper.GetString("MASTER_STORAGE.STORAGE_CLASS")
-	spec.MasterStorage.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
-	spec.MasterStorage.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
-	spec.MasterStorage.StorageType = viper.GetString("MASTER_STORAGE.STORAGE_TYPE")
-	spec.MasterStorage.FSGROUP = viper.GetString("MASTER_STORAGE.FSGROUP")
-	spec.MasterStorage.SUPPLEMENTAL_GROUPS = viper.GetString("MASTER_STORAGE.SUPPLEMENTAL_GROUPS")
+	spec.PrimaryStorage.Name = viper.GetString("PrimaryStorage.Name")
+	spec.PrimaryStorage.StorageClass = viper.GetString("PrimaryStorage.StorageClass")
+	spec.PrimaryStorage.AccessMode = viper.GetString("PrimaryStorage.AccessMode")
+	spec.PrimaryStorage.Size = viper.GetString("PrimaryStorage.Size")
+	spec.PrimaryStorage.StorageType = viper.GetString("PrimaryStorage.StorageType")
+	spec.PrimaryStorage.Fsgroup = viper.GetString("PrimaryStorage.Fsgroup")
+	spec.PrimaryStorage.SupplementalGroups = viper.GetString("PrimaryStorage.SupplementalGroups")
 
-	spec.ReplicaStorage.PvcName = viper.GetString("REPLICA_STORAGE.PVC_NAME")
-	spec.ReplicaStorage.StorageClass = viper.GetString("REPLICA_STORAGE.STORAGE_CLASS")
-	spec.ReplicaStorage.PvcAccessMode = viper.GetString("REPLICA_STORAGE.PVC_ACCESS_MODE")
-	spec.ReplicaStorage.PvcSize = viper.GetString("REPLICA_STORAGE.PVC_SIZE")
-	spec.ReplicaStorage.StorageType = viper.GetString("REPLICA_STORAGE.STORAGE_TYPE")
-	spec.ReplicaStorage.FSGROUP = viper.GetString("REPLICA_STORAGE.FSGROUP")
-	spec.ReplicaStorage.SUPPLEMENTAL_GROUPS = viper.GetString("REPLICA_STORAGE.SUPPLEMENTAL_GROUPS")
+	spec.ReplicaStorage.Name = viper.GetString("ReplicaStorage.Name")
+	spec.ReplicaStorage.StorageClass = viper.GetString("ReplicaStorage.StorageClass")
+	spec.ReplicaStorage.AccessMode = viper.GetString("ReplicaStorage.AccessMode")
+	spec.ReplicaStorage.Size = viper.GetString("ReplicaStorage.Size")
+	spec.ReplicaStorage.StorageType = viper.GetString("ReplicaStorage.StorageType")
+	spec.ReplicaStorage.Fsgroup = viper.GetString("ReplicaStorage.Fsgroup")
+	spec.ReplicaStorage.SupplementalGroups = viper.GetString("ReplicaStorage.SupplementalGroups")
 
 	spec.Name = name
 	spec.ClusterName = name
 	spec.Port = "5432"
-	spec.SECRET_FROM = ""
-	spec.BACKUP_PATH = ""
-	spec.BACKUP_PVC_NAME = ""
-	spec.PG_MASTER_HOST = name
-	spec.PG_MASTER_USER = "master"
+	spec.SecretFrom = ""
+	spec.BackupPath = ""
+	spec.BackupPVCName = ""
+	spec.PrimaryHost = name
+	spec.PrimaryUser = "primary"
 	if PoliciesFlag == "" {
-		spec.Policies = viper.GetString("CLUSTER.POLICIES")
+		spec.Policies = viper.GetString("Cluster.Policies")
 	} else {
 		spec.Policies = PoliciesFlag
 	}
-	spec.PG_MASTER_PASSWORD = viper.GetString("CLUSTER.PG_MASTER_PASSWORD")
-	spec.PG_USER = "testuser"
-	spec.PG_PASSWORD = viper.GetString("CLUSTER.PG_PASSWORD")
-	spec.PG_DATABASE = "userdb"
-	spec.PG_ROOT_PASSWORD = viper.GetString("CLUSTER.PG_ROOT_PASSWORD")
-	spec.REPLICAS = "0"
-	spec.STRATEGY = "1"
+	spec.PrimaryPassword = viper.GetString("Cluster.PgPrimaryPassword")
+	spec.User = "testuser"
+	spec.Password = viper.GetString("Cluster.Password")
+	spec.Database = "userdb"
+	spec.RootPassword = viper.GetString("Cluster.RootPassword")
+	spec.Replicas = "0"
+	spec.Strategy = "1"
 	spec.NodeName = NodeName
 	spec.UserLabels = UserLabelsMap
 
 	//override any values from config file
-	str := viper.GetString("CLUSTER.PORT")
+	str := viper.GetString("Cluster.Port")
 	if str != "" {
 		spec.Port = str
 	}
-	str = viper.GetString("CLUSTER.PG_MASTER_USER")
+	str = viper.GetString("Cluster.PrimaryUser")
 	if str != "" {
-		spec.PG_MASTER_USER = str
+		spec.PrimaryUser = str
 	}
-	str = viper.GetString("CLUSTER.PG_USER")
+	str = viper.GetString("Cluster.User")
 	if str != "" {
-		spec.PG_USER = str
+		spec.User = str
 	}
-	str = viper.GetString("CLUSTER.PG_DATABASE")
+	str = viper.GetString("Cluster.Database")
 	if str != "" {
-		spec.PG_DATABASE = str
+		spec.Database = str
 	}
-	str = viper.GetString("CLUSTER.STRATEGY")
+	str = viper.GetString("Cluster.Strategy")
 	if str != "" {
-		spec.STRATEGY = str
+		spec.Strategy = str
 	}
-	str = viper.GetString("CLUSTER.REPLICAS")
+	str = viper.GetString("Cluster.Replicas")
 	if str != "" {
-		spec.REPLICAS = str
+		spec.Replicas = str
 	}
 
 	//pass along command line flags for a restore
 	if SecretFrom != "" {
-		spec.SECRET_FROM = SecretFrom
+		spec.SecretFrom = SecretFrom
 	}
 
-	spec.BACKUP_PATH = BackupPath
+	spec.BackupPath = BackupPath
 	if BackupPVC != "" {
-		spec.BACKUP_PVC_NAME = BackupPVC
+		spec.BackupPVCName = BackupPVC
 	}
 
 	labels := make(map[string]string)
@@ -453,9 +451,8 @@ func validateUserLabels() error {
 		p := strings.Split(v, "=")
 		if len(p) < 2 {
 			return errors.New("invalid labels format")
-		} else {
-			UserLabelsMap[p[0]] = p[1]
 		}
+		UserLabelsMap[p[0]] = p[1]
 	}
 	return err
 
@@ -497,34 +494,35 @@ func validateSecretFrom(secretname string) error {
 	}
 
 	log.Debug("secrets for " + secretname)
-	pgmasterFound := false
+	pgprimaryFound := false
 	pgrootFound := false
 	pguserFound := false
 
 	for _, s := range secrets.Items {
 		//fmt.Println("")
 		//fmt.Println("secret : " + s.ObjectMeta.Name)
-		if s.ObjectMeta.Name == secretname+crv1.PGMASTER_SECRET_SUFFIX {
-			pgmasterFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.PGROOT_SECRET_SUFFIX {
+		if s.ObjectMeta.Name == secretname+crv1.PrimarySecretSuffix {
+			pgprimaryFound = true
+		} else if s.ObjectMeta.Name == secretname+crv1.RootSecretSuffix {
 			pgrootFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.PGUSER_SECRET_SUFFIX {
+		} else if s.ObjectMeta.Name == secretname+crv1.UserSecretSuffix {
 			pguserFound = true
 		}
 	}
-	if !pgmasterFound {
-		return errors.New(secretname + crv1.PGMASTER_SECRET_SUFFIX + " not found")
+	if !pgprimaryFound {
+		return errors.New(secretname + crv1.PrimarySecretSuffix + " not found")
 	}
 	if !pgrootFound {
-		return errors.New(secretname + crv1.PGROOT_SECRET_SUFFIX + " not found")
+		return errors.New(secretname + crv1.RootSecretSuffix + " not found")
 	}
 	if !pguserFound {
-		return errors.New(secretname + crv1.PGUSER_SECRET_SUFFIX + " not found")
+		return errors.New(secretname + crv1.UserSecretSuffix + " not found")
 	}
 
 	return err
 }
 
+// PrintSecrets ...
 func PrintSecrets(db string) {
 
 	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
@@ -538,8 +536,8 @@ func PrintSecrets(db string) {
 	for _, s := range secrets.Items {
 		fmt.Println("")
 		fmt.Println("secret : " + s.ObjectMeta.Name)
-		fmt.Println(TREE_BRANCH + "username: " + string(s.Data["username"][:]))
-		fmt.Println(TREE_TRUNK + "password: " + string(s.Data["password"][:]))
+		fmt.Println(TreeBranch + "username: " + string(s.Data["username"][:]))
+		fmt.Println(TreeTrunk + "password: " + string(s.Data["password"][:]))
 	}
 
 }

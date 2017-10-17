@@ -1,17 +1,33 @@
 package policyservice
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
-	crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	"github.com/crunchydata/kraken/util"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
+// CreatePolicy ...
 func CreatePolicy(RestClient *rest.RESTClient, Namespace, policyName, policyURL, policyFile string) error {
 	var err error
 
@@ -38,8 +54,8 @@ func CreatePolicy(RestClient *rest.RESTClient, Namespace, policyName, policyURL,
 	// Create an instance of our CRD
 	spec := crv1.PgpolicySpec{}
 	spec.Name = policyName
-	spec.Url = policyURL
-	spec.Sql = policyFile
+	spec.URL = policyURL
+	spec.SQL = policyFile
 
 	newInstance := &crv1.Pgpolicy{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -63,6 +79,7 @@ func CreatePolicy(RestClient *rest.RESTClient, Namespace, policyName, policyURL,
 
 }
 
+// ShowPolicy ...
 func ShowPolicy(RestClient *rest.RESTClient, Namespace string, name string) crv1.PgpolicyList {
 	policyList := crv1.PgpolicyList{}
 
@@ -95,6 +112,7 @@ func ShowPolicy(RestClient *rest.RESTClient, Namespace string, name string) crv1
 
 }
 
+// DeletePolicy ...
 func DeletePolicy(Namespace string, RestClient *rest.RESTClient, args []string) error {
 	var err error
 	// Fetch a list of our policy CRDs
@@ -119,11 +137,11 @@ func DeletePolicy(Namespace string, RestClient *rest.RESTClient, args []string) 
 					Name(policy.Spec.Name).
 					Do().
 					Error()
-				if err != nil {
+				if err == nil {
+					log.Infoln("deleted pgpolicy " + policy.Spec.Name)
+				} else {
 					log.Error("error deleting pgpolicy " + arg + err.Error())
 					return err
-				} else {
-					log.Infoln("deleted pgpolicy " + policy.Spec.Name)
 				}
 
 			}
@@ -136,6 +154,7 @@ func DeletePolicy(Namespace string, RestClient *rest.RESTClient, args []string) 
 
 }
 
+// ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicy(username string, Selector string, Clientset *kubernetes.Clientset, DryRun bool, RestClient *rest.RESTClient, Namespace string, args []string) error {
 	var err error
@@ -196,11 +215,11 @@ func ApplyPolicy(username string, Selector string, Clientset *kubernetes.Clients
 				Namespace(Namespace).
 				Body(newInstance).
 				Do().Into(&result)
-			if err != nil {
+			if err == nil {
+				log.Infoln("created Pgpolicylog " + result.ObjectMeta.Name)
+			} else {
 				log.Error("error in creating Pgpolicylog CRD instance", err.Error())
 				return err
-			} else {
-				log.Infoln("created Pgpolicylog " + result.ObjectMeta.Name)
 			}
 
 		}
@@ -210,6 +229,7 @@ func ApplyPolicy(username string, Selector string, Clientset *kubernetes.Clients
 
 }
 
+// getPolicyLog ...
 func getPolicylog(username, policyname, clustername string) *crv1.Pgpolicylog {
 
 	spec := crv1.PgpolicylogSpec{}

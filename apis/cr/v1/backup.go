@@ -1,3 +1,5 @@
+package v1
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,25 +15,26 @@
  limitations under the License.
 */
 
-package v1
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PgbackupResourcePlural ...
 const PgbackupResourcePlural = "pgbackups"
 
+// PgbackupSpec ...
 type PgbackupSpec struct {
-	Name          string        `json:"name"`
-	StorageSpec   PgStorageSpec `json:"storagespec"`
-	CCP_IMAGE_TAG string        `json:"ccpimagetag"`
-	BACKUP_HOST   string        `json:"backuphost"`
-	BACKUP_USER   string        `json:"backupuser"`
-	BACKUP_PASS   string        `json:"backuppass"`
-	BACKUP_PORT   string        `json:"backupport"`
-	BACKUP_STATUS string        `json:"backupstatus"`
+	Name         string        `json:"name"`
+	StorageSpec  PgStorageSpec `json:"storagespec"`
+	CCPImageTag  string        `json:"ccpimagetag"`
+	BackupHost   string        `json:"backuphost"`
+	BackupUser   string        `json:"backupuser"`
+	BackupPass   string        `json:"backuppass"`
+	BackupPort   string        `json:"backupport"`
+	BackupStatus string        `json:"backupstatus"`
 }
 
+// Pgbackup ...
 type Pgbackup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -40,6 +43,7 @@ type Pgbackup struct {
 	Status PgbackupStatus `json:"status,omitempty"`
 }
 
+// PgbackupList ...
 type PgbackupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -47,14 +51,18 @@ type PgbackupList struct {
 	Items []Pgbackup `json:"items"`
 }
 
+// PgbackupStatus ...
 type PgbackupStatus struct {
 	State   PgbackupState `json:"state,omitempty"`
 	Message string        `json:"message,omitempty"`
 }
 
+// PgbackupState ...
 type PgbackupState string
 
 const (
-	PgbackupStateCreated   PgbackupState = "Created"
+	// PgbackupStateCreated ...
+	PgbackupStateCreated PgbackupState = "Created"
+	// PgbackupStateProcessed ...
 	PgbackupStateProcessed PgbackupState = "Processed"
 )

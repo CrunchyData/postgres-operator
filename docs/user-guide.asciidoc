@@ -1,5 +1,5 @@
 = postgres Operator User Guide
-v1.5.2, {docdate}
+v2.0, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
@@ -205,7 +205,7 @@ Once the upgrade job is completed, the operator will create the
 original database or cluster container mounted with the new PVC
 which contains the upgraded database files.
 
-As the upgrade is processed, the status of the *pgupgrade* TPR is
+As the upgrade is processed, the status of the *pgupgrade* CRD is
 updated to give the user some insight into how the upgrade is
 proceeding.  Upgrades like this can take a long time if your
 database is large.  The operator creates a watch on the upgrade
@@ -243,13 +243,13 @@ based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
 can override this value using the *--ccp-image-tag* command line
 flag:
 ....
-pgo create cluster mycluster --ccp-image-tag=centos7-9.6-1.4.1
+pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
 ....
 
 Likewise, you can upgrade the cluster using a command line flag:
 ....
-pgo upgrade mycluster --ccp-image-tag=centos7-9.6-1.4.1
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6-1.4.1
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.5-1.6.0
 ....
 
 == Testing Database Connections
@@ -275,14 +275,14 @@ pgo clone mycluster --name=myclone
 When you execute the *clone*, it will orchestrate the following
 actions:
 
- * create a PgClone TPR to start the cloning workflow
+ * create a PgClone CRD to start the cloning workflow
  * create a replica on *mycluster* that will become the clone master
  * watch for cloned replicas to complete their replication
  * copy the original cluster's secrets for the clone to use
- * create a PgCluster TPR for the new clone cluster
+ * create a PgCluster CRD for the new clone cluster
  * create the Postgres trigger file on the clone to cause it to recover
    and become a valid read-write master
- * remove the PgClone TPR
+ * remove the PgClone CRD
 
 NOTE:  if you are cloning a cluster that has replica(s) which 
 specify a /pgdata volume using emptyDir volume type, then the cloned
@@ -301,7 +301,7 @@ pgo create policy policy1 --url=https://someurl/policy1.sql
 
 When you execute this command, it will create a policy named *policy1*
 using the input file */tmp/policy1.sql* as input.  It will create
-on the server a PgPolicy TPR with the name *policy1* that you can 
+on the server a PgPolicy CRD with the name *policy1* that you can 
 examine as follows:
 
 ....
@@ -451,7 +451,7 @@ bash shell to try it out.
 
 == Label Selectors on Cluster Listing
 
-You can create and assign a label to a *pgcluster* TPR object
+You can create and assign a label to a *pgcluster* CRD object
 as follows:
 ....
 kubectl label pgclusters mycluster name=thebest

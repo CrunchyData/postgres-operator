@@ -1,3 +1,5 @@
+package util
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,21 +15,14 @@
  limitations under the License.
 */
 
-package util
-
 import (
-	//"encoding/base64"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/api/core/v1"
-
+	"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
 	"time"
@@ -36,58 +31,58 @@ import (
 const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-var seededRand *rand.Rand = rand.New(
+var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
-//create pgroot, pgmaster, and pguser secrets
+// CreateDatabaseSecrets create pgroot, pgprimary, and pguser secrets
 func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 
 	//pgroot
 	username := "postgres"
-	suffix := crv1.PGROOT_SECRET_SUFFIX
+	suffix := crv1.RootSecretSuffix
 
 	var secretName string
 	var err error
 
 	secretName = cl.Spec.Name + suffix
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_ROOT_PASSWORD, namespace)
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.RootPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret" + err.Error())
 	}
 
-	cl.Spec.PGROOT_SECRET_NAME = secretName
+	cl.Spec.RootSecretName = secretName
 	err = Patch(restclient, "/spec/pgrootsecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster" + err.Error())
 	}
 
-	///pgmaster
-	username = "master"
-	suffix = crv1.PGMASTER_SECRET_SUFFIX
+	///pgprimary
+	username = "primary"
+	suffix = crv1.PrimarySecretSuffix
 
 	secretName = cl.Spec.Name + suffix
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_MASTER_PASSWORD, namespace)
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PrimaryPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret2" + err.Error())
 	}
 
-	cl.Spec.PGMASTER_SECRET_NAME = secretName
-	err = Patch(restclient, "/spec/pgmastersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	cl.Spec.PrimarySecretName = secretName
+	err = Patch(restclient, "/spec/pgprimarysecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster " + err.Error())
 	}
 
 	///pguser
 	username = "testuser"
-	suffix = crv1.PGUSER_SECRET_SUFFIX
+	suffix = crv1.UserSecretSuffix
 
 	secretName = cl.Spec.Name + suffix
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PG_PASSWORD, namespace)
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.Password, namespace)
 	if err != nil {
 		log.Error("error creating secret " + err.Error())
 	}
 
-	cl.Spec.PGUSER_SECRET_NAME = secretName
+	cl.Spec.UserSecretName = secretName
 	err = Patch(restclient, "/spec/pgusersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster " + err.Error())
@@ -96,12 +91,10 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	return err
 }
 
-//create the secret, user, and master secrets
+// CreateSecret create the secret, user, and primary secrets
 func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, password, namespace string) error {
 
-	//var enUsername = base64.StdEncoding.EncodeToString([]byte(username))
 	var enUsername = username
-	//var enPassword = base64.StdEncoding.EncodeToString([]byte(generatePassword(10)))
 	var enPassword = GeneratePassword(10)
 	if password != "" {
 		log.Debug("using user specified password for secret " + secretName)
@@ -128,6 +121,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 
 }
 
+// stringWithCharset returns a generated string value
 func stringWithCharset(length int, charset string) string {
 	b := make([]byte, length)
 	for i := range b {
@@ -136,30 +130,30 @@ func stringWithCharset(length int, charset string) string {
 	return string(b)
 }
 
-//generate a password of a given length
+// GeneratePassword generate a password of a given length
 func GeneratePassword(length int) string {
 	return stringWithCharset(length, charset)
 }
 
-//delete pgroot, pgmaster, and pguser secrets
+// DeleteDatabaseSecrets delete pgroot, pgprimary, and pguser secrets
 func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) {
 
 	options := meta_v1.DeleteOptions{}
-	secretName := db + crv1.PGMASTER_SECRET_SUFFIX
+	secretName := db + crv1.PrimarySecretSuffix
 	err := clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error("error deleting secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
-	secretName = db + crv1.PGROOT_SECRET_SUFFIX
+	secretName = db + crv1.RootSecretSuffix
 	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error("error deleting secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
-	secretName = db + crv1.PGUSER_SECRET_SUFFIX
+	secretName = db + crv1.UserSecretSuffix
 	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error("error deleting secret" + err.Error())
@@ -168,6 +162,7 @@ func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string
 	}
 }
 
+// GetPasswordFromSecret will fetch the password from a user secret
 func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, secretName string) (string, error) {
 
 	if clientset == nil {
@@ -187,6 +182,7 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 
 }
 
+// CopySecrets will copy a secret to another secret
 func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
 
 	log.Debug("CopySecrets " + fromCluster + " to " + toCluster)
@@ -219,6 +215,7 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 
 }
 
+// CreateUserSecret will create a new secret holding a user credential
 func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
 
 	var err error
@@ -232,6 +229,7 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	return err
 }
 
+// UpdateUserSecret updates a user secret with a new password
 func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
 
 	var err error
@@ -241,24 +239,23 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	//delete current secret
 	options := meta_v1.DeleteOptions{}
 	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
-	if err != nil {
-		log.Error("error deleting secret" + err.Error())
-		return err
-	} else {
+	if err == nil {
 		log.Debug("deleted secret " + secretName)
-	}
-	//create secret with updated password
-	err = CreateUserSecret(clientset, clustername, username, password, namespace)
-	if err != nil {
-		log.Error("error creating secret" + err.Error())
-		return err
+		//create secret with updated password
+		err = CreateUserSecret(clientset, clustername, username, password, namespace)
+		if err != nil {
+			log.Error("error creating secret" + err.Error())
+		} else {
+			log.Debug("created secret " + secretName)
+		}
 	} else {
-		log.Debug("created secret " + secretName)
+		log.Error("error deleting secret" + err.Error())
 	}
 
 	return err
 }
 
+// DeleteUserSecret will delete a user secret
 func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, namespace string) error {
 	//delete current secret
 	secretName := clustername + "-" + username + "-secret"
@@ -267,7 +264,6 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	err := clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
 		log.Error("error deleting secret" + err.Error())
-		return err
 	} else {
 		log.Debug("deleted secret " + secretName)
 	}

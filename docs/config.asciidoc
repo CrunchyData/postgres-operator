@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v1.5.2, {docdate}
+v2.0.0, {docdate}
 
 
 This document describes the configuration options
@@ -25,50 +25,50 @@ The sample pgo client configuration file, included in
 
 [source,yaml]
 ....
-KUBECONFIG:  /etc/kubernetes/admin.conf
-CLUSTER:
-  CCP_IMAGE_TAG:  centos7-9.6-1.4.1
-  PORT:  5432
-  PG_MASTER_USER:  master
-  PG_MASTER_PASSWORD:  password
-  PG_USER:  testuser
-  PG_PASSWORD:  password
-  PG_DATABASE:  userdb
-  PG_ROOT_PASSWORD:  password
-  STRATEGY:  1
-  REPLICAS:  0
-  POLICIES:  policy1,policy2
-  PASSWORD_AGE_DAYS:  60
-  PASSWORD_LENGTH:  8
-MASTER_STORAGE:
-  PVC_NAME:  crunchy-pvc
-  STORAGE_CLASS:  standard
-  PVC_ACCESS_MODE:  ReadWriteMany
-  PVC_SIZE:  100M
-  STORAGE_TYPE:  emptydir
-  FSGROUP:  26
-  SUPPLEMENTALGROUPS:  65534
-REPLICA_STORAGE:
-  PVC_NAME:  crunchy-pvc
-  STORAGE_CLASS:  standard
-  PVC_ACCESS_MODE:  ReadWriteMany
-  PVC_SIZE:  100M
-  STORAGE_TYPE:  emptydir
-  FSGROUP:  26
-  SUPPLEMENTALGROUPS:  65534
-BACKUP_STORAGE:
-  PVC_NAME:  crunchy-pvc
-  STORAGE_CLASS:  standard
-  PVC_ACCESS_MODE:  ReadWriteMany
-  PVC_SIZE:  100M
-  STORAGE_TYPE:  shared
-  FSGROUP:  26
-  SUPPLEMENTALGROUPS:  65534
-PGO:
-  LSPVC_TEMPLATE:  /home/youruserid/.pgo.lspvc-template.json
-  CSVLOAD_TEMPLATE:  /home/youruserid/.pgo.csvload-template.json
-  CO_IMAGE_TAG:  centos7-1.5.2
-  DEBUG:  false
+Kubeconfig:  /etc/kubernetes/admin.conf
+Cluster:
+  CCPImageTag:  centos7-9.6.5-1.6.0
+  Port:  5432
+  Primary_USER:  master
+  Primary_PASSWORD:  password
+  User:  testuser
+  Password:  password
+  Database:  userdb
+  RootPassword:  password
+  Strategy:  1
+  Replicas:  0
+  Policies:  policy1,policy2
+  PasswordAgeDays:  60
+  PasswordLength:  8
+PrimaryStorage:
+  Name:  crunchy-pvc
+  StorageClass:  standard
+  AccessMode:  ReadWriteMany
+  Size:  100M
+  StorageType:  emptydir
+  Fsgroup:  26
+  SupplementalGroups:  65534
+ReplicaStorage:
+  Name:  crunchy-pvc
+  StorageClass:  standard
+  AccessMode:  ReadWriteMany
+  Size:  100M
+  StorageType:  emptydir
+  Fsgroup:  26
+  SupplementalGroups:  65534
+BackupStorage:
+  Name:  crunchy-pvc
+  StorageClass:  standard
+  AccessMode:  ReadWriteMany
+  Size:  100M
+  StorageType:  shared
+  Fsgroup:  26
+  SupplementalGroups:  65534
+Pgo:
+  LSPVCTemplate:  /home/youruserid/.pgo.lspvc-template.json
+  CSVLoadTemplate:  /home/youruserid/.pgo.csvload-template.json
+  COImageTag:  centos7-2.0
+  Debug:  false
 ....
 
 Values in the pgo configuration file have the following meaning:
@@ -77,44 +77,44 @@ Values in the pgo configuration file have the following meaning:
 [width="90%",cols="m,2",frame="topbot",options="header"]
 |======================
 |Setting | Definition
-|KUBECONFIG        | the path to the kubeconfig file
-|CLUSTER.CCP_IMAGE_TAG        |newly created containers will be based on this image version (e.g. centos7-9.6-1.4.1), unless you override it using the --ccp-image-tag command line flag
-|CLUSTER.PORT        | the PostgreSQL port to use for new containers (e.g. 5432)
-|CLUSTER.PG_MASTER_USER        | the PostgreSQL master user name
-|CLUSTER.PG_MASTER_PASSWORD        | the PostgreSQL master user password, when specified, it will be stored in the secret holding the master user credentials, if not specified the value will be generated
-|CLUSTER.PG_USER        | the PostgreSQL normal user name
-|CLUSTER.PG_PASSWORD        | the PostgreSQL normal user password, when specified, it will be stored in the secret holding the normal user credentials, if not specified the value will be generated
-|CLUSTER.PG_ROOT_PASSWORD        | the PostgreSQL *postgres* user password, when specified, it will be stored in the secret holding the root user credentials, if not specified the value will be generated
-|CLUSTER.STRATEGY        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
-|CLUSTER.REPLICAS        | the number of cluster replicas to create for newly created clusters
-|CLUSTER.POLICIES        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
-|CLUSTER.PASSWORD_AGE_DAYS        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
-|CLUSTER.PASSWORD_LENGTH        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|MASTER_STORAGE.PVC_NAME        |for the master PostgreSQL deployment, if set, the PVC to use for created databases, used when the storage type is *existing*
-|MASTER_STORAGE.STORAGE_CLASS        |for the master PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|MASTER_STORAGE.PVC_ACCESS_MODE        |for the master PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|MASTER_STORAGE.PVC_SIZE        |for the master PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|MASTER_STORAGE.STORAGE_TYPE        |for the master PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|MASTER_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|MASTER_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|REPLICA_STORAGE.PVC_NAME        |for the replica PostgreSQL deployments, if set, the PVC to use for created databases, used when the storage type is *existing*
-|REPLICA_STORAGE.STORAGE_CLASS        |for the replica PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|REPLICA_STORAGE.PVC_ACCESS_MODE        |for the replica PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|REPLICA_STORAGE.PVC_SIZE        |for the replica PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|REPLICA_STORAGE.STORAGE_TYPE        |for the replica PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|REPLICA_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|REPLICA_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|BACKUP_STORAGE.PVC_NAME        |for the backup job, if set, the PVC to use for holding backup files, used when the storage type is *existing*
-|BACKUP_STORAGE.STORAGE_CLASS        |for the backup job, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|BACKUP_STORAGE.PVC_ACCESS_MODE        |for the backup job, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|BACKUP_STORAGE.PVC_SIZE        |for the backup job, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|BACKUP_STORAGE.STORAGE_TYPE        |for the backup job , supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|BACKUP_STORAGE.FSGROUP        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|BACKUP_STORAGE.SUPPLEMENTAL_GROUPS        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|PGO.LSPVC_TEMPLATE        | the PVC lspvc template file that lists PVC contents
-|PGO.CSVLOAD_TEMPLATE        | the CSV load template file used for load jobs
-|PGO.CO_IMAGE_TAG        | image tag to use for the PostgreSQL operator containers
-|PGO.DEBUG        | set to true if you want to see debug messages from the pgo client
+|Kubeconfig        | the path to the kubeconfig file
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.5-1.6.0), unless you override it using the --ccp-image-tag command line flag
+|Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
+|Cluster.PrimaryUser        | the PostgreSQL master user name
+|Cluster.PrimaryPassword        | the PostgreSQL master user password, when specified, it will be stored in the secret holding the master user credentials, if not specified the value will be generated
+|Cluster.User        | the PostgreSQL normal user name
+|Cluster.Password        | the PostgreSQL normal user password, when specified, it will be stored in the secret holding the normal user credentials, if not specified the value will be generated
+|Cluster.RootPassword        | the PostgreSQL *postgres* user password, when specified, it will be stored in the secret holding the root user credentials, if not specified the value will be generated
+|Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
+|Cluster.Replicas        | the number of cluster replicas to create for newly created clusters
+|Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
+|Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
+|Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
+|PrimaryStorage.Name        |for the master PostgreSQL deployment, if set, the PVC to use for created databases, used when the storage type is *existing*
+|PrimaryStorage.StorageClass        |for the master PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|PrimaryStorage.AccessMode        |for the master PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|PrimaryStorage.Size        |for the master PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|PrimaryStorage.StorageType        |for the master PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|PrimaryStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|PrimaryStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|ReplicaStorage.Name        |for the replica PostgreSQL deployments, if set, the PVC to use for created databases, used when the storage type is *existing*
+|ReplicaStorage.StorageClass        |for the replica PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|ReplicaStorage.AccessMode        |for the replica PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|ReplicaStorage.Size        |for the replica PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|ReplicaStorage.StorageType        |for the replica PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|ReplicaStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|ReplicaStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|BackupStorage.Name        |for the backup job, if set, the PVC to use for holding backup files, used when the storage type is *existing*
+|BackupStorage.StorageClass        |for the backup job, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|BackupStorage.AccessMode        |for the backup job, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|BackupStorage.Size        |for the backup job, the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|BackupStorage.StorageType        |for the backup job , supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|BackupStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|BackupStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
+|Pgo.CSVLoadTemplate        | the CSV load template file used for load jobs
+|Pgo.COImageTag        | image tag to use for the PostgreSQL operator containers
+|Pgo.Debug        | set to true if you want to see debug messages from the pgo client
 |======================
 
 *NOTE*: Regarding the PVC access mode variable; this is automatically set to ReadWriteMany but
@@ -134,7 +134,7 @@ Execute the Makefile target *deployoperator* to deploy the Operator.
 
 You can also create NFS PV(s) using the create-pv-nfs.sh script.
 
-To enable DEBUG messages from the operator pod, set the *DEBUG* environment
+To enable DEBUG messages from the operator pod, set the *Debug* environment
 variable to *true* within its deployment file *deployment.json*.
 
 === Operator Templates
@@ -154,21 +154,21 @@ file.
 
 Different ways of handling storage are specified by a user in
 the *.pgo.yaml* configuration file by specifying values within
-the REPLICA_STORAGE, MASTER_STORAGE, and BACKUP_STORAGE settings.
+the ReplicaStorage, PrimaryStorage, and BackupStorage settings.
 
-The following STORAGE_TYPE values are possible:
+The following StorageType values are possible:
 
  * *dynamic* - Currently not implemented, this will allow for dynamic
  provisioning of storage using a StorageClass.
  * *existing* - This setting allows you to use a PVC that already exists.
  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters
- can write to that NFS volume mount via a common PVC. When set, the PVC_NAME
+ can write to that NFS volume mount via a common PVC. When set, the Name
  setting is used for the PVC.
  * *create* - This setting allows for the creation of a new PVC for
  each PostgreSQL cluster using a naming convention of *clustername*-pvc*.
- When set, the *PVC_SIZE*, *PVC_ACCESS_MODE* settings are used in
+ When set, the *Size*, *AccessMode* settings are used in
  constructing the new PVC.
- * *emptydir* - If a STORAGE_TYPE value is not defined, *emptydir* is used by default.
+ * *emptydir* - If a StorageType value is not defined, *emptydir* is used by default.
  This is a volume type that’s created when a pod is assigned to a node and exists as
  long as that pod remains running on that node; it is deleted as soon as the pod is
  manually deleted or removed from the node.

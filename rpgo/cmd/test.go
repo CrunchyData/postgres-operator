@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +14,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-package cmd
 
 import (
-	//"bytes"
-	//"database/sql"
-	//"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//"github.com/crunchydata/postgres-operator/clusterservice"
-	//"github.com/crunchydata/postgres-operator/tpr"
-	//_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
-	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"log"
 	"net/http"
 )
 

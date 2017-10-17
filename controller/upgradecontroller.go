@@ -1,5 +1,20 @@
 package controller
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"context"
 	"fmt"
@@ -12,21 +27,20 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	upgradeoperator "github.com/crunchydata/postgres-operator/operator/upgrade"
+	upgradeoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
-// Watcher is an upgrade of watching on resource create/update/delete events
+// PgupgradeController holds the connections for the controller
 type PgupgradeController struct {
 	PgupgradeClient    *rest.RESTClient
 	PgupgradeClientset *kubernetes.Clientset
 	PgupgradeScheme    *runtime.Scheme
 }
 
-// Run starts an Example resource controller
+// Run starts an pgupgrade resource controller
 func (c *PgupgradeController) Run(ctx context.Context) error {
 	fmt.Print("Watch Pgupgrade objects\n")
 
-	// Watch Example objects
 	_, err := c.watchPgupgrades(ctx)
 	if err != nil {
 		fmt.Printf("Failed to register watch for Pgupgrade resource: %v\n", err)
@@ -37,6 +51,7 @@ func (c *PgupgradeController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// watchPgupgrades is the event loop for pgupgrade resources
 func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		c.PgupgradeClient,
@@ -66,6 +81,7 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 	return controller, nil
 }
 
+// onAdd is called when pgupgrades are added
 func (c *PgupgradeController) onAdd(obj interface{}) {
 	upgrade := obj.(*crv1.Pgupgrade)
 	fmt.Printf("[PgupgradeCONTROLLER] OnAdd %s\n", upgrade.ObjectMeta.SelfLink)
@@ -107,13 +123,11 @@ func (c *PgupgradeController) onAdd(obj interface{}) {
 	upgradeoperator.AddUpgrade(c.PgupgradeClientset, c.PgupgradeClient, upgradeCopy, upgrade.ObjectMeta.Namespace)
 }
 
+// onUpdate is called when a pgupgrade is updated
 func (c *PgupgradeController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgupgrade)
-	//newExample := newObj.(*crv1.Pgupgrade)
-	//fmt.Printf("[PgupgradeCONTROLLER] OnUpdate oldObj: %s\n", oldExample.ObjectMeta.SelfLink)
-	//fmt.Printf("[PgupgradeCONTROLLER] OnUpdate newObj: %s\n", newExample.ObjectMeta.SelfLink)
 }
 
+// onDelete is called when a pgupgrade is deleted
 func (c *PgupgradeController) onDelete(obj interface{}) {
 	upgrade := obj.(*crv1.Pgupgrade)
 	fmt.Printf("[PgupgradeCONTROLLER] OnDelete %s\n", upgrade.ObjectMeta.SelfLink)

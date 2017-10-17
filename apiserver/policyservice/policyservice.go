@@ -1,15 +1,30 @@
 package policyservice
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	//crv1 "github.com/crunchydata/kraken/apis/cr/v1"
-	apiserver "github.com/crunchydata/kraken/apiserver"
-	msgs "github.com/crunchydata/kraken/apiservermsgs"
+	apiserver "github.com/crunchydata/postgres-operator/apiserver"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
+// CreatePolicyHandler ...
 // pgo create policy
 // parameters secretfrom
 func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +41,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ShowPolicyHandler ...
 // returns a ShowPolicyResponse
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("policyservice.ShowPolicyHandler called")
@@ -58,6 +74,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// ApplyPolicyHandler ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("policyservice.ApplyPolicyHandler called")

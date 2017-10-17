@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-package cmd
 
 import (
 	"bytes"
@@ -55,7 +56,7 @@ func showPolicy(args []string) {
 			log.Error("Namespace can not be empty")
 			return
 		}
-		url := APISERVER_URL + "/policies/" + v + "?namespace=" + Namespace
+		url := APIServerURL + "/policies/" + v + "?namespace=" + Namespace
 		log.Debug("showPolicy called...[" + url + "]")
 
 		action := "GET"
@@ -98,9 +99,9 @@ func showPolicy(args []string) {
 		for _, policy := range response.PolicyList.Items {
 			fmt.Println("")
 			fmt.Println("policy : " + policy.Spec.Name)
-			fmt.Println(TREE_BRANCH + "url : " + policy.Spec.Url)
-			fmt.Println(TREE_BRANCH + "status : " + policy.Spec.Status)
-			fmt.Println(TREE_TRUNK + "sql : " + policy.Spec.Sql)
+			fmt.Println(TreeBranch + "url : " + policy.Spec.URL)
+			fmt.Println(TreeBranch + "status : " + policy.Spec.Status)
+			fmt.Println(TreeTrunk + "sql : " + policy.Spec.SQL)
 		}
 	}
 
@@ -140,7 +141,7 @@ func createPolicy(args []string) {
 
 	jsonValue, _ := json.Marshal(r)
 
-	url := APISERVER_URL + "/policies"
+	url := APIServerURL + "/policies"
 	log.Debug("createPolicy called...[" + url + "]")
 
 	action := "POST"

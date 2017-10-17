@@ -1,3 +1,5 @@
+package backup
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-package backup
 
 import (
 	"bytes"
@@ -38,38 +38,39 @@ import (
 	//"k8s.io/client-go/tools/cache"
 )
 
-type JobTemplateFields struct {
-	Name             string
-	PVC_NAME         string
-	CCP_IMAGE_TAG    string
-	SECURITY_CONTEXT string
-	BACKUP_HOST      string
-	BACKUP_USER      string
-	BACKUP_PASS      string
-	BACKUP_PORT      string
+type jobTemplateFields struct {
+	Name            string
+	PvcName         string
+	CCPImageTag     string
+	SecurityContext string
+	BackupHost      string
+	BackupUser      string
+	BackupPass      string
+	BackupPort      string
 }
 
-const JOB_PATH = "/operator-conf/backup-job.json"
+const jobPath = "/operator-conf/backup-job.json"
 
-var JobTemplate *template.Template
+var jobTemplate *template.Template
 
 func init() {
 	var err error
 	var buf []byte
 
-	buf, err = ioutil.ReadFile(JOB_PATH)
+	buf, err = ioutil.ReadFile(jobPath)
 	if err != nil {
 		log.Error("error in backup.go init " + err.Error())
 		panic(err.Error())
 	}
-	JobTemplate = template.Must(template.New("backup job template").Parse(string(buf)))
+	jobTemplate = template.Must(template.New("backup job template").Parse(string(buf)))
 
 }
 
+// AddBackupBase creates a backup job and its pvc
 func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var err error
 
-	if job.Spec.BACKUP_STATUS == crv1.UPGRADE_COMPLETED_STATUS {
+	if job.Spec.BackupStatus == crv1.UpgradeCompletedStatus {
 		log.Warn("pgbackup " + job.Spec.Name + " already completed, not recreating it")
 		return
 	}
@@ -90,19 +91,19 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	err = util.Patch(client, "/spec/pvcname", pvcName, "pgbackups", job.Spec.Name, namespace)
 
 	//create the job -
-	jobFields := JobTemplateFields{
-		Name:             job.Spec.Name,
-		PVC_NAME:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
-		CCP_IMAGE_TAG:    job.Spec.CCP_IMAGE_TAG,
-		SECURITY_CONTEXT: util.CreateSecContext(job.Spec.StorageSpec.FSGROUP, job.Spec.StorageSpec.SUPPLEMENTAL_GROUPS),
-		BACKUP_HOST:      job.Spec.BACKUP_HOST,
-		BACKUP_USER:      job.Spec.BACKUP_USER,
-		BACKUP_PASS:      job.Spec.BACKUP_PASS,
-		BACKUP_PORT:      job.Spec.BACKUP_PORT,
+	jobFields := jobTemplateFields{
+		Name:            job.Spec.Name,
+		PvcName:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
+		CCPImageTag:     job.Spec.CCPImageTag,
+		SecurityContext: util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
+		BackupHost:      job.Spec.BackupHost,
+		BackupUser:      job.Spec.BackupUser,
+		BackupPass:      job.Spec.BackupPass,
+		BackupPort:      job.Spec.BackupPort,
 	}
 
 	var doc2 bytes.Buffer
-	err = JobTemplate.Execute(&doc2, jobFields)
+	err = jobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -125,13 +126,14 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	log.Info("created Job " + resultJob.Name)
 
 	//update the backup TPR status to submitted
-	err = util.Patch(client, "/spec/backupstatus", crv1.UPGRADE_SUBMITTED_STATUS, "pgbackups", job.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/backupstatus", crv1.UpgradeSubmittedStatus, "pgbackups", job.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}
 
 }
 
+// DeleteBackupBase deletes a backup job
 func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var jobName = "backup-" + job.Spec.Name
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)

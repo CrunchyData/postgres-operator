@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +15,13 @@
  limitations under the License.
 */
 
-package cmd
-
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-var CCP_IMAGE_TAG string
+var CCPImageTag string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
@@ -49,11 +49,12 @@ pgo create policy
 	},
 }
 
+// createClusterCmd ...
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Create a database cluster",
 	Long: `Create a crunchy cluster which consist of a
-master and a number of replica backends. For example:
+primary and a number of replica backends. For example:
 
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -98,6 +99,7 @@ pgo create cluster mycluster`,
 	},
 }
 
+// createPolicyCmd ...
 var createPolicyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "Create a policy",
@@ -123,14 +125,14 @@ func init() {
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
 
-	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the master database")
+	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the primary database")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated")
-	createClusterCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for cluster creation, if specified overrides the .pgo.yaml setting")
+	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation, if specified overrides the .pgo.yaml setting")
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series, defaults to 1")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy")

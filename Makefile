@@ -32,7 +32,7 @@ pgo:	check-go-vars
 runpgo:	check-go-vars
 	pgo --kubeconfig=/etc/kubernetes/admin.conf
 clean:	check-go-vars
-	rm -rf $(GOPATH)/pkg/* $(GOBIN)/main $(GOBIN)/pgo
+	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 	godep restore
 operatorimage:	check-go-vars
 	go install postgres-operator.go

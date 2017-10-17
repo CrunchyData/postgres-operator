@@ -35,10 +35,9 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	crdclient "github.com/crunchydata/postgres-operator/client"
-	"github.com/crunchydata/postgres-operator/operator/backup"
-	"github.com/crunchydata/postgres-operator/operator/upgrade"
-
 	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/operator/backup"
+	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -65,16 +64,6 @@ func main() {
 		log.Info("error creating Clientset")
 		panic(err.Error())
 	}
-
-	// initialize custom resource using a CustomResourceDefinition if it does not exist
-	crd, err := crdclient.CreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if crd != nil {
-		fmt.Println(crd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crd.Name, nil)
 
 	clustercrd, err := crdclient.PgclusterCreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
@@ -160,7 +149,7 @@ func main() {
 
 	Namespace := "default"
 	go backup.ProcessJobs(Clientset, crdClient, Namespace)
-	go upgrade.MajorUpgradeProcess(Clientset, crdClient, Namespace)
+	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")
 

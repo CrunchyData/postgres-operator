@@ -1,3 +1,6 @@
+// Package cmd provides the command line functions of the crunchy CLI
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +15,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-// Package cmd provides the command line functions of the crunchy CLI
-package cmd
 
 import (
 	"errors"
@@ -31,8 +31,8 @@ import (
 	"strings"
 )
 
-const MAJOR_UPGRADE = "major"
-const MINOR_UPGRADE = "minor"
+const MajorUpgrade = "major"
+const MinorUpgrade = "minor"
 const SEP = "-"
 
 var UpgradeType string
@@ -64,14 +64,14 @@ func init() {
 	upgradeCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 
 	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
-	upgradeCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
+	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for the upgrade target")
 
 }
 
 func validateCreateUpdate(args []string) error {
 	var err error
 
-	if UpgradeType == MAJOR_UPGRADE || UpgradeType == MINOR_UPGRADE {
+	if UpgradeType == MajorUpgrade || UpgradeType == MinorUpgrade {
 	} else {
 		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
 	}
@@ -124,18 +124,18 @@ func showUpgradeItem(upgrade *crv1.Pgupgrade) {
 	//print the TPR
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgupgrade : "+upgrade.Spec.Name)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "upgrade_status : "+upgrade.Spec.UPGRADE_STATUS)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "resource_type : "+upgrade.Spec.RESOURCE_TYPE)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "upgrade_type : "+upgrade.Spec.UPGRADE_TYPE)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_access_mode : "+upgrade.Spec.StorageSpec.PvcAccessMode)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "pvc_size : "+upgrade.Spec.StorageSpec.PvcSize)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "ccp_image_tag : "+upgrade.Spec.CCP_IMAGE_TAG)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "old_database_name : "+upgrade.Spec.OLD_DATABASE_NAME)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "new_database_name : "+upgrade.Spec.NEW_DATABASE_NAME)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "old_version : "+upgrade.Spec.OLD_VERSION)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "new_version : "+upgrade.Spec.NEW_VERSION)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "old_pvc_name : "+upgrade.Spec.OLD_PVC_NAME)
-	fmt.Printf("%s%s\n", TREE_TRUNK, "new_pvc_name : "+upgrade.Spec.NEW_PVC_NAME)
+	fmt.Printf("%s%s\n", TreeBranch, "upgrade_status : "+upgrade.Spec.UpgradeStatus)
+	fmt.Printf("%s%s\n", TreeBranch, "resource_type : "+upgrade.Spec.ResourceType)
+	fmt.Printf("%s%s\n", TreeBranch, "upgrade_type : "+upgrade.Spec.UpgradeType)
+	fmt.Printf("%s%s\n", TreeBranch, "pvc_access_mode : "+upgrade.Spec.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "pvc_size : "+upgrade.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "ccp_image_tag : "+upgrade.Spec.CCPImageTag)
+	fmt.Printf("%s%s\n", TreeBranch, "old_database_name : "+upgrade.Spec.OldDatabaseName)
+	fmt.Printf("%s%s\n", TreeBranch, "new_database_name : "+upgrade.Spec.NewDatabaseName)
+	fmt.Printf("%s%s\n", TreeBranch, "old_version : "+upgrade.Spec.OldVersion)
+	fmt.Printf("%s%s\n", TreeBranch, "new_version : "+upgrade.Spec.NewVersion)
+	fmt.Printf("%s%s\n", TreeBranch, "old_pvc_name : "+upgrade.Spec.OldPVCName)
+	fmt.Printf("%s%s\n", TreeTrunk, "new_pvc_name : "+upgrade.Spec.NewPVCName)
 
 	//print the upgrade jobs if any exists
 	lo := meta_v1.ListOptions{
@@ -152,7 +152,7 @@ func showUpgradeItem(upgrade *crv1.Pgupgrade) {
 	} else {
 		fmt.Printf("\nupgrade job pods for %s\n", upgrade.Spec.Name+"...")
 		for _, p := range pods.Items {
-			fmt.Printf("%s pod : %s (%s)\n", TREE_TRUNK, p.Name, p.Status.Phase)
+			fmt.Printf("%s pod : %s (%s)\n", TreeTrunk, p.Name, p.Status.Phase)
 		}
 	}
 
@@ -237,7 +237,7 @@ func createUpgrade(args []string) {
 			break
 		}
 
-		if cl.Spec.MasterStorage.StorageType == "emptydir" {
+		if cl.Spec.PrimaryStorage.StorageType == "emptydir" {
 			fmt.Println("cluster " + arg + " uses emptydir storage and can not be upgraded")
 			break
 		}
@@ -306,25 +306,25 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 	var existingMajorVersion float64
 
 	spec := crv1.PgupgradeSpec{
-		Name:              name,
-		RESOURCE_TYPE:     "cluster",
-		UPGRADE_TYPE:      UpgradeType,
-		CCP_IMAGE_TAG:     viper.GetString("CLUSTER.CCP_IMAGE_TAG"),
-		StorageSpec:       crv1.PgStorageSpec{},
-		OLD_DATABASE_NAME: "basic",
-		NEW_DATABASE_NAME: "master",
-		OLD_VERSION:       "9.5",
-		NEW_VERSION:       "9.6",
-		OLD_PVC_NAME:      viper.GetString("MASTER_STORAGE.PVC_NAME"),
-		NEW_PVC_NAME:      viper.GetString("MASTER_STORAGE.PVC_NAME"),
+		Name:            name,
+		ResourceType:    "cluster",
+		UpgradeType:     UpgradeType,
+		CCPImageTag:     viper.GetString("Cluster.CCPImageTag"),
+		StorageSpec:     crv1.PgStorageSpec{},
+		OldDatabaseName: "basic",
+		NewDatabaseName: "primary",
+		OldVersion:      "9.5",
+		NewVersion:      "9.6",
+		OldPVCName:      viper.GetString("PrimaryStorage.Name"),
+		NewPVCName:      viper.GetString("PrimaryStorage.Name"),
 	}
 
-	spec.StorageSpec.PvcAccessMode = viper.GetString("MASTER_STORAGE.PVC_ACCESS_MODE")
-	spec.StorageSpec.PvcSize = viper.GetString("MASTER_STORAGE.PVC_SIZE")
+	spec.StorageSpec.AccessMode = viper.GetString("PrimaryStorage.AccessMode")
+	spec.StorageSpec.Size = viper.GetString("PrimaryStorage.Size")
 
-	if CCP_IMAGE_TAG != "" {
-		log.Debug("using CCP_IMAGE_TAG from command line " + CCP_IMAGE_TAG)
-		spec.CCP_IMAGE_TAG = CCP_IMAGE_TAG
+	if CCPImageTag != "" {
+		log.Debug("using CCPImageTag from command line " + CCPImageTag)
+		spec.CCPImageTag = CCPImageTag
 	}
 
 	cluster := crv1.Pgcluster{}
@@ -335,14 +335,14 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 		Do().
 		Into(&cluster)
 	if err == nil {
-		spec.RESOURCE_TYPE = "cluster"
-		spec.OLD_DATABASE_NAME = cluster.Spec.Name
-		spec.NEW_DATABASE_NAME = cluster.Spec.Name + "-upgrade"
-		spec.OLD_PVC_NAME = cluster.Spec.MasterStorage.PvcName
-		spec.NEW_PVC_NAME = cluster.Spec.MasterStorage.PvcName + "-upgrade"
-		spec.BACKUP_PVC_NAME = cluster.Spec.BACKUP_PVC_NAME
-		existingImage = cluster.Spec.CCP_IMAGE_TAG
-		existingMajorVersion = parseMajorVersion(cluster.Spec.CCP_IMAGE_TAG)
+		spec.ResourceType = "cluster"
+		spec.OldDatabaseName = cluster.Spec.Name
+		spec.NewDatabaseName = cluster.Spec.Name + "-upgrade"
+		spec.OldPVCName = cluster.Spec.PrimaryStorage.Name
+		spec.NewPVCName = cluster.Spec.PrimaryStorage.Name + "-upgrade"
+		spec.BackupPVCName = cluster.Spec.BackupPVCName
+		existingImage = cluster.Spec.CCPImageTag
+		existingMajorVersion = parseMajorVersion(cluster.Spec.CCPImageTag)
 	} else if kerrors.IsNotFound(err) {
 		log.Debug(name + " is not a cluster")
 		return nil, err
@@ -354,24 +354,24 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 
 	var requestedMajorVersion float64
 
-	if CCP_IMAGE_TAG != "" {
-		if CCP_IMAGE_TAG == existingImage {
-			log.Error("CCP_IMAGE_TAG is the same as the cluster")
+	if CCPImageTag != "" {
+		if CCPImageTag == existingImage {
+			log.Error("CCPImageTag is the same as the cluster")
 			log.Error("can't upgrade to the same image version")
 
 			return nil, errors.New("invalid image tag")
 		}
-		requestedMajorVersion = parseMajorVersion(CCP_IMAGE_TAG)
-	} else if viper.GetString("CLUSTER.CCP_IMAGE_TAG") == existingImage {
-		log.Error("CCP_IMAGE_TAG is the same as the cluster")
+		requestedMajorVersion = parseMajorVersion(CCPImageTag)
+	} else if viper.GetString("Cluster.CCPImageTag") == existingImage {
+		log.Error("CCPImageTag is the same as the cluster")
 		log.Error("can't upgrade to the same image version")
 
 		return nil, errors.New("invalid image tag")
 	} else {
-		requestedMajorVersion = parseMajorVersion(viper.GetString("CLUSTER.CCP_IMAGE_TAG"))
+		requestedMajorVersion = parseMajorVersion(viper.GetString("Cluster.CCPImageTag"))
 	}
 
-	if UpgradeType == MAJOR_UPGRADE {
+	if UpgradeType == MajorUpgrade {
 		if requestedMajorVersion == existingMajorVersion {
 			log.Error("can't upgrade to the same major version")
 			return nil, errors.New("requested upgrade major version can not equal existing upgrade major version")

@@ -1,3 +1,5 @@
+package util
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +15,15 @@
  limitations under the License.
 */
 
-package util
-
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
+	"os/exec"
 	"strconv"
+	"strings"
 	"text/template"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -32,23 +34,25 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func CreateSecContext(FS_GROUP string, SUPP string) string {
+// CreateSecContext will generate the JSON security context fragment
+// for a storage type
+func CreateSecContext(fsGroup string, suppGroup string) string {
 
 	var sc bytes.Buffer
 	var fsgroup = false
 	var supp = false
 
-	if FS_GROUP != "" {
+	if fsGroup != "" {
 		fsgroup = true
 	}
-	if SUPP != "" {
+	if suppGroup != "" {
 		supp = true
 	}
 	if fsgroup || supp {
 		sc.WriteString("\"securityContext\": {\n")
 	}
 	if fsgroup {
-		sc.WriteString("\t \"fsGroup\": " + FS_GROUP)
+		sc.WriteString("\t \"fsGroup\": " + fsGroup)
 		if fsgroup && supp {
 			sc.WriteString(",")
 		}
@@ -56,7 +60,7 @@ func CreateSecContext(FS_GROUP string, SUPP string) string {
 	}
 
 	if supp {
-		sc.WriteString("\t \"supplementalGroups\": [" + SUPP + "]\n")
+		sc.WriteString("\t \"supplementalGroups\": [" + suppGroup + "]\n")
 	}
 
 	//closing of securityContext
@@ -67,6 +71,7 @@ func CreateSecContext(FS_GROUP string, SUPP string) string {
 	return sc.String()
 }
 
+// LoadTemplate will load a JSON template from a path
 func LoadTemplate(path string) *template.Template {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -77,12 +82,14 @@ func LoadTemplate(path string) *template.Template {
 
 }
 
+// ThingSpec is a json patch structure
 type ThingSpec struct {
 	Op    string `json:"op"`
 	Path  string `json:"path"`
 	Value string `json:"value"`
 }
 
+// Patch will patch a particular resource
 func Patch(restclient *rest.RESTClient, path string, value string, resource string, name string, namespace string) error {
 
 	things := make([]ThingSpec, 1)
@@ -108,6 +115,7 @@ func Patch(restclient *rest.RESTClient, path string, value string, resource stri
 
 }
 
+// DrainDeployment will drain a deployment to 0 pods
 func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace string) error {
 
 	var err error
@@ -133,13 +141,14 @@ func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace str
 
 }
 
-func CreatePVCSnippet(storageType string, PVC_NAME string) string {
+// CreatePVCSnippet generates the PVC json snippet
+func CreatePVCSnippet(storageType string, PVCName string) string {
 
 	var sc bytes.Buffer
 
 	if storageType != "emptydir" {
 		sc.WriteString("\"persistentVolumeClaim\": {\n")
-		sc.WriteString("\t \"claimName\": \"" + PVC_NAME + "\"")
+		sc.WriteString("\t \"claimName\": \"" + PVCName + "\"")
 		sc.WriteString("\n")
 	} else {
 		sc.WriteString("\"emptyDir\": {")
@@ -151,13 +160,14 @@ func CreatePVCSnippet(storageType string, PVC_NAME string) string {
 	return sc.String()
 }
 
-func CreateBackupPVCSnippet(BACKUP_PVC_NAME string) string {
+// CreateBackupPVCSnippet generates the PVC definition fragment
+func CreateBackupPVCSnippet(backupPVCName string) string {
 
 	var sc bytes.Buffer
 
-	if BACKUP_PVC_NAME != "" {
+	if backupPVCName != "" {
 		sc.WriteString("\"persistentVolumeClaim\": {\n")
-		sc.WriteString("\t \"claimName\": \"" + BACKUP_PVC_NAME + "\"")
+		sc.WriteString("\t \"claimName\": \"" + backupPVCName + "\"")
 		sc.WriteString("\n")
 	} else {
 		sc.WriteString("\"emptyDir\": {")
@@ -169,6 +179,7 @@ func CreateBackupPVCSnippet(BACKUP_PVC_NAME string) string {
 	return sc.String()
 }
 
+// ScaleDeployment will increase the number of pods in a deployment
 func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace string, replicaCount int) error {
 	var err error
 
@@ -187,13 +198,14 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace 
 
 	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(deploymentName, types.JSONPatchType, patchBytes)
 	if err != nil {
-		log.Error("error creating master Deployment " + err.Error())
+		log.Error("error creating primary Deployment " + err.Error())
 		return err
 	}
 	log.Debug("replica count patch succeeded")
 	return err
 }
 
+// GetLabels ...
 func GetLabels(name, clustername string, clone, replica bool) string {
 	var output string
 	if clone {
@@ -206,6 +218,8 @@ func GetLabels(name, clustername string, clone, replica bool) string {
 	output += fmt.Sprintf("\"pg-cluster\": \"%s\"\n", clustername)
 	return output
 }
+
+// GetLabelsFromMap ...
 func GetLabelsFromMap(labels map[string]string) string {
 	var output string
 
@@ -223,10 +237,8 @@ func GetLabelsFromMap(labels map[string]string) string {
 	return output
 }
 
-func MyBigUnusedFunc() {
-}
-
-func PatchClusterTPR(restclient *rest.RESTClient, labelMap map[string]string, oldCrd *crv1.Pgcluster, namespace string) error {
+// PatchClusterCRD patches the pgcluster CRD
+func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, oldCrd *crv1.Pgcluster, namespace string) error {
 
 	oldData, err := json.Marshal(oldCrd)
 	if err != nil {
@@ -262,4 +274,27 @@ func PatchClusterTPR(restclient *rest.RESTClient, labelMap map[string]string, ol
 
 	return err6
 
+}
+
+// RunPsql runs a psql statement
+func RunPsql(password string, hostip string, sqlstring string) {
+
+	log.Infoln("RunPsql password [" + password + "] hostip=[" + hostip + "] sql=[" + sqlstring + "]")
+	cmd := exec.Command("runpsql.sh", password, hostip)
+
+	cmd.Stdin = strings.NewReader(sqlstring)
+
+	var out, stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Error("error in run cmd " + err.Error())
+		log.Error(out.String())
+		log.Error(stderr.String())
+		return
+	}
+
+	log.Debugf("runpsql output [%s]\n", out.String())
 }

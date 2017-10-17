@@ -1,3 +1,8 @@
+// Package cluster holds the cluster TPR logic and definitions
+// A cluster is comprised of a primary service, replica service,
+// primary deployment, and replica deployment
+package cluster
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,29 +18,21 @@
  limitations under the License.
 */
 
-// Package cluster holds the cluster TPR logic and definitions
-// A cluster is comprised of a master service, replica service,
-// master deployment, and replica deployment
-package cluster
-
 import (
 	log "github.com/Sirupsen/logrus"
-	"math/rand"
-	"strconv"
-	"time"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	//"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/cache"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
-type ClusterStrategy interface {
+// Strategy ....
+type Strategy interface {
 	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
 	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string, bool) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
@@ -47,65 +44,69 @@ type ClusterStrategy interface {
 	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
 }
 
+// ServiceTemplateFields ...
 type ServiceTemplateFields struct {
 	Name        string
 	ClusterName string
 	Port        string
 }
 
+// DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name                 string
-	ClusterName          string
-	Port                 string
-	CCP_IMAGE_TAG        string
-	PG_DATABASE          string
-	OPERATOR_LABELS      string
-	PGDATA_PATH_OVERRIDE string
-	PVC_NAME             string
-	BACKUP_PVC_NAME      string
-	BACKUP_PATH          string
-	PGROOT_SECRET_NAME   string
-	PGUSER_SECRET_NAME   string
-	PGMASTER_SECRET_NAME string
-	SECURITY_CONTEXT     string
-	NODE_SELECTOR        string
+	Name              string
+	ClusterName       string
+	Port              string
+	CCPImageTag       string
+	Database          string
+	OperatorLabels    string
+	DataPathOverride  string
+	PVCName           string
+	BackupPVCName     string
+	BackupPath        string
+	RootSecretName    string
+	UserSecretName    string
+	PrimarySecretName string
+	SecurityContext   string
+	NodeSelector      string
 	//next 2 are for the replica deployment only
-	REPLICAS       string
-	PG_MASTER_HOST string
+	Replicas    string
+	PrimaryHost string
 }
 
-const REPLICA_SUFFIX = "-replica"
+// ReplicaSuffix ...
+const ReplicaSuffix = "-replica"
 
-var StrategyMap map[string]ClusterStrategy
+var strategyMap map[string]Strategy
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
-	StrategyMap = make(map[string]ClusterStrategy)
-	StrategyMap["1"] = ClusterStrategy1{}
+	strategyMap = make(map[string]Strategy)
+	strategyMap["1"] = Strategy1{}
 }
 
+// AddClusterBase ...
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
-	if cl.Spec.STATUS == crv1.UPGRADE_COMPLETED_STATUS {
+	if cl.Spec.Status == crv1.UpgradeCompletedStatus {
 		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
 		return
 	}
 
-	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name, &cl.Spec.MasterStorage, namespace)
-	log.Debug("created master pvc [" + pvcName + "]")
+	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name, &cl.Spec.PrimaryStorage, namespace)
+	log.Debug("created primary pvc [" + pvcName + "]")
 
-	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.STRATEGY + "]")
+	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.Strategy + "]")
 
 	var err1, err2, err3 error
-	if cl.Spec.SECRET_FROM != "" {
-		cl.Spec.PG_ROOT_PASSWORD, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SECRET_FROM+crv1.PGROOT_SECRET_SUFFIX)
-		cl.Spec.PG_PASSWORD, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SECRET_FROM+crv1.PGUSER_SECRET_SUFFIX)
-		cl.Spec.PG_MASTER_PASSWORD, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SECRET_FROM+crv1.PGMASTER_SECRET_SUFFIX)
+	if cl.Spec.SecretFrom != "" {
+		cl.Spec.RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
+		cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
+		cl.Spec.PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
 		if err1 != nil || err2 != nil || err3 != nil {
-			log.Error("error getting secrets using SECRET_FROM " + cl.Spec.SECRET_FROM)
+			log.Error("error getting secrets using SecretFrom " + cl.Spec.SecretFrom)
 			return
 		}
 	}
@@ -116,16 +117,16 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	if cl.Spec.STRATEGY == "" {
-		cl.Spec.STRATEGY = "1"
+	if cl.Spec.Strategy == "" {
+		cl.Spec.Strategy = "1"
 		log.Info("using default strategy")
 	}
 
-	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
+		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
 	}
 
@@ -134,44 +135,31 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
 
-	err = util.Patch(client, "/spec/status", crv1.UPGRADE_COMPLETED_STATUS, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
-	err = util.Patch(client, "/spec/MasterStorage/pvcname", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/PrimaryStorage/pvcname", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
 }
 
-/**
-func setFullVersion(restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
-	//get full version from image tag
-	fullVersion := util.GetFullVersion(cl.Spec.CCP_IMAGE_TAG)
-
-	//update the crv1
-	err := util.Patch(restclient, "/spec/postgresfullversion", fullVersion, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error in version patch " + err.Error())
-	}
-
-}
-*/
-
+// DeleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
-	log.Debug("deleteCluster called with strategy " + cl.Spec.STRATEGY)
+	log.Debug("deleteCluster called with strategy " + cl.Spec.Strategy)
 
-	if cl.Spec.STRATEGY == "" {
-		cl.Spec.STRATEGY = "1"
+	if cl.Spec.Strategy == "" {
+		cl.Spec.Strategy = "1"
 	}
 
-	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
+		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
 	}
 
@@ -195,38 +183,39 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 
 }
 
+// AddUpgradeBase ...
 func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string, cl *crv1.Pgcluster) error {
 	var err error
 
 	//get the strategy to use
-	if cl.Spec.STRATEGY == "" {
-		cl.Spec.STRATEGY = "1"
+	if cl.Spec.Strategy == "" {
+		cl.Spec.Strategy = "1"
 		log.Info("using default cluster strategy")
 	}
 
-	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster upgrade" + cl.Spec.STRATEGY)
+		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
 		return err
 	}
 
 	//invoke the strategy
-	if upgrade.Spec.UPGRADE_TYPE == "minor" {
+	if upgrade.Spec.UpgradeType == "minor" {
 		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
 		if err == nil {
-			err = util.Patch(client, "/spec/upgradestatus", crv1.UPGRADE_COMPLETED_STATUS, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
+			err = util.Patch(client, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
 		}
-	} else if upgrade.Spec.UPGRADE_TYPE == "major" {
+	} else if upgrade.Spec.UpgradeType == "major" {
 		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
 	} else {
-		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UPGRADE_TYPE)
+		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UpgradeType)
 		return err
 	}
 	if err == nil {
 		log.Info("updating the pg version after cluster upgrade")
-		fullVersion := upgrade.Spec.CCP_IMAGE_TAG
+		fullVersion := upgrade.Spec.CCPImageTag
 		err = util.Patch(client, "/spec/ccpimagetag", fullVersion, crv1.PgclusterResourcePlural, upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err.Error())
@@ -237,18 +226,19 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 
 }
 
+// ScaleCluster ...
 func ScaleCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, oldcluster *crv1.Pgcluster, namespace string) {
 
 	//log.Debug("updateCluster on pgcluster called..something changed")
 
-	if oldcluster.Spec.REPLICAS != cl.Spec.REPLICAS {
-		log.Debug("detected change to REPLICAS for " + cl.Spec.Name + " from " + oldcluster.Spec.REPLICAS + " to " + cl.Spec.REPLICAS)
-		oldCount, err := strconv.Atoi(oldcluster.Spec.REPLICAS)
+	if oldcluster.Spec.Replicas != cl.Spec.Replicas {
+		log.Debug("detected change to Replicas for " + cl.Spec.Name + " from " + oldcluster.Spec.Replicas + " to " + cl.Spec.Replicas)
+		oldCount, err := strconv.Atoi(oldcluster.Spec.Replicas)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		newCount, err := strconv.Atoi(cl.Spec.REPLICAS)
+		newCount, err := strconv.Atoi(cl.Spec.Replicas)
 		if err != nil {
 			log.Error(err)
 			return
@@ -268,6 +258,7 @@ func ScaleCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *
 
 }
 
+// ScaleReplicasBase ...
 func ScaleReplicasBase(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, newReplicas int, namespace string) {
 
 	//create the service if it doesn't exist
@@ -284,16 +275,16 @@ func ScaleReplicasBase(serviceName string, clientset *kubernetes.Clientset, cl *
 	}
 
 	//get the strategy to use
-	if cl.Spec.STRATEGY == "" {
-		cl.Spec.STRATEGY = "1"
+	if cl.Spec.Strategy == "" {
+		cl.Spec.Strategy = "1"
 		log.Info("using default cluster strategy")
 	}
 
-	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster upgrade" + cl.Spec.STRATEGY)
+		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
 		return
 	}
 
@@ -314,6 +305,7 @@ func ScaleReplicasBase(serviceName string, clientset *kubernetes.Clientset, cl *
 	}
 }
 
+// RandStringBytesRmndr ...
 func RandStringBytesRmndr(n int) string {
 	b := make([]byte, n)
 	for i := range b {

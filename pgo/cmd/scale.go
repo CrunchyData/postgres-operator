@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +15,6 @@
  limitations under the License.
 */
 
-package cmd
-
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -24,6 +24,7 @@ import (
 	"strconv"
 )
 
+// ReplicaCount is the replica flag value
 var ReplicaCount int
 
 var scaleCmd = &cobra.Command{

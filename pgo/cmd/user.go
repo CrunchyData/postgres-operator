@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,28 +15,24 @@
  limitations under the License.
 */
 
-package cmd
-
 import (
 	"database/sql"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/util"
+	//libpq uses this blank import
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"os"
 	"strconv"
 	"time"
-	//"io/ioutil"
-	//kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"os/user"
-	//"strings"
 )
 
+// ConnInfo ....
 type ConnInfo struct {
 	Username string
 	Hostip   string
@@ -42,24 +40,48 @@ type ConnInfo struct {
 	Database string
 	Password string
 }
+
+// PswResult ...
 type PswResult struct {
 	Rolname       string
 	Rolvaliduntil string
 	ConnDetails   ConnInfo
 }
 
-const DEFAULT_AGE_DAYS = 365
-const DEFAULT_PSW_LEN = 8
+// DefaultAgeDays password age length
+const DefaultAgeDays = 365
 
-var PasswordAgeDays, PasswordLength int
+// DefaultPswLen password length
+const DefaultPswLen = 8
 
+// PasswordAgeDays password age flag
+var PasswordAgeDays int
+
+// PasswordLength password age flag
+var PasswordLength int
+
+// ChangePasswordForUser change password flag
 var ChangePasswordForUser string
+
+// DeleteUser delete user flag
 var DeleteUser string
+
+// ValidDays valid days flag
 var ValidDays string
+
+// UserDBAccess user db access flag
 var UserDBAccess string
+
+// AddUser add user flag
 var AddUser string
+
+// Expired expired flag
 var Expired string
+
+// UpdatePasswords update passwords flag
 var UpdatePasswords bool
+
+// ManagedUser managed user flag
 var ManagedUser bool
 
 var userCmd = &cobra.Command{
@@ -95,6 +117,7 @@ func init() {
 
 }
 
+// userManager ...
 func userManager() {
 	//build the selector based on the selector parameter
 
@@ -198,6 +221,7 @@ func userManager() {
 
 }
 
+// callDB ...
 func callDB(info ConnInfo, clusterName, maxdays string) []PswResult {
 	var conn *sql.DB
 	var err error
@@ -247,6 +271,7 @@ func callDB(info ConnInfo, clusterName, maxdays string) []PswResult {
 
 }
 
+// updatePassword ...
 func updatePassword(clusterName string, p ConnInfo, username, newPassword, passwordExpireDate string) error {
 	var err error
 	var conn *sql.DB
@@ -292,6 +317,7 @@ func updatePassword(clusterName string, p ConnInfo, username, newPassword, passw
 	return err
 }
 
+// GeneratePasswordExpireDate ...
 func GeneratePasswordExpireDate(daysFromNow int) string {
 
 	now := time.Now()
@@ -302,16 +328,17 @@ func GeneratePasswordExpireDate(daysFromNow int) string {
 
 }
 
+// getDefaults ....
 func getDefaults() {
-	PasswordAgeDays = DEFAULT_AGE_DAYS
-	PasswordLength = DEFAULT_PSW_LEN
-	str := viper.GetString("CLUSTER.PASSWORD_AGE_DAYS")
+	PasswordAgeDays = DefaultAgeDays
+	PasswordLength = DefaultPswLen
+	str := viper.GetString("Cluster.PasswordAgeDays")
 	if str != "" {
 		PasswordAgeDays, _ = strconv.Atoi(str)
 		log.Debugf("PasswordAgeDays set to %d\n", PasswordAgeDays)
 
 	}
-	str = viper.GetString("CLUSTER.PASSWORD_LENGTH")
+	str = viper.GetString("Cluster.PasswordLength")
 	if str != "" {
 		PasswordLength, _ = strconv.Atoi(str)
 		log.Debugf("PasswordLength set to %d\n", PasswordLength)
@@ -319,6 +346,7 @@ func getDefaults() {
 
 }
 
+// getPostgresUserInfo...
 func getPostgresUserInfo(clusterName string) ConnInfo {
 	info := ConnInfo{}
 
@@ -363,6 +391,7 @@ func getPostgresUserInfo(clusterName string) ConnInfo {
 	return info
 }
 
+// addUser ...
 func addUser(clusterName string, info ConnInfo, newUser string) {
 	var conn *sql.DB
 	var err error
@@ -412,6 +441,8 @@ func addUser(clusterName string, info ConnInfo, newUser string) {
 	}
 
 }
+
+// deleteUser ...
 func deleteUser(clusterName string, info ConnInfo, user string) {
 	var conn *sql.DB
 	var err error

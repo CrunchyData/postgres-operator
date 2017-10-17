@@ -17,20 +17,20 @@
                 "volumes": [{
                     "name": "pgolddata",
                     "persistentVolumeClaim": {
-                        "claimName": "{{.OLD_PVC_NAME}}"
+                        "claimName": "{{.OldPVCName}}"
                     }
                 }, {
                     "name": "pgnewdata",
                     "persistentVolumeClaim": {
-                        "claimName": "{{.NEW_PVC_NAME}}"
+                        "claimName": "{{.NewPVCName}}"
                     }
                 }],
 
-		{{.SECURITY_CONTEXT}}
+		{{.SecurityContext}}
 
                 "containers": [{
                     "name": "upgrade",
-                    "image": "crunchydata/crunchy-upgrade:{{.CCP_IMAGE_TAG}}",
+                    "image": "crunchydata/crunchy-upgrade:{{.CCPImageTag}}",
                     "volumeMounts": [{
                         "mountPath": "/pgolddata",
                         "name": "pgolddata",
@@ -42,16 +42,16 @@
                     }],
                     "env": [{
                         "name": "OLD_DATABASE_NAME",
-                        "value": "{{.OLD_DATABASE_NAME}}"
+                        "value": "{{.OldDatabaseName}}"
                     }, {
                         "name": "NEW_DATABASE_NAME",
-                        "value": "{{.NEW_DATABASE_NAME}}"
+                        "value": "{{.NewDatabaseName}}"
                     }, {
                         "name": "OLD_VERSION",
-                        "value": "{{.OLD_VERSION}}"
+                        "value": "{{.OldVersion}}"
                     }, {
                         "name": "NEW_VERSION",
-                        "value": "{{.NEW_VERSION}}"
+                        "value": "{{.NewVersion}}"
                     }]
                 }],
                 "restartPolicy": "Never"

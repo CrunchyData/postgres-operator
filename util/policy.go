@@ -1,3 +1,5 @@
+package util
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +15,6 @@
  limitations under the License.
 */
 
-package util
-
 import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,7 +29,7 @@ import (
 	"net/http"
 )
 
-// execute a sql policy against a cluster
+// ExecPolicy execute a sql policy against a cluster
 func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace string, policyName string, clusterName string) error {
 	//fetch the policy sql
 	sqlString, err := GetPolicySQL(restclient, namespace, policyName)
@@ -61,6 +61,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 
 }
 
+// GetPolicySQL returns the SQL string from a policy
 func GetPolicySQL(restclient *rest.RESTClient, namespace, policyName string) (string, error) {
 	p := crv1.Pgpolicy{}
 	err := restclient.Get().
@@ -70,40 +71,38 @@ func GetPolicySQL(restclient *rest.RESTClient, namespace, policyName string) (st
 		Do().
 		Into(&p)
 	if err == nil {
-		if p.Spec.Url != "" {
-			return readSQLFromURL(p.Spec.Url)
-		} else {
-			return p.Spec.Sql, err
+		if p.Spec.URL != "" {
+			return readSQLFromURL(p.Spec.URL)
 		}
-	} else if kerrors.IsNotFound(err) {
-		log.Error("getPolicySQL policy not found using " + policyName + " in namespace " + namespace)
-		return "", err
-	} else {
-		log.Error(err)
-		return "", err
+		return p.Spec.SQL, err
 	}
+
+	if kerrors.IsNotFound(err) {
+		log.Error("getPolicySQL policy not found using " + policyName + " in namespace " + namespace)
+	}
+	log.Error(err)
+	return "", err
 }
 
+// readSQLFromURL returns the SQL string from a URL
 func readSQLFromURL(urlstring string) (string, error) {
 	var bodyBytes []byte
 	response, err := http.Get(urlstring)
+	if err == nil {
+		bodyBytes, err = ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+	}
+
 	if err != nil {
 		log.Error(err)
 		return "", err
-	} else {
-		bodyBytes, err = ioutil.ReadAll(response.Body)
-		if err != nil {
-			log.Error(err)
-			return "", err
-		}
-
-		defer response.Body.Close()
 	}
 
 	return string(bodyBytes), err
 
 }
 
+// ValidatePolicy tests to see if a policy exists
 func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName string) error {
 	result := crv1.Pgpolicy{}
 	err := restclient.Get().

@@ -1,3 +1,6 @@
+// Package cmd provides the command line functions of the crunchy CLI
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +15,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-// Package cmd provides the command line functions of the crunchy CLI
-package cmd
 
 import (
 	"fmt"
@@ -51,6 +51,7 @@ func init() {
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 }
 
+// showBackup ....
 func showBackup(args []string) {
 	log.Debugf("showBackup called %v\n", args)
 
@@ -79,9 +80,11 @@ func showBackup(args []string) {
 	}
 
 }
+
+// showBackupInfo ...
 func showBackupInfo(name string) {
 	fmt.Println("\nbackup information for " + name + "...")
-	//print the pgbackups TPR if it exists
+	//print the pgbackups CRD if it exists
 	result := crv1.Pgbackup{}
 	err := RestClient.Get().
 		Resource(crv1.PgbackupResourcePlural).
@@ -90,9 +93,9 @@ func showBackupInfo(name string) {
 		Do().
 		Into(&result)
 	if err == nil {
-		printBackupTPR(&result)
+		printBackupCRD(&result)
 	} else if errors.IsNotFound(err) {
-		fmt.Println("\npgbackup TPR not found ")
+		fmt.Println("\npgbackup CRD not found ")
 	} else {
 		log.Errorf("\npgbackup %s\n", name+" lookup error ")
 		log.Error(err.Error())
@@ -115,7 +118,7 @@ func showBackupInfo(name string) {
 		//get the pgdata volume info
 		for _, v := range p.Spec.Volumes {
 			if v.Name == "pgdata" {
-				fmt.Printf("%s%s (pvc %s)\n\n", TREE_TRUNK, p.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+				fmt.Printf("%s%s (pvc %s)\n\n", TreeTrunk, p.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
 				pvcMap[v.VolumeSource.PersistentVolumeClaim.ClaimName] = v.VolumeSource.PersistentVolumeClaim.ClaimName
 			}
 		}
@@ -133,22 +136,24 @@ func showBackupInfo(name string) {
 	}
 }
 
-func printBackupTPR(result *crv1.Pgbackup) {
+// printBackupCRD ...
+func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Name:\t"+result.Spec.StorageSpec.PvcName)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Access Mode:\t"+result.Spec.StorageSpec.PvcAccessMode)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "PVC Size:\t\t"+result.Spec.StorageSpec.PvcSize)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "CCP_IMAGE_TAG:\t"+result.Spec.CCP_IMAGE_TAG)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Status:\t"+result.Spec.BACKUP_STATUS)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Host:\t"+result.Spec.BACKUP_HOST)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup User:\t"+result.Spec.BACKUP_USER)
-	fmt.Printf("%s%s\n", TREE_BRANCH, "Backup Pass:\t"+result.Spec.BACKUP_PASS)
-	fmt.Printf("%s%s\n", TREE_TRUNK, "Backup Port:\t"+result.Spec.BACKUP_PORT)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup User:\t"+result.Spec.BackupUser)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Pass:\t"+result.Spec.BackupPass)
+	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }
 
+// createBackup ...
 func createBackup(args []string) {
 	log.Debugf("createBackup called %v\n", args)
 
@@ -213,7 +218,7 @@ func createBackup(args []string) {
 			log.Error(err.Error())
 			break
 		}
-		// Create an instance of our TPR
+		// Create an instance of our CRD
 		newInstance, err = getBackupParams(arg)
 		if err != nil {
 			log.Error("error creating backup")
@@ -226,7 +231,7 @@ func createBackup(args []string) {
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
-			log.Error("error in creating Pgbackup TPR instance")
+			log.Error("error in creating Pgbackup CRD instance")
 			log.Error(err.Error())
 		}
 		fmt.Println("created Pgbackup " + arg)
@@ -235,6 +240,7 @@ func createBackup(args []string) {
 
 }
 
+// deleteBackup ....
 func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 	var err error
@@ -274,6 +280,7 @@ func deleteBackup(args []string) {
 
 }
 
+// getBackupParams ...
 func getBackupParams(name string) (*crv1.Pgbackup, error) {
 	var newInstance *crv1.Pgbackup
 
@@ -281,19 +288,19 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 	spec := crv1.PgbackupSpec{}
 	spec.Name = name
 	spec.StorageSpec = storageSpec
-	spec.StorageSpec.PvcName = viper.GetString("BACKUP_STORAGE.PVC_NAME")
-	spec.StorageSpec.PvcAccessMode = viper.GetString("BACKUP_STORAGE.PVC_ACCESS_MODE")
-	spec.StorageSpec.PvcSize = viper.GetString("BACKUP_STORAGE.PVC_SIZE")
-	spec.StorageSpec.StorageClass = viper.GetString("BACKUP_STORAGE.STORAGE_CLASS")
-	spec.StorageSpec.StorageType = viper.GetString("BACKUP_STORAGE.STORAGE_TYPE")
-	spec.StorageSpec.SUPPLEMENTAL_GROUPS = viper.GetString("BACKUP_STORAGE.SUPPLEMENTAL_GROUPS")
-	spec.StorageSpec.FSGROUP = viper.GetString("BACKUP_STORAGE.FSGROUP")
-	spec.CCP_IMAGE_TAG = viper.GetString("CLUSTER.CCP_IMAGE_TAG")
-	spec.BACKUP_STATUS = "initial"
-	spec.BACKUP_HOST = "basic"
-	spec.BACKUP_USER = "master"
-	spec.BACKUP_PASS = "password"
-	spec.BACKUP_PORT = "5432"
+	spec.StorageSpec.Name = viper.GetString("BackupStorage.Name")
+	spec.StorageSpec.AccessMode = viper.GetString("BackupStorage.AccessMode")
+	spec.StorageSpec.Size = viper.GetString("BackupStorage.Size")
+	spec.StorageSpec.StorageClass = viper.GetString("BackupStorage.StorageClass")
+	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageType")
+	spec.StorageSpec.SupplementalGroups = viper.GetString("BackupStorage.SupplementalGroups")
+	spec.StorageSpec.Fsgroup = viper.GetString("BackupStorage.Fsgroup")
+	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
+	spec.BackupStatus = "initial"
+	spec.BackupHost = "basic"
+	spec.BackupUser = "primary"
+	spec.BackupPass = "password"
+	spec.BackupPort = "5432"
 
 	cluster := crv1.Pgcluster{}
 	err := RestClient.Get().
@@ -303,11 +310,9 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 		Do().
 		Into(&cluster)
 	if err == nil {
-		spec.BACKUP_HOST = cluster.Spec.Name
-		//spec.BACKUP_USER = cluster.Spec.PG_MASTER_USER
-		//spec.BACKUP_PASS = cluster.Spec.PG_MASTER_PASSWORD
-		spec.BACKUP_PASS = GetSecretPassword(cluster.Spec.Name, crv1.PGMASTER_SECRET_SUFFIX)
-		spec.BACKUP_PORT = cluster.Spec.Port
+		spec.BackupHost = cluster.Spec.Name
+		spec.BackupPass = GetSecretPassword(cluster.Spec.Name, crv1.PrimarySecretSuffix)
+		spec.BackupPort = cluster.Spec.Port
 	} else if errors.IsNotFound(err) {
 		log.Debug(name + " is not a cluster")
 		return newInstance, err
@@ -326,9 +331,10 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 	return newInstance, nil
 }
 
+// PodTemplateFields ...
 type PodTemplateFields struct {
-	Name         string
-	CO_IMAGE_TAG string
-	BACKUP_ROOT  string
-	PVC_NAME     string
+	Name       string
+	COImageTag string
+	BackupRoot string
+	PVCName    string
 }

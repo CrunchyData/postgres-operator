@@ -1,3 +1,5 @@
+package v1
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +15,14 @@
  limitations under the License.
 */
 
-package v1
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PgpolicylogResourcePlural ...
 const PgpolicylogResourcePlural = "pgpolicylogs"
 
+// PgpolicylogSpec ...
 type PgpolicylogSpec struct {
 	PolicyName  string `json:"policyname"`
 	Status      string `json:"status"`
@@ -29,7 +31,7 @@ type PgpolicylogSpec struct {
 	Username    string `json:"username"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// Pgpolicylog ...
 type Pgpolicylog struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -38,7 +40,7 @@ type Pgpolicylog struct {
 	Status PgpolicylogStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// PgpolicylogList ...
 type PgpolicylogList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -46,14 +48,18 @@ type PgpolicylogList struct {
 	Items []Pgpolicylog `json:"items"`
 }
 
+// PgpolicylogStatus ...
 type PgpolicylogStatus struct {
 	State   PgpolicylogState `json:"state,omitempty"`
 	Message string           `json:"message,omitempty"`
 }
 
+// PgpolicylogState ...
 type PgpolicylogState string
 
 const (
-	PgpolicylogStateCreated   PgpolicylogState = "Created"
+	// PgpolicylogStateCreated ...
+	PgpolicylogStateCreated PgpolicylogState = "Created"
+	// PgpolicylogStateProcessed ...
 	PgpolicylogStateProcessed PgpolicylogState = "Processed"
 )

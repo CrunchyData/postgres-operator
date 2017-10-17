@@ -1,5 +1,20 @@
 package controller
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"context"
 	"fmt"
@@ -15,7 +30,7 @@ import (
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 )
 
-// Watcher is an backup of watching on resource create/update/delete events
+// PgbackupController holds connections required by the controller
 type PgbackupController struct {
 	PgbackupClient    *rest.RESTClient
 	PgbackupScheme    *runtime.Scheme
@@ -36,6 +51,7 @@ func (c *PgbackupController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// watchPgbackups will watch events for the pgbackups
 func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		c.PgbackupClient,
@@ -65,6 +81,7 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 	return controller, nil
 }
 
+// onAdd is called when a pgbackup is added
 func (c *PgbackupController) onAdd(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
 	fmt.Printf("[PgbackupCONTROLLER] OnAdd %s\n", backup.ObjectMeta.SelfLink)
@@ -105,6 +122,7 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backupCopy, backup.ObjectMeta.Namespace)
 }
 
+// onUpdate is called when a pgbackup is updated
 func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
 	//oldExample := oldObj.(*crv1.Pgbackup)
 	//newExample := newObj.(*crv1.Pgbackup)
@@ -112,6 +130,7 @@ func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
 	//fmt.Printf("[PgbackupCONTROLLER] OnUpdate newObj: %s\n", newExample.ObjectMeta.SelfLink)
 }
 
+// onDelete is called when a pgbackup is deleted
 func (c *PgbackupController) onDelete(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
 	fmt.Printf("[PgbackupCONTROLLER] OnDelete %s\n", backup.ObjectMeta.SelfLink)

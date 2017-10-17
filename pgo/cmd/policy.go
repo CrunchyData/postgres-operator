@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +14,10 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-package cmd
 
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//"github.com/crunchydata/postgres-operator/util"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/util"
 
@@ -56,9 +56,9 @@ func showPolicy(args []string) {
 				itemFound = true
 				log.Debug("listing policy " + arg)
 				fmt.Println("policy : " + policy.Spec.Name)
-				fmt.Println(TREE_BRANCH + "url : " + policy.Spec.Url)
-				fmt.Println(TREE_BRANCH + "status : " + policy.Spec.Status)
-				fmt.Println(TREE_TRUNK + "sql : " + policy.Spec.Sql)
+				fmt.Println(TreeBranch + "url : " + policy.Spec.URL)
+				fmt.Println(TreeBranch + "status : " + policy.Spec.Status)
+				fmt.Println(TreeTrunk + "sql : " + policy.Spec.SQL)
 			}
 		}
 		if !itemFound {
@@ -123,10 +123,10 @@ func getPolicyParams(name string) (*crv1.Pgpolicy, error) {
 	spec.Name = name
 
 	if PolicyURL != "" {
-		spec.Url = PolicyURL
+		spec.URL = PolicyURL
 	}
 	if PolicyFile != "" {
-		spec.Sql, err = getPolicyString(PolicyFile)
+		spec.SQL, err = getPolicyString(PolicyFile)
 
 		if err != nil {
 			return &crv1.Pgpolicy{}, err
@@ -195,7 +195,7 @@ func validateConfigPolicies() error {
 	var err error
 	var configPolicies string
 	if PoliciesFlag == "" {
-		configPolicies = viper.GetString("CLUSTER.POLICIES")
+		configPolicies = viper.GetString("Cluster.Policies")
 	} else {
 		configPolicies = PoliciesFlag
 	}

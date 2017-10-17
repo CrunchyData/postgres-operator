@@ -2,18 +2,18 @@
     "kind": "PersistentVolumeClaim",
     "apiVersion": "v1",
     "metadata": {
-        "name": "{{.PVC_NAME}}",
+        "name": "{{.PVCName}}",
         "labels": {
             "pgremove": "true"
         }
     },
     "spec": {
         "accessModes": [
-            "{{.PVC_ACCESS_MODE}}"
+            "{{.PVCAccessMode}}"
         ],
         "resources": {
             "requests": {
-                "storage": "{{.PVC_SIZE}}"
+                "storage": "{{.PVCSize}}"
             }
         }
     }

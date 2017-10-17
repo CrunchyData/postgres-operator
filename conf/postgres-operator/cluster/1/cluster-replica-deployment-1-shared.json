@@ -5,32 +5,32 @@
         "name": "{{.Name}}"
     },
     "spec": {
-        "replicas": {{.REPLICAS}},
+        "replicas": {{.Replicas}},
         "template": {
             "metadata": {
                 "labels": {
-	        {{.OPERATOR_LABELS}}
+	        {{.OperatorLabels}}
                 }
             },
             "spec": {
 
-	    	{{.SECURITY_CONTEXT}}
+	    	{{.SecurityContext}}
 
                 "containers": [{
                     "name": "database",
-                    "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG}}",
+                    "image": "crunchydata/crunchy-postgres:{{.CCPImageTag}}",
                     "env": [{
-                        "name": "PG_MASTER_PORT",
+                        "name": "PG_PRIMARY_PORT",
                         "value": "{{.Port}}"
                     }, {
-                        "name": "PG_MASTER_HOST",
-                        "value": "{{.PG_MASTER_HOST}}"
+                        "name": "PG_PRIMARY_HOST",
+                        "value": "{{.PgPrimaryHost}}"
                     }, {
                         "name": "PG_MODE",
                         "value": "slave"
                     }, {
                         "name": "PG_DATABASE",
-                        "value": "{{.PG_DATABASE}}"
+                        "value": "{{.PgDatabase}}"
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
@@ -44,8 +44,8 @@
 			"mountPath": "/pguser",
 			"name": "pguser-volume"
 			}, {
-			"mountPath": "/pgmaster",
-			"name": "pgmaster-volume"
+			"mountPath": "/pgprimary",
+			"name": "pgprimary-volume"
 			}, {
 			"mountPath": "/pgroot",
 			"name": "pgroot-volume"
@@ -63,27 +63,27 @@
 		{
                     "name": "pgdata",
             		"persistentVolumeClaim": {
-                		"claimName": "{{.PVC_NAME}}"
+                		"claimName": "{{.PVCName}}"
             		}
                 }, {
 		  	"name": "pguser-volume",
 			"secret": {
-			"secretName": "{{.PGUSER_SECRET_NAME}}"
+			"secretName": "{{.PguserSecretName}}"
 			}
 		}, {
-			"name": "pgmaster-volume",
+			"name": "pgprimary-volume",
 			"secret": {
-			"secretName": "{{.PGMASTER_SECRET_NAME}}"
+			"secretName": "{{.PgPrimarySecretName}}"
 			}
 		}, {
 			"name": "pgroot-volume",
 			"secret": {
-			"secretName": "{{.PGROOT_SECRET_NAME}}"
+			"secretName": "{{.PgRootSecretName}}"
 			}
 		}
 		],
 
-		{{.NODE_SELECTOR}}
+		{{.NodeSelector}}
 
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"

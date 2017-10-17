@@ -1,5 +1,20 @@
 package controller
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"context"
 	"fmt"
@@ -17,18 +32,17 @@ import (
 	policylogoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
-// Watcher is an policylog of watching on resource create/update/delete events
+// PgpolicylogController holds connections for the controller
 type PgpolicylogController struct {
 	PgpolicylogClientset *kubernetes.Clientset
 	PgpolicylogClient    *rest.RESTClient
 	PgpolicylogScheme    *runtime.Scheme
 }
 
-// Run starts an Example resource controller
+// Run starts an pgpolicylog resource controller
 func (c *PgpolicylogController) Run(ctx context.Context) error {
 	fmt.Print("Watch Pgpolicylog objects\n")
 
-	// Watch Example objects
 	_, err := c.watchPgpolicylogs(ctx)
 	if err != nil {
 		fmt.Printf("Failed to register watch for Pgpolicylog resource: %v\n", err)
@@ -39,6 +53,7 @@ func (c *PgpolicylogController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// watchPgpolicylogs is an event loop for the pgpolicylogs resources
 func (c *PgpolicylogController) watchPgpolicylogs(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		c.PgpolicylogClient,
@@ -68,6 +83,7 @@ func (c *PgpolicylogController) watchPgpolicylogs(ctx context.Context) (cache.Co
 	return controller, nil
 }
 
+// onAdd is called when a pgpolicylog is added
 func (c *PgpolicylogController) onAdd(obj interface{}) {
 	policylog := obj.(*crv1.Pgpolicylog)
 	fmt.Printf("[PgpolicylogCONTROLLER] OnAdd %s\n", policylog.ObjectMeta.SelfLink)
@@ -108,13 +124,11 @@ func (c *PgpolicylogController) onAdd(obj interface{}) {
 	policylogoperator.AddPolicylog(c.PgpolicylogClientset, c.PgpolicylogClient, policylogCopy, policylog.ObjectMeta.Namespace)
 }
 
+// onUpdate is called when a pgpolicylog is updated
 func (c *PgpolicylogController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgpolicylog)
-	//newExample := newObj.(*crv1.Pgpolicylog)
-	//fmt.Printf("[PgpolicylogCONTROLLER] OnUpdate oldObj: %s\n", oldExample.ObjectMeta.SelfLink)
-	//fmt.Printf("[PgpolicylogCONTROLLER] OnUpdate newObj: %s\n", newExample.ObjectMeta.SelfLink)
 }
 
+// onDelete is called when a pgpolicylog is deleted
 func (c *PgpolicylogController) onDelete(obj interface{}) {
 	policylog := obj.(*crv1.Pgpolicylog)
 	fmt.Printf("[PgpolicylogCONTROLLER] OnDelete %s\n", policylog.ObjectMeta.SelfLink)

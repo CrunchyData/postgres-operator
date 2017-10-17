@@ -1,3 +1,5 @@
+package v1
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +15,14 @@
  limitations under the License.
 */
 
-package v1
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PgclusterResourcePlural ..
 const PgclusterResourcePlural = "pgclusters"
 
+// Pgcluster ..
 type Pgcluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -28,37 +30,37 @@ type Pgcluster struct {
 	Status            PgclusterStatus `json:"status,omitempty"`
 }
 
-//anonymous struct field usage somecluster.metav1.ObjectMeta = foo
-
+// PgclusterSpec ...
 type PgclusterSpec struct {
-	Name                 string            `json:"name"`
-	ClusterName          string            `json:"clustername"`
-	Policies             string            `json:"policies"`
-	CCP_IMAGE_TAG        string            `json:"ccpimagetag"`
-	Port                 string            `json:"port"`
-	NodeName             string            `json:"nodename"`
-	MasterStorage        PgStorageSpec     `json:masterstorage`
-	ReplicaStorage       PgStorageSpec     `json:replicastorage`
-	PG_MASTER_HOST       string            `json:"pgmasterhost"`
-	PG_MASTER_USER       string            `json:"pgmasteruser"`
-	PG_MASTER_PASSWORD   string            `json:"pgmasterpassword"`
-	PG_USER              string            `json:"pguser"`
-	PG_PASSWORD          string            `json:"pgpassword"`
-	PG_DATABASE          string            `json:"pgdatabase"`
-	PG_ROOT_PASSWORD     string            `json:"pgrootpassword"`
-	REPLICAS             string            `json:"replicas"`
-	STRATEGY             string            `json:"strategy"`
-	SECRET_FROM          string            `json:"secretfrom"`
-	BACKUP_PVC_NAME      string            `json:"backuppvcname"`
-	BACKUP_PATH          string            `json:"backuppath"`
-	PGUSER_SECRET_NAME   string            `json:"pgusersecretname"`
-	PGROOT_SECRET_NAME   string            `json:"pgrootsecretname"`
-	PGMASTER_SECRET_NAME string            `json:"pgmastersecretname"`
-	STATUS               string            `json:"status"`
-	PSW_LAST_UPDATE      string            `json:"pswlastupdate"`
-	UserLabels           map[string]string `json:"userlabels"`
+	Name              string            `json:"name"`
+	ClusterName       string            `json:"clustername"`
+	Policies          string            `json:"policies"`
+	CCPImageTag       string            `json:"ccpimagetag"`
+	Port              string            `json:"port"`
+	NodeName          string            `json:"nodename"`
+	PrimaryStorage    PgStorageSpec     `json:primarystorage`
+	ReplicaStorage    PgStorageSpec     `json:replicastorage`
+	PrimaryHost       string            `json:"primaryhost"`
+	PrimaryUser       string            `json:"primaryuser"`
+	PrimaryPassword   string            `json:"primarypassword"`
+	User              string            `json:"user"`
+	Password          string            `json:"password"`
+	Database          string            `json:"database"`
+	RootPassword      string            `json:"rootpassword"`
+	Replicas          string            `json:"replicas"`
+	Strategy          string            `json:"strategy"`
+	SecretFrom        string            `json:"secretfrom"`
+	BackupPVCName     string            `json:"backuppvcname"`
+	BackupPath        string            `json:"backuppath"`
+	UserSecretName    string            `json:"usersecretname"`
+	RootSecretName    string            `json:"rootsecretname"`
+	PrimarySecretName string            `json:"primarysecretname"`
+	Status            string            `json:"status"`
+	PswLastUpdate     string            `json:"pswlastupdate"`
+	UserLabels        map[string]string `json:"userlabels"`
 }
 
+// PgclusterList ...
 type PgclusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -66,14 +68,18 @@ type PgclusterList struct {
 	Items []Pgcluster `json:"items"`
 }
 
+// PgclusterStatus ...
 type PgclusterStatus struct {
 	State   PgclusterState `json:"state,omitempty"`
 	Message string         `json:"message,omitempty"`
 }
 
+// PgclusterState ...
 type PgclusterState string
 
 const (
-	PgclusterStateCreated   PgclusterState = "Created"
+	// PgclusterStateCreated ...
+	PgclusterStateCreated PgclusterState = "Created"
+	// PgclusterStateProcessed ...
 	PgclusterStateProcessed PgclusterState = "Processed"
 )

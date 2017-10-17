@@ -1,3 +1,5 @@
+package v1
+
 /*
 Copyright 2017 The Kubernetes Authors.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
-
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,8 +23,10 @@ import (
 )
 
 var (
+	// SchemeBuilder ...
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	// AddToScheme ...
+	AddToScheme = SchemeBuilder.AddToScheme
 )
 
 // GroupName is the group name used in this package.
@@ -41,8 +43,6 @@ func Resource(resource string) schema.GroupResource {
 // addKnownTypes adds the set of types defined in this package to the supplied scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Example{},
-		&ExampleList{},
 		&Pgcluster{},
 		&PgclusterList{},
 		&Pgupgrade{},

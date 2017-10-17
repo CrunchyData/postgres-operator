@@ -1,5 +1,20 @@
 package controller
 
+/*
+Copyright 2017 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"context"
 	"fmt"
@@ -12,17 +27,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//policycontroller "github.com/crunchydata/postgres-operator/operator/policy"
 )
 
-// Watcher is an policy of watching on resource create/update/delete events
+// PgpolicyController holds connections for the controller
 type PgpolicyController struct {
 	PgpolicyClient    *rest.RESTClient
 	PgpolicyScheme    *runtime.Scheme
 	PgpolicyClientset *kubernetes.Clientset
 }
 
-// Run starts an Example resource controller
+// Run starts an pgpolicy resource controller
 func (c *PgpolicyController) Run(ctx context.Context) error {
 	fmt.Print("Watch Pgpolicy objects\n")
 
@@ -37,6 +51,7 @@ func (c *PgpolicyController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
+// watchPgpolicys watches the pgpolicy resource catching events
 func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		c.PgpolicyClient,
@@ -66,6 +81,7 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 	return controller, nil
 }
 
+// onAdd is called when a pgpolicy is added
 func (c *PgpolicyController) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
 	fmt.Printf("[PgpolicyCONTROLLER] OnAdd %s\n", policy.ObjectMeta.SelfLink)
@@ -102,16 +118,13 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 	} else {
 		fmt.Printf("UPDATED status: %#v\n", policyCopy)
 	}
-	//policyoperator.AddPolicyBase(c.PgpolicyClientset, c.PgpolicyClient, policyCopy, policy.ObjectMeta.Namespace)
 }
 
+// onUpdate is called when a pgpolicy is updated
 func (c *PgpolicyController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgpolicy)
-	//newExample := newObj.(*crv1.Pgpolicy)
-	//fmt.Printf("[PgpolicyCONTROLLER] OnUpdate oldObj: %s\n", oldExample.ObjectMeta.SelfLink)
-	//fmt.Printf("[PgpolicyCONTROLLER] OnUpdate newObj: %s\n", newExample.ObjectMeta.SelfLink)
 }
 
+// onDelete is called when a pgpolicy is deleted
 func (c *PgpolicyController) onDelete(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
 	fmt.Printf("[PgpolicyCONTROLLER] OnDelete %s\n", policy.ObjectMeta.SelfLink)

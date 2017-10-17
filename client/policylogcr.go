@@ -1,3 +1,5 @@
+package client
+
 /*
 Copyright 2017 The Kubernetes Authors.
 
@@ -13,8 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package client
 
 import (
 	"fmt"
@@ -35,6 +35,7 @@ import (
 
 const policylogCRDName = crv1.PgpolicylogResourcePlural + "." + crv1.GroupName
 
+// PgpolicylogCreateCustomResourceDefinition creates the pgpolicylog CRD
 func PgpolicylogCreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
@@ -85,6 +86,7 @@ func PgpolicylogCreateCustomResourceDefinition(clientset apiextensionsclient.Int
 	return crd, nil
 }
 
+// WaitForPgpolicylogInstanceProcessed waits for the pgpolicylog to be processed
 func WaitForPgpolicylogInstanceProcessed(exampleClient *rest.RESTClient, name string) error {
 	return wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 		var policylog crv1.Pgpolicylog

@@ -1,3 +1,5 @@
+package cmd
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +14,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
-package cmd
 
 import (
 	"fmt"
@@ -162,7 +162,7 @@ func addLabels(items []crv1.Pgcluster) {
 
 		for _, d := range deployments.Items {
 			//update Deployment with the label
-			//fmt.Println(TREE_BRANCH + "deployment : " + d.ObjectMeta.Name)
+			//fmt.Println(TreeBranch + "deployment : " + d.ObjectMeta.Name)
 			if DryRun {
 			} else {
 				err := updateLabels(&d, Clientset, items[i].Spec.Name, Namespace, LabelMap)

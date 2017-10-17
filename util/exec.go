@@ -1,3 +1,5 @@
+package util
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +15,6 @@
  limitations under the License.
 */
 
-package util
-
 import (
 	"bytes"
 	"fmt"
@@ -22,19 +22,20 @@ import (
 	"github.com/gorilla/websocket"
 	"io"
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"net/url"
 )
 
+// RoundTripCallback ...
 type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
 
+// WebsocketRoundTripper ...
 type WebsocketRoundTripper struct {
 	Dialer *websocket.Dialer
 	Do     RoundTripCallback
 }
 
-//execs the cmd
+// Exec execs the cmd
 func Exec(config *rest.Config, namespace, podname, containername string, cmd []string) error {
 
 	wrappedRoundTripper, err := roundTripperFromConfig(config)
@@ -61,6 +62,7 @@ func Exec(config *rest.Config, namespace, podname, containername string, cmd []s
 
 }
 
+// RoundTrip ...
 func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	conn, resp, err := d.Dialer.Dial(r.URL.String(), r.Header)
 	if err == nil {
@@ -69,6 +71,7 @@ func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, erro
 	return resp, d.Do(conn, resp, err)
 }
 
+// roundTripperFromConfig  ...
 func roundTripperFromConfig(config *rest.Config) (http.RoundTripper, error) {
 
 	// Configure TLS
@@ -93,6 +96,7 @@ func roundTripperFromConfig(config *rest.Config) (http.RoundTripper, error) {
 	return rest.HTTPWrappersForConfig(config, rt)
 }
 
+// requestFromConfig ...
 func requestFromConfig(config *rest.Config, pod string, container string, namespace string, cmd []string) (*http.Request, error) {
 
 	log.Info("config.Host is " + config.Host)
@@ -131,6 +135,7 @@ func requestFromConfig(config *rest.Config, pod string, container string, namesp
 	return req, nil
 }
 
+// WebsocketCallback ...
 func WebsocketCallback(ws *websocket.Conn, resp *http.Response, err error) error {
 
 	if err != nil {

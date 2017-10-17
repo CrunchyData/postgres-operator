@@ -1,3 +1,5 @@
+package cluster
+
 /*
  Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,31 +15,25 @@
  limitations under the License.
 */
 
-package cluster
-
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	//"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/api/core/v1"
-
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/cache"
 	"os"
 	"strings"
 	"time"
 )
 
+// ProcessPolicies ...
 func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster,master"}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster,primary"}
 	fw, err := clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())
@@ -81,6 +77,7 @@ func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 }
 
+// applyPolicies ...
 func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName string) {
 	//dep *v1beta1.Deployment
 	//get the crv1 which holds the requested labels if any
@@ -120,11 +117,11 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient
 
 	}
 
-	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY found in policy apply for " + clusterName)
+		log.Error("invalid Strategy found in policy apply for " + clusterName)
 		return
 	}
 
@@ -136,6 +133,7 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient
 	}
 }
 
+// AddPolicylog ...
 func AddPolicylog(clientset *kubernetes.Clientset, restclient *rest.RESTClient, policylog *crv1.Pgpolicylog, namespace string) {
 	policylogname := policylog.Spec.PolicyName + policylog.Spec.ClusterName
 	log.Infof("policylog added=%s\n", policylogname)
@@ -161,11 +159,11 @@ func AddPolicylog(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		return
 
 	}
-	strategy, ok := StrategyMap[cl.Spec.STRATEGY]
+	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid STRATEGY requested for cluster creation" + cl.Spec.STRATEGY)
+		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
 	}
 
@@ -178,7 +176,7 @@ func AddPolicylog(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	}
 
 	//update the policylog with applydate and status
-	err = util.Patch(restclient, "/spec/status", crv1.UPGRADE_COMPLETED_STATUS, crv1.PgpolicylogResourcePlural, policylogname, namespace)
+	err = util.Patch(restclient, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgpolicylogResourcePlural, policylogname, namespace)
 	if err != nil {
 		log.Error("error in policylog status patch " + err.Error())
 	}
@@ -191,6 +189,7 @@ func AddPolicylog(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 }
 
+// podReady ...
 func podReady(pod *v1.Pod) (bool, int32) {
 	var restartCount int32
 	readyCount := 0
@@ -209,6 +208,8 @@ func podReady(pod *v1.Pod) (bool, int32) {
 	return false, restartCount
 
 }
+
+// getClusterName ...
 func getClusterName(pod *v1.Pod) string {
 	var clusterName string
 	labels := pod.ObjectMeta.Labels
