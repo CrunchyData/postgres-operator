@@ -270,13 +270,12 @@ func getClusterParams(name string) *crv1.Pgcluster {
 	spec.BackupPath = ""
 	spec.BackupPVCName = ""
 	spec.PrimaryHost = name
-	spec.PrimaryUser = "primary"
 	if PoliciesFlag == "" {
 		spec.Policies = viper.GetString("Cluster.Policies")
 	} else {
 		spec.Policies = PoliciesFlag
 	}
-	spec.PrimaryPassword = viper.GetString("Cluster.PgPrimaryPassword")
+	spec.PrimaryPassword = viper.GetString("Cluster.PrimaryPassword")
 	spec.User = "testuser"
 	spec.Password = viper.GetString("Cluster.Password")
 	spec.Database = "userdb"
@@ -290,10 +289,6 @@ func getClusterParams(name string) *crv1.Pgcluster {
 	str := viper.GetString("Cluster.Port")
 	if str != "" {
 		spec.Port = str
-	}
-	str = viper.GetString("Cluster.PrimaryUser")
-	if str != "" {
-		spec.PrimaryUser = str
 	}
 	str = viper.GetString("Cluster.User")
 	if str != "" {

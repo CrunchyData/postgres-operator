@@ -18,13 +18,13 @@ limitations under the License.
 import ()
 
 // RootSecretSuffix ...
-const RootSecretSuffix = "-pgroot-secret"
+const RootSecretSuffix = "-root-secret"
 
 // UserSecretSuffix ...
-const UserSecretSuffix = "-pguser-secret"
+const UserSecretSuffix = "-user-secret"
 
 // PrimarySecretSuffix ...
-const PrimarySecretSuffix = "-pgprimary-secret"
+const PrimarySecretSuffix = "-primary-secret"
 
 // StorageExisting ...
 const StorageExisting = "existing"

@@ -29,8 +29,7 @@ Kubeconfig:  /etc/kubernetes/admin.conf
 Cluster:
   CCPImageTag:  centos7-9.6.5-1.6.0
   Port:  5432
-  Primary_USER:  master
-  Primary_PASSWORD:  password
+  PrimaryPassword:  password
   User:  testuser
   Password:  password
   Database:  userdb
@@ -80,8 +79,7 @@ Values in the pgo configuration file have the following meaning:
 |Kubeconfig        | the path to the kubeconfig file
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.5-1.6.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
-|Cluster.PrimaryUser        | the PostgreSQL master user name
-|Cluster.PrimaryPassword        | the PostgreSQL master user password, when specified, it will be stored in the secret holding the master user credentials, if not specified the value will be generated
+|Cluster.PrimaryPassword        | the PostgreSQL primary user password, when specified, it will be stored in the secret holding the primary user credentials, if not specified the value will be generated
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Password        | the PostgreSQL normal user password, when specified, it will be stored in the secret holding the normal user credentials, if not specified the value will be generated
 |Cluster.RootPassword        | the PostgreSQL *postgres* user password, when specified, it will be stored in the secret holding the root user credentials, if not specified the value will be generated
@@ -90,11 +88,11 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
 |Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|PrimaryStorage.Name        |for the master PostgreSQL deployment, if set, the PVC to use for created databases, used when the storage type is *existing*
-|PrimaryStorage.StorageClass        |for the master PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|PrimaryStorage.AccessMode        |for the master PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|PrimaryStorage.Size        |for the master PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|PrimaryStorage.StorageType        |for the master PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|PrimaryStorage.Name        |for the primary PostgreSQL deployment, if set, the PVC to use for created databases, used when the storage type is *existing*
+|PrimaryStorage.StorageClass        |for the primary PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|PrimaryStorage.AccessMode        |for the primary PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|PrimaryStorage.Size        |for the primary PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|PrimaryStorage.StorageType        |for the primary PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |PrimaryStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |PrimaryStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |ReplicaStorage.Name        |for the replica PostgreSQL deployments, if set, the PVC to use for created databases, used when the storage type is *existing*

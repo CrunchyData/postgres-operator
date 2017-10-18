@@ -51,13 +51,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	}
 
 	cl.Spec.RootSecretName = secretName
-	err = Patch(restclient, "/spec/pgrootsecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = Patch(restclient, "/spec/rootsecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster" + err.Error())
 	}
 
-	///pgprimary
-	username = "primary"
+	///primary
+	username = "primaryuser"
 	suffix = crv1.PrimarySecretSuffix
 
 	secretName = cl.Spec.Name + suffix
@@ -67,7 +67,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	}
 
 	cl.Spec.PrimarySecretName = secretName
-	err = Patch(restclient, "/spec/pgprimarysecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = Patch(restclient, "/spec/primarysecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster " + err.Error())
 	}
@@ -83,7 +83,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	}
 
 	cl.Spec.UserSecretName = secretName
-	err = Patch(restclient, "/spec/pgusersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = Patch(restclient, "/spec/usersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error patching cluster " + err.Error())
 	}

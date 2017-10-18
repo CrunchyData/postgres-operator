@@ -34,20 +34,20 @@
                         "timeoutSeconds": 8
                     },
                     "env": [{
-                        "name": "PG_MASTER_PORT",
+                        "name": "PG_PRIMARY_PORT",
                         "value": "{{.Port}}"
                     }, {
                         "name": "PG_MODE",
                         "value": "primary"
                     }, {
                         "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.PgdataPathOverride}}"
+                        "value": "{{.DataPathOverride}}"
                     }, {
                         "name": "BACKUP_PATH",
                         "value": "{{.BackupPath}}"
                     }, {
                         "name": "PG_DATABASE",
-                        "value": "{{.PgDatabase}}"
+                        "value": "{{.Database}}"
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
@@ -62,13 +62,13 @@
                             "readOnly": true
                         }, {
                             "mountPath": "/pguser",
-                            "name": "pguser-volume"
+                            "name": "user-volume"
                         }, {
                             "mountPath": "/pgprimary",
-                            "name": "pgprimary-volume"
+                            "name": "primary-volume"
                         }, {
                             "mountPath": "/pgroot",
-                            "name": "pgroot-volume"
+                            "name": "root-volume"
                         }
 
                     ],
@@ -87,19 +87,19 @@
                         "name": "backup",
                         {{.BackupPVCName}}
                     }, {
-                        "name": "pguser-volume",
+                        "name": "user-volume",
                         "secret": {
-                            "secretName": "{{.PgUserSecretName}}"
+                            "secretName": "{{.UserSecretName}}"
                         }
                     }, {
-                        "name": "pgprimary-volume",
+                        "name": "primary-volume",
                         "secret": {
-                            "secretName": "{{.PgPrimarySecretName}}"
+                            "secretName": "{{.PrimarySecretName}}"
                         }
                     }, {
-                        "name": "pgroot-volume",
+                        "name": "root-volume",
                         "secret": {
-                            "secretName": "{{.PgRootSecretName}}"
+                            "secretName": "{{.RootSecretName}}"
                         }
                     }
 
