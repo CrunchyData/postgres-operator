@@ -24,13 +24,13 @@
                         "value": "{{.Port}}"
                     }, {
                         "name": "PG_PRIMARY_HOST",
-                        "value": "{{.PgPrimaryHost}}"
+                        "value": "{{.PrimaryHost}}"
                     }, {
                         "name": "PG_MODE",
-                        "value": "slave"
+                        "value": "replica"
                     }, {
                         "name": "PG_DATABASE",
-                        "value": "{{.PgDatabase}}"
+                        "value": "{{.Database}}"
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
@@ -42,13 +42,13 @@
                         "readOnly": false
                     }, {
 			"mountPath": "/pguser",
-			"name": "pguser-volume"
+			"name": "user-volume"
 			}, {
 			"mountPath": "/pgprimary",
-			"name": "pgprimary-volume"
+			"name": "primary-volume"
 			}, {
 			"mountPath": "/pgroot",
-			"name": "pgroot-volume"
+			"name": "root-volume"
 			}
 		    ],
 
@@ -64,19 +64,19 @@
                     "name": "pgdata",
 		    "emptyDir": {}
                 }, {
-		  	"name": "pguser-volume",
+		  	"name": "user-volume",
 			"secret": {
-			"secretName": "{{.PgUserSecretName}}"
+			"secretName": "{{.UserSecretName}}"
 			}
 		}, {
-			"name": "pgprimary-volume",
+			"name": "primary-volume",
 			"secret": {
-			"secretName": "{{.PgPrimarySecretName}}"
+			"secretName": "{{.PrimarySecretName}}"
 			}
 		}, {
-			"name": "pgroot-volume",
+			"name": "root-volume",
 			"secret": {
-			"secretName": "{{.PgRootSecretName}}"
+			"secretName": "{{.RootSecretName}}"
 			}
 		}
 		],
