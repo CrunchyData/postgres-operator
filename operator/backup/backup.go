@@ -19,23 +19,15 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"io/ioutil"
-	"text/template"
-	//"time"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-
-	"k8s.io/client-go/kubernetes"
-
+	"io/ioutil"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-	//v1batch "k8s.io/api/batch/v1"
-
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/cache"
+	"text/template"
 )
 
 type jobTemplateFields struct {

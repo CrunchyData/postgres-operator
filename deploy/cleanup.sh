@@ -14,8 +14,6 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
-
 $CO_CMD delete configmap operator-conf
 
 $CO_CMD --namespace=$CO_NAMESPACE delete deployment postgres-operator

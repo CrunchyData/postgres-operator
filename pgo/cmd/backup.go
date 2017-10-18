@@ -284,13 +284,13 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 	spec.StorageSpec.AccessMode = viper.GetString("BackupStorage.AccessMode")
 	spec.StorageSpec.Size = viper.GetString("BackupStorage.Size")
 	spec.StorageSpec.StorageClass = viper.GetString("BackupStorage.StorageClass")
-	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageTypeg")
+	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageType")
 	spec.StorageSpec.SupplementalGroups = viper.GetString("BackupStorage.SupplementalGroups")
 	spec.StorageSpec.Fsgroup = viper.GetString("BackupStorage.Fsgroup")
 	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
-	spec.BackupUser = "primary"
+	spec.BackupUser = "primaryuser"
 	spec.BackupPass = "password"
 	spec.BackupPort = "5432"
 
