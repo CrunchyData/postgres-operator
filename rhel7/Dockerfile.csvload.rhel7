@@ -1,4 +1,4 @@
-FROM centos:7
+FROM registry.access.redhat.com/rhel7.3
 
 LABEL name="crunchydata/csvload" \
         vendor="crunchy data" \
@@ -15,10 +15,12 @@ LABEL name="crunchydata/csvload" \
         io.openshift.expose-services="" \
         io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+# Crunchy Postgres repo
+ADD conf/CRUNCHY-GPG-KEY.public  /
+ADD conf/crunchypg96.repo /etc/yum.repos.d/
+RUN rpm --import CRUNCHY-GPG-KEY.public
 
-# PGDG Postgres repo
-RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm 
 
 RUN yum -y update &&  yum -y install epel-release \
  && yum install -y \

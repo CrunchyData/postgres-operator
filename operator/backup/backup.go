@@ -79,8 +79,8 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 		log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
 	}
 
-	//update the pvc name in the TPR
-	err = util.Patch(client, "/spec/pvcname", pvcName, "pgbackups", job.Spec.Name, namespace)
+	//update the pvc name in the CRD
+	err = util.Patch(client, "/spec/storagespec/name", pvcName, "pgbackups", job.Spec.Name, namespace)
 
 	//create the job -
 	jobFields := jobTemplateFields{

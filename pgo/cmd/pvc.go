@@ -64,7 +64,7 @@ func printPVC(pvcName string) {
 
 // PrintPVCListing ...
 func PrintPVCListing(pvcName string) {
-	var podPath = viper.GetString("Pgo.LspvcTemplate")
+	var podPath = viper.GetString("Pgo.LSPVCTemplate")
 	var PodTemplate *template.Template
 	var err error
 	var buf []byte
