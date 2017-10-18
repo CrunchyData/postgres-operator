@@ -11,10 +11,9 @@ ifndef GOBIN
 endif
 
 #======= Main functions =======
-etlclient:      check-go-vars
-	        go build -buildmode=plugin -o client/etlclient.so client/etlclient.go
-#======= Main functions =======
 #	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go 
+setup:
+	godep restore && ./bin/get-deps.sh
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars

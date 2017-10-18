@@ -60,16 +60,7 @@ The CRD version of the operator is tested on the following platforms:
 
 * *Kubernetes 1.7.X+*
 * *Kubernetes 1.8.0+*
-
-Support for Openshift is in progress.
-
-The Operator makes use of the following containers:
-
-* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6.5 Container]
-* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
-* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
-* link:https://hub.docker.com/r/crunchydata/lspvc/[PostgreSQL PVC Listing Container]
-* link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
+* *Openshift Origin 1.7.0+*
 
 This Operator has also been tested on the following operating systems:
 

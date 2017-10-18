@@ -52,8 +52,11 @@ environment. A few different links are listed below that describe different
 methods of installation.
 
 link:https://kubernetes.io/docs/setup/independent/install-kubeadm/[Installing kubeadm - Official Kubernetes Documentation]
+
 link:http://linoxide.com/containers/setup-kubernetes-kubeadm-centos/[Installing Kubernetes 1.5 with kubeadm on CentOS]
+
 link:https://blog.openebs.io/setting-up-kubernetes-1-5-5-cluster-with-vagrant-dda11e33b5bc[Setting up Kubernetes 1.5.5 Cluster with Vagrant]
+
 link:https://github.com/kubernetes/minikube[Minikube]
 
 ==== minikube
@@ -99,26 +102,6 @@ kubectl create clusterrolebinding permissive-binding \
 See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
 details on how to enable RBAC roles.
 
-==== Namespace
-
-You can set the namespace to use for deploying the operator
-as follows. If not set, the namespace is set to *default* automatically.
-This behavior is defined within the postgres-operator shell script located
-link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/operator/setup.sh[here]:
-....
-export CO_NAMESPACE=myproject
-....
-
-==== Namespace
-
-You can set the namespace to use for deploying the operator
-as follows. If not set, the namespace is set to *default* automatically.
-This behavior is defined within the postgres-operator shell script located
-link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/operator/setup.sh[here]:
-....
-export CO_NAMESPACE=myproject
-....
-
 == Installation
 
 === Create Project and Clone
@@ -137,6 +120,8 @@ export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
 export CO_VERSION=2.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
+export CO_NAMESPACE=myproject
+export CO_CMD=kubectl
 ....
 
 It will be necessary to log out and back in for the changes to your .bashrc
@@ -167,8 +152,7 @@ docker pull crunchydata/csvload:centos7-2.0
 docker pull crunchydata/postgres-operator:centos7-2.0
 ....
 
-Then to get the *pgo* client, go to the Releases page and download the tar ball, uncompress
-it into your $HOME directory:
+Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
 ....
 cd $HOME
 wget https://github.com/CrunchyData/postgres-operator/releases/download/2.0/postgres-operator.2.0.tar.gz
@@ -177,15 +161,13 @@ tar xvzf ./postgres-operator.2.0.tar.gz
 
 Lastly, add the *pgo* client into your PATH.
 
-At this point, you'll want to head to the
-link:https://github.com/xenophenes/postgres-operator/blob/master/docs/build.asciidoc#deploy-the-postgresql-operator[Deploy the PostgreSQL Operator]
-section in order to complete installation.
+You are now ready to Deploy the operator to your Kube system.
 
 === Build from Source
 
 Install a golang compiler, this can be done with either
 your package manager or by following directions
-from https://golang.org/dl/.  The operator is currenlty built
+from https://golang.org/dl/.  The operator is currently built
 using golang version 1.8.X
 
 
@@ -194,33 +176,17 @@ as follows:
 ....
 cd $COROOT
 go get github.com/tools/godep
-./bin/get-deps.sh
-....
-
-In a development environment you will likely want to create a
-*docker* group and add your user ID to that group, this allows
-you as your normal user ID to access the *docker* daemon and
-issue commands to it:
-....
-sudo groupadd docker
-sudo usermod -a -G docker youruserID
-sudo systemctl restart docker
-newgrp docker
+make setup
 ....
 
 ==== Compiling the PostgreSQL Operator
 ....
 cd $COROOT
 make pgo
-which pgo
-....
-
-==== Build the Docker Images
-....
-cd $COROOT
 make operatorimage
 make lsimage
-docker images | grep crunchydata
+make csvimage
+which pgo
 ....
 
 === Deploy the PostgreSQL Operator
@@ -228,14 +194,9 @@ docker images | grep crunchydata
 local system as the persistent store for the operator to use
 for its persistent volume.
 ....
-cd $COROOT/examples/operator
-./deploy.sh
+cd $COROOT
+make deployoperator
 kubectl get pod -l 'name=postgres-operator'
-....
-
-You can also deploy the operator by running the following command:
-....
-make deploy
 ....
 
 When you first run the operator, it will create the required
@@ -266,7 +227,7 @@ Strategies for deploying the operator can be found in the link:design.asciidoc[P
 
 === Configuration
 
-The *pgo* client requires two configuration files be copied
+The *pgo* client requires three configuration files be copied
 to your $HOME as follows:
 ....
 cp $COROOT/examples/pgo.yaml.emptydir $HOME/.pgo.yaml
@@ -274,8 +235,7 @@ cp $COROOT/examples/pgo.lspvc-template.json $HOME/.pgo.lspvc-template.json
 cp $COROOT/examples/pgo.csvload-template.json $HOME/.pgo.csvload-template.json
 ....
 
-If you are disinterested in having the configuration files in your $HOME folder,
-you do have the option of hosting them in three different locations:
+Alternatively, the configuration files can be located in these locations:
 
 * . (current directory)
 * $HOME

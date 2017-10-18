@@ -15,8 +15,6 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
-
 $DIR/cleanup.sh
 
 $CO_CMD --namespace=$CO_NAMESPACE create configmap operator-conf \

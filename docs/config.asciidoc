@@ -144,10 +144,6 @@ by means of a mounted volume.
 The templates are located in the *$COROOT/conf/postgres-operator* directory
 and get added into a config map which is mounted by the operator deployment.
 
-For your persistent file system, you might need to adjust the templates
-to add *fsGroup* or *supplementalGroup* attributes to your *pgo* configuration
-file.
-
 === Persistence
 
 Different ways of handling storage are specified by a user in
