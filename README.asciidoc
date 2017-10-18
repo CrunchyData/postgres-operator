@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v1.5.2, {docdate}
+v2.0, {docdate}
 
 == Table of Contents
 
@@ -17,15 +17,11 @@ The PostgreSQL Operator provides a Kubernetes operator capability for managing P
 
 image::docs/tty.gif?raw=true[]
 
-The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource types such as:
+The PostgreSQL Operator leverages Kubernetes Custom Resource Definitions to define custom resource types such as:
 
  * *pgcluster*
  * *pgbackups*
- * *pgupgrades*
- * *pgclones*
  * *pgpolicies*
- * *pgpolicylogs*
-
 
 Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object.
 
@@ -41,36 +37,35 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Upgrade a PostgreSQL Cluster
 * View PVC
 * Test Connections to a PostgreSQL Cluster
-* Clone a PostgreSQL Cluster
 * Create a SQL-based Policy
 * Apply a SQL-based Policy to a PostgreSQL Cluster
 * Perform User Management
 * Apply User Defined Labels to PostgreSQL Clusters
 * Perform Password Management
 
-What actually gets created on the Kubernetes cluster for a
-*pgcluster* resource is defined as a *deployment strategy*.  Strategies
-are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
 
 [#Requirements]
 == Requirements
 
-These versions of Kubernetes and OpenShift are required due to the use of ThirdPartyResources which first emerged in
-these versions.
+CRD (custom resource definitions) are supported starting with Kube 1.7.X.
+NOTE:  Along with this new major version, changes were made to the configuration
+settings from the prior version of the Operator. 
 
-* *Kubernetes 1.5.3+*
-* *OpenShift Origin 1.5.1+*
-* *OpenShift Container Platform 3.5*
+If you require an older version of Kube (< 1.7), you can work
+with the operator version 1.5.2 which resides in the github 1.5.X branch.
+Note however, that the older operator will be deprecated and no longer 
+maintained in the future.
 
-The operator is developed with the following specific version of Golang; you can find this distribution on the official
-link:https://golang.org/dl/[Golang website]. Because Go binaries essentially have Go runtime bundled with them, it is
-important to build on a platform that is compatible with the target deployment platform.
+The CRD version of the operator is tested on the following platforms:
 
-* *Golang 1.8.x*
+* *Kubernetes 1.7.X+*
+* *Kubernetes 1.8.0+*
+
+Support for Openshift is in progress.
 
 The Operator makes use of the following containers:
 
-* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6.5 Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
 * link:https://hub.docker.com/r/crunchydata/lspvc/[PostgreSQL PVC Listing Container]
@@ -165,12 +160,6 @@ pgo show pvc mypvc
 pgo test mycluster
 ----
 
-.Clone Cluster
-[source,bash]
-----
-pgo clone mycluster --name=myclone
-----
-
 .Create a Policy
 [source,bash]
 ----
@@ -189,7 +178,7 @@ pgo apply policy1 --selector=name=mycluster
 Details on the *pgo* commands and complex examples are found in the
 link:docs/user-guide.asciidoc[User Guide]
 
-[#PostgreSQL Operator Container]
+#PostgreSQL Operator Container]
 == PostgreSQL Operator Container
 
 In the following diagram, the PostgreSQL operator client, *pgo*, is
@@ -202,6 +191,10 @@ image::docs/operator-diagram.png?raw=true[]
 The operator functionality runs in a Kubernetes Deployment on your
 Kubernetes cluster.  The *postgres-operator* Docker container image
 is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub].
+
+What actually gets created on the Kubernetes cluster for a
+*pgcluster* resource is defined as a *deployment strategy*.  Strategies
+are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
 
 You can also build the Docker image for *postgres-operator* using
 the build instructions located on the link:docs/build.asciidoc[Build and Setup] page.
