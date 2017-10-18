@@ -139,7 +139,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
-	err = util.Patch(client, "/spec/PrimaryStorage/pvcname", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/PrimaryStorage/name", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
 	}

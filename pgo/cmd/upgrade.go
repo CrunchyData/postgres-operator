@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/labels"
+	"os"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -406,11 +407,29 @@ func parseMajorVersion(st string) float64 {
 	//OS = parts[0]
 	//PGVERSION = parts[1]
 	//CVERSION = parts[2]
+	//PG10 makes this a bit harder given its versioning scheme
+	// is different than PG9  e.g. 10.0 is sort of like 9.6.0
 
-	f, err := strconv.ParseFloat(parts[1], 64)
+	fullversion := parts[1]
+	fullversionparts := strings.Split(fullversion, ".")
+	strippedversion := strings.Replace(fullversion, ".", "", -1)
+	numericVersion, err := strconv.ParseFloat(strippedversion, 64)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
+		os.Exit(2)
 	}
-	return f
+
+	first := strings.Split(fullversion, ".")
+	if first[0] == "10" {
+		log.Debug("version 10 ")
+		numericVersion = +numericVersion * 10
+	} else {
+		log.Debug("assuming version 9")
+		numericVersion, err = strconv.ParseFloat(fullversionparts[0]+fullversionparts[1], 64)
+	}
+
+	log.Debugf("parseMajorVersion is %f\n", numericVersion)
+
+	return numericVersion
 
 }
