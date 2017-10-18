@@ -249,7 +249,7 @@ func createUpgrade(args []string) {
 		}
 
 		// Create an instance of our CRD
-		newInstance, err = getUpgradeParams(arg)
+		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag)
 		if err == nil {
 			err = RestClient.Post().
 				Resource(crv1.PgupgradeResourcePlural).
@@ -305,10 +305,10 @@ func deleteUpgrade(args []string) {
 
 }
 
-func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
+func getUpgradeParams(name, currentImageTag string) (*crv1.Pgupgrade, error) {
 
 	var err error
-	var existingImage string
+	var existingImage, strRep string
 	var existingMajorVersion float64
 
 	spec := crv1.PgupgradeSpec{
@@ -317,13 +317,16 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 		UpgradeType:     UpgradeType,
 		CCPImageTag:     viper.GetString("Cluster.CCPImageTag"),
 		StorageSpec:     crv1.PgStorageSpec{},
-		OldDatabaseName: "basic",
-		NewDatabaseName: "primary",
-		OldVersion:      "9.5",
-		NewVersion:      "9.6",
+		OldDatabaseName: "??",
+		NewDatabaseName: "??",
+		OldVersion:      "??",
+		NewVersion:      "??",
 		OldPVCName:      viper.GetString("PrimaryStorage.Name"),
 		NewPVCName:      viper.GetString("PrimaryStorage.Name"),
 	}
+
+	_, strRep = parseMajorVersion(currentImageTag)
+	spec.OldVersion = strRep
 
 	spec.StorageSpec.AccessMode = viper.GetString("PrimaryStorage.AccessMode")
 	spec.StorageSpec.Size = viper.GetString("PrimaryStorage.Size")
@@ -348,7 +351,7 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 		spec.NewPVCName = cluster.Spec.PrimaryStorage.Name + "-upgrade"
 		spec.BackupPVCName = cluster.Spec.BackupPVCName
 		existingImage = cluster.Spec.CCPImageTag
-		existingMajorVersion = parseMajorVersion(cluster.Spec.CCPImageTag)
+		existingMajorVersion, strRep = parseMajorVersion(cluster.Spec.CCPImageTag)
 	} else if kerrors.IsNotFound(err) {
 		log.Debug(name + " is not a cluster")
 		return nil, err
@@ -367,14 +370,14 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 
 			return nil, errors.New("invalid image tag")
 		}
-		requestedMajorVersion = parseMajorVersion(CCPImageTag)
+		requestedMajorVersion, strRep = parseMajorVersion(CCPImageTag)
 	} else if viper.GetString("Cluster.CCPImageTag") == existingImage {
 		log.Error("CCPImageTag is the same as the cluster")
 		log.Error("can't upgrade to the same image version")
 
 		return nil, errors.New("invalid image tag")
 	} else {
-		requestedMajorVersion = parseMajorVersion(viper.GetString("Cluster.CCPImageTag"))
+		requestedMajorVersion, strRep = parseMajorVersion(viper.GetString("Cluster.CCPImageTag"))
 	}
 
 	if UpgradeType == MajorUpgrade {
@@ -393,6 +396,8 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 		}
 	}
 
+	spec.NewVersion = strRep
+
 	newInstance := &crv1.Pgupgrade{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: name,
@@ -402,7 +407,8 @@ func getUpgradeParams(name string) (*crv1.Pgupgrade, error) {
 	return newInstance, err
 }
 
-func parseMajorVersion(st string) float64 {
+// parseMajorVersion returns a numeric and string representation
+func parseMajorVersion(st string) (float64, string) {
 	parts := strings.Split(st, separator)
 	//OS = parts[0]
 	//PGVERSION = parts[1]
@@ -419,17 +425,21 @@ func parseMajorVersion(st string) float64 {
 		os.Exit(2)
 	}
 
+	var strRep string
+
 	first := strings.Split(fullversion, ".")
 	if first[0] == "10" {
 		log.Debug("version 10 ")
 		numericVersion = +numericVersion * 10
+		strRep = fullversionparts[0]
 	} else {
 		log.Debug("assuming version 9")
 		numericVersion, err = strconv.ParseFloat(fullversionparts[0]+fullversionparts[1], 64)
+		strRep = fullversionparts[0] + "." + fullversionparts[1]
 	}
 
 	log.Debugf("parseMajorVersion is %f\n", numericVersion)
 
-	return numericVersion
+	return numericVersion, strRep
 
 }
