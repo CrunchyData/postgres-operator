@@ -1,35 +1,32 @@
-KUBECONFIG:  /etc/kubernetes/admin.conf
-NAMESPACE:  default
-CLUSTER:
-  CCP_IMAGE_TAG:  centos7-9.6-1.5.1
-  PORT:  5432
-  PG_MASTER_USER:  master
-  PG_MASTER_PASSWORD:  password
-  PG_USER:  testuser
-  PG_PASSWORD:  password
-  PG_DATABASE:  userdb
-  PG_ROOT_PASSWORD:  password
-  PASSWORD_AGE_DAYS:  60
-  PASSWORD_LENGTH:  8
-  STRATEGY:  1
-  REPLICAS:  0
-MASTER_STORAGE:
-  PVC_ACCESS_MODE:  ReadWriteMany
-  PVC_SIZE:  100M
-  STORAGE_TYPE:  create
-  SUPPLEMENTAL_GROUPS:  65534
-BACKUP_STORAGE:
-  PVC_ACCESS_MODE:  ReadWriteMany
-  PVC_SIZE:  100M
-  STORAGE_TYPE:  create
-  SUPPLEMENTAL_GROUPS:  65534
-REPLICA_STORAGE:
-  PVC_ACCESS_MODE:  ReadWriteMany
-  PVC_SIZE:  100M
-  STORAGE_TYPE:  create
-  SUPPLEMENTAL_GROUPS:  65534
-PGO:
-  LSPVC_TEMPLATE:  /home/jeffmc/.pgo.lspvc-template.json
-  CSVLOAD_TEMPLATE:  /home/jeffmc/.pgo.csvload-template.json
-  CO_IMAGE_TAG:  centos7-1.5.2
-  DEBUG:  false
+Kubeconfig:  /etc/kubernetes/admin.conf
+Namespace:  default
+Cluster:
+  CCPImageTag:  centos7-10.0-1.6.0
+  Port:  5432
+  PrimaryPassword:  password
+  User:  testuser
+  Password:  password
+  RootPassword:  password
+  Database:  userdb
+  PasswordAgeDays:  60
+  PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
+PrimaryStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  emptydir
+BackupStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  emptydir
+ReplicaStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  emptydir
+Pgo:
+  APIServerUrl:  http://localhost:8080
+  LSPVCTemplate:  /home/jeffmc/.pgo.lspvc-template.json
+  CSVLoadTemplate:  /home/jeffmc/.pgo.csvload-template.json
+  COImageTag:  centos7-2.0
+  Debug:  false

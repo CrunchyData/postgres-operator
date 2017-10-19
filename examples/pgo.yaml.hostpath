@@ -16,17 +16,14 @@ PrimaryStorage:
   AccessMode:  ReadWriteMany
   Size:  200M
   StorageType:  create
-  SupplementalGroups:  65534
 BackupStorage:
   AccessMode:  ReadWriteMany
   Size:  200M
   StorageType:  create
-  SupplementalGroups:  65534
 ReplicaStorage:
   AccessMode:  ReadWriteMany
   Size:  200M
   StorageType:  create
-  SupplementalGroups:  65534
 Pgo:
   APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /home/jeffmc/.pgo.lspvc-template.json
