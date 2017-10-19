@@ -11,7 +11,6 @@ ifndef GOBIN
 endif
 
 #======= Main functions =======
-#	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go 
 macpgo:	check-go-vars
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
 setup:
@@ -21,7 +20,7 @@ deployoperator:
 main:	check-go-vars
 	go install postgres-operator.go
 runmain:	check-go-vars
-	main --kubeconfig=/etc/kubernetes/admin.conf
+	postgres-operator --kubeconfig=/etc/kubernetes/admin.conf
 runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
 apiserver:	check-go-vars
