@@ -12,6 +12,8 @@ endif
 
 #======= Main functions =======
 #	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go 
+macpgo:	check-go-vars
+	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
 setup:
 	godep restore && ./bin/get-deps.sh
 deployoperator:
@@ -57,6 +59,8 @@ release:	check-go-vars
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)
+	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
+	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	cp $(COROOT)/examples/*pgo.yaml* $(RELTMPDIR)
 	cp $(COROOT)/examples/*pgo.lspvc-template.json $(RELTMPDIR)
 	cp $(COROOT)/examples/*pgo.csvload-template.json $(RELTMPDIR)

@@ -225,6 +225,25 @@ desired PVC to use when databases and clusters are created.
 
 Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
 
+=== Makefile Targets
+
+The following table describes the Makefile targets:
+.Makefile Targets
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Target | Description
+|setup        | fetch the dependent packages required to build with
+|deployoperator        | deploy the Operator to Kubernetes
+|main        | compile the postgres-operator 
+|runmain        | locally execute the postgres-operator
+|pgo        | build the pgo binary
+|runpgo        | run the pgo binary 
+|clean        | remove binaries and compiled packages, restore dependencies
+|operatorimage        | compile and build the postgres-operator Docker image
+|lsimage        | build the lspvc Docker image
+|csvloadimage        | build the csvload Docker image
+|release        | build the postgres-operator release
+|======================
 === Configuration
 
 The *pgo* client requires three configuration files be copied
