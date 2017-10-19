@@ -182,10 +182,7 @@ make setup
 ==== Compiling the PostgreSQL Operator
 ....
 cd $COROOT
-make pgo
-make operatorimage
-make lsimage
-make csvimage
+make all
 which pgo
 ....
 

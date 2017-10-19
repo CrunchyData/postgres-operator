@@ -34,8 +34,8 @@ git checkout release-1.7
 #go get github.com/evanphx/json-patch
 #go get github.com/gorilla/websocket
 #go get github.com/gorilla/mux
-#go get github.com/spf13/cobra
-#go get github.com/spf13/viper
+go get github.com/spf13/cobra
+go get github.com/spf13/viper
 
 cd $GOPATH/src/github.com/spf13/cobra
 git checkout a3cd8ab85aeba3522b9b59242f3b86ddbc67f8bd

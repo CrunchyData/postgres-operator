@@ -14,7 +14,7 @@ endif
 macpgo:	check-go-vars
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
 setup:
-	godep restore && ./bin/get-deps.sh
+	./bin/get-deps.sh
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars
@@ -33,7 +33,6 @@ runpgo:	check-go-vars
 	pgo --kubeconfig=/etc/kubernetes/admin.conf
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
-	godep restore
 operatorimage:	check-go-vars
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
