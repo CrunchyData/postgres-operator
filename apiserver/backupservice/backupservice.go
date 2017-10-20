@@ -22,35 +22,22 @@ import (
 	"net/http"
 )
 
-// BackupDetail ...
-type BackupDetail struct {
-	Name string
-}
-
-// ShowBackupResponse ...
-type ShowBackupResponse struct {
-	Items []BackupDetail
-}
-
-// CreateBackupRequest ...
-type CreateBackupRequest struct {
-	Name string
-}
-
-// CreateBackupHandler ...
-func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("backupservice.CreateBackupHandler called")
-	var request CreateBackupRequest
-	_ = json.NewDecoder(r.Body).Decode(&request)
-
-	log.Infoln("backupservice.CreateBackupHandler got request " + request.Name)
-}
-
 // ShowBackupHandler ...
+// returns a ShowBackupResponse
 func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("backupservice.ShowBackupHandler called")
 	vars := mux.Vars(r)
 	log.Infof(" vars are %v\n", vars)
+
+	backupname := vars["name"]
+	log.Infof(" name arg is %v\n", backupname)
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Infoln("namespace param was [" + namespace + "]")
+	} else {
+		log.Infoln("namespace param was null")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -62,11 +49,7 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ShowBackupResponse)
-	resp.Items = []BackupDetail{}
-	c := BackupDetail{}
-	c.Name = "somecluster"
-	resp.Items = append(resp.Items, c)
+	resp := ShowBackup(namespace, backupname)
 
 	json.NewEncoder(w).Encode(resp)
 }

@@ -36,26 +36,12 @@ import (
 )
 
 func showPolicy(args []string) {
-
-	//	jsonstr, _ := json.Marshal(args)
-	//	values := url.Values{"args": {string(jsonstr[:])}}
-	//	encoded := values.Encode()
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
+		return
+	}
 
 	for _, v := range args {
-		//b := new(bytes.Buffer)
-		//json.NewEncoder(b).Encode(args)
-		//s := new(bytes.Buffer)
-		//json.NewEncoder(s).Encode("foodaddy")
-
-		//url := APISERVER_URL + "/policies/somename?" + encoded
-		//fmt.Println("labelselector=" + LabelSelector)
-		//url := APISERVER_URL + "/policies/" + b.String() + "?selector=" + s.String()
-		//read_line := strings.TrimSuffix(b.String(), "\n")
-		//url := APISERVER_URL + "/policies/" + read_line + "?selector=name=foodaddy"
-		if Namespace == "" {
-			log.Error("Namespace can not be empty")
-			return
-		}
 		url := APIServerURL + "/policies/" + v + "?namespace=" + Namespace
 		log.Debug("showPolicy called...[" + url + "]")
 
