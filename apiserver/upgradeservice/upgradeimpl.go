@@ -29,7 +29,7 @@ func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
 
 	if name == "all" {
 		//get a list of all upgrades
-		err := apiserver.RestClient.Get().
+		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgupgradeResourcePlural).
 			Namespace(namespace).
 			Do().Into(&response.UpgradeList)
@@ -42,7 +42,7 @@ func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
 		log.Debug("upgrades found len is %d\n", len(response.UpgradeList.Items))
 	} else {
 		upgrade := crv1.Pgupgrade{}
-		err := apiserver.RestClient.Get().
+		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgupgradeResourcePlural).
 			Namespace(namespace).
 			Name(name).

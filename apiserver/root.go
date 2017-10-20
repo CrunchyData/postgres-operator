@@ -26,8 +26,8 @@ import (
 	"os"
 )
 
-// RestClient ...
-var RestClient *rest.RESTClient
+// RESTClient ...
+var RESTClient *rest.RESTClient
 
 // Clientset ...
 var Clientset *kubernetes.Clientset
@@ -71,7 +71,7 @@ func ConnectToKube() {
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	RestClient, _, err = crdclient.NewClient(config)
+	RESTClient, _, err = crdclient.NewClient(config)
 	if err != nil {
 		panic(err)
 	}

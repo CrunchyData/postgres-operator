@@ -29,7 +29,7 @@ func ShowBackup(namespace string, name string) msgs.ShowBackupResponse {
 
 	if name == "all" {
 		//get a list of all backups
-		err := apiserver.RestClient.Get().
+		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgbackupResourcePlural).
 			Namespace(namespace).
 			Do().Into(&response.BackupList)
@@ -42,7 +42,7 @@ func ShowBackup(namespace string, name string) msgs.ShowBackupResponse {
 		log.Debug("backups found len is %d\n", len(response.BackupList.Items))
 	} else {
 		backup := crv1.Pgbackup{}
-		err := apiserver.RestClient.Get().
+		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgbackupResourcePlural).
 			Namespace(namespace).
 			Name(name).

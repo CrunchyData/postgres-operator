@@ -34,7 +34,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Infoln("policyservice.CreatePolicyHandler got request " + request.Name)
 
-	err := CreatePolicy(apiserver.RestClient, request.Namespace, request.Name, request.URL, request.SQL)
+	err := CreatePolicy(apiserver.RESTClient, request.Namespace, request.Name, request.URL, request.SQL)
 	if err != nil {
 		log.Error(err.Error())
 		log.Infoln("error would be reported back to caller!!!!")
@@ -69,7 +69,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp := msgs.ShowPolicyResponse{}
-	resp.PolicyList = ShowPolicy(apiserver.RestClient, namespace, policyname)
+	resp.PolicyList = ShowPolicy(apiserver.RESTClient, namespace, policyname)
 
 	json.NewEncoder(w).Encode(resp)
 }

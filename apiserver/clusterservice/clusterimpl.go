@@ -47,7 +47,7 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 
 	if name == "all" {
 		//get a list of all clusters
-		err := apiserver.RestClient.Get().
+		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
 			Namespace(namespace).
 			LabelsSelectorParam(myselector).
@@ -61,7 +61,7 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 		log.Debug("clusters found len is %d\n", len(response.ClusterList.Items))
 	} else {
 		cluster := crv1.Pgcluster{}
-		err := apiserver.RestClient.Get().
+		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
 			Namespace(namespace).
 			Name(name).
