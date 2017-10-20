@@ -130,7 +130,7 @@ func showBackupInfo(name string) {
 
 	if ShowPVC {
 		//print pvc information for all jobs
-		for key, _ := range pvcMap {
+		for key := range pvcMap {
 			PrintPVCListing(key)
 		}
 	}
