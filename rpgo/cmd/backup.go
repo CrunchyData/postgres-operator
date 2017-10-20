@@ -129,10 +129,13 @@ func showBackupInfo(name string) {
 	log.Debugf("ShowPVC is %v\n", ShowPVC)
 
 	if ShowPVC {
+		log.Error("need to implement")
+		/**
 		//print pvc information for all jobs
 		for key, _ := range pvcMap {
-			PrintPVCListing(key)
+			//PrintPVCListing(key)
 		}
+		*/
 	}
 }
 

@@ -165,16 +165,16 @@ func initConfig() {
 }
 
 func validateConfig() {
-	switch viper.GetString("PrimaryStorage.PVCAccessMode") {
+	switch viper.GetString("PrimaryStorage.AccessMode") {
 	case string(v1.ReadWriteOnce), string(v1.ReadWriteMany), string(v1.ReadOnlyMany):
 	default:
-		log.Error("invalid PrimaryStorage.PVCAccessMode specified")
+		log.Error("invalid PrimaryStorage.AccessMode specified")
 		os.Exit(2)
 	}
-	switch viper.GetString("ReplicaStorage.PVCAccessMode") {
+	switch viper.GetString("ReplicaStorage.AccessMode") {
 	case string(v1.ReadWriteOnce), string(v1.ReadWriteMany), string(v1.ReadOnlyMany):
 	default:
-		log.Error("invalid ReplicaStorage.PVCAccessMode specified")
+		log.Error("invalid ReplicaStorage.AccessMode specified")
 		os.Exit(2)
 	}
 	switch viper.GetString("PrimaryStorage.StorageType") {

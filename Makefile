@@ -54,6 +54,7 @@ push:
 	docker push crunchydata/csvload:$(CO_IMAGE_TAG)
 	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
 release:	check-go-vars
+	make macpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)

@@ -6,6 +6,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -13,13 +14,14 @@ import (
 
 func main() {
 
-	log.Infoln("restserver starts")
+	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()
 	r.HandleFunc("/clones", cloneservice.CreateCloneHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
 	//r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).
 	//Queries("selector", "{selector}").Methods("GET", "DELETE")
 	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET", "DELETE")
+	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply/{name}", policyservice.ApplyPolicyHandler)
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler)
 	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
