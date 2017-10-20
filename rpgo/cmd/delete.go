@@ -114,7 +114,7 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			log.Error("a cluster name or selector is required for this command")
 		} else {
-			deleteCluster(args)
+			//deleteCluster(args)
 		}
 	},
 }

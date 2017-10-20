@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -37,22 +38,12 @@ type ClusterDetail struct {
 	//secrets
 }
 
-// ShowClusterResponse ...
-type ShowClusterResponse struct {
-	Items []ClusterDetail
-}
-
-// CreateClusterRequest ...
-type CreateClusterRequest struct {
-	Name string
-}
-
 // CreateClusterHandler ...
 // pgo create cluster
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("clusterservice.CreateClusterHandler called")
-	var request CreateClusterRequest
+	var request msgs.CreateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	log.Infoln("clusterservice.CreateClusterHandler got request " + request.Name)
@@ -68,9 +59,24 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("clusterservice.ShowClusterHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
 	log.Infof(" vars are %v\n", vars)
+
+	clustername := vars["name"]
+	log.Infof(" name arg is %v\n", clustername)
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Infoln("namespace param was [" + namespace + "]")
+	} else {
+		log.Infoln("namespace param was null")
+	}
+	selector := r.URL.Query().Get("selector")
+	if namespace != "" {
+		log.Infoln("selector param was [" + selector + "]")
+	} else {
+		log.Infoln("selector param was null")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -82,12 +88,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ShowClusterResponse)
-	resp.Items = []ClusterDetail{}
-	c := ClusterDetail{}
-	c.Name = "somecluster"
-	resp.Items = append(resp.Items, c)
-
+	resp := ShowCluster(namespace, clustername, selector)
 	json.NewEncoder(w).Encode(resp)
 }
 

@@ -75,26 +75,30 @@ pgo create cluster mycluster`,
 		if NodeName == "" {
 			//NodeName = getValidNodeName()
 		} else {
+			/**
 			err = validateNodeName(NodeName)
 			if err != nil {
 				log.Error(err)
 				return
 			}
+			*/
 
 		}
 
 		if UserLabels != "" {
+			/**
 			err = validateUserLabels()
 			if err != nil {
 				log.Error("invalid user labels, check --labels value")
 				return
 			}
+			*/
 		}
 
 		if len(args) == 0 {
 			log.Error("a cluster name is required for this command")
 		} else {
-			createCluster(args)
+			//createCluster(args)
 		}
 	},
 }

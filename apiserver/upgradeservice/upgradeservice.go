@@ -64,9 +64,18 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowUpgradeResponse
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("upgradeservice.ShowUpgradeHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
 	log.Infof(" vars are %v\n", vars)
+
+	upgradename := vars["name"]
+	log.Infof(" name arg is %v\n", upgradename)
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Infoln("namespace param was [" + namespace + "]")
+	} else {
+		log.Infoln("namespace param was null")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -78,11 +87,7 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ShowUpgradeResponse)
-	resp.Items = []UpgradeDetail{}
-	c := UpgradeDetail{}
-	c.Name = "someupgrade"
-	resp.Items = append(resp.Items, c)
+	resp := ShowUpgrade(namespace, upgradename)
 
 	json.NewEncoder(w).Encode(resp)
 }

@@ -430,7 +430,7 @@ func parseMajorVersion(st string) (float64, string) {
 	first := strings.Split(fullversion, ".")
 	if first[0] == "10" {
 		log.Debug("version 10 ")
-		numericVersion = +numericVersion * 10
+		numericVersion = +10.0 * 10
 		strRep = fullversionparts[0]
 	} else {
 		log.Debug("assuming version 9")
