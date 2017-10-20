@@ -21,10 +21,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/apiserver"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 // CreatePolicy ...
@@ -156,93 +157,40 @@ func DeletePolicy(Namespace string, RestClient *rest.RESTClient, args []string) 
 
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
-func ApplyPolicy(username string, Selector string, Clientset *kubernetes.Clientset, DryRun bool, RestClient *rest.RESTClient, Namespace string, args []string) error {
+func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 	var err error
-	//validate policies
-	labels := make(map[string]string)
-	for _, p := range args {
-		err = util.ValidatePolicy(RestClient, Namespace, p)
-		if err != nil {
-			return errors.New("policy " + p + " is not found, cancelling request")
-		}
+	clusters := make([]string, 0)
 
-		labels[p] = "pgpolicy"
+	//validate policy
+	err = util.ValidatePolicy(apiserver.RestClient, request.Namespace, request.Name)
+	if err != nil {
+		return clusters, errors.New("policy " + request.Name + " is not found, cancelling request")
 	}
+
 	//get filtered list of Deployments
-	sel := Selector + ",!replica"
+	sel := request.Selector + ",!replica"
 	log.Debug("selector string=[" + sel + "]")
 	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
+	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(request.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
-		return err
+		return clusters, err
 	}
 
-	if DryRun {
-		log.Infoln("policy would be applied to the following clusters:")
+	if request.DryRun {
 		for _, d := range deployments.Items {
 			log.Infoln("deployment : " + d.ObjectMeta.Name)
+			clusters = append(clusters, d.ObjectMeta.Name)
 		}
-		return err
+		return clusters, err
 	}
-	var newInstance *crv1.Pgpolicylog
+
 	for _, d := range deployments.Items {
-		for _, p := range args {
-			log.Debug("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
+		log.Debug("apply policy " + request.Name + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
 
-			newInstance = getPolicylog(username, p, d.ObjectMeta.Name)
-
-			result := crv1.Pgpolicylog{}
-			err = RestClient.Get().
-				Resource(crv1.PgpolicylogResourcePlural).
-				Namespace(Namespace).
-				Name(newInstance.ObjectMeta.Name).
-				Do().Into(&result)
-			if err == nil {
-				log.Infoln(p + " already applied to " + d.ObjectMeta.Name)
-				break
-			} else {
-				if kerrors.IsNotFound(err) {
-				} else {
-					log.Error(err)
-					break
-				}
-			}
-
-			result = crv1.Pgpolicylog{}
-			err = RestClient.Post().
-				Resource(crv1.PgpolicylogResourcePlural).
-				Namespace(Namespace).
-				Body(newInstance).
-				Do().Into(&result)
-			if err == nil {
-				log.Infoln("created Pgpolicylog " + result.ObjectMeta.Name)
-			} else {
-				log.Error("error in creating Pgpolicylog CRD instance", err.Error())
-				return err
-			}
-
-		}
+		clusters = append(clusters, d.ObjectMeta.Name)
 
 	}
-	return err
-
-}
-
-// getPolicyLog ...
-func getPolicylog(username, policyname, clustername string) *crv1.Pgpolicylog {
-
-	spec := crv1.PgpolicylogSpec{}
-	spec.PolicyName = policyname
-	spec.Username = username
-	spec.ClusterName = clustername
-
-	newInstance := &crv1.Pgpolicylog{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: policyname + clustername,
-		},
-		Spec: spec,
-	}
-	return newInstance
+	return clusters, err
 
 }

@@ -17,24 +17,111 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//"github.com/crunchydata/postgres-operator/util"
-	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
-	"net/http"
-	//"net/url"
-
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/http"
 	"os/user"
 	"strings"
 )
 
+var applyCmd = &cobra.Command{
+	Use:   "apply",
+	Short: "apply a Policy",
+	Long: `APPLY allows you to apply a Policy to a set of clusters
+For example:
+
+pgo apply mypolicy1 --selector=name=mycluster
+pgo apply mypolicy1 --selector=someotherpolicy
+pgo apply mypolicy1 --selector=someotherpolicy --dry-run
+.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("apply called")
+		if Selector == "" {
+			log.Error("selector is required to apply a policy")
+			return
+		}
+		if len(args) == 0 {
+			log.Error(`You must specify the name of a policy to apply.`)
+		} else {
+			applyPolicy(args)
+		}
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(applyCmd)
+
+	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters that policy would be applied to but does not actually apply them")
+
+}
+
+func applyPolicy(args []string) {
+	var err error
+
+	if len(args) == 0 {
+		log.Error("policy name argument is required")
+		return
+	}
+
+	if Selector == "" {
+		log.Error("--selector flag is required")
+		return
+	}
+
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
+		return
+	}
+
+	r := new(msgs.ApplyPolicyRequest)
+	r.Name = args[0]
+	r.Selector = Selector
+	r.DryRun = DryRun
+	r.Namespace = Namespace
+
+	jsonValue, _ := json.Marshal(r)
+
+	url := APIServerURL + "/policies/apply"
+	log.Debug("applyPolicy called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	log.Printf("response is %v\n", resp)
+
+	if DryRun {
+		fmt.Println("would have applied policy on " + "something")
+	}
+	//for v := range resp.Name {
+	//fmt.Println("applied policy on " + v)
+	//}
+
+}
 func showPolicy(args []string) {
 	if Namespace == "" {
 		log.Error("Namespace can not be empty")
@@ -252,81 +339,6 @@ func validateConfigPolicies() error {
 	}
 
 	return err
-}
-
-func applyPolicy(policies []string) {
-	var err error
-	//validate policies
-	labels := make(map[string]string)
-	for _, p := range policies {
-		err = util.ValidatePolicy(RestClient, Namespace, p)
-		if err != nil {
-			log.Error("policy " + p + " is not found, cancelling request")
-			return
-		}
-
-		labels[p] = "pgpolicy"
-	}
-
-	//get filtered list of Deployments
-	sel := Selector + ",!replica"
-	log.Debug("selector string=[" + sel + "]")
-	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
-		return
-	}
-
-	if DryRun {
-		fmt.Println("policy would be applied to the following clusters:")
-		for _, d := range deployments.Items {
-			fmt.Println("deployment : " + d.ObjectMeta.Name)
-		}
-		return
-	}
-
-	var newInstance *crv1.Pgpolicylog
-	for _, d := range deployments.Items {
-		fmt.Println("deployment : " + d.ObjectMeta.Name)
-		for _, p := range policies {
-			log.Debug("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
-
-			newInstance, err = getPolicylog(p, d.ObjectMeta.Name)
-
-			result := crv1.Pgpolicylog{}
-			err = RestClient.Get().
-				Resource(crv1.PgpolicyResourcePlural).
-				Namespace(Namespace).
-				Name(newInstance.ObjectMeta.Name).
-				Do().Into(&result)
-			if err == nil {
-				fmt.Println(p + " already applied to " + d.ObjectMeta.Name)
-				break
-			} else {
-				if kerrors.IsNotFound(err) {
-				} else {
-					log.Error(err)
-					break
-				}
-			}
-
-			result = crv1.Pgpolicylog{}
-			err = RestClient.Post().
-				Resource(crv1.PgpolicyResourcePlural).
-				Namespace(Namespace).
-				Body(newInstance).
-				Do().Into(&result)
-			if err != nil {
-				log.Error("error in creating Pgpolicylog TPR instance", err.Error())
-			} else {
-				fmt.Println("created Pgpolicylog " + result.ObjectMeta.Name)
-			}
-
-		}
-
-	}
-
 }
 
 func getPolicylog(policyname, clustername string) (*crv1.Pgpolicylog, error) {

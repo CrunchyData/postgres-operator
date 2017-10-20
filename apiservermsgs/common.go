@@ -15,38 +15,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-)
+import ()
 
-// CreatePolicyRequest ...
-type CreatePolicyRequest struct {
-	Name      string
-	URL       string
-	SQL       string
-	Namespace string
-}
+// Ok status
+const Ok = "ok"
+const Error = "error"
 
-// ApplyPolicyRequest ...
-type ApplyPolicyRequest struct {
-	Name      string
-	Selector  string
-	DryRun    bool
-	Namespace string
-}
-
-// ApplyPolicyResponse ...
-type ApplyPolicyResponse struct {
-	Name []string
-	Status
-}
-
-// ApplyResults ...
-type ApplyResults struct {
-	Results []string
-}
-
-// ShowPolicyResponse ...
-type ShowPolicyResponse struct {
-	PolicyList crv1.PgpolicyList
+// Status ...
+type Status struct {
+	Code string
+	Msg  string
 }

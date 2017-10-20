@@ -77,13 +77,22 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 // ApplyPolicyHandler ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
 	log.Infoln("policyservice.ApplyPolicyHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
-	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+
+	var request msgs.ApplyPolicyRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	c := new(msgs.ApplyResults)
-	c.Results = []string{"one", "two"}
-	json.NewEncoder(w).Encode(c)
+
+	resp := msgs.ApplyPolicyResponse{}
+	resp.Name, err = ApplyPolicy(&request)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+	}
+
+	json.NewEncoder(w).Encode(resp)
 }
