@@ -21,7 +21,6 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/apiservermsgs"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -153,7 +152,7 @@ func showPolicy(args []string) {
 		//log.Info("here after Do2")
 		defer resp.Body.Close()
 
-		var response apiservermsgs.ShowPolicyResponse
+		var response msgs.ShowPolicyResponse
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
@@ -195,7 +194,7 @@ func createPolicy(args []string) {
 
 	//create the request
 
-	r := new(apiservermsgs.CreatePolicyRequest)
+	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
 
 	if PolicyURL != "" {
@@ -239,7 +238,7 @@ func createPolicy(args []string) {
 	defer resp.Body.Close()
 
 	/**
-	var response apiservermsgs.CreatePolicyResponse
+	var response msgs.CreatePolicyResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Error(err)

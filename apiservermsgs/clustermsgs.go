@@ -29,3 +29,15 @@ type ShowClusterResponse struct {
 	ClusterList crv1.PgclusterList
 	Status
 }
+
+// ClusterTestDetail ...
+type ClusterTestDetail struct {
+	PsqlString string
+	Working    bool
+}
+
+// ClusterTestResponse ...
+type ClusterTestResponse struct {
+	Items []ClusterTestDetail
+	Status
+}

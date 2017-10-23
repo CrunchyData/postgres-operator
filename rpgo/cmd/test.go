@@ -16,8 +16,10 @@ package cmd
 */
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
 	"net/http"
 )
@@ -47,8 +49,8 @@ func init() {
 func showTest(args []string) {
 
 	for _, arg := range args {
-		fmt.Println(arg)
-		url := "http://localhost:8080/clusters/test/newcluster"
+		url := APIServerURL + "/clusters/test/" + arg + "?namespace=" + Namespace
+		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -66,6 +68,31 @@ func showTest(args []string) {
 			return
 		}
 		fmt.Printf("%v\n", resp)
+
+		defer resp.Body.Close()
+
+		var response msgs.ClusterTestResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if len(response.Items) == 0 {
+			fmt.Println("nothing found")
+			return
+		}
+
+		for _, v := range response.Items {
+			fmt.Printf("%s is ", v.PsqlString)
+			if v.Working {
+				fmt.Printf("%s\n", GREEN("working"))
+			} else {
+				fmt.Printf("%s\n", RED("NOT working"))
+			}
+		}
 
 	}
 }

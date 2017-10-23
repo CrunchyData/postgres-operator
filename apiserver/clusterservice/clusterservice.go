@@ -98,10 +98,19 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("clusterservice.TestClusterHandler called")
 	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	clustername := vars["name"]
+	log.Infof(" name arg is %v\n", clustername)
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Infoln("namespace param was [" + namespace + "]")
+	} else {
+		log.Infoln("namespace param was null")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	c := new(TestResults)
-	c.Results = []string{"one", "two"}
-	json.NewEncoder(w).Encode(c)
+
+	resp := TestCluster(namespace, clustername)
+
+	json.NewEncoder(w).Encode(resp)
 }
