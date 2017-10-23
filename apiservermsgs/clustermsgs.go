@@ -41,3 +41,8 @@ type ClusterTestResponse struct {
 	Items []ClusterTestDetail
 	Status
 }
+
+// ClusterScaleResponse ...
+type ClusterScaleResponse struct {
+	Status
+}

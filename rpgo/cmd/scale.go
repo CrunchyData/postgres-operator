@@ -16,11 +16,12 @@ package cmd
 */
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/util"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
+	"net/http"
 	"strconv"
 )
 
@@ -54,40 +55,43 @@ func init() {
 }
 
 func scaleCluster(args []string) {
-	//get a list of all clusters
-	clusterList := crv1.PgclusterList{}
-	err := RestClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(Namespace).
-		Do().Into(&clusterList)
-	if err != nil {
-		log.Error("error getting list of clusters" + err.Error())
-		return
-	}
-
-	if len(clusterList.Items) == 0 {
-		fmt.Println("no clusters found")
-		return
-	}
-
-	itemFound := false
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		for _, cluster := range clusterList.Items {
-			if arg == "all" || cluster.Spec.Name == arg {
-				itemFound = true
-				fmt.Printf("scaling %s to %d\n", arg, ReplicaCount)
-				err = util.Patch(RestClient, "/spec/replicas", strconv.Itoa(ReplicaCount), crv1.PgclusterResourcePlural, arg, Namespace)
-				if err != nil {
-					log.Error(err.Error())
-				}
-			}
+		url := APIServerURL + "/clusters/scale/" + arg + "?namespace=" + Namespace + "&replica-count=" + strconv.Itoa(ReplicaCount)
+		log.Debug(url)
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
-		if !itemFound {
-			fmt.Println(arg + " was not found")
+
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
-		itemFound = false
+
+		defer resp.Body.Close()
+
+		var response msgs.ClusterScaleResponse
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if response.Status.Code == msgs.Ok {
+			fmt.Println("Ok")
+		} else {
+			fmt.Println("Error")
+			fmt.Println(response.Status.Msg)
+		}
 
 	}
 }

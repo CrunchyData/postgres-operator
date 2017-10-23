@@ -22,25 +22,30 @@ import (
 	"net/http"
 )
 
-// ScaleResponse ...
-type ScaleResponse struct {
-	Results string
-}
-
-// ScaleRequest ...
-type ScaleRequest struct {
-	Name string
-}
-
 // ScaleClusterHandler ...
 // pgo scale mycluster --replica-count=1
 // parameters showsecrets
 // returns a ScaleResponse
 func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Infoln("clusterservice.ScaleClusterHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
 	log.Infof(" vars are %v\n", vars)
+
+	clusterName := vars["name"]
+	log.Infof(" clusterName arg is %v\n", clusterName)
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Infoln("namespace param was [" + namespace + "]")
+	} else {
+		log.Infoln("namespace param was null")
+	}
+	replicaCount := r.URL.Query().Get("replica-count")
+	if namespace != "" {
+		log.Infoln("replica-count param was [" + replicaCount + "]")
+	} else {
+		log.Infoln("replica-count param was null")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -50,8 +55,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ScaleResponse)
-	resp.Results = "ok it worked"
-
+	resp := ScaleCluster(namespace, clusterName, replicaCount)
 	json.NewEncoder(w).Encode(resp)
 }
