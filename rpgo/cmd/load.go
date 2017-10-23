@@ -19,35 +19,19 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	"net/http"
 	"os"
-	"text/template"
 )
 
-type LoadJobTemplateFields struct {
-	Name            string
-	COImageTag      string
-	Host            string
-	Database        string
-	User            string
-	Pass            string
-	Port            string
-	TableToLoad     string
-	CSVFilePath     string
-	PVCName         string
-	SecurityContext string
-}
-
 var LoadConfig string
-var LoadConfigTemplate LoadJobTemplateFields
 
 var loadCmd = &cobra.Command{
 	Use:   "load",
@@ -70,12 +54,6 @@ var loadCmd = &cobra.Command{
 	},
 }
 
-// CSVLoadTemplatePath ....
-var CSVLoadTemplatePath string
-
-// JobTemplate ...
-var JobTemplate *template.Template
-
 func init() {
 	RootCmd.AddCommand(loadCmd)
 
@@ -85,64 +63,78 @@ func init() {
 }
 
 func createLoad(args []string) {
-	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
-	if CSVLoadTemplatePath == "" {
-		log.Error("Pgo.CSVLoadTemplate not defined in pgo config.")
-		os.Exit(2)
-	}
 	getLoadConfigFile()
-	fmt.Println("using csvload template from " + CSVLoadTemplatePath)
-	getJobTemplate()
-	log.Debugf("createLoad called %v\n", args)
-
-	//var err error
+	err := validateLoadConfig()
+	if err != nil {
+		log.Error("problem parsing load config file...")
+		log.Error(err)
+		return
+	}
 
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
 
-		myselector, err := labels.Parse(Selector)
+		_, err := labels.Parse(Selector)
 		if err != nil {
 			log.Error("could not parse selector flag")
 			return
 		}
-
-		//get the clusters list
-		clusterList := crv1.PgclusterList{}
-		err = RestClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(Namespace).
-			LabelsSelectorParam(myselector).
-			Do().
-			Into(&clusterList)
-		if err != nil {
-			log.Error("error getting cluster list" + err.Error())
-			return
-		}
-
-		if len(clusterList.Items) == 0 {
-			log.Debug("no clusters found")
-		} else {
-			newargs := make([]string, 0)
-			for _, cluster := range clusterList.Items {
-				newargs = append(newargs, cluster.Spec.Name)
-			}
-			args = newargs
-		}
-
 	}
 
-	for _, arg := range args {
-		log.Debug("load called for " + arg)
+	buf, err := ioutil.ReadFile(LoadConfig)
+	request := msgs.LoadRequest{}
+	request.LoadConfig = string(buf)
+	request.Namespace = Namespace
+	request.Selector = Selector
+	request.Args = args
 
-		fmt.Println("created load for " + arg)
-		createJob(Clientset, arg, Namespace)
+	//make the request
 
+	jsonValue, _ := json.Marshal(request)
+
+	url := APIServerURL + "/load"
+	log.Debug("LoadPolicy called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var response msgs.LoadResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	//get the response
+	if response.Status.Code == msgs.Error {
+		log.Error("error in loading...")
+		log.Error(response.Status.Msg)
+		os.Exit(2)
+	}
+
+	for value := range response.Results {
+		fmt.Println(value)
 	}
 
 }
 
 func getLoadConfigFile() {
-	LoadConfigTemplate = LoadJobTemplateFields{}
 	viper.SetConfigFile(LoadConfig)
 	err := viper.ReadInConfig()
 	if err == nil {
@@ -152,61 +144,30 @@ func getLoadConfigFile() {
 		os.Exit(2)
 	}
 
-	//LoadConfigTemplate.Name = viper.GetString("Name")
-	LoadConfigTemplate.COImageTag = viper.GetString("COImageTag")
-	//LoadConfigTemplate.DbHost = viper.GetString("DbHost")
-	LoadConfigTemplate.Database = viper.GetString("Database")
-	LoadConfigTemplate.User = viper.GetString("User")
-	//LoadConfigTemplate.DbPass = viper.GetString("DbPass")
-	LoadConfigTemplate.Port = viper.GetString("Port")
-	LoadConfigTemplate.TableToLoad = viper.GetString("TableToLoad")
-	LoadConfigTemplate.CSVFilePath = viper.GetString("CSVFilePath")
-	LoadConfigTemplate.PVCName = viper.GetString("PVCName")
-	LoadConfigTemplate.SecurityContext = viper.GetString("SecurityContext")
-
 }
 
-func getJobTemplate() {
+func validateLoadConfig() error {
 	var err error
-	var buf []byte
-
-	buf, err = ioutil.ReadFile(CSVLoadTemplatePath)
-	if err != nil {
-		log.Error("error loading csvload job template..." + err.Error())
-		os.Exit(2)
+	if viper.GetString("COImageTag") == "" {
+		return errors.New("COImageTag is not supplied")
 	}
-	JobTemplate = template.Must(template.New("csvload job template").Parse(string(buf)))
-
-}
-
-func createJob(clientset *kubernetes.Clientset, clusterName string, namespace string) {
-	var err error
-
-	LoadConfigTemplate.Name = "csvload-" + clusterName
-	LoadConfigTemplate.Host = clusterName
-	LoadConfigTemplate.Pass = GetSecretPassword(clusterName, crv1.RootSecretSuffix)
-
-	var doc2 bytes.Buffer
-	err = JobTemplate.Execute(&doc2, LoadConfigTemplate)
-	if err != nil {
-		log.Error(err.Error())
-		return
+	if viper.GetString("DbDatabase") == "" {
+		return errors.New("DbDatabase is not supplied")
 	}
-	jobDocString := doc2.String()
-	log.Debug(jobDocString)
-
-	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
-		log.Error("error unmarshalling json into Job " + err.Error())
-		return
+	if viper.GetString("DbUser") == "" {
+		return errors.New("DbUser is not supplied")
 	}
-
-	resultJob, err := Clientset.Batch().Jobs(Namespace).Create(&newjob)
-	if err != nil {
-		log.Error("error creating Job " + err.Error())
-		return
+	if viper.GetString("DbPort") == "" {
+		return errors.New("DbPort is not supplied")
 	}
-	log.Info("created load Job " + resultJob.Name)
-
+	if viper.GetString("TableToLoad") == "" {
+		return errors.New("TableToLoad is not supplied")
+	}
+	if viper.GetString("CSVFilePath") == "" {
+		return errors.New("CSVFilePath is not supplied")
+	}
+	if viper.GetString("PVCName") == "" {
+		return errors.New("PVCName is not supplied")
+	}
+	return err
 }

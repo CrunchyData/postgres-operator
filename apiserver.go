@@ -5,6 +5,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
+	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
@@ -23,6 +24,7 @@ func main() {
 	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
+	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler)
 	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler)
