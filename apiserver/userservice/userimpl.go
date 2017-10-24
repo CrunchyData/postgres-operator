@@ -67,6 +67,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	resp := msgs.UserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
 
 	//set up the selector
 	var sel string
@@ -164,7 +165,8 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				if len(results) > 0 {
 					log.Debug("expired passwords....")
 					for _, v := range results {
-						log.Debug("RoleName %s Role Valid Until %s\n", v.Rolname, v.Rolvaliduntil)
+						resp.Results = append(resp.Results, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
+						log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(defaultPasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
