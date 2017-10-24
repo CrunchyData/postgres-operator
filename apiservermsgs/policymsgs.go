@@ -50,3 +50,8 @@ type ApplyResults struct {
 type ShowPolicyResponse struct {
 	PolicyList crv1.PgpolicyList
 }
+
+// DeletePolicyResponse ...
+type DeletePolicyResponse struct {
+	Status
+}

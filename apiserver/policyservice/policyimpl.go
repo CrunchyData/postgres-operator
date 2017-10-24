@@ -115,44 +115,51 @@ func ShowPolicy(RESTClient *rest.RESTClient, Namespace string, name string) crv1
 }
 
 // DeletePolicy ...
-func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, args []string) error {
+func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, policyName string) msgs.DeletePolicyResponse {
+	resp := msgs.DeletePolicyResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+
 	var err error
-	// Fetch a list of our policy CRDs
+
 	policyList := crv1.PgpolicyList{}
 	err = RESTClient.Get().Resource(crv1.PgpolicyResourcePlural).Do().Into(&policyList)
 	if err != nil {
 		log.Error("error getting policy list" + err.Error())
-		return err
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
-	//to remove a policy, you just have to remove
-	//the pgpolicy object, the operator will do the actual deletes
-	for _, arg := range args {
-		policyFound := false
-		log.Debug("deleting policy " + arg)
-		for _, policy := range policyList.Items {
-			if arg == "all" || arg == policy.Spec.Name {
-				policyFound = true
-				err = RESTClient.Delete().
-					Resource(crv1.PgpolicyResourcePlural).
-					Namespace(Namespace).
-					Name(policy.Spec.Name).
-					Do().
-					Error()
-				if err == nil {
-					log.Infoln("deleted pgpolicy " + policy.Spec.Name)
-				} else {
-					log.Error("error deleting pgpolicy " + arg + err.Error())
-					return err
-				}
-
+	policyFound := false
+	log.Debug("deleting policy " + policyName)
+	for _, policy := range policyList.Items {
+		if policyName == "all" || policyName == policy.Spec.Name {
+			policyFound = true
+			err = RESTClient.Delete().
+				Resource(crv1.PgpolicyResourcePlural).
+				Namespace(Namespace).
+				Name(policy.Spec.Name).
+				Do().
+				Error()
+			if err == nil {
+				log.Infoln("deleted pgpolicy " + policy.Spec.Name)
+			} else {
+				log.Error("error deleting pgpolicy " + policyName + err.Error())
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
 			}
-		}
-		if !policyFound {
-			log.Infoln("policy " + arg + " not found")
+
 		}
 	}
-	return err
+	if !policyFound {
+		log.Debug("policy " + policyName + " not found")
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "policy " + policyName + " not found"
+		return resp
+	}
+	return resp
 
 }
 

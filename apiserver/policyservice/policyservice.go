@@ -58,20 +58,22 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		log.Infoln("namespace param was null")
 	}
 
-	switch r.Method {
-	case "GET":
-		log.Infoln("policyservice.ShowPolicyHandler GET called")
-	case "DELETE":
-		log.Infoln("policyservice.ShowPolicyHandler DELETE called")
-	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := msgs.ShowPolicyResponse{}
-	resp.PolicyList = ShowPolicy(apiserver.RESTClient, namespace, policyname)
+	switch r.Method {
+	case "GET":
+		log.Infoln("policyservice.ShowPolicyHandler GET called")
+		resp := msgs.ShowPolicyResponse{}
+		resp.PolicyList = ShowPolicy(apiserver.RESTClient, namespace, policyname)
 
-	json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Infoln("policyservice.ShowPolicyHandler DELETE called")
+		resp := DeletePolicy(namespace, apiserver.RESTClient, policyname)
+		json.NewEncoder(w).Encode(resp)
+	}
+
 }
 
 // ApplyPolicyHandler ...

@@ -20,16 +20,10 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io/ioutil"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
-	"os/user"
-	"strings"
 )
 
 var applyCmd = &cobra.Command{
@@ -264,99 +258,51 @@ func getPolicyString(filename string) (string, error) {
 }
 
 func deletePolicy(args []string) {
-	// Fetch a list of our policy TPRs
-	policyList := crv1.PgpolicyList{}
-	err := RestClient.Get().Resource(crv1.PgpolicyResourcePlural).Do().Into(&policyList)
-	if err != nil {
-		log.Error("error getting policy list" + err.Error())
+
+	log.Debugf("deletePolicy called %v\n", args)
+
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
 		return
 	}
 
-	//to remove a policy, you just have to remove
-	//the pgpolicy object, the operator will do the actual deletes
 	for _, arg := range args {
-		policyFound := false
 		log.Debug("deleting policy " + arg)
-		for _, policy := range policyList.Items {
-			if arg == "all" || arg == policy.Spec.Name {
-				policyFound = true
-				err = RestClient.Delete().
-					Resource(crv1.PgpolicyResourcePlural).
-					Namespace(Namespace).
-					Name(policy.Spec.Name).
-					Do().
-					Error()
-				if err != nil {
-					log.Error("error deleting pgpolicy " + arg + err.Error())
-				} else {
-					fmt.Println("deleted pgpolicy " + policy.Spec.Name)
-				}
 
-			}
+		url := APIServerURL + "/policies/" + arg + "?namespace=" + Namespace
+
+		log.Debug("delete policy called [" + url + "]")
+
+		action := "DELETE"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
-		if !policyFound {
-			fmt.Println("policy " + arg + " not found")
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
-	}
-}
 
-func validateConfigPolicies() error {
-	var err error
-	var configPolicies string
-	if PoliciesFlag == "" {
-		configPolicies = viper.GetString("CLUSTER.POLICIES")
-	} else {
-		configPolicies = PoliciesFlag
-	}
-	if configPolicies == "" {
-		log.Debug("no policies are specified")
-		return err
-	}
+		defer resp.Body.Close()
+		var response msgs.DeletePolicyResponse
 
-	policies := strings.Split(configPolicies, ",")
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
 
-	for _, v := range policies {
-		result := crv1.Pgpolicy{}
-
-		// error if it already exists
-		err = RestClient.Get().
-			Resource(crv1.PgpolicyResourcePlural).
-			Namespace(Namespace).
-			Name(v).
-			Do().
-			Into(&result)
-		if err == nil {
-			log.Debug("policy " + v + " was found in catalog")
-		} else if kerrors.IsNotFound(err) {
-			log.Error("policy " + v + " specified in configuration was not found")
-			return err
+		if response.Status.Code == msgs.Ok {
+			fmt.Println(GREEN("ok"))
 		} else {
-			log.Error("error getting pgpolicy " + v + err.Error())
-			return err
+			fmt.Println(RED(response.Status.Msg))
 		}
 
 	}
-
-	return err
-}
-
-func getPolicylog(policyname, clustername string) (*crv1.Pgpolicylog, error) {
-	u, err := user.Current()
-	if err != nil {
-		log.Error(err.Error())
-	}
-
-	spec := crv1.PgpolicylogSpec{}
-	spec.PolicyName = policyname
-	spec.Username = u.Name
-	spec.ClusterName = clustername
-
-	newInstance := &crv1.Pgpolicylog{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: policyname + clustername,
-		},
-		Spec: spec,
-	}
-	return newInstance, err
-
 }

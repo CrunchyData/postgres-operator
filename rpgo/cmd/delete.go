@@ -65,7 +65,7 @@ pgo delete upgrade mycluster`,
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
-	//deleteCmd.AddCommand(deletePolicyCmd)
+	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 
@@ -119,7 +119,6 @@ var deleteClusterCmd = &cobra.Command{
 	},
 }
 
-/*
 var deletePolicyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "delete a policy",
@@ -133,4 +132,3 @@ var deletePolicyCmd = &cobra.Command{
 		}
 	},
 }
-*/
