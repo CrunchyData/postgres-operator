@@ -9,6 +9,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
+	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -25,6 +26,7 @@ func main() {
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
+	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler)
 	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler)
