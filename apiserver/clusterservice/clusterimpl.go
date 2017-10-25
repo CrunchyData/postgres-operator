@@ -174,6 +174,12 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		detail.Secrets, err = getSecrets(&c, namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 		response.Results = append(response.Results, detail)
 	}
 
@@ -244,6 +250,28 @@ func getServices(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterS
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
 		d.ClusterIP = p.Spec.ClusterIP
+		output = append(output, d)
+
+	}
+
+	return output, err
+}
+
+func getSecrets(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterSecret, error) {
+
+	output := make([]msgs.ShowClusterSecret, 0)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
+	secrets, err := apiserver.Clientset.Core().Secrets(namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return output, err
+	}
+
+	for _, s := range secrets.Items {
+		d := msgs.ShowClusterSecret{}
+		d.Name = s.Name
+		d.Username = string(s.Data["username"][:])
+		d.Password = string(s.Data["password"][:])
 		output = append(output, d)
 
 	}

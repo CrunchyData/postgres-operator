@@ -160,6 +160,13 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		}
 	}
 
+	for _, s := range detail.Secrets {
+		fmt.Println("")
+		fmt.Println("secret : " + s.Name)
+		fmt.Println(TreeBranch + "username: " + s.Username)
+		fmt.Println(TreeTrunk + "password: " + s.Password)
+	}
+
 }
 
 func printPolicies(d *msgs.ShowClusterDeployment) {

@@ -60,12 +60,20 @@ type ShowClusterDeployment struct {
 	PolicyLabels []string
 }
 
+// ShowClusterSecret
+type ShowClusterSecret struct {
+	Name     string
+	Username string
+	Password string
+}
+
 // ShowClusterDetail ...
 type ShowClusterDetail struct {
 	Cluster     crv1.Pgcluster
 	Deployments []ShowClusterDeployment
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
+	Secrets     []ShowClusterSecret
 }
 
 // ShowClusterResponse ...
