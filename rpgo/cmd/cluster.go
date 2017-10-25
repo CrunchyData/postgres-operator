@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
 	"os"
@@ -124,16 +124,13 @@ func showCluster(args []string) {
 			return
 		}
 
-		if len(response.ClusterList.Items) == 0 {
+		if len(response.Results) == 0 {
 			fmt.Println("no clusters found")
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
-		log.Debugf("len of items = %d\n", len(response.ClusterList.Items))
-
-		for _, cluster := range response.ClusterList.Items {
-			printCluster(&cluster)
+		for _, clusterDetail := range response.Results {
+			printCluster(&clusterDetail)
 		}
 
 	}
@@ -141,10 +138,34 @@ func showCluster(args []string) {
 }
 
 // printCluster
-func printCluster(result *crv1.Pgcluster) {
-	fmt.Printf("%s%s\n", "", "")
-	fmt.Printf("%s%s\n", "", "pgcluster : "+result.Spec.Name)
+func printCluster(detail *msgs.ShowClusterDetail) {
+	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
 
+	for _, pod := range detail.Pods {
+		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
+	}
+
+	for _, d := range detail.Deployments {
+		fmt.Println(TreeBranch + "deployment : " + d.Name)
+	}
+	if len(detail.Deployments) > 0 {
+		printPolicies(&detail.Deployments[0])
+	}
+
+	for i, service := range detail.Services {
+		if i == len(detail.Services)-1 {
+			fmt.Println(TreeTrunk + "service : " + service.Name + " (" + service.ClusterIP + ")")
+		} else {
+			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
+		}
+	}
+
+}
+
+func printPolicies(d *msgs.ShowClusterDeployment) {
+	for _, v := range d.PolicyLabels {
+		fmt.Printf("policy: %s\n", TreeBranch, v)
+	}
 }
 
 // createCluster ....

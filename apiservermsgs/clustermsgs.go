@@ -40,9 +40,37 @@ type CreateClusterResponse struct {
 	Status
 }
 
+// ShowClusterService
+type ShowClusterService struct {
+	Name      string
+	ClusterIP string
+}
+
+// ShowClusterPod
+type ShowClusterPod struct {
+	Name        string
+	Phase       string
+	NodeName    string
+	ReadyStatus string
+}
+
+// ShowClusterDeployment
+type ShowClusterDeployment struct {
+	Name         string
+	PolicyLabels []string
+}
+
+// ShowClusterDetail ...
+type ShowClusterDetail struct {
+	Cluster     crv1.Pgcluster
+	Deployments []ShowClusterDeployment
+	Pods        []ShowClusterPod
+	Services    []ShowClusterService
+}
+
 // ShowClusterResponse ...
 type ShowClusterResponse struct {
-	ClusterList crv1.PgclusterList
+	Results []ShowClusterDetail
 	Status
 }
 

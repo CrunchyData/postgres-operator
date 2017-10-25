@@ -20,7 +20,12 @@ import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"k8s.io/client-go/pkg/api/v1"
+
+	"fmt"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
@@ -109,12 +114,18 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 
 	response := msgs.ShowClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]msgs.ShowClusterDetail, 0)
 
 	myselector := labels.Everything()
 	log.Debug("selector is " + selector)
-	if selector != "" {
-		name = "all"
-		myselector, err = labels.Parse(selector)
+	if selector == "" && name == "all" {
+	} else {
+		if selector == "" {
+			selector = "name=" + name
+			myselector, err = labels.Parse(selector)
+		} else {
+			myselector, err = labels.Parse(selector)
+		}
 		if err != nil {
 			log.Error("could not parse --selector value " + err.Error())
 			response.Status.Code = msgs.Error
@@ -125,42 +136,121 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 
 	log.Debugf("label selector is [%v]\n", myselector)
 
-	if name == "all" {
-		//get a list of all clusters
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(namespace).
-			LabelsSelectorParam(myselector).
-			Do().Into(&response.ClusterList)
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(namespace).
+		LabelsSelectorParam(myselector).
+		Do().Into(&clusterList)
+	if err != nil {
+		log.Error("error getting list of clusters" + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+
+	for _, c := range clusterList.Items {
+		detail := msgs.ShowClusterDetail{}
+		detail.Cluster = c
+		detail.Deployments, err = getDeployments(&c, namespace)
 		if err != nil {
-			log.Error("error getting list of clusters" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		log.Debug("clusters found len is %d\n", len(response.ClusterList.Items))
-	} else {
-		cluster := crv1.Pgcluster{}
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(namespace).
-			Name(name).
-			Do().Into(&cluster)
+		detail.Pods, err = getPods(&c, namespace)
 		if err != nil {
-			log.Error("error getting cluster" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		response.ClusterList.Items = make([]crv1.Pgcluster, 1)
-		response.ClusterList.Items[0] = cluster
+		detail.Services, err = getServices(&c, namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results = append(response.Results, detail)
 	}
 
 	return response
 
 }
 
-// TestCluster ...
+func getDeployments(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterDeployment, error) {
+	output := make([]msgs.ShowClusterDeployment, 0)
+
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
+	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of deployments" + err.Error())
+		return output, err
+	}
+
+	for _, dep := range deployments.Items {
+		d := msgs.ShowClusterDeployment{}
+		d.Name = dep.Name
+		d.PolicyLabels = make([]string, 0)
+
+		labels := dep.ObjectMeta.Labels
+		for k, v := range labels {
+			if v == "pgpolicy" {
+				d.PolicyLabels = append(d.PolicyLabels, k)
+			}
+		}
+		output = append(output, d)
+
+	}
+
+	return output, err
+}
+func getPods(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterPod, error) {
+
+	output := make([]msgs.ShowClusterPod, 0)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
+	pods, err := apiserver.Clientset.CoreV1().Pods(namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of pods" + err.Error())
+		return output, err
+	}
+	for _, p := range pods.Items {
+		d := msgs.ShowClusterPod{}
+		d.Name = p.Name
+		d.Phase = string(p.Status.Phase)
+		d.NodeName = p.Spec.NodeName
+		d.ReadyStatus = getReadyStatus(&p)
+		output = append(output, d)
+
+	}
+
+	return output, err
+
+}
+func getServices(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterService, error) {
+
+	output := make([]msgs.ShowClusterService, 0)
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
+	services, err := apiserver.Clientset.CoreV1().Services(namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of services" + err.Error())
+		return output, err
+	}
+
+	for _, p := range services.Items {
+		d := msgs.ShowClusterService{}
+		d.Name = p.Name
+		d.ClusterIP = p.Spec.ClusterIP
+		output = append(output, d)
+
+	}
+
+	return output, err
+}
+
 func TestCluster(namespace, name string) msgs.ClusterTestResponse {
 	var err error
 
@@ -562,5 +652,18 @@ func validateNodeName(nodeName string) error {
 	}
 
 	return err
+
+}
+
+func getReadyStatus(pod *v1.Pod) string {
+	readyCount := 0
+	containerCount := 0
+	for _, stat := range pod.Status.ContainerStatuses {
+		containerCount++
+		if stat.Ready {
+			readyCount++
+		}
+	}
+	return fmt.Sprintf("%d/%d", readyCount, containerCount)
 
 }
