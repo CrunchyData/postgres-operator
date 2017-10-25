@@ -46,7 +46,13 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Infoln("clusterservice.CreateClusterHandler got request " + request.Name)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := msgs.CreateClusterResponse{}
+	resp = CreateCluster(&request)
+	json.NewEncoder(w).Encode(resp)
+
 }
 
 // ShowClusterHandler ...

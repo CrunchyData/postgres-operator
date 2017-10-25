@@ -93,7 +93,7 @@ pgo create cluster mycluster`,
 		if len(args) == 0 {
 			log.Error("a cluster name is required for this command")
 		} else {
-			//createCluster(args)
+			createCluster(args)
 		}
 	},
 }

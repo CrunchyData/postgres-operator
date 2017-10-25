@@ -21,7 +21,23 @@ import (
 
 // CreateClusterRequest ...
 type CreateClusterRequest struct {
-	Name string
+	Name        string
+	Namespace   string
+	NodeName    string
+	Password    string
+	SecretFrom  string
+	BackupPVC   string
+	UserLabels  string
+	BackupPath  string
+	Policies    string
+	CCPImageTag string
+	Series      int
+}
+
+// CreateClusterResponse ...
+type CreateClusterResponse struct {
+	Results []string
+	Status
 }
 
 // ShowClusterResponse ...

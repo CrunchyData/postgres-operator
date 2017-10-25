@@ -29,7 +29,7 @@ func main() {
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler)
 	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
-	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler)
+	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
 	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)

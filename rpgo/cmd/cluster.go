@@ -16,12 +16,14 @@ package cmd
 */
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
+	"os"
 )
 
 // deleteCluster ...
@@ -142,5 +144,75 @@ func showCluster(args []string) {
 func printCluster(result *crv1.Pgcluster) {
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgcluster : "+result.Spec.Name)
+
+}
+
+// createCluster ....
+func createCluster(args []string) {
+	var err error
+
+	if len(args) == 0 {
+		log.Error("cluster name argument is required")
+		return
+	}
+
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
+		return
+	}
+
+	r := new(msgs.CreateClusterRequest)
+	r.Name = args[0]
+	r.Namespace = Namespace
+	r.NodeName = NodeName
+	r.Password = Password
+	r.SecretFrom = SecretFrom
+	r.BackupPVC = BackupPVC
+	r.UserLabels = UserLabels
+	r.BackupPath = BackupPath
+	r.Policies = PoliciesFlag
+	r.CCPImageTag = CCPImageTag
+	r.Series = Series
+
+	jsonValue, _ := json.Marshal(r)
+	url := APIServerURL + "/clusters"
+	log.Debug("createCluster called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var response msgs.CreateClusterResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		fmt.Println(GREEN("ok"))
+
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
+	}
 
 }
