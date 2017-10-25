@@ -30,6 +30,12 @@ type ShowClusterResponse struct {
 	Status
 }
 
+// DeleteClusterResponse ...
+type DeleteClusterResponse struct {
+	Results []string
+	Status
+}
+
 // ClusterTestDetail ...
 type ClusterTestDetail struct {
 	PsqlString string

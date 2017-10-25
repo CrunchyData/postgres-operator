@@ -24,12 +24,11 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a policy, database, cluster, backup, or upgrade",
-	Long: `delete allows you to delete a policy, database, cluster, backup, or upgrade
+	Short: "Delete a policy, cluster, backup, or upgrade",
+	Long: `delete allows you to delete a policy, cluster, backup, or upgrade
 For example:
 
 pgo delete policy mypolicy
-pgo delete database mydatabase
 pgo delete cluster mycluster
 pgo delete backup mycluster
 pgo delete upgrade mycluster`,
@@ -38,14 +37,12 @@ pgo delete upgrade mycluster`,
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
 	* policy
-	* database
 	* cluster
 	* backup
 	* upgrade`)
 		} else {
 			switch args[0] {
 			case "policy":
-			case "database":
 			case "cluster":
 			case "backup":
 			case "upgrade":
@@ -53,7 +50,6 @@ pgo delete upgrade mycluster`,
 			default:
 				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
 	* policy
-	* database
 	* cluster
 	* backup
 	* upgrade`)
@@ -114,7 +110,7 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			log.Error("a cluster name or selector is required for this command")
 		} else {
-			//deleteCluster(args)
+			deleteCluster(args)
 		}
 	},
 }

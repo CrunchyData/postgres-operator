@@ -27,6 +27,77 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// DeleteCluster ...
+func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse {
+	var err error
+
+	response := msgs.DeleteClusterResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 0)
+
+	myselector := labels.Everything()
+
+	if selector != "all" {
+		if selector == "" {
+			selector = "name=" + name
+		}
+		myselector, err = labels.Parse(selector)
+		if err != nil {
+			log.Error("could not parse selector value of " + selector + " " + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	}
+	log.Debugf("label selector is [%v]\n", myselector)
+
+	clusterList := crv1.PgclusterList{}
+
+	//get the clusters list
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(namespace).
+		LabelsSelectorParam(myselector).
+		Do().
+		Into(&clusterList)
+	if err != nil {
+		log.Error("error getting cluster list" + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	if len(clusterList.Items) == 0 {
+		log.Debug("no clusters found")
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no clusters found"
+		return response
+	}
+
+	for _, cluster := range clusterList.Items {
+
+		err := apiserver.RESTClient.Delete().
+			Resource(crv1.PgclusterResourcePlural).
+			Namespace(namespace).
+			Name(cluster.Spec.Name).
+			Do().
+			Error()
+
+		if err != nil {
+			log.Error("error deleting pgcluster " + cluster.Spec.Name + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		} else {
+			log.Debug("deleted pgcluster " + cluster.Spec.Name)
+			response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
+		}
+	}
+
+	return response
+
+}
+
 // ShowCluster ...
 func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 	var err error

@@ -78,18 +78,20 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		log.Infoln("selector param was null")
 	}
 
-	switch r.Method {
-	case "GET":
-		log.Infoln("clusterservice.ShowClusterHandler GET called")
-	case "DELETE":
-		log.Infoln("clusterservice.ShowClusterHandler DELETE called")
-	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ShowCluster(namespace, clustername, selector)
-	json.NewEncoder(w).Encode(resp)
+	switch r.Method {
+	case "GET":
+		log.Infoln("clusterservice.ShowClusterHandler GET called")
+		resp := ShowCluster(namespace, clustername, selector)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Infoln("clusterservice.DeleteClusterHandler DELETE called")
+		resp := DeleteCluster(namespace, clustername, selector)
+		json.NewEncoder(w).Encode(resp)
+	}
+
 }
 
 // TestClusterHandler ...

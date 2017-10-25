@@ -24,6 +24,59 @@ import (
 	"net/http"
 )
 
+// deleteCluster ...
+func deleteCluster(args []string) {
+	log.Debugf("deleteCluster called %v\n", args)
+
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
+		return
+	}
+
+	for _, arg := range args {
+		log.Debug("deleting cluster " + arg)
+
+		url := APIServerURL + "/clusters/" + arg + "?namespace=" + Namespace
+
+		log.Debug("delete cluster called [" + url + "]")
+
+		action := "DELETE"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
+		}
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
+		}
+
+		defer resp.Body.Close()
+		var response msgs.DeleteClusterResponse
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if response.Status.Code == msgs.Ok {
+			fmt.Println(GREEN("ok"))
+		} else {
+			fmt.Println(RED(response.Status.Msg))
+		}
+		for _, result := range response.Results {
+			fmt.Println(result)
+		}
+
+	}
+
+}
+
 // showCluster ...
 func showCluster(args []string) {
 
