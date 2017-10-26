@@ -16,13 +16,11 @@ package cmd
 */
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
-	//	"k8s.io/client-go/kubernetes"
-	//	"k8s.io/client-go/rest"
 )
 
 // RED ...
@@ -31,19 +29,12 @@ var RED func(a ...interface{}) string
 // GREEN ...
 var GREEN func(a ...interface{}) string
 
-var cfgFile string
-var APIServerURL, KubeconfigPath string
+var APIServerURL string
 var Labelselector string
 var DebugFlag bool
 var Namespace string
 var Selector string
 var DryRun bool
-
-// RestClient ...
-//var RestClient *rest.RESTClient
-
-// Clientset ...
-//var Clientset *kubernetes.Clientset
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -59,6 +50,8 @@ create and manage PostgreSQL clusters.`,
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	fmt.Println("Execute called")
+
 	if err := RootCmd.Execute(); err != nil {
 		log.Debug(err.Error())
 		os.Exit(-1)
@@ -68,89 +61,32 @@ func Execute() {
 
 func init() {
 
+	cobra.OnInitialize(initConfig)
+	fmt.Println("init called")
 	GREEN = color.New(color.FgGreen).SprintFunc()
 	RED = color.New(color.FgRed).SprintFunc()
 
-	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.pgo.yaml)")
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	RootCmd.PersistentFlags().StringVar(&KubeconfigPath, "kubeconfig", "", "kube config file")
+	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "postgres operator apiserver URL")
 	RootCmd.PersistentFlags().StringVar(&Namespace, "namespace", "", "kube namespace to work in (default is default)")
-	RootCmd.PersistentFlags().StringVar(&Labelselector, "selector", "", "label selector string")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "enable debug with true")
 
 }
 
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
-	}
-
-	viper.SetConfigName(".pgo")     // name of config file (without extension)
-	viper.AddConfigPath(".")        // adding current directory as first search path
-	viper.AddConfigPath("$HOME")    // adding home directory as second search path
-	viper.AddConfigPath("/etc/pgo") // adding /etc/pgo directory as third search path
-	viper.AutomaticEnv()            // read in environment variables that match
-
-	// If a config file is found, read it in.
-	err := viper.ReadInConfig()
-	if err == nil {
-		log.Debugf("Using config file:", viper.ConfigFileUsed())
-	} else {
-		log.Debug("config file not found")
-	}
-
-	APIServerURL = viper.GetString("Pgo.APIServerURL")
-	if APIServerURL == "" {
-		APIServerURL = os.Getenv("APIServerURL")
+	fmt.Println("in initConfig with namespace=" + Namespace)
+	fmt.Println("in initConfig with url=" + APIServerURL)
+	if Namespace == "" {
+		Namespace = os.Getenv("CO_NAMESPACE")
+		if Namespace == "" {
+			log.Error("NAMESPACE env var or --namespace flag needs to be supplied")
+			os.Exit(-1)
+		}
 	}
 	if APIServerURL == "" {
-		log.Debug("Pgo.APIServerURL or APIServerURL env var is required")
-		os.Exit(2)
+		APIServerURL = os.Getenv("CO_APISERVER_URL")
+		if APIServerURL == "" {
+			log.Error("CO_APISERVER_URL env var or --apiserver-url flag needs to be supplied")
+			os.Exit(-1)
+		}
 	}
-	if DebugFlag || viper.GetBool("Pgo.Debug") {
-		log.Debug("debug flag is set to true")
-		log.SetLevel(log.DebugLevel)
-	}
-
-	if KubeconfigPath == "" {
-		KubeconfigPath = viper.GetString("KUBECONFIG")
-	}
-	if KubeconfigPath == "" {
-		log.Error("--kubeconfig flag is not set and required")
-		os.Exit(2)
-	}
-
-	log.Debug("kubeconfig path is " + viper.GetString("KUBECONFIG"))
-
-	if Namespace == "" {
-		Namespace = viper.GetString("NAMESPACE")
-	}
-	if Namespace == "" {
-		log.Error("--namespace flag is not set and required")
-		os.Exit(2)
-	}
-
-	log.Debug("namespace is " + viper.GetString("NAMESPACE"))
-
-	//ConnectToKube()
-
-	/**
-	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
-	if err2 != nil {
-		log.Error(err2.Error())
-	}
-	defer file.Close()
-	RootCmd.GenBashCompletion(file)
-	*/
-
 }

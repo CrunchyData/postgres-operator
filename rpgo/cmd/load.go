@@ -19,12 +19,10 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
@@ -59,18 +57,9 @@ func init() {
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
-	log.Debug(" csvload config is " + viper.GetString("Pgo.CSVLoadTemplate"))
 }
 
 func createLoad(args []string) {
-	getLoadConfigFile()
-	err := validateLoadConfig()
-	if err != nil {
-		log.Error("problem parsing load config file...")
-		log.Error(err)
-		return
-	}
-
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
 
@@ -132,42 +121,4 @@ func createLoad(args []string) {
 		fmt.Println(value)
 	}
 
-}
-
-func getLoadConfigFile() {
-	viper.SetConfigFile(LoadConfig)
-	err := viper.ReadInConfig()
-	if err == nil {
-		log.Debugf("Using load config file: %s\n", viper.ConfigFileUsed())
-	} else {
-		log.Error("load config file not found")
-		os.Exit(2)
-	}
-
-}
-
-func validateLoadConfig() error {
-	var err error
-	if viper.GetString("COImageTag") == "" {
-		return errors.New("COImageTag is not supplied")
-	}
-	if viper.GetString("DbDatabase") == "" {
-		return errors.New("DbDatabase is not supplied")
-	}
-	if viper.GetString("DbUser") == "" {
-		return errors.New("DbUser is not supplied")
-	}
-	if viper.GetString("DbPort") == "" {
-		return errors.New("DbPort is not supplied")
-	}
-	if viper.GetString("TableToLoad") == "" {
-		return errors.New("TableToLoad is not supplied")
-	}
-	if viper.GetString("CSVFilePath") == "" {
-		return errors.New("CSVFilePath is not supplied")
-	}
-	if viper.GetString("PVCName") == "" {
-		return errors.New("PVCName is not supplied")
-	}
-	return err
 }

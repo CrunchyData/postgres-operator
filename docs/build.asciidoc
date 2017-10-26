@@ -122,6 +122,7 @@ export CO_VERSION=2.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=myproject
 export CO_CMD=kubectl
+export CO_APISERVER_URL=http://localhost:8080
 ....
 
 It will be necessary to log out and back in for the changes to your .bashrc

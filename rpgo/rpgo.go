@@ -16,10 +16,16 @@ package main
 */
 
 import (
+	"fmt"
 	"github.com/crunchydata/postgres-operator/rpgo/cmd"
+	"os"
 )
 
 func main() {
-	cmd.Execute()
+	err := cmd.RootCmd.Execute()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 }
