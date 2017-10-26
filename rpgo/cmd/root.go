@@ -17,19 +17,12 @@ package cmd
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"os"
-	"strconv"
-
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"os"
+	//	"k8s.io/client-go/kubernetes"
+	//	"k8s.io/client-go/rest"
 )
 
 // RED ...
@@ -47,10 +40,10 @@ var Selector string
 var DryRun bool
 
 // RestClient ...
-var RestClient *rest.RESTClient
+//var RestClient *rest.RESTClient
 
 // Clientset ...
-var Clientset *kubernetes.Clientset
+//var Clientset *kubernetes.Clientset
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -149,8 +142,6 @@ func initConfig() {
 
 	log.Debug("namespace is " + viper.GetString("NAMESPACE"))
 
-	validateConfig()
-
 	//ConnectToKube()
 
 	/**
@@ -161,99 +152,5 @@ func initConfig() {
 	defer file.Close()
 	RootCmd.GenBashCompletion(file)
 	*/
-
-}
-
-func validateConfig() {
-	switch viper.GetString("PrimaryStorage.AccessMode") {
-	case string(v1.ReadWriteOnce), string(v1.ReadWriteMany), string(v1.ReadOnlyMany):
-	default:
-		log.Error("invalid PrimaryStorage.AccessMode specified")
-		os.Exit(2)
-	}
-	switch viper.GetString("ReplicaStorage.AccessMode") {
-	case string(v1.ReadWriteOnce), string(v1.ReadWriteMany), string(v1.ReadOnlyMany):
-	default:
-		log.Error("invalid ReplicaStorage.AccessMode specified")
-		os.Exit(2)
-	}
-	switch viper.GetString("PrimaryStorage.StorageType") {
-	case crv1.StorageExisting, crv1.StorageCreate, crv1.StorageEmptydir, crv1.StorageDynamic:
-	default:
-		log.Error("invalid PrimaryStorage.StorageType specified")
-		os.Exit(2)
-	}
-	switch viper.GetString("ReplicaStorage.StorageType") {
-	case crv1.StorageExisting, crv1.StorageCreate, crv1.StorageEmptydir, crv1.StorageDynamic:
-	default:
-		log.Error("invalid ReplicaStorage.StorageType specified")
-		os.Exit(2)
-	}
-
-	/**
-	if viper.GetString("PrimaryStorage.STORAGE_TYPE") == "dynamic" ||
-		viper.GetString("ReplicaStorage.STORAGE_TYPE") == "dynamic" {
-		log.Error("STORAGE_TYPE dynamic is not supported yet")
-		os.Exit(2)
-	}
-	*/
-
-	rep := viper.GetString("Cluster.Replicas")
-	if rep != "" {
-		_, err := strconv.Atoi(rep)
-		if err != nil {
-			log.Error("Cluster.Replicas not a valid integer")
-			os.Exit(2)
-		}
-	}
-	port := viper.GetString("Cluster.Port")
-	if port != "" {
-		_, err := strconv.Atoi(port)
-		if err != nil {
-			log.Error("Cluster.Port not a valid integer")
-			os.Exit(2)
-		}
-	}
-	strategy := viper.GetString("Cluster.Strategy")
-	if strategy != "" {
-		_, err := strconv.Atoi(strategy)
-		if err != nil {
-			log.Error("Cluster.Strategy not a valid integer")
-			os.Exit(2)
-		}
-	}
-
-	pvcsize := viper.GetString("PrimaryStorage.PVCSize")
-	if pvcsize != "" {
-		_, err := resource.ParseQuantity(pvcsize)
-		if err != nil {
-			log.Error("PrimaryStorage.PVCSize not a valid quantity")
-			os.Exit(2)
-		}
-	}
-	pvcsize = viper.GetString("ReplicaStorage.PVCSize")
-	if pvcsize != "" {
-		_, err := resource.ParseQuantity(pvcsize)
-		if err != nil {
-			log.Error("ReplicaStorage.PVCSize not a valid quantity")
-			os.Exit(2)
-		}
-	}
-	passwordAge := viper.GetString("Cluster.PasswordAgeDays")
-	if passwordAge != "" {
-		_, err := resource.ParseQuantity(passwordAge)
-		if err != nil {
-			log.Error("Cluster.PasswordAGE not a valid quantity")
-			os.Exit(2)
-		}
-	}
-	passwordLen := viper.GetString("Cluster.PasswordLength")
-	if passwordLen != "" {
-		_, err := resource.ParseQuantity(passwordLen)
-		if err != nil {
-			log.Error("Cluster.PasswordLength not a valid quantity")
-			os.Exit(2)
-		}
-	}
 
 }
