@@ -24,3 +24,9 @@ type ShowBackupResponse struct {
 	BackupList crv1.PgbackupList
 	Status
 }
+
+// DeleteBackupResponse ...
+type DeleteBackupResponse struct {
+	Results []string
+	Status
+}

@@ -12,30 +12,24 @@ import (
 // returns a ShowPVCResponse
 func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
-	log.Infoln("pvcervice.ShowPVCHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("pvcervice.ShowPVCHandler %v\n", vars)
 
 	pvcname := vars["pvcname"]
-	log.Infof(" pvcname arg is %v\n", pvcname)
 
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 	pvcroot := r.URL.Query().Get("pvcroot")
 	if pvcroot != "" {
-		log.Infoln("pvcroot param was [" + pvcroot + "]")
-	} else {
-		log.Infoln("pvcroot param was null")
+		log.Debug("pvcroot param was [" + pvcroot + "]")
 	}
 	switch r.Method {
 	case "GET":
-		log.Infoln("pvcservice.ShowPVCHandler GET called")
+		log.Debug("pvcservice.ShowPVCHandler GET called")
 	case "DELETE":
-		log.Infoln("pvcservice.ShowPVCHandler DELETE called")
+		log.Debug("pvcservice.ShowPVCHandler DELETE called")
 	}
 
 	w.WriteHeader(http.StatusOK)

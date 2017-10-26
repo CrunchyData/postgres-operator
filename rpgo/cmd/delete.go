@@ -65,12 +65,11 @@ func init() {
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 
-	//deleteCmd.AddCommand(deleteBackupCmd)
-	//deleteCmd.AddCommand(deleteUpgradeCmd)
+	deleteCmd.AddCommand(deleteBackupCmd)
+	deleteCmd.AddCommand(deleteUpgradeCmd)
 
 }
 
-/**
 var deleteUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "delete an upgrade",
@@ -98,7 +97,6 @@ var deleteBackupCmd = &cobra.Command{
 		}
 	},
 }
-*/
 
 // deleteClusterCmd ...
 var deleteClusterCmd = &cobra.Command{

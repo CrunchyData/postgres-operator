@@ -42,7 +42,7 @@ type ClusterDetail struct {
 // pgo create cluster
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.CreateClusterHandler called")
+	log.Debug("clusterservice.CreateClusterHandler called")
 	var request msgs.CreateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -64,24 +64,18 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.ShowClusterHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("clusterservice.ShowClusterHandler %v\n", vars)
 
 	clustername := vars["name"]
-	log.Infof(" name arg is %v\n", clustername)
 
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 	selector := r.URL.Query().Get("selector")
 	if namespace != "" {
-		log.Infoln("selector param was [" + selector + "]")
-	} else {
-		log.Infoln("selector param was null")
+		log.Debug("selector param was [" + selector + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -89,11 +83,11 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		log.Infoln("clusterservice.ShowClusterHandler GET called")
+		log.Debug("clusterservice.ShowClusterHandler GET called")
 		resp := ShowCluster(namespace, clustername, selector)
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
-		log.Infoln("clusterservice.DeleteClusterHandler DELETE called")
+		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
 		resp := DeleteCluster(namespace, clustername, selector)
 		json.NewEncoder(w).Encode(resp)
 	}
@@ -103,16 +97,12 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 // TestClusterHandler ...
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.TestClusterHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
+	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
-	log.Infof(" name arg is %v\n", clustername)
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)

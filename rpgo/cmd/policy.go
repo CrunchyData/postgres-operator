@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 var applyCmd = &cobra.Command{
@@ -231,7 +232,6 @@ func createPolicy(args []string) {
 
 	defer resp.Body.Close()
 
-	/**
 	var response msgs.CreatePolicyResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -239,10 +239,14 @@ func createPolicy(args []string) {
 		log.Println(err)
 		return
 	}
-	*/
-	log.Printf("response is %v\n", resp)
 
-	fmt.Println("created policy")
+	if response.Status.Code == msgs.Ok {
+		fmt.Println(GREEN("ok"))
+		fmt.Println("created policy")
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
+	}
 
 }
 

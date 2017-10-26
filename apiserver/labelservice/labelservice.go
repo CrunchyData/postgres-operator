@@ -25,7 +25,7 @@ import (
 // LabelHandler ...
 func LabelHandler(w http.ResponseWriter, r *http.Request) {
 
-	log.Infoln("labelservice.LabelHandler called")
+	log.Debug("labelservice.LabelHandler called")
 
 	var request msgs.LabelRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)

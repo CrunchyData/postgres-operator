@@ -28,7 +28,7 @@ import (
 // pgo user XXXX
 func UserHandler(w http.ResponseWriter, r *http.Request) {
 
-	log.Infoln("userservice.UserHandler called")
+	log.Debug("userservice.UserHandler called")
 
 	var request msgs.UserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)

@@ -27,6 +27,11 @@ type CreatePolicyRequest struct {
 	Namespace string
 }
 
+// CreatePolicyResponse ...
+type CreatePolicyResponse struct {
+	Status
+}
+
 // ApplyPolicyRequest ...
 type ApplyPolicyRequest struct {
 	Name      string

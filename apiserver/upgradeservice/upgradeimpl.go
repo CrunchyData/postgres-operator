@@ -60,3 +60,40 @@ func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
 	return response
 
 }
+
+// DeleteUpgrade ...
+func DeleteUpgrade(namespace string, name string) msgs.DeleteUpgradeResponse {
+	response := msgs.DeleteUpgradeResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 1)
+
+	if name == "all" {
+		err := apiserver.RESTClient.Delete().
+			Resource(crv1.PgupgradeResourcePlural).
+			Namespace(namespace).
+			Do().Error()
+		if err != nil {
+			log.Error("error deleting all upgrades" + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results[0] = "all"
+	} else {
+		err := apiserver.RESTClient.Delete().
+			Resource(crv1.PgupgradeResourcePlural).
+			Namespace(namespace).
+			Name(name).
+			Do().Error()
+		if err != nil {
+			log.Error("error deleting upgrade" + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results[0] = name
+	}
+
+	return response
+
+}

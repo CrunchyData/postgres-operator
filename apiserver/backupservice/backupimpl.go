@@ -23,7 +23,7 @@ import (
 )
 
 // ShowBackup ...
-func ShowBackup(namespace string, name string) msgs.ShowBackupResponse {
+func ShowBackup(namespace, name string) msgs.ShowBackupResponse {
 	response := msgs.ShowBackupResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
@@ -58,5 +58,42 @@ func ShowBackup(namespace string, name string) msgs.ShowBackupResponse {
 	}
 
 	return response
+
+}
+
+// DeleteBackup ...
+func DeleteBackup(namespace, backupName string) msgs.DeleteBackupResponse {
+	resp := msgs.DeleteBackupResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	var err error
+
+	if backupName == "all" {
+		err = apiserver.RESTClient.Delete().
+			Resource(crv1.PgbackupResourcePlural).
+			Namespace(namespace).
+			Do().
+			Error()
+		resp.Results = append(resp.Results, "all")
+	} else {
+		err = apiserver.RESTClient.Delete().
+			Resource(crv1.PgbackupResourcePlural).
+			Namespace(namespace).
+			Name(backupName).
+			Do().
+			Error()
+		resp.Results = append(resp.Results, backupName)
+	}
+
+	if err != nil {
+		log.Error("error deleting pgbackup ")
+		log.Error(err.Error())
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+	}
+
+	return resp
 
 }

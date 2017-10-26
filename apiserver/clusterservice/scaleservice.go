@@ -27,29 +27,24 @@ import (
 // parameters showsecrets
 // returns a ScaleResponse
 func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.ScaleClusterHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("clusterservice.ScaleClusterHandler %v\n", vars)
 
 	clusterName := vars["name"]
-	log.Infof(" clusterName arg is %v\n", clusterName)
+	log.Debugf(" clusterName arg is %v\n", clusterName)
 
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 	replicaCount := r.URL.Query().Get("replica-count")
 	if namespace != "" {
-		log.Infoln("replica-count param was [" + replicaCount + "]")
-	} else {
-		log.Infoln("replica-count param was null")
+		log.Debug("replica-count param was [" + replicaCount + "]")
 	}
 
 	switch r.Method {
 	case "GET":
-		log.Infoln("clusterservice.ScaleClusterHandler GET called")
+		log.Debug("clusterservice.ScaleClusterHandler GET called")
 	}
 
 	w.WriteHeader(http.StatusOK)

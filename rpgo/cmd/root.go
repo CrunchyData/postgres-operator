@@ -62,7 +62,7 @@ func Execute() {
 func init() {
 
 	cobra.OnInitialize(initConfig)
-	fmt.Println("init called")
+	log.Debug("init called")
 	GREEN = color.New(color.FgGreen).SprintFunc()
 	RED = color.New(color.FgRed).SprintFunc()
 
@@ -73,8 +73,8 @@ func init() {
 }
 
 func initConfig() {
-	fmt.Println("in initConfig with namespace=" + Namespace)
-	fmt.Println("in initConfig with url=" + APIServerURL)
+	log.Debug("in initConfig with namespace=" + Namespace)
+	log.Debug("in initConfig with url=" + APIServerURL)
 	if Namespace == "" {
 		Namespace = os.Getenv("CO_NAMESPACE")
 		if Namespace == "" {

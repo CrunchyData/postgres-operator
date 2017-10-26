@@ -44,7 +44,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL,
 		Do().
 		Into(&result)
 	if err == nil {
-		log.Infoln("pgpolicy " + policyName + " was found so we will not create it")
+		log.Debug("pgpolicy " + policyName + " was found so we will not create it")
 		return err
 	} else if kerrors.IsNotFound(err) {
 		log.Debug("pgpolicy " + policyName + " not found so we will create it")
@@ -76,7 +76,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL,
 		log.Error(" in creating Pgpolicy instance" + err.Error())
 		return err
 	}
-	log.Infoln("created Pgpolicy " + policyName)
+	log.Debug("created Pgpolicy " + policyName)
 	return err
 
 }
@@ -143,7 +143,7 @@ func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, policyName stri
 				Do().
 				Error()
 			if err == nil {
-				log.Infoln("deleted pgpolicy " + policy.Spec.Name)
+				log.Debug("deleted pgpolicy " + policy.Spec.Name)
 			} else {
 				log.Error("error deleting pgpolicy " + policyName + err.Error())
 				resp.Status.Code = msgs.Error
@@ -187,7 +187,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 
 	if request.DryRun {
 		for _, d := range deployments.Items {
-			log.Infoln("deployment : " + d.ObjectMeta.Name)
+			log.Debug("deployment : " + d.ObjectMeta.Name)
 			clusters = append(clusters, d.ObjectMeta.Name)
 		}
 		return clusters, err
@@ -224,7 +224,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 
 		strategy, ok := strategyMap[cl.Spec.Strategy]
 		if ok {
-			log.Info("strategy found")
+			log.Debug("strategy found")
 		} else {
 			log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 			return clusters, err

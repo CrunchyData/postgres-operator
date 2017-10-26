@@ -23,6 +23,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
+	"os"
 )
 
 const MajorUpgrade = "major"
@@ -42,7 +43,7 @@ func showUpgrade(args []string) {
 	for _, v := range args {
 
 		url := APIServerURL + "/upgrades/" + v + "?namespace=" + Namespace
-		log.Debug("showPolicy called...[" + url + "]")
+		log.Debug("showUpgrade called...[" + url + "]")
 
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
@@ -101,5 +102,63 @@ func showUpgradeItem(upgrade *crv1.Pgupgrade) {
 	fmt.Printf("%s%s\n", TreeTrunk, "new_pvc_name : "+upgrade.Spec.NewPVCName)
 
 	fmt.Println("")
+
+}
+
+func deleteUpgrade(args []string) {
+	log.Debugf("deleteUpgrade called %v\n", args)
+
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
+		return
+	}
+
+	for _, v := range args {
+
+		url := APIServerURL + "/upgrades/" + v + "?namespace=" + Namespace
+		log.Debug("deleteUpgrade called...[" + url + "]")
+
+		action := "DELETE"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
+		}
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
+		}
+
+		defer resp.Body.Close()
+
+		var response msgs.DeleteUpgradeResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if len(response.Results) == 0 {
+			fmt.Println("no upgrades found")
+			return
+		}
+
+		if response.Status.Code == msgs.Ok {
+			fmt.Println(GREEN("ok"))
+			for k := range response.Results {
+				fmt.Println("deleted upgrade " + response.Results[k])
+			}
+		} else {
+			fmt.Println(RED(response.Status.Msg))
+			os.Exit(2)
+		}
+
+	}
 
 }

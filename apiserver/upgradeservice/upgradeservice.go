@@ -47,11 +47,11 @@ type CreateUpgradeRequest struct {
 // parameters --upgrade-type
 // parameters --ccp-image-tag
 func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("upgradeservice.CreateUpgradeHandler called")
+	log.Debug("upgradeservice.CreateUpgradeHandler called")
 	var request CreateUpgradeRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Infoln("upgradeservice.CreateUpgradeHandler got request " + request.Name)
+	log.Debug("upgradeservice.CreateUpgradeHandler got request " + request.Name)
 }
 
 // ShowUpgradeHandler ...
@@ -63,31 +63,28 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowUpgradeResponse
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("upgradeservice.ShowUpgradeHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("upgradeservice.ShowUpgradeHandler %v\n", vars)
 
 	upgradename := vars["name"]
-	log.Infof(" name arg is %v\n", upgradename)
 
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
-	}
-
-	switch r.Method {
-	case "GET":
-		log.Infoln("upgradeservice.ShowUpgradeHandler GET called")
-	case "DELETE":
-		log.Infoln("upgradeservice.ShowUpgradeHandler DELETE called")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ShowUpgrade(namespace, upgradename)
+	switch r.Method {
+	case "GET":
+		log.Debug("upgradeservice.ShowUpgradeHandler GET called")
+		resp := ShowUpgrade(namespace, upgradename)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("upgradeservice.ShowUpgradeHandler DELETE called")
+		resp := DeleteUpgrade(namespace, upgradename)
+		json.NewEncoder(w).Encode(resp)
+	}
 
-	json.NewEncoder(w).Encode(resp)
 }

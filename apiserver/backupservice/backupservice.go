@@ -25,31 +25,28 @@ import (
 // ShowBackupHandler ...
 // returns a ShowBackupResponse
 func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("backupservice.ShowBackupHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("backupservice.ShowBackupHandler %v\n", vars)
 
 	backupname := vars["name"]
-	log.Infof(" name arg is %v\n", backupname)
 
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
-	}
-
-	switch r.Method {
-	case "GET":
-		log.Infoln("backupservice.ShowBackupHandler GET called")
-	case "DELETE":
-		log.Infoln("backupservice.ShowBackupHandler DELETE called")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ShowBackup(namespace, backupname)
+	switch r.Method {
+	case "GET":
+		log.Debug("backupservice.ShowBackupHandler GET called")
+		resp := ShowBackup(namespace, backupname)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("backupservice.ShowBackupHandler DELETE called")
+		resp := DeleteBackup(namespace, backupname)
+		json.NewEncoder(w).Encode(resp)
+	}
 
-	json.NewEncoder(w).Encode(resp)
 }

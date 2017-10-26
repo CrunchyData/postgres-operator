@@ -24,3 +24,9 @@ type ShowUpgradeResponse struct {
 	UpgradeList crv1.PgupgradeList
 	Status
 }
+
+// DeleteUpgradeResponse ...
+type DeleteUpgradeResponse struct {
+	Results []string
+	Status
+}
