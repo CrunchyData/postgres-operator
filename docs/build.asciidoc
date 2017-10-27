@@ -255,55 +255,42 @@ The following table describes the Makefile targets:
 [width="40%",frame="topbot",options="header,footer"]
 |======================
 |Target | Description
+|all        | compile all binaries and build all images
 |setup        | fetch the dependent packages required to build with
-|deployoperator        | deploy the Operator to Kubernetes
+|deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
 |main        | compile the postgres-operator 
 |runmain        | locally execute the postgres-operator
 |pgo        | build the pgo binary
 |runpgo        | run the pgo binary 
+|runapiserver        | run the apiserver binary outside of Kube
 |clean        | remove binaries and compiled packages, restore dependencies
 |operatorimage        | compile and build the postgres-operator Docker image
+|apiserverimage        | compile and build the apiserver Docker image
 |lsimage        | build the lspvc Docker image
 |csvloadimage        | build the csvload Docker image
 |release        | build the postgres-operator release
 |======================
 === Configuration
 
-The *pgo* client requires three configuration files be copied
-to your $HOME as follows:
+The *apiserver* uses the following  configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
 ....
-cp $COROOT/examples/pgo.yaml.emptydir $HOME/.pgo.yaml
-cp $COROOT/examples/pgo.lspvc-template.json $HOME/.pgo.lspvc-template.json
-cp $COROOT/examples/pgo.csvload-template.json $HOME/.pgo.csvload-template.json
-....
-
-Alternatively, the configuration files can be located in these locations:
-
-* . (current directory)
-* $HOME
-* /etc/pgo/
-
-The .pgo.yaml file location is checked in that order.
-
-Edit the .pgo.yaml file and change the following settings to match your current configuration:
-....
-KUBECONFIG:  /etc/kubernetes/admin.conf
-LSPVC_TEMPLATE:  /home/*yourid*/.pgo.lspvc-template.json
+$COROOT/conf/apiserver/pgo.yaml
+$COROOT/conf/apiserver/pgo.lspvc-template.json
+$COROOT/conf/apiserver/pgo.csvload-template.json
 ....
 
-Note that this configuration file assumes your Kubernetes configuration file is
-located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
-path to match your local Kubernetes configuration file location.  Also, update
-the location of the LSPVC_TEMPLATE value to match your $HOME value.
+Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
+path to match your local Kubernetes configuration file location. 
 
 More in-depth explanations of postgres operator configurations are available
 in the link:config.asciidoc[Configuration] document.
 
 === Verify Installation
 
-When you first run the operator, it will look for the presence
-of the predefined custom resource definitions, and create them if not found. The best way to
-verify pgo is up and running successfully is by viewing these custom resource definitions:
+When you first run the operator, it will look for the presence of the 
+predefined custom resource definitions, and create them if not found. 
+The best way to verify a successful deployment of the Operator is by 
+viewing these custom resource definitions:
 
 ....
 kubectl get crd
