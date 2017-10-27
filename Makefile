@@ -27,10 +27,6 @@ apiserver:	check-go-vars
 	go install apiserver.go
 rpgo:	check-go-vars
 	cd rpgo && go install rpgo.go
-pgo:	check-go-vars
-	cd pgo && go install pgo.go
-runpgo:	check-go-vars
-	pgo --kubeconfig=/etc/kubernetes/admin.conf
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 apiserverimage:	check-go-vars
@@ -54,7 +50,6 @@ all:
 	make apiserverimage
 	make lsimage
 	make csvloadimage
-	make pgo
 	make rpgo
 push:
 	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
