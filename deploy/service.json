@@ -1,0 +1,23 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "postgres-operator",
+        "labels": {
+            "name": "postgres-operator"
+        }
+    },
+    "spec": {
+        "ports": [{
+            "protocol": "TCP",
+            "port": 8080,
+            "targetPort": 8080,
+            "nodePort": 0
+        }],
+        "selector": {
+            "name": "postgres-operator"
+        },
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+    }
+}

@@ -19,20 +19,16 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	"io"
-	"strings"
-	"text/template"
-	"time"
-	//"k8s.io/client-go/rest"
-	//"os"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/util"
+	"github.com/spf13/viper"
+	"io"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/client-go/kubernetes"
-	"github.com/spf13/viper"
+	"strings"
+	"text/template"
+	"time"
 )
 
 type lspvcTemplateFields struct {
@@ -45,7 +41,7 @@ type lspvcTemplateFields struct {
 var lspvcTemplate *template.Template
 
 func init() {
-	lspvcTemplate = util.LoadTemplate("/home/jeffmc/.pgo.lspvc-template.json")
+	lspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
 
 }
 

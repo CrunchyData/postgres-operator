@@ -1,0 +1,32 @@
+Kubeconfig:  /etc/kubernetes/admin.conf
+Namespace:  default
+Cluster:
+  CCPImageTag:  centos7-10.0-1.6.0
+  Port:  5432
+  PrimaryPassword:  password
+  User:  testuser
+  Password:  password
+  RootPassword:  password
+  Database:  userdb
+  PasswordAgeDays:  60
+  PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
+PrimaryStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  create
+BackupStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  create
+ReplicaStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  create
+Pgo:
+  APIServerUrl:  http://localhost:8080
+  LSPVCTemplate:  /config/pgo.lspvc-template.json
+  CSVLoadTemplate:  /config/pgo.csvload-template.json
+  COImageTag:  centos7-2.0
+  Debug:  true

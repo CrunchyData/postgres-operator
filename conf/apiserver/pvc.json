@@ -1,0 +1,20 @@
+{
+    "kind": "PersistentVolumeClaim",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "pgremove": "true"
+        }
+    },
+    "spec": {
+        "accessModes": [
+            "{{.AccessMode}}"
+        ],
+        "resources": {
+            "requests": {
+                "storage": "{{.Size}}"
+            }
+        }
+    }
+}

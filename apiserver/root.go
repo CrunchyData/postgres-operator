@@ -91,11 +91,11 @@ func initConfig() {
 	//		viper.SetConfigFile(cfgFile)
 	//	}
 
-	viper.SetConfigName(".pgo")     // name of config file (without extension)
-	viper.AddConfigPath(".")        // adding current directory as first search path
-	viper.AddConfigPath("$HOME")    // adding home directory as second search path
-	viper.AddConfigPath("/etc/pgo") // adding /etc/pgo directory as third search path
-	viper.AutomaticEnv()            // read in environment variables that match
+	viper.SetConfigName("pgo")     // name of config file (without extension)
+	viper.AddConfigPath(".")       // adding current directory as first search path
+	viper.AddConfigPath("$HOME")   // adding home directory as second search path
+	viper.AddConfigPath("/config") // adding /config directory as third search path
+	viper.AutomaticEnv()           // read in environment variables that match
 
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()

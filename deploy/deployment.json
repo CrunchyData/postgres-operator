@@ -14,8 +14,23 @@
             },
             "spec": {
                 "containers": [{
-	        "securityContext": {
-		},
+                    "name": "apiserver",
+                    "image": "crunchydata/apiserver:$CO_IMAGE_TAG",
+                    "imagePullPolicy": "IfNotPresent",
+                    "env": [{
+                        "name": "DEBUG",
+                        "value": "true"
+                    }],
+                    "volumeMounts": [{
+                        "mountPath": "/config",
+                        "name": "apiserver-conf",
+                        "readOnly": true
+                    }, {
+                        "mountPath": "/operator-conf",
+                        "name": "operator-conf",
+                        "readOnly": true
+                    }]
+                }, {
                     "name": "postgres-operator",
                     "image": "crunchydata/postgres-operator:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
@@ -47,6 +62,11 @@
                     "name": "operator-conf",
                     "configMap": {
                         "name": "operator-conf"
+                    }
+                }, {
+                    "name": "apiserver-conf",
+                    "configMap": {
+                        "name": "apiserver-conf"
                     }
                 }]
             }

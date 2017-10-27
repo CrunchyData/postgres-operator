@@ -1,0 +1,61 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.Name}}"
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.Name}}",
+                "labels": {
+                    "csvload": "true",
+                    "pg-database": "{{.DbHost}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    	"name": "pgdata",
+			"persistentVolumeClaim" : {
+				"claimName": "{{.PVCName}}"
+			}
+                }],
+
+		{{.SecurityContext}}
+
+                "containers": [{
+                    "name": "csvload",
+                    "image": "crunchydata/csvload:{{.COImageTag}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }],
+                    "env": [{
+                        "name": "TABLE_TO_LOAD",
+                        "value": "{{.TableToLoad}}"
+                    }, {
+                        "name": "CSV_FILE_PATH",
+                        "value": "{{.CSVFilePath}}"
+                    }, {
+                        "name": "DB_HOST",
+                        "value": "{{.DbHost}}"
+                    }, {
+                        "name": "DB_DATABASE",
+                        "value": "{{.DbDatabase}}"
+                    }, {
+                        "name": "DB_USER",
+                        "value": "{{.DbUser}}"
+                    }, {
+                        "name": "DB_PASS",
+                        "value": "{{.DbPass}}"
+                    }, {
+                        "name": "DB_PORT",
+                        "value": "{{.DbPort}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

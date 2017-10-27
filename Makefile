@@ -33,6 +33,11 @@ runpgo:	check-go-vars
 	pgo --kubeconfig=/etc/kubernetes/admin.conf
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
+apiserverimage:	check-go-vars
+	go install apiserver.go
+	cp $(GOBIN)/apiserver bin/
+	docker build -t apiserver -f $(CO_BASEOS)/Dockerfile.apiserver.$(CO_BASEOS) .
+	docker tag apiserver crunchydata/apiserver:$(CO_BASEOS)-$(CO_VERSION)
 operatorimage:	check-go-vars
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
@@ -46,9 +51,11 @@ csvloadimage:
 	docker tag csvload crunchydata/csvload:$(CO_BASEOS)-$(CO_VERSION)
 all:
 	make operatorimage
+	make apiserverimage
 	make lsimage
 	make csvloadimage
 	make pgo
+	make rpgo
 push:
 	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
 	docker push crunchydata/csvload:$(CO_IMAGE_TAG)

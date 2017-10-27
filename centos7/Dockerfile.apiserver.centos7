@@ -1,0 +1,15 @@
+FROM centos:7
+
+LABEL Release="2.1" Vendor="Crunchy Data Solutions" 
+
+RUN yum -y update && yum -y install hostname && yum -y clean all
+
+ADD bin/apiserver /usr/local/bin
+
+VOLUME ["/config", "/operator-conf"]
+
+EXPOSE 8080
+
+USER daemon
+
+ENTRYPOINT ["/usr/local/bin/apiserver"]
