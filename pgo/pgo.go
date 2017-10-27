@@ -17,7 +17,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/crunchydata/postgres-operator/rpgo/cmd"
+	"github.com/crunchydata/postgres-operator/pgo/cmd"
 	"os"
 )
 

@@ -25,8 +25,8 @@ runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
 apiserver:	check-go-vars
 	go install apiserver.go
-rpgo:	check-go-vars
-	cd rpgo && go install rpgo.go
+pgo:	check-go-vars
+	cd pgo && go install pgo.go
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 apiserverimage:	check-go-vars
@@ -50,11 +50,12 @@ all:
 	make apiserverimage
 	make lsimage
 	make csvloadimage
-	make rpgo
+	make pgo
 push:
 	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
 	docker push crunchydata/csvload:$(CO_IMAGE_TAG)
 	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
+	docker push crunchydata/apiserver:$(CO_IMAGE_TAG)
 release:	check-go-vars
 	make macpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)
@@ -62,9 +63,7 @@ release:	check-go-vars
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
 	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
-	cp $(COROOT)/examples/*pgo.yaml* $(RELTMPDIR)
-	cp $(COROOT)/examples/*pgo.lspvc-template.json $(RELTMPDIR)
-	cp $(COROOT)/examples/*pgo.csvload-template.json $(RELTMPDIR)
+	cp -r $(COROOT)/conf/ $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 default:
 	all
