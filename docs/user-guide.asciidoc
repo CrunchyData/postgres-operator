@@ -1,8 +1,16 @@
 = postgres Operator User Guide
-v2.0, {docdate}
+v2.1, {docdate}
 
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
+
+== Check Version
+
+To see what version of pgo client and postgres-operator you are
+running, use the following:
+....
+pgo version
+....
 
 == Create Cluster
 

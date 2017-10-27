@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -49,4 +50,28 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 	}
 
+}
+
+// CreateBackupHandler ...
+// pgo backup all
+// pgo backup --selector=name=mycluster
+// pgo backup mycluster
+func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	log.Debug("backupservice.CreateBackupHandler called")
+
+	var request msgs.CreateBackupRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := CreateBackup(&request)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+	}
+
+	json.NewEncoder(w).Encode(resp)
 }

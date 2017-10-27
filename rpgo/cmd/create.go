@@ -27,7 +27,8 @@ var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var NodeName string
 var UserLabels string
-var UserLabelsMap map[string]string
+
+//var UserLabelsMap map[string]string
 var Series int
 
 var CreateCmd = &cobra.Command{
@@ -135,6 +136,6 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series, defaults to 1")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy")
-	UserLabelsMap = make(map[string]string)
+	//UserLabelsMap = make(map[string]string)
 
 }

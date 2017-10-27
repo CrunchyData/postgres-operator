@@ -19,7 +19,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/spf13/viper"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // ShowBackup ...
@@ -96,4 +101,162 @@ func DeleteBackup(namespace, backupName string) msgs.DeleteBackupResponse {
 
 	return resp
 
+}
+
+//  CreateBackup ...
+// pgo backup mycluster
+// pgo backup all
+// pgo backup --selector=name=mycluster
+func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
+	var err error
+	resp := msgs.CreateBackupResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	var newInstance *crv1.Pgbackup
+
+	if request.Selector != "" {
+		//use the selector instead of an argument list to filter on
+
+		myselector, err := labels.Parse(request.Selector)
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		//get the clusters list
+		clusterList := crv1.PgclusterList{}
+		err = apiserver.RESTClient.Get().
+			Resource(crv1.PgclusterResourcePlural).
+			Namespace(request.Namespace).
+			LabelsSelectorParam(myselector).
+			Do().
+			Into(&clusterList)
+		if err != nil {
+			log.Error("error getting cluster list" + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		if len(clusterList.Items) == 0 {
+			log.Debug("no clusters found")
+			resp.Status.Msg = "no clusters found"
+			return resp
+		} else {
+			newargs := make([]string, 0)
+			for _, cluster := range clusterList.Items {
+				newargs = append(newargs, cluster.Spec.Name)
+			}
+			request.Args = newargs
+		}
+
+	}
+	for _, arg := range request.Args {
+		log.Debug("create backup called for " + arg)
+		result := crv1.Pgbackup{}
+
+		// error if it already exists
+		err = apiserver.RESTClient.Get().
+			Resource(crv1.PgbackupResourcePlural).
+			Namespace(request.Namespace).
+			Name(arg).
+			Do().
+			Into(&result)
+		if err == nil {
+			log.Debug("pgbackup " + arg + " was found so we recreate it")
+			dels := make([]string, 1)
+			dels[0] = arg
+			DeleteBackup(arg, request.Namespace)
+		} else if kerrors.IsNotFound(err) {
+			msg := "pgbackup " + arg + " not found so we will create it"
+			resp.Results = append(resp.Results, "pgbackup "+msg)
+		} else {
+			log.Error("error getting pgbackup " + arg)
+			log.Error(err.Error())
+			resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+			break
+		}
+		// Create an instance of our CRD
+		newInstance, err = getBackupParams(arg, request.Namespace)
+		if err != nil {
+			msg := "error creating backup for " + arg
+			log.Error(err)
+			resp.Results = append(resp.Results, msg)
+			break
+		}
+		err = apiserver.RESTClient.Post().
+			Resource(crv1.PgbackupResourcePlural).
+			Namespace(request.Namespace).
+			Body(newInstance).
+			Do().Into(&result)
+		if err != nil {
+			log.Error("error in creating Pgbackup CRD instance")
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		resp.Results = append(resp.Results, "created Pgbackup "+arg)
+
+	}
+
+	return resp
+}
+
+func getBackupParams(name, Namespace string) (*crv1.Pgbackup, error) {
+	var err error
+	var newInstance *crv1.Pgbackup
+
+	storageSpec := crv1.PgStorageSpec{}
+	spec := crv1.PgbackupSpec{}
+	spec.Name = name
+	spec.StorageSpec = storageSpec
+	spec.StorageSpec.Name = viper.GetString("BackupStorage.Name")
+	spec.StorageSpec.AccessMode = viper.GetString("BackupStorage.AccessMode")
+	spec.StorageSpec.Size = viper.GetString("BackupStorage.Size")
+	spec.StorageSpec.StorageClass = viper.GetString("BackupStorage.StorageClass")
+	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageType")
+	spec.StorageSpec.SupplementalGroups = viper.GetString("BackupStorage.SupplementalGroups")
+	spec.StorageSpec.Fsgroup = viper.GetString("BackupStorage.Fsgroup")
+	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
+	spec.BackupStatus = "initial"
+	spec.BackupHost = "basic"
+	spec.BackupUser = "primaryuser"
+	spec.BackupPass = "password"
+	spec.BackupPort = "5432"
+
+	cluster := crv1.Pgcluster{}
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(Namespace).
+		Name(name).
+		Do().
+		Into(&cluster)
+	if err == nil {
+		spec.BackupHost = cluster.Spec.Name
+		spec.BackupPass, err = util.GetSecretPassword(cluster.Spec.Name, crv1.PrimarySecretSuffix, Namespace)
+		if err != nil {
+			return newInstance, err
+		}
+		spec.BackupPort = cluster.Spec.Port
+	} else if kerrors.IsNotFound(err) {
+		log.Debug(name + " is not a cluster")
+		return newInstance, err
+	} else {
+		log.Error("error getting pgcluster " + name)
+		log.Error(err.Error())
+		return newInstance, err
+	}
+
+	newInstance = &crv1.Pgbackup{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: name,
+		},
+		Spec: spec,
+	}
+	return newInstance, nil
 }

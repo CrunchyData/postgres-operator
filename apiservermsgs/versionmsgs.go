@@ -15,33 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-)
+import ()
 
-// ShowUpgradeResponse ...
-type ShowUpgradeResponse struct {
-	UpgradeList crv1.PgupgradeList
-	Status
-}
-
-// DeleteUpgradeResponse ...
-type DeleteUpgradeResponse struct {
-	Results []string
-	Status
-}
-
-// CreateUpgradeRequest ...
-type CreateUpgradeRequest struct {
-	Args        []string
-	Selector    string
-	Namespace   string
-	CCPImageTag string
-	UpgradeType string
-}
-
-// CreateUpgradeResponse ...
-type CreateUpgradeResponse struct {
-	Results []string
+// VersionResponse ...
+type VersionResponse struct {
+	Version string
 	Status
 }

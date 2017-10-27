@@ -22,10 +22,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/viper"
 	"io/ioutil"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	"os"
@@ -154,7 +154,12 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 	for _, arg := range args {
 		log.Debug("created load for " + arg)
-		createJob(arg, request.Namespace)
+		err = createJob(arg, request.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 
 	}
 
@@ -162,18 +167,22 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 }
 
-func createJob(clusterName, namespace string) {
+func createJob(clusterName, namespace string) error {
 	var err error
 
 	LoadConfigTemplate.Name = "csvload-" + clusterName
 	LoadConfigTemplate.DbHost = clusterName
-	LoadConfigTemplate.DbPass = GetSecretPassword(clusterName, crv1.RootSecretSuffix, namespace)
+	LoadConfigTemplate.DbPass, err = util.GetSecretPassword(clusterName, crv1.RootSecretSuffix, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	var doc2 bytes.Buffer
 	err = JobTemplate.Execute(&doc2, LoadConfigTemplate)
 	if err != nil {
 		log.Error(err.Error())
-		return
+		return err
 	}
 	jobDocString := doc2.String()
 	log.Debug(jobDocString)
@@ -182,15 +191,16 @@ func createJob(clusterName, namespace string) {
 	err = json.Unmarshal(doc2.Bytes(), &newjob)
 	if err != nil {
 		log.Error("error unmarshalling json into Job " + err.Error())
-		return
+		return err
 	}
 
 	resultJob, err := apiserver.Clientset.Batch().Jobs(namespace).Create(&newjob)
 	if err != nil {
 		log.Error("error creating Job " + err.Error())
-		return
+		return err
 	}
-	log.Info("created load Job " + resultJob.Name)
+	log.Debug("created load Job " + resultJob.Name)
+	return err
 
 }
 
@@ -218,28 +228,4 @@ func validateConfig() error {
 		return errors.New("PVCName is not supplied")
 	}
 	return err
-}
-
-func GetSecretPassword(db, suffix, namespace string) string {
-
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
-	secrets, err := apiserver.Clientset.Core().Secrets(namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
-		return "error"
-	}
-
-	log.Debug("secrets for " + db)
-	secretName := db + suffix
-	for _, s := range secrets.Items {
-		log.Debug("secret : " + s.ObjectMeta.Name)
-		if s.ObjectMeta.Name == secretName {
-			log.Debug("pgprimary password found")
-			return string(s.Data["password"][:])
-		}
-	}
-
-	log.Error("primary secret not found for " + db)
-	return "error"
-
 }

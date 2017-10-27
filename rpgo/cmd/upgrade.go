@@ -17,11 +17,14 @@ package cmd
 */
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 )
@@ -31,6 +34,27 @@ const MinorUpgrade = "minor"
 const SEP = "-"
 
 var UpgradeType string
+
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "perform an upgrade",
+	Long: `UPGRADE performs an upgrade, for example:
+				                pgo upgrade mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("upgrade called")
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`You must specify the cluster to upgrade or a selector value.`)
+		} else {
+			err := validateCreateUpdate(args)
+			if err != nil {
+				log.Error(err.Error())
+			} else {
+				createUpgrade(args)
+			}
+		}
+
+	},
+}
 
 func showUpgrade(args []string) {
 	log.Debugf("showUpgrade called %v\n", args)
@@ -159,6 +183,74 @@ func deleteUpgrade(args []string) {
 			os.Exit(2)
 		}
 
+	}
+
+}
+
+func validateCreateUpdate(args []string) error {
+	var err error
+
+	if UpgradeType == MajorUpgrade || UpgradeType == MinorUpgrade {
+	} else {
+		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
+	}
+	return err
+}
+
+func createUpgrade(args []string) {
+	log.Debugf("createUpgrade called %v\n", args)
+
+	if len(args) == 0 && Selector == "" {
+		log.Error("cluster names or a selector flag is required")
+		os.Exit(2)
+	}
+
+	request := msgs.CreateUpgradeRequest{}
+	request.Args = args
+	request.Selector = Selector
+	request.Namespace = Namespace
+	request.CCPImageTag = CCPImageTag
+	request.UpgradeType = UpgradeType
+
+	jsonValue, _ := json.Marshal(request)
+
+	url := APIServerURL + "/upgrades"
+	log.Debug("createUpgrade called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var response msgs.CreateUpgradeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		fmt.Println(GREEN("ok"))
+		for k := range response.Results {
+			fmt.Println(response.Results[k])
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
 	}
 
 }

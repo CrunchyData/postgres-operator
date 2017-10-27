@@ -19,6 +19,19 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+// CreateBackupResponse ...
+type CreateBackupResponse struct {
+	Results []string
+	Status
+}
+
+// CreateBackupRequest ...
+type CreateBackupRequest struct {
+	Namespace string
+	Args      []string
+	Selector  string
+}
+
 // ShowBackupResponse ...
 type ShowBackupResponse struct {
 	BackupList crv1.PgbackupList

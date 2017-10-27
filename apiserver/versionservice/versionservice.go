@@ -1,4 +1,4 @@
-package apiservermsgs
+package versionservice
 
 /*
 Copyright 2017 Crunchy Data Solutions, Inc.
@@ -16,32 +16,21 @@ limitations under the License.
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"encoding/json"
+	log "github.com/Sirupsen/logrus"
+	"net/http"
 )
 
-// ShowUpgradeResponse ...
-type ShowUpgradeResponse struct {
-	UpgradeList crv1.PgupgradeList
-	Status
-}
+// VersionHandler ...
+// pgo version
+func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
-// DeleteUpgradeResponse ...
-type DeleteUpgradeResponse struct {
-	Results []string
-	Status
-}
+	log.Debug("versionservice.VersionHandler called")
 
-// CreateUpgradeRequest ...
-type CreateUpgradeRequest struct {
-	Args        []string
-	Selector    string
-	Namespace   string
-	CCPImageTag string
-	UpgradeType string
-}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 
-// CreateUpgradeResponse ...
-type CreateUpgradeResponse struct {
-	Results []string
-	Status
+	resp := Version()
+
+	json.NewEncoder(w).Encode(resp)
 }

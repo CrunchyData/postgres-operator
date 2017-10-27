@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v2.0, {docdate}
+v2.1, {docdate}
 
 == Table of Contents
 

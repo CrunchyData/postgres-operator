@@ -1,4 +1,4 @@
-package apiservermsgs
+package versionservice
 
 /*
 Copyright 2017 Crunchy Data Solutions, Inc.
@@ -16,32 +16,16 @@ limitations under the License.
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 )
 
-// ShowUpgradeResponse ...
-type ShowUpgradeResponse struct {
-	UpgradeList crv1.PgupgradeList
-	Status
-}
+//  Version ...
+// pgo version
+func Version() msgs.VersionResponse {
+	resp := msgs.VersionResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = "apiserver version"
+	resp.Version = "2.1"
 
-// DeleteUpgradeResponse ...
-type DeleteUpgradeResponse struct {
-	Results []string
-	Status
-}
-
-// CreateUpgradeRequest ...
-type CreateUpgradeRequest struct {
-	Args        []string
-	Selector    string
-	Namespace   string
-	CCPImageTag string
-	UpgradeType string
-}
-
-// CreateUpgradeResponse ...
-type CreateUpgradeResponse struct {
-	Results []string
-	Status
+	return resp
 }

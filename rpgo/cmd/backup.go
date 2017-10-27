@@ -17,14 +17,38 @@ package cmd
 */
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 )
+
+var backupCmd = &cobra.Command{
+	Use:   "backup",
+	Short: "perform a Backup",
+	Long: `BACKUP performs a Backup, for example:
+				                        pgo backup mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("backup called")
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
+		} else {
+			createBackup(args)
+		}
+
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(backupCmd)
+
+	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+}
 
 // showBackup ....
 func showBackup(args []string) {
@@ -155,6 +179,70 @@ func deleteBackup(args []string) {
 			os.Exit(2)
 		}
 
+	}
+
+}
+
+// createBackup ....
+func createBackup(args []string) {
+	log.Debugf("createBackup called %v\n", args)
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
+		return
+	}
+
+	request := new(msgs.CreateBackupRequest)
+	request.Args = args
+	request.Selector = Selector
+	request.Namespace = Namespace
+
+	jsonValue, _ := json.Marshal(request)
+
+	url := APIServerURL + "/backups"
+
+	log.Debug("create backup called [" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		//log.Info("here after new req")
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	var response msgs.CreateBackupResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if len(response.Results) == 0 {
+		fmt.Println("no backups found")
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		fmt.Println(GREEN("ok"))
+		for k := range response.Results {
+			fmt.Println("created backup " + response.Results[k])
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
 	}
 
 }
