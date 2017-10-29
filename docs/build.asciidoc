@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build and Setup
 :toc:
-v2.0.0, {docdate}
+v2.0.1, {docdate}
 
 == Table of Contents
 

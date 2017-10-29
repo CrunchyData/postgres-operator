@@ -52,7 +52,7 @@ func showCluster(args []string) {
 	log.Debugf("label selector is [%v]\n", myselector)
 	err = RestClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(v1.NamespaceDefault).
+		Namespace(Namespace).
 		LabelsSelectorParam(myselector).
 		Do().
 		Into(&clusterList)
@@ -103,7 +103,7 @@ func showCluster(args []string) {
 
 func listReplicaSets(name string) {
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	reps, err := Clientset.ReplicaSets(v1.NamespaceDefault).List(lo)
+	reps, err := Clientset.ReplicaSets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of replicasets" + err.Error())
 		return
@@ -115,7 +115,7 @@ func listReplicaSets(name string) {
 }
 func listDeployments(name string) {
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	deployments, err := Clientset.ExtensionsV1beta1().Deployments(v1.NamespaceDefault).List(lo)
+	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
 		return
@@ -141,7 +141,7 @@ func printPolicies(d *v1beta1.Deployment) {
 
 func listPods(name string) {
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	pods, err := Clientset.CoreV1().Pods(v1.NamespaceDefault).List(lo)
+	pods, err := Clientset.CoreV1().Pods(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of pods" + err.Error())
 		return
@@ -154,7 +154,7 @@ func listPods(name string) {
 }
 func listServices(name string) {
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + name}
-	services, err := Clientset.CoreV1().Services(v1.NamespaceDefault).List(lo)
+	services, err := Clientset.CoreV1().Services(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of services" + err.Error())
 		return
@@ -191,7 +191,7 @@ func createCluster(args []string) {
 			// error if it already exists
 			err = RestClient.Get().
 				Resource(crv1.PgclusterResourcePlural).
-				Namespace(v1.NamespaceDefault).
+				Namespace(Namespace).
 				Name(clusterName).
 				Do().
 				Into(&result)
@@ -222,7 +222,7 @@ func createCluster(args []string) {
 
 			err = RestClient.Post().
 				Resource(crv1.PgclusterResourcePlural).
-				Namespace(v1.NamespaceDefault).
+				Namespace(Namespace).
 				Body(newInstance).
 				Do().Into(&result)
 			if err != nil {
@@ -354,7 +354,7 @@ func deleteCluster(args []string) {
 	//get the clusters list
 	err = RestClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(v1.NamespaceDefault).
+		Namespace(Namespace).
 		LabelsSelectorParam(myselector).
 		Do().
 		Into(&clusterList)
@@ -385,7 +385,7 @@ func deleteCluster(args []string) {
 				clusterFound = true
 				err := RestClient.Delete().
 					Resource(crv1.PgclusterResourcePlural).
-					Namespace(v1.NamespaceDefault).
+					Namespace(Namespace).
 					Name(arg).
 					Do().
 					Error()
@@ -482,7 +482,7 @@ func validateNodeName(nodeName string) error {
 func validateSecretFrom(secretname string) error {
 	var err error
 	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + secretname}
-	secrets, err := Clientset.Core().Secrets(v1.NamespaceDefault).List(lo)
+	secrets, err := Clientset.Core().Secrets(Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
 		return err
