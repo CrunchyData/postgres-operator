@@ -32,7 +32,7 @@ ReplicaStorage:
   Fsgroup:  26
 Pgo:
   APIServerUrl:  http://localhost:8080
-  LSPVCTemplate:  /home/jeffmc/.pgo.lspvc-template.json
-  CSVLoadTemplate:  /home/jeffmc/.pgo.csvload-template.json
+  LSPVCTemplate:  /home/$(whoami)/.pgo.lspvc-template.json
+  CSVLoadTemplate:  /home/$(whoami)/.pgo.csvload-template.json
   COImageTag:  centos7-2.0
   Debug:  false
