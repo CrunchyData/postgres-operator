@@ -47,7 +47,7 @@ func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse 
 
 	myselector := labels.Everything()
 
-	if selector != "all" {
+	if name != "all" {
 		if selector == "" {
 			selector = "name=" + name
 		}

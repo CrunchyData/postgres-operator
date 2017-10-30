@@ -78,8 +78,9 @@ func init() {
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 
-	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "s", false, "Show secrets ")
+	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "x", false, "Show secrets ")
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
+	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
 
 }
@@ -153,7 +154,7 @@ var ShowClusterCmd = &cobra.Command{
 
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if Labelselector == "" && len(args) == 0 {
+		if Selector == "" && len(args) == 0 {
 			log.Error("cluster name(s) required for this command")
 		} else {
 			showCluster(args)

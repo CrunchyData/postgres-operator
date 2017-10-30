@@ -34,6 +34,11 @@ func deleteCluster(args []string) {
 		return
 	}
 
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg)
 
@@ -86,11 +91,15 @@ func showCluster(args []string) {
 		return
 	}
 
-	log.Debug("selector is " + Labelselector)
+	log.Debug("selector is " + Selector)
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?namespace=" + Namespace + "&selector=" + Labelselector
+		url := APIServerURL + "/clusters/" + v + "?namespace=" + Namespace + "&selector=" + Selector
 
 		log.Debug("show cluster called [" + url + "]")
 
