@@ -105,7 +105,7 @@ func labelClusters(clusters []string) {
 
 	defer resp.Body.Close()
 
-	//log.Printf("response is %v\n", resp)
+	log.Debugf("response is %v\n", resp)
 
 	if DryRun {
 		fmt.Println("DRY RUN....would have applied label on ...")

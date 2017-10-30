@@ -236,7 +236,7 @@ func createBackup(args []string) {
 
 	if response.Status.Code == msgs.Ok {
 		for k := range response.Results {
-			fmt.Println("created backup " + response.Results[k])
+			fmt.Println(response.Results[k])
 		}
 	} else {
 		fmt.Println(RED(response.Status.Msg))

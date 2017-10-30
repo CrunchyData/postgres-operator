@@ -41,6 +41,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	resp := msgs.LabelResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
 
 	if len(request.Args) == 0 && request.Selector == "" {
 		resp.Status.Code = msgs.Error
@@ -104,10 +105,13 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 			}
 
 			//fmt.Println(result.Spec.Name)
-			resp.Results = append(resp.Results, "adding label to "+result.Spec.Name)
 			items = append(items, result)
 		}
 		clusterList.Items = items
+	}
+
+	for _, c := range clusterList.Items {
+		resp.Results = append(resp.Results, "adding label to "+c.Spec.Name)
 	}
 
 	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, request.Namespace)
