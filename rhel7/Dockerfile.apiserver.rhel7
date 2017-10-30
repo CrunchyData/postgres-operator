@@ -3,9 +3,18 @@ FROM registry.access.redhat.com/rhel7.3
 
 LABEL Release="2.1" Vendor="Crunchy Data Solutions" 
 
-RUN yum -y update && yum -y install hostname && yum -y clean all
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+
+# Crunchy Postgres repo
+ADD conf/CRUNCHY-GPG-KEY.public  /
+ADD conf/crunchypg96.repo /etc/yum.repos.d/
+RUN rpm --import CRUNCHY-GPG-KEY.public
+
+
+RUN yum -y update && yum -y install postgresql96 hostname && yum -y clean all
 
 ADD bin/apiserver /usr/local/bin
+ADD bin/postgres-operator/runpsql.sh /usr/local/bin
 
 VOLUME ["/config", "/operator-conf"]
 
