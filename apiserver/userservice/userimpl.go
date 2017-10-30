@@ -126,7 +126,9 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 			info := getPostgresUserInfo(request.Namespace, d.ObjectMeta.Name)
 
 			if request.ChangePasswordForUser != "" {
-				log.Debug("changing password of user " + request.ChangePasswordForUser + " on " + d.ObjectMeta.Name)
+				msg := "changing password of user " + request.ChangePasswordForUser + " on " + d.ObjectMeta.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace)
@@ -138,11 +140,15 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				}
 			}
 			if request.DeleteUser != "" {
-				log.Debug("deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name)
+				msg := "deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
 				err = deleteUser(request.Namespace, cluster.Spec.Name, info, request.DeleteUser)
 			}
 			if request.AddUser != "" {
-				log.Debug("adding new user " + request.AddUser + " to " + d.ObjectMeta.Name)
+				msg := "adding new user " + request.AddUser + " to " + d.ObjectMeta.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
 				err = addUser(request.UserDBAccess, request.Namespace, d.ObjectMeta.Name, info, request.AddUser, request.ManagedUser)
 				if err != nil {
 					resp.Status.Code = msgs.Error
