@@ -3,9 +3,6 @@ v2.1, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
-This document goes a bit deeper into the postgres Operator
-design and explains the concepts fuller.
-
 == Custom Resource Definitions
 
 Kubernetes Custom Resource Definitions are used in the design
@@ -14,7 +11,6 @@ of the postgres Operator to define:
  * Cluster - *pgclusters*
  * Backup - *pgbackups*
  * Upgrade - *pgupgrades*
- * Clones - *pgclones*
  * Policy - *pgpolicies*
 
 A PostgreSQL Cluster is made up of multiple Deployments, Services, and Proxies.
@@ -25,11 +21,8 @@ A PostgreSQL Cluster is made up of multiple Deployments, Services, and Proxies.
 The pgo command line interface (CLI) is used by a normal end-user
 to create databases or clusters, or make changes to existing databases.
 
-The CLI interacts interacts with the Kubernetes cluster using
-the golang Kubernetes client package.
-
-The CLI can create a new cluster by creating
-a new ThirdPartyResource instance of type *pgcluster*.
+The CLI interacts interacts with the *apiserver* REST API deployed
+within the *postgres-operator* Deployment.
 
 From the CLI, users can view existing clusters that
 were deployed using the CLI and Operator.  Objects that were
@@ -66,18 +59,6 @@ pgo create cluster mycluster
 
 In the above example, the *show*, *backup*, *delete*, and *create* verbs are used.  The CLI is case sensitive and supports only lowercase.
 
-=== Object Types
-
-Currently the operator supports object types of *backup*, *upgrade*, and *cluster*.
-The object type follows the verb as follows:
-
-[source,bash]
-----
-pgo show cluster all
-pgo delete cluster db1 db2 db3
-pgo create cluster mycluster
-----
-
 == Debugging
 
 To see if the operator pod is running enter the following:
@@ -86,31 +67,18 @@ To see if the operator pod is running enter the following:
 kubectl get pod -l 'name=postgres-operator'
 ----
 
-To verify the operator installed the following Custom Resources:
+To verify the operator is running and has deployed the Custom Resources execute the following:
 [source,bash]
 ----
 kubectl get crd
+NAME                               KIND
+pgbackups.cr.client-go.k8s.io      CustomResourceDefinition.v1beta1.apiextensions.k8s.io
+pgclusters.cr.client-go.k8s.io     CustomResourceDefinition.v1beta1.apiextensions.k8s.io
+pgpolicies.cr.client-go.k8s.io     CustomResourceDefinition.v1beta1.apiextensions.k8s.io
+pgpolicylogs.cr.client-go.k8s.io   CustomResourceDefinition.v1beta1.apiextensions.k8s.io
+pgupgrades.cr.client-go.k8s.io     CustomResourceDefinition.v1beta1.apiextensions.k8s.io
 ----
 
-You should see six Crunchy custom resource definitions deployed -
-
-....
-pg-backup.crunchydata.com      A postgres backup ThirdPartyResource       v1
-pg-clone.crunchydata.com       A postgres clone ThirdPartyResource        v1
-pg-cluster.crunchydata.com     A postgres cluster ThirdPartyResource      v1
-pg-policy.crunchydata.com      A postgres policy ThirdPartyResource       v1
-pg-policylog.crunchydata.com   A postgres policy log ThirdPartyResource   v1
-pg-upgrade.crunchydata.com     A postgres upgrade ThirdPartyResource      v1
-....
-
-# Command Line Interface
-
-You can view the  CRD Endpoints as follows:
-
-[source,bash]
-----
- curl https//192.168.42.30:8443/apis/crunchydata.com/v1/pgclusters --insecure
-----
 
 == Persistent Volumes
 

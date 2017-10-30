@@ -102,6 +102,56 @@ kubectl create clusterrolebinding permissive-binding \
 See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
 details on how to enable RBAC roles.
 
+=== Create Namespace
+
+This example is based on a kubeadm installation with the admin
+user being already created. The example below assumes the cluster name is *kubernetes* and the cluster default user is *kubernetes-admin*.
+....
+kubectl create -f $COROOT/examples/demo-namespace.json
+kubectl get namespaces
+....
+
+On kubeadm, you'll need to let non-root users have access to the
+kubeconfig admin directory and files as follows:
+....
+sudo chmod o+rwx /etc/kubernetes/
+sudo chmod o+rwx /etc/kubernetes/admin.conf
+....
+
+then set your context to the new demo namespace
+....
+kubectl config set-context demo --namespace=demo --cluster=kubernetes --user=kubernetes-admin
+kubectl config use-context demo
+kubectl config current-context
+....
+
+Add a cluster role binding to allow the new namespace default service
+account permissions to run the postgres-operator and create
+the Custom Resource Definitions:
+
+....
+kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+  --clusterrole=cluster-admin \
+    --group=system:serviceaccounts
+....
+
+*WARNING*:  the above RBAC command is very permissive, adjust this
+to a scope that you require for your environment.
+
+In version 1.6 of the Operator, modify your $HOME/.pgo.yaml
+file by setting the Namespace configuration setting to your
+new namespace *demo*, as follows:
+
+....
+Namespace:  demo
+....
+
+likewise, specify your *CO_NAMESPACE* environment variable as *demo*
+
+....
+export CO_NAMESPACE=demo
+....
+
 == Installation
 
 === Create Project and Clone
@@ -120,7 +170,7 @@ export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
 export CO_VERSION=2.1
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
-export CO_NAMESPACE=myproject
+export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export CO_APISERVER_URL=http://postgres-operator:8080
 ....

@@ -133,7 +133,6 @@ func userManager() {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println(GREEN("ok"))
 		for k := range response.Results {
 			fmt.Println(response.Results[k])
 		}

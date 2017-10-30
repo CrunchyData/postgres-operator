@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"errors"
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
@@ -165,14 +164,19 @@ func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, policyName stri
 
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
-func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
+func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	var err error
-	clusters := make([]string, 0)
+	resp := msgs.ApplyPolicyResponse{}
+	resp.Name = make([]string, 0)
+	resp.Status.Msg = ""
+	resp.Status.Code = msgs.Ok
 
 	//validate policy
 	err = util.ValidatePolicy(apiserver.RESTClient, request.Namespace, request.Name)
 	if err != nil {
-		return clusters, errors.New("policy " + request.Name + " is not found, cancelling request")
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "policy " + request.Name + " is not found, cancelling request"
+		return resp
 	}
 
 	//get filtered list of Deployments
@@ -181,16 +185,17 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 	lo := meta_v1.ListOptions{LabelSelector: sel}
 	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(request.Namespace).List(lo)
 	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
-		return clusters, err
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	if request.DryRun {
 		for _, d := range deployments.Items {
 			log.Debug("deployment : " + d.ObjectMeta.Name)
-			clusters = append(clusters, d.ObjectMeta.Name)
+			resp.Name = append(resp.Name, d.ObjectMeta.Name)
 		}
-		return clusters, err
+		return resp
 	}
 
 	labels := make(map[string]string)
@@ -202,7 +207,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, request.Namespace, request.Name, d.ObjectMeta.Name)
 		if err != nil {
 			log.Error(err)
-			return clusters, err
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 		}
 
 		cl := crv1.Pgcluster{}
@@ -214,7 +221,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 			Into(&cl)
 		if err != nil {
 			log.Error(err)
-			return clusters, err
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 
 		}
 
@@ -227,7 +236,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 			log.Debug("strategy found")
 		} else {
 			log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-			return clusters, err
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "invalid strategy " + cl.Spec.Strategy
+			return resp
 		}
 
 		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, request.Namespace, labels)
@@ -235,9 +246,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) ([]string, error) {
 			log.Error(err)
 		}
 
-		clusters = append(clusters, d.ObjectMeta.Name)
+		resp.Name = append(resp.Name, d.ObjectMeta.Name)
 
 	}
-	return clusters, err
+	return resp
 
 }

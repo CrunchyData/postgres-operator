@@ -106,14 +106,29 @@ func applyPolicy(args []string) {
 
 	defer resp.Body.Close()
 
-	log.Printf("response is %v\n", resp)
+	log.Debugf("response is %v\n", resp)
+
+	var response msgs.ApplyPolicyResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
 
 	if DryRun {
 		fmt.Println("would have applied policy on " + "something")
 	}
-	//for v := range resp.Name {
-	//fmt.Println("applied policy on " + v)
-	//}
+
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Name {
+			fmt.Println("applied policy on " + v)
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
+	}
 
 }
 func showPolicy(args []string) {
@@ -135,10 +150,8 @@ func showPolicy(args []string) {
 		}
 
 		client := &http.Client{}
-		//log.Info("here after new client")
 
 		resp, err := client.Do(req)
-		//log.Info("here after Do")
 		if err != nil {
 			log.Fatal("Do: ", err)
 			return
@@ -241,7 +254,6 @@ func createPolicy(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println(GREEN("ok"))
 		fmt.Println("created policy")
 	} else {
 		fmt.Println(RED(response.Status.Msg))
@@ -303,7 +315,7 @@ func deletePolicy(args []string) {
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println(GREEN("ok"))
+			fmt.Println("policy deleted")
 		} else {
 			fmt.Println(RED(response.Status.Msg))
 		}

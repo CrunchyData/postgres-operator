@@ -66,12 +66,11 @@ func deleteCluster(args []string) {
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println(GREEN("ok"))
+			for _, result := range response.Results {
+				fmt.Println(result)
+			}
 		} else {
 			fmt.Println(RED(response.Status.Msg))
-		}
-		for _, result := range response.Results {
-			fmt.Println(result)
 		}
 
 	}
@@ -159,18 +158,20 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		}
 	}
 
-	for _, s := range detail.Secrets {
-		fmt.Println("")
-		fmt.Println("secret : " + s.Name)
-		fmt.Println(TreeBranch + "username: " + s.Username)
-		fmt.Println(TreeTrunk + "password: " + s.Password)
+	if ShowSecrets {
+		for _, s := range detail.Secrets {
+			fmt.Println("")
+			fmt.Println("secret : " + s.Name)
+			fmt.Println(TreeBranch + "username: " + s.Username)
+			fmt.Println(TreeTrunk + "password: " + s.Password)
+		}
 	}
 
 }
 
 func printPolicies(d *msgs.ShowClusterDeployment) {
 	for _, v := range d.PolicyLabels {
-		fmt.Printf("policy: %s\n", TreeBranch, v)
+		fmt.Printf("%spolicy: %s\n", TreeBranch, v)
 	}
 }
 
@@ -232,8 +233,6 @@ func createCluster(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println(GREEN("ok"))
-
 		for _, v := range response.Results {
 			fmt.Println(v)
 		}

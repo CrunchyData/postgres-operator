@@ -82,7 +82,6 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 // ApplyPolicyHandler ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
 
 	log.Debug("policyservice.ApplyPolicyHandler called")
 
@@ -92,12 +91,7 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := msgs.ApplyPolicyResponse{}
-	resp.Name, err = ApplyPolicy(&request)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-	}
+	resp := ApplyPolicy(&request)
 
 	json.NewEncoder(w).Encode(resp)
 }

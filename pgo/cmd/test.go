@@ -67,7 +67,7 @@ func showTest(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
-		fmt.Printf("%v\n", resp)
+		log.Debugf("%v\n", resp)
 
 		defer resp.Body.Close()
 

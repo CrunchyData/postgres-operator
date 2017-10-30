@@ -170,7 +170,6 @@ func deleteBackup(args []string) {
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println(GREEN("ok"))
 			for k := range response.Results {
 				fmt.Println("deleted backup " + response.Results[k])
 			}
@@ -236,7 +235,6 @@ func createBackup(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println(GREEN("ok"))
 		for k := range response.Results {
 			fmt.Println("created backup " + response.Results[k])
 		}

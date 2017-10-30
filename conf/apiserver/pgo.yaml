@@ -1,5 +1,5 @@
 Kubeconfig:  /etc/kubernetes/admin.conf
-Namespace:  default
+Namespace:  demo
 Cluster:
   CCPImageTag:  centos7-10.0-1.6.0
   Port:  5432
@@ -28,5 +28,5 @@ Pgo:
   APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.csvload-template.json
-  COImageTag:  centos7-2.0
+  COImageTag:  centos7-2.1
   Debug:  true

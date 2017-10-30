@@ -4,6 +4,16 @@ v2.1, {docdate}
 This document is meant for users and demonstrates
 the basic interface of the *pgo* command line interface.
 
+Prior to using *pgo*, users will need to specify the
+*postgres-operator* URL as follows:
+....
+kubectl get service postgres-operator
+NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+postgres-operator   10.104.47.110   <none>        8080/TCP   7m
+export APISERVER_URL=http://10.104.47.110:8080
+pgo version
+....
+
 == Check Version
 
 To see what version of pgo client and postgres-operator you are
@@ -317,7 +327,7 @@ kubectl get pgpolicies policy1 -o json
 ....
 
 Policies get automatically applied to any cluster you create if 
-you define in your *.pgo.yaml* configuration a CLUSTER.POLICIES
+you define in your *pgo.yaml* configuration a CLUSTER.POLICIES
 value.  Policy SQL is executed as the *postgres* user.  
 
 To view policies:
