@@ -73,8 +73,11 @@ func init() {
 }
 
 func initConfig() {
-	log.Debug("in initConfig with namespace=" + Namespace)
-	log.Debug("in initConfig with url=" + APIServerURL)
+	if DebugFlag {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("debug flag is set to true")
+	}
+
 	if Namespace == "" {
 		Namespace = os.Getenv("CO_NAMESPACE")
 		if Namespace == "" {
@@ -82,6 +85,7 @@ func initConfig() {
 			os.Exit(-1)
 		}
 	}
+	log.Debug("in initConfig with namespace=" + Namespace)
 	if APIServerURL == "" {
 		APIServerURL = os.Getenv("CO_APISERVER_URL")
 		if APIServerURL == "" {
@@ -89,4 +93,5 @@ func initConfig() {
 			os.Exit(-1)
 		}
 	}
+	log.Debug("in initConfig with url=" + APIServerURL)
 }

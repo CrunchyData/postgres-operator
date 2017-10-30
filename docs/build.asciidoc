@@ -364,7 +364,7 @@ the following:
  * show all clusters (*pgo show cluster all*)
  * backup a cluster (*pgo backup testcluster*)
  * show backup of cluster (*pgo show backup testcluster*)
- * show backup pvc of cluster (*pgo show backup testcluster --show-pvc*)
+ * show backup pvc of cluster (*pgo show pvc backup-testcluster-pvc*)
  * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01 --secret-from=testcluster*)
  * test a cluster (*pgo test restoredcluster*)
  * minor upgrade a cluster (*pgo upgrade testcluster*)
@@ -376,7 +376,7 @@ the following:
  * repeat testing using create storage type
  * repeat testing using existing storage type
  * create a series of clusters  (*pgo create cluster myseries --series=2*)
- * apply policies at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray --policies=xrayapp,rlspolicy*)
+ * TODO apply policies at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray --policies=xrayapp,rlspolicy*)
  * apply a label to an existing set of clusters (*pgo label --label=env=research --selector=project=xray*)
  * create a user for a given cluster (*pgo user --add-user=user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
  * load a csv file into a cluster (*pgo load --load-config=./sample-load-config.json --selector=project=xray*)
