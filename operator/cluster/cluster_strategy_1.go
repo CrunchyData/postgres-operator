@@ -1,4 +1,4 @@
-// Package cluster holds the cluster TPR logic and definitions
+// Package cluster holds the cluster CRD logic and definitions
 // A cluster is comprised of a primary service, replica service,
 // primary deployment, and replica deployment
 package cluster

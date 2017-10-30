@@ -47,6 +47,14 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
+	debugFlag := os.Getenv("DEBUG")
+	if debugFlag == "true" {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("debug flag set to true")
+	} else {
+		log.Info("debug flag set to false")
+	}
+
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
@@ -147,7 +155,12 @@ func main() {
 	go pgPolicycontroller.Run(ctx)
 	go pgPolicylogcontroller.Run(ctx)
 
-	Namespace := "default"
+	Namespace := os.Getenv("NAMESPACE")
+	log.Debug("setting NAMESPACE to " + Namespace)
+	if Namespace == "" {
+		log.Error("NAMESPACE env var not set")
+		os.Exit(2)
+	}
 	go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
