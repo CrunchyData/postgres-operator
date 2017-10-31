@@ -26,21 +26,26 @@ these versions.
 * *Kubernetes 1.7.0+*
 * *OpenShift Origin 1.7.0+*
 
-The operator is developed with the following specific version of Golang; you can find this distribution on the official
-link:https://golang.org/dl/[Golang website]. Because Go binaries essentially have Go runtime bundled with them, it is
-important to build on a platform that is compatible with the target deployment platform.
+The operator is developed with the Golang versions great than or equal to version 1.8  See
+link:https://golang.org/dl/[Golang website] for details on installing golang. 
 
-* *Golang 1.8.x*
+Pre-compiled versions of the Operator *pgo* client are provided for the x86_64 and Mac OSX
+hosts.
 
-The Operator makes use of the following containers:
+The Operator uses the following PostgreSQL containers:
 
-* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.5+ Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
 * link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
+
+The Operator project builds and operates with the following containers:
+
 * link:https://hub.docker.com/r/crunchydata/lspvc/[PostgreSQL PVC Listing Container]
 * link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
+* link:https://hub.docker.com/r/crunchydata/apiserver/[apiserver Container]
+* link:https://hub.docker.com/r/crunchydata/csvload/[csvload Container]
 
-This Operator has also been tested on the following operating systems:
+This Operator is developed on and has also been tested on the following operating systems:
 
 * *CentOS 7*
 * *RHEL 7*
@@ -48,16 +53,11 @@ This Operator has also been tested on the following operating systems:
 === Kubernetes Environment
 
 To test the *postgres-operator*, it is required to have a Kubernetes cluster
-environment. A few different links are listed below that describe different
-methods of installation.
+environment.  The Operator is tested on Kubeadm Kubernetes installed clusters.  Other
+Kubernetes installation methods have been known to work as well.
 
 link:https://kubernetes.io/docs/setup/independent/install-kubeadm/[Installing kubeadm - Official Kubernetes Documentation]
 
-link:http://linoxide.com/containers/setup-kubernetes-kubeadm-centos/[Installing Kubernetes 1.5 with kubeadm on CentOS]
-
-link:https://blog.openebs.io/setting-up-kubernetes-1-5-5-cluster-with-vagrant-dda11e33b5bc[Setting up Kubernetes 1.5.5 Cluster with Vagrant]
-
-link:https://github.com/kubernetes/minikube[Minikube]
 
 ==== minikube
 
@@ -71,17 +71,6 @@ minikube addons disable default-storageclass
 Minikube uses a hostpath provisioner that does not support supplementalGroups; because of this,
 if you don't disable the default-storageclass, odd permission errors occur that stop the
 PostgreSQL database from operating correctly.
-
-==== kubeconfig
-
-The kubeadm installation will create */etc/kubernetes/admin.conf* for
-the kubeconfig file you will use to execute the *postgres-operator*. This
-needs to be readable from your user account - to enable this, change
-the permissions:
-....
-sudo chmod +r /etc/kubernetes/admin.conf
-....
-
 
 === Create Namespace
 
@@ -230,8 +219,7 @@ You are now ready to Deploy the operator to your Kube system.
 Install a golang compiler, this can be done with either
 your package manager or by following directions
 from https://golang.org/dl/.  The operator is currently built
-using golang version 1.8.X
-
+using golang version 1.8.X but also runs using golang version 1.9.X
 
 Then install the project library dependencies, the godep dependency manager is used
 as follows:
@@ -251,6 +239,30 @@ make all
 which pgo
 ....
 
+=== Configure Persistent Storage
+
+The default Operator configuration is defined to use a HostPath
+persistence configuration.  
+
+There are example scripts provided that will create PV and PVC resources
+that can be used in your testing. 
+
+These utilize HostPath and NFS volume types. Other types are not currently 
+supported, but can be manually defined. 
+
+To create sample HostPath Persistent Volumes and CLaims use the following scripts:
+....
+cd $COROOT/pv
+./create-pv.sh
+kubectl create -f ./crunchy-pvc.json
+kubectl create -f ./csv-pvc.json
+....
+
+Note that this example will create a PVC called *crunchy-pvc* that is
+referenced in the examples and *pgo.yaml* configuration file as the
+desired PVC to use when databases and clusters are created.
+
+
 === Deploy the PostgreSQL Operator
 *NOTE*: This will create and use */data* on your
 local system as the persistent store for the operator to use
@@ -267,23 +279,6 @@ CustomResourceDefinitions. You can view these as follows:
 ....
 kubectl get crd
 ....
-
-There are example scripts provided that will create PV and PVC resources
-that can be used in your testing. These utilize HostPath and NFS volume
-types. Other types are not currently supported, but can be manually defined.
-If you do elect to use dynamic storage, it is not necessary to create the
-PersistentVolume object in Kubernetes.
-
-See the following scripts:
-....
-examples/operator/create-pv-nfs.sh
-examples/operator/create-pv.sh
-kubectl create -f examples/operator/crunchy-pvc.json
-....
-
-Note that this example will create a PVC called *crunchy-pvc* that is
-referenced in the examples and *pgo* configuration file as the
-desired PVC to use when databases and clusters are created.
 
 Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
 
