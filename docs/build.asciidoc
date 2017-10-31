@@ -255,6 +255,9 @@ go get github.com/tools/godep
 make setup
 ....
 
+NOTE:  you will see errors and warnings from the *make setup* target, you
+can ignore these when building release 2.1
+
 ==== Compiling the PostgreSQL Operator
 ....
 cd $COROOT
