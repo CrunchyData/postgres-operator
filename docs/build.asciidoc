@@ -82,25 +82,6 @@ the permissions:
 sudo chmod +r /etc/kubernetes/admin.conf
 ....
 
-==== RBAC Permissions
-
-*NOTE* - as of Kubernetes 1.6, RBAC security is enabled on most Kubernetes
-installations.  With RBAC, the *postgres-operator* needs permissions
-granted to it to enable CustomResourceDefinitions viewing.  You can grant the
-*default* Service Account a cluster role as one way to enable
-permissions for the operator. This coarse level of granting permissions
-is not recommended for production. This command will enable
-the *default* Service Account to have the *cluster-admin* role:
-....
-kubectl create clusterrolebinding permissive-binding \
-	--clusterrole=cluster-admin \
-	--user=admin \
-	--user=kubelet \
-       	--group=system:serviceaccounts:default
-....
-
-See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
-details on how to enable RBAC roles.
 
 === Create Namespace
 
@@ -138,15 +119,20 @@ kubectl create clusterrolebinding serviceaccounts-cluster-admin \
 *WARNING*:  the above RBAC command is very permissive, adjust this
 to a scope that you require for your environment.
 
-In version 1.6 of the Operator, modify your $HOME/.pgo.yaml
-file by setting the Namespace configuration setting to your
-new namespace *demo*, as follows:
+See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
+details on how to enable RBAC roles and modify the scope of the permissions
+to suit your needs.
 
+There are 2 places you will need to update to specify your
+namespace:
+
+In the operator configuration file, $COROOT/conf/apiserver/pgo.yaml, you will add
+the *demo* value for the *Namespace*:
 ....
 Namespace:  demo
 ....
 
-likewise, specify your *CO_NAMESPACE* environment variable as *demo*
+likewise, specify your *CO_NAMESPACE* environment variable will specify *demo*;
 
 ....
 export CO_NAMESPACE=demo
@@ -331,6 +317,9 @@ $COROOT/conf/apiserver/pgo.yaml
 $COROOT/conf/apiserver/pgo.lspvc-template.json
 $COROOT/conf/apiserver/pgo.csvload-template.json
 ....
+
+Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
+your storage configuration.  Adjust this file for NFS or other storage configurations.
 
 Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kubernetes configuration file location. 

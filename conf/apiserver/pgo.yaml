@@ -1,7 +1,6 @@
-Kubeconfig:  /etc/kubernetes/admin.conf
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.0-1.6.0
+  CCPImageTag:  centos7-9.6.5-1.6.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
