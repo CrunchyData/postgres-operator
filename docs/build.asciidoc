@@ -363,7 +363,7 @@ the following:
  * repeat testing using create storage type
  * repeat testing using existing storage type
  * create a series of clusters  (*pgo create cluster myseries --series=2*)
- * TODO apply policies at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray --policies=xrayapp,rlspolicy*)
+ * apply labels at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray*)
  * apply a label to an existing set of clusters (*pgo label --label=env=research --selector=project=xray*)
  * create a user for a given cluster (*pgo user --add-user=user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
  * load a csv file into a cluster (*pgo load --load-config=./sample-load-config.json --selector=project=xray*)

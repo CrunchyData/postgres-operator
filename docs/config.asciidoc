@@ -11,10 +11,10 @@ Starting with Operator version 2.1, the *pgo.yaml* configuration
 file is used solely by the *apiserver* and has no effect on the *pgo* client.  With this change, the Operator configuration is centralized to
 the *apiserver* container which is deployed alongside the *postgres-operator* container.
 
-Sample pgo configuration files for various storage configurations are located in the $COROOT/examples directory.
+Sample Operator configuration files for various storage configurations are located in the $COROOT/examples directory.
 
 To configure the Operator, modify the settings found in
-$COROOT/conf/apiserver/pgo.yaml to meet your project needs.  Typically
+*$COROOT/conf/apiserver/pgo.yaml* to meet your project needs.  Typically
 you will modify the storage and namespace settings.
 
 === pgo Configuration Format
@@ -24,10 +24,9 @@ The default pgo configuration file, included in
 
 [source,yaml]
 ....
-Kubeconfig:  /etc/kubernetes/admin.conf
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.0-1.6.0
+  CCPImageTag:  centos7-9.6.5-1.6.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
@@ -64,7 +63,6 @@ Values in the pgo configuration file have the following meaning:
 [width="90%",cols="m,2",frame="topbot",options="header"]
 |======================
 |Setting | Definition
-|Kubeconfig        | the path to the kubeconfig file
 |Namespace        | the namespace the Operator will run within
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.5-1.6.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
