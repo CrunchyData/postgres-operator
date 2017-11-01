@@ -248,10 +248,10 @@ The following table describes the Makefile targets:
 |Target | Description
 |setup        | fetch the dependent packages required to build with
 |deployoperator        | deploy the Operator to Kubernetes
-|main        | compile the postgres-operator 
+|main        | compile the postgres-operator
 |runmain        | locally execute the postgres-operator
 |pgo        | build the pgo binary
-|runpgo        | run the pgo binary 
+|runpgo        | run the pgo binary
 |clean        | remove binaries and compiled packages, restore dependencies
 |operatorimage        | compile and build the postgres-operator Docker image
 |lsimage        | build the lspvc Docker image
@@ -279,13 +279,18 @@ The .pgo.yaml file location is checked in that order.
 Edit the .pgo.yaml file and change the following settings to match your current configuration:
 ....
 KUBECONFIG:  /etc/kubernetes/admin.conf
+....
+
+The location of the LSPVC_TEMPLATE value is set by default to $HOME/$(whoami) as a location.
+If this is not accurate, please change this value to match where the file is located.
+
+....
 LSPVC_TEMPLATE:  /home/*yourid*/.pgo.lspvc-template.json
 ....
 
 Note that this configuration file assumes your Kubernetes configuration file is
 located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
-path to match your local Kubernetes configuration file location.  Also, update
-the location of the LSPVC_TEMPLATE value to match your $HOME value.
+path to match your local Kubernetes configuration file location.
 
 More in-depth explanations of postgres operator configurations are available
 in the link:config.asciidoc[Configuration] document.
