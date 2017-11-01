@@ -14,16 +14,14 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
+$CO_CMD --namespace=$CO_NAMESPACE delete pgbackups --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgclones --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgpolicylogs --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all
 
-$CO_CMD delete pgbackups --all
-$CO_CMD delete pgclones --all
-$CO_CMD delete pgclusters --all
-$CO_CMD delete pgpolicies --all
-$CO_CMD delete pgpolicylogs --all
-$CO_CMD delete pgupgrades --all
-
-$CO_CMD delete crd \
+$CO_CMD --namespace=$CO_NAMESPACE delete crd \
 	examples.cr.client-go.k8s.io \
 	pgbackups.cr.client-go.k8s.io \
 	pgclusters.cr.client-go.k8s.io \

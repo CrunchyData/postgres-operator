@@ -14,12 +14,10 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
-
-$CO_CMD get pgbackups
-$CO_CMD get pgclones
-$CO_CMD get pgclusters
-$CO_CMD get pgpolicies 
-$CO_CMD get pgpolicylogs
-$CO_CMD get pgupgrades
+$CO_CMD --namespace=$CO_NAMESPACE get pgbackups
+$CO_CMD --namespace=$CO_NAMESPACE get pgclones
+$CO_CMD --namespace=$CO_NAMESPACE get pgclusters
+$CO_CMD --namespace=$CO_NAMESPACE get pgpolicies 
+$CO_CMD --namespace=$CO_NAMESPACE get pgpolicylogs
+$CO_CMD --namespace=$CO_NAMESPACE get pgupgrades
 
