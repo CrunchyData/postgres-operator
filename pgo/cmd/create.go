@@ -21,43 +21,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CCPImageTag is the ccp-image-tag flag value
 var CCPImageTag string
-
-// Password is the password flag value
 var Password string
-
-// SecretFrom is the secret-from flag value
-var SecretFrom string
-
-// BackupPath is the backup-path flag value
-var BackupPath string
-
-// BackupPVC is the backup-pvc flag value
-var BackupPVC string
-
-// PoliciesFlag is the policies flag value
-var PoliciesFlag string
-
-// PolicyFile is the in-file flag value
-var PolicyFile string
-
-// PolicyURL is the url flag value
-var PolicyURL string
-
-// NodeName is the node-name flag value
+var SecretFrom, BackupPath, BackupPVC string
+var PoliciesFlag, PolicyFile, PolicyURL string
 var NodeName string
-
-// UserLabels is the user-labels flag value
 var UserLabels string
 
-// UserLabelsMap is ...
-var UserLabelsMap map[string]string
-
-// Series is the series flag value
+//var UserLabelsMap map[string]string
 var Series int
 
-var createCmd = &cobra.Command{
+var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Cluster or Policy",
 	Long: `CREATE allows you to create a new Cluster or Policy
@@ -76,6 +50,7 @@ pgo create policy
 	},
 }
 
+// createClusterCmd ...
 var createClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Create a database cluster",
@@ -84,12 +59,7 @@ primary and a number of replica backends. For example:
 
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var err error
 		log.Debug("create cluster called")
-		err = validateConfigPolicies()
-		if err != nil {
-			return
-		}
 		if SecretFrom != "" || BackupPath != "" || BackupPVC != "" {
 			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
 				log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
@@ -101,20 +71,24 @@ pgo create cluster mycluster`,
 		if NodeName == "" {
 			//NodeName = getValidNodeName()
 		} else {
+			/**
 			err = validateNodeName(NodeName)
 			if err != nil {
 				log.Error(err)
 				return
 			}
+			*/
 
 		}
 
 		if UserLabels != "" {
+			/**
 			err = validateUserLabels()
 			if err != nil {
 				log.Error("invalid user labels, check --labels value")
 				return
 			}
+			*/
 		}
 
 		if len(args) == 0 {
@@ -125,14 +99,15 @@ pgo create cluster mycluster`,
 	},
 }
 
+// createPolicyCmd ...
 var createPolicyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "Create a policy",
 	Long: `Create a policy. For example:
 pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("create policy called")
-		if PolicyFile != "" && PolicyURL != "" {
+		log.Debug("create policy called ")
+		if PolicyFile == "" && PolicyURL == "" {
 			log.Error("--in-file or --url is required to create a policy")
 			return
 		}
@@ -146,9 +121,9 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 }
 
 func init() {
-	RootCmd.AddCommand(createCmd)
-	createCmd.AddCommand(createClusterCmd)
-	createCmd.AddCommand(createPolicyCmd)
+	RootCmd.AddCommand(CreateCmd)
+	CreateCmd.AddCommand(createClusterCmd)
+	CreateCmd.AddCommand(createPolicyCmd)
 
 	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the primary database")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
@@ -157,10 +132,10 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated")
-	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for cluster creation, if specified overrides the .pgo.yaml setting")
+	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation, if specified overrides the .pgo.yaml setting")
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series, defaults to 1")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy")
-	UserLabelsMap = make(map[string]string)
+	//UserLabelsMap = make(map[string]string)
 
 }

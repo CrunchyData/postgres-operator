@@ -16,22 +16,11 @@ package cmd
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/util"
-	"github.com/spf13/viper"
-	"io"
-	"io/ioutil"
-	//"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/v1"
-
-	"strings"
-	"text/template"
-	"time"
+	"github.com/crunchydata/postgres-operator/apiservermsgs"
+	"net/http"
 )
 
 func showPVC(args []string) {
@@ -40,159 +29,54 @@ func showPVC(args []string) {
 	//args are a list of pvc names
 	for _, arg := range args {
 		log.Debug("show pvc called for " + arg)
-		printPVC(arg)
+		printPVC(arg, PVCRoot)
 
 	}
 
 }
+func printPVC(pvcName, pvcRoot string) {
 
-func printPVC(pvcName string) {
-
-	var pvc *v1.PersistentVolumeClaim
-	var err error
-
-	pvc, err = Clientset.CoreV1().PersistentVolumeClaims(Namespace).Get(pvcName, meta_v1.GetOptions{})
-	if err != nil {
-		fmt.Printf("\nPVC %s\n", pvcName+" is not found")
-		fmt.Println(err.Error())
-	} else {
-		log.Debug("\nPVC %s\n", pvc.Name+" is found")
-		PrintPVCListing(pvc.Name)
-	}
-
-}
-
-// PrintPVCListing ...
-func PrintPVCListing(pvcName string) {
-	var podPath = viper.GetString("Pgo.LSPVCTemplate")
-	var PodTemplate *template.Template
-	var err error
-	var buf []byte
-	var doc2 bytes.Buffer
-	var podName = "lspvc-" + pvcName
-
-	//delete lspvc pod if it was not deleted for any reason prior
-	_, err = Clientset.CoreV1().Pods(Namespace).Get(podName, meta_v1.GetOptions{})
-	if errors.IsNotFound(err) {
-		//
-	} else if err != nil {
-		log.Error(err.Error())
-	} else {
-		log.Debug("deleting prior pod " + podName)
-		err = Clientset.Core().Pods(Namespace).Delete(podName,
-			&meta_v1.DeleteOptions{})
-		if err != nil {
-			log.Error("delete pod error " + err.Error()) //TODO this is debug info
-		}
-		//sleep a bit for the pod to be deleted
-		time.Sleep(2000 * time.Millisecond)
-	}
-
-	buf, err = ioutil.ReadFile(podPath)
-	if err != nil {
-		log.Error("error reading lspvc_template file")
-		log.Error("make sure it is specified in your .pgo.yaml config")
-		log.Error(err.Error())
-		return
-	}
-	PodTemplate = template.Must(template.New("pod template").Parse(string(buf)))
-
-	pvcRoot := "/"
-	if PVCRoot != "" {
-		log.Debug("using " + PVCRoot + " as the PVC listing root")
-		pvcRoot = PVCRoot
-		fmt.Println(pvcName + "/" + pvcRoot)
-	} else {
-		fmt.Println(pvcName)
-	}
-
-	podFields := PodTemplateFields{
-		Name:       podName,
-		COImageTag: viper.GetString("Pgo.COImageTag"),
-		BackupRoot: pvcRoot,
-		PVCName:    pvcName,
-	}
-
-	err = PodTemplate.Execute(&doc2, podFields)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-	podDocString := doc2.String()
-	log.Debug(podDocString)
-
-	//template name is lspvc-pod.json
-	//create lspvc pod
-	newpod := v1.Pod{}
-	err = json.Unmarshal(doc2.Bytes(), &newpod)
-	if err != nil {
-		log.Error("error unmarshalling json into Pod " + err.Error())
-		return
-	}
-	var resultPod *v1.Pod
-	resultPod, err = Clientset.CoreV1().Pods(Namespace).Create(&newpod)
-	if err != nil {
-		log.Error("error creating lspvc Pod " + err.Error())
-		return
-	}
-	log.Debug("created pod " + resultPod.Name)
-
-	timeout := time.Duration(6 * time.Second)
-	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
-	podPhase := v1.PodSucceeded
-	err = util.WaitUntilPod(Clientset, lo, podPhase, timeout, Namespace)
-	if err != nil {
-		log.Error("error waiting on lspvc pod to complete" + err.Error())
-	}
-
-	time.Sleep(5000 * time.Millisecond)
-
-	//get lspvc pod output
-	logOptions := v1.PodLogOptions{}
-	req := Clientset.CoreV1().Pods(Namespace).GetLogs(podName, &logOptions)
-	if req == nil {
-		log.Debug("error in get logs for " + podName)
-	} else {
-		log.Debug("got the logs for " + podName)
-	}
-
-	readCloser, err := req.Stream()
-	if err != nil {
-		log.Error(err.Error())
+	if Namespace == "" {
+		log.Error("Namespace can not be empty")
 		return
 	}
 
-	defer func() {
-		if readCloser != nil {
-			readCloser.Close()
-		}
-	}()
-	var buf2 bytes.Buffer
-	_, err = io.Copy(&buf2, readCloser)
-	log.Debugf("backups are... \n%s", buf2.String())
+	url := APIServerURL + "/pvc/" + pvcName + "?namespace=" + Namespace + "&pvcroot=" + pvcRoot
+	log.Debug("showPolicy called...[" + url + "]")
 
-	log.Debug("pvc=" + pvcName)
-	lines := strings.Split(buf2.String(), "\n")
+	action := "GET"
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		//log.Info("here after new req")
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	defer resp.Body.Close()
+	var response apiservermsgs.ShowPVCResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+	if len(response.Results) == 0 {
+		fmt.Println("no PVC Results")
+		return
+	}
+	log.Debugf("response = %v\n", response)
 
-	//chop off last line since its only a newline
-	last := len(lines) - 1
-	newlines := make([]string, last)
-	copy(newlines, lines[:last])
-
-	for k, v := range newlines {
-		if k == len(newlines)-1 {
+	for k, v := range response.Results {
+		if k == len(response.Results)-1 {
 			fmt.Printf("%s%s\n", TreeTrunk, "/"+v)
 		} else {
 			fmt.Printf("%s%s\n", TreeBranch, "/"+v)
 		}
-	}
-
-	//delete lspvc pod
-	err = Clientset.CoreV1().Pods(Namespace).Delete(podName,
-		&meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error(err.Error())
-		log.Error("error deleting lspvc pod " + podName)
 	}
 
 }

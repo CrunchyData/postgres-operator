@@ -16,14 +16,12 @@ package cmd
 */
 
 import (
-	"database/sql"
+	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	// libpq uses a blank import
-	_ "github.com/lib/pq"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/http"
 )
 
 var testCmd = &cobra.Command{
@@ -49,114 +47,52 @@ func init() {
 }
 
 func showTest(args []string) {
-	//get a list of all clusters
-	clusterList := crv1.PgclusterList{}
-	err := RestClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(Namespace).
-		Do().Into(&clusterList)
-	if err != nil {
-		log.Error("error getting list of clusters" + err.Error())
-		return
-	}
 
-	if len(clusterList.Items) == 0 {
-		fmt.Println("no clusters found")
-		return
-	}
-
-	itemFound := false
-
-	//each arg represents a cluster name or the special 'all' value
 	for _, arg := range args {
-		for _, cluster := range clusterList.Items {
-			fmt.Println("")
-			if arg == "all" || cluster.Spec.Name == arg {
-				itemFound = true
-				fmt.Println("cluster : " + cluster.Spec.Name + " (" + cluster.Spec.CCPImageTag + ")")
-				log.Debug("listing cluster " + arg)
-				//list the services
-				testServices(&cluster)
-			}
+		url := APIServerURL + "/clusters/test/" + arg + "?namespace=" + Namespace
+		log.Debug(url)
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
 		}
-		if !itemFound {
-			fmt.Println(arg + " was not found")
+
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
 		}
-		itemFound = false
-	}
-}
+		log.Debugf("%v\n", resp)
 
-func testServices(cluster *crv1.Pgcluster) {
+		defer resp.Body.Close()
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	services, err := Clientset.CoreV1().Services(Namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of services" + err.Error())
-		return
-	}
+		var response msgs.ClusterTestResponse
 
-	lo = meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
-	secrets, err := Clientset.Core().Secrets(Namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
-		return
-	}
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
 
-	for _, service := range services.Items {
-		for _, s := range secrets.Items {
-			username := string(s.Data["username"][:])
-			password := string(s.Data["password"][:])
-			database := "postgres"
-			if username == cluster.Spec.User {
-				database = cluster.Spec.Database
-			}
-			fmt.Print("psql -p " + cluster.Spec.Port + " -h " + service.Spec.ClusterIP + " -U " + username + " " + database)
-			status := query(username, service.Spec.ClusterIP, cluster.Spec.Port, database, password)
-			if status {
-				fmt.Print(" is " + GREEN("working"))
+		if len(response.Items) == 0 {
+			fmt.Println("nothing found")
+			return
+		}
+
+		for _, v := range response.Items {
+			fmt.Printf("%s is ", v.PsqlString)
+			if v.Working {
+				fmt.Printf("%s\n", GREEN("working"))
 			} else {
-				fmt.Print(" is " + RED("NOT working"))
+				fmt.Printf("%s\n", RED("NOT working"))
 			}
-			fmt.Println("")
 		}
+
 	}
-}
-
-func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
-	var conn *sql.DB
-	var err error
-
-	conn, err = sql.Open("postgres", "sslmode=disable user="+dbUser+" host="+dbHost+" port="+dbPort+" dbname="+database+" password="+dbPassword)
-	if err != nil {
-		log.Debug(err.Error())
-		return false
-	}
-
-	var ts string
-	var rows *sql.Rows
-
-	rows, err = conn.Query("select now()::text")
-	if err != nil {
-		log.Debug(err.Error())
-		return false
-	}
-
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		if rows != nil {
-			rows.Close()
-		}
-	}()
-	for rows.Next() {
-		if err = rows.Scan(&ts); err != nil {
-			log.Debug(err.Error())
-			return false
-		}
-		log.Debug("returned " + ts)
-		return true
-	}
-	return false
-
 }

@@ -117,7 +117,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	}
 	log.Info("created Job " + resultJob.Name)
 
-	//update the backup TPR status to submitted
+	//update the backup CRD status to submitted
 	err = util.Patch(client, "/spec/backupstatus", crv1.UpgradeSubmittedStatus, "pgbackups", job.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err.Error())

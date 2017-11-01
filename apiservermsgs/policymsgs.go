@@ -27,6 +27,25 @@ type CreatePolicyRequest struct {
 	Namespace string
 }
 
+// CreatePolicyResponse ...
+type CreatePolicyResponse struct {
+	Status
+}
+
+// ApplyPolicyRequest ...
+type ApplyPolicyRequest struct {
+	Name      string
+	Selector  string
+	DryRun    bool
+	Namespace string
+}
+
+// ApplyPolicyResponse ...
+type ApplyPolicyResponse struct {
+	Name []string
+	Status
+}
+
 // ApplyResults ...
 type ApplyResults struct {
 	Results []string
@@ -35,4 +54,9 @@ type ApplyResults struct {
 // ShowPolicyResponse ...
 type ShowPolicyResponse struct {
 	PolicyList crv1.PgpolicyList
+}
+
+// DeletePolicyResponse ...
+type DeletePolicyResponse struct {
+	Status
 }

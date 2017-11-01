@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -37,21 +38,21 @@ type ShowUpgradeResponse struct {
 	Items []UpgradeDetail
 }
 
-// CreateUpgradeRequest ...
-type CreateUpgradeRequest struct {
-	Name string
-}
-
 // CreateUpgradeHandler ...
 // pgo upgrade mycluster
 // parameters --upgrade-type
 // parameters --ccp-image-tag
 func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("upgradeservice.CreateUpgradeHandler called")
-	var request CreateUpgradeRequest
+	log.Debug("upgradeservice.CreateUpgradeHandler called")
+	var request msgs.CreateUpgradeRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Infoln("upgradeservice.CreateUpgradeHandler got request " + request.Name)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := CreateUpgrade(&request)
+
+	json.NewEncoder(w).Encode(resp)
 }
 
 // ShowUpgradeHandler ...
@@ -63,26 +64,28 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowUpgradeResponse
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("upgradeservice.ShowUpgradeHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("upgradeservice.ShowUpgradeHandler %v\n", vars)
 
-	switch r.Method {
-	case "GET":
-		log.Infoln("upgradeservice.ShowUpgradeHandler GET called")
-	case "DELETE":
-		log.Infoln("upgradeservice.ShowUpgradeHandler DELETE called")
+	upgradename := vars["name"]
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ShowUpgradeResponse)
-	resp.Items = []UpgradeDetail{}
-	c := UpgradeDetail{}
-	c.Name = "someupgrade"
-	resp.Items = append(resp.Items, c)
+	switch r.Method {
+	case "GET":
+		log.Debug("upgradeservice.ShowUpgradeHandler GET called")
+		resp := ShowUpgrade(namespace, upgradename)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("upgradeservice.ShowUpgradeHandler DELETE called")
+		resp := DeleteUpgrade(namespace, upgradename)
+		json.NewEncoder(w).Encode(resp)
+	}
 
-	json.NewEncoder(w).Encode(resp)
 }

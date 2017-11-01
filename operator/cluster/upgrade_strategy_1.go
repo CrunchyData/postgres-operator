@@ -1,4 +1,4 @@
-// Package cluster holds the cluster TPR logic and definitions
+// Package cluster holds the cluster CRD logic and definitions
 // A cluster is comprised of a primary service, replica service,
 // primary deployment, and replica deployment
 package cluster
@@ -113,7 +113,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	}
 	log.Info("created primary Deployment " + deploymentResult.Name + " in namespace " + namespace)
 
-	//update the upgrade TPR status to completed
+	//update the upgrade CRD status to completed
 	err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in upgradestatus patch " + err.Error())

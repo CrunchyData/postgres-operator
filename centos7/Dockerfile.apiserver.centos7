@@ -1,0 +1,21 @@
+FROM centos:7
+
+LABEL Release="2.1" Vendor="Crunchy Data Solutions" 
+
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+
+RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+
+
+RUN yum -y update && yum -y install postgresql96 hostname && yum -y clean all
+
+ADD bin/apiserver /usr/local/bin
+ADD bin/postgres-operator/runpsql.sh /usr/local/bin
+
+VOLUME ["/config", "/operator-conf"]
+
+EXPOSE 8080
+
+USER daemon
+
+ENTRYPOINT ["/usr/local/bin/apiserver"]

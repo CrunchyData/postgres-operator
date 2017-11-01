@@ -21,25 +21,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TreeBranch represents the command line branch display char
 const TreeBranch = "├── "
-
-// TreeTrunk represents the command line tree trunk display char
 const TreeTrunk = "└── "
 
-// PostgresVersion postgres version flag
 var PostgresVersion string
-
-// ShowPVC show pvc flag
 var ShowPVC bool
-
-// ShowSecrets show secrets flag
 var ShowSecrets bool
-
-// PVCRoot pvc root flag
 var PVCRoot string
 
-var showCmd = &cobra.Command{
+var ShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "show a description of a cluster",
 	Long: `show allows you to show the details of a policy, backup, pvc, or cluster.
@@ -81,32 +71,21 @@ Valid resource types include:
 }
 
 func init() {
-	RootCmd.AddCommand(showCmd)
-	showCmd.AddCommand(showClusterCmd)
-	showCmd.AddCommand(showBackupCmd)
-	showCmd.AddCommand(showPolicyCmd)
-	showCmd.AddCommand(showPVCCmd)
-	showCmd.AddCommand(showUpgradeCmd)
+	RootCmd.AddCommand(ShowCmd)
+	ShowCmd.AddCommand(ShowClusterCmd)
+	ShowCmd.AddCommand(ShowBackupCmd)
+	ShowCmd.AddCommand(ShowPolicyCmd)
+	ShowCmd.AddCommand(ShowPVCCmd)
+	ShowCmd.AddCommand(ShowUpgradeCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// showCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// showCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	showClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "s", false, "Show secrets ")
-	showClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
-	showPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
-
-	showBackupCmd.Flags().BoolVarP(&ShowPVC, "show-pvc", "p", false, "Show backup archive PVC listing ")
+	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "x", false, "Show secrets ")
+	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
+	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
 
 }
 
-var showPolicyCmd = &cobra.Command{
+var ShowPolicyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "Show policy information",
 	Long: `Show policy information. For example:
@@ -121,7 +100,7 @@ var showPolicyCmd = &cobra.Command{
 	},
 }
 
-var showPVCCmd = &cobra.Command{
+var ShowPVCCmd = &cobra.Command{
 	Use:   "pvc",
 	Short: "Show pvc information",
 	Long: `Show pvc information. For example:
@@ -136,7 +115,7 @@ var showPVCCmd = &cobra.Command{
 	},
 }
 
-var showUpgradeCmd = &cobra.Command{
+var ShowUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Show upgrade information",
 	Long: `Show upgrade information. For example:
@@ -152,7 +131,7 @@ var showUpgradeCmd = &cobra.Command{
 }
 
 // showBackupCmd represents the show backup command
-var showBackupCmd = &cobra.Command{
+var ShowBackupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Show backup information",
 	Long: `Show backup information. For example:
@@ -167,14 +146,15 @@ var showBackupCmd = &cobra.Command{
 	},
 }
 
-var showClusterCmd = &cobra.Command{
+// ShowClusterCmd represents the show cluster command
+var ShowClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Show cluster information",
 	Long: `Show a crunchy cluster. For example:
 
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if Labelselector == "" && len(args) == 0 {
+		if Selector == "" && len(args) == 0 {
 			log.Error("cluster name(s) required for this command")
 		} else {
 			showCluster(args)

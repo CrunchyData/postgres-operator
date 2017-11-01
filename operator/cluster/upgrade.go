@@ -79,7 +79,7 @@ func DeleteUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 // MajorUpgradeProcess process major upgrade completions
 // this watcher will look for completed upgrade jobs
-// and when this occurs, will update the upgrade TPR status to
+// and when this occurs, will update the upgrade CRD status to
 // completed and spin up the database or cluster using the newly
 // upgraded data files
 func MajorUpgradeProcess(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace string) {
@@ -132,7 +132,7 @@ func finishUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	var cl crv1.Pgcluster
 	var upgrade crv1.Pgupgrade
 
-	//from the job get the db and upgrade TPRs
+	//from the job get the db and upgrade CRDs
 	//pgdatabase name is from the pg-database label value in the job
 	// it represents the cluster name or the database name
 	//pgupgrade name is from the pg-database label value in the job

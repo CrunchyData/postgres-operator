@@ -1,4 +1,4 @@
-COImageTag:  centos7-2.0
+COImageTag:  centos7-2.1
 DbDatabase:  userdb
 DbUser:  postgres
 DbPort:  5432

@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -37,25 +38,21 @@ type ClusterDetail struct {
 	//secrets
 }
 
-// ShowClusterResponse ...
-type ShowClusterResponse struct {
-	Items []ClusterDetail
-}
-
-// CreateClusterRequest ...
-type CreateClusterRequest struct {
-	Name string
-}
-
 // CreateClusterHandler ...
 // pgo create cluster
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.CreateClusterHandler called")
-	var request CreateClusterRequest
+	log.Debug("clusterservice.CreateClusterHandler called")
+	var request msgs.CreateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Infoln("clusterservice.CreateClusterHandler got request " + request.Name)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := msgs.CreateClusterResponse{}
+	resp = CreateCluster(&request)
+	json.NewEncoder(w).Encode(resp)
+
 }
 
 // ShowClusterHandler ...
@@ -67,40 +64,51 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.ShowClusterHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("clusterservice.ShowClusterHandler %v\n", vars)
 
-	switch r.Method {
-	case "GET":
-		log.Infoln("clusterservice.ShowClusterHandler GET called")
-	case "DELETE":
-		log.Infoln("clusterservice.ShowClusterHandler DELETE called")
+	clustername := vars["name"]
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Debug("namespace param was [" + namespace + "]")
+	}
+	selector := r.URL.Query().Get("selector")
+	if namespace != "" {
+		log.Debug("selector param was [" + selector + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ShowClusterResponse)
-	resp.Items = []ClusterDetail{}
-	c := ClusterDetail{}
-	c.Name = "somecluster"
-	resp.Items = append(resp.Items, c)
+	switch r.Method {
+	case "GET":
+		log.Debug("clusterservice.ShowClusterHandler GET called")
+		resp := ShowCluster(namespace, clustername, selector)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
+		resp := DeleteCluster(namespace, clustername, selector)
+		json.NewEncoder(w).Encode(resp)
+	}
 
-	json.NewEncoder(w).Encode(resp)
 }
 
 // TestClusterHandler ...
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("clusterservice.TestClusterHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
+	clustername := vars["name"]
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Debug("namespace param was [" + namespace + "]")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	c := new(TestResults)
-	c.Results = []string{"one", "two"}
-	json.NewEncoder(w).Encode(c)
+
+	resp := TestCluster(namespace, clustername)
+
+	json.NewEncoder(w).Encode(resp)
 }

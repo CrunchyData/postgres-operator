@@ -58,7 +58,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, n
 			if gotjob.Status.Succeeded == 1 {
 				dbname := gotjob.ObjectMeta.Labels["pg-database"]
 				log.Infoln("pgbackup job " + gotjob.Name + " succeeded" + " marking " + dbname + " completed")
-				//update the backup TPR status to completed
+				//update the backup CRD status to completed
 				err = util.Patch(restclient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, namespace)
 				if err != nil {
 					log.Error("error in backup ProcessJobs " + err.Error())

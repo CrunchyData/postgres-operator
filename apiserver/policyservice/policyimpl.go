@@ -16,33 +16,34 @@ limitations under the License.
 */
 
 import (
-	"errors"
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/apiserver"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 // CreatePolicy ...
-func CreatePolicy(RestClient *rest.RESTClient, Namespace, policyName, policyURL, policyFile string) error {
+func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL, policyFile string) error {
 	var err error
 
 	log.Debug("create policy called for " + policyName)
 	result := crv1.Pgpolicy{}
 
 	// error if it already exists
-	err = RestClient.Get().
+	err = RESTClient.Get().
 		Resource(crv1.PgpolicyResourcePlural).
 		Namespace(Namespace).
 		Name(policyName).
 		Do().
 		Into(&result)
 	if err == nil {
-		log.Infoln("pgpolicy " + policyName + " was found so we will not create it")
+		log.Debug("pgpolicy " + policyName + " was found so we will not create it")
 		return err
 	} else if kerrors.IsNotFound(err) {
 		log.Debug("pgpolicy " + policyName + " not found so we will create it")
@@ -64,7 +65,7 @@ func CreatePolicy(RestClient *rest.RESTClient, Namespace, policyName, policyURL,
 		Spec: spec,
 	}
 
-	err = RestClient.Post().
+	err = RESTClient.Post().
 		Resource(crv1.PgpolicyResourcePlural).
 		Namespace(Namespace).
 		Body(newInstance).
@@ -74,18 +75,18 @@ func CreatePolicy(RestClient *rest.RESTClient, Namespace, policyName, policyURL,
 		log.Error(" in creating Pgpolicy instance" + err.Error())
 		return err
 	}
-	log.Infoln("created Pgpolicy " + policyName)
+	log.Debug("created Pgpolicy " + policyName)
 	return err
 
 }
 
 // ShowPolicy ...
-func ShowPolicy(RestClient *rest.RESTClient, Namespace string, name string) crv1.PgpolicyList {
+func ShowPolicy(RESTClient *rest.RESTClient, Namespace string, name string) crv1.PgpolicyList {
 	policyList := crv1.PgpolicyList{}
 
 	if name == "all" {
 		//get a list of all policies
-		err := RestClient.Get().
+		err := RESTClient.Get().
 			Resource(crv1.PgpolicyResourcePlural).
 			Namespace(Namespace).
 			Do().Into(&policyList)
@@ -95,7 +96,7 @@ func ShowPolicy(RestClient *rest.RESTClient, Namespace string, name string) crv1
 		}
 	} else {
 		policy := crv1.Pgpolicy{}
-		err := RestClient.Get().
+		err := RESTClient.Get().
 			Resource(crv1.PgpolicyResourcePlural).
 			Namespace(Namespace).
 			Name(name).
@@ -113,136 +114,141 @@ func ShowPolicy(RestClient *rest.RESTClient, Namespace string, name string) crv1
 }
 
 // DeletePolicy ...
-func DeletePolicy(Namespace string, RestClient *rest.RESTClient, args []string) error {
+func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, policyName string) msgs.DeletePolicyResponse {
+	resp := msgs.DeletePolicyResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+
 	var err error
-	// Fetch a list of our policy CRDs
+
 	policyList := crv1.PgpolicyList{}
-	err = RestClient.Get().Resource(crv1.PgpolicyResourcePlural).Do().Into(&policyList)
+	err = RESTClient.Get().Resource(crv1.PgpolicyResourcePlural).Do().Into(&policyList)
 	if err != nil {
 		log.Error("error getting policy list" + err.Error())
-		return err
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
-	//to remove a policy, you just have to remove
-	//the pgpolicy object, the operator will do the actual deletes
-	for _, arg := range args {
-		policyFound := false
-		log.Debug("deleting policy " + arg)
-		for _, policy := range policyList.Items {
-			if arg == "all" || arg == policy.Spec.Name {
-				policyFound = true
-				err = RestClient.Delete().
-					Resource(crv1.PgpolicyResourcePlural).
-					Namespace(Namespace).
-					Name(policy.Spec.Name).
-					Do().
-					Error()
-				if err == nil {
-					log.Infoln("deleted pgpolicy " + policy.Spec.Name)
-				} else {
-					log.Error("error deleting pgpolicy " + arg + err.Error())
-					return err
-				}
-
+	policyFound := false
+	log.Debug("deleting policy " + policyName)
+	for _, policy := range policyList.Items {
+		if policyName == "all" || policyName == policy.Spec.Name {
+			policyFound = true
+			err = RESTClient.Delete().
+				Resource(crv1.PgpolicyResourcePlural).
+				Namespace(Namespace).
+				Name(policy.Spec.Name).
+				Do().
+				Error()
+			if err == nil {
+				log.Debug("deleted pgpolicy " + policy.Spec.Name)
+			} else {
+				log.Error("error deleting pgpolicy " + policyName + err.Error())
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
 			}
-		}
-		if !policyFound {
-			log.Infoln("policy " + arg + " not found")
+
 		}
 	}
-	return err
+	if !policyFound {
+		log.Debug("policy " + policyName + " not found")
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "policy " + policyName + " not found"
+		return resp
+	}
+	return resp
 
 }
 
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
-func ApplyPolicy(username string, Selector string, Clientset *kubernetes.Clientset, DryRun bool, RestClient *rest.RESTClient, Namespace string, args []string) error {
+func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	var err error
-	//validate policies
-	labels := make(map[string]string)
-	for _, p := range args {
-		err = util.ValidatePolicy(RestClient, Namespace, p)
-		if err != nil {
-			return errors.New("policy " + p + " is not found, cancelling request")
-		}
+	resp := msgs.ApplyPolicyResponse{}
+	resp.Name = make([]string, 0)
+	resp.Status.Msg = ""
+	resp.Status.Code = msgs.Ok
 
-		labels[p] = "pgpolicy"
+	//validate policy
+	err = util.ValidatePolicy(apiserver.RESTClient, request.Namespace, request.Name)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "policy " + request.Name + " is not found, cancelling request"
+		return resp
 	}
+
 	//get filtered list of Deployments
-	sel := Selector + ",!replica"
+	sel := request.Selector + ",!replica"
 	log.Debug("selector string=[" + sel + "]")
 	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
+	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(request.Namespace).List(lo)
 	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
-		return err
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
-	if DryRun {
-		log.Infoln("policy would be applied to the following clusters:")
+	if request.DryRun {
 		for _, d := range deployments.Items {
-			log.Infoln("deployment : " + d.ObjectMeta.Name)
+			log.Debug("deployment : " + d.ObjectMeta.Name)
+			resp.Name = append(resp.Name, d.ObjectMeta.Name)
 		}
-		return err
+		return resp
 	}
-	var newInstance *crv1.Pgpolicylog
+
+	labels := make(map[string]string)
+	labels[request.Name] = "pgpolicy"
+
 	for _, d := range deployments.Items {
-		for _, p := range args {
-			log.Debug("apply policy " + p + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
+		log.Debug("apply policy " + request.Name + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
 
-			newInstance = getPolicylog(username, p, d.ObjectMeta.Name)
+		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, request.Namespace, request.Name, d.ObjectMeta.Name)
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 
-			result := crv1.Pgpolicylog{}
-			err = RestClient.Get().
-				Resource(crv1.PgpolicylogResourcePlural).
-				Namespace(Namespace).
-				Name(newInstance.ObjectMeta.Name).
-				Do().Into(&result)
-			if err == nil {
-				log.Infoln(p + " already applied to " + d.ObjectMeta.Name)
-				break
-			} else {
-				if kerrors.IsNotFound(err) {
-				} else {
-					log.Error(err)
-					break
-				}
-			}
-
-			result = crv1.Pgpolicylog{}
-			err = RestClient.Post().
-				Resource(crv1.PgpolicylogResourcePlural).
-				Namespace(Namespace).
-				Body(newInstance).
-				Do().Into(&result)
-			if err == nil {
-				log.Infoln("created Pgpolicylog " + result.ObjectMeta.Name)
-			} else {
-				log.Error("error in creating Pgpolicylog CRD instance", err.Error())
-				return err
-			}
+		cl := crv1.Pgcluster{}
+		err = apiserver.RESTClient.Get().
+			Resource(crv1.PgclusterResourcePlural).
+			Namespace(request.Namespace).
+			Name(d.ObjectMeta.Name).
+			Do().
+			Into(&cl)
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 
 		}
 
+		var strategyMap map[string]cluster.Strategy
+		strategyMap = make(map[string]cluster.Strategy)
+		strategyMap["1"] = cluster.Strategy1{}
+
+		strategy, ok := strategyMap[cl.Spec.Strategy]
+		if ok {
+			log.Debug("strategy found")
+		} else {
+			log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "invalid strategy " + cl.Spec.Strategy
+			return resp
+		}
+
+		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, request.Namespace, labels)
+		if err != nil {
+			log.Error(err)
+		}
+
+		resp.Name = append(resp.Name, d.ObjectMeta.Name)
+
 	}
-	return err
-
-}
-
-// getPolicyLog ...
-func getPolicylog(username, policyname, clustername string) *crv1.Pgpolicylog {
-
-	spec := crv1.PgpolicylogSpec{}
-	spec.PolicyName = policyname
-	spec.Username = username
-	spec.ClusterName = clustername
-
-	newInstance := &crv1.Pgpolicylog{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: policyname + clustername,
-		},
-		Spec: spec,
-	}
-	return newInstance
+	return resp
 
 }

@@ -28,62 +28,70 @@ import (
 // pgo create policy
 // parameters secretfrom
 func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("policyservice.CreatePolicyHandler called")
+	resp := msgs.CreatePolicyResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	log.Debug("policyservice.CreatePolicyHandler called")
+
 	var request msgs.CreatePolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Infoln("policyservice.CreatePolicyHandler got request " + request.Name)
+	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
 
-	err := CreatePolicy(apiserver.RestClient, request.Namespace, request.Name, request.URL, request.SQL)
+	err := CreatePolicy(apiserver.RESTClient, request.Namespace, request.Name, request.URL, request.SQL)
 	if err != nil {
 		log.Error(err.Error())
-		log.Infoln("error would be reported back to caller!!!!")
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 	}
+
+	json.NewEncoder(w).Encode(resp)
 }
 
 // ShowPolicyHandler ...
 // returns a ShowPolicyResponse
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("policyservice.ShowPolicyHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("policyservice.ShowPolicyHandler %v\n", vars)
 
 	policyname := vars["name"]
-	log.Infof(" name arg is %v\n", policyname)
 
 	namespace := r.URL.Query().Get("namespace")
 	if namespace != "" {
-		log.Infoln("namespace param was [" + namespace + "]")
-	} else {
-		log.Infoln("namespace param was null")
-	}
-
-	switch r.Method {
-	case "GET":
-		log.Infoln("policyservice.ShowPolicyHandler GET called")
-	case "DELETE":
-		log.Infoln("policyservice.ShowPolicyHandler DELETE called")
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := msgs.ShowPolicyResponse{}
-	resp.PolicyList = ShowPolicy(apiserver.RestClient, namespace, policyname)
+	switch r.Method {
+	case "GET":
+		log.Debug("policyservice.ShowPolicyHandler GET called")
+		resp := msgs.ShowPolicyResponse{}
+		resp.PolicyList = ShowPolicy(apiserver.RESTClient, namespace, policyname)
 
-	json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("policyservice.ShowPolicyHandler DELETE called")
+		resp := DeletePolicy(namespace, apiserver.RESTClient, policyname)
+		json.NewEncoder(w).Encode(resp)
+	}
+
 }
 
 // ApplyPolicyHandler ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("policyservice.ApplyPolicyHandler called")
-	//log.Infoln("showsecrets=" + showsecrets)
-	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+
+	log.Debug("policyservice.ApplyPolicyHandler called")
+
+	var request msgs.ApplyPolicyRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	c := new(msgs.ApplyResults)
-	c.Results = []string{"one", "two"}
-	json.NewEncoder(w).Encode(c)
+
+	resp := ApplyPolicy(&request)
+
+	json.NewEncoder(w).Encode(resp)
 }

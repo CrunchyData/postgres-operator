@@ -18,55 +18,60 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
-// BackupDetail ...
-type BackupDetail struct {
-	Name string
-}
-
-// ShowBackupResponse ...
-type ShowBackupResponse struct {
-	Items []BackupDetail
-}
-
-// CreateBackupRequest ...
-type CreateBackupRequest struct {
-	Name string
-}
-
-// CreateBackupHandler ...
-func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("backupservice.CreateBackupHandler called")
-	var request CreateBackupRequest
-	_ = json.NewDecoder(r.Body).Decode(&request)
-
-	log.Infoln("backupservice.CreateBackupHandler got request " + request.Name)
-}
-
 // ShowBackupHandler ...
+// returns a ShowBackupResponse
 func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
-	log.Infoln("backupservice.ShowBackupHandler called")
 	vars := mux.Vars(r)
-	log.Infof(" vars are %v\n", vars)
+	log.Debugf("backupservice.ShowBackupHandler %v\n", vars)
 
-	switch r.Method {
-	case "GET":
-		log.Infoln("backupservice.ShowBackupHandler GET called")
-	case "DELETE":
-		log.Infoln("backupservice.ShowBackupHandler DELETE called")
+	backupname := vars["name"]
+
+	namespace := r.URL.Query().Get("namespace")
+	if namespace != "" {
+		log.Debug("namespace param was [" + namespace + "]")
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := new(ShowBackupResponse)
-	resp.Items = []BackupDetail{}
-	c := BackupDetail{}
-	c.Name = "somecluster"
-	resp.Items = append(resp.Items, c)
+	switch r.Method {
+	case "GET":
+		log.Debug("backupservice.ShowBackupHandler GET called")
+		resp := ShowBackup(namespace, backupname)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("backupservice.ShowBackupHandler DELETE called")
+		resp := DeleteBackup(namespace, backupname)
+		json.NewEncoder(w).Encode(resp)
+	}
+
+}
+
+// CreateBackupHandler ...
+// pgo backup all
+// pgo backup --selector=name=mycluster
+// pgo backup mycluster
+func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	log.Debug("backupservice.CreateBackupHandler called")
+
+	var request msgs.CreateBackupRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := CreateBackup(&request)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }
