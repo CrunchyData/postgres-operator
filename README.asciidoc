@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v2.0.1, {docdate}
+v2.1, {docdate}
 
 == Table of Contents
 
@@ -13,7 +13,9 @@ v2.0.1, {docdate}
 [#Overview]
 == Overview
 
-The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes environment.
+The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes environment.  The project
+also incorporates a REST API and REST client for interfacing with the
+Operator.
 
 image::docs/tty.gif?raw=true[]
 
@@ -23,36 +25,29 @@ The PostgreSQL Operator leverages Kubernetes Custom Resource Definitions to defi
  * *pgbackups*
  * *pgpolicies*
 
-Once those custom objects are defined, Kubernetes provides the ability to create and manage those objects similar to any other native Kubernetes object.
+Kubernetes provides the ability to create and manage Custom Resource Definitions similar to any other native Kubernetes object.
 
-The PostgreSQL Operator runs within Kubernetes detecting these new custom object types being created, updated, or removed.
+The PostgreSQL Operator runs within Kubernetes detecting these custom object types as they are created, updated, or removed.
 
-Once the objects are detected, the PostgreSQL Operator enables users to perform operations across the Kubernetes environment, including:
+The PostgreSQL Operator enables users to perform operations, including:
 
-* Create a PostgreSQL Cluster
-* Destroy a PostgreSQL Cluster
-* Backup a PostgreSQL Cluster
-* Scale a a PostgreSQL Cluster
-* Restore a PostgreSQL Cluster
+* Create, Delete, Scale, Restore, and Backup a PostgreSQL Cluster
 * Upgrade a PostgreSQL Cluster
-* View PVC
+* View PVCs used by PostgreSQL clusters
 * Test Connections to a PostgreSQL Cluster
-* Create a SQL-based Policy
-* Apply a SQL-based Policy to a PostgreSQL Cluster
-* Perform User Management
+* Create and apply a SQL-based Policy to a PostgreSQL Cluster
+* Perform User and Password Management
 * Apply User Defined Labels to PostgreSQL Clusters
-* Perform Password Management
 
 
 [#Requirements]
 == Requirements
 
-CRD (custom resource definitions) are supported starting with Kube 1.7.X.
-NOTE:  Along with this new major version, changes were made to the configuration
-settings from the prior version of the Operator. 
+CRD (custom resource definitions) are supported starting with Kube 1.7.X and
+with the PostgreSQL Operator version 2.0.
 
 If you require an older version of Kube (< 1.7), you can work
-with the operator version 1.5.2 which resides in the github 1.5.X branch.
+with the PostgreSQL Operator version 1.5.2 which resides in the github 1.5.X branch.
 Note however, that the older operator will be deprecated and no longer 
 maintained in the future.
 
@@ -64,8 +59,8 @@ The CRD version of the operator is tested on the following platforms:
 
 This Operator has also been tested on the following operating systems:
 
-* *CentOS 7*
-* *RHEL 7*
+* *CentOS 7.3+*
+* *RHEL 7.3+*
 
 [#Build and Install Instructions]
 == Build and Install Instructions
@@ -169,23 +164,32 @@ pgo apply policy1 --selector=name=mycluster
 Details on the *pgo* commands and complex examples are found in the
 link:docs/user-guide.asciidoc[User Guide]
 
-#PostgreSQL Operator Container]
 == PostgreSQL Operator Container
 
-In the following diagram, the PostgreSQL operator client, *pgo*, is
+The following diagram depicts the components of the PostgreSQL Operator,
+here the PostgreSQL operator client, *pgo*, is
 shown interacting with the PostgreSQL operator that runs within
 a Kubernetes cluster.  The operator is responsible for creating
 or modifying PostgreSQL databases deployed within the Kubernetes cluster.
 
 image::docs/operator-diagram.png?raw=true[]
 
+The *pgo* client, as of release 2.1, is now a REST client which interacts 
+with the *apiserver*.  The *apiserver* is a REST API that interacts
+with the Kube API including creating Custom Resource Definition resources
+implemented by the PostgreSQL Operator.
+
 The operator functionality runs in a Kubernetes Deployment on your
-Kubernetes cluster.  The *postgres-operator* Docker container image
-is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub].
+Kubernetes cluster.  
+
+The *postgres-operator* Docker container image is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub]. 
+The *postgres-operator-apiserver* Docker container image is available on link:https://hub.docker.com/r/crunchydata/postgres-operator-apiserver/[Dockerhub]. 
+The *pgo* client is available on in the Releases section of
+this github repo site.
 
 What actually gets created on the Kubernetes cluster for a
 *pgcluster* resource is defined as a *deployment strategy*.  Strategies
 are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
 
-You can also build the Docker image for *postgres-operator* using
+You can also build the project Docker images using
 the build instructions located on the link:docs/build.asciidoc[Build and Setup] page.

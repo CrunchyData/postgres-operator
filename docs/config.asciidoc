@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v2.0.1, {docdate}
+v2.1, {docdate}
 
 
 This document describes the configuration options
@@ -7,67 +7,54 @@ for the *PostgreSQL operator*.
 
 == pgo Client Configuration
 
-Sample pgo configuration files are located in the $COROOT/examples directory.
+Starting with Operator version 2.1, the *pgo.yaml* configuration
+file is used solely by the *apiserver* and has no effect on the *pgo* client.  With this change, the Operator configuration is centralized to
+the *apiserver* container which is deployed alongside the *postgres-operator* container.
 
-You will need to copy a sample to your $HOME/.pgo.yaml location.  It
-can be defined in the following locations:
+Sample Operator configuration files for various storage configurations are located in the $COROOT/examples directory.
 
- * . (current directory)
- * $HOME
- * /etc/pgo/
-
-The .pgo.yaml file location is checked in that order.
+To configure the Operator, modify the settings found in
+*$COROOT/conf/apiserver/pgo.yaml* to meet your project needs.  Typically
+you will modify the storage and namespace settings.
 
 === pgo Configuration Format
 
-The sample pgo client configuration file, included in
-*examples/pgo.yaml.emptydir*, looks like this:
+The default pgo configuration file, included in
+*$COROOT/conf/apiserver/pgo.yaml*, looks like this:
 
 [source,yaml]
 ....
-Kubeconfig:  /etc/kubernetes/admin.conf
+Namespace:  demo
 Cluster:
   CCPImageTag:  centos7-9.6.5-1.6.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
   Password:  password
-  Database:  userdb
   RootPassword:  password
-  Strategy:  1
-  Replicas:  0
-  Policies:  policy1,policy2
+  Database:  userdb
   PasswordAgeDays:  60
   PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
 PrimaryStorage:
-  Name:  crunchy-pvc
-  StorageClass:  standard
   AccessMode:  ReadWriteMany
-  Size:  100M
-  StorageType:  emptydir
-  Fsgroup:  26
-  SupplementalGroups:  65534
-ReplicaStorage:
-  Name:  crunchy-pvc
-  StorageClass:  standard
-  AccessMode:  ReadWriteMany
-  Size:  100M
-  StorageType:  emptydir
-  Fsgroup:  26
-  SupplementalGroups:  65534
+  Size:  200M
+  StorageType:  create
 BackupStorage:
-  Name:  crunchy-pvc
-  StorageClass:  standard
   AccessMode:  ReadWriteMany
-  Size:  100M
-  StorageType:  shared
-  Fsgroup:  26
-  SupplementalGroups:  65534
+  Size:  200M
+  StorageType:  create
+ReplicaStorage:
+  AccessMode:  ReadWriteMany
+  Size:  200M
+  StorageType:  create
 Pgo:
-  LSPVCTemplate:  /home/youruserid/.pgo.lspvc-template.json
-  CSVLoadTemplate:  /home/youruserid/.pgo.csvload-template.json
-  COImageTag:  centos7-2.0
-  Debug:  false
+  APIServerUrl:  http://localhost:8080
+  LSPVCTemplate:  /config/pgo.lspvc-template.json
+  CSVLoadTemplate:  /config/pgo.csvload-template.json
+  COImageTag:  centos7-2.1
+  Debug:  true
 ....
 
 Values in the pgo configuration file have the following meaning:
@@ -76,7 +63,7 @@ Values in the pgo configuration file have the following meaning:
 [width="90%",cols="m,2",frame="topbot",options="header"]
 |======================
 |Setting | Definition
-|Kubeconfig        | the path to the kubeconfig file
+|Namespace        | the namespace the Operator will run within
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.5-1.6.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.PrimaryPassword        | the PostgreSQL primary user password, when specified, it will be stored in the secret holding the primary user credentials, if not specified the value will be generated
