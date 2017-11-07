@@ -5,11 +5,10 @@ replicaCount: 1
 
 image:
   repository: crunchydata/postgres-operator
-  tag: centos7-1.5.2
+  tag: centos7-2.1
   pullPolicy: IfNotPresent
 
 env:
-  dockerApiVersion: "1.24"
   debug: "true"
 
 resources:

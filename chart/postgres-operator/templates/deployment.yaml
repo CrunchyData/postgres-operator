@@ -21,8 +21,6 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
           env:
-            - name: DOCKER_API_VERSION
-              value: "{{ .Values.env.dockerApiVersion }}"
             - name: DEBUG
               value: "{{ .Values.env.debug }}"
             - name: NAMESPACE
@@ -39,13 +37,7 @@ spec:
             - name: operator-conf
               mountPath: /operator-conf
               readOnly: true
-            - name: docker-socket
-              mountPath: /var/run/docker.sock
-              readOnly: false
       volumes:
         - name: operator-conf
           configMap:
             name: {{ .Release.Name }}
-        - name: docker-socket
-          hostPath:
-            path: /var/run/docker.sock

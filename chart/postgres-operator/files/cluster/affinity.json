@@ -5,12 +5,12 @@
 			    "preference": {
 				"matchExpressions": [{
 				    "key": "kubernetes.io/hostname",
-				    "operator": "{{.OPERATOR}}",
+				    "operator": "{{.Operator}}",
 				    "values": [
-					"{{.NODE}}"
-				    ]
-				}]
-			    }
-			}]
-		    }
+					"{{.Node}}"
+				    ]   
+				}]  
+			    }   
+			}]  
+		    }   
 		},

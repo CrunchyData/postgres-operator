@@ -4,7 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            {{.OPERATOR_LABELS }}
+            {{.OperatorLabels }}
         }
     },
     "spec": {
@@ -13,17 +13,17 @@
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
-                    "master": "true",
+                    "primary": "true",
                     "pg-cluster": "{{.ClusterName}}"
                 }
             },
             "spec": {
 
-                {{.SECURITY_CONTEXT }}
+                {{.SecurityContext }}
 
                 "containers": [{
                     "name": "database",
-                    "image": "crunchydata/crunchy-postgres:{{.CCP_IMAGE_TAG}}",
+                    "image": "crunchydata/crunchy-postgres:{{.CCPImageTag}}",
                     "readinessProbe": {
                         "exec": {
                             "command": [
@@ -34,20 +34,20 @@
                         "timeoutSeconds": 8
                     },
                     "env": [{
-                        "name": "PG_MASTER_PORT",
+                        "name": "PG_PRIMARY_PORT",
                         "value": "{{.Port}}"
                     }, {
                         "name": "PG_MODE",
-                        "value": "master"
+                        "value": "primary"
                     }, {
                         "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.PGDATA_PATH_OVERRIDE}}"
+                        "value": "{{.DataPathOverride}}"
                     }, {
                         "name": "BACKUP_PATH",
-                        "value": "{{.BACKUP_PATH}}"
+                        "value": "{{.BackupPath}}"
                     }, {
                         "name": "PG_DATABASE",
-                        "value": "{{.PG_DATABASE}}"
+                        "value": "{{.Database}}"
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
@@ -62,13 +62,13 @@
                             "readOnly": true
                         }, {
                             "mountPath": "/pguser",
-                            "name": "pguser-volume"
+                            "name": "user-volume"
                         }, {
-                            "mountPath": "/pgmaster",
-                            "name": "pgmaster-volume"
+                            "mountPath": "/pgprimary",
+                            "name": "primary-volume"
                         }, {
                             "mountPath": "/pgroot",
-                            "name": "pgroot-volume"
+                            "name": "root-volume"
                         }
 
                     ],
@@ -82,30 +82,30 @@
                 }],
                 "volumes": [{
                         "name": "pgdata",
-                        {{.PVC_NAME}}
+                        {{.PVCName}}
                     }, {
                         "name": "backup",
-                        {{.BACKUP_PVC_NAME}}
+                        {{.BackupPVCName}}
                     }, {
-                        "name": "pguser-volume",
+                        "name": "user-volume",
                         "secret": {
-                            "secretName": "{{.PGUSER_SECRET_NAME}}"
+                            "secretName": "{{.UserSecretName}}"
                         }
                     }, {
-                        "name": "pgmaster-volume",
+                        "name": "primary-volume",
                         "secret": {
-                            "secretName": "{{.PGMASTER_SECRET_NAME}}"
+                            "secretName": "{{.PrimarySecretName}}"
                         }
                     }, {
-                        "name": "pgroot-volume",
+                        "name": "root-volume",
                         "secret": {
-                            "secretName": "{{.PGROOT_SECRET_NAME}}"
+                            "secretName": "{{.RootSecretName}}"
                         }
                     }
 
                 ],
 
-		{{.NODE_SELECTOR}}
+		{{.NodeSelector}}
 
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
