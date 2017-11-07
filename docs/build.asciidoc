@@ -200,7 +200,7 @@ from source, you can pull down the Docker images as follows:
 docker pull crunchydata/lspvc:centos7-2.1
 docker pull crunchydata/csvload:centos7-2.1
 docker pull crunchydata/postgres-operator:centos7-2.1
-docker pull crunchydata/postgres-operator-apiserver:centos7-2.1
+docker pull crunchydata/apiserver:centos7-2.1
 ....
 
 Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
