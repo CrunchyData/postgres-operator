@@ -197,23 +197,23 @@
 		},
 		{
 			"ImportPath": "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions",
-			"Rev": "d2858dac15f1e3693d95c98bd2c943fc3a39c5e7"
+			"Rev": "e509bb64fe1116e12a32273a2032426aa1a5fd26"
 		},
 		{
 			"ImportPath": "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
-			"Rev": "d2858dac15f1e3693d95c98bd2c943fc3a39c5e7"
+			"Rev": "e509bb64fe1116e12a32273a2032426aa1a5fd26"
 		},
 		{
 			"ImportPath": "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset",
-			"Rev": "d2858dac15f1e3693d95c98bd2c943fc3a39c5e7"
+			"Rev": "e509bb64fe1116e12a32273a2032426aa1a5fd26"
 		},
 		{
 			"ImportPath": "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme",
-			"Rev": "d2858dac15f1e3693d95c98bd2c943fc3a39c5e7"
+			"Rev": "e509bb64fe1116e12a32273a2032426aa1a5fd26"
 		},
 		{
 			"ImportPath": "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
-			"Rev": "d2858dac15f1e3693d95c98bd2c943fc3a39c5e7"
+			"Rev": "e509bb64fe1116e12a32273a2032426aa1a5fd26"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery/pkg/api/equality",
