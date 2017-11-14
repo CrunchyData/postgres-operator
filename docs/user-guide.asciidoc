@@ -459,6 +459,23 @@ pgo label --label=env=research  --selector=project=xray
 In this example, we apply a label of *env=research* to any
 clusters that have an existing label of *project=xray* applied.
 
+== Data Loading
+
+A CSV file loading capability is supported currently.  You can
+test that by creating a SQL Policy which will create a database
+table that will be loaded with the CSV data.  For example:
+
+....
+pgo create policy xrayapp --in-file=$COROOT/examples/policy/xrayapp.sql
+....
+
+Then you can load a sample CSV file into a database as follows:
+
+....
+pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name=mycluster
+....
+
+The loading is based on a load definition found in the *sample-load-config.json* file.  In that file, the data to be loaded is specified. When the *pgo load* command is executed, Jobs will be created to perform the loading for each cluster that matches the selector filter.
 
 == bash Completion
 
