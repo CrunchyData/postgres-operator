@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	"net/http"
 )
 
@@ -26,6 +27,36 @@ import (
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("versionservice.VersionHandler called")
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := Version()
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+// VersionHandler ...
+// pgo version
+func AuthTestHandler(w http.ResponseWriter, r *http.Request) {
+
+	log.Debug("versionservice.AuthTestHandler called")
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	username, password, authOK := r.BasicAuth()
+	if authOK == false {
+		http.Error(w, "Not authorized", 401)
+		return
+	}
+
+	log.Debugf("versionservice.AuthTestHandler username=[%s] password=[%s]\n", username, password)
+
+	if !apiserver.BasicAuthCheck(username, password) {
+		//if username != "username" || password != "password" {
+		http.Error(w, "Not authenticated in apiserver", 401)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

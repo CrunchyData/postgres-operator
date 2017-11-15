@@ -20,6 +20,7 @@ func main() {
 
 	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()
+	r.HandleFunc("/authtest", versionservice.AuthTestHandler)
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/clones", cloneservice.CreateCloneHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
@@ -37,5 +38,6 @@ func main() {
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
+	//log.Fatal(http.ListenAndServeTLS(":8080", "/cpmkeys/cert.pem", "/cpmkeys/key.pem", r))
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

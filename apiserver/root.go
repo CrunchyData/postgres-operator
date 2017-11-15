@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"bufio"
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
@@ -24,7 +25,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"strings"
 )
+
+// pgouserPath ...
+const pgouserPath = "/config/pgouser"
 
 // RESTClient ...
 var RESTClient *rest.RESTClient
@@ -44,8 +49,13 @@ const TreeTrunk = "└── "
 // TreeBranch is for debugging only in this context
 const TreeBranch = "├── "
 
+// Credentials holds the BasicAuth credentials found in the config
+var Credentials map[string]string
+
 func init() {
 	log.Infoln("apiserver starts")
+
+	getCredentials()
 
 	initConfig()
 
@@ -130,4 +140,60 @@ func initConfig() {
 
 	log.Debug("namespace is " + viper.GetString("Namespace"))
 
+}
+
+func file2lines(filePath string) []string {
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		log.Error(err)
+	}
+
+	return lines
+}
+
+func parseUserMap(dat string) (string, string) {
+
+	fields := strings.Split(strings.TrimSpace(dat), ":")
+	log.Infof("%v\n", fields)
+	log.Infof("username=[%s] password=[%s]\n", fields[0], fields[1])
+	return fields[0], fields[1]
+}
+
+// getCredentials ...
+func getCredentials() {
+	var Username, Password string
+
+	Credentials = make(map[string]string)
+
+	lines := file2lines(pgouserPath)
+	for _, v := range lines {
+		Username, Password = parseUserMap(v)
+		log.Debugf("username=%s password=%s\n", Username, Password)
+		Credentials[Username] = Password
+	}
+
+}
+
+func BasicAuthCheck(username, password string) bool {
+	value := Credentials[username]
+	if value == "" {
+		return false
+	}
+
+	if value != password {
+		return false
+	}
+
+	return true
 }

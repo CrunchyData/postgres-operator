@@ -94,4 +94,5 @@ func initConfig() {
 		}
 	}
 	log.Debug("in initConfig with url=" + APIServerURL)
+	GetCredentials()
 }

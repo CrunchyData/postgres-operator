@@ -47,7 +47,8 @@ func init() {
 
 func showVersion() {
 
-	url := APIServerURL + "/version"
+	//url := APIServerURL + "/version"
+	url := APIServerURL + "/authtest"
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -57,6 +58,7 @@ func showVersion() {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	client := &http.Client{}
 
@@ -68,6 +70,8 @@ func showVersion() {
 	log.Debugf("%v\n", resp)
 
 	defer resp.Body.Close()
+
+	StatusCheck(resp)
 
 	var response msgs.VersionResponse
 
