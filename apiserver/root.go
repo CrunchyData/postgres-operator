@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
@@ -24,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -196,4 +198,25 @@ func BasicAuthCheck(username, password string) bool {
 	}
 
 	return true
+}
+
+func Authn(where string, w http.ResponseWriter, r *http.Request) error {
+	var err error
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	username, password, authOK := r.BasicAuth()
+	log.Debugf("Authn Attempt %s username=[%s] password=[%s]\n", where, username, password)
+	if authOK == false {
+		http.Error(w, "Not authorized", 401)
+		return errors.New("Not Authorized")
+	}
+
+	if !BasicAuthCheck(username, password) {
+		log.Errorf("Authn Failed %s username=[%s] password=[%s]\n", where, username, password)
+		http.Error(w, "Not authenticated in apiserver", 401)
+		return errors.New("Not Authenticated")
+	}
+	log.Debugf("Authn Success %s username=[%s] password=[%s]\n", where, username, password)
+	return err
+
 }

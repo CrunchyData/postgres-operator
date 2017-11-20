@@ -310,7 +310,8 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		if request.CCPImageTag == existingImage {
 			log.Error("CCPImageTag is the same as the cluster")
 			log.Error("can't upgrade to the same image version")
-
+			log.Error("requested version is " + request.CCPImageTag)
+			log.Error("existing version is " + existingImage)
 			return nil, errors.New("invalid image tag")
 		}
 		requestedMajorVersion, strRep, err = parseMajorVersion(request.CCPImageTag)
@@ -318,7 +319,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 			log.Error(err)
 		}
 	} else if viper.GetString("Cluster.CCPImageTag") == existingImage {
-		log.Error("CCPImageTag is the same as the cluster")
+		log.Error("Cluster.CCPImageTag is the same as the cluster")
 		log.Error("can't upgrade to the same image version")
 
 		return nil, errors.New("invalid image tag")

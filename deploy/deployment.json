@@ -17,9 +17,9 @@
                     "name": "apiserver",
                     "image": "crunchydata/apiserver:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
-					"ports":[{
-						"containerPort": 8080
-					}],
+			"ports":[{
+			"containerPort": 8080
+			}],
                     "env": [{
                         "name": "DEBUG",
                         "value": "true"

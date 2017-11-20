@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	operutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
@@ -169,8 +170,8 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 func createJob(clusterName, namespace string) error {
 	var err error
-
-	LoadConfigTemplate.Name = "csvload-" + clusterName
+	randStr := operutil.GenerateRandString(3)
+	LoadConfigTemplate.Name = "csvload-" + clusterName + "-" + randStr
 	LoadConfigTemplate.DbHost = clusterName
 	LoadConfigTemplate.DbPass, err = util.GetSecretPassword(clusterName, crv1.RootSecretSuffix, namespace)
 	if err != nil {

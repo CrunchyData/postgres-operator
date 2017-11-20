@@ -28,6 +28,8 @@ import (
 	"time"
 )
 
+const lowercharset = "abcdefghijklmnopqrstuvwxyz"
+
 const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -133,6 +135,11 @@ func stringWithCharset(length int, charset string) string {
 // GeneratePassword generate a password of a given length
 func GeneratePassword(length int) string {
 	return stringWithCharset(length, charset)
+}
+
+// GenerateRandString generate a rand lowercase string of a given length
+func GenerateRandString(length int) string {
+	return stringWithCharset(length, lowercharset)
 }
 
 // DeleteDatabaseSecrets delete pgroot, pgprimary, and pguser secrets

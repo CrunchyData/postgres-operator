@@ -33,6 +33,7 @@ const MajorUpgrade = "major"
 const MinorUpgrade = "minor"
 const SEP = "-"
 
+var CCP_IMAGE_TAG string
 var UpgradeType string
 
 var upgradeCmd = &cobra.Command{
@@ -56,6 +57,12 @@ var upgradeCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	RootCmd.AddCommand(upgradeCmd)
+	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
+	upgradeCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
+}
+
 func showUpgrade(args []string) {
 	log.Debugf("showUpgrade called %v\n", args)
 
@@ -76,6 +83,7 @@ func showUpgrade(args []string) {
 			return
 		}
 
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 		client := &http.Client{}
 
 		resp, err := client.Do(req)
@@ -148,6 +156,7 @@ func deleteUpgrade(args []string) {
 			log.Fatal("NewRequest: ", err)
 			return
 		}
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		client := &http.Client{}
 
@@ -223,6 +232,7 @@ func createUpgrade(args []string) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	client := &http.Client{}
 

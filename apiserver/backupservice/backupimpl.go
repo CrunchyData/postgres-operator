@@ -220,6 +220,7 @@ func getBackupParams(name, Namespace string) (*crv1.Pgbackup, error) {
 	spec.StorageSpec.Size = viper.GetString("BackupStorage.Size")
 	spec.StorageSpec.StorageClass = viper.GetString("BackupStorage.StorageClass")
 	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageType")
+	log.Debug("JEFF in backup setting storagetype to " + spec.StorageSpec.StorageType)
 	spec.StorageSpec.SupplementalGroups = viper.GetString("BackupStorage.SupplementalGroups")
 	spec.StorageSpec.Fsgroup = viper.GetString("BackupStorage.Fsgroup")
 	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")

@@ -95,6 +95,7 @@ func applyPolicy(args []string) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	client := &http.Client{}
 
@@ -149,6 +150,7 @@ func showPolicy(args []string) {
 			return
 		}
 
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 		client := &http.Client{}
 
 		resp, err := client.Do(req)
@@ -232,6 +234,7 @@ func createPolicy(args []string) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	client := &http.Client{}
 	//log.Info("here after new client")
@@ -295,6 +298,7 @@ func deletePolicy(args []string) {
 			log.Fatal("NewRequest: ", err)
 			return
 		}
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		client := &http.Client{}
 

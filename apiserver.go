@@ -1,6 +1,8 @@
 package main
 
 import (
+	//"crypto/tls"
+	//"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
@@ -13,14 +15,15 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/gorilla/mux"
+	//"io/ioutil"
 	"net/http"
+	//"os"
 )
 
 func main() {
 
 	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()
-	r.HandleFunc("/authtest", versionservice.AuthTestHandler)
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/clones", cloneservice.CreateCloneHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
@@ -38,6 +41,27 @@ func main() {
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
-	//log.Fatal(http.ListenAndServeTLS(":8080", "/cpmkeys/cert.pem", "/cpmkeys/key.pem", r))
+	//log.Fatal(http.ListenAndServeTLS(":8443", "/config/cert.pem", "/config/key.pem", r))
+	//log.Fatal(http.ListenAndServeTLS(":8443", "/config/secure.domain.com.crt", "/config/secure.domain.com.key", r))
+	//caCert, err := ioutil.ReadFile("/config/client.crt")
+	//if err != nil {
+	//log.Fatal(err)
+	//log.Error("could not read /config/client.crt")
+	//os.Exit(2)
+	//}
+	//caCertPool := x509.NewCertPool()
+	//caCertPool.AppendCertsFromPEM(caCert)
+	//cfg := &tls.Config{
+	//ClientAuth: tls.RequireAndVerifyClientCert,
+	//ClientCAs:  caCertPool,
+	//}
+	//srv := &http.Server{
+	////Addr: ":8443",
+	//Handler:   &handler{},
+	//Handler:   r,
+	//TLSConfig: cfg,
+	//}
+
+	//log.Fatal(srv.ListenAndServeTLS("/config/server.crt", "/config/server.key"))
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -16,6 +16,7 @@ package cmd
 */
 
 import (
+	//"crypto/tls"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -25,7 +26,7 @@ import (
 	"os"
 )
 
-const ClientVersion = "2.1"
+const ClientVersion = "2.2"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
@@ -47,8 +48,8 @@ func init() {
 
 func showVersion() {
 
-	//url := APIServerURL + "/version"
-	url := APIServerURL + "/authtest"
+	url := APIServerURL + "/version"
+	//url := APIServerURL + "/authtest"
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -60,7 +61,14 @@ func showVersion() {
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
-	client := &http.Client{}
+	client := &http.Client{
+	//	Transport: &http.Transport{
+	//		TLSClientConfig: &tls.Config{
+	//			RootCAs:      caCertPool,
+	//			Certificates: []tls.Certificate{cert},
+	//		},
+	//	},
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

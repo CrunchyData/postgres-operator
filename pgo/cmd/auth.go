@@ -16,6 +16,8 @@ package cmd
 */
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -29,6 +31,9 @@ const pgouserenvvar = "PGOUSER"
 
 // BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
 var BasicAuthUsername, BasicAuthPassword string
+
+var caCertPool *x509.CertPool
+var cert tls.Certificate
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
@@ -103,4 +108,22 @@ func GetCredentials() {
 
 	log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
 	BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
+
+	/**
+	caCert, err := ioutil.ReadFile("/tmp/server.crt")
+	if err != nil {
+		log.Error(err)
+		log.Error("could not read ca certificate")
+		os.Exit(2)
+	}
+	caCertPool = x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	cert, err = tls.LoadX509KeyPair("/tmp/client.crt", "/tmp/client.key")
+	if err != nil {
+		log.Fatal(err)
+		log.Error("could not load client.crt and client.key")
+		os.Exit(2)
+	} */
+
 }

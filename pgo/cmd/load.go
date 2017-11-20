@@ -91,6 +91,7 @@ func createLoad(args []string) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	client := &http.Client{}
 

@@ -53,6 +53,8 @@ func deleteCluster(args []string) {
 			return
 		}
 
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
 		client := &http.Client{}
 
 		resp, err := client.Do(req)
@@ -111,6 +113,8 @@ func showCluster(args []string) {
 			log.Fatal("NewRequest: ", err)
 			return
 		}
+
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		client := &http.Client{}
 
@@ -222,6 +226,7 @@ func createCluster(args []string) {
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	client := &http.Client{}
 

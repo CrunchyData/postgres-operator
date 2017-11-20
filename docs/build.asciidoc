@@ -32,11 +32,11 @@ link:https://golang.org/dl/[Golang website] for details on installing golang.
 Pre-compiled versions of the Operator *pgo* client are provided for the x86_64 and Mac OSX
 hosts.
 
-The Operator uses the following PostgreSQL containers:
+As of version 2.0, the Operator uses the following PostgreSQL containers:
 
-* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container]
-* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
-* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container] version 1.6.0 or later (e.g. centos7-9.6.6-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container] version 1.6.0 or later (e.g. centos7-9.6.6-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container] version 1.6.0 or later (e.g. centos7-9.6.6-1.7.0)
 
 The Operator project builds and operates with the following containers:
 
@@ -58,19 +58,6 @@ Kubernetes installation methods have been known to work as well.
 
 link:https://kubernetes.io/docs/setup/independent/install-kubeadm/[Installing kubeadm - Official Kubernetes Documentation]
 
-
-==== minikube
-
-*Note*: If you set up your Kubernetes environment using *minikube*, it is important to
-run the following command:
-
-....
-minikube addons disable default-storageclass
-....
-
-Minikube uses a hostpath provisioner that does not support supplementalGroups; because of this,
-if you don't disable the default-storageclass, odd permission errors occur that stop the
-PostgreSQL database from operating correctly.
 
 === Create Namespace
 
@@ -143,7 +130,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=2.1
+export CO_VERSION=2.2
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
@@ -154,9 +141,6 @@ The value of CO_APISERVER_URL is used by the *pgo* client to connect
 to the postgres-operator *apiserver*.  This URL should include
 either a DNS name for the postgres-operator service or it's Service
 IP address.
-
-It will be necessary to log out and back in for the changes to your .bashrc
-file to take effect.
 
 Next, set up a project directory structure and pull down the project:
 ....
@@ -170,7 +154,7 @@ cd postgres-operator
 At this point, you can choose one of two options to install the postgres-operator
 itself:
 
-* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#get-packaged-dependencies[Get packaged dependencies]
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#get-prebuilt-images[Get Pre-built Images]
 * link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#build-from-source[Build from source]
 
 === Pull Postgres Containers
@@ -180,34 +164,34 @@ containers, you can pre-pull them as follows:
 
 For PostgreSQL version 9.6:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-9.6.5-1.6.0
-docker pull crunchydata/crunchy-backup:centos7-9.6.5-1.6.0
-docker pull crunchydata/crunchy-upgrade:centos7-9.6.5-1.6.0
+docker pull crunchydata/crunchy-postgres:centos7-9.6.6-1.7.0
+docker pull crunchydata/crunchy-backup:centos7-9.6.6-1.7.0
+docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.0
 ....
 
-For PostgreSQL version 10.0:
+For PostgreSQL version 10.1:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-10.0-1.6.0
-docker pull crunchydata/crunchy-backup:centos7-10.0-1.6.0
-docker pull crunchydata/crunchy-upgrade:centos7-10.0-1.6.0
+docker pull crunchydata/crunchy-postgres:centos7-10.1-1.7.0
+docker pull crunchydata/crunchy-backup:centos7-10.1-1.7.0
+docker pull crunchydata/crunchy-upgrade:centos7-10.1-1.7.0
 ....
 
-=== Get Packaged Dependencies
+=== Get Prebuilt Images
 
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-2.1
-docker pull crunchydata/csvload:centos7-2.1
-docker pull crunchydata/postgres-operator:centos7-2.1
-docker pull crunchydata/apiserver:centos7-2.1
+docker pull crunchydata/lspvc:centos7-2.2
+docker pull crunchydata/csvload:centos7-2.2
+docker pull crunchydata/postgres-operator:centos7-2.2
+docker pull crunchydata/apiserver:centos7-2.2
 ....
 
 Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/2.1/postgres-operator.2.1.tar.gz
-tar xvzf ./postgres-operator.2.1.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/2.1/postgres-operator.2.2.tar.gz
+tar xvzf ./postgres-operator.2.2.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -262,6 +246,62 @@ Note that this example will create a PVC called *crunchy-pvc* that is
 referenced in the examples and *pgo.yaml* configuration file as the
 desired PVC to use when databases and clusters are created.
 
+=== Configure Basic Authentication
+
+In Operator version 2.2, Basic Authentication is required by the *apiserver*.
+You will configure the *pgo* client to specify a basic authentication
+username and password by creating a file in the user's home
+directory named *.pgouser* that looks similar to this:
+....
+testuser:testpass
+....
+
+This example specifies a username of *testuser* and a password of
+*testpass*.  These values will be read by the *pgo* client and passed
+to the *apiserver* on each REST API call.
+
+For the *apiserver*, a list of usernames and passwords is
+specified in the *apiserver-conf* ConfigMap.  The values specified
+in a deployment are found in the following location:
+....
+$COROOT/conf/apiserver/pgouser
+....
+
+The sample configuration for *pgouser* is as follows:
+....
+username:password
+testuser:testpass
+....
+
+Modify these values to be unique to your environment.
+
+If the username and password passed by clients to the *apiserver* do
+not match, the REST call will fail and a log message will be produced
+in the *apiserver* container log.  The client will receive a 401 http
+status code if they are not able to authenticate.
+
+If the *pgouser* file is not found in the home directory of the *pgo* user
+then the next searched location is */etc/pgo/pgouser*, and if not found
+there then lastly the *PGOUSER* environment variable is searched for
+a path to the basic authentication file.
+
+=== Configuration
+
+The *apiserver* uses the following  configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
+....
+$COROOT/conf/apiserver/pgo.yaml
+$COROOT/conf/apiserver/pgo.lspvc-template.json
+$COROOT/conf/apiserver/pgo.csvload-template.json
+....
+
+Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
+your storage configuration.  Adjust this file for NFS or other storage configurations.
+
+Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
+path to match your local Kubernetes configuration file location. 
+
+More in-depth explanations of postgres operator configurations are available
+in the link:config.asciidoc[Configuration] document.
 
 === Deploy the PostgreSQL Operator
 *NOTE*: This will create and use */data* on your
@@ -304,23 +344,6 @@ The following table describes the Makefile targets:
 |csvloadimage        | build the csvload Docker image
 |release        | build the postgres-operator release
 |======================
-=== Configuration
-
-The *apiserver* uses the following  configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
-....
-$COROOT/conf/apiserver/pgo.yaml
-$COROOT/conf/apiserver/pgo.lspvc-template.json
-$COROOT/conf/apiserver/pgo.csvload-template.json
-....
-
-Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
-your storage configuration.  Adjust this file for NFS or other storage configurations.
-
-Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
-path to match your local Kubernetes configuration file location. 
-
-More in-depth explanations of postgres operator configurations are available
-in the link:config.asciidoc[Configuration] document.
 
 === Verify Installation
 
@@ -345,6 +368,7 @@ At this point, you should be ready to start using the *pgo* client!
 A simple *smoke test* of the postgres operator includes testing
 the following:
 
+ * get version information (*pgo version*)
  * create a cluster (*pgo create cluster testcluster*)
  * scale a cluster (*pgo scale testcluster --replica-count=1*)
  * show a cluster (*pgo show cluster testcluster*)
@@ -372,6 +396,5 @@ the following:
  * check password age (*pgo user --expired=10 --selector=project=xray*)
  * backup an entire project (*pgo backup --selector=project=xray*)
  * delete an entire project (*pgo delete cluster --selector=project=xray*)
- * get version information (*pgo version*)
 
 More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].

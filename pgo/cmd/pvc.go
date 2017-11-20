@@ -51,6 +51,7 @@ func printPVC(pvcName, pvcRoot string) {
 		log.Fatal("NewRequest: ", err)
 		return
 	}
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
