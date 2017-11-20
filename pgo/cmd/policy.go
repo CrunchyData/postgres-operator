@@ -123,8 +123,12 @@ func applyPolicy(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		for _, v := range response.Name {
-			fmt.Println("applied policy on " + v)
+		if len(response.Name) == 0 {
+			fmt.Println("no clusters found")
+		} else {
+			for _, v := range response.Name {
+				fmt.Println("applied policy on " + v)
+			}
 		}
 	} else {
 		fmt.Println(RED(response.Status.Msg))
