@@ -53,6 +53,7 @@ Pgo:
   APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.csvload-template.json
+  COImagePrefix:  crunchydata
   COImageTag:  centos7-2.1
   Debug:  true
 ....
@@ -98,8 +99,8 @@ Values in the pgo configuration file have the following meaning:
 |BackupStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
 |Pgo.CSVLoadTemplate        | the CSV load template file used for load jobs
-|Pgo.COImageTag        | image tag to use for the PostgreSQL operator containers
-|Pgo.Debug        | set to true if you want to see debug messages from the pgo client
+|Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
+|Pgo.COImageTag        | image tag to use for the Operator containers
 |======================
 
 *NOTE*: Regarding the PVC access mode variable; this is automatically set to ReadWriteMany but

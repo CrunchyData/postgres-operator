@@ -17,10 +17,18 @@ import (
 	"github.com/gorilla/mux"
 	//"io/ioutil"
 	"net/http"
-	//"os"
+	"os"
 )
 
 func main() {
+
+	debugFlag := os.Getenv("DEBUG")
+	if debugFlag == "true" {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("debug flag set to true")
+	} else {
+		log.Info("debug flag set to false")
+	}
 
 	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()

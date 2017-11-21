@@ -25,9 +25,7 @@ ReplicaStorage:
   Size:  200M
   StorageType:  create
 Pgo:
-  APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.csvload-template.json
   COImagePrefix:  crunchydata
   COImageTag:  centos7-2.2
-  Debug:  true
