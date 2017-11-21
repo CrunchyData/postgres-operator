@@ -35,6 +35,7 @@ import (
 
 type loadJobTemplateFields struct {
 	Name            string
+	COImagePrefix   string
 	COImageTag      string
 	DbHost          string
 	DbDatabase      string
@@ -106,6 +107,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 		return resp
 	}
 
+	LoadConfigTemplate.COImagePrefix = viper.GetString("COImagePrefix")
 	LoadConfigTemplate.COImageTag = viper.GetString("COImageTag")
 	LoadConfigTemplate.DbDatabase = viper.GetString("DbDatabase")
 	LoadConfigTemplate.DbUser = viper.GetString("DbUser")
@@ -207,6 +209,9 @@ func createJob(clusterName, namespace string) error {
 
 func validateConfig() error {
 	var err error
+	if viper.GetString("COImagePrefix") == "" {
+		return errors.New("COImagePrefix is not supplied")
+	}
 	if viper.GetString("COImageTag") == "" {
 		return errors.New("COImageTag is not supplied")
 	}

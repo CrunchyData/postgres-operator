@@ -56,6 +56,7 @@ type DeploymentTemplateFields struct {
 	Name              string
 	ClusterName       string
 	Port              string
+	CCPImagePrefix    string
 	CCPImageTag       string
 	Database          string
 	OperatorLabels    string

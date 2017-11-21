@@ -15,7 +15,7 @@
             "securityContext": {
                 "privileged": false
             },
-            "image": "crunchydata/lspvc:{{.COImageTag}}",
+            "image": "{{.COImagePrefix}}/lspvc:{{.COImageTag}}",
             "env": [{
                 "name": "BACKUP_ROOT",
                 "value": "{{.BackupRoot}}"

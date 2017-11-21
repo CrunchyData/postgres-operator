@@ -23,7 +23,7 @@
 
                 "containers": [{
                     "name": "database",
-                    "image": "crunchydata/crunchy-postgres:{{.CCPImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/crunchy-postgres:{{.CCPImageTag}}",
                     "readinessProbe": {
                         "exec": {
                             "command": [

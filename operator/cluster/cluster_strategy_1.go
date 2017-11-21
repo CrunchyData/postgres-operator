@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,11 +92,14 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 
 	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
 
+	log.Debug("CCPImagePrefix before create cluster " + operator.CCPImagePrefix)
+
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
 		Name:              cl.Spec.Name,
 		ClusterName:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
+		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       cl.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
 		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
@@ -453,6 +457,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		Name:              depName,
 		ClusterName:       clusterName,
 		Port:              cl.Spec.Port,
+		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       cl.Spec.CCPImageTag,
 		PVCName:           pvcName,
 		PrimaryHost:       cl.Spec.PrimaryHost,

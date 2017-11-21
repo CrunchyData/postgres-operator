@@ -3,10 +3,10 @@ FROM centos:7
 LABEL name="crunchydata/csvload" \
         vendor="crunchy data" \
       	PostgresVersion="9.6" \
-      	PostgresFullVersion="9.6.5" \
+      	PostgresFullVersion="9.6.6" \
         version="7.3" \
-        release="2.1" \
-        build-date="2017-11-08" \
+        release="2.2" \
+        build-date="2017-11-28" \
         url="https://crunchydata.com" \
         summary="loads a CSV file into a database" \
         description="executed by the operator, loads a CSV file." \

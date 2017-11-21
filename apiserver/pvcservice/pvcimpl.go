@@ -32,10 +32,11 @@ import (
 )
 
 type lspvcTemplateFields struct {
-	Name       string
-	COImageTag string
-	BackupRoot string
-	PVCName    string
+	Name          string
+	COImagePrefix string
+	COImageTag    string
+	BackupRoot    string
+	PVCName       string
 }
 
 var lspvcTemplate *template.Template
@@ -98,10 +99,11 @@ func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	pvcFields := lspvcTemplateFields{
-		Name:       podName,
-		COImageTag: viper.GetString("Pgo.COImageTag"),
-		BackupRoot: pvcRoot,
-		PVCName:    pvcName,
+		Name:          podName,
+		COImagePrefix: viper.GetString("Pgo.COImagePrefix"),
+		COImageTag:    viper.GetString("Pgo.COImageTag"),
+		BackupRoot:    pvcRoot,
+		PVCName:       pvcName,
 	}
 
 	err = lspvcTemplate.Execute(&doc2, pvcFields)

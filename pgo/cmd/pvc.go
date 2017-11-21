@@ -72,6 +72,11 @@ func printPVC(pvcName, pvcRoot string) {
 	}
 	log.Debugf("response = %v\n", response)
 
+	if response.Status.Code == apiservermsgs.Error {
+		log.Error(response.Status.Msg)
+		return
+	}
+
 	for k, v := range response.Results {
 		if k == len(response.Results)-1 {
 			fmt.Printf("%s%s\n", TreeTrunk, "/"+v)

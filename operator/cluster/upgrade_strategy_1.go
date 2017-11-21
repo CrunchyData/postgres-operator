@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
@@ -40,6 +41,7 @@ type JobTemplateFields struct {
 	Name            string
 	OldPVCName      string
 	NewPVCName      string
+	CCPImagePrefix  string
 	CCPImageTag     string
 	OldDatabaseName string
 	NewDatabaseName string
@@ -77,6 +79,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		Name:              cl.Spec.Name,
 		ClusterName:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
+		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, cl.Spec.PrimaryStorage.Name),
 		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
@@ -142,6 +145,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		Name:            upgrade.Spec.Name,
 		NewPVCName:      pvcName,
 		OldPVCName:      upgrade.Spec.OldPVCName,
+		CCPImagePrefix:  operator.CCPImagePrefix,
 		CCPImageTag:     upgrade.Spec.CCPImageTag,
 		OldDatabaseName: upgrade.Spec.OldDatabaseName,
 		NewDatabaseName: upgrade.Spec.NewDatabaseName,
@@ -201,6 +205,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		Name:              cl.Spec.Name,
 		ClusterName:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
+		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, upgrade.Spec.NewPVCName),
 		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),

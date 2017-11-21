@@ -36,6 +36,7 @@ import (
 
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/client-go/kubernetes"
@@ -54,6 +55,8 @@ func main() {
 	} else {
 		log.Info("debug flag set to false")
 	}
+
+	operator.Initialize()
 
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)

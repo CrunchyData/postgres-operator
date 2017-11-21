@@ -38,6 +38,9 @@
                     "image": "crunchydata/postgres-operator:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
+                        "name": "CCP_IMAGE_PREFIX",
+                        "value": "crunchydata"
+                    }, {
                         "name": "DEBUG",
                         "value": "true"
                     }, {

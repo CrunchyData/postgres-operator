@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/rhel7.3
 
-LABEL Release="2.1" Vendor="Crunchy Data Solutions" 
+LABEL Release="2.2" Vendor="Crunchy Data Solutions" 
 
 RUN yum -y update && yum -y clean all
 

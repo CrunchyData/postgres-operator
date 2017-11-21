@@ -18,7 +18,7 @@
 
                 "containers": [{
                     "name": "database",
-                    "image": "crunchydata/crunchy-postgres:{{.CCPImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/crunchy-postgres:{{.CCPImageTag}}",
                     "env": [{
                         "name": "PG_PRIMARY_PORT",
                         "value": "{{.Port}}"

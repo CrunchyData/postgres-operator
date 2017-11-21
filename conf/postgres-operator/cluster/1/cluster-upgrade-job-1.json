@@ -30,7 +30,7 @@
 
                 "containers": [{
                     "name": "upgrade",
-                    "image": "crunchydata/crunchy-upgrade:{{.CCPImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/crunchy-upgrade:{{.CCPImageTag}}",
                     "volumeMounts": [{
                         "mountPath": "/pgolddata",
                         "name": "pgolddata",

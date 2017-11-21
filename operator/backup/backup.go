@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	"io/ioutil"
@@ -33,6 +34,7 @@ import (
 type jobTemplateFields struct {
 	Name            string
 	PvcName         string
+	CCPImagePrefix  string
 	CCPImageTag     string
 	SecurityContext string
 	BackupHost      string
@@ -86,6 +88,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	jobFields := jobTemplateFields{
 		Name:            job.Spec.Name,
 		PvcName:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
+		CCPImagePrefix:  operator.CCPImagePrefix,
 		CCPImageTag:     job.Spec.CCPImageTag,
 		SecurityContext: util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
 		BackupHost:      job.Spec.BackupHost,
