@@ -1,3 +1,4 @@
+COImagePrefix:  crunchydata
 COImageTag:  centos7-2.1
 DbDatabase:  userdb
 DbUser:  postgres

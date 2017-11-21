@@ -61,9 +61,12 @@ var CSVLoadTemplatePath string
 var JobTemplate *template.Template
 
 func init() {
+
+	log.Debug("loadimpl init called")
+
 	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
 	if CSVLoadTemplatePath == "" {
-		log.Error("Pgo.CSVLoadTemplate not defined in pgo config.")
+		log.Error("Pgo.CSVLoadTemplate not defined in pgo config 1.")
 		os.Exit(2)
 	}
 
@@ -90,7 +93,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
 	if CSVLoadTemplatePath == "" {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "Pgo.CSVLoadTemplate not defined in pgo config."
+		resp.Status.Msg = "Pgo.CSVLoadTemplate not defined in pgo config 2."
 		return resp
 	}
 
