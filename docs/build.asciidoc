@@ -59,59 +59,11 @@ Kubernetes installation methods have been known to work as well.
 link:https://kubernetes.io/docs/setup/independent/install-kubeadm/[Installing kubeadm - Official Kubernetes Documentation]
 
 
-=== Create Namespace
-
-This example is based on a kubeadm installation with the admin
-user being already created. The example below assumes the cluster name is *kubernetes* and the cluster default user is *kubernetes-admin*.
-....
-kubectl create -f $COROOT/examples/demo-namespace.json
-kubectl get namespaces
-....
-
 On kubeadm, you'll need to let non-root users have access to the
 kubeconfig admin directory and files as follows:
 ....
 sudo chmod o+rwx /etc/kubernetes/
 sudo chmod o+rwx /etc/kubernetes/admin.conf
-....
-
-then set your context to the new demo namespace
-....
-kubectl config set-context demo --namespace=demo --cluster=kubernetes --user=kubernetes-admin
-kubectl config use-context demo
-kubectl config current-context
-....
-
-Add a cluster role binding to allow the new namespace default service
-account permissions to run the postgres-operator and create
-the Custom Resource Definitions:
-
-....
-kubectl create clusterrolebinding serviceaccounts-cluster-admin \
-  --clusterrole=cluster-admin \
-    --group=system:serviceaccounts
-....
-
-*WARNING*:  the above RBAC command is very permissive, adjust this
-to a scope that you require for your environment.
-
-See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
-details on how to enable RBAC roles and modify the scope of the permissions
-to suit your needs.
-
-There are 2 places you will need to update to specify your
-namespace:
-
-In the operator configuration file, $COROOT/conf/apiserver/pgo.yaml, you will add
-the *demo* value for the *Namespace*:
-....
-Namespace:  demo
-....
-
-likewise, specify your *CO_NAMESPACE* environment variable will specify *demo*;
-
-....
-export CO_NAMESPACE=demo
 ....
 
 == Installation
@@ -221,6 +173,53 @@ can ignore these when building release 2.1
 cd $COROOT
 make all
 which pgo
+....
+
+=== Create Namespace
+
+This example is based on a kubeadm installation with the admin
+user being already created. The example below assumes the cluster name is *kubernetes* and the cluster default user is *kubernetes-admin*.
+....
+kubectl create -f $COROOT/examples/demo-namespace.json
+kubectl get namespaces
+....
+then set your context to the new demo namespace
+....
+kubectl config set-context demo --namespace=demo --cluster=kubernetes --user=kubernetes-admin
+kubectl config use-context demo
+kubectl config current-context
+....
+
+Add a cluster role binding to allow the new namespace default service
+account permissions to run the postgres-operator and create
+the Custom Resource Definitions:
+
+....
+kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+  --clusterrole=cluster-admin \
+    --group=system:serviceaccounts
+....
+
+*WARNING*:  the above RBAC command is very permissive, adjust this
+to a scope that you require for your environment.
+
+See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
+details on how to enable RBAC roles and modify the scope of the permissions
+to suit your needs.
+
+There are 2 places you will need to update to specify your
+namespace:
+
+In the operator configuration file, $COROOT/conf/apiserver/pgo.yaml, you will add
+the *demo* value for the *Namespace*:
+....
+Namespace:  demo
+....
+
+likewise, specify your *CO_NAMESPACE* environment variable will specify *demo*;
+
+....
+export CO_NAMESPACE=demo
 ....
 
 === Configure Persistent Storage
