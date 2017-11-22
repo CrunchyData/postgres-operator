@@ -185,6 +185,8 @@ kubectl get namespaces
 ....
 then set your context to the new demo namespace
 ....
+sudo chmod o+w /etc/kubernetes
+sudo chmod o+w /etc/kubernetes/admin.conf
 kubectl config set-context demo --namespace=demo --cluster=kubernetes --user=kubernetes-admin
 kubectl config use-context demo
 kubectl config current-context
@@ -299,6 +301,11 @@ your storage configuration.  Adjust this file for NFS or other storage configura
 Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
 path to match your local Kubernetes configuration file location. 
 
+The version of PostgreSQL container the Operator will deploy is determined
+by the *CCPImageTag* setting in the *$COROOT/conf/apiserver/pgo.yaml* 
+configuration file.  By default, this value is set to the latest
+release of the Crunchy Container Suite.
+
 More in-depth explanations of postgres operator configurations are available
 in the link:config.asciidoc[Configuration] document.
 
@@ -321,28 +328,6 @@ kubectl get crd
 
 Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
 
-=== Makefile Targets
-
-The following table describes the Makefile targets:
-.Makefile Targets
-[width="40%",frame="topbot",options="header,footer"]
-|======================
-|Target | Description
-|all        | compile all binaries and build all images
-|setup        | fetch the dependent packages required to build with
-|deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
-|main        | compile the postgres-operator 
-|runmain        | locally execute the postgres-operator
-|pgo        | build the pgo binary
-|runpgo        | run the pgo binary 
-|runapiserver        | run the apiserver binary outside of Kube
-|clean        | remove binaries and compiled packages, restore dependencies
-|operatorimage        | compile and build the postgres-operator Docker image
-|apiserverimage        | compile and build the apiserver Docker image
-|lsimage        | build the lspvc Docker image
-|csvloadimage        | build the csvload Docker image
-|release        | build the postgres-operator release
-|======================
 
 === Verify Installation
 
@@ -360,7 +345,10 @@ kubectl get pgpolicies
 kubectl get pgpolicylogs
 ....
 
-At this point, you should be ready to start using the *pgo* client!
+At this point, you should be ready to start using the *pgo* client!  Be
+sure to set the environment variable *CO_APISERVER_URL* to the DNS
+name of the *postgres-operator* service or to the IP address of the
+*postgres-operator* service IP address.
 
 == Performing a Smoke Test
 
@@ -397,3 +385,26 @@ the following:
  * delete an entire project (*pgo delete cluster --selector=project=xray*)
 
 More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].
+
+=== Makefile Targets
+
+The following table describes the Makefile targets:
+.Makefile Targets
+[width="40%",frame="topbot",options="header,footer"]
+|======================
+|Target | Description
+|all        | compile all binaries and build all images
+|setup        | fetch the dependent packages required to build with
+|deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
+|main        | compile the postgres-operator 
+|runmain        | locally execute the postgres-operator
+|pgo        | build the pgo binary
+|runpgo        | run the pgo binary 
+|runapiserver        | run the apiserver binary outside of Kube
+|clean        | remove binaries and compiled packages, restore dependencies
+|operatorimage        | compile and build the postgres-operator Docker image
+|apiserverimage        | compile and build the apiserver Docker image
+|lsimage        | build the lspvc Docker image
+|csvloadimage        | build the csvload Docker image
+|release        | build the postgres-operator release
+|======================

@@ -63,7 +63,6 @@ release:	check-go-vars
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
 	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
-	cp -r $(COROOT)/conf/ $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 default:
 	all
