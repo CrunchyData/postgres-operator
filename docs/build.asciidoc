@@ -27,7 +27,7 @@ these versions.
 * *OpenShift Origin 1.7.0+*
 
 The operator is developed with the Golang versions great than or equal to version 1.8  See
-link:https://golang.org/dl/[Golang website] for details on installing golang. 
+link:https://golang.org/dl/[Golang website] for details on installing golang.
 
 Pre-compiled versions of the Operator *pgo* client are provided for the x86_64 and Mac OSX
 hosts.
@@ -151,12 +151,6 @@ git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ....
 
-At this point, you can choose one of two options to install the postgres-operator
-itself:
-
-* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#get-prebuilt-images[Get Pre-built Images]
-* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#build-from-source[Build from source]
-
 === Pull Postgres Containers
 
 The Operator works with the Crunchy Container Suite
@@ -175,6 +169,12 @@ docker pull crunchydata/crunchy-postgres:centos7-10.1-1.7.0
 docker pull crunchydata/crunchy-backup:centos7-10.1-1.7.0
 docker pull crunchydata/crunchy-upgrade:centos7-10.1-1.7.0
 ....
+
+At this point, you can choose one of two options to install the postgres-operator
+itself:
+
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#get-prebuilt-images[Get Pre-built Images]
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#build-from-source[Build from source]
 
 === Get Prebuilt Images
 
@@ -226,13 +226,13 @@ which pgo
 === Configure Persistent Storage
 
 The default Operator configuration is defined to use a HostPath
-persistence configuration.  
+persistence configuration.
 
 There are example scripts provided that will create PV and PVC resources
-that can be used in your testing. 
+that can be used in your testing.
 
-These utilize HostPath and NFS volume types. Other types are not currently 
-supported, but can be manually defined. 
+These utilize HostPath and NFS volume types. Other types are not currently
+supported, but can be manually defined.
 
 To create sample HostPath Persistent Volumes and CLaims use the following scripts:
 ....
@@ -298,7 +298,7 @@ Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Pe
 your storage configuration.  Adjust this file for NFS or other storage configurations.
 
 Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
-path to match your local Kubernetes configuration file location. 
+path to match your local Kubernetes configuration file location.
 
 More in-depth explanations of postgres operator configurations are available
 in the link:config.asciidoc[Configuration] document.
@@ -332,10 +332,10 @@ The following table describes the Makefile targets:
 |all        | compile all binaries and build all images
 |setup        | fetch the dependent packages required to build with
 |deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
-|main        | compile the postgres-operator 
+|main        | compile the postgres-operator
 |runmain        | locally execute the postgres-operator
 |pgo        | build the pgo binary
-|runpgo        | run the pgo binary 
+|runpgo        | run the pgo binary
 |runapiserver        | run the apiserver binary outside of Kube
 |clean        | remove binaries and compiled packages, restore dependencies
 |operatorimage        | compile and build the postgres-operator Docker image
@@ -347,9 +347,9 @@ The following table describes the Makefile targets:
 
 === Verify Installation
 
-When you first run the operator, it will look for the presence of the 
-predefined custom resource definitions, and create them if not found. 
-The best way to verify a successful deployment of the Operator is by 
+When you first run the operator, it will look for the presence of the
+predefined custom resource definitions, and create them if not found.
+The best way to verify a successful deployment of the Operator is by
 viewing these custom resource definitions:
 
 ....
