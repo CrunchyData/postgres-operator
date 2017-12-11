@@ -49,7 +49,6 @@ func init() {
 func showVersion() {
 
 	url := APIServerURL + "/version"
-	//url := APIServerURL + "/authtest"
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -61,16 +60,19 @@ func showVersion() {
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
+	/**
 	client := &http.Client{
-	//	Transport: &http.Transport{
-	//		TLSClientConfig: &tls.Config{
-	//			RootCAs:      caCertPool,
-	//			Certificates: []tls.Certificate{cert},
-	//		},
-	//	},
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: true,
+				Certificates:       []tls.Certificate{cert},
+			},
+		},
 	}
+	*/
 
-	resp, err := client.Do(req)
+	resp, err := httpclient.Do(req)
 	if err != nil {
 		log.Fatal("Do: ", err)
 		return

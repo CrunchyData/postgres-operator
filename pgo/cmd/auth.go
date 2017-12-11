@@ -34,6 +34,8 @@ var BasicAuthUsername, BasicAuthPassword string
 
 var caCertPool *x509.CertPool
 var cert tls.Certificate
+var httpclient *http.Client
+var caCertPath, clientCertPath, clientKeyPath string
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
@@ -72,45 +74,57 @@ func GetCredentials() {
 	fullPath := dir + "/" + ".pgouser"
 	log.Debug("looking in " + fullPath + " for credentials")
 	dat, err := ioutil.ReadFile(fullPath)
+	found := false
 	if err != nil {
 		log.Debug(fullPath + " not found")
 	} else {
 		log.Debug(fullPath + " found")
 		log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
 		BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
-		return
+		found = true
+
 	}
 
-	fullPath = etcpath
-	dat, err = ioutil.ReadFile(fullPath)
-	if err != nil {
-		log.Debug(etcpath + " not found")
-	} else {
-		log.Debug(fullPath + " found")
+	if !found {
+		fullPath = etcpath
+		dat, err = ioutil.ReadFile(fullPath)
+		if err != nil {
+			log.Debug(etcpath + " not found")
+		} else {
+			log.Debug(fullPath + " found")
+			log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
+			BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
+			found = true
+		}
+	}
+
+	if !found {
+		pgoUser := os.Getenv(pgouserenvvar)
+		if pgoUser == "" {
+			log.Error(pgouserenvvar + " env var not set")
+			os.Exit(2)
+		}
+
+		fullPath = pgoUser
+		log.Debug(pgouserenvvar + " env var is being used at " + fullPath)
+		dat, err = ioutil.ReadFile(fullPath)
+		if err != nil {
+			log.Error(fullPath + " file not found")
+			os.Exit(2)
+		}
+
 		log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
 		BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
-		return
 	}
 
-	pgoUser := os.Getenv(pgouserenvvar)
-	if pgoUser == "" {
-		log.Error(pgouserenvvar + " env var not set")
+	caCertPath = os.Getenv("PGO_CA_CERT")
+
+	if caCertPath == "" {
+		log.Error("PGO_CA_CERT not specified")
 		os.Exit(2)
 	}
-
-	fullPath = pgoUser
-	log.Debug(pgouserenvvar + " env var is being used at " + fullPath)
-	dat, err = ioutil.ReadFile(fullPath)
-	if err != nil {
-		log.Error(fullPath + " file not found")
-		os.Exit(2)
-	}
-
-	log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
-	BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
-
-	/**
-	caCert, err := ioutil.ReadFile("/tmp/server.crt")
+	//caCert, err := ioutil.ReadFile("/tmp/server.crt")
+	caCert, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
 		log.Error(err)
 		log.Error("could not read ca certificate")
@@ -119,11 +133,48 @@ func GetCredentials() {
 	caCertPool = x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	cert, err = tls.LoadX509KeyPair("/tmp/client.crt", "/tmp/client.key")
+	clientCertPath = os.Getenv("PGO_CLIENT_CERT")
+
+	if clientCertPath == "" {
+		log.Error("PGO_CLIENT_CERT not specified")
+		os.Exit(2)
+	}
+
+	_, err = ioutil.ReadFile(clientCertPath)
+	if err != nil {
+		log.Debug(clientCertPath + " not found")
+		os.Exit(2)
+	}
+
+	clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
+
+	if clientKeyPath == "" {
+		log.Error("PGO_CLIENT_KEY not specified")
+		os.Exit(2)
+	}
+
+	_, err = ioutil.ReadFile(clientKeyPath)
+	if err != nil {
+		log.Debug(clientKeyPath + " not found")
+		os.Exit(2)
+	}
+	//cert, err = tls.LoadX509KeyPair("/tmp/example.com.crt", "/tmp/example.com.key")
+	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
 		log.Fatal(err)
-		log.Error("could not load client.crt and client.key")
+		log.Error("could not load example.com.crt and example.com.key")
 		os.Exit(2)
-	} */
+	}
+
+	log.Info("setting up httpclient with TLS")
+	httpclient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:            caCertPool,
+				InsecureSkipVerify: true,
+				Certificates:       []tls.Certificate{cert},
+			},
+		},
+	}
 
 }

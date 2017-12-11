@@ -1,8 +1,8 @@
 package main
 
 import (
-	//"crypto/tls"
-	//"crypto/x509"
+	"crypto/tls"
+	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
@@ -15,10 +15,13 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/gorilla/mux"
-	//"io/ioutil"
+	"io/ioutil"
 	"net/http"
 	"os"
 )
+
+const serverCert = "/config/server.crt"
+const serverKey = "/config/server.key"
 
 func main() {
 
@@ -51,25 +54,33 @@ func main() {
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
 	//log.Fatal(http.ListenAndServeTLS(":8443", "/config/cert.pem", "/config/key.pem", r))
 	//log.Fatal(http.ListenAndServeTLS(":8443", "/config/secure.domain.com.crt", "/config/secure.domain.com.key", r))
-	//caCert, err := ioutil.ReadFile("/config/client.crt")
-	//if err != nil {
-	//log.Fatal(err)
-	//log.Error("could not read /config/client.crt")
-	//os.Exit(2)
-	//}
-	//caCertPool := x509.NewCertPool()
-	//caCertPool.AppendCertsFromPEM(caCert)
-	//cfg := &tls.Config{
-	//ClientAuth: tls.RequireAndVerifyClientCert,
-	//ClientCAs:  caCertPool,
-	//}
-	//srv := &http.Server{
-	////Addr: ":8443",
-	//Handler:   &handler{},
-	//Handler:   r,
-	//TLSConfig: cfg,
-	//}
 
-	//log.Fatal(srv.ListenAndServeTLS("/config/server.crt", "/config/server.key"))
-	log.Fatal(http.ListenAndServe(":8080", r))
+	caCert, err := ioutil.ReadFile(serverCert)
+	if err != nil {
+		log.Fatal(err)
+		log.Error("could not read " + serverCert)
+		os.Exit(2)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	cfg := &tls.Config{
+		//ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientCAs: caCertPool,
+	}
+
+	srv := &http.Server{
+		Addr:      ":8443",
+		Handler:   r,
+		TLSConfig: cfg,
+	}
+
+	_, err = ioutil.ReadFile(serverKey)
+	if err != nil {
+		log.Fatal(err)
+		log.Error("could not read " + serverKey)
+		os.Exit(2)
+	}
+
+	log.Fatal(srv.ListenAndServeTLS(serverCert, serverKey))
+	//log.Fatal(http.ListenAndServe(":8080", r))
 }

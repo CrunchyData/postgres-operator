@@ -86,6 +86,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	switch r.Method {
 	case "GET":
@@ -113,6 +114,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	resp := TestCluster(namespace, clustername)
 

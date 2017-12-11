@@ -18,6 +18,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $DIR/cleanup.sh
 
 $CO_CMD --namespace=$CO_NAMESPACE create configmap apiserver-conf \
+	--from-file=$COROOT/conf/apiserver/server.crt \
+	--from-file=$COROOT/conf/apiserver/server.key \
 	--from-file=$COROOT/conf/apiserver/pgouser \
 	--from-file=$COROOT/conf/apiserver/pgo.yaml \
 	--from-file=$COROOT/conf/apiserver/pgo.csvload-template.json \
