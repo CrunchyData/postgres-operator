@@ -166,7 +166,7 @@ func GetCredentials() {
 		os.Exit(2)
 	}
 
-	log.Info("setting up httpclient with TLS")
+	log.Debug("setting up httpclient with TLS")
 	httpclient = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{

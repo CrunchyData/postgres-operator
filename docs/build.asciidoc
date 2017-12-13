@@ -86,7 +86,7 @@ export CO_VERSION=2.2
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
-export CO_APISERVER_URL=http://postgres-operator:8080
+export CO_APISERVER_URL=https://postgres-operator:8443
 ....
 
 The value of CO_APISERVER_URL is used by the *pgo* client to connect
@@ -286,6 +286,40 @@ then the next searched location is */etc/pgo/pgouser*, and if not found
 there then lastly the *PGOUSER* environment variable is searched for
 a path to the basic authentication file.
 
+=== Configure TLS
+
+As of Operator 2.3, TLS is used to secure communications to
+the *apiserver*.  Sample keys/certs used by TLS are found
+here:
+....
+$COROOT/conf/apiserver/server.crt
+$COROOT/conf/apiserver/server.key
+....
+
+If you want to generate your own keys, you can use the script found in:
+....
+$COROOT/bin/make-certs.sh
+....
+
+The *pgo* client is required to use keys to connect to the *apiserver*.
+Specify the keys to *pgo* by setting the following environment
+variables:
+....
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+....
+
+The sample server keys are used as the client keys, adjust to suit
+your requirements.
+
+For the *apiserver* TLS configuration, the keys are included
+in the *apiserver-conf* configMap when the *apiserver* is deployed.
+See the $COROOT/deploy/deploy.sh script which is where the
+configMap is created.
+
+The *apiserver* listens on port 8443 (e.g. https://postgres-operator:8443).
+
 === Configuration
 
 The *apiserver* uses the following  configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
@@ -319,6 +353,25 @@ make deployoperator
 kubectl get pod -l 'name=postgres-operator'
 ....
 
+You should see output similar to:
+....
+NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-7f8db87c7b-4tk52   2/2       Running   0          8s
+....
+
+This output shows that both the *apiserver* and *postgres-operator* containers
+are in ready state and the pod is running.
+
+You can find the operator service IP address as follows:
+....
+kubectl get service postgres-operator
+NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
+postgres-operator   ClusterIP   10.105.56.167   <none>        8080/TCP,8443/TCP   1m
+....
+
+In this example, the *apiserver* is reachable at *https://10.105.56.167:8443*.
+
+
 When you first run the operator, it will create the required
 CustomResourceDefinitions. You can view these as follows:
 
@@ -348,7 +401,17 @@ kubectl get pgpolicylogs
 At this point, you should be ready to start using the *pgo* client!  Be
 sure to set the environment variable *CO_APISERVER_URL* to the DNS
 name of the *postgres-operator* service or to the IP address of the
-*postgres-operator* service IP address.
+*postgres-operator* service IP address.  For example:
+
+....
+export CO_APISERVER_URL=https://10.105.56.167:8443
+....
+
+or if you have DNS configured on your client host:
+....
+export CO_APISERVER_URL=https://postgres-operator.demo.svc.cluster.local:8443
+....
+
 
 == Performing a Smoke Test
 
