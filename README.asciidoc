@@ -183,7 +183,7 @@ The operator functionality runs in a Kubernetes Deployment on your
 Kubernetes cluster.  
 
 The *postgres-operator* Docker container image is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub]. 
-The *postgres-operator-apiserver* Docker container image is available on link:https://hub.docker.com/r/crunchydata/postgres-operator-apiserver/[Dockerhub]. 
+The *postgres-operator-apiserver* Docker container image is available on link:https://hub.docker.com/r/crunchydata/apiserver/[Dockerhub].
 The *pgo* client is available on in the Releases section of
 this github repo site.
 

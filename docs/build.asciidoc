@@ -87,6 +87,9 @@ export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export CO_APISERVER_URL=https://postgres-operator:8443
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
 ....
 
 The value of CO_APISERVER_URL is used by the *pgo* client to connect
