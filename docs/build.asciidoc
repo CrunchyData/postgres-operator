@@ -168,9 +168,6 @@ go get github.com/tools/godep
 make setup
 ....
 
-NOTE:  you will see errors and warnings from the *make setup* target, you
-can ignore these when building release 2.1
-
 ==== Compiling the PostgreSQL Operator
 ....
 cd $COROOT
@@ -428,7 +425,7 @@ the following:
  * show all clusters (*pgo show cluster all*)
  * backup a cluster (*pgo backup testcluster*)
  * show backup of cluster (*pgo show backup testcluster*)
- * show backup pvc of cluster (*pgo show pvc backup-testcluster-pvc*)
+ * show backup pvc of cluster (*pgo show pvc testcluster-backup-pvc*)
  * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01 --secret-from=testcluster*)
  * test a cluster (*pgo test restoredcluster*)
  * minor upgrade a cluster (*pgo upgrade testcluster*)
@@ -444,7 +441,7 @@ the following:
  * apply a label to an existing set of clusters (*pgo label --label=env=research --selector=project=xray*)
  * create a user for a given cluster (*pgo user --add-user=user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
  * load a csv file into a cluster (*pgo load --load-config=./sample-load-config.json --selector=project=xray*)
- * extend a user's password allowed age (*pgo user --change-password=user1 --valid-days=10 --selector=name=xraydb1*)
+ * extend a user's password allowed age (*pgo user --change-password=user0 --valid-days=10 --selector=name=xraydb1*)
  * drop user access (*pgo user --delete-user=user2 --selector=project=xray*)
  * check password age (*pgo user --expired=10 --selector=project=xray*)
  * backup an entire project (*pgo backup --selector=project=xray*)

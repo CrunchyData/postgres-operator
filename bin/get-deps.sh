@@ -14,29 +14,30 @@
 # limitations under the License.
 
 echo "getting project dependencies...."
-godep restore
+#godep restore
 
-cd $GOPATH/src/k8s.io/apiextensions-apiserver
-git checkout be41f5093e2b05c7a0befe35b04b715eb325ab43
-
-rm -rf $GOPATH/src/k8s.io/apiextensions-apiserver/vendor
-rm -rf $GOPATH/src/k8s.io/apiextensions-apiserver/examples
+go get k8s.io/client-go
+cd $GOPATH/src/k8s.io/client-go
+git checkout kubernetes-1.8.5
 
 cd $GOPATH/src/k8s.io/client-go
-git checkout v4.0.0
+godep restore
 
-cd $GOPATH/src/k8s.io/apimachinery
-git checkout release-1.7
-
-#go get github.com/lib/pq
-#go get github.com/fatih/color
-#go get github.com/Sirupsen/logrus
-#go get github.com/evanphx/json-patch
-#go get github.com/gorilla/websocket
-#go get github.com/gorilla/mux
-go get github.com/spf13/cobra
-go get github.com/spf13/viper
+go get github.com/Sirupsen/logrus;go get github.com/fatih/color;go get github.com/spf13/cobra;go get github.com/spf13/viper
+go get github.com/lib/pq;go get github.com/fatih/color;go get github.com/Sirupsen/logrus;go get github.com/evanphx/json-patch;go get github.com/gorilla/websocket;go get github.com/gorilla/mux
 
 cd $GOPATH/src/github.com/spf13/cobra
 git checkout a3cd8ab85aeba3522b9b59242f3b86ddbc67f8bd
+
+go get github.com/kubernetes/apiextensions-apiserver
+cd $GOPATH/src/github.com/kubernetes/apiextensions-apiserver
+git checkout kubernetes-1.8.5
+rm -rf  $GOPATH/src/github.com/kubernetes/apiextensions-apiserver/vendor
+rm -rf  $GOPATH/src/k8s.io/apiextensions-apiserver/vendor
+
+go get github.com/kubernetes/code-generator
+cd $GOPATH/src/github.com/kubernetes/code-generator
+git checkout kubernetes-1.8.5
+cd $GOPATH/src/github.com/kubernetes/code-generator/cmd/deepcopy-gen
+go build main.go && mv main $GOPATH/bin/deepcopy-gen
 

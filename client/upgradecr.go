@@ -58,6 +58,7 @@ func PgupgradeCreateCustomResourceDefinition(clientset apiextensionsclient.Inter
 
 	// wait for CRD being established
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
+		//crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(upgradeCRDName, metav1.GetOptions{})
 		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(upgradeCRDName, metav1.GetOptions{})
 		if err != nil {
 			return false, err

@@ -28,7 +28,8 @@ import (
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	v1batch "k8s.io/api/batch/v1"
 	"os"
 	"text/template"
 )
@@ -130,13 +131,16 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 			resp.Status.Msg = err.Error()
 			return resp
 		}
+		if myselector == nil {
+		}
 
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
 			Namespace(request.Namespace).
-			LabelsSelectorParam(myselector).
+			Param("labelSelector", myselector.String()).
+			//LabelsSelectorParam(myselector).
 			Do().
 			Into(&clusterList)
 		if err != nil {

@@ -34,6 +34,7 @@ type PgbackupSpec struct {
 	BackupStatus string        `json:"backupstatus"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgbackup ...
 type Pgbackup struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -43,6 +44,7 @@ type Pgbackup struct {
 	Status PgbackupStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgbackupList ...
 type PgbackupList struct {
 	metav1.TypeMeta `json:",inline"`

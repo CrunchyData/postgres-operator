@@ -22,6 +22,7 @@ import (
 // PgclusterResourcePlural ..
 const PgclusterResourcePlural = "pgclusters"
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgcluster ..
 type Pgcluster struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -59,6 +60,7 @@ type PgclusterSpec struct {
 	UserLabels        map[string]string `json:"userlabels"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgclusterList ...
 type PgclusterList struct {
 	metav1.TypeMeta `json:",inline"`

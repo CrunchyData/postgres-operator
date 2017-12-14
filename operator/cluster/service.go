@@ -26,7 +26,8 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
+	//"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 	"text/template"
 )
 

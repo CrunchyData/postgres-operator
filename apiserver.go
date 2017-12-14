@@ -52,8 +52,6 @@ func main() {
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
-	//log.Fatal(http.ListenAndServeTLS(":8443", "/config/cert.pem", "/config/key.pem", r))
-	//log.Fatal(http.ListenAndServeTLS(":8443", "/config/secure.domain.com.crt", "/config/secure.domain.com.key", r))
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

@@ -13,6 +13,31 @@ endif
 #======= Main functions =======
 macpgo:	check-go-vars
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
+
+gendeps: 
+	godep save \
+	github.com/crunchydata/postgres-operator/apis/cr/v1 \
+	github.com/crunchydata/postgres-operator/util \
+	github.com/crunchydata/postgres-operator/operator \
+	github.com/crunchydata/postgres-operator/operator/backup \
+	github.com/crunchydata/postgres-operator/operator/cluster \
+	github.com/crunchydata/postgres-operator/operator/pvc \
+	github.com/crunchydata/postgres-operator/controller \
+	github.com/crunchydata/postgres-operator/client \
+	github.com/crunchydata/postgres-operator/pgo/cmd \
+	github.com/crunchydata/postgres-operator/apiservermsgs \
+	github.com/crunchydata/postgres-operator/apiserver \
+	github.com/crunchydata/postgres-operator/apiserver/backupservice \
+	github.com/crunchydata/postgres-operator/apiserver/cloneservice \
+	github.com/crunchydata/postgres-operator/apiserver/clusterservice \
+	github.com/crunchydata/postgres-operator/apiserver/labelservice \
+	github.com/crunchydata/postgres-operator/apiserver/loadservice \
+	github.com/crunchydata/postgres-operator/apiserver/policyservice \
+	github.com/crunchydata/postgres-operator/apiserver/pvcservice \
+	github.com/crunchydata/postgres-operator/apiserver/upgradeservice \
+	github.com/crunchydata/postgres-operator/apiserver/userservice \
+	github.com/crunchydata/postgres-operator/apiserver/util \
+	github.com/crunchydata/postgres-operator/apiserver/versionservice 
 setup:
 	./bin/get-deps.sh
 deployoperator:
@@ -34,6 +59,8 @@ apiserverimage:	check-go-vars
 	cp $(GOBIN)/apiserver bin/
 	docker build -t apiserver -f $(CO_BASEOS)/Dockerfile.apiserver.$(CO_BASEOS) .
 	docker tag apiserver crunchydata/apiserver:$(CO_BASEOS)-$(CO_VERSION)
+postgres-operator:	check-go-vars
+	go install postgres-operator.go
 operatorimage:	check-go-vars
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/

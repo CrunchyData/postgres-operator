@@ -31,6 +31,7 @@ type PgpolicylogSpec struct {
 	Username    string `json:"username"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgpolicylog ...
 type Pgpolicylog struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -40,6 +41,7 @@ type Pgpolicylog struct {
 	Status PgpolicylogStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgpolicylogList ...
 type PgpolicylogList struct {
 	metav1.TypeMeta `json:",inline"`

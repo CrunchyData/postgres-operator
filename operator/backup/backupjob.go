@@ -24,7 +24,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	v1batch "k8s.io/api/batch/v1"
 	//v1batch "k8s.io/api/batch/v1"
 
 	"k8s.io/client-go/rest"

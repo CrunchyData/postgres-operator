@@ -8,22 +8,13 @@
         }
     },
     "spec": {
-        "ports": [
-	{
-            "name": "postgres-operator",
-            "protocol": "TCP",
-            "port": 8080,
-            "targetPort": 8080,
-            "nodePort": 0
-        },
-	{
+        "ports": [{
             "name": "apiserver",
             "protocol": "TCP",
             "port": 8443,
             "targetPort": 8443,
             "nodePort": 0
-        }
-	],
+        }],
         "selector": {
             "name": "postgres-operator"
         },

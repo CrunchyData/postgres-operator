@@ -134,13 +134,15 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			response.Status.Msg = err.Error()
 			return response
 		}
+		log.Debug("myselector is %s\n", myselector.String())
 
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
 			Namespace(request.Namespace).
-			LabelsSelectorParam(myselector).
+			Param("labelSelector", myselector.String()).
+			//LabelsSelectorParam(myselector).
 			Do().
 			Into(&clusterList)
 		if err != nil {

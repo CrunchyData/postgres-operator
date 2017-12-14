@@ -127,12 +127,15 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			return resp
 		}
 
+		log.Debug("myselector is " + myselector.String())
+
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
 			Namespace(request.Namespace).
-			LabelsSelectorParam(myselector).
+			Param("labelSelector", myselector.String()).
+			//LabelsSelectorParam(myselector).
 			Do().
 			Into(&clusterList)
 		if err != nil {

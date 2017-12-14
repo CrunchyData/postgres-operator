@@ -30,6 +30,7 @@ type PgpolicySpec struct {
 	Status string `json:"status"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgpolicy ...
 type Pgpolicy struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -39,6 +40,7 @@ type Pgpolicy struct {
 	Status PgpolicyStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgpolicyList ...
 type PgpolicyList struct {
 	metav1.TypeMeta `json:",inline"`

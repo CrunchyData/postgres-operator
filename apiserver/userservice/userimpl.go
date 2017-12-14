@@ -89,13 +89,15 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 		resp.Status.Msg = err.Error()
 		return resp
 	}
+	log.Debug("myselector string=[" + myselector.String() + "]")
 
 	//get the clusters list
 	clusterList := crv1.PgclusterList{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
 		Namespace(request.Namespace).
-		LabelsSelectorParam(myselector).
+		Param("labelSelector", myselector.String()).
+		//LabelsSelectorParam(myselector).
 		Do().
 		Into(&clusterList)
 	if err != nil {
@@ -326,7 +328,7 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 
 	//get the secrets for this cluster
 	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + clusterName}
-	secrets, err := apiserver.Clientset.Secrets(namespace).List(lo)
+	secrets, err := apiserver.Clientset.CoreV1().Secrets(namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
 		return info

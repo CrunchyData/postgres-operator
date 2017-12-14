@@ -23,7 +23,8 @@ import (
 	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"k8s.io/client-go/pkg/api/v1"
+	//"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 
 	"fmt"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -59,7 +60,7 @@ func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse 
 			return response
 		}
 	}
-	log.Debugf("label selector is [%v]\n", myselector)
+	log.Debugf("label selector is [%s]\n", myselector.String())
 
 	clusterList := crv1.PgclusterList{}
 
@@ -67,7 +68,8 @@ func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse 
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
 		Namespace(namespace).
-		LabelsSelectorParam(myselector).
+		Param("labelSelector", myselector.String()).
+		//LabelsSelectorParam(myselector).
 		Do().
 		Into(&clusterList)
 	if err != nil {
@@ -134,7 +136,7 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 		}
 	}
 
-	log.Debugf("label selector is [%v]\n", myselector)
+	log.Debugf("label selector is [%s]\n", myselector.String())
 
 	clusterList := crv1.PgclusterList{}
 
@@ -142,7 +144,8 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
 		Namespace(namespace).
-		LabelsSelectorParam(myselector).
+		Param("labelSelector", myselector.String()).
+		//LabelsSelectorParam(myselector).
 		Do().Into(&clusterList)
 	if err != nil {
 		log.Error("error getting list of clusters" + err.Error())

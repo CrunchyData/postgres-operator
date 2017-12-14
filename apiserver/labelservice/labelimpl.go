@@ -27,7 +27,8 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
 	"strings"
 )
 
@@ -60,6 +61,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	myselector := labels.Everything()
 	if request.Selector != "" {
 		log.Debug("selector is " + request.Selector)
+
 		myselector, err = labels.Parse(request.Selector)
 		if err != nil {
 			log.Error("could not parse --selector value " + err.Error())
@@ -68,11 +70,13 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 			return resp
 		}
 
-		log.Debugf("label selector is [%v]\n", myselector)
+		log.Debugf("label selector is [%s]\n", myselector.String())
+
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
 			Namespace(request.Namespace).
-			LabelsSelectorParam(myselector).
+			Param("labelSelector", myselector.String()).
+			//LabelsSelectorParam(myselector).
 			Do().
 			Into(&clusterList)
 		if err != nil {

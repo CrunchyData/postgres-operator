@@ -27,8 +27,10 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
-	v1batch "k8s.io/client-go/pkg/apis/batch/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
+	v1batch "k8s.io/api/batch/v1"
+	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"text/template"
 )

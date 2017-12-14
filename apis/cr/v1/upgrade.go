@@ -45,6 +45,7 @@ type PgupgradeSpec struct {
 	BackupPVCName   string        `json:"backuppvcname"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgupgrade ...
 type Pgupgrade struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -54,6 +55,7 @@ type Pgupgrade struct {
 	Status PgupgradeStatus `json:"status,omitempty"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgupgradeList ...
 type PgupgradeList struct {
 	metav1.TypeMeta `json:",inline"`
