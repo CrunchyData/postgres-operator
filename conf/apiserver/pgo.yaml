@@ -1,7 +1,7 @@
 Namespace:  demo
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-9.6.5-1.6.0
+  CCPImageTag:  centos7-10.1-1.7.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
@@ -28,4 +28,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.csvload-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.2
+  COImageTag:  centos7-2.3

@@ -1,5 +1,5 @@
 = PostgreSQL Operator
-v2.1, {docdate}
+v2.3, {docdate}
 
 == Table of Contents
 
@@ -174,7 +174,7 @@ or modifying PostgreSQL databases deployed within the Kubernetes cluster.
 
 image::docs/operator-diagram.png?raw=true[]
 
-The *pgo* client, as of release 2.1, is now a REST client which interacts 
+The *pgo* client is a REST client which interacts 
 with the *apiserver*.  The *apiserver* is a REST API that interacts
 with the Kube API including creating Custom Resource Definition resources
 implemented by the PostgreSQL Operator.

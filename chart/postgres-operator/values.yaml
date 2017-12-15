@@ -5,7 +5,7 @@ replicaCount: 1
 
 image:
   repository: crunchydata/postgres-operator
-  tag: centos7-2.1
+  tag: centos7-2.3
   pullPolicy: IfNotPresent
 
 env:
