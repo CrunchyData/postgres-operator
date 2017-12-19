@@ -17,7 +17,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$CO_CMD --namespace=$CO_NAMESPACE create configmap apiserver-conf \
+if [ "$CO_CMD" = "kubectl" ]; then
+	NS="--namespace=$CO_NAMESPACE"
+fi
+
+$CO_CMD $NS create configmap apiserver-conf \
 	--from-file=$COROOT/conf/apiserver/server.crt \
 	--from-file=$COROOT/conf/apiserver/server.key \
 	--from-file=$COROOT/conf/apiserver/pgouser \
@@ -25,13 +29,13 @@ $CO_CMD --namespace=$CO_NAMESPACE create configmap apiserver-conf \
 	--from-file=$COROOT/conf/apiserver/pgo.csvload-template.json \
 	--from-file=$COROOT/conf/apiserver/pgo.lspvc-template.json 
 
-$CO_CMD --namespace=$CO_NAMESPACE create configmap operator-conf \
+$CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
-envsubst < $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+envsubst < $DIR/deployment.json | $CO_CMD $NS create -f -
 
-$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service.json
+$CO_CMD $NS create -f $DIR/service.json
 

@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build and Setup
 :toc:
-v2.1, {docdate}
+v2.3, {docdate}
 
 == Table of Contents
 
@@ -197,7 +197,7 @@ account permissions to run the postgres-operator and create
 the Custom Resource Definitions:
 
 ....
-kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+$CO_CMD create clusterrolebinding serviceaccounts-cluster-admin \
   --clusterrole=cluster-admin \
     --group=system:serviceaccounts
 ....
@@ -223,6 +223,17 @@ likewise, specify your *CO_NAMESPACE* environment variable will specify *demo*;
 ....
 export CO_NAMESPACE=demo
 ....
+
+=== Openshift Container Platform
+
+To run the Operator on Openshift Container Platform note the following:
+ * Openshift Container Platform 3.7 or greater is required since the
+ Operator is based on Custom Resource Definitions which were first
+ supported in OCP starting with version 3.7
+ * the Openshift Project is synonymous with the CO_NAMESPACE environment
+ variable setting
+ * the OC_CMD environment variable should be set to *oc* when operating
+ in an Openshift environment
 
 === Configure Persistent Storage
 

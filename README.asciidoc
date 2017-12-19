@@ -55,7 +55,7 @@ The CRD version of the operator is tested on the following platforms:
 
 * *Kubernetes 1.7.X+*
 * *Kubernetes 1.8.0+*
-* *Openshift Origin 1.7.0+*
+* *Openshift Container Platform 3.7*
 
 This Operator has also been tested on the following operating systems:
 

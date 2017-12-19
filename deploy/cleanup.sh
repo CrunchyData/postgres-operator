@@ -14,11 +14,16 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CO_CMD --namespace=$CO_NAMESPACE delete configmap operator-conf apiserver-conf
 
-$CO_CMD --namespace=$CO_NAMESPACE delete service postgres-operator
+if [ "$CO_CMD" = "kubectl" ]; then
+	NS="--namespace=$CO_NAMESPACE"
+fi
 
-$CO_CMD --namespace=$CO_NAMESPACE delete deployment postgres-operator
+$CO_CMD $NS delete configmap operator-conf apiserver-conf
+
+$CO_CMD $NS delete service postgres-operator
+
+$CO_CMD $NS delete deployment postgres-operator
 
 sleep 10
 
