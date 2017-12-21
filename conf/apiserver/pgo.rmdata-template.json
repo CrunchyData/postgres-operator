@@ -1,0 +1,43 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.Name}}"
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.Name}}",
+                "labels": {
+                    "rmdata": "true",
+                    "pg-database": "{{.DbHost}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    	"name": "pgdata",
+			"persistentVolumeClaim" : {
+				"claimName": "{{.PVCName}}"
+			}
+                }],
+
+		{{.SecurityContext}}
+
+                "containers": [{
+                    "name": "rmdata",
+                    "image": "{{.COImagePrefix}}/rmdata:{{.COImageTag}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }],
+                    "env": [{
+                        "name": "DATA_ROOT",
+                        "value": "{{.DataRoot}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

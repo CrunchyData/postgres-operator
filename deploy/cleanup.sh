@@ -21,7 +21,7 @@ fi
 
 $CO_CMD $NS delete configmap operator-conf apiserver-conf
 
-$CO_CMD $NS delete service postgres-operator
+#$CO_CMD $NS delete service postgres-operator
 
 $CO_CMD $NS delete deployment postgres-operator
 

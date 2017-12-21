@@ -19,49 +19,50 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PgpolicylogResourcePlural ...
-const PgpolicylogResourcePlural = "pgpolicylogs"
+// PgtaskResourcePlural ...
+const PgtaskResourcePlural = "pgtasks"
 
-// PgpolicylogSpec ...
-type PgpolicylogSpec struct {
-	PolicyName  string `json:"policyname"`
-	Status      string `json:"status"`
-	ApplyDate   string `json:"applydate"`
-	ClusterName string `json:"clustername"`
-	Username    string `json:"username"`
+const PgtaskDeleteData = "delete-data"
+
+// PgtaskSpec ...
+type PgtaskSpec struct {
+	Name       string `json:"name"`
+	TaskType   string `json:"tasktype"`
+	Status     string `json:"status"`
+	Parameters string `json:"parameters"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// Pgpolicylog ...
-type Pgpolicylog struct {
+// Pgtask ...
+type Pgtask struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   PgpolicylogSpec   `json:"spec"`
-	Status PgpolicylogStatus `json:"status,omitempty"`
+	Spec   PgtaskSpec   `json:"spec"`
+	Status PgtaskStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// PgpolicylogList ...
-type PgpolicylogList struct {
+// PgtaskList ...
+type PgtaskList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Pgpolicylog `json:"items"`
+	Items []Pgtask `json:"items"`
 }
 
-// PgpolicylogStatus ...
-type PgpolicylogStatus struct {
-	State   PgpolicylogState `json:"state,omitempty"`
-	Message string           `json:"message,omitempty"`
+// PgtaskStatus ...
+type PgtaskStatus struct {
+	State   PgtaskState `json:"state,omitempty"`
+	Message string      `json:"message,omitempty"`
 }
 
-// PgpolicylogState ...
-type PgpolicylogState string
+// PgtaskState ...
+type PgtaskState string
 
 const (
-	// PgpolicylogStateCreated ...
-	PgpolicylogStateCreated PgpolicylogState = "Created"
-	// PgpolicylogStateProcessed ...
-	PgpolicylogStateProcessed PgpolicylogState = "Processed"
+	// PgtaskStateCreated ...
+	PgtaskStateCreated PgtaskState = "Created"
+	// PgtaskStateProcessed ...
+	PgtaskStateProcessed PgtaskState = "Processed"
 )

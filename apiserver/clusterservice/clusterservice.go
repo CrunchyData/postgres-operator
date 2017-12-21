@@ -22,6 +22,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 // TestResults ...
@@ -79,6 +80,13 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("selector param was [" + selector + "]")
 	}
 
+	deleteData := false
+	deleteDataStr := r.URL.Query().Get("delete-data")
+	if deleteDataStr != "" {
+		log.Debug("delete-data param was [" + deleteDataStr + "]")
+		deleteData, _ = strconv.ParseBool(deleteDataStr)
+	}
+
 	err := apiserver.Authn("ShowClusterHandler", w, r)
 	if err != nil {
 		return
@@ -95,7 +103,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
 		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
-		resp := DeleteCluster(namespace, clustername, selector)
+		resp := DeleteCluster(namespace, clustername, selector, deleteData)
 		json.NewEncoder(w).Encode(resp)
 	}
 

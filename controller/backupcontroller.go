@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -35,6 +35,7 @@ type PgbackupController struct {
 	PgbackupClient    *rest.RESTClient
 	PgbackupScheme    *runtime.Scheme
 	PgbackupClientset *kubernetes.Clientset
+	Namespace         string
 }
 
 // Run starts controller
@@ -56,7 +57,8 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgbackupClient,
 		crv1.PgbackupResourcePlural,
-		apiv1.NamespaceAll,
+		//apiv1.NamespaceAll,
+		c.Namespace,
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

@@ -51,8 +51,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PgbackupList{},
 		&Pgpolicy{},
 		&PgpolicyList{},
-		&Pgpolicylog{},
-		&PgpolicylogList{},
+		&Pgtask{},
+		&PgtaskList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -23,6 +23,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 // deleteCluster ...
@@ -40,9 +41,9 @@ func deleteCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		log.Debug("deleting cluster " + arg)
+		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clusters/" + arg + "?namespace=" + Namespace + "&selector=" + Selector
+		url := APIServerURL + "/clusters/" + arg + "?namespace=" + Namespace + "&selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData)
 
 		log.Debug("delete cluster called [" + url + "]")
 
@@ -150,6 +151,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for _, pod := range detail.Pods {
 		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
+		fmt.Println("\t" + TreeBranch + "pvc : " + pod.PVCName)
 	}
 
 	for _, d := range detail.Deployments {

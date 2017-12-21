@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -34,6 +34,7 @@ type PgpolicyController struct {
 	PgpolicyClient    *rest.RESTClient
 	PgpolicyScheme    *runtime.Scheme
 	PgpolicyClientset *kubernetes.Clientset
+	Namespace         string
 }
 
 // Run starts an pgpolicy resource controller
@@ -56,7 +57,8 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgpolicyClient,
 		crv1.PgpolicyResourcePlural,
-		apiv1.NamespaceAll,
+		//apiv1.NamespaceAll,
+		c.Namespace,
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

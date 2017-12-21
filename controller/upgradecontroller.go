@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -35,6 +35,7 @@ type PgupgradeController struct {
 	PgupgradeClient    *rest.RESTClient
 	PgupgradeClientset *kubernetes.Clientset
 	PgupgradeScheme    *runtime.Scheme
+	Namespace          string
 }
 
 // Run starts an pgupgrade resource controller
@@ -56,7 +57,8 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgupgradeClient,
 		crv1.PgupgradeResourcePlural,
-		apiv1.NamespaceAll,
+		//apiv1.NamespaceAll,
+		c.Namespace,
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

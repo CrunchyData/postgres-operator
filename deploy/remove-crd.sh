@@ -18,14 +18,13 @@ $CO_CMD --namespace=$CO_NAMESPACE delete pgbackups --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgclones --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgpolicylogs --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgtasks --all
 
 $CO_CMD --namespace=$CO_NAMESPACE delete crd \
-	examples.cr.client-go.k8s.io \
 	pgbackups.cr.client-go.k8s.io \
 	pgclusters.cr.client-go.k8s.io \
 	pgpolicies.cr.client-go.k8s.io \
-	pgpolicylogs.cr.client-go.k8s.io \
+	pgtasks.cr.client-go.k8s.io \
 	pgupgrades.cr.client-go.k8s.io
 

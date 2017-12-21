@@ -29,25 +29,25 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE policylogs).
+	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE tasks).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-const policylogCRDName = crv1.PgpolicylogResourcePlural + "." + crv1.GroupName
+const taskCRDName = crv1.PgtaskResourcePlural + "." + crv1.GroupName
 
-// PgpolicylogCreateCustomResourceDefinition creates the pgpolicylog CRD
-func PgpolicylogCreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+// PgtaskCreateCustomResourceDefinition creates the pgtask CRD
+func PgtaskCreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: policylogCRDName,
+			Name: taskCRDName,
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 			Group:   crv1.GroupName,
 			Version: crv1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural: crv1.PgpolicylogResourcePlural,
-				Kind:   reflect.TypeOf(crv1.Pgpolicylog{}).Name(),
+				Plural: crv1.PgtaskResourcePlural,
+				Kind:   reflect.TypeOf(crv1.Pgtask{}).Name(),
 			},
 		},
 	}
@@ -58,7 +58,7 @@ func PgpolicylogCreateCustomResourceDefinition(clientset apiextensionsclient.Int
 
 	// wait for CRD being established
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(policylogCRDName, metav1.GetOptions{})
+		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(taskCRDName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -77,7 +77,7 @@ func PgpolicylogCreateCustomResourceDefinition(clientset apiextensionsclient.Int
 		return false, err
 	})
 	if err != nil {
-		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(policylogCRDName, nil)
+		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(taskCRDName, nil)
 		if deleteErr != nil {
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}
@@ -86,17 +86,17 @@ func PgpolicylogCreateCustomResourceDefinition(clientset apiextensionsclient.Int
 	return crd, nil
 }
 
-// WaitForPgpolicylogInstanceProcessed waits for the pgpolicylog to be processed
-func WaitForPgpolicylogInstanceProcessed(exampleClient *rest.RESTClient, name string) error {
+// WaitForPgtaskInstanceProcessed waits for the pgtask to be processed
+func WaitForPgtaskInstanceProcessed(exampleClient *rest.RESTClient, name string) error {
 	return wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-		var policylog crv1.Pgpolicylog
+		var task crv1.Pgtask
 		err := exampleClient.Get().
-			Resource(crv1.PgpolicylogResourcePlural).
+			Resource(crv1.PgtaskResourcePlural).
 			Namespace(apiv1.NamespaceDefault).
 			Name(name).
-			Do().Into(&policylog)
+			Do().Into(&task)
 
-		if err == nil && policylog.Status.State == crv1.PgpolicylogStateProcessed {
+		if err == nil && task.Status.State == crv1.PgtaskStateProcessed {
 			return true, nil
 		}
 

@@ -39,7 +39,7 @@ import (
 )
 
 // DeleteCluster ...
-func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse {
+func DeleteCluster(namespace, name, selector string, deleteData bool) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -61,6 +61,7 @@ func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse 
 		}
 	}
 	log.Debugf("label selector is [%s]\n", myselector.String())
+	log.Debugf("delete-data is [%v]\n", deleteData)
 
 	clusterList := crv1.PgclusterList{}
 
@@ -87,6 +88,10 @@ func DeleteCluster(namespace, name, selector string) msgs.DeleteClusterResponse 
 	}
 
 	for _, cluster := range clusterList.Items {
+
+		if deleteData {
+			createDeleteDataTasks(namespace, cluster.Spec.Name)
+		}
 
 		err := apiserver.RESTClient.Delete().
 			Resource(crv1.PgclusterResourcePlural).
@@ -232,6 +237,9 @@ func getPods(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterPod, 
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus = getReadyStatus(&p)
+		log.Infof("pod details are %v\n", p)
+		d.PVCName = getPVCName(&p)
+		d.Primary = isPrimary(&p)
 		output = append(output, d)
 
 	}
@@ -696,5 +704,92 @@ func getReadyStatus(pod *v1.Pod) string {
 		}
 	}
 	return fmt.Sprintf("%d/%d", readyCount, containerCount)
+
+}
+
+func createDeleteDataTasks(namespace, clusterName string) {
+
+	var err error
+
+	log.Info("inside createDeleteDataTasks")
+
+	//get the pods for this cluster
+	var pods []msgs.ShowClusterPod
+	spec := crv1.PgclusterSpec{}
+	cluster := &crv1.Pgcluster{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: clusterName,
+		},
+		Spec: spec,
+	}
+	cluster.Spec.Name = clusterName
+	pods, err = getPods(cluster, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Debug("got the cluster...")
+
+	for _, element := range pods {
+		log.Debugf("the pod details ... %v\n", element)
+		//get the pgdata pvc for each pod
+
+		//create pgtask CRD
+		spec := crv1.PgtaskSpec{}
+		if element.Primary {
+			spec.Name = clusterName
+		} else {
+			spec.Name = element.Name
+		}
+		spec.TaskType = crv1.PgtaskDeleteData
+		//spec.Status = crv1.PgtaskStateCreated
+		spec.Parameters = element.PVCName
+
+		newInstance := &crv1.Pgtask{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: element.Name,
+			},
+			Spec: spec,
+		}
+
+		result := crv1.Pgtask{}
+		err = apiserver.RESTClient.Post().
+			Resource(crv1.PgtaskResourcePlural).
+			Namespace(namespace).
+			Body(newInstance).
+			Do().Into(&result)
+
+		if err != nil {
+			log.Error(" in creating Pgtask instance" + err.Error())
+			return
+		}
+		log.Debug("created Pgtask " + clusterName)
+	}
+
+}
+
+func getPVCName(pod *v1.Pod) string {
+	pvcName := "unknown"
+
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == "pgdata" {
+			pvcName = v.VolumeSource.PersistentVolumeClaim.ClaimName
+			log.Infof("pod.Name %s pgdata %s\n", pod.Name, pvcName)
+		}
+	}
+
+	return pvcName
+
+}
+
+func isPrimary(pod *v1.Pod) bool {
+
+	log.Infof("%v\n", pod.ObjectMeta.Labels)
+	//map[string]string
+	if pod.ObjectMeta.Labels["primary"] == "true" {
+		log.Infoln("this is a primary pod")
+		return true
+	}
+	return false
 
 }

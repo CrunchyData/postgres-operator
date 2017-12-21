@@ -51,7 +51,9 @@ type ShowClusterPod struct {
 	Name        string
 	Phase       string
 	NodeName    string
+	PVCName     string
 	ReadyStatus string
+	Primary     bool
 }
 
 // ShowClusterDeployment

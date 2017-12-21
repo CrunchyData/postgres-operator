@@ -56,6 +56,13 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
+	Namespace := os.Getenv("NAMESPACE")
+	log.Debug("setting NAMESPACE to " + Namespace)
+	if Namespace == "" {
+		log.Error("NAMESPACE env var not set")
+		os.Exit(2)
+	}
+
 	operator.Initialize()
 
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
@@ -108,12 +115,12 @@ func main() {
 	if policycrd != nil {
 		fmt.Println(policycrd.Name + " exists ")
 	}
-	policylogcrd, err := crdclient.PgpolicylogCreateCustomResourceDefinition(apiextensionsclientset)
+	taskcrd, err := crdclient.PgtaskCreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		panic(err)
 	}
-	if policylogcrd != nil {
-		fmt.Println(policylogcrd.Name + " exists ")
+	if taskcrd != nil {
+		fmt.Println(taskcrd.Name + " exists ")
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
@@ -128,26 +135,30 @@ func main() {
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
+		Namespace:          Namespace,
 	}
 	pgUpgradecontroller := controller.PgupgradeController{
 		PgupgradeClientset: Clientset,
 		PgupgradeClient:    crdClient,
 		PgupgradeScheme:    crdScheme,
+		Namespace:          Namespace,
 	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
+		Namespace:         Namespace,
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
 		PgpolicyScheme:    crdScheme,
 		PgpolicyClientset: Clientset,
+		Namespace:         Namespace,
 	}
-	pgPolicylogcontroller := controller.PgpolicylogController{
-		PgpolicylogClientset: Clientset,
-		PgpolicylogClient:    crdClient,
-		PgpolicylogScheme:    crdScheme,
+	podcontroller := controller.PodController{
+		PodClientset: Clientset,
+		PodClient:    crdClient,
+		Namespace:    Namespace,
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -156,14 +167,8 @@ func main() {
 	go pgBackupcontroller.Run(ctx)
 	go pgUpgradecontroller.Run(ctx)
 	go pgPolicycontroller.Run(ctx)
-	go pgPolicylogcontroller.Run(ctx)
+	go podcontroller.Run(ctx)
 
-	Namespace := os.Getenv("NAMESPACE")
-	log.Debug("setting NAMESPACE to " + Namespace)
-	if Namespace == "" {
-		log.Error("NAMESPACE env var not set")
-		os.Exit(2)
-	}
 	go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 

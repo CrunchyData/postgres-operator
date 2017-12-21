@@ -27,7 +27,6 @@ import (
 	"k8s.io/client-go/rest"
 	"os"
 	"strings"
-	"time"
 )
 
 // ProcessPolicies ...
@@ -131,62 +130,6 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient
 	if err != nil {
 		log.Error(err)
 	}
-}
-
-// AddPolicylog ...
-func AddPolicylog(clientset *kubernetes.Clientset, restclient *rest.RESTClient, policylog *crv1.Pgpolicylog, namespace string) {
-	policylogname := policylog.Spec.PolicyName + policylog.Spec.ClusterName
-	log.Infof("policylog added=%s\n", policylogname)
-
-	labels := make(map[string]string)
-
-	err := util.ExecPolicy(clientset, restclient, namespace, policylog.Spec.PolicyName, policylog.Spec.ClusterName)
-	if err != nil {
-		log.Error(err)
-	} else {
-		labels[policylog.Spec.PolicyName] = "pgpolicy"
-	}
-
-	cl := crv1.Pgcluster{}
-	err = restclient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
-		Name(policylog.Spec.ClusterName).
-		Do().
-		Into(&cl)
-	if err != nil {
-		log.Error("error getting cluster crv1 in addPolicylog " + policylog.Spec.ClusterName)
-		return
-
-	}
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-		return
-	}
-
-	err = strategy.UpdatePolicyLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
-
-	//update the deployment's labels to show applied policies
-	//err = util.UpdateDeploymentLabels(clientset, policylog.Spec.ClusterName, namespace, labels)
-	if err != nil {
-		log.Error(err)
-	}
-
-	//update the policylog with applydate and status
-	err = util.Patch(restclient, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgpolicylogResourcePlural, policylogname, namespace)
-	if err != nil {
-		log.Error("error in policylog status patch " + err.Error())
-	}
-
-	t := time.Now()
-	err = util.Patch(restclient, "/spec/applydate", t.Format("2006-01-02-15:04:05"), crv1.PgpolicylogResourcePlural, policylogname, namespace)
-	if err != nil {
-		log.Error("error in policylog applydate patch " + err.Error())
-	}
-
 }
 
 // podReady ...

@@ -30,6 +30,7 @@ For example:
 
 pgo delete policy mypolicy
 pgo delete cluster mycluster
+pgo delete cluster mycluster --delete-data
 pgo delete backup mycluster
 pgo delete upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -59,11 +60,14 @@ pgo delete upgrade mycluster`,
 	},
 }
 
+var DeleteData bool
+
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "--delete-data causes the data for this cluster to be removed permanently ")
 
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)

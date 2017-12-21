@@ -72,6 +72,9 @@ lsimage:
 csvloadimage:
 	docker build -t csvload -f $(CO_BASEOS)/Dockerfile.csvload.$(CO_BASEOS) .
 	docker tag csvload crunchydata/csvload:$(CO_BASEOS)-$(CO_VERSION)
+rmdataimage:
+	docker build -t rmdata -f $(CO_BASEOS)/Dockerfile.rmdata.$(CO_BASEOS) .
+	docker tag rmdata crunchydata/rmdata:$(CO_BASEOS)-$(CO_VERSION)
 all:
 	make operatorimage
 	make apiserverimage

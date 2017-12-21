@@ -1,0 +1,11 @@
+FROM centos:7
+
+LABEL Release="2.3" Vendor="Crunchy Data Solutions" 
+
+RUN yum -y update && yum -y clean all
+
+VOLUME ["/pgdata"]
+
+USER 26
+
+CMD ["sh", "-c", "rm -rf /pgdata/${DATA_ROOT}"]

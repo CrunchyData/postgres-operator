@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	apiv1 "k8s.io/api/core/v1"
+	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -35,6 +35,7 @@ type PgclusterController struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
+	Namespace          string
 }
 
 // Run starts an pgcluster resource controller
@@ -56,7 +57,8 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgclusterClient,
 		crv1.PgclusterResourcePlural,
-		apiv1.NamespaceAll,
+		//apiv1.NamespaceAll,
+		c.Namespace,
 		fields.Everything())
 
 	_, controller := cache.NewInformer(
