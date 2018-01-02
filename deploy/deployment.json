@@ -41,6 +41,12 @@
                         "name": "CCP_IMAGE_PREFIX",
                         "value": "crunchydata"
                     }, {
+                        "name": "CO_IMAGE_PREFIX",
+                        "value": "crunchydata"
+                    }, {
+                        "name": "CO_IMAGE_TAG",
+                        "value": "$CO_IMAGE_TAG"
+                    }, {
                         "name": "DEBUG",
                         "value": "true"
                     }, {

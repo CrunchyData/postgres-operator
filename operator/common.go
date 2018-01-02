@@ -20,6 +20,8 @@ import (
 	"os"
 )
 
+var COImagePrefix string
+var COImageTag string
 var CCPImagePrefix string
 
 func Initialize() {
@@ -29,6 +31,18 @@ func Initialize() {
 		CCPImagePrefix = "crunchydata"
 	} else {
 		log.Debug("CCP_IMAGE_PREFIX set, using " + CCPImagePrefix)
+	}
+	COImagePrefix = os.Getenv("CO_IMAGE_PREFIX")
+	if COImagePrefix == "" {
+		log.Debug("CO_IMAGE_PREFIX not set, using default")
+		COImagePrefix = "crunchydata"
+	} else {
+		log.Debug("CO_IMAGE_PREFIX set, using " + COImagePrefix)
+	}
+	COImageTag = os.Getenv("CO_IMAGE_TAG")
+	if COImageTag == "" {
+		log.Error("CO_IMAGE_TAG not set, required ")
+		panic("CO_IMAGE_TAG env var not set")
 	}
 
 }

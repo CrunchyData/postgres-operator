@@ -26,10 +26,11 @@ const PgtaskDeleteData = "delete-data"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {
-	Name       string `json:"name"`
-	TaskType   string `json:"tasktype"`
-	Status     string `json:"status"`
-	Parameters string `json:"parameters"`
+	Name        string        `json:"name"`
+	StorageSpec PgStorageSpec `json:"storagespec"`
+	TaskType    string        `json:"tasktype"`
+	Status      string        `json:"status"`
+	Parameters  string        `json:"parameters"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

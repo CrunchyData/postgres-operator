@@ -90,7 +90,7 @@ func DeleteCluster(namespace, name, selector string, deleteData bool) msgs.Delet
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
-			createDeleteDataTasks(namespace, cluster.Spec.Name)
+			createDeleteDataTasks(namespace, cluster.Spec.Name, cluster.Spec.PrimaryStorage)
 		}
 
 		err := apiserver.RESTClient.Delete().
@@ -707,7 +707,7 @@ func getReadyStatus(pod *v1.Pod) string {
 
 }
 
-func createDeleteDataTasks(namespace, clusterName string) {
+func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgStorageSpec) {
 
 	var err error
 
@@ -742,6 +742,7 @@ func createDeleteDataTasks(namespace, clusterName string) {
 			spec.Name = element.Name
 		}
 		spec.TaskType = crv1.PgtaskDeleteData
+		spec.StorageSpec = storageSpec
 		//spec.Status = crv1.PgtaskStateCreated
 		spec.Parameters = element.PVCName
 

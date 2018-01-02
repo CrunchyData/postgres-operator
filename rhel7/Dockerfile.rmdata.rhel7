@@ -1,4 +1,4 @@
-FROM centos:7
+FROM registry.access.redhat.com/rhel7.3
 
 LABEL Release="2.3" Vendor="Crunchy Data Solutions" 
 

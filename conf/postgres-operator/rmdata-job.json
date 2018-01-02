@@ -2,22 +2,22 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "{{.Name}}"
+        "name": "rmdata-{{.Name}}"
     },
     "spec": {
         "template": {
             "metadata": {
-                "name": "{{.Name}}",
+                "name": "rmdata-{{.Name}}",
                 "labels": {
-                    "rmdata": "true",
-                    "pg-database": "{{.DbHost}}"
+                    "pgrmdata": "true",
+                    "pg-database": "{{.Name}}"
                 }
             },
             "spec": {
                 "volumes": [{
                     	"name": "pgdata",
 			"persistentVolumeClaim" : {
-				"claimName": "{{.PVCName}}"
+				"claimName": "{{.PvcName}}"
 			}
                 }],
 

@@ -131,6 +131,12 @@ func main() {
 
 	// start a controller on instances of our custom resource
 
+	pgTaskcontroller := controller.PgtaskController{
+		PgtaskClient:    crdClient,
+		PgtaskScheme:    crdScheme,
+		PgtaskClientset: Clientset,
+		Namespace:       Namespace,
+	}
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
@@ -163,6 +169,7 @@ func main() {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
+	go pgTaskcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)
 	go pgUpgradecontroller.Run(ctx)

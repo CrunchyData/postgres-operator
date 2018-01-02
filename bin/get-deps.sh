@@ -16,6 +16,8 @@
 echo "getting project dependencies...."
 #godep restore
 
+go get github.com/blang/expenv
+
 go get k8s.io/client-go
 cd $GOPATH/src/k8s.io/client-go
 git fetch --all --tags --prune
