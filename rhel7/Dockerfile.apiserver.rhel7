@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/rhel7.3
 
 
-LABEL Release="2.3" Vendor="Crunchy Data Solutions" 
+LABEL Release="2.4" Vendor="Crunchy Data Solutions" 
 
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 

@@ -1,5 +1,5 @@
 = postgres Operator Design
-v2.3, {docdate}
+v2.4, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
@@ -77,6 +77,7 @@ pgclusters.cr.client-go.k8s.io     CustomResourceDefinition.v1beta1.apiextension
 pgpolicies.cr.client-go.k8s.io     CustomResourceDefinition.v1beta1.apiextensions.k8s.io
 pgpolicylogs.cr.client-go.k8s.io   CustomResourceDefinition.v1beta1.apiextensions.k8s.io
 pgupgrades.cr.client-go.k8s.io     CustomResourceDefinition.v1beta1.apiextensions.k8s.io
+pgtasks.cr.client-go.k8s.io        CustomResourceDefinition.v1beta1.apiextensions.k8s.io
 ----
 
 

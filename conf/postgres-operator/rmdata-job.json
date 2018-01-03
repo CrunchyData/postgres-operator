@@ -10,7 +10,8 @@
                 "name": "rmdata-{{.Name}}",
                 "labels": {
                     "pgrmdata": "true",
-                    "pg-database": "{{.Name}}"
+                    "pg-database": "{{.Name}}",
+		    "claimName": "{{.PvcName}}"
                 }
             },
             "spec": {

@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build and Setup
 :toc:
-v2.3, {docdate}
+v2.4, {docdate}
 
 == Table of Contents
 
@@ -82,7 +82,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=2.3
+export CO_VERSION=2.4
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
@@ -136,17 +136,17 @@ docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.0
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-2.3
-docker pull crunchydata/csvload:centos7-2.3
-docker pull crunchydata/postgres-operator:centos7-2.3
-docker pull crunchydata/apiserver:centos7-2.3
+docker pull crunchydata/lspvc:centos7-2.4
+docker pull crunchydata/csvload:centos7-2.4
+docker pull crunchydata/postgres-operator:centos7-2.4
+docker pull crunchydata/apiserver:centos7-2.4
 ....
 
 Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/2.1/postgres-operator.2.3.tar.gz
-tar xvzf ./postgres-operator.2.3.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/2.1/postgres-operator.2.4.tar.gz
+tar xvzf ./postgres-operator.2.4.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -260,7 +260,7 @@ desired PVC to use when databases and clusters are created.
 
 === Configure Basic Authentication
 
-In Operator version 2.3, Basic Authentication is required by the *apiserver*.
+Starting in Operator version 2.3, Basic Authentication is required by the *apiserver*.
 You will configure the *pgo* client to specify a basic authentication
 username and password by creating a file in the user's home
 directory named *.pgouser* that looks similar to this, containing only a single line:

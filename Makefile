@@ -81,6 +81,7 @@ all:
 	make lsimage
 	make csvloadimage
 	make pgo
+	make rmdataimage
 push:
 	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
 	docker push crunchydata/csvload:$(CO_IMAGE_TAG)

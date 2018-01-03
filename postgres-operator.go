@@ -166,6 +166,11 @@ func main() {
 		PodClient:    crdClient,
 		Namespace:    Namespace,
 	}
+	jobcontroller := controller.JobController{
+		JobClientset: Clientset,
+		JobClient:    crdClient,
+		Namespace:    Namespace,
+	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -175,6 +180,7 @@ func main() {
 	go pgUpgradecontroller.Run(ctx)
 	go pgPolicycontroller.Run(ctx)
 	go podcontroller.Run(ctx)
+	go jobcontroller.Run(ctx)
 
 	go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)

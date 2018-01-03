@@ -132,6 +132,22 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	default:
 		log.Info("unknown task type on pgtask added")
 	}
+
+	//for now, remove the pgtask in all cases
+	err = c.PgtaskClient.Delete().
+		Name(task.ObjectMeta.Name).
+		Namespace(task.ObjectMeta.Namespace).
+		Resource(crv1.PgtaskResourcePlural).
+		Body(taskCopy).
+		Do().
+		Error()
+
+	if err != nil {
+		log.Errorf("ERROR deleting pgtask status: %s %v\n", task.ObjectMeta.Name, err)
+	} else {
+		log.Errorf("UPDATED deleted pgtask %s\n", task.ObjectMeta.Name)
+	}
+
 }
 
 // onUpdate is called when a pgtask is updated

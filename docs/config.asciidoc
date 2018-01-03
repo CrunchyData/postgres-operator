@@ -1,5 +1,5 @@
 = PostgreSQL Operator Configuration
-v2.3, {docdate}
+v2.4, {docdate}
 
 
 This document describes the configuration options
@@ -26,7 +26,7 @@ The default pgo configuration file, included in
 ....
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-9.6.5-1.6.0
+  CCPImageTag:  centos7-9.6.6-1.7.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
@@ -65,7 +65,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |Namespace        | the namespace the Operator will run within
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.5-1.6.0), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.6-1.7.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.PrimaryPassword        | the PostgreSQL primary user password, when specified, it will be stored in the secret holding the primary user credentials, if not specified the value will be generated
 |Cluster.User        | the PostgreSQL normal user name

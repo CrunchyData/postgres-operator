@@ -16,4 +16,5 @@
 docker rmi -f lspvc crunchydata/lspvc:$CO_IMAGE_TAG  \
 postgres-operator crunchydata/postgres-operator:$CO_IMAGE_TAG  \
 csvload crunchydata/csvload:$CO_IMAGE_TAG  \
-apiserver crunchydata/apiserver:$CO_IMAGE_TAG 
+apiserver crunchydata/apiserver:$CO_IMAGE_TAG \
+rmdata crunchydata/rmdata:$CO_IMAGE_TAG 
