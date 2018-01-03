@@ -124,8 +124,7 @@ pgo delete cluster restoredb
 ....
 
 Note, that this command will not remove the PVC associated with
-this cluster.  If you want to remove the cluster's old data files,
-you will need to remove it manually.
+this cluster. 
 
 Selectors also apply to the delete command as follows:
 ....
@@ -134,6 +133,16 @@ pgo delete cluster  --selector=project=xray
 
 This command will cause any cluster matching the selector
 to be removed. 
+
+You can remove a cluster and it's data files by running:
+....
+pgo delete cluster restoredb --delete-data
+....
+
+You can remove a cluster, it's data files, and all backups by running:
+....
+pgo delete cluster restoredb --delete-data --delete-backups
+....
 
 
 == Cluster Replication

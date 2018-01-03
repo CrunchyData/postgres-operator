@@ -43,7 +43,7 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clusters/" + arg + "?namespace=" + Namespace + "&selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData)
+		url := APIServerURL + "/clusters/" + arg + "?namespace=" + Namespace + "&selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
 
 		log.Debug("delete cluster called [" + url + "]")
 

@@ -28,3 +28,5 @@ $CO_CMD --namespace=$CO_NAMESPACE delete crd \
 	pgtasks.cr.client-go.k8s.io \
 	pgupgrades.cr.client-go.k8s.io
 
+$CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgrmdata=true
+$CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgbackup=true

@@ -86,6 +86,12 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("delete-data param was [" + deleteDataStr + "]")
 		deleteData, _ = strconv.ParseBool(deleteDataStr)
 	}
+	deleteBackups := false
+	deleteBackupsStr := r.URL.Query().Get("delete-backups")
+	if deleteDataStr != "" {
+		log.Debug("delete-backups param was [" + deleteBackupsStr + "]")
+		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
+	}
 
 	err := apiserver.Authn("ShowClusterHandler", w, r)
 	if err != nil {
@@ -103,7 +109,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
 		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
-		resp := DeleteCluster(namespace, clustername, selector, deleteData)
+		resp := DeleteCluster(namespace, clustername, selector, deleteData, deleteBackups)
 		json.NewEncoder(w).Encode(resp)
 	}
 

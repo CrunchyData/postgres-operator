@@ -39,7 +39,7 @@ import (
 )
 
 // DeleteCluster ...
-func DeleteCluster(namespace, name, selector string, deleteData bool) msgs.DeleteClusterResponse {
+func DeleteCluster(namespace, name, selector string, deleteData, deleteBackups bool) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -62,6 +62,7 @@ func DeleteCluster(namespace, name, selector string, deleteData bool) msgs.Delet
 	}
 	log.Debugf("label selector is [%s]\n", myselector.String())
 	log.Debugf("delete-data is [%v]\n", deleteData)
+	log.Debugf("delete-backups is [%v]\n", deleteBackups)
 
 	clusterList := crv1.PgclusterList{}
 
@@ -90,7 +91,7 @@ func DeleteCluster(namespace, name, selector string, deleteData bool) msgs.Delet
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
-			createDeleteDataTasks(namespace, cluster.Spec.Name, cluster.Spec.PrimaryStorage)
+			createDeleteDataTasks(namespace, cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 		}
 
 		err := apiserver.RESTClient.Delete().
@@ -707,7 +708,7 @@ func getReadyStatus(pod *v1.Pod) string {
 
 }
 
-func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgStorageSpec) {
+func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool) {
 
 	var err error
 
@@ -753,6 +754,36 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 			Spec: spec,
 		}
 
+		result := crv1.Pgtask{}
+		err = apiserver.RESTClient.Post().
+			Resource(crv1.PgtaskResourcePlural).
+			Namespace(namespace).
+			Body(newInstance).
+			Do().Into(&result)
+
+		if err != nil {
+			log.Error(" in creating Pgtask instance" + err.Error())
+			return
+		}
+		log.Debug("created Pgtask " + clusterName)
+	}
+	if deleteBackups {
+
+		backupPVCName := clusterName + "-backup-pvc"
+		spec := crv1.PgtaskSpec{}
+		spec.Name = clusterName + "-backups"
+		spec.TaskType = crv1.PgtaskDeleteData
+		spec.StorageSpec = storageSpec
+
+		spec.Parameters = backupPVCName
+
+		newInstance := &crv1.Pgtask{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: spec.Name,
+			},
+			Spec: spec,
+		}
+		log.Debug("deleting backups at " + backupPVCName)
 		result := crv1.Pgtask{}
 		err = apiserver.RESTClient.Post().
 			Resource(crv1.PgtaskResourcePlural).
