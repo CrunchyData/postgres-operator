@@ -57,9 +57,15 @@ func init() {
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
+	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated")
 }
 
 func createLoad(args []string) {
+	if PoliciesFlag != "" {
+		log.Infoln("policies=" + PoliciesFlag)
+	} else {
+		log.Infoln("policies is blank")
+	}
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
 
@@ -75,6 +81,7 @@ func createLoad(args []string) {
 	request.LoadConfig = string(buf)
 	request.Namespace = Namespace
 	request.Selector = Selector
+	request.Policies = PoliciesFlag
 	request.Args = args
 
 	//make the request

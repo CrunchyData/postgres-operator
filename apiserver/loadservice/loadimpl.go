@@ -22,15 +22,16 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/labels"
-	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"os"
+	"strings"
 	"text/template"
 )
 
@@ -84,19 +85,22 @@ func init() {
 }
 
 // Load ...
-// pgo load  --selector=name=mycluster --load-config=./sample-load-config.json
+// pgo load  --policies=jsonload --selector=name=mycluster --load-config=./sample-load-config.json
 func Load(request *msgs.LoadRequest) msgs.LoadResponse {
+
 	var err error
 	resp := msgs.LoadResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
+	/**
 	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
 	if CSVLoadTemplatePath == "" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "Pgo.CSVLoadTemplate not defined in pgo config 2."
 		return resp
 	}
+	*/
 
 	LoadConfigTemplate = loadJobTemplateFields{}
 
@@ -162,7 +166,25 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 	}
 
+	log.Debug("policies to apply before loading are %v\n", request.Policies)
+	policies := strings.Split(request.Policies, ",")
+
 	for _, arg := range args {
+		for _, p := range policies {
+			log.Debug("applying policy " + p + " to " + arg)
+			//apply policies to this cluster
+			applyReq := msgs.ApplyPolicyRequest{}
+			applyReq.Name = p
+			applyReq.Namespace = request.Namespace
+			applyReq.DryRun = false
+			applyReq.Selector = "name=" + arg
+			applyResp := policyservice.ApplyPolicy(&applyReq)
+			if applyResp.Status.Code != msgs.Ok {
+				log.Error("error in applying policy " + applyResp.Status.Msg)
+			}
+		}
+
+		//create the load job for this cluster
 		log.Debug("created load for " + arg)
 		err = createJob(arg, request.Namespace)
 		if err != nil {

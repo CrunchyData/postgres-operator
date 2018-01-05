@@ -23,6 +23,7 @@ type LoadRequest struct {
 	Selector   string
 	Namespace  string
 	LoadConfig string
+	Policies   string
 }
 
 // LoadResponse ...

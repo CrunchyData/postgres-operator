@@ -3,7 +3,7 @@ COImageTag:  centos7-2.4
 DbDatabase:  userdb
 DbUser:  postgres
 DbPort:  5432
-TableToLoad:  xraycsvtable
-CSVFilePath:  sample.csv
+TableToLoad:  JSON_COLLECTION
+CSVFilePath:  sample.json
 PVCName:  crunchy-pvc
 SecurityContext:  
