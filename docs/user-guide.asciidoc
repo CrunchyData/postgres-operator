@@ -486,6 +486,13 @@ pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name
 
 The loading is based on a load definition found in the *sample-load-config.json* file.  In that file, the data to be loaded is specified. When the *pgo load* command is executed, Jobs will be created to perform the loading for each cluster that matches the selector filter.
 
+If you include the *--policies* flag, any specified policies will be applied prior to the data being loaded.  For
+example:
+....
+pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster 
+....
+
+
 == bash Completion
 
 There is a bash completion file that is included for users to try, this
