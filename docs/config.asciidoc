@@ -26,7 +26,7 @@ The default pgo configuration file, included in
 ....
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-9.6.6-1.7.0
+  CCPImageTag:  centos7-10.1-1.7.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
@@ -52,9 +52,9 @@ ReplicaStorage:
 Pgo:
   APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
-  CSVLoadTemplate:  /config/pgo.csvload-template.json
+  CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.1
+  COImageTag:  centos7-2.4
   Debug:  true
 ....
 
@@ -65,7 +65,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |Namespace        | the namespace the Operator will run within
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-9.6.6-1.7.0), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.1-1.7.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.PrimaryPassword        | the PostgreSQL primary user password, when specified, it will be stored in the secret holding the primary user credentials, if not specified the value will be generated
 |Cluster.User        | the PostgreSQL normal user name
@@ -98,7 +98,7 @@ Values in the pgo configuration file have the following meaning:
 |BackupStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |BackupStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
-|Pgo.CSVLoadTemplate        | the CSV load template file used for load jobs
+|Pgo.LoadTemplate        | the load template file used for load jobs
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
 |Pgo.COImageTag        | image tag to use for the Operator containers
 |======================

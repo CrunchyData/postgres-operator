@@ -492,6 +492,27 @@ example:
 pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster 
 ....
 
+Likewise you can load a sample json file into a database as follows:
+....
+pgo load --policies=jsonload --load-config=$COROOT/examples/sample-json-load-config.json  --selector=name=mycluster
+....
+
+The load configuration file has the following YAML attributes:
+
+.Load Configuration File Definitions
+[width="90%",cols="m,2",frame="topbot",options="header"]
+|======================
+|COImagePrefix|  the pgo-load image prefix to use for the load job
+|COImageTag|  the pgo-load image tag to use for the load job
+|DbDatabase|  the database schema to use for loading the data
+|DbUser|  the database user to use for loading the data
+|DbPort|  the database port of the database to load
+|TableToLoad|  the PostgreSQL table to load
+|FilePath|  the name of the file to be loaded
+|FileType|  either csv or json, determines the type of data to be loaded
+|PVCName|  the name of the PVC that holds the data file to be loaded
+|SecurityContext| either fsGroup or SupplementalGroup values
+|======================
 
 == bash Completion
 
