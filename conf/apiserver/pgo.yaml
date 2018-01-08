@@ -26,6 +26,6 @@ ReplicaStorage:
   StorageType:  create
 Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
-  CSVLoadTemplate:  /config/pgo.csvload-template.json
+  LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
   COImageTag:  centos7-2.4

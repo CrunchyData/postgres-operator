@@ -26,7 +26,7 @@
 
                 "containers": [{
                     "name": "rmdata",
-                    "image": "{{.COImagePrefix}}/rmdata:{{.COImageTag}}",
+                    "image": "{{.COImagePrefix}}/pgo-rmdata:{{.COImageTag}}",
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",

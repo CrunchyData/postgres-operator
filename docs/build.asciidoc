@@ -40,10 +40,11 @@ As of version 2.0, the Operator uses the following PostgreSQL containers:
 
 The Operator project builds and operates with the following containers:
 
-* link:https://hub.docker.com/r/crunchydata/lspvc/[PostgreSQL PVC Listing Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-lspvc/[PVC Listing Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-rmdata/[Remove Data Container]
 * link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
 * link:https://hub.docker.com/r/crunchydata/apiserver/[apiserver Container]
-* link:https://hub.docker.com/r/crunchydata/csvload/[csvload Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
 
 This Operator is developed on and has also been tested on the following operating systems:
 
@@ -136,8 +137,9 @@ docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.0
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/lspvc:centos7-2.4
-docker pull crunchydata/csvload:centos7-2.4
+docker pull crunchydata/pgo-lspvc:centos7-2.4
+docker pull crunchydata/pgo-load:centos7-2.4
+docker pull crunchydata/pgo-rmdata:centos7-2.4
 docker pull crunchydata/postgres-operator:centos7-2.4
 docker pull crunchydata/apiserver:centos7-2.4
 ....
@@ -337,7 +339,7 @@ The *apiserver* uses the following  configuration files found in $COROOT/conf/ap
 ....
 $COROOT/conf/apiserver/pgo.yaml
 $COROOT/conf/apiserver/pgo.lspvc-template.json
-$COROOT/conf/apiserver/pgo.csvload-template.json
+$COROOT/conf/apiserver/pgo.load-template.json
 ....
 
 Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
@@ -479,6 +481,7 @@ The following table describes the Makefile targets:
 |operatorimage        | compile and build the postgres-operator Docker image
 |apiserverimage        | compile and build the apiserver Docker image
 |lsimage        | build the lspvc Docker image
-|csvloadimage        | build the csvload Docker image
+|loadimage        | build the file load Docker image
+|rmdataimage        | build the data deletion Docker image
 |release        | build the postgres-operator release
 |======================

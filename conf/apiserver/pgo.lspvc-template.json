@@ -15,7 +15,7 @@
             "securityContext": {
                 "privileged": false
             },
-            "image": "{{.COImagePrefix}}/lspvc:{{.COImageTag}}",
+            "image": "{{.COImagePrefix}}/pgo-lspvc:{{.COImageTag}}",
             "env": [{
                 "name": "BACKUP_ROOT",
                 "value": "{{.BackupRoot}}"

@@ -45,12 +45,20 @@ function ose_hack() {
 
 ose_hack
 
-echo $CSVFILE_PATH
+echo $FILE_PATH is the file path
 
 create_pgpass
 
 cat $PGPASSFILE
 
-echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$CSV_FILE_PATH' WITH (FORMAT csv);" > /tmp/copycommand
-psql -U $DB_USER -h $DB_HOST $DB_DATABASE -f /tmp/copycommand
-echo "csvload has ended!"
+OUTFILE=/tmp/copycommand
+
+if [ "$FILE_TYPE" = "json" ]; then
+	echo "file type is json"
+	echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$FILE_PATH' csv quote e'\x01' delimiter e'\x02';" > $OUTFILE
+else
+	echo "assuming file type is csv"
+	echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$FILE_PATH' WITH (FORMAT csv);" > $OUTFILE
+fi
+psql -U $DB_USER -h $DB_HOST $DB_DATABASE -f $OUTFILE
+echo "pgo-load has ended!"

@@ -97,6 +97,10 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name, &cl.Spec.PrimaryStorage, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	log.Debug("created primary pvc [" + pvcName + "]")
 
 	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.Strategy + "]")

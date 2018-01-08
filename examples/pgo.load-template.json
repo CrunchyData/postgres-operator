@@ -9,7 +9,7 @@
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
-                    "csvload": "true",
+                    "pgo-load": "true",
                     "pg-database": "{{.DB_HOST}}"
                 }
             },
@@ -24,8 +24,8 @@
 		{{.SECURITY_CONTEXT}}
 
                 "containers": [{
-                    "name": "csvload",
-                    "image": "crunchydata/csvload:{{.CO_IMAGE_TAG}}",
+                    "name": "pgo-load",
+                    "image": "crunchydata/pgo-load:{{.CO_IMAGE_TAG}}",
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",
@@ -35,8 +35,8 @@
                         "name": "TABLE_TO_LOAD",
                         "value": "{{.TABLE_TO_LOAD}}"
                     }, {
-                        "name": "CSV_FILE_PATH",
-                        "value": "{{.CSV_FILE_PATH}}"
+                        "name": "FILE_PATH",
+                        "value": "{{.FILE_PATH}}"
                     }, {
                         "name": "DB_HOST",
                         "value": "{{.DB_HOST}}"

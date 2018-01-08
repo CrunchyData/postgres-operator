@@ -67,24 +67,25 @@ operatorimage:	check-go-vars
 	docker build -t postgres-operator -f $(CO_BASEOS)/Dockerfile.postgres-operator.$(CO_BASEOS) .
 	docker tag postgres-operator crunchydata/postgres-operator:$(CO_BASEOS)-$(CO_VERSION)
 lsimage:
-	docker build -t lspvc -f $(CO_BASEOS)/Dockerfile.lspvc.$(CO_BASEOS) .
-	docker tag lspvc crunchydata/lspvc:$(CO_BASEOS)-$(CO_VERSION)
-csvloadimage:
-	docker build -t csvload -f $(CO_BASEOS)/Dockerfile.csvload.$(CO_BASEOS) .
-	docker tag csvload crunchydata/csvload:$(CO_BASEOS)-$(CO_VERSION)
+	docker build -t pgo-lspvc -f $(CO_BASEOS)/Dockerfile.pgo-lspvc.$(CO_BASEOS) .
+	docker tag pgo-lspvc crunchydata/pgo-lspvc:$(CO_BASEOS)-$(CO_VERSION)
+loadimage:
+	docker build -t pgo-load -f $(CO_BASEOS)/Dockerfile.pgo-load.$(CO_BASEOS) .
+	docker tag pgo-load crunchydata/pgo-load:$(CO_BASEOS)-$(CO_VERSION)
 rmdataimage:
-	docker build -t rmdata -f $(CO_BASEOS)/Dockerfile.rmdata.$(CO_BASEOS) .
-	docker tag rmdata crunchydata/rmdata:$(CO_BASEOS)-$(CO_VERSION)
+	docker build -t pgo-rmdata -f $(CO_BASEOS)/Dockerfile.pgo-rmdata.$(CO_BASEOS) .
+	docker tag pgo-rmdata crunchydata/pgo-rmdata:$(CO_BASEOS)-$(CO_VERSION)
 all:
 	make operatorimage
 	make apiserverimage
 	make lsimage
-	make csvloadimage
+	make loadimage
 	make pgo
 	make rmdataimage
 push:
-	docker push crunchydata/lspvc:$(CO_IMAGE_TAG)
-	docker push crunchydata/csvload:$(CO_IMAGE_TAG)
+	docker push crunchydata/pgo-lspvc:$(CO_IMAGE_TAG)
+	docker push crunchydata/pgo-rmdata:$(CO_IMAGE_TAG)
+	docker push crunchydata/pgo-load:$(CO_IMAGE_TAG)
 	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
 	docker push crunchydata/apiserver:$(CO_IMAGE_TAG)
 release:	check-go-vars

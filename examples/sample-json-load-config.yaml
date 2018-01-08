@@ -4,6 +4,7 @@ DbDatabase:  userdb
 DbUser:  postgres
 DbPort:  5432
 TableToLoad:  JSON_COLLECTION
-CSVFilePath:  sample.json
+FilePath:  sample.json
+FileType:  json
 PVCName:  crunchy-pvc
 SecurityContext:  

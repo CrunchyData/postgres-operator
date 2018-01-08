@@ -26,7 +26,7 @@ $CO_CMD $NS create configmap apiserver-conf \
 	--from-file=$COROOT/conf/apiserver/server.key \
 	--from-file=$COROOT/conf/apiserver/pgouser \
 	--from-file=$COROOT/conf/apiserver/pgo.yaml \
-	--from-file=$COROOT/conf/apiserver/pgo.csvload-template.json \
+	--from-file=$COROOT/conf/apiserver/pgo.load-template.json \
 	--from-file=$COROOT/conf/apiserver/pgo.lspvc-template.json 
 
 $CO_CMD $NS create configmap operator-conf \

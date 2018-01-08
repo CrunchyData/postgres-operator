@@ -45,7 +45,8 @@ type loadJobTemplateFields struct {
 	DbPass          string
 	DbPort          string
 	TableToLoad     string
-	CSVFilePath     string
+	FilePath        string
+	FileType        string
 	PVCName         string
 	SecurityContext string
 }
@@ -56,8 +57,8 @@ var LoadConfig string
 // LoadConfigTemplate ....
 var LoadConfigTemplate loadJobTemplateFields
 
-// CSVLoadTemplatePath ...
-var CSVLoadTemplatePath string
+// LoadTemplatePath ...
+var LoadTemplatePath string
 
 // JobTemplate ...
 var JobTemplate *template.Template
@@ -66,9 +67,9 @@ func init() {
 
 	log.Debug("loadimpl init called")
 
-	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
-	if CSVLoadTemplatePath == "" {
-		log.Error("Pgo.CSVLoadTemplate not defined in pgo config 1.")
+	LoadTemplatePath = viper.GetString("Pgo.LoadTemplate")
+	if LoadTemplatePath == "" {
+		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
 		os.Exit(2)
 	}
 
@@ -76,12 +77,12 @@ func init() {
 	var err error
 	var buf []byte
 
-	buf, err = ioutil.ReadFile(CSVLoadTemplatePath)
+	buf, err = ioutil.ReadFile(LoadTemplatePath)
 	if err != nil {
-		log.Error("error loading csvload job template..." + err.Error())
+		log.Error("error loading pgo-load job template..." + err.Error())
 		os.Exit(2)
 	}
-	JobTemplate = template.Must(template.New("csvload job template").Parse(string(buf)))
+	JobTemplate = template.Must(template.New("pgo-load job template").Parse(string(buf)))
 }
 
 // Load ...
@@ -94,10 +95,10 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	resp.Status.Msg = ""
 
 	/**
-	CSVLoadTemplatePath = viper.GetString("Pgo.CSVLoadTemplate")
-	if CSVLoadTemplatePath == "" {
+	LoadTemplatePath = viper.GetString("Pgo.LoadTemplate")
+	if LoadTemplatePath == "" {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "Pgo.CSVLoadTemplate not defined in pgo config 2."
+		resp.Status.Msg = "Pgo.LoadTemplate not defined in pgo config 2."
 		return resp
 	}
 	*/
@@ -121,7 +122,8 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	LoadConfigTemplate.DbUser = viper.GetString("DbUser")
 	LoadConfigTemplate.DbPort = viper.GetString("DbPort")
 	LoadConfigTemplate.TableToLoad = viper.GetString("TableToLoad")
-	LoadConfigTemplate.CSVFilePath = viper.GetString("CSVFilePath")
+	LoadConfigTemplate.FilePath = viper.GetString("FilePath")
+	LoadConfigTemplate.FileType = viper.GetString("FileType")
 	LoadConfigTemplate.PVCName = viper.GetString("PVCName")
 	LoadConfigTemplate.SecurityContext = viper.GetString("SecurityContext")
 
@@ -186,7 +188,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 		//create the load job for this cluster
 		log.Debug("created load for " + arg)
-		err = createJob(arg, request.Namespace)
+		err = createJob(arg, request.Namespace, LoadConfigTemplate.FileType, LoadConfigTemplate.FilePath)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -199,11 +201,13 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 }
 
-func createJob(clusterName, namespace string) error {
+func createJob(clusterName, namespace, filetype, filepath string) error {
 	var err error
 	randStr := operutil.GenerateRandString(3)
-	LoadConfigTemplate.Name = "csvload-" + clusterName + "-" + randStr
+	LoadConfigTemplate.Name = "pgo-load-" + clusterName + "-" + randStr
 	LoadConfigTemplate.DbHost = clusterName
+	LoadConfigTemplate.FilePath = filepath
+	LoadConfigTemplate.FileType = filetype
 	LoadConfigTemplate.DbPass, err = util.GetSecretPassword(clusterName, crv1.RootSecretSuffix, namespace)
 	if err != nil {
 		log.Error(err)
@@ -256,8 +260,8 @@ func validateConfig() error {
 	if viper.GetString("TableToLoad") == "" {
 		return errors.New("TableToLoad is not supplied")
 	}
-	if viper.GetString("CSVFilePath") == "" {
-		return errors.New("CSVFilePath is not supplied")
+	if viper.GetString("FilePath") == "" {
+		return errors.New("FilePath is not supplied")
 	}
 	if viper.GetString("PVCName") == "" {
 		return errors.New("PVCName is not supplied")

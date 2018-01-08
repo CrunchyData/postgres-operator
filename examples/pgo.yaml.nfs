@@ -1,7 +1,7 @@
 Kubeconfig:  /etc/kubernetes/admin.conf
 Namespace:  default
 Cluster:
-  CCPImageTag:  centos7-10.0-1.6.0
+  CCPImageTag:  centos7-10.1-1.7.0
   Port:  5432
   PrimaryPassword:  password
   User:  testuser
@@ -30,6 +30,6 @@ ReplicaStorage:
 Pgo:
   APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /home/jeffmc/.pgo.lspvc-template.json
-  CSVLoadTemplate:  /home/jeffmc/.pgo.csvload-template.json
-  COImageTag:  centos7-2.0
+  LoadTemplate:  /home/jeffmc/.pgo.load-template.json
+  COImageTag:  centos7-2.4
   Debug:  false
