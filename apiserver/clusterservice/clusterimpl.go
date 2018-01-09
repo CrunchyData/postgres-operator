@@ -23,6 +23,7 @@ import (
 	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
 
@@ -770,6 +771,14 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 	if deleteBackups {
 
 		backupPVCName := clusterName + "-backup-pvc"
+		//verify backup pvc exists
+		_, err = pvcservice.ShowPVC(namespace, backupPVCName, "")
+		if err != nil {
+			log.Debug("not running rmdata for backups, " + backupPVCName + " not found")
+			return
+		}
+
+		//proceed with backups removal
 		spec := crv1.PgtaskSpec{}
 		spec.Name = clusterName + "-backups"
 		spec.TaskType = crv1.PgtaskDeleteData

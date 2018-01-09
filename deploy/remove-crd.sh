@@ -30,3 +30,4 @@ $CO_CMD --namespace=$CO_NAMESPACE delete crd \
 
 $CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgrmdata=true
 $CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgbackup=true
+$CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgo-load=true

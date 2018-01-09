@@ -443,7 +443,7 @@ the following:
  * test a cluster (*pgo test restoredcluster*)
  * minor upgrade a cluster (*pgo upgrade testcluster*)
  * major upgrade a cluster (*pgo upgrade testcluster --upgrade-type=major*)
- * delete a cluster (*pgo delete cluster testcluster*)
+ * delete a cluster (*pgo delete cluster testcluster --delete-data --delete-backups*)
  * create a policy from local file (*pgo create policy policy1 --in-file=./examples/policy/policy1.sql*)
  * create a policy from git repo (*pgo create policy gitpolicy --url=https://github.com/CrunchyData/postgres-operator/blob/master/examples/policy/gitpolicy.sql*)
  * repeat testing using emptydir storage type

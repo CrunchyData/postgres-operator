@@ -43,13 +43,25 @@
                     }, {
 			"mountPath": "/pguser",
 			"name": "user-volume"
-			}, {
+		    }, {
 			"mountPath": "/pgprimary",
 			"name": "primary-volume"
-			}, {
+		    }, {
 			"mountPath": "/pgroot",
 			"name": "root-volume"
-			}
+                    }, {
+                        "mountPath": "/pgwal",
+                        "name": "pgwal-volume"
+                    }, {
+                        "mountPath": "/backrestrepo",
+                        "name": "backrestrepo-volume"
+                    }, {
+                        "mountPath": "/recover",
+                        "name": "recover-volume"
+                    }, {
+                        "mountPath": "/pgconf",
+                        "name": "pgconf-volume"
+                    }
 		    ],
 
                     "ports": [{
@@ -80,7 +92,20 @@
 			"secret": {
 			"secretName": "{{.RootSecretName}}"
 			}
-		}
+                    }, {
+                        "name": "pgwal-volume",
+                        "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "backrestrepo-volume",
+                        "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "recover-volume",
+                        "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "pgconf-volume",
+                        "emptyDir": { "medium": "Memory" }
+                    }
+
 		],
 
 		{{.NodeSelector}}
