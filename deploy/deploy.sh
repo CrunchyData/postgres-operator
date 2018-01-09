@@ -38,5 +38,5 @@ $CO_CMD $NS create configmap operator-conf \
 
 envsubst < $DIR/deployment.json | $CO_CMD $NS create -f -
 
-#$CO_CMD $NS create -f $DIR/service.json
+$CO_CMD $NS create -f $DIR/service.json
 
