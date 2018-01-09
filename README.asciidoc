@@ -1,16 +1,7 @@
 = PostgreSQL Operator
+:toc:
 v2.4, {docdate}
 
-== Table of Contents
-
-* <<Overview>>
-* <<Requirements>>
-* <<Build and Install Instructions>>
-* <<Configuration>>
-* <<Examples>>
-* <<PostgreSQL Operator Container>>
-
-[#Overview]
 == Overview
 
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes environment.  The project
@@ -66,7 +57,7 @@ This Operator has also been tested on the following operating systems:
 == Build and Install Instructions
 
 To build and deploy the Operator on your Kubernetes system, follow
-the instructions documented on the link:docs/build.asciidoc[Build and Install] page.
+the instructions documented on the link:docs/operator-docs.asciidoc[Build and Install] page.
 
 With the operator deployed, the *pgo* command line
 interface can execute commands that the *postgres-operator* understands
@@ -76,7 +67,7 @@ and reacts to.
 == Configuration
 
 The operator is template-driven; this makes it simple to configure both the client and the operator. The
-configuration options are documented on the link:docs/config.asciidoc[Configuration] page.
+configuration options are documented on the link:docs/operator-docs.asciidoc[Configuration] page.
 
 [#Examples]
 == Examples
@@ -162,7 +153,7 @@ pgo apply policy1 --selector=name=mycluster
 ----
 
 Details on the *pgo* commands and complex examples are found in the
-link:docs/user-guide.asciidoc[User Guide]
+link:docs/operator-docs.asciidoc[User Guide]
 
 == PostgreSQL Operator Container
 
@@ -192,4 +183,4 @@ What actually gets created on the Kubernetes cluster for a
 are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
 
 You can also build the project Docker images using
-the build instructions located on the link:docs/build.asciidoc[Build and Setup] page.
+the build instructions located on the link:docs/operator-docs.asciidoc[Build and Setup] page.
