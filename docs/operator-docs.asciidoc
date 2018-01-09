@@ -460,7 +460,7 @@ the following:
 
 More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].
 
-=== Makefile Targets
+== Makefile Targets
 
 The following table describes the Makefile targets:
 .Makefile Targets
