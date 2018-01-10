@@ -20,11 +20,8 @@ import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
-	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
 
 	"fmt"
@@ -239,7 +236,7 @@ func getPods(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterPod, 
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus = getReadyStatus(&p)
-		log.Infof("pod details are %v\n", p)
+		//log.Infof("pod details are %v\n", p)
 		d.PVCName = getPVCName(&p)
 		d.Primary = isPrimary(&p)
 		output = append(output, d)
@@ -733,7 +730,7 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 	log.Debug("got the cluster...")
 
 	for _, element := range pods {
-		log.Debugf("the pod details ... %v\n", element)
+		//log.Debugf("the pod details ... %v\n", element)
 		//get the pgdata pvc for each pod
 
 		//create pgtask CRD

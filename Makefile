@@ -57,8 +57,8 @@ clean:	check-go-vars
 apiserverimage:	check-go-vars
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
-	docker build -t apiserver -f $(CO_BASEOS)/Dockerfile.apiserver.$(CO_BASEOS) .
-	docker tag apiserver crunchydata/apiserver:$(CO_BASEOS)-$(CO_VERSION)
+	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
+	docker tag pgo-apiserver crunchydata/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
 postgres-operator:	check-go-vars
 	go install postgres-operator.go
 operatorimage:	check-go-vars
@@ -87,7 +87,7 @@ push:
 	docker push crunchydata/pgo-rmdata:$(CO_IMAGE_TAG)
 	docker push crunchydata/pgo-load:$(CO_IMAGE_TAG)
 	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
-	docker push crunchydata/apiserver:$(CO_IMAGE_TAG)
+	docker push crunchydata/pgo-apiserver:$(CO_IMAGE_TAG)
 release:	check-go-vars
 	make macpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)

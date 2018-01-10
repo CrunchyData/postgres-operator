@@ -15,7 +15,7 @@
             "spec": {
                 "containers": [{
                     "name": "apiserver",
-                    "image": "crunchydata/apiserver:$CO_IMAGE_TAG",
+                    "image": "crunchydata/pgo-apiserver:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
 			"ports":[{
 			"containerPort": 8443

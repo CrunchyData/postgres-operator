@@ -133,7 +133,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace, request.ManagedUser)
+				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -159,7 +159,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				}
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.AddUser, newPassword, newExpireDate, request.Namespace, request.ManagedUser)
+				err = updatePassword(cluster.Spec.Name, info, request.AddUser, newPassword, newExpireDate, request.Namespace)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -178,7 +178,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(defaultPasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, request.ManagedUser)
+							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace)
 							if err != nil {
 								log.Error("error in updating password")
 							}
@@ -244,7 +244,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 }
 
 // updatePassword ...
-func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, managed bool) error {
+func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string) error {
 	var err error
 	var conn *sql.DB
 
@@ -280,18 +280,29 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 		}
 	}()
 
-	if managed {
-		err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace)
-		if err != nil {
-			log.Debug(err.Error())
-			return err
-		}
+	//see if a secret exists for this user taco-user0-secret
+	secretName := clusterName + "-" + username + "-" + "secret"
+	_, err = util.GetPasswordFromSecret(apiserver.Clientset, namespace, secretName)
+	if err != nil {
+		log.Debug(secretName + " secret does not exist")
+		return nil
 	}
+
+	err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
 	return err
 }
 
 // GeneratePasswordExpireDate ...
 func GeneratePasswordExpireDate(daysFromNow int) string {
+
+	if daysFromNow == -1 {
+		return "infinity"
+	}
 
 	now := time.Now()
 	totalHours := daysFromNow * 24

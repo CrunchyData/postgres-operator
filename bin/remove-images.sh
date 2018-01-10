@@ -16,5 +16,5 @@
 docker rmi -f pgo-lspvc crunchydata/pgo-lspvc:$CO_IMAGE_TAG  \
 postgres-operator crunchydata/postgres-operator:$CO_IMAGE_TAG  \
 pgo-load crunchydata/pgo-load:$CO_IMAGE_TAG  \
-apiserver crunchydata/apiserver:$CO_IMAGE_TAG \
+pgo-apiserver crunchydata/pgo-apiserver:$CO_IMAGE_TAG \
 pgo-rmdata crunchydata/pgo-rmdata:$CO_IMAGE_TAG 

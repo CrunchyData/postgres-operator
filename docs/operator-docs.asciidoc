@@ -1088,7 +1088,8 @@ pgo user --change-password=user1 --valid-days=10 --selector=name=xray1
 
 In this example, a user named *user1* has its password changed to a generated
 value and the *valid until* expiration date set to 10 days from now, this
-command will take effect across all clusters that match the selector.
+command will take effect across all clusters that match the selector.  If you
+specify *valid-days=-1* it will mean the password will not expire (e.g. infinity).
 
 To drop a user:
 ....
