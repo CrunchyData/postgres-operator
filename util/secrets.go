@@ -150,21 +150,21 @@ func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string
 	secretName := db + crv1.PrimarySecretSuffix
 	err := clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error("error deleting secret" + err.Error())
+		log.Error("error deleting pgprimary secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
 	secretName = db + crv1.RootSecretSuffix
 	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error("error deleting secret" + err.Error())
+		log.Error("error deleting pgroot secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
 	secretName = db + crv1.UserSecretSuffix
 	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error("error deleting secret" + err.Error())
+		log.Error("error deleting pguser secret" + err.Error())
 	} else {
 		log.Info("deleted secret " + secretName)
 	}
@@ -252,7 +252,7 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 		//create secret with updated password
 		err = CreateUserSecret(clientset, clustername, username, password, namespace)
 		if err != nil {
-			log.Error("error creating secret" + err.Error())
+			log.Error("UpdateUserSecret error creating secret" + err.Error())
 		} else {
 			log.Debug("created secret " + secretName)
 		}
@@ -271,7 +271,7 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	options := meta_v1.DeleteOptions{}
 	err := clientset.Core().Secrets(namespace).Delete(secretName, &options)
 	if err != nil {
-		log.Error("error deleting secret" + err.Error())
+		log.Error("DeleteUserSecret error deleting secret" + err.Error())
 	} else {
 		log.Debug("deleted secret " + secretName)
 	}

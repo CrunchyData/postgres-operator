@@ -133,7 +133,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace)
+				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace, request.ManagedUser)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -145,7 +145,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				msg := "deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
-				err = deleteUser(request.Namespace, cluster.Spec.Name, info, request.DeleteUser)
+				err = deleteUser(request.Namespace, cluster.Spec.Name, info, request.DeleteUser, request.ManagedUser)
 			}
 			if request.AddUser != "" {
 				msg := "adding new user " + request.AddUser + " to " + d.ObjectMeta.Name
@@ -159,7 +159,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				}
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.AddUser, newPassword, newExpireDate, request.Namespace)
+				err = updatePassword(cluster.Spec.Name, info, request.AddUser, newPassword, newExpireDate, request.Namespace, request.ManagedUser)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -178,7 +178,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(defaultPasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace)
+							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, request.ManagedUser)
 							if err != nil {
 								log.Error("error in updating password")
 							}
@@ -244,7 +244,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 }
 
 // updatePassword ...
-func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string) error {
+func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, managed bool) error {
 	var err error
 	var conn *sql.DB
 
@@ -280,10 +280,12 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 		}
 	}()
 
-	err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace)
-	if err != nil {
-		log.Debug(err.Error())
-		return err
+	if managed {
+		err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace)
+		if err != nil {
+			log.Debug(err.Error())
+			return err
+		}
 	}
 	return err
 }
@@ -412,7 +414,7 @@ func addUser(UserDBAccess, namespace, clusterName string, info connInfo, newUser
 }
 
 // deleteUser ...
-func deleteUser(namespace, clusterName string, info connInfo, user string) error {
+func deleteUser(namespace, clusterName string, info connInfo, user string, managed bool) error {
 	var conn *sql.DB
 	var err error
 
@@ -448,10 +450,12 @@ func deleteUser(namespace, clusterName string, info connInfo, user string) error
 		}
 	}()
 
-	err = util.DeleteUserSecret(apiserver.Clientset, clusterName, user, namespace)
-	if err != nil {
-		log.Error(err.Error())
-		return err
+	if managed {
+		err = util.DeleteUserSecret(apiserver.Clientset, clusterName, user, namespace)
+		if err != nil {
+			log.Error(err.Error())
+			return err
+		}
 	}
 	return err
 
