@@ -50,10 +50,17 @@ type affinityTemplateFields struct {
 	OPERATOR string
 }
 
+type collectTemplateFields struct {
+	Name           string
+	CCPImageTag    string
+	CCPImagePrefix string
+}
+
 // Strategy1  ...
 type Strategy1 struct{}
 
 var affinityTemplate1 *template.Template
+var collectTemplate1 *template.Template
 var deploymentTemplate1 *template.Template
 var replicadeploymentTemplate1 *template.Template
 var replicadeploymentTemplate1Shared *template.Template
@@ -66,6 +73,7 @@ func init() {
 	replicadeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
 	replicadeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
 	deploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
+	collectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
 	affinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
 }
 
@@ -113,6 +121,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
+		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
 	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
@@ -546,4 +555,26 @@ func GetAffinity(nodeName string, operator string) string {
 	log.Info(affinityDocString)
 
 	return affinityDocString
+}
+
+func GetCollectAddon(spec *crv1.PgclusterSpec) string {
+
+	if spec.UserLabels["crunchy-collect"] == "true" {
+		log.Info("crunchy-collect was found as a label on cluster create")
+		collectTemplateFields := collectTemplateFields{}
+		collectTemplateFields.Name = spec.Name
+		collectTemplateFields.CCPImageTag = spec.CCPImageTag
+		collectTemplateFields.CCPImagePrefix = operator.CCPImagePrefix
+
+		var collectDoc bytes.Buffer
+		err := collectTemplate1.Execute(&collectDoc, collectTemplateFields)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+		collectString := collectDoc.String()
+		log.Info(collectString)
+		return collectString
+	}
+	return ""
 }

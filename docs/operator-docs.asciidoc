@@ -32,9 +32,10 @@ hosts.
 
 As of version 2.0, the Operator uses the following PostgreSQL containers:
 
-* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container] version 1.6.0 or later (e.g. centos7-9.6.6-1.7.0)
-* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container] version 1.6.0 or later (e.g. centos7-9.6.6-1.7.0)
-* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container] version 1.6.0 or later (e.g. centos7-9.6.6-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-collect/[PostgreSQL Metrics Collection Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
 
 The Operator project builds and operates with the following containers:
 
@@ -457,6 +458,7 @@ the following:
  * check password age (*pgo user --expired=10 --selector=project=xray*)
  * backup an entire project (*pgo backup --selector=project=xray*)
  * delete an entire project (*pgo delete cluster --selector=project=xray*)
+ * create a cluster with a crunchy-collect sidecar(*pgo create cluster testcluster --metrics*)
 
 More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].
 
@@ -722,6 +724,17 @@ You can filter the results based on the Postgres Version:
 ....
 pgo show cluster all --version=9.6.2
 ....
+
+You can also add metrics collection to a cluster by using the *--metrics*
+command flag as follows:
+....
+pgo create cluster testcluster --metrics
+....
+
+This command flag causes a *crunchy-collect* container to be added to the
+database cluster pod and enables metrics collection on that database pod.
+For this to work, you will need to configure the Crunchy metrics
+example as found in the Crunchy Container Suite.
 
 === Backup Cluster
 

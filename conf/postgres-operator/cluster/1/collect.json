@@ -1,0 +1,24 @@
+{
+    "name": "collect",
+    "image": "{{.CCPImagePrefix}}/crunchy-collect:{{.CCPImageTag}}",
+    "ports": [{
+        "containerPort": 9187,
+        "protocol": "TCP"
+    }, {
+        "containerPort": 9100,
+        "protocol": "TCP"
+    }],
+    "env": [{
+        "name": "PROM_GATEWAY",
+        "value": "http://crunchy-metrics:9091"
+    }, {
+        "name": "DATA_SOURCE_NAME",
+        "value": "postgresql://primaryuser:password@{{.Name}}:5432/postgres?sslmode=disable"
+    }, {
+        "name": "POSTGRES_EXPORTER_URL",
+        "value": "http://localhost:9187/metrics"
+    }, {
+        "name": "NODE_EXPORTER_URL",
+        "value": "http://localhost:9100/metrics"
+    }]
+},

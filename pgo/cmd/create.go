@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var MetricsFlag bool
 var CCPImageTag string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
@@ -125,6 +126,7 @@ func init() {
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
 
+	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "m", false, "If set, will cause the crunchy-collect container to be added to the database pod")
 	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the primary database")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")

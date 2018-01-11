@@ -32,6 +32,7 @@ type CreateClusterRequest struct {
 	Policies    string
 	CCPImageTag string
 	Series      int
+	MetricsFlag bool
 }
 
 // CreateClusterResponse ...

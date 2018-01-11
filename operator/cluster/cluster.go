@@ -69,6 +69,7 @@ type DeploymentTemplateFields struct {
 	PrimarySecretName string
 	SecurityContext   string
 	NodeSelector      string
+	CollectAddon      string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string

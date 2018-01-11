@@ -450,6 +450,12 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 				userLabelsMap[p[0]] = p[1]
 			}
 		}
+
+		//if metrics is chosen, stick it into the user labels
+		if request.MetricsFlag {
+			userLabelsMap["crunchy-collect"] = "true"
+		}
+
 		if request.SecretFrom != "" {
 			err = validateSecretFrom(request.SecretFrom, request.Namespace)
 			if err != nil {
