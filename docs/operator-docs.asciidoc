@@ -141,7 +141,7 @@ docker pull crunchydata/apiserver:centos7-2.4
 Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/2.1/postgres-operator.2.4.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/2.4/postgres-operator.2.4.tar.gz
 tar xvzf ./postgres-operator.2.4.tar.gz
 ....
 
