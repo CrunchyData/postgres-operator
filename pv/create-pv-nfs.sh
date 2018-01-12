@@ -23,5 +23,5 @@ do
    	echo "creating PV crunchy-pv$i"
 	export COUNTER=$i
 	$CO_CMD --namespace=$CO_NAMESPACE delete pv crunchy-pv$i
-	envsubst < $DIR/crunchy-pv-nfs.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+	expenv -f $DIR/crunchy-pv-nfs.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
 done

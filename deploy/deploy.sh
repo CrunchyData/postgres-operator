@@ -36,7 +36,7 @@ $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
-envsubst < $DIR/deployment.json | $CO_CMD $NS create -f -
+expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
 
 $CO_CMD $NS create -f $DIR/service.json
 

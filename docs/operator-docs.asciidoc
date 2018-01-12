@@ -70,11 +70,6 @@ sudo chmod o+rwx /etc/kubernetes/admin.conf
 
 === Create Project and Clone
 
-Install some of the required dependencies:
-....
-yum -y install git gettext
-....
-
 In your .bashrc file, include the following:
 ....
 export GOPATH=$HOME/odev
