@@ -42,7 +42,7 @@ The Operator project builds and operates with the following containers:
 * link:https://hub.docker.com/r/crunchydata/pgo-lspvc/[PVC Listing Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-rmdata/[Remove Data Container]
 * link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
-* link:https://hub.docker.com/r/crunchydata/apiserver/[apiserver Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
 
 This Operator is developed on and has also been tested on the following operating systems:
@@ -135,7 +135,7 @@ docker pull crunchydata/pgo-lspvc:centos7-2.4
 docker pull crunchydata/pgo-load:centos7-2.4
 docker pull crunchydata/pgo-rmdata:centos7-2.4
 docker pull crunchydata/postgres-operator:centos7-2.4
-docker pull crunchydata/apiserver:centos7-2.4
+docker pull crunchydata/pgo-apiserver:centos7-2.4
 ....
 
 Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
