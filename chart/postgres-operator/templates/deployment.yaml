@@ -14,8 +14,25 @@ spec:
       labels:
         app: {{ template "name" . }}
         release: {{ .Release.Name }}
+        name: postgres-operator
     spec:
       containers:
+        - name: apiserver
+          image: "crunchydata/pgo-apiserver:centos7-2.4"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {}
+          ports:
+            - containerPort: 8443
+          env:
+            - name: DEBUG
+              value: "{{ .Values.env.debug }}"
+          volumeMounts:
+            - name: apiserver-conf
+              mountPath: /config
+              readOnly: true
+            - name: operator-conf
+              mountPath: /operator-conf
+              readOnly: true
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -23,6 +40,12 @@ spec:
           env:
             - name: DEBUG
               value: "{{ .Values.env.debug }}"
+            - name: CCP_IMAGE_PREFIX
+              value: "{{ .Values.env.ccp_image_prefix }}"
+            - name: CO_IMAGE_PREFIX
+              value: "{{ .Values.env.co_image_prefix }}"
+            - name: CO_IMAGE_TAG
+              value: "{{ .Values.env.co_image_tag }}"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -40,4 +63,7 @@ spec:
       volumes:
         - name: operator-conf
           configMap:
-            name: {{ .Release.Name }}
+            name: operator-conf
+        - name: apiserver-conf
+          configMap:
+            name: apiserver-conf

@@ -1,0 +1,64 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.Name}}"
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.Name}}",
+                "labels": {
+                    "pgo-load": "true",
+                    "pg-database": "{{.DbHost}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    	"name": "pgdata",
+			"persistentVolumeClaim" : {
+				"claimName": "{{.PVCName}}"
+			}
+                }],
+
+		{{.SecurityContext}}
+
+                "containers": [{
+                    "name": "csvload",
+                    "image": "{{.COImagePrefix}}/pgo-load:{{.COImageTag}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }],
+                    "env": [{
+                        "name": "TABLE_TO_LOAD",
+                        "value": "{{.TableToLoad}}"
+                    }, {
+                        "name": "FILE_PATH",
+                        "value": "{{.FilePath}}"
+                    }, {
+                        "name": "FILE_TYPE",
+                        "value": "{{.FileType}}"
+                    }, {
+                        "name": "DB_HOST",
+                        "value": "{{.DbHost}}"
+                    }, {
+                        "name": "DB_DATABASE",
+                        "value": "{{.DbDatabase}}"
+                    }, {
+                        "name": "DB_USER",
+                        "value": "{{.DbUser}}"
+                    }, {
+                        "name": "DB_PASS",
+                        "value": "{{.DbPass}}"
+                    }, {
+                        "name": "DB_PORT",
+                        "value": "{{.DbPort}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}
