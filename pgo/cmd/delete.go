@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 )
 
@@ -85,7 +86,12 @@ var deleteUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			deleteUpgrade(args)
+		   fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+		   if util.AskForConfirmation() {
+			   deleteUpgrade(args)
+			} else {
+			   fmt.Println(`Aborting...`)
+			}
 		}
 	},
 }
@@ -99,7 +105,12 @@ var deleteBackupCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			deleteBackup(args)
+         fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+		   if util.AskForConfirmation() {
+			   deleteBackup(args)
+         } else {
+            fmt.Println(`Aborting...`)
+         }
 		}
 	},
 }
@@ -114,7 +125,12 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			log.Error("a cluster name or selector is required for this command")
 		} else {
-			deleteCluster(args)
+			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+		   if util.AskForConfirmation() {
+			   deleteCluster(args)
+         } else {
+            fmt.Println(`Aborting...`)
+         }
 		}
 	},
 }
@@ -128,7 +144,12 @@ var deletePolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a policy name is required for this command")
 		} else {
-			deletePolicy(args)
+			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+		   if util.AskForConfirmation() {
+			   deletePolicy(args)
+         } else {
+            fmt.Println(`Aborting...`)
+         }
 		}
 	},
 }
