@@ -89,7 +89,6 @@ func init() {
 func userManager() {
 
 	request := msgs.UserRequest{}
-	request.Namespace = Namespace
 	request.Selector = Selector
 	request.PasswordAgeDays = PasswordAgeDays
 	request.ChangePasswordForUser = ChangePasswordForUser

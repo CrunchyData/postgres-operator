@@ -25,7 +25,7 @@ import (
 )
 
 // ScaleCluster ...
-func ScaleCluster(namespace, name, replicaCount string) msgs.ClusterScaleResponse {
+func ScaleCluster(name, replicaCount string) msgs.ClusterScaleResponse {
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -34,7 +34,7 @@ func ScaleCluster(namespace, name, replicaCount string) msgs.ClusterScaleRespons
 	cluster := crv1.Pgcluster{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
+		Namespace(apiserver.Namespace).
 		Name(name).
 		Do().Into(&cluster)
 
@@ -53,7 +53,7 @@ func ScaleCluster(namespace, name, replicaCount string) msgs.ClusterScaleRespons
 	}
 
 	log.Debug("scaling %s to %d\n", name, replicaCount)
-	err = util.Patch(apiserver.RESTClient, "/spec/replicas", replicaCount, crv1.PgclusterResourcePlural, name, namespace)
+	err = util.Patch(apiserver.RESTClient, "/spec/replicas", replicaCount, crv1.PgclusterResourcePlural, name, apiserver.Namespace)
 	if err != nil {
 		log.Error(err.Error())
 		response.Status.Code = msgs.Error

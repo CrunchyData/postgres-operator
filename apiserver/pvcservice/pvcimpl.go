@@ -48,16 +48,16 @@ func init() {
 }
 
 // ShowPVC ...
-func ShowPVC(Namespace string, pvcName, PVCRoot string) ([]string, error) {
+func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 	pvcList := make([]string, 1)
 
-	pvc, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(Namespace).Get(pvcName, meta_v1.GetOptions{})
+	pvc, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(apiserver.Namespace).Get(pvcName, meta_v1.GetOptions{})
 	if err != nil {
 		log.Error("\nPVC %s\n", pvcName+" is not found")
 		log.Error(err.Error())
 	} else {
 		log.Debug("\nPVC %s\n", pvc.Name+" is found")
-		pvcList, err = printPVCListing(Namespace, pvc.Name, PVCRoot)
+		pvcList, err = printPVCListing(pvc.Name, PVCRoot)
 	}
 
 	return pvcList, err
@@ -65,14 +65,14 @@ func ShowPVC(Namespace string, pvcName, PVCRoot string) ([]string, error) {
 }
 
 // printPVCListing ...
-func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
+func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 	newlines := make([]string, 1)
 	var err error
 	var doc2 bytes.Buffer
 	var podName = "lspvc-" + pvcName
 
 	//delete lspvc pod if it was not deleted for any reason prior
-	_, err = apiserver.Clientset.CoreV1().Pods(namespace).Get(podName, meta_v1.GetOptions{})
+	_, err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).Get(podName, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		//
 	} else if err != nil {
@@ -80,7 +80,7 @@ func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
 		return newlines, err
 	} else {
 		log.Debug("deleting prior pod " + podName)
-		err = apiserver.Clientset.Core().Pods(namespace).Delete(podName,
+		err = apiserver.Clientset.Core().Pods(apiserver.Namespace).Delete(podName,
 			&meta_v1.DeleteOptions{})
 		if err != nil {
 			log.Error("delete pod error " + err.Error()) //TODO this is debug info
@@ -123,7 +123,7 @@ func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
 		return newlines, err
 	}
 	var resultPod *v1.Pod
-	resultPod, err = apiserver.Clientset.CoreV1().Pods(namespace).Create(&newpod)
+	resultPod, err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).Create(&newpod)
 	if err != nil {
 		log.Error("error creating lspvc Pod " + err.Error())
 		return newlines, err
@@ -132,7 +132,7 @@ func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
 	timeout := time.Duration(6 * time.Second)
 	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
 	podPhase := v1.PodSucceeded
-	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, namespace)
+	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, apiserver.Namespace)
 	if err != nil {
 		log.Error("error waiting on lspvc pod to complete" + err.Error())
 	}
@@ -141,7 +141,7 @@ func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
 
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}
-	req := apiserver.Clientset.CoreV1().Pods(namespace).GetLogs(podName, &logOptions)
+	req := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).GetLogs(podName, &logOptions)
 	if req == nil {
 		log.Debug("error in get logs for " + podName)
 	} else {
@@ -178,7 +178,7 @@ func printPVCListing(namespace, pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	//delete lspvc pod
-	err = apiserver.Clientset.CoreV1().Pods(namespace).Delete(podName,
+	err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).Delete(podName,
 		&meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err.Error())

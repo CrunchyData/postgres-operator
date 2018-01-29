@@ -17,10 +17,6 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 
 	pvcname := vars["pvcname"]
 
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
 	pvcroot := r.URL.Query().Get("pvcroot")
 	if pvcroot != "" {
 		log.Debug("pvcroot param was [" + pvcroot + "]")
@@ -36,7 +32,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp := msgs.ShowPVCResponse{}
-	resp.Results, err = ShowPVC(namespace, pvcname, pvcroot)
+	resp.Results, err = ShowPVC(pvcname, pvcroot)
 	if err != nil {
 		resp.Status.Code = "error"
 		resp.Status.Msg = err.Error()

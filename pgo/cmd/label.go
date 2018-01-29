@@ -77,7 +77,6 @@ func labelClusters(clusters []string) {
 	r.Args = clusters
 	r.Selector = Selector
 	r.DryRun = DryRun
-	r.Namespace = Namespace
 	r.LabelCmdLabel = LabelCmdLabel
 	r.DeleteLabel = DeleteLabel
 

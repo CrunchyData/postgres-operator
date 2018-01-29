@@ -49,7 +49,7 @@ func init() {
 func showTest(args []string) {
 
 	for _, arg := range args {
-		url := APIServerURL + "/clusters/test/" + arg + "?namespace=" + Namespace
+		url := APIServerURL + "/clusters/test/" + arg
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)

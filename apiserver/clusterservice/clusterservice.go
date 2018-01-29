@@ -62,7 +62,6 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo delete mycluster
 // parameters showsecrets
 // parameters selector
-// parameters namespace
 // parameters postgresversion
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,12 +70,8 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	clustername := vars["name"]
 
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
 	selector := r.URL.Query().Get("selector")
-	if namespace != "" {
+	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
 
@@ -105,11 +100,11 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		log.Debug("clusterservice.ShowClusterHandler GET called")
-		resp := ShowCluster(namespace, clustername, selector)
+		resp := ShowCluster(clustername, selector)
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
 		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
-		resp := DeleteCluster(namespace, clustername, selector, deleteData, deleteBackups)
+		resp := DeleteCluster(clustername, selector, deleteData, deleteBackups)
 		json.NewEncoder(w).Encode(resp)
 	}
 
@@ -121,16 +116,12 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := TestCluster(namespace, clustername)
+	resp := TestCluster(clustername)
 
 	json.NewEncoder(w).Encode(resp)
 }

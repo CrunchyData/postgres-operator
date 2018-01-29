@@ -37,7 +37,7 @@ import (
 )
 
 // DeleteCluster ...
-func DeleteCluster(namespace, name, selector string, deleteData, deleteBackups bool) msgs.DeleteClusterResponse {
+func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -67,7 +67,7 @@ func DeleteCluster(namespace, name, selector string, deleteData, deleteBackups b
 	//get the clusters list
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
+		Namespace(apiserver.Namespace).
 		Param("labelSelector", myselector.String()).
 		//LabelsSelectorParam(myselector).
 		Do().
@@ -89,12 +89,12 @@ func DeleteCluster(namespace, name, selector string, deleteData, deleteBackups b
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
-			createDeleteDataTasks(namespace, cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
+			createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 		}
 
 		err := apiserver.RESTClient.Delete().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Name(cluster.Spec.Name).
 			Do().
 			Error()
@@ -115,7 +115,7 @@ func DeleteCluster(namespace, name, selector string, deleteData, deleteBackups b
 }
 
 // ShowCluster ...
-func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
+func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 	var err error
 
 	response := msgs.ShowClusterResponse{}
@@ -147,7 +147,7 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 	//get a list of all clusters
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
+		Namespace(apiserver.Namespace).
 		Param("labelSelector", myselector.String()).
 		//LabelsSelectorParam(myselector).
 		Do().Into(&clusterList)
@@ -163,25 +163,25 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowClusterDetail{}
 		detail.Cluster = c
-		detail.Deployments, err = getDeployments(&c, namespace)
+		detail.Deployments, err = getDeployments(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		detail.Pods, err = getPods(&c, namespace)
+		detail.Pods, err = getPods(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		detail.Services, err = getServices(&c, namespace)
+		detail.Services, err = getServices(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		detail.Secrets, err = getSecrets(&c, namespace)
+		detail.Secrets, err = getSecrets(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -194,11 +194,11 @@ func ShowCluster(namespace, name, selector string) msgs.ShowClusterResponse {
 
 }
 
-func getDeployments(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterDeployment, error) {
+func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, error) {
 	output := make([]msgs.ShowClusterDeployment, 0)
 
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(namespace).List(lo)
+	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of deployments" + err.Error())
 		return output, err
@@ -221,11 +221,11 @@ func getDeployments(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClust
 
 	return output, err
 }
-func getPods(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterPod, error) {
+func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	pods, err := apiserver.Clientset.CoreV1().Pods(namespace).List(lo)
+	pods, err := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of pods" + err.Error())
 		return output, err
@@ -246,11 +246,11 @@ func getPods(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterPod, 
 	return output, err
 
 }
-func getServices(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterService, error) {
+func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	services, err := apiserver.Clientset.CoreV1().Services(namespace).List(lo)
+	services, err := apiserver.Clientset.CoreV1().Services(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of services" + err.Error())
 		return output, err
@@ -267,11 +267,11 @@ func getServices(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterS
 	return output, err
 }
 
-func getSecrets(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterSecret, error) {
+func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
 
 	output := make([]msgs.ShowClusterSecret, 0)
 	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
-	secrets, err := apiserver.Clientset.Core().Secrets(namespace).List(lo)
+	secrets, err := apiserver.Clientset.Core().Secrets(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
 		return output, err
@@ -289,7 +289,7 @@ func getSecrets(cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowClusterSe
 	return output, err
 }
 
-func TestCluster(namespace, name string) msgs.ClusterTestResponse {
+func TestCluster(name string) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
@@ -298,7 +298,7 @@ func TestCluster(namespace, name string) msgs.ClusterTestResponse {
 	cluster := crv1.Pgcluster{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
+		Namespace(apiserver.Namespace).
 		Name(name).
 		Do().Into(&cluster)
 
@@ -317,7 +317,7 @@ func TestCluster(namespace, name string) msgs.ClusterTestResponse {
 	}
 
 	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	services, err := apiserver.Clientset.CoreV1().Services(namespace).List(lo)
+	services, err := apiserver.Clientset.CoreV1().Services(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of services" + err.Error())
 		response.Status.Code = msgs.Error
@@ -326,7 +326,7 @@ func TestCluster(namespace, name string) msgs.ClusterTestResponse {
 	}
 
 	lo = meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
-	secrets, err := apiserver.Clientset.Core().Secrets(namespace).List(lo)
+	secrets, err := apiserver.Clientset.Core().Secrets(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
 		response.Status.Code = msgs.Error
@@ -418,7 +418,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		// error if it already exists
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Name(clusterName).
 			Do().
 			Into(&result)
@@ -457,7 +457,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 
 		if request.SecretFrom != "" {
-			err = validateSecretFrom(request.SecretFrom, request.Namespace)
+			err = validateSecretFrom(request.SecretFrom)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = request.SecretFrom + " secret was not found "
@@ -477,13 +477,13 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 
 		newInstance := getClusterParams(request, clusterName, userLabelsMap)
-		validateConfigPolicies(request.Policies, request.Namespace)
+		validateConfigPolicies(request.Policies)
 
 		t := time.Now()
 		newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
 		err = apiserver.RESTClient.Post().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
@@ -496,7 +496,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 
 }
 
-func validateConfigPolicies(PoliciesFlag, namespace string) error {
+func validateConfigPolicies(PoliciesFlag string) error {
 	var err error
 	var configPolicies string
 	if PoliciesFlag == "" {
@@ -518,7 +518,7 @@ func validateConfigPolicies(PoliciesFlag, namespace string) error {
 		// error if it already exists
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgpolicyResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Name(v).
 			Do().
 			Into(&result)
@@ -635,10 +635,10 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	return newInstance
 }
 
-func validateSecretFrom(secretname, namespace string) error {
+func validateSecretFrom(secretname string) error {
 	var err error
 	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + secretname}
-	secrets, err := apiserver.Clientset.Core().Secrets(namespace).List(lo)
+	secrets, err := apiserver.Clientset.Core().Secrets(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
 		return err
@@ -712,7 +712,7 @@ func getReadyStatus(pod *v1.Pod) string {
 
 }
 
-func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool) {
+func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool) {
 
 	var err error
 
@@ -728,7 +728,7 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 		Spec: spec,
 	}
 	cluster.Spec.Name = clusterName
-	pods, err = getPods(cluster, namespace)
+	pods, err = getPods(cluster)
 	if err != nil {
 		log.Error(err)
 		return
@@ -761,7 +761,7 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 		result := crv1.Pgtask{}
 		err = apiserver.RESTClient.Post().
 			Resource(crv1.PgtaskResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 
@@ -775,7 +775,7 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 
 		backupPVCName := clusterName + "-backup-pvc"
 		//verify backup pvc exists
-		_, err = pvcservice.ShowPVC(namespace, backupPVCName, "")
+		_, err = pvcservice.ShowPVC(backupPVCName, "")
 		if err != nil {
 			log.Debug("not running rmdata for backups, " + backupPVCName + " not found")
 			return
@@ -799,7 +799,7 @@ func createDeleteDataTasks(namespace, clusterName string, storageSpec crv1.PgSto
 		result := crv1.Pgtask{}
 		err = apiserver.RESTClient.Post().
 			Resource(crv1.PgtaskResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 

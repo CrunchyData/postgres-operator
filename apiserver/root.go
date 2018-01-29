@@ -42,7 +42,7 @@ var Clientset *kubernetes.Clientset
 // DebugFlag is the debug flag value
 var DebugFlag bool
 
-// Namespace is the namespace flag value
+// Namespace comes from the apiserver config in this version
 var Namespace string
 
 // TreeTrunk is for debugging only in this context

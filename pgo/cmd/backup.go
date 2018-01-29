@@ -53,14 +53,10 @@ func init() {
 // showBackup ....
 func showBackup(args []string) {
 	log.Debugf("showBackup called %v\n", args)
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
 
 	//show pod information for job
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v + "?namespace=" + Namespace
+		url := APIServerURL + "/backups/" + v
 
 		log.Debug("show backup called [" + url + "]")
 
@@ -126,13 +122,9 @@ func printBackupCRD(result *crv1.Pgbackup) {
 // deleteBackup ....
 func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
 
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v + "?namespace=" + Namespace
+		url := APIServerURL + "/backups/" + v
 
 		log.Debug("delete backup called [" + url + "]")
 
@@ -184,15 +176,10 @@ func deleteBackup(args []string) {
 // createBackup ....
 func createBackup(args []string) {
 	log.Debugf("createBackup called %v\n", args)
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
-	request.Namespace = Namespace
 
 	jsonValue, _ := json.Marshal(request)
 

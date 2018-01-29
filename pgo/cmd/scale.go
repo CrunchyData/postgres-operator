@@ -58,7 +58,7 @@ func scaleCluster(args []string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		url := APIServerURL + "/clusters/scale/" + arg + "?namespace=" + Namespace + "&replica-count=" + strconv.Itoa(ReplicaCount)
+		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount)
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)

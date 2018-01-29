@@ -33,12 +33,8 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	clusterName := vars["name"]
 	log.Debugf(" clusterName arg is %v\n", clusterName)
 
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
 	replicaCount := r.URL.Query().Get("replica-count")
-	if namespace != "" {
+	if replicaCount != "" {
 		log.Debug("replica-count param was [" + replicaCount + "]")
 	}
 
@@ -50,6 +46,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ScaleCluster(namespace, clusterName, replicaCount)
+	resp := ScaleCluster(clusterName, replicaCount)
 	json.NewEncoder(w).Encode(resp)
 }

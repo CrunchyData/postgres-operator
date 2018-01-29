@@ -38,7 +38,7 @@ const MinorUpgrade = "minor"
 const separator = "-"
 
 // ShowUpgrade ...
-func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
+func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 	response := msgs.ShowUpgradeResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
@@ -46,7 +46,7 @@ func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
 		//get a list of all upgrades
 		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Do().Into(&response.UpgradeList)
 		if err != nil {
 			log.Error("error getting list of upgrades" + err.Error())
@@ -59,7 +59,7 @@ func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
 		upgrade := crv1.Pgupgrade{}
 		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Name(name).
 			Do().Into(&upgrade)
 		if err != nil {
@@ -77,7 +77,7 @@ func ShowUpgrade(namespace string, name string) msgs.ShowUpgradeResponse {
 }
 
 // DeleteUpgrade ...
-func DeleteUpgrade(namespace string, name string) msgs.DeleteUpgradeResponse {
+func DeleteUpgrade(name string) msgs.DeleteUpgradeResponse {
 	response := msgs.DeleteUpgradeResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 1)
@@ -85,7 +85,7 @@ func DeleteUpgrade(namespace string, name string) msgs.DeleteUpgradeResponse {
 	if name == "all" {
 		err := apiserver.RESTClient.Delete().
 			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Do().Error()
 		if err != nil {
 			log.Error("error deleting all upgrades" + err.Error())
@@ -97,7 +97,7 @@ func DeleteUpgrade(namespace string, name string) msgs.DeleteUpgradeResponse {
 	} else {
 		err := apiserver.RESTClient.Delete().
 			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Name(name).
 			Do().Error()
 		if err != nil {
@@ -140,7 +140,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		clusterList := crv1.PgclusterList{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Param("labelSelector", myselector.String()).
 			//LabelsSelectorParam(myselector).
 			Do().
@@ -172,13 +172,13 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		// error if it already exists
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Name(arg).
 			Do().
 			Into(&result)
 		if err == nil {
 			log.Warn("previous pgupgrade " + arg + " was found so we will remove it.")
-			delMsg := DeleteUpgrade(request.Namespace, arg)
+			delMsg := DeleteUpgrade(arg)
 			if delMsg.Status.Code == msgs.Error {
 				log.Error("could not delete previous pgupgrade " + arg)
 			}
@@ -196,7 +196,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Name(arg).
 			Do().
 			Into(&cl)
@@ -219,7 +219,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		if err == nil {
 			err = apiserver.RESTClient.Post().
 				Resource(crv1.PgupgradeResourcePlural).
-				Namespace(request.Namespace).
+				Namespace(apiserver.Namespace).
 				Body(newInstance).
 				Do().Into(&result)
 			if err != nil {
@@ -282,7 +282,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 	cluster := crv1.Pgcluster{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(request.Namespace).
+		Namespace(apiserver.Namespace).
 		Name(name).
 		Do().
 		Into(&cluster)

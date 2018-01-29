@@ -29,7 +29,7 @@ import (
 )
 
 // CreatePolicy ...
-func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL, policyFile string) error {
+func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile string) error {
 	var err error
 
 	log.Debug("create policy called for " + policyName)
@@ -38,7 +38,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL,
 	// error if it already exists
 	err = RESTClient.Get().
 		Resource(crv1.PgpolicyResourcePlural).
-		Namespace(Namespace).
+		Namespace(apiserver.Namespace).
 		Name(policyName).
 		Do().
 		Into(&result)
@@ -67,7 +67,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL,
 
 	err = RESTClient.Post().
 		Resource(crv1.PgpolicyResourcePlural).
-		Namespace(Namespace).
+		Namespace(apiserver.Namespace).
 		Body(newInstance).
 		Do().Into(&result)
 
@@ -81,14 +81,14 @@ func CreatePolicy(RESTClient *rest.RESTClient, Namespace, policyName, policyURL,
 }
 
 // ShowPolicy ...
-func ShowPolicy(RESTClient *rest.RESTClient, Namespace string, name string) crv1.PgpolicyList {
+func ShowPolicy(RESTClient *rest.RESTClient, name string) crv1.PgpolicyList {
 	policyList := crv1.PgpolicyList{}
 
 	if name == "all" {
 		//get a list of all policies
 		err := RESTClient.Get().
 			Resource(crv1.PgpolicyResourcePlural).
-			Namespace(Namespace).
+			Namespace(apiserver.Namespace).
 			Do().Into(&policyList)
 		if err != nil {
 			log.Error("error getting list of policies" + err.Error())
@@ -98,7 +98,7 @@ func ShowPolicy(RESTClient *rest.RESTClient, Namespace string, name string) crv1
 		policy := crv1.Pgpolicy{}
 		err := RESTClient.Get().
 			Resource(crv1.PgpolicyResourcePlural).
-			Namespace(Namespace).
+			Namespace(apiserver.Namespace).
 			Name(name).
 			Do().Into(&policy)
 		if err != nil {
@@ -114,7 +114,7 @@ func ShowPolicy(RESTClient *rest.RESTClient, Namespace string, name string) crv1
 }
 
 // DeletePolicy ...
-func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, policyName string) msgs.DeletePolicyResponse {
+func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePolicyResponse {
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -137,7 +137,7 @@ func DeletePolicy(Namespace string, RESTClient *rest.RESTClient, policyName stri
 			policyFound = true
 			err = RESTClient.Delete().
 				Resource(crv1.PgpolicyResourcePlural).
-				Namespace(Namespace).
+				Namespace(apiserver.Namespace).
 				Name(policy.Spec.Name).
 				Do().
 				Error()
@@ -172,7 +172,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	resp.Status.Code = msgs.Ok
 
 	//validate policy
-	err = util.ValidatePolicy(apiserver.RESTClient, request.Namespace, request.Name)
+	err = util.ValidatePolicy(apiserver.RESTClient, apiserver.Namespace, request.Name)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "policy " + request.Name + " is not found, cancelling request"
@@ -183,7 +183,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	sel := request.Selector + ",!replica"
 	log.Debug("selector string=[" + sel + "]")
 	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(request.Namespace).List(lo)
+	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -204,7 +204,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	for _, d := range deployments.Items {
 		log.Debug("apply policy " + request.Name + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
 
-		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, request.Namespace, request.Name, d.ObjectMeta.Name)
+		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.Namespace, request.Name, d.ObjectMeta.Name)
 		if err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
@@ -215,7 +215,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 		cl := crv1.Pgcluster{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Name(d.ObjectMeta.Name).
 			Do().
 			Into(&cl)
@@ -241,7 +241,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 			return resp
 		}
 
-		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, request.Namespace, labels)
+		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, apiserver.Namespace, labels)
 		if err != nil {
 			log.Error(err)
 		}

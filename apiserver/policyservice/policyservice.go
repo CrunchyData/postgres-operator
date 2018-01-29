@@ -38,7 +38,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
 
-	err := CreatePolicy(apiserver.RESTClient, request.Namespace, request.Name, request.URL, request.SQL)
+	err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
 	if err != nil {
 		log.Error(err.Error())
 		resp.Status.Code = msgs.Error
@@ -56,11 +56,6 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	policyname := vars["name"]
 
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -68,12 +63,12 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		log.Debug("policyservice.ShowPolicyHandler GET called")
 		resp := msgs.ShowPolicyResponse{}
-		resp.PolicyList = ShowPolicy(apiserver.RESTClient, namespace, policyname)
+		resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname)
 
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
 		log.Debug("policyservice.ShowPolicyHandler DELETE called")
-		resp := DeletePolicy(namespace, apiserver.RESTClient, policyname)
+		resp := DeletePolicy(apiserver.RESTClient, policyname)
 		json.NewEncoder(w).Encode(resp)
 	}
 

@@ -144,7 +144,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 		clusterList := crv1.PgclusterList{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Param("labelSelector", myselector.String()).
 			//LabelsSelectorParam(myselector).
 			Do().
@@ -177,7 +177,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 			//apply policies to this cluster
 			applyReq := msgs.ApplyPolicyRequest{}
 			applyReq.Name = p
-			applyReq.Namespace = request.Namespace
+			applyReq.Namespace = apiserver.Namespace
 			applyReq.DryRun = false
 			applyReq.Selector = "name=" + arg
 			applyResp := policyservice.ApplyPolicy(&applyReq)
@@ -188,7 +188,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 		//create the load job for this cluster
 		log.Debug("created load for " + arg)
-		err = createJob(arg, request.Namespace, LoadConfigTemplate.FileType, LoadConfigTemplate.FilePath)
+		err = createJob(arg, LoadConfigTemplate.FileType, LoadConfigTemplate.FilePath)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -201,14 +201,14 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 }
 
-func createJob(clusterName, namespace, filetype, filepath string) error {
+func createJob(clusterName, filetype, filepath string) error {
 	var err error
 	randStr := operutil.GenerateRandString(3)
 	LoadConfigTemplate.Name = "pgo-load-" + clusterName + "-" + randStr
 	LoadConfigTemplate.DbHost = clusterName
 	LoadConfigTemplate.FilePath = filepath
 	LoadConfigTemplate.FileType = filetype
-	LoadConfigTemplate.DbPass, err = util.GetSecretPassword(clusterName, crv1.RootSecretSuffix, namespace)
+	LoadConfigTemplate.DbPass, err = util.GetSecretPassword(clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -230,7 +230,7 @@ func createJob(clusterName, namespace, filetype, filepath string) error {
 		return err
 	}
 
-	resultJob, err := apiserver.Clientset.Batch().Jobs(namespace).Create(&newjob)
+	resultJob, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Create(&newjob)
 	if err != nil {
 		log.Error("error creating Job " + err.Error())
 		return err

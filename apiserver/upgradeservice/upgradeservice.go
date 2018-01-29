@@ -60,7 +60,6 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // pgo delete myupgrade
 // parameters showsecrets
 // parameters selector
-// parameters namespace
 // parameters postgresversion
 // returns a ShowUpgradeResponse
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,22 +68,17 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	upgradename := vars["name"]
 
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
 	case "GET":
 		log.Debug("upgradeservice.ShowUpgradeHandler GET called")
-		resp := ShowUpgrade(namespace, upgradename)
+		resp := ShowUpgrade(upgradename)
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
 		log.Debug("upgradeservice.ShowUpgradeHandler DELETE called")
-		resp := DeleteUpgrade(namespace, upgradename)
+		resp := DeleteUpgrade(upgradename)
 		json.NewEncoder(w).Encode(resp)
 	}
 

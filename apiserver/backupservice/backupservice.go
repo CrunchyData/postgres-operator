@@ -31,22 +31,17 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	backupname := vars["name"]
 
-	namespace := r.URL.Query().Get("namespace")
-	if namespace != "" {
-		log.Debug("namespace param was [" + namespace + "]")
-	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
 	switch r.Method {
 	case "GET":
 		log.Debug("backupservice.ShowBackupHandler GET called")
-		resp := ShowBackup(namespace, backupname)
+		resp := ShowBackup(backupname)
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
 		log.Debug("backupservice.ShowBackupHandler DELETE called")
-		resp := DeleteBackup(namespace, backupname)
+		resp := DeleteBackup(backupname)
 		json.NewEncoder(w).Encode(resp)
 	}
 

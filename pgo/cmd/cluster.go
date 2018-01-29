@@ -30,11 +30,6 @@ import (
 func deleteCluster(args []string) {
 	log.Debugf("deleteCluster called %v\n", args)
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
 		args[0] = "all"
@@ -43,7 +38,7 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clusters/" + arg + "?namespace=" + Namespace + "&selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
+		url := APIServerURL + "/clusters/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
 
 		log.Debug("delete cluster called [" + url + "]")
 
@@ -87,10 +82,6 @@ func deleteCluster(args []string) {
 func showCluster(args []string) {
 
 	log.Debugf("showCluster called %v\n", args)
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
 
 	log.Debug("selector is " + Selector)
 	if len(args) == 0 && Selector != "" {
@@ -100,7 +91,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?namespace=" + Namespace + "&selector=" + Selector
+		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector
 
 		log.Debug("show cluster called [" + url + "]")
 
@@ -195,14 +186,8 @@ func createCluster(args []string) {
 		return
 	}
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
 	r := new(msgs.CreateClusterRequest)
 	r.Name = args[0]
-	r.Namespace = Namespace
 	r.NodeName = NodeName
 	r.Password = Password
 	r.SecretFrom = SecretFrom

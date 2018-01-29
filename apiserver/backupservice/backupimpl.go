@@ -28,7 +28,7 @@ import (
 )
 
 // ShowBackup ...
-func ShowBackup(namespace, name string) msgs.ShowBackupResponse {
+func ShowBackup(name string) msgs.ShowBackupResponse {
 	response := msgs.ShowBackupResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
@@ -36,7 +36,7 @@ func ShowBackup(namespace, name string) msgs.ShowBackupResponse {
 		//get a list of all backups
 		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgbackupResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Do().Into(&response.BackupList)
 		if err != nil {
 			log.Error("error getting list of backups" + err.Error())
@@ -49,7 +49,7 @@ func ShowBackup(namespace, name string) msgs.ShowBackupResponse {
 		backup := crv1.Pgbackup{}
 		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgbackupResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Name(name).
 			Do().Into(&backup)
 		if err != nil {
@@ -67,7 +67,7 @@ func ShowBackup(namespace, name string) msgs.ShowBackupResponse {
 }
 
 // DeleteBackup ...
-func DeleteBackup(namespace, backupName string) msgs.DeleteBackupResponse {
+func DeleteBackup(backupName string) msgs.DeleteBackupResponse {
 	resp := msgs.DeleteBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -78,14 +78,14 @@ func DeleteBackup(namespace, backupName string) msgs.DeleteBackupResponse {
 	if backupName == "all" {
 		err = apiserver.RESTClient.Delete().
 			Resource(crv1.PgbackupResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Do().
 			Error()
 		resp.Results = append(resp.Results, "all")
 	} else {
 		err = apiserver.RESTClient.Delete().
 			Resource(crv1.PgbackupResourcePlural).
-			Namespace(namespace).
+			Namespace(apiserver.Namespace).
 			Name(backupName).
 			Do().
 			Error()
@@ -133,7 +133,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		clusterList := crv1.PgclusterList{}
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Param("labelSelector", myselector.String()).
 			//LabelsSelectorParam(myselector).
 			Do().
@@ -165,7 +165,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		// error if it already exists
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgbackupResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Name(arg).
 			Do().
 			Into(&result)
@@ -173,7 +173,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			log.Debug("pgbackup " + arg + " was found so we recreate it")
 			dels := make([]string, 1)
 			dels[0] = arg
-			DeleteBackup(arg, request.Namespace)
+			DeleteBackup(arg)
 		} else if kerrors.IsNotFound(err) {
 			msg := "pgbackup " + arg + " not found so we will create it"
 			resp.Results = append(resp.Results, "pgbackup "+msg)
@@ -184,7 +184,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			break
 		}
 		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg, request.Namespace)
+		newInstance, err = getBackupParams(arg)
 		if err != nil {
 			msg := "error creating backup for " + arg
 			log.Error(err)
@@ -193,7 +193,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		}
 		err = apiserver.RESTClient.Post().
 			Resource(crv1.PgbackupResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Body(newInstance).
 			Do().Into(&result)
 		if err != nil {
@@ -210,7 +210,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	return resp
 }
 
-func getBackupParams(name, Namespace string) (*crv1.Pgbackup, error) {
+func getBackupParams(name string) (*crv1.Pgbackup, error) {
 	var err error
 	var newInstance *crv1.Pgbackup
 
@@ -236,13 +236,13 @@ func getBackupParams(name, Namespace string) (*crv1.Pgbackup, error) {
 	cluster := crv1.Pgcluster{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
-		Namespace(Namespace).
+		Namespace(apiserver.Namespace).
 		Name(name).
 		Do().
 		Into(&cluster)
 	if err == nil {
 		spec.BackupHost = cluster.Spec.Name
-		spec.BackupPass, err = util.GetSecretPassword(cluster.Spec.Name, crv1.PrimarySecretSuffix, Namespace)
+		spec.BackupPass, err = util.GetSecretPassword(cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
 		if err != nil {
 			return newInstance, err
 		}

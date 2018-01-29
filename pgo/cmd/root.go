@@ -32,7 +32,6 @@ var GREEN func(a ...interface{}) string
 var APIServerURL string
 var Labelselector string
 var DebugFlag bool
-var Namespace string
 var Selector string
 var DryRun bool
 
@@ -67,7 +66,6 @@ func init() {
 	RED = color.New(color.FgRed).SprintFunc()
 
 	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "postgres operator apiserver URL")
-	RootCmd.PersistentFlags().StringVar(&Namespace, "namespace", "", "kube namespace to work in (default is default)")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "enable debug with true")
 
 }
@@ -78,14 +76,6 @@ func initConfig() {
 		log.Debug("debug flag is set to true")
 	}
 
-	if Namespace == "" {
-		Namespace = os.Getenv("CO_NAMESPACE")
-		if Namespace == "" {
-			log.Error("NAMESPACE env var or --namespace flag needs to be supplied")
-			os.Exit(-1)
-		}
-	}
-	log.Debug("in initConfig with namespace=" + Namespace)
 	if APIServerURL == "" {
 		APIServerURL = os.Getenv("CO_APISERVER_URL")
 		if APIServerURL == "" {
@@ -96,7 +86,7 @@ func initConfig() {
 	log.Debug("in initConfig with url=" + APIServerURL)
 	GetCredentials()
 
-	//generateBashCompletion()
+	generateBashCompletion()
 }
 
 func generateBashCompletion() {

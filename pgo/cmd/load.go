@@ -79,7 +79,6 @@ func createLoad(args []string) {
 	buf, err := ioutil.ReadFile(LoadConfig)
 	request := msgs.LoadRequest{}
 	request.LoadConfig = string(buf)
-	request.Namespace = Namespace
 	request.Selector = Selector
 	request.Policies = PoliciesFlag
 	request.Args = args

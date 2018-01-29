@@ -74,7 +74,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 
 		err = apiserver.RESTClient.Get().
 			Resource(crv1.PgclusterResourcePlural).
-			Namespace(request.Namespace).
+			Namespace(apiserver.Namespace).
 			Param("labelSelector", myselector.String()).
 			//LabelsSelectorParam(myselector).
 			Do().
@@ -97,7 +97,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 			result := crv1.Pgcluster{}
 			err := apiserver.RESTClient.Get().
 				Resource(crv1.PgclusterResourcePlural).
-				Namespace(request.Namespace).
+				Namespace(apiserver.Namespace).
 				Name(cluster).
 				Do().
 				Into(&result)
@@ -118,19 +118,19 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 		resp.Results = append(resp.Results, "adding label to "+c.Spec.Name)
 	}
 
-	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, request.Namespace)
+	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap)
 
 	return resp
 
 }
 
-func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, Namespace string) {
+func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string) {
 	for i := 0; i < len(items); i++ {
 		log.Debug("adding label to " + items[i].Spec.Name)
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
-			err := PatchPgcluster(LabelCmdLabel, items[i], Namespace)
+			err := PatchPgcluster(LabelCmdLabel, items[i])
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -140,7 +140,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
 		lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + items[i].Spec.Name}
-		deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(Namespace).List(lo)
+		deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
 		if err != nil {
 			log.Error("error getting list of deployments" + err.Error())
 			return
@@ -149,7 +149,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 			//update Deployment with the label
 			//fmt.Println(TreeBranch + "deployment : " + d.ObjectMeta.Name)
 			if !DryRun {
-				err := updateLabels(&d, items[i].Spec.Name, Namespace, newLabels)
+				err := updateLabels(&d, items[i].Spec.Name, newLabels)
 				if err != nil {
 					log.Error(err.Error())
 				}
@@ -159,7 +159,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 }
 
-func updateLabels(deployment *v1beta1.Deployment, clusterName string, namespace string, newLabels map[string]string) error {
+func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string) error {
 
 	var err error
 
@@ -198,7 +198,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, namespace 
 		return err
 	}
 
-	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
+	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debug("error patching deployment " + err.Error())
 	}
@@ -206,7 +206,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, namespace 
 
 }
 
-func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, namespace string) error {
+func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
 
 	fields := strings.Split(newLabel, "=")
 	labelKey := fields[0]
@@ -231,7 +231,7 @@ func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, namespace string) er
 
 	log.Debug(string(patchBytes))
 	_, err6 := apiserver.RESTClient.Patch(types.MergePatchType).
-		Namespace(namespace).
+		Namespace(apiserver.Namespace).
 		Resource(crv1.PgclusterResourcePlural).
 		Name(oldCRD.Spec.Name).
 		Body(patchBytes).

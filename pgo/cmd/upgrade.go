@@ -66,14 +66,9 @@ func init() {
 func showUpgrade(args []string) {
 	log.Debugf("showUpgrade called %v\n", args)
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v + "?namespace=" + Namespace
+		url := APIServerURL + "/upgrades/" + v
 		log.Debug("showUpgrade called...[" + url + "]")
 
 		action := "GET"
@@ -139,14 +134,9 @@ func showUpgradeItem(upgrade *crv1.Pgupgrade) {
 func deleteUpgrade(args []string) {
 	log.Debugf("deleteUpgrade called %v\n", args)
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v + "?namespace=" + Namespace
+		url := APIServerURL + "/upgrades/" + v
 		log.Debug("deleteUpgrade called...[" + url + "]")
 
 		action := "DELETE"
@@ -213,7 +203,6 @@ func createUpgrade(args []string) {
 	request := msgs.CreateUpgradeRequest{}
 	request.Args = args
 	request.Selector = Selector
-	request.Namespace = Namespace
 	request.CCPImageTag = CCPImageTag
 	request.UpgradeType = UpgradeType
 

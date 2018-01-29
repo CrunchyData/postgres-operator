@@ -72,16 +72,10 @@ func applyPolicy(args []string) {
 		return
 	}
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
 	r := new(msgs.ApplyPolicyRequest)
 	r.Name = args[0]
 	r.Selector = Selector
 	r.DryRun = DryRun
-	r.Namespace = Namespace
 
 	jsonValue, _ := json.Marshal(r)
 
@@ -135,13 +129,9 @@ func applyPolicy(args []string) {
 
 }
 func showPolicy(args []string) {
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
 
 	for _, v := range args {
-		url := APIServerURL + "/policies/" + v + "?namespace=" + Namespace
+		url := APIServerURL + "/policies/" + v
 		log.Debug("showPolicy called...[" + url + "]")
 
 		action := "GET"
@@ -198,10 +188,6 @@ func createPolicy(args []string) {
 	}
 	var err error
 	//PolicyURL, PolicyFile
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
 
 	//create the request
 
@@ -219,8 +205,6 @@ func createPolicy(args []string) {
 			return
 		}
 	}
-
-	r.Namespace = Namespace
 
 	jsonValue, _ := json.Marshal(r)
 
@@ -278,15 +262,10 @@ func deletePolicy(args []string) {
 
 	log.Debugf("deletePolicy called %v\n", args)
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		url := APIServerURL + "/policies/" + arg + "?namespace=" + Namespace
+		url := APIServerURL + "/policies/" + arg
 
 		log.Debug("delete policy called [" + url + "]")
 

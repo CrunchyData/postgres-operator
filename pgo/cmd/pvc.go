@@ -36,12 +36,7 @@ func showPVC(args []string) {
 }
 func printPVC(pvcName, pvcRoot string) {
 
-	if Namespace == "" {
-		log.Error("Namespace can not be empty")
-		return
-	}
-
-	url := APIServerURL + "/pvc/" + pvcName + "?namespace=" + Namespace + "&pvcroot=" + pvcRoot
+	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot
 	log.Debug("showPolicy called...[" + url + "]")
 
 	action := "GET"
