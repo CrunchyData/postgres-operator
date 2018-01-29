@@ -63,11 +63,13 @@ pgo delete upgrade mycluster`,
 }
 
 var DeleteData, DeleteBackups bool
+var NoPrompt bool
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
+	deleteCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "--delete-data causes the data for this cluster to be removed permanently ")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "--delete-backups causes the backups for this cluster to be removed permanently ")
@@ -86,11 +88,11 @@ var deleteUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-		   fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
-		   if util.AskForConfirmation() {
-			   deleteUpgrade(args)
+			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+			if util.AskForConfirmation(NoPrompt) {
+				deleteUpgrade(args)
 			} else {
-			   fmt.Println(`Aborting...`)
+				fmt.Println(`Aborting...`)
 			}
 		}
 	},
@@ -105,12 +107,12 @@ var deleteBackupCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-         fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
-		   if util.AskForConfirmation() {
-			   deleteBackup(args)
-         } else {
-            fmt.Println(`Aborting...`)
-         }
+			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+			if util.AskForConfirmation(NoPrompt) {
+				deleteBackup(args)
+			} else {
+				fmt.Println(`Aborting...`)
+			}
 		}
 	},
 }
@@ -126,11 +128,12 @@ var deleteClusterCmd = &cobra.Command{
 			log.Error("a cluster name or selector is required for this command")
 		} else {
 			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
-		   if util.AskForConfirmation() {
-			   deleteCluster(args)
-         } else {
-            fmt.Println(`Aborting...`)
-         }
+			if util.AskForConfirmation(NoPrompt) {
+				deleteCluster(args)
+
+			} else {
+				fmt.Println(`Aborting...`)
+			}
 		}
 	},
 }
@@ -145,11 +148,11 @@ var deletePolicyCmd = &cobra.Command{
 			log.Error("a policy name is required for this command")
 		} else {
 			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
-		   if util.AskForConfirmation() {
-			   deletePolicy(args)
-         } else {
-            fmt.Println(`Aborting...`)
-         }
+			if util.AskForConfirmation(NoPrompt) {
+				deletePolicy(args)
+			} else {
+				fmt.Println(`Aborting...`)
+			}
 		}
 	},
 }
