@@ -73,6 +73,8 @@ func main() {
 	caCertPool.AppendCertsFromPEM(caCert)
 	cfg := &tls.Config{
 		//ClientAuth: tls.RequireAndVerifyClientCert,
+		//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
+		ServerName:         "pgo-apiserver",
 		InsecureSkipVerify: tlsNoVerify,
 		ClientCAs:          caCertPool,
 	}

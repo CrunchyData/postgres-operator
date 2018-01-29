@@ -25,7 +25,7 @@
                         "value": "true"
                     }, {
                         "name": "TLS_NO_VERIFY",
-                        "value": "true"
+                        "value": "false"
                     }],
                     "volumeMounts": [{
                         "mountPath": "/config",
