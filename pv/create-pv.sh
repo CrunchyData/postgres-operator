@@ -15,8 +15,6 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
-
 echo "create the test PV and PVC using the HostPath dir"
 for i in {1..60}
 do

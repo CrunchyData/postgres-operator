@@ -15,8 +15,6 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source $DIR/setup.sh
-
 for i in {1..15}
 do
    	echo "deleting PV crunchy-pv$i"
