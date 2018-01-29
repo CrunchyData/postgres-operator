@@ -29,6 +29,9 @@
                         "name": "PG_MODE",
                         "value": "replica"
                     }, {
+                        "name": "PG_LOCALE",
+                        "value": "en_US.UTF8"
+                    }, {
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
                     }, {

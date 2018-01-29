@@ -44,6 +44,9 @@
                         "name": "PG_MODE",
                         "value": "primary"
                     }, {
+                        "name": "PG_LOCALE",
+                        "value": "en_US.UTF8"
+                    }, {
                         "name": "PGDATA_PATH_OVERRIDE",
                         "value": "{{.DataPathOverride}}"
                     }, {

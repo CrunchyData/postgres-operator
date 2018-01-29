@@ -17,11 +17,14 @@
                     "name": "apiserver",
                     "image": "crunchydata/pgo-apiserver:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
-			"ports":[{
-			"containerPort": 8443
-			}],
+                    "ports": [{
+                        "containerPort": 8443
+                    }],
                     "env": [{
                         "name": "DEBUG",
+                        "value": "true"
+                    }, {
+                        "name": "TLS_NO_VERIFY",
                         "value": "true"
                     }],
                     "volumeMounts": [{

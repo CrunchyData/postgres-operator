@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 const serverCert = "/config/server.crt"
@@ -32,6 +33,15 @@ func main() {
 	} else {
 		log.Info("debug flag set to false")
 	}
+
+	tmp := os.Getenv("TLS_NO_VERIFY")
+	if tmp == "true" {
+		log.Debug("TLS_NO_VERIFY set to true")
+	} else {
+		tmp = "false"
+		log.Debug("TLS_NO_VERIFY set to false")
+	}
+	tlsNoVerify, _ := strconv.ParseBool(tmp)
 
 	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()
@@ -63,7 +73,8 @@ func main() {
 	caCertPool.AppendCertsFromPEM(caCert)
 	cfg := &tls.Config{
 		//ClientAuth: tls.RequireAndVerifyClientCert,
-		ClientCAs: caCertPool,
+		InsecureSkipVerify: tlsNoVerify,
+		ClientCAs:          caCertPool,
 	}
 
 	srv := &http.Server{
