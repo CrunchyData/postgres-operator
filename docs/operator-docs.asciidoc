@@ -619,8 +619,7 @@ the ReplicaStorage, PrimaryStorage, and BackupStorage settings.
 
 The following StorageType values are possible:
 
- * *dynamic* - Currently not implemented, this will allow for dynamic
- provisioning of storage using a StorageClass.
+ * *dynamic* - this will allow for dynamic provisioning of storage using a StorageClass.
  * *existing* - This setting allows you to use a PVC that already exists.
  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters
  can write to that NFS volume mount via a common PVC. When set, the Name
@@ -884,8 +883,7 @@ container image specified in your pgo configuration file.
 
 The database data files are converted to the new major Postgres
 version as specified by the current Postgres image version
-in your pgo configuration file.  Currently only a Postgres
-9.5 to 9.6 upgrade is supported.
+in your pgo configuration file.  
 
 In this scenario, the upgrade is performed by the Postgres
 pg_upgrade utility which is containerized in the *crunchydata/crunchy-upgrade*

@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -42,6 +43,9 @@ var Clientset *kubernetes.Clientset
 // DebugFlag is the debug flag value
 var DebugFlag bool
 
+// BasicAuth comes from the apiserver config
+var BasicAuth bool
+
 // Namespace comes from the apiserver config in this version
 var Namespace string
 
@@ -55,6 +59,8 @@ const TreeBranch = "├── "
 var Credentials map[string]string
 
 func init() {
+	BasicAuth = true
+
 	log.Infoln("apiserver starts")
 
 	getCredentials()
@@ -139,8 +145,20 @@ func initConfig() {
 		log.Error("--namespace flag is not set and required")
 		os.Exit(2)
 	}
+	tmp := viper.GetString("BasicAuth")
+	if tmp == "" {
+		BasicAuth = true
+	} else {
+		var err error
+		BasicAuth, err = strconv.ParseBool(tmp)
+		if err != nil {
+			log.Error("BasicAuth config value is not valid")
+			os.Exit(2)
+		}
+	}
+	log.Infof("BasicAuth is %v\n", BasicAuth)
 
-	log.Debug("namespace is " + viper.GetString("Namespace"))
+	log.Info("namespace is " + viper.GetString("Namespace"))
 
 }
 
@@ -188,6 +206,11 @@ func getCredentials() {
 }
 
 func BasicAuthCheck(username, password string) bool {
+
+	if BasicAuth == false {
+		return true
+	}
+
 	value := Credentials[username]
 	if value == "" {
 		return false
