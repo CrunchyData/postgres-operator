@@ -529,7 +529,7 @@ ReplicaStorage:
   Size:  200M
   StorageType:  create
 Pgo:
-  APIServerUrl:  http://localhost:8080
+  APIServerUrl:  https://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
@@ -664,7 +664,7 @@ Prior to using *pgo*, users will need to specify the
 kubectl get service postgres-operator
 NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
 postgres-operator   10.104.47.110   <none>        8080/TCP   7m
-export APISERVER_URL=http://10.104.47.110:8080
+export APISERVER_URL=https://10.104.47.110:8080
 pgo version
 ....
 
