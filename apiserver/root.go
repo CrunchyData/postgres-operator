@@ -188,8 +188,8 @@ func file2lines(filePath string) []string {
 func parseUserMap(dat string) (string, string) {
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	log.Infof("%v\n", fields)
-	log.Infof("username=[%s] password=[%s]\n", fields[0], fields[1])
+	//log.Infof("%v\n", fields)
+	//log.Infof("username=[%s] password=[%s]\n", fields[0], fields[1])
 	return fields[0], fields[1]
 }
 
@@ -202,7 +202,7 @@ func getCredentials() {
 	lines := file2lines(pgouserPath)
 	for _, v := range lines {
 		Username, Password = parseUserMap(v)
-		log.Debugf("username=%s password=%s\n", Username, Password)
+		//log.Debugf("username=%s password=%s\n", Username, Password)
 		Credentials[Username] = Password
 	}
 
@@ -242,7 +242,8 @@ func Authn(where string, w http.ResponseWriter, r *http.Request) error {
 		http.Error(w, "Not authenticated in apiserver", 401)
 		return errors.New("Not Authenticated")
 	}
-	log.Debugf("Authn Success %s username=[%s] password=[%s]\n", where, username, password)
+	log.Debug("Authn Success")
+	//log.Debugf("Authn Success %s username=[%s] password=[%s]\n", where, username, password)
 	return err
 
 }

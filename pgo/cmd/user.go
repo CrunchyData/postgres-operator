@@ -61,8 +61,8 @@ For example:
 
 pgo user --selector=name=mycluster --update
 pgo user --expired=7 --selector=name=mycluster
-pgo user --add-user=bob --selector=sname=mycluster
-pgo user --change-password=bob --selector=sname=mycluster
+pgo user --add-user=bob --selector=name=mycluster
+pgo user --change-password=bob --selector=name=mycluster
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
