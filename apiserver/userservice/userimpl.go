@@ -282,7 +282,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 
 	//see if a secret exists for this user taco-user0-secret
 	secretName := clusterName + "-" + username + "-" + "secret"
-	_, err = util.GetPasswordFromSecret(apiserver.Clientset, namespace, secretName)
+	_, _, err = util.GetPasswordFromSecret(apiserver.Clientset, namespace, secretName)
 	if err != nil {
 		log.Debug(secretName + " secret does not exist")
 		return nil

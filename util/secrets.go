@@ -29,6 +29,10 @@ import (
 	"time"
 )
 
+const PGO_PRIMARY_USER_PASS_SECRET = "pgo-primary-user-pass"
+const PGO_TESTUSER_USER_PASS_SECRET = "pgo-testuser-user-pass"
+const PGO_POSTGRES_USER_PASS_SECRET = "pgo-postgres-user-pass"
+
 const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +
@@ -170,8 +174,8 @@ func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string
 	}
 }
 
-// GetPasswordFromSecret will fetch the password from a user secret
-func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, secretName string) (string, error) {
+// GetPasswordFromSecret will fetch the username, password from a user secret
+func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, secretName string) (string, string, error) {
 
 	if clientset == nil {
 		log.Errorln("clientset is nil")
@@ -183,10 +187,10 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 	secret, err := clientset.Core().Secrets(namespace).Get(secretName, options)
 	if errors.IsNotFound(err) {
 		log.Error("not found error secret " + secretName)
-		return "", err
+		return "", "", err
 	}
 
-	return string(secret.Data["password"][:]), err
+	return string(secret.Data["username"][:]), string(secret.Data["password"][:]), err
 
 }
 
@@ -276,4 +280,31 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 		log.Debug("deleted secret " + secretName)
 	}
 	return err
+}
+
+func GetAllPasswords(clientset *kubernetes.Clientset, namespace string) (string, string, string, error) {
+	var err error
+	var primaryPassword, testuserPassword, postgresPassword string
+
+	_, primaryPassword, err = GetPasswordFromSecret(clientset, namespace, PGO_PRIMARY_USER_PASS_SECRET)
+	if err != nil {
+		log.Error("could not get " + PGO_PRIMARY_USER_PASS_SECRET)
+		log.Error(err.Error())
+		return primaryPassword, postgresPassword, testuserPassword, err
+	}
+	_, testuserPassword, err = GetPasswordFromSecret(clientset, namespace, PGO_TESTUSER_USER_PASS_SECRET)
+	if err != nil {
+		log.Error("could not get " + PGO_TESTUSER_USER_PASS_SECRET)
+		log.Error(err.Error())
+		return primaryPassword, postgresPassword, testuserPassword, err
+	}
+	_, postgresPassword, err = GetPasswordFromSecret(clientset, namespace, PGO_POSTGRES_USER_PASS_SECRET)
+	if err != nil {
+		log.Error("could not get " + PGO_POSTGRES_USER_PASS_SECRET)
+		log.Error(err.Error())
+		return primaryPassword, postgresPassword, testuserPassword, err
+	}
+
+	return primaryPassword, postgresPassword, testuserPassword, err
+
 }

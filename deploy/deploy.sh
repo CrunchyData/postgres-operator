@@ -21,6 +21,8 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
+$DIR/create-secrets.sh
+
 $CO_CMD $NS create configmap apiserver-conf \
 	--from-file=$COROOT/conf/apiserver/server.crt \
 	--from-file=$COROOT/conf/apiserver/server.key \

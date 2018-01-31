@@ -25,5 +25,8 @@ $CO_CMD $NS delete service postgres-operator
 
 $CO_CMD $NS delete deployment postgres-operator
 
+$CO_CMD $NS delete secret pgo-postgres-user-pass \
+	pgo-primary-user-pass pgo-testuser-user-pass
+
 sleep 10
 

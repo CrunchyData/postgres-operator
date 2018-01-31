@@ -251,7 +251,8 @@ Note that this example will create a PVC called *crunchy-pvc* that is
 referenced in the examples and *pgo.yaml* configuration file as the
 desired PVC to use when databases and clusters are created.
 
-=== Configure Basic Authentication
+=== Security
+==== Configure Basic Authentication
 
 Starting in Operator version 2.3, Basic Authentication is required by the *apiserver*.
 You will configure the *pgo* client to specify a basic authentication
@@ -290,7 +291,10 @@ then the next searched location is */etc/pgo/pgouser*, and if not found
 there then lastly the *PGOUSER* environment variable is searched for
 a path to the basic authentication file.
 
-=== Configure TLS
+You can turn off Basic Authentication entirely if you set
+the BasicAuth setting in the pgo.yaml configuration file to false.
+
+==== Configure TLS
 
 As of Operator 2.3, TLS is used to secure communications to
 the *apiserver*.  Sample keys/certs used by TLS are found
@@ -323,6 +327,22 @@ See the $COROOT/deploy/deploy.sh script which is where the
 configMap is created.
 
 The *apiserver* listens on port 8443 (e.g. https://postgres-operator:8443).
+
+You can set *InsecureSkipVerify* to true if you set the NO_TLS_VERIFY
+environment variable in the *deployment.json* file to *true*.  By default
+this value is set to *false* if you do not specify a value.
+
+==== PostgreSQL Passwords
+
+PostgreSQL passwords are defined in Secrets starting with release
+2.5.  When the *pgo-apiserver* starts, it will read the passwords
+to be used for PostgresSQL clusters from the following Kube Secrets:
+ * pgo-postgres-user-pass
+ * pgo-primary-user-pass
+ * pgo-testuser-user-pass
+
+The defaults for these Secrets are set in the *create-secrets.sh* script
+which is executed during the postgres-operator deployment. 
 
 === Configuration
 
@@ -507,10 +527,7 @@ Namespace:  demo
 Cluster:
   CCPImageTag:  centos7-10.1-1.7.0
   Port:  5432
-  PrimaryPassword:  password
   User:  testuser
-  Password:  password
-  RootPassword:  password
   Database:  userdb
   PasswordAgeDays:  60
   PasswordLength:  8
@@ -546,10 +563,7 @@ Values in the pgo configuration file have the following meaning:
 |Namespace        | the namespace the Operator will run within
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.1-1.7.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
-|Cluster.PrimaryPassword        | the PostgreSQL primary user password, when specified, it will be stored in the secret holding the primary user credentials, if not specified the value will be generated
 |Cluster.User        | the PostgreSQL normal user name
-|Cluster.Password        | the PostgreSQL normal user password, when specified, it will be stored in the secret holding the normal user credentials, if not specified the value will be generated
-|Cluster.RootPassword        | the PostgreSQL *postgres* user password, when specified, it will be stored in the secret holding the root user credentials, if not specified the value will be generated
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |Cluster.Replicas        | the number of cluster replicas to create for newly created clusters
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog

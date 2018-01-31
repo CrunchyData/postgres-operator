@@ -39,7 +39,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 	secretName := clusterName + crv1.RootSecretSuffix
 	//get the postgres user password
 	var password string
-	password, err = GetPasswordFromSecret(clientset, namespace, secretName)
+	_, password, err = GetPasswordFromSecret(clientset, namespace, secretName)
 	if err != nil {
 		return err
 	}

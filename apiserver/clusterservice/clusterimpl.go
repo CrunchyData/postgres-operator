@@ -22,6 +22,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 
 	"fmt"
@@ -577,11 +578,15 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	} else {
 		spec.Policies = request.Policies
 	}
-	spec.PrimaryPassword = viper.GetString("Cluster.PrimaryPassword")
+
+	//get passwords from secrets
+	primaryPassword, testuserPassword, postgresPassword, _ := util.GetAllPasswords(apiserver.Clientset, apiserver.Namespace)
+
+	spec.PrimaryPassword = primaryPassword
 	spec.User = "testuser"
-	spec.Password = viper.GetString("Cluster.Password")
+	spec.Password = testuserPassword
 	spec.Database = "userdb"
-	spec.RootPassword = viper.GetString("Cluster.RootPassword")
+	spec.RootPassword = postgresPassword
 	spec.Replicas = "0"
 	spec.Strategy = "1"
 	spec.NodeName = request.NodeName

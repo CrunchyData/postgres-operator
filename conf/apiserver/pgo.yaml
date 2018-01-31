@@ -3,10 +3,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   CCPImageTag:  centos7-10.1-1.7.0
   Port:  5432
-  PrimaryPassword:  password
   User:  testuser
-  Password:  password
-  RootPassword:  password
   Database:  userdb
   PasswordAgeDays:  60
   PasswordLength:  8
