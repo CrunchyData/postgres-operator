@@ -41,6 +41,9 @@ var RESTClient *rest.RESTClient
 // Clientset ...
 var Clientset *kubernetes.Clientset
 
+// AuditFlag if set to true will cause auditing to occur in the logs
+var AuditFlag bool
+
 // DebugFlag is the debug flag value
 var DebugFlag bool
 
@@ -61,6 +64,8 @@ var Credentials map[string]string
 
 func init() {
 	BasicAuth = true
+
+	AuditFlag = false
 
 	log.Infoln("apiserver starts")
 
@@ -124,6 +129,11 @@ func initConfig() {
 		log.Debugf("Using config file:", viper.ConfigFileUsed())
 	} else {
 		log.Debug("config file not found")
+	}
+
+	AuditFlag = viper.GetBool("Pgo.Audit")
+	if AuditFlag {
+		log.Info("audit flag is set to true")
 	}
 
 	if DebugFlag || viper.GetBool("Pgo.Debug") {
@@ -231,6 +241,10 @@ func Authn(where string, w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	username, password, authOK := r.BasicAuth()
+	if AuditFlag {
+		log.Infof("[audit] %s username=[%s] method=[%s]\n", where, username, r.Method)
+	}
+
 	log.Debugf("Authn Attempt %s username=[%s] password=[%s]\n", where, username, password)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)

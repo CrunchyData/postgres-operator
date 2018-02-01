@@ -1,7 +1,7 @@
 Namespace:  demo
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.1-1.7.0
+  CCPImageTag:  centos7-10.1-1.7.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -22,6 +22,7 @@ ReplicaStorage:
   Size:  200M
   StorageType:  create
 Pgo:
+  Audit:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata

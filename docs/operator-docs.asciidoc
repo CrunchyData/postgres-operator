@@ -546,6 +546,7 @@ ReplicaStorage:
   Size:  200M
   StorageType:  create
 Pgo:
+  Audit:  true
   APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
@@ -594,6 +595,7 @@ Values in the pgo configuration file have the following meaning:
 |Pgo.LoadTemplate        | the load template file used for load jobs
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
 |Pgo.COImageTag        | image tag to use for the Operator containers
+|Pgo.Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
 |======================
 
 *NOTE*: Regarding the PVC access mode variable; this is automatically set to ReadWriteMany but
