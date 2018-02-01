@@ -23,6 +23,7 @@ ReplicaStorage:
   StorageType:  create
 Pgo:
   Audit:  false
+  Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata

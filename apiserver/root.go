@@ -41,6 +41,9 @@ var RESTClient *rest.RESTClient
 // Clientset ...
 var Clientset *kubernetes.Clientset
 
+// MetricsFlag if set to true will cause crunchy-collect to be added into new clusters
+var MetricsFlag bool
+
 // AuditFlag if set to true will cause auditing to occur in the logs
 var AuditFlag bool
 
@@ -64,7 +67,7 @@ var Credentials map[string]string
 
 func init() {
 	BasicAuth = true
-
+	MetricsFlag = false
 	AuditFlag = false
 
 	log.Infoln("apiserver starts")
@@ -134,6 +137,11 @@ func initConfig() {
 	AuditFlag = viper.GetBool("Pgo.Audit")
 	if AuditFlag {
 		log.Info("audit flag is set to true")
+	}
+
+	MetricsFlag = viper.GetBool("Pgo.Metrics")
+	if MetricsFlag {
+		log.Info("metrics flag is set to true")
 	}
 
 	if DebugFlag || viper.GetBool("Pgo.Debug") {
