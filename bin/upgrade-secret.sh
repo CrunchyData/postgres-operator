@@ -17,10 +17,9 @@
 # the old pre-2.5 release format to the 2.5 post format
 # it will prompt the user along the way
 
-echo -n "enter the cluster name:"
-read CLUSTER
+echo "CLUSTER is " $1
 
-echo "you entered " $CLUSTER
+CLUSTER=$1
 
 CURRENT_POSTGRES_PASSWORD=`kubectl get secret $CLUSTER-root-secret -o jsonpath="{.data.password}"`
 echo "current decoded postgres password is..."

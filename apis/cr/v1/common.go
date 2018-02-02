@@ -18,13 +18,13 @@ limitations under the License.
 import ()
 
 // RootSecretSuffix ...
-const RootSecretSuffix = "-root-secret"
+const RootSecretSuffix = "-postgres-secret"
 
 // UserSecretSuffix ...
-const UserSecretSuffix = "-user-secret"
+const UserSecretSuffix = "-testuser-secret"
 
 // PrimarySecretSuffix ...
-const PrimarySecretSuffix = "-primary-secret"
+const PrimarySecretSuffix = "-primaryuser-secret"
 
 // StorageExisting ...
 const StorageExisting = "existing"
