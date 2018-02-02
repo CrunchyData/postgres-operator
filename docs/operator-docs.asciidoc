@@ -99,6 +99,7 @@ mkdir -p $GOPATH/src/github.com/crunchydata/
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
+git checkout 2.4
 ....
 
 At this point, you can choose one of two options to install the postgres-operator
