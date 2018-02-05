@@ -1,6 +1,6 @@
 = PostgreSQL Operator Documentation 
 :toc:
-v2.4, {docdate}
+v2.5, {docdate}
 
 == Overview
 
@@ -77,7 +77,7 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=2.4
+export CO_VERSION=2.5
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
@@ -99,7 +99,7 @@ mkdir -p $GOPATH/src/github.com/crunchydata/
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 2.4
+git checkout 2.5
 ....
 
 At this point, you can choose one of two options to install the postgres-operator
@@ -132,18 +132,18 @@ docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.0
 At this point if you want to avoid building the images and binary
 from source, you can pull down the Docker images as follows:
 ....
-docker pull crunchydata/pgo-lspvc:centos7-2.4
-docker pull crunchydata/pgo-load:centos7-2.4
-docker pull crunchydata/pgo-rmdata:centos7-2.4
-docker pull crunchydata/postgres-operator:centos7-2.4
-docker pull crunchydata/pgo-apiserver:centos7-2.4
+docker pull crunchydata/pgo-lspvc:centos7-2.5
+docker pull crunchydata/pgo-load:centos7-2.5
+docker pull crunchydata/pgo-rmdata:centos7-2.5
+docker pull crunchydata/postgres-operator:centos7-2.5
+docker pull crunchydata/pgo-apiserver:centos7-2.5
 ....
 
 Next get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory:
 ....
 cd $HOME
-wget https://github.com/CrunchyData/postgres-operator/releases/download/2.4/postgres-operator.2.4.tar.gz
-tar xvzf ./postgres-operator.2.4.tar.gz
+wget https://github.com/CrunchyData/postgres-operator/releases/download/2.5/postgres-operator.2.5.tar.gz
+tar xvzf ./postgres-operator.2.5.tar.gz
 ....
 
 Lastly, add the *pgo* client into your PATH.
@@ -548,11 +548,10 @@ ReplicaStorage:
   StorageType:  create
 Pgo:
   Audit:  true
-  APIServerUrl:  http://localhost:8080
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.4
+  COImageTag:  centos7-2.5
   Debug:  true
 ....
 
@@ -680,8 +679,8 @@ Prior to using *pgo*, users will need to specify the
 ....
 kubectl get service postgres-operator
 NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-postgres-operator   10.104.47.110   <none>        8080/TCP   7m
-export APISERVER_URL=http://10.104.47.110:8080
+postgres-operator   10.104.47.110   <none>        8443/TCP   7m
+export CO_APISERVER_URL=https://10.104.47.110:8443
 pgo version
 ....
 

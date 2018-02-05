@@ -1,6 +1,6 @@
 = PostgreSQL Operator
 :toc:
-v2.4, {docdate}
+v2.5, {docdate}
 
 == Overview
 
