@@ -2,7 +2,10 @@
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-        "name": "postgres-operator",
+	"name": "postgres-operator",
+	"annotations": {
+		"cloud.google.com/load-balancer-type": "Internal"
+	},
         "labels": {
             "name": "postgres-operator"
         }
@@ -12,13 +15,12 @@
             "name": "apiserver",
             "protocol": "TCP",
             "port": 8443,
-            "targetPort": 8443,
-            "nodePort": 0
+            "targetPort": 8443
         }],
         "selector": {
             "name": "postgres-operator"
         },
-        "type": "ClusterIP",
+        "type": "LoadBalancer",
         "sessionAffinity": "None"
     }
 }

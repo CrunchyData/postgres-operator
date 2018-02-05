@@ -46,7 +46,7 @@ export CO_VERSION=2.4
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
-export CO_APISERVER_URL=https://postgres-operator:8443
+export CO_APISERVER_URL=https://127.0.0.1:8443
 export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
@@ -131,4 +131,9 @@ echo "for pgo bash completion you will need to install the bash-completion packa
 
 mv $HOME/pgo-bash-completion $HOME/.bash_completion
 
-echo "install complete, try 'pgo version' command"
+echo "install complete"
+
+echo "At this point you can access the operator by using a port-forward command similar to:"
+echo "kubectl port-forward postgres-operator-3590887357-7h5ht 8443:8443"
+echo "do this in another terminal or run in the background"
+
