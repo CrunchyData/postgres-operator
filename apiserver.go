@@ -26,6 +26,12 @@ const serverKey = "/config/server.key"
 
 func main() {
 
+	PORT := "8443"
+	tmp := os.Getenv("PORT")
+	if tmp != "" {
+		PORT = tmp
+	}
+
 	debugFlag := os.Getenv("DEBUG")
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
@@ -34,7 +40,7 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	tmp := os.Getenv("TLS_NO_VERIFY")
+	tmp = os.Getenv("TLS_NO_VERIFY")
 	if tmp == "true" {
 		log.Debug("TLS_NO_VERIFY set to true")
 	} else {
@@ -79,8 +85,10 @@ func main() {
 		ClientCAs:          caCertPool,
 	}
 
+	log.Info("listening on port " + PORT)
+
 	srv := &http.Server{
-		Addr:      ":8443",
+		Addr:      ":" + PORT,
 		Handler:   r,
 		TLSConfig: cfg,
 	}

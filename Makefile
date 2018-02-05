@@ -13,6 +13,9 @@ endif
 #======= Main functions =======
 macpgo:	check-go-vars
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
+winpgo:	check-go-vars
+	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
+
 
 gendeps: 
 	godep save \
@@ -90,10 +93,15 @@ push:
 	docker push crunchydata/pgo-apiserver:$(CO_IMAGE_TAG)
 release:	check-go-vars
 	make macpgo
+	make winpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
+	cp -r $(COROOT)/examples $(RELTMPDIR)
+	cp -r $(COROOT)/deploy $(RELTMPDIR)
+	cp -r $(COROOT)/conf $(RELTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
+	cp $(GOBIN)/pgo.exe $(RELTMPDIR)
 	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 default:

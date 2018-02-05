@@ -25,7 +25,7 @@ func Version() msgs.VersionResponse {
 	resp := msgs.VersionResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = "apiserver version"
-	resp.Version = "2.4"
+	resp.Version = "2.5"
 
 	return resp
 }

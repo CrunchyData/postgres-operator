@@ -24,6 +24,9 @@
                         "name": "DEBUG",
                         "value": "true"
                     }, {
+                        "name": "PORT",
+                        "value": "8443"
+                    }, {
                         "name": "TLS_NO_VERIFY",
                         "value": "false"
                     }],
