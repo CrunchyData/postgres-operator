@@ -197,6 +197,7 @@ Also, if you pass a flag:
 it will cause *all* the backup files to be removed.
 
 The data removal workflow includes the following steps:
+
  * create a pgtask CRD to hold the PVC name and cluster name to be removed
  * the CRD is watched, and on an ADD will cause a Job to be created that will run the *rmdata* container using the PVC name and cluster name as parameters which determine the PVC to mount, and the file path to remove under that PVC
  * the *rmdata* Job is watched by the Operator, and upon a successful status completion the actual PVC is removed
