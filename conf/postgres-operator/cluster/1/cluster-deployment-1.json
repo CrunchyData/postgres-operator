@@ -131,7 +131,7 @@
 			"emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "pgconf-volume",
-			"emptyDir": { "medium": "Memory" }
+			{{.ConfVolume}}
                     }
 
                 ],

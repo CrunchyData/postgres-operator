@@ -92,7 +92,8 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		UserSecretName:    cl.Spec.UserSecretName,
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		Database:          cl.Spec.Database,
-		NodeSelector:      cl.Spec.NodeName,
+		NodeSelector:      GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		ConfVolume:        cl.Spec.NodeName,
 		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
 	}
 
@@ -215,6 +216,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		DataPathOverride:  upgrade.Spec.NewDatabaseName,
 		Database:          cl.Spec.Database,
 		NodeSelector:      cl.Spec.NodeName,
+		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		RootSecretName:    cl.Spec.RootSecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
 		PrimarySecretName: cl.Spec.PrimarySecretName,

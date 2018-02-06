@@ -34,6 +34,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
+
 // CreateSecContext will generate the JSON security context fragment
 // for a storage type
 func CreateSecContext(fsGroup string, suppGroup string) string {

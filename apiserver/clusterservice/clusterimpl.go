@@ -463,6 +463,21 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap["crunchy-collect"] = "true"
 		}
 
+		if existsGlobalConfig() {
+			userLabelsMap["custom-config"] = util.GLOBAL_CUSTOM_CONFIGMAP
+		}
+
+		if request.CustomConfig != "" {
+			err = validateCustomConfig(request.CustomConfig)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.CustomConfig + " configmap was not found "
+				return resp
+			}
+			//add a label for the custom config
+			userLabelsMap["custom-config"] = request.CustomConfig
+		}
+
 		if request.SecretFrom != "" {
 			err = validateSecretFrom(request.SecretFrom)
 			if err != nil {
@@ -628,6 +643,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.BackupPVC != "" {
 		spec.BackupPVCName = request.BackupPVC
 	}
+
+	spec.CustomConfig = request.CustomConfig
 
 	labels := make(map[string]string)
 	labels["name"] = name
@@ -847,4 +864,22 @@ func isPrimary(pod *v1.Pod) bool {
 	}
 	return false
 
+}
+
+func validateCustomConfig(configmapname string) error {
+	var err error
+
+	_, err = apiserver.Clientset.CoreV1().ConfigMaps(apiserver.Namespace).Get(configmapname, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return err
+	}
+	return err
+}
+
+func existsGlobalConfig() bool {
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(apiserver.Namespace).Get(util.GLOBAL_CUSTOM_CONFIGMAP, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return false
+	}
+	return true
 }

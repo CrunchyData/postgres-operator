@@ -26,16 +26,13 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	jsonpatch "github.com/evanphx/json-patch"
+	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"strconv"
 	"text/template"
@@ -121,6 +118,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
+		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
@@ -577,4 +575,37 @@ func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 		return collectString
 	}
 	return ""
+}
+
+// GetConfVolume ...
+func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace string) string {
+	var err error
+
+	//check for user provided configmap
+	if customConfig != "" {
+		_, err = clientset.CoreV1().ConfigMaps(namespace).Get(customConfig, meta_v1.GetOptions{})
+		if kerrors.IsNotFound(err) {
+			//you should NOT get this error because of apiserver validation of this value!
+			log.Error(customConfig + " was not found, error, skipping user provided configMap")
+		} else if err != nil {
+			log.Error(err)
+			log.Error(customConfig + " lookup error, skipping user provided configMap")
+		}
+		return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
+
+	}
+
+	//check for global custom configmap "pgo-custom-pg-config"
+	_, err = clientset.CoreV1().ConfigMaps(namespace).Get(util.GLOBAL_CUSTOM_CONFIGMAP, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+	} else if err != nil {
+		log.Error(err)
+		log.Error(util.GLOBAL_CUSTOM_CONFIGMAP + " lookup error, skipping global configMap")
+	} else {
+		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
+	}
+
+	//the default situation
+	return "\"emptyDir\": { \"medium\": \"Memory\" }"
 }

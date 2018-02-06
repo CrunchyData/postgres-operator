@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright 2018 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-docker rmi -f pgo-lspvc crunchydata/pgo-lspvc:$CO_IMAGE_TAG  \
-postgres-operator crunchydata/postgres-operator:$CO_IMAGE_TAG  \
-pgo-load crunchydata/pgo-load:$CO_IMAGE_TAG  \
-pgo-apiserver crunchydata/pgo-apiserver:$CO_IMAGE_TAG \
-pgo-rmdata crunchydata/pgo-rmdata:$CO_IMAGE_TAG 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+$CO_CMD delete configmap pgo-custom-pg-config
+
+$CO_CMD create configmap pgo-custom-pg-config --from-file=$DIR
+

@@ -198,6 +198,7 @@ func createCluster(args []string) {
 	r.CCPImageTag = CCPImageTag
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
+	r.CustomConfig = CustomConfig
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"
