@@ -3,6 +3,37 @@ v2.5, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
+== Reference Architecture
+
+So, what does the Postgres Operator actually deploy
+when you create a cluster?
+
+image::OperatorReferenceDiagram.png?raw=true[]
+
+On this diagram, objects with dashed lines are things
+that are optionally deployed as part of a Postgres Cluster
+by the Operator and objects with solid lines are
+the fundamental and required components.
+
+For example, within the Primary Deployment, the *metrics* container
+is completely optional, you can deploy that component using
+Operator configuration or command line arguments if you want
+to cause metrics to be collected from the Postgres container.
+
+Replica deployments are just like the Primary deployment but
+are optional.  You do not have to create a Replica at all 
+unless you need that capability.  As you scale up your Postgres
+cluster, the  standard set of components gets deployed and
+replication to the Primary is started.
+
+Lastly, in a future release, you will be able to optionally
+deploy a Pgpool service and Deployment that can act as a
+SQL *router* to your Postgres cluster.
+
+Notice that each cluster deployment gets its own unique
+Persistent Volumes.  Each volume can use different storage
+configurations which is quite powerful.
+
 == Custom Resource Definitions
 
 Kubernetes Custom Resource Definitions are used in the design
