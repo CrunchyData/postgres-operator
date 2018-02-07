@@ -1,0 +1,42 @@
+= GKE Notes
+:toc:
+v2.5, {docdate}
+
+== Overview
+
+Some notes on setting up GKE for Operator deployment.
+
+=== Install Kubectl
+On your host you will be working from, install the kubectl command:
+
+https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+=== GCP
+
+* Select your project
+* Create a Kube cluster in that project
+
+By default a storage class called *standard* is created.
+
+
+=== Install GCloud
+
+To access the Kube cluster you need to install the gcloud utility:
+
+....
+https://cloud.google.com/sdk/downloads
+cd google-cloud-sdk
+./install.sh
+....
+
+=== Configure Kubectl for Cluster Access
+
+
+....
+gcloud auth login
+
+gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
+
+kubectl get storageclass
+....
+
