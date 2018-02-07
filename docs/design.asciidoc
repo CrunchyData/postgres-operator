@@ -198,10 +198,6 @@ are stored within the ConfigMap.
 Using the default cluster strategy, a *cluster* when created by the operator will create the
 following on a Kube cluster:
 
-image::operator-diagram-cluster.png?raw=true[]
-
-The default cluster strategy creates the following:
-
  * deployment running a Postgres *primary* container with replica count of 1
  * service mapped to the *primary* Postgres database
  * service mapped to the *replica* Postgres database
