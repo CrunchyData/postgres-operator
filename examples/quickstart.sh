@@ -144,7 +144,7 @@ if [[ "$REPLY" == "yes" ]]; then
 
 	echo "deploy the operator to the Kube cluster" | tee -a $LOG
 	cd $COROOT
-	#./deploy/deploy.sh
+	./deploy/deploy.sh
 fi
 
 echo "setting up pgo client auth" | tee -a $LOG
