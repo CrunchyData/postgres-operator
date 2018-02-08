@@ -650,6 +650,19 @@ pgo backup testcluster --storage-config=offsitestorage
 That example will create a backup and use the *offsitestorage* 
 storage configuration for persisting the backup.
 
+=== Disaster Recovery Using Storage Configurations
+
+A simple support for disaster recovery can be obtained
+by leveraging network storage, Kube storage classes, and
+the storage configuration options within the Operator.
+
+For example, if you define a Kube storage class that refers
+to a storage backend that is running within your disaster recovery
+site, and then use that storage class as a storage configuration
+for your backups, you essentially have moved your backup files
+automatically to your DR site thanks to network storage.
+
+image::Operator-DR-Storage.png?raw=true[]
 
 === Operator Configuration (Server)
 
