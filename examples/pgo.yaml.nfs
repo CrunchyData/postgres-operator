@@ -1,35 +1,27 @@
-Kubeconfig:  /etc/kubernetes/admin.conf
-Namespace:  default
+Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.1-1.7.0
+  CCPImagePrefix:  crunchydata
+  CCPImageTag:  centos7-10.1-1.7.1
   Port:  5432
-  PrimaryPassword:  password
   User:  testuser
-  Password:  password
-  RootPassword:  password
   Database:  userdb
   PasswordAgeDays:  60
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
-PrimaryStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-  SupplementalGroups:  65534
-BackupStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-  SupplementalGroups:  65534
-ReplicaStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-  SupplementalGroups:  65534
+PrimaryStorage: storage1
+BackupStorage: storage1
+ReplicaStorage: storage1
+Storage:
+  storage1:
+    AccessMode:  ReadWriteMany
+    Size:  200M
+    StorageType:  create
+    SupplementalGroups:  65534
 Pgo:
-  APIServerUrl:  http://localhost:8080
-  LSPVCTemplate:  /home/jeffmc/.pgo.lspvc-template.json
-  LoadTemplate:  /home/jeffmc/.pgo.load-template.json
-  COImageTag:  centos7-2.4
-  Debug:  false
+  Audit: false
+  Metrics: false
+  LSPVCTemplate:  /config/pgo.lspvc-template.json
+  LoadTemplate:  /config/pgo.load-template.json
+  COImagePrefix:  crunchydata
+  COImageTag:  centos7-2.5
