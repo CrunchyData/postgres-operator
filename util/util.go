@@ -18,9 +18,13 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/spf13/viper"
 	"io/ioutil"
+
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -299,4 +303,44 @@ func RunPsql(password string, hostip string, sqlstring string) {
 	}
 
 	log.Debugf("runpsql output [%s]\n", out.String())
+}
+
+// GetSecretPassword ...
+func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace string) (string, error) {
+
+	var err error
+
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
+	secrets, err := clientset.Core().Secrets(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return "", err
+	}
+
+	log.Debug("secrets for " + db)
+	secretName := db + suffix
+	for _, s := range secrets.Items {
+		log.Debug("secret : " + s.ObjectMeta.Name)
+		if s.ObjectMeta.Name == secretName {
+			log.Debug("pgprimary password found")
+			return string(s.Data["password"][:]), err
+		}
+	}
+
+	log.Error("primary secret not found for " + db)
+	return "", errors.New("primary secret not found for " + db)
+
+}
+
+// GetStorageSpec ...
+func GetStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
+	storage := crv1.PgStorageSpec{}
+	storage.StorageClass = cfg.GetString("StorageClass")
+	storage.AccessMode = cfg.GetString("AccessMode")
+	storage.Size = cfg.GetString("Size")
+	storage.StorageType = cfg.GetString("StorageType")
+	storage.Fsgroup = cfg.GetString("Fsgroup")
+	storage.SupplementalGroups = cfg.GetString("SupplementalGroups")
+	return storage
+
 }

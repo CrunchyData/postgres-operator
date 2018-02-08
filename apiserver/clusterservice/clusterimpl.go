@@ -475,6 +475,14 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			}
 		}
 
+		if request.ReplicaStorageConfig != "" {
+			if apiserver.IsValidStorageName(request.ReplicaStorageConfig) == false {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.ReplicaStorageConfig + " Storage config was not found "
+				return resp
+			}
+		}
+
 		if request.CustomConfig != "" {
 			err = validateCustomConfig(request.CustomConfig)
 			if err != nil {
@@ -570,8 +578,17 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec := crv1.PgclusterSpec{}
 
-	spec.PrimaryStorage = getStorageSpec(viper.Sub("Storage." + viper.GetString("PrimaryStorage")))
-	spec.ReplicaStorage = getStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+	if request.StorageConfig != "" {
+		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + request.StorageConfig))
+	} else {
+		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("PrimaryStorage")))
+	}
+
+	if request.ReplicaStorageConfig != "" {
+		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + request.ReplicaStorageConfig))
+	} else {
+		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+	}
 
 	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
 	if request.CCPImageTag != "" {
@@ -874,16 +891,4 @@ func existsGlobalConfig() bool {
 		return false
 	}
 	return true
-}
-
-func getStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
-	storage := crv1.PgStorageSpec{}
-	storage.StorageClass = cfg.GetString("StorageClass")
-	storage.AccessMode = cfg.GetString("AccessMode")
-	storage.Size = cfg.GetString("Size")
-	storage.StorageType = cfg.GetString("StorageType")
-	storage.Fsgroup = cfg.GetString("Fsgroup")
-	storage.SupplementalGroups = cfg.GetString("SupplementalGroups")
-	return storage
-
 }

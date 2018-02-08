@@ -27,9 +27,10 @@ type CreateBackupResponse struct {
 
 // CreateBackupRequest ...
 type CreateBackupRequest struct {
-	Namespace string
-	Args      []string
-	Selector  string
+	Namespace     string
+	Args          []string
+	Selector      string
+	StorageConfig string
 }
 
 // ShowBackupResponse ...

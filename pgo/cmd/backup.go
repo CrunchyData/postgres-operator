@@ -48,6 +48,7 @@ func init() {
 	RootCmd.AddCommand(backupCmd)
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
 }
 
 // showBackup ....
@@ -180,6 +181,7 @@ func createBackup(args []string) {
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.StorageConfig = StorageConfig
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -214,11 +216,6 @@ func createBackup(args []string) {
 		return
 	}
 
-	if len(response.Results) == 0 {
-		fmt.Println("no backups found")
-		return
-	}
-
 	if response.Status.Code == msgs.Ok {
 		for k := range response.Results {
 			fmt.Println(response.Results[k])
@@ -226,6 +223,11 @@ func createBackup(args []string) {
 	} else {
 		fmt.Println(RED(response.Status.Msg))
 		os.Exit(2)
+	}
+
+	if len(response.Results) == 0 {
+		fmt.Println("no backups found")
+		return
 	}
 
 }

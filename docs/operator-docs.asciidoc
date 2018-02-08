@@ -623,6 +623,32 @@ These Storage configurations are validated when the *pgo-apiserver* starts, if a
 non-valid configuration is found, the apiserver will abort.  These Storage values are
 only read at apiserver start time.
 
+==== Overriding Storage Configuration Defaults
+
+....
+pgo create cluster testcluster --storage-config=bigdisk
+....
+
+That example will create a cluster and specify a storage configuration
+of *bigdisk* to be used for the primary database storage, the replica
+storage will default to the value of ReplicaStorage as specified
+in *pgo.yaml*.
+
+....
+pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk
+....
+
+That example will create a cluster and specify a storage configuration
+of *fastdisk* to be used for the primary database storage, the replica
+storage will use the storage configuration *slowdisk*.  
+
+....
+pgo backup testcluster --storage-config=offsitestorage
+....
+
+That example will create a backup and use the *offsitestorage* 
+storage configuration for persisting the backup.
+
 
 === Operator Configuration (Server)
 

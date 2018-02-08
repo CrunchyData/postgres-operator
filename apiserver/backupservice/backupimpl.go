@@ -19,8 +19,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,6 +116,16 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 
 	var newInstance *crv1.Pgbackup
 
+	log.Info("CreateBackup sc " + request.StorageConfig)
+	if request.StorageConfig != "" {
+		if apiserver.IsValidStorageName(request.StorageConfig) == false {
+			log.Info("CreateBackup sc error is found " + request.StorageConfig)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
 
@@ -184,7 +194,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			break
 		}
 		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg)
+		newInstance, err = getBackupParams(arg, request.StorageConfig)
 		if err != nil {
 			msg := "error creating backup for " + arg
 			log.Error(err)
@@ -210,22 +220,17 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	return resp
 }
 
-func getBackupParams(name string) (*crv1.Pgbackup, error) {
+func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	var err error
 	var newInstance *crv1.Pgbackup
 
-	storageSpec := crv1.PgStorageSpec{}
 	spec := crv1.PgbackupSpec{}
 	spec.Name = name
-	spec.StorageSpec = storageSpec
-	spec.StorageSpec.Name = viper.GetString("BackupStorage.Name")
-	spec.StorageSpec.AccessMode = viper.GetString("BackupStorage.AccessMode")
-	spec.StorageSpec.Size = viper.GetString("BackupStorage.Size")
-	spec.StorageSpec.StorageClass = viper.GetString("BackupStorage.StorageClass")
-	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageType")
-	log.Debug("JEFF in backup setting storagetype to " + spec.StorageSpec.StorageType)
-	spec.StorageSpec.SupplementalGroups = viper.GetString("BackupStorage.SupplementalGroups")
-	spec.StorageSpec.Fsgroup = viper.GetString("BackupStorage.Fsgroup")
+	if storageConfig != "" {
+		spec.StorageSpec = util.GetStorageSpec(viper.Sub("Storage." + storageConfig))
+	} else {
+		spec.StorageSpec = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("BackupStorage")))
+	}
 	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
@@ -242,7 +247,7 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 		Into(&cluster)
 	if err == nil {
 		spec.BackupHost = cluster.Spec.Name
-		spec.BackupPass, err = util.GetSecretPassword(cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
+		spec.BackupPass, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
 		if err != nil {
 			return newInstance, err
 		}
