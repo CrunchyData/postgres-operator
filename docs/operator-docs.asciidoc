@@ -544,18 +544,22 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
-PrimaryStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-BackupStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-ReplicaStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
+PrimaryStorage: storage1
+BackupStorage: storage1
+ReplicaStorage: storage1
+Storage:
+  storage1:
+    AccessMode:  ReadWriteMany
+    Size:  200M
+    StorageType:  create
+  storage2:
+    AccessMode:  ReadWriteMany
+    Size:  333M
+    StorageType:  create
+  storage3:
+    AccessMode:  ReadWriteMany
+    Size:  440M
+    StorageType:  create
 Pgo:
   Audit:  true
   LSPVCTemplate:  /config/pgo.lspvc-template.json
@@ -580,27 +584,15 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
 |Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|PrimaryStorage.Name        |for the primary PostgreSQL deployment, if set, the PVC to use for created databases, used when the storage type is *existing*
-|PrimaryStorage.StorageClass        |for the primary PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|PrimaryStorage.AccessMode        |for the primary PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|PrimaryStorage.Size        |for the primary PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|PrimaryStorage.StorageType        |for the primary PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|PrimaryStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|PrimaryStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|ReplicaStorage.Name        |for the replica PostgreSQL deployments, if set, the PVC to use for created databases, used when the storage type is *existing*
-|ReplicaStorage.StorageClass        |for the replica PostgreSQL deployment, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|ReplicaStorage.AccessMode        |for the replica PostgreSQL deployment, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|ReplicaStorage.Size        |for the replica PostgreSQL deployment, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|ReplicaStorage.StorageType        |for the replica PostgreSQL deployment, supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|ReplicaStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|ReplicaStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|BackupStorage.Name        |for the backup job, if set, the PVC to use for holding backup files, used when the storage type is *existing*
-|BackupStorage.StorageClass        |for the backup job, for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|BackupStorage.AccessMode        |for the backup job, the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|BackupStorage.Size        |for the backup job, the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|BackupStorage.StorageType        |for the backup job , supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
-|BackupStorage.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|BackupStorage.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment 
+|BackupStorage    |required, the value of the storage configuration to use for backups
+|ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
+|Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|Storage.storage1.AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|Storage.storage1.Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|Storage.storage1.StorageType        |supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
 |Pgo.LoadTemplate        | the load template file used for load jobs
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
@@ -609,13 +601,28 @@ Values in the pgo configuration file have the following meaning:
 |Pgo.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
 |======================
 
-*NOTE*: Regarding the PVC access mode variable; this is automatically set to ReadWriteMany but
-you also have the option to set this to ReadWriteOnce or ReadOnlyMany. The definitions of these
-are as follows:
+==== Storage Configurations
 
+Starting with release 2.5, you can now define n-number of Storage configurations
+within the *pgo.yaml* file.  Those Storage configurations follow these conventions:
+ * they must have lowercase name (e.g. storage1)
+ * they must be unique names (e.g. mydrstorage, faststorage, slowstorage)
+
+These Storage configurations are referenced in the BcakupStorage, ReplicaStorage,
+and PrimaryStorage configuration values.  However, there are command line
+options in the *pgo* client that will let a user override these default global
+values to offer you the user a way to specify very targeted storage configurations
+when needed (e.g. disaster recovery storage for certain backups).
+
+You can set the storage AccessMode values to the following:
 * *ReadWriteMany* - mounts the volume as read-write by many nodes
 * *ReadWriteOnce* - mounts the PVC as read-write by a single node
 * *ReadOnlyMany* - mounts the PVC as read-only by many nodes
+
+These Storage configurations are validated when the *pgo-apiserver* starts, if a
+non-valid configuration is found, the apiserver will abort.  These Storage values are
+only read at apiserver start time.
+
 
 === Operator Configuration (Server)
 

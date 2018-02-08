@@ -65,6 +65,8 @@ const TreeBranch = "├── "
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]string
 
+var StorageMap map[string]interface{}
+
 func init() {
 	BasicAuth = true
 	MetricsFlag = false
@@ -181,6 +183,13 @@ func initConfig() {
 
 	log.Info("namespace is " + viper.GetString("Namespace"))
 
+	StorageMap = viper.GetStringMap("Storage")
+
+	if !validStorageSettings() {
+		log.Error("Storage Settings are not defined correctly, can't continue")
+		os.Exit(2)
+	}
+
 }
 
 func file2lines(filePath string) []string {
@@ -278,4 +287,37 @@ func verifySecrets() {
 	}
 	log.Info("got required secrets for passwords during startup check")
 
+}
+
+func validStorageSettings() bool {
+	log.Infof("Storage has %d definitions\n", len(StorageMap))
+
+	ps := viper.GetString("PrimaryStorage")
+	if IsValidStorageName(ps) {
+		log.Info(ps + " is valid")
+	} else {
+		log.Error(ps + " is NOT valid")
+		return false
+	}
+	rs := viper.GetString("ReplicaStorage")
+	if IsValidStorageName(rs) {
+		log.Info(rs + " is valid")
+	} else {
+		log.Error(rs + " is NOT valid")
+		return false
+	}
+	bs := viper.GetString("BackupStorage")
+	if IsValidStorageName(bs) {
+		log.Info(bs + " is valid")
+	} else {
+		log.Error(bs + " is NOT valid")
+		return false
+	}
+	return true
+
+}
+
+func IsValidStorageName(name string) bool {
+	_, ok := StorageMap[name]
+	return ok
 }
