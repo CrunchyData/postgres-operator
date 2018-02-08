@@ -375,8 +375,7 @@ by the *CCPImageTag* setting in the *$COROOT/conf/apiserver/pgo.yaml*
 configuration file.  By default, this value is set to the latest
 release of the Crunchy Container Suite.
 
-More in-depth explanations of postgres operator configurations are available
-in the link:config.asciidoc[Configuration] document.
+More in-depth explanations of postgres operator configurations are available below.
 
 === Deploy the PostgreSQL Operator
 *NOTE*: This will create and use */data* on your
@@ -601,10 +600,11 @@ Values in the pgo configuration file have the following meaning:
 |Pgo.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
 |======================
 
-==== Storage Configurations
+=== Storage Configurations
 
 Starting with release 2.5, you can now define n-number of Storage configurations
 within the *pgo.yaml* file.  Those Storage configurations follow these conventions:
+
  * they must have lowercase name (e.g. storage1)
  * they must be unique names (e.g. mydrstorage, faststorage, slowstorage)
 
@@ -615,6 +615,7 @@ values to offer you the user a way to specify very targeted storage configuratio
 when needed (e.g. disaster recovery storage for certain backups).
 
 You can set the storage AccessMode values to the following:
+
 * *ReadWriteMany* - mounts the volume as read-write by many nodes
 * *ReadWriteOnce* - mounts the PVC as read-write by a single node
 * *ReadOnlyMany* - mounts the PVC as read-only by many nodes
@@ -623,7 +624,7 @@ These Storage configurations are validated when the *pgo-apiserver* starts, if a
 non-valid configuration is found, the apiserver will abort.  These Storage values are
 only read at apiserver start time.
 
-==== Overriding Storage Configuration Defaults
+=== Overriding Storage Configuration Defaults
 
 ....
 pgo create cluster testcluster --storage-config=bigdisk
