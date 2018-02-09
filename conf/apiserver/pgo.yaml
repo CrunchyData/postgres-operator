@@ -1,7 +1,7 @@
 Namespace:  demo
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.1-1.7.1
+  CCPImageTag:  centos7-10.1-1.7.0
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -11,12 +11,13 @@ Cluster:
   Replicas:  0
 PrimaryStorage: storage1
 BackupStorage: storage1
-ReplicaStorage: storage2
+ReplicaStorage: storage1
 Storage:
   storage1:
     AccessMode:  ReadWriteMany
     Size:  200M
     StorageType:  create
+    SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteMany
     Size:  333M
