@@ -23,6 +23,7 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -320,4 +321,36 @@ func validStorageSettings() bool {
 func IsValidStorageName(name string) bool {
 	_, ok := StorageMap[name]
 	return ok
+}
+
+// IsValidNodeName returns true or false if
+// a node is valid, returns a string that
+// describes the not valid condition, and
+// lastly a string of all valid nodes found
+func IsValidNodeName(nodeName string) (bool, string, string) {
+
+	var err error
+	found := false
+	allNodes := ""
+
+	lo := meta_v1.ListOptions{}
+	nodes, err := Clientset.CoreV1().Nodes().List(lo)
+	if err != nil {
+		log.Error(err)
+		return false, err.Error(), allNodes
+	}
+
+	for _, node := range nodes.Items {
+		log.Infof("%v\n", node)
+		if node.Name == nodeName {
+			found = true
+		}
+		allNodes += node.Name + " "
+	}
+
+	if found == false {
+		return false, "not found", allNodes
+	}
+
+	return true, "", allNodes
 }

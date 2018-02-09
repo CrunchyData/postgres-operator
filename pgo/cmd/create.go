@@ -70,20 +70,6 @@ pgo create cluster mycluster`,
 			}
 		}
 
-		//always have a valid NodeName
-		if NodeName == "" {
-			//NodeName = getValidNodeName()
-		} else {
-			/**
-			err = validateNodeName(NodeName)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			*/
-
-		}
-
 		if UserLabels != "" {
 			/**
 			err = validateUserLabels()
@@ -132,7 +118,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "g", "", "The name of a configMap that holds custom PG config files used to override the defaults")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
-	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the primary database")
+	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "", "", "The node on which to place the primary database, if not set any node is used")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")

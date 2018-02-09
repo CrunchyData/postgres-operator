@@ -475,6 +475,15 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			}
 		}
 
+		if request.NodeName != "" {
+			valid, reason, allNodes := apiserver.IsValidNodeName(request.NodeName)
+			if !valid {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.NodeName + " NodeName was not valid, " + reason + " valid nodes are " + allNodes
+				return resp
+			}
+		}
+
 		if request.ReplicaStorageConfig != "" {
 			if apiserver.IsValidStorageName(request.ReplicaStorageConfig) == false {
 				resp.Status.Code = msgs.Error

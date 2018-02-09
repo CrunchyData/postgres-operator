@@ -39,12 +39,12 @@ import (
 	"time"
 )
 
-//const AffinityInOperator = "In"
-//const AFFINITY_NOTINOperator = "NotIn"
+const AffinityInOperator = "In"
+const AFFINITY_NOTINOperator = "NotIn"
 
 type affinityTemplateFields struct {
-	NODE     string
-	OPERATOR string
+	Node          string
+	OperatorValue string
 }
 
 type collectTemplateFields struct {
@@ -533,14 +533,16 @@ func getPrimaryLabels(Name string, ClusterName string, cloneFlag bool, replicaFl
 
 // GetAffinity ...
 func GetAffinity(nodeName string, operator string) string {
+	fmt.Println("are you here jeff")
+	log.Infof("GetAffinity with nodeName=[%s] and operator=[%s]\n", nodeName, operator)
 	output := ""
 	if nodeName == "" {
 		return output
 	}
 
 	affinityTemplateFields := affinityTemplateFields{}
-	affinityTemplateFields.NODE = nodeName
-	affinityTemplateFields.OPERATOR = operator
+	affinityTemplateFields.Node = nodeName
+	affinityTemplateFields.OperatorValue = operator
 
 	var affinityDoc bytes.Buffer
 	err := affinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)

@@ -62,6 +62,7 @@ apiserverimage:	check-go-vars
 	cp $(GOBIN)/apiserver bin/
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
 	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
+	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 postgres-operator:	check-go-vars
 	go install postgres-operator.go
 operatorimage:	check-go-vars
@@ -69,6 +70,7 @@ operatorimage:	check-go-vars
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
 	docker build -t postgres-operator -f $(CO_BASEOS)/Dockerfile.postgres-operator.$(CO_BASEOS) .
 	docker tag postgres-operator $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_BASEOS)-$(CO_VERSION)
+	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 lsimage:
 	docker build -t pgo-lspvc -f $(CO_BASEOS)/Dockerfile.pgo-lspvc.$(CO_BASEOS) .
 	docker tag pgo-lspvc $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_BASEOS)-$(CO_VERSION)

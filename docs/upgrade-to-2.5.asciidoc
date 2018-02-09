@@ -1,0 +1,37 @@
+= Upgrade Notes for Migrating to Release 2.5
+v2.5, {docdate}
+
+image::crunchy_logo.png?raw=true[]
+
+== pgo.yaml
+
+2.5 changed the pgo.yaml file in terms of storage configuration
+
+=== Required Changes
+
+You will need to change your pgo.yaml file to look like:
+....
+$COROOT/conf/apiserver/pgo.yaml
+....
+
+In terms of the Storage Configuration sections.
+
+== Database Credentials Secrets
+
+2.5 changed the names of the database credentials that are created
+by default to get in sync with the way new database credentials 
+were named.
+
+=== Required Changes
+
+There is a utility in :
+....
+$COROOT/bin/upgrade-secret.sh
+....
+
+that you will need to run on your existing clusters.  This script
+will essentially copy the existing secrets values and create
+new secrets with those same values but named to the new standard.
+
+Run the script by passing in the name of a cluster as a parameter.
+
