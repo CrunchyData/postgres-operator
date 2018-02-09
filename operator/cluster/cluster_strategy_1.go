@@ -533,7 +533,6 @@ func getPrimaryLabels(Name string, ClusterName string, cloneFlag bool, replicaFl
 
 // GetAffinity ...
 func GetAffinity(nodeName string, operator string) string {
-	fmt.Println("are you here jeff")
 	log.Infof("GetAffinity with nodeName=[%s] and operator=[%s]\n", nodeName, operator)
 	output := ""
 	if nodeName == "" {
