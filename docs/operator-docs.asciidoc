@@ -118,11 +118,12 @@ cd postgres-operator
 git checkout 2.5
 ....
 
-At this point, you can choose one of two options to install the postgres-operator
+At this point, you can choose one of three options to install the postgres-operator
 itself:
 
-* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#get-prebuilt-images[Get Pre-built Images]
-* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/build.asciidoc#build-from-source[Build from source]
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/operator-docs.asciidoc#get-prebuilt-images[Get Pre-built Images]
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/operator-docs.asciidoc#build-from-source[Build from source]
+* link:https://github.com/CrunchyData/postgres-operator/blob/master/docs/operator-docs.asciidoc#Quickstart[Quickstart]
 
 === Pull Postgres Containers
 
