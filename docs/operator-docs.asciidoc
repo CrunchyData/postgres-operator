@@ -1256,6 +1256,7 @@ This script is tested on GKE but can be used for other Kube environments as
 well.
 
 The script requires a few things in order to work:
+
  * wget utility installed
  * kubectl utility installed
  * go installed and in the PATH
@@ -1266,6 +1267,7 @@ that assumes *dynamic* storage and a storage class named *standard*,
 things that GKE provides.
 
 The script performs the following:
+
  * downloads the Operator configuration files
  * sets the $HOME/.pgouser file to default settings
  * deploys the Operator Deployment
