@@ -748,7 +748,7 @@ export CO_APISERVER_URL=https://10.104.47.110:8443
 pgo version
 ....
 
-=== Check Version
+=== pgo version
 
 To see what version of pgo client and postgres-operator you are
 running, use the following:
@@ -756,7 +756,7 @@ running, use the following:
 pgo version
 ....
 
-=== Create Cluster
+=== pgo create cluster
 
 To create a database, use the following:
 ....
@@ -808,7 +808,15 @@ database cluster pod and enables metrics collection on that database pod.
 For this to work, you will need to configure the Crunchy metrics
 example as found in the Crunchy Container Suite.
 
-=== Backup Cluster
+New clusters typically pick up the container image version to use
+based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
+can override this value using the *--ccp-image-tag* command line
+flag:
+....
+pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
+....
+
+=== pgo backup
 
 You can start a backup job for a cluster as follows:
 ....
@@ -860,8 +868,14 @@ pgo backup  --selector=project=xray
 In this example, any cluster that matches the selector will cause
 a backup job to be created.
 
+=== pgo delete backup
 
-=== Cluster Removal
+To delete a backup enter the following:
+....
+pgo delete backup mybackup
+....
+
+=== pgo delete cluster
 
 You can remove a cluster by running:
 ....
@@ -890,7 +904,7 @@ pgo delete cluster restoredb --delete-data --delete-backups
 ....
 
 
-=== Cluster Replication
+=== pgo scale
 
 When you create a Cluster, you will see in the output a variety of Kubernetes objects were created including:
 
@@ -933,7 +947,7 @@ pgo show cluster all --version=9.6.2
 ....
 
 
-=== Minor Cluster Upgrade
+=== pgo upgrade
 
 You can perform a minor Postgres version upgrade
 of either a database or cluster as follows:
@@ -948,8 +962,6 @@ container image specified in your pgo configuration file.
 
 The database data files remain untouched, only the container
 is updated, this will upgrade your Postgres server version only.
-
-=== Major Cluster Upgrade
 
 You can perform a major Postgres version upgrade
 of either a database or cluster as follows:
@@ -982,7 +994,21 @@ proceeding.  Upgrades like this can take a long time if your
 database is large.  The operator creates a watch on the upgrade
 job to know when and how to proceed.
 
-=== Viewing PVC Information
+Likewise, you can upgrade the cluster using a command line flag:
+....
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.6-1.7.0
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.6-1.7.0
+....
+
+
+=== pgo delete upgrade
+
+To remove an upgrade CRD, issue the following:
+....
+pgo delete upgrade
+....
+
+=== pgo show pvc
 
 You can view the files on a PVC as follows:
 ....
@@ -998,7 +1024,7 @@ you can specify the path option as follows:
 pgo show pvc crunchy-pvc --pvc-root=mycluster-backups
 ....
 
-=== Viewing Passwords
+=== pgo show cluster
 
 You can view the passwords used by the cluster as follows:
 ....
@@ -1007,23 +1033,7 @@ pgo show cluster mycluster --show-secrets=true
 
 Passwords are generated if not specified in your *pgo* configuration.
 
-=== Overriding CCP_IMAGE_TAG
-
-New clusters typically pick up the container image version to use
-based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
-can override this value using the *--ccp-image-tag* command line
-flag:
-....
-pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
-....
-
-Likewise, you can upgrade the cluster using a command line flag:
-....
-pgo upgrade mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.5-1.6.0
-....
-
-=== Testing Database Connections
+=== pgo test
 
 You can test the database connections to a cluster:
 ....
@@ -1036,33 +1046,7 @@ cluster.  The cluster credentials are accessed and used to test
 the database connections.  The equivalent *psql* command is printed
 out as connections are tried, along with the connection status.
 
-=== Clone Cluster
-
-To create a cluster clone from an existing cluster, use the following:
-....
-pgo clone mycluster --name=myclone
-....
-
-When you execute the *clone*, it will orchestrate the following
-actions:
-
- * create a PgClone CRD to start the cloning workflow
- * create a replica on *mycluster* that will become the clone master
- * watch for cloned replicas to complete their replication
- * copy the original cluster's secrets for the clone to use
- * create a PgCluster CRD for the new clone cluster
- * create the Postgres trigger file on the clone to cause it to recover
-   and become a valid read-write master
- * remove the PgClone CRD
-
-NOTE:  if you are cloning a cluster that has replica(s) which 
-specify a /pgdata volume using emptyDir volume type, then the cloned
-master will inherit that same emptydir volume for the new cloned
-master.  If this is not the behavior you want, you will need to specify
-a volume type for the replica(s) that is based on either shared
-volume types or dynamic volumes.
-
-=== Create and View Policy
+=== pgo create policy
 
 To create a policy use the following syntax:
 ....
@@ -1088,8 +1072,14 @@ To view policies:
 pgo show policy all
 ....
 
+=== pgo delete policy
 
-=== Apply Policy
+To delete a policy use the following form:
+....
+pgo delete policy policy1
+....
+
+=== pgo apply
 
 To apply an existing policy to a set of clusters, issue
 a command like this:
@@ -1105,7 +1095,7 @@ SQL against that cluster using the *postgres* user account.
 WARNING:  policies are executed as the superuser in PostgreSQL therefore
 take caution when using them.
 
-=== User Management - Add a User
+=== pgo user
 
 To create a new Postgres user to the *mycluster* cluster, execute:
 ....
@@ -1117,8 +1107,6 @@ To add that user to a all clusters:
 pgo user --add-user=sally 
 ....
 
-=== User Management - Delete a User
-
 To delete a Postgres user in the *mycluster* cluster, execute:
 ....
 pgo user --delete-user=sally --selector=name=mycluster
@@ -1128,8 +1116,6 @@ To delete that user in all clusters:
 ....
 pgo user --delete-user=sally 
 ....
-
-=== User Management - Change Password
 
 To change the password for a user in the *mycluster* cluster:
 ....
@@ -1143,8 +1129,6 @@ pgo user --change-password=sally
 
 The password is generated and printed in cleartext on your screen.
 
-=== User Management - Show Expired Passwords
-
 To see user passwords that have expired past a certain number
 of days in the *mycluster* cluster:
 ....
@@ -1155,8 +1139,6 @@ The same command across all clusters:
 ....
 pgo user --expired=7 
 ....
-
-=== User Management - Update Expired Passwords
 
 To assign users to a cluster:
 ....
@@ -1203,7 +1185,7 @@ The same command across all clusters:
 pgo user --update-passwords
 ....
 
-=== Label Management
+=== pgo label
 
 You can apply a user defined label to a cluster as follows:
 ....
@@ -1213,7 +1195,7 @@ pgo label --label=env=research  --selector=project=xray
 In this example, we apply a label of *env=research* to any
 clusters that have an existing label of *project=xray* applied.
 
-=== Data Loading
+=== pgo load
 
 A CSV file loading capability is supported currently.  You can
 test that by creating a SQL Policy which will create a database
@@ -1259,31 +1241,13 @@ The load configuration file has the following YAML attributes:
 |SecurityContext| either fsGroup or SupplementalGroup values
 |======================
 
-=== bash Completion
+== bash Completion
 
 There is a bash completion file that is included for users to try, this
 is located in the repo at *example/pgo-bash-completion*.  To use it, copy
 that file to /etc/bash_completion.d/pgo, and log out and back into your
 bash shell to try it out.   
 
-=== Label Selectors on Cluster Listing
-
-You can create and assign a label to a *pgcluster* CRD object
-as follows:
-....
-kubectl label pgclusters mycluster name=thebest
-kubectl get pgclusters --show-lables
-....
-
-This allows the user to define any user metadata they desire
-for any set of *pgcluster* objects.  You can then select a
-subset of *pgcluster* objects using a command like this:
-....
-pgo show cluster all --selector=name=thebest
-....
-
-This gives user another way to query the clusters using their
-own metadata labeling scheme applied to *pgcluster* objects.
 
 == Quickstart
 
