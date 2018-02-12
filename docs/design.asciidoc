@@ -375,3 +375,21 @@ of what configMap was used when creating the database.
 
 Commands coming in future releases will take advantage of this
 labeling.
+
+=== Metrics Collection
+
+If you add a *--metrics* flag to *pgo create cluster* it will 
+cause the *crunchy-collect* container to be added to your
+Postgres cluster.
+
+That container requires you run the *crunchy-metrics* containers
+as defined within the *crunchy-containers* project.  
+
+The *prometheus push gateway* that is deployed as part of the
+*crunchy-metrics* example is a current requirement for the
+metrics solution.  This will change in an upcoming
+release of the *crunchy-containers* project and there will
+no longer be a requirement for the push gateway to be deployed.
+
+See https://github.com/CrunchyData/crunchy-containers/blob/master/docs/metrics.adoc and https://github.com/CrunchyData/crunchy-containers/blob/master/docs/examples.adoc#metrics-collection for more details on setting up the *crunchy-metrics* solution.
+
