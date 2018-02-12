@@ -310,7 +310,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 
 	if request.CCPImageTag != "" {
 		if request.CCPImageTag == existingImage {
-			log.Error("CCPImageTag is the same as the cluster")
+			log.Error("CCPImageTag is the same as the cluster here ")
 			log.Error("can't upgrade to the same image version")
 			log.Error("requested version is " + request.CCPImageTag)
 			log.Error("existing version is " + existingImage)
