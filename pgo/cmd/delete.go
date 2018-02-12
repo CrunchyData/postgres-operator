@@ -69,7 +69,8 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
-	deleteCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
+	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
+	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "--delete-data causes the data for this cluster to be removed permanently ")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "--delete-backups causes the backups for this cluster to be removed permanently ")
@@ -88,7 +89,6 @@ var deleteUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
 			if util.AskForConfirmation(NoPrompt) {
 				deleteUpgrade(args)
 			} else {
@@ -107,7 +107,6 @@ var deleteBackupCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
 			if util.AskForConfirmation(NoPrompt) {
 				deleteBackup(args)
 			} else {
@@ -127,7 +126,6 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			log.Error("a cluster name or selector is required for this command")
 		} else {
-			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
 			if util.AskForConfirmation(NoPrompt) {
 				deleteCluster(args)
 
@@ -147,7 +145,6 @@ var deletePolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a policy name is required for this command")
 		} else {
-			fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
 			if util.AskForConfirmation(NoPrompt) {
 				deletePolicy(args)
 			} else {
