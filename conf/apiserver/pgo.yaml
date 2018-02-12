@@ -1,7 +1,7 @@
 Namespace:  demo
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.1-1.7.0
+  CCPImageTag:  centos7-10.1-1.7.1
   Port:  5432
   User:  testuser
   Database:  userdb
