@@ -542,7 +542,7 @@ The default pgo configuration file, included in
 ....
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.1-1.7.0
+  CCPImageTag:  centos7-10.1-1.7.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -567,7 +567,8 @@ Storage:
     Size:  440M
     StorageType:  create
 Pgo:
-  Audit:  true
+  Audit:  false
+  Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
