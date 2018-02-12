@@ -170,50 +170,56 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	}
 	for _, arg := range request.Args {
 		log.Debug("create backup called for " + arg)
-		result := crv1.Pgbackup{}
 
-		// error if it already exists
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
-		if err == nil {
-			log.Debug("pgbackup " + arg + " was found so we recreate it")
-			dels := make([]string, 1)
-			dels[0] = arg
-			DeleteBackup(arg)
-		} else if kerrors.IsNotFound(err) {
-			msg := "pgbackup " + arg + " not found so we will create it"
-			resp.Results = append(resp.Results, "pgbackup "+msg)
+		if BackupJobExists("backup-" + arg) {
+			resp.Results = append(resp.Results, "please delete job backup-"+arg+" before creating another backup")
 		} else {
-			log.Error("error getting pgbackup " + arg)
-			log.Error(err.Error())
-			resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
-			break
+
+			result := crv1.Pgbackup{}
+
+			// error if it already exists
+			err = apiserver.RESTClient.Get().
+				Resource(crv1.PgbackupResourcePlural).
+				Namespace(apiserver.Namespace).
+				Name(arg).
+				Do().
+				Into(&result)
+			if err == nil {
+				log.Debug("pgbackup " + arg + " was found so we recreate it")
+				dels := make([]string, 1)
+				dels[0] = arg
+				DeleteBackup(arg)
+			} else if kerrors.IsNotFound(err) {
+				msg := "pgbackup " + arg + " not found so we will create it"
+				resp.Results = append(resp.Results, "pgbackup "+msg)
+			} else {
+				log.Error("error getting pgbackup " + arg)
+				log.Error(err.Error())
+				resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+				break
+			}
+			// Create an instance of our CRD
+			newInstance, err = getBackupParams(arg, request.StorageConfig)
+			if err != nil {
+				msg := "error creating backup for " + arg
+				log.Error(err)
+				resp.Results = append(resp.Results, msg)
+				break
+			}
+			err = apiserver.RESTClient.Post().
+				Resource(crv1.PgbackupResourcePlural).
+				Namespace(apiserver.Namespace).
+				Body(newInstance).
+				Do().Into(&result)
+			if err != nil {
+				log.Error("error in creating Pgbackup CRD instance")
+				log.Error(err.Error())
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			resp.Results = append(resp.Results, "created Pgbackup "+arg)
 		}
-		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg, request.StorageConfig)
-		if err != nil {
-			msg := "error creating backup for " + arg
-			log.Error(err)
-			resp.Results = append(resp.Results, msg)
-			break
-		}
-		err = apiserver.RESTClient.Post().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Body(newInstance).
-			Do().Into(&result)
-		if err != nil {
-			log.Error("error in creating Pgbackup CRD instance")
-			log.Error(err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-		resp.Results = append(resp.Results, "created Pgbackup "+arg)
 
 	}
 
@@ -268,4 +274,21 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 		Spec: spec,
 	}
 	return newInstance, nil
+}
+
+func BackupJobExists(name string) bool {
+
+	options := meta_v1.GetOptions{}
+	resultJob, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Get(name, options)
+	if kerrors.IsNotFound(err) {
+		log.Debug("Job " + err.Error())
+
+		return false
+	}
+	if err != nil {
+		log.Error("error getting Job " + err.Error())
+		return false
+	}
+	log.Debugf("found job %v\n", resultJob)
+	return true
 }
