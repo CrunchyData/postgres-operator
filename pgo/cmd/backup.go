@@ -115,7 +115,6 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup User:\t"+result.Spec.BackupUser)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup Pass:\t"+result.Spec.BackupPass)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }
