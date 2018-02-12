@@ -142,20 +142,28 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				}
 			}
 			if request.DeleteUser != "" {
-				msg := "deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name
-				log.Debug(msg)
-				resp.Results = append(resp.Results, msg)
 				err = deleteUser(apiserver.Namespace, cluster.Spec.Name, info, request.DeleteUser, request.ManagedUser)
+				if err != nil {
+					log.Error(err)
+				} else {
+					msg := "deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name
+					log.Debug(msg)
+					resp.Results = append(resp.Results, msg)
+
+					//if managed, if so, delete secret
+					util.DeleteUserSecret(apiserver.Clientset, d.ObjectMeta.Name, request.DeleteUser, apiserver.Namespace)
+				}
 			}
 			if request.AddUser != "" {
-				msg := "adding new user " + request.AddUser + " to " + d.ObjectMeta.Name
-				log.Debug(msg)
-				resp.Results = append(resp.Results, msg)
 				err = addUser(request.UserDBAccess, apiserver.Namespace, d.ObjectMeta.Name, info, request.AddUser, request.ManagedUser)
 				if err != nil {
 					resp.Status.Code = msgs.Error
 					resp.Status.Msg = err.Error()
 					return resp
+				} else {
+					msg := "adding new user " + request.AddUser + " to " + d.ObjectMeta.Name
+					log.Debug(msg)
+					resp.Results = append(resp.Results, msg)
 				}
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)

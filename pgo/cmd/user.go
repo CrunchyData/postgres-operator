@@ -59,7 +59,7 @@ var userCmd = &cobra.Command{
 	Long: `USER allows you to manage users and passwords across a set of clusters
 For example:
 
-pgo user --selector=name=mycluster --update
+pgo user --selector=name=mycluster --update-passwords
 pgo user --expired=7 --selector=name=mycluster
 pgo user --add-user=bob --selector=name=mycluster
 pgo user --change-password=bob --selector=name=mycluster
