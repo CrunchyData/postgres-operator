@@ -56,7 +56,7 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 		}
 
 		replicaServiceDocString := replicaServiceDoc.String()
-		log.Info(replicaServiceDocString)
+		log.Debug(replicaServiceDocString)
 
 		replicaService := v1.Service{}
 		err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)

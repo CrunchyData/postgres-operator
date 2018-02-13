@@ -128,7 +128,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		return err
 	}
 	deploymentDocString := primaryDoc.String()
-	log.Info(deploymentDocString)
+	log.Debug(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
@@ -493,7 +493,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		return err
 	}
 	replicaDeploymentDocString := replicaDoc.String()
-	log.Info(replicaDeploymentDocString)
+	log.Debug(replicaDeploymentDocString)
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
@@ -533,7 +533,7 @@ func getPrimaryLabels(Name string, ClusterName string, cloneFlag bool, replicaFl
 
 // GetAffinity ...
 func GetAffinity(nodeName string, operator string) string {
-	log.Infof("GetAffinity with nodeName=[%s] and operator=[%s]\n", nodeName, operator)
+	log.Debugf("GetAffinity with nodeName=[%s] and operator=[%s]\n", nodeName, operator)
 	output := ""
 	if nodeName == "" {
 		return output
@@ -551,7 +551,7 @@ func GetAffinity(nodeName string, operator string) string {
 	}
 
 	affinityDocString := affinityDoc.String()
-	log.Info(affinityDocString)
+	log.Debug(affinityDocString)
 
 	return affinityDocString
 }
@@ -559,7 +559,7 @@ func GetAffinity(nodeName string, operator string) string {
 func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 
 	if spec.UserLabels["crunchy-collect"] == "true" {
-		log.Info("crunchy-collect was found as a label on cluster create")
+		log.Debug("crunchy-collect was found as a label on cluster create")
 		collectTemplateFields := collectTemplateFields{}
 		collectTemplateFields.Name = spec.Name
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
@@ -572,7 +572,7 @@ func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 			return ""
 		}
 		collectString := collectDoc.String()
-		log.Info(collectString)
+		log.Debug(collectString)
 		return collectString
 	}
 	return ""

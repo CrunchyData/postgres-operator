@@ -102,7 +102,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		return err
 	}
 	deploymentDocString := primaryDoc.String()
-	log.Info(deploymentDocString)
+	log.Debug(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)

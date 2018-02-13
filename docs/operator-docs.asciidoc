@@ -484,7 +484,7 @@ the following:
  * delete an entire project (*pgo delete cluster --selector=project=xray*)
  * create a cluster with a crunchy-collect sidecar(*pgo create cluster testcluster --metrics*)
 
-More detailed explanations of the commands can be found in the link:user-guide.asciidoc[User Guide].
+More detailed explanations of the commands can be found below <<pgo Commands>>.
 
 == Makefile Targets
 
