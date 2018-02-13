@@ -263,19 +263,18 @@ func Authn(where string, w http.ResponseWriter, r *http.Request) error {
 		log.Infof("[audit] %s username=[%s] method=[%s]\n", where, username, r.Method)
 	}
 
-	log.Debugf("Authn Attempt %s username=[%s] password=[%s]\n", where, username, password)
+	log.Debugf("Authn Attempt %s username=[%s]\n", where, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
 		return errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
-		log.Errorf("Authn Failed %s username=[%s] password=[%s]\n", where, username, password)
+		log.Errorf("Authn Failed %s username=[%s]\n", where, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
 		return errors.New("Not Authenticated")
 	}
 	log.Debug("Authn Success")
-	//log.Debugf("Authn Success %s username=[%s] password=[%s]\n", where, username, password)
 	return err
 
 }
