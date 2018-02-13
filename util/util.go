@@ -285,7 +285,7 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 // RunPsql runs a psql statement
 func RunPsql(password string, hostip string, sqlstring string) {
 
-	log.Debug("RunPsql password [" + password + "] hostip=[" + hostip + "] sql=[" + sqlstring + "]")
+	log.Debug("RunPsql hostip=[" + hostip + "] sql=[" + sqlstring + "]")
 	cmd := exec.Command("runpsql.sh", password, hostip)
 
 	cmd.Stdin = strings.NewReader(sqlstring)
@@ -302,7 +302,7 @@ func RunPsql(password string, hostip string, sqlstring string) {
 		return
 	}
 
-	log.Debugf("runpsql output [%s]\n", out.String())
+	log.Debugf("runpsql output [%s]\n", out.String()[0:20])
 }
 
 // GetSecretPassword ...
