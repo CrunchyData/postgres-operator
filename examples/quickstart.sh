@@ -29,7 +29,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 echo "testing kubectl connection" | tee -a $LOG
-kubectl get namespaces | tee -a $LOG
+kubectl get namespaces 
 if [[ $? -ne 0 ]]; then
 	echo "kubectl is not connecting to your Kube Cluster, required to proceed" | tee -a $LOG
 	exit 1
@@ -104,7 +104,7 @@ if [[ "$REPLY" == "yes" ]]; then
 		echo "problem creating Kube demo namespace"
 		exit 1
 	fi
-	Kubectl get namespaces
+	kubectl get namespaces
 	kubectl config view
 
 	echo "enter your Kube cluster name: "
