@@ -16,12 +16,12 @@ how the operator is built and how it operates.
 
 For most users of the Operator who simply want to deploy 
 it on a running Kube cluster will find the Quickstart
-script useful https://github.com/CrunchyData/postgres-operator/blob/pre25/examples/quickstart.sh
+script useful https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh
 
 Executing that script will deploy the Operator to your Kube
 cluster and also set up your local user environment with the
 *pgo* client in about 10 seconds.  More details on the Quickstart
-is at the end of this document.
+is at the end of this document <<Quickstart>>.
 
 
 == Requirements
@@ -37,15 +37,14 @@ these versions.
 The operator is developed with the Golang versions great than or equal to version 1.8  See
 link:https://golang.org/dl/[Golang website] for details on installing golang. 
 
-Pre-compiled versions of the Operator *pgo* client are provided for the x86_64 and Mac OSX
-hosts.
+Pre-compiled versions of the Operator *pgo* client are provided for the x86_64, Mac OSX, and Windows hosts.
 
-As of version 2.0, the Operator uses the following PostgreSQL containers:
+As of version 2.0, the Operator uses the following Crunchy containers (+1.6.0):
 
-* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
-* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
-* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
-* link:https://hub.docker.com/r/crunchydata/crunchy-collect/[PostgreSQL Metrics Collection Container] version 1.6.0 or later (e.g. centos7-10.1-1.7.0)
+* link:https://hub.docker.com/r/crunchydata/crunchy-postgres/[PostgreSQL 9.6+ Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-backup/[PostgreSQL Backup Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-upgrade/[PostgreSQL Upgrade Container]
+* link:https://hub.docker.com/r/crunchydata/crunchy-collect/[PostgreSQL Metrics Collection Container]
 
 The Operator project builds and operates with the following containers:
 
@@ -55,7 +54,7 @@ The Operator project builds and operates with the following containers:
 * link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
 
-This Operator is developed on and has also been tested on the following operating systems:
+This Operator is developed and tested on the following operating systems:
 
 * *CentOS 7*
 * *RHEL 7*
@@ -63,18 +62,9 @@ This Operator is developed on and has also been tested on the following operatin
 === Kubernetes Environment
 
 To test the *postgres-operator*, it is required to have a Kubernetes cluster
-environment.  The Operator is tested on Kubeadm Kubernetes installed clusters.  Other
-Kubernetes installation methods have been known to work as well.
+environment.  The Operator is tested on Kubeadm Kubernetes installed clusters.  Other Kubernetes installation methods have been known to work as well.
 
 link:https://kubernetes.io/docs/setup/independent/install-kubeadm/[Installing kubeadm - Official Kubernetes Documentation]
-
-
-On kubeadm, you'll need to let non-root users have access to the
-kubeconfig admin directory and files as follows:
-....
-sudo chmod o+rwx /etc/kubernetes/
-sudo chmod o+rwx /etc/kubernetes/admin.conf
-....
 
 == Installation
 
@@ -132,16 +122,16 @@ containers, you can pre-pull them as follows:
 
 For PostgreSQL version 10.1:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-10.1-1.7.0
-docker pull crunchydata/crunchy-backup:centos7-10.1-1.7.0
-docker pull crunchydata/crunchy-upgrade:centos7-10.1-1.7.0
+docker pull crunchydata/crunchy-postgres:centos7-10.1-1.7.1
+docker pull crunchydata/crunchy-backup:centos7-10.1-1.7.1
+docker pull crunchydata/crunchy-upgrade:centos7-10.1-1.7.1
 ....
 
 For PostgreSQL version 9.6:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-9.6.6-1.7.0
-docker pull crunchydata/crunchy-backup:centos7-9.6.6-1.7.0
-docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.0
+docker pull crunchydata/crunchy-postgres:centos7-9.6.6-1.7.1
+docker pull crunchydata/crunchy-backup:centos7-9.6.6-1.7.1
+docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.1
 ....
 
 === Get Prebuilt Images
@@ -221,13 +211,13 @@ The sample service account and cluster role bindings specify
 the *demo* namespace.  Edit the yaml definitions of these to match
 the namespace you are deploying the operator into.
 
-Edit the following, updating the namespace if not using *demo*:
+If you are not using the *demo* namespace, you will edit the following:
 
-$COROOT/conf/apiserver/pgo.yaml
-$COROOT/deploy/service-account.yaml
-$COROOT/deploy/cluster-role-binding.yaml
+ * $COROOT/conf/apiserver/pgo.yaml
+ * $COROOT/deploy/service-account.yaml
+ * $COROOT/deploy/cluster-role-binding.yaml
 
-likewise, specify your *CO_NAMESPACE* environment variable will specify *demo*;
+likewise, specify your *CO_NAMESPACE* environment variable:
 
 ....
 export CO_NAMESPACE=demo
@@ -249,20 +239,13 @@ persistence configuration.
 There are example scripts provided that will create PV and PVC resources
 that can be used in your testing. 
 
-These utilize HostPath and NFS volume types. Other types are not currently 
-supported, but can be manually defined. 
+These example scripts can create sample HostPath and NFS volumes. 
 
 To create sample HostPath Persistent Volumes and CLaims use the following scripts:
 ....
 cd $COROOT/pv
 ./create-pv.sh
-kubectl create -f ./crunchy-pvc.json
-kubectl create -f ./csv-pvc.json
 ....
-
-Note that this example will create a PVC called *crunchy-pvc* that is
-referenced in the examples and *pgo.yaml* configuration file as the
-desired PVC to use when databases and clusters are created.
 
 === Security
 ==== Configure Basic Authentication
@@ -849,7 +832,7 @@ essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
-pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=crunchy-pvc --secret-from=mycluster
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster-pvc --secret-from=mycluster
 ....
 
 This will create a new database called *restoredb* based on the
@@ -1008,16 +991,16 @@ pgo delete upgrade
 
 You can view the files on a PVC as follows:
 ....
-pgo show pvc crunchy-pvc
+pgo show pvc mycluster-pvc
 ....
 
-In this example, the PVC is *crunchy-pvc*.  This command is useful
+In this example, the PVC is *mycluster-pvc*.  This command is useful
 in some cases to examine what files are on a given PVC.
 
 In the case where you want to list a specific path on a PVC
 you can specify the path option as follows:
 ....
-pgo show pvc crunchy-pvc --pvc-root=mycluster-backups
+pgo show pvc mycluster-pvc --pvc-root=mycluster-backups
 ....
 
 === pgo show cluster
