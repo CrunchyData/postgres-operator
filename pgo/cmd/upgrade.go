@@ -24,6 +24,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -184,6 +185,14 @@ func deleteUpgrade(args []string) {
 func validateCreateUpdate(args []string) error {
 	var err error
 
+	if UpgradeType == MajorUpgrade {
+		if util.AskForConfirmation(NoPrompt) {
+		} else {
+			fmt.Println(`Aborting...`)
+			os.Exit(2)
+		}
+
+	}
 	if UpgradeType == MajorUpgrade || UpgradeType == MinorUpgrade {
 	} else {
 		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
