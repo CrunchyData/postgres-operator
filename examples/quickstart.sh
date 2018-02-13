@@ -17,17 +17,6 @@ LOG="pgo-installer.log"
 
 echo "installing deps if necessary" | tee -a $LOG
 
-
-which git > /dev/null 2> /dev/null
-if [[ $? -ne 0 ]]; then
-	echo "git is missing on your system, a required dependency" | tee -a $LOG
-	exit 1
-fi
-which go > /dev/null 2> /dev/null
-if [[ $? -ne 0 ]]; then
-	echo "golang is missing on your system, a required dependency" | tee -a $LOG
-	exit 1
-fi
 which wget > /dev/null 2> /dev/null
 if [[ $? -ne 0 ]]; then
 	echo "wget is missing on your system, a required dependency" | tee -a $LOG
@@ -57,7 +46,8 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_BASEOS=centos7
-export CO_VERSION=2.4
+export CO_VERSION=2.5
+export CO_IMAGE_PREFIX=crunchydata
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
@@ -74,7 +64,7 @@ source $HOME/.bashrc
 echo "setting up directory structure" | tee -a $LOG
 
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
-mkdir -p $GOPATH/src/github.com/crunchydata/
+mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
 echo "installing deps if necessary" | tee -a $LOG
 
@@ -86,33 +76,23 @@ fi
 
 
 echo "installing pgo server config" | tee -a $LOG
-cd $GOPATH/src/github.com/crunchydata
-git clone --quiet https://github.com/CrunchyData/postgres-operator.git 
+wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/2.4/postgres-operator.2.4.tar.gz -O /tmp/postgres-operator.2.4.tar.gz
 if [[ $? -ne 0 ]]; then
 	echo "problem getting pgo server config"
 	exit 1
 fi
 cd $COROOT
-#git checkout 2.4
-git checkout master
+tar xzf /tmp/postgres-operator.2.5.tar.gz
 if [[ $? -ne 0 ]]; then
-	echo "problem getting 2.4 release"
+	echo "problem getting 2.5 release"
 	exit 1
 fi
 
 echo "installing pgo client" | tee -a $LOG
 
-cd $HOME
-wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/2.4/postgres-operator.2.4.tar.gz
-if [[ $? -ne 0 ]]; then
-	echo "problem getting postgres-operator release" | tee -a $LOG
-	exit 1
-fi
-
-tar xzf $HOME/postgres-operator.2.4.tar.gz
-
 mv pgo $GOBIN
 mv pgo-mac $GOBIN
+mv pgo.exe $GOBIN
 
 echo -n "do you want to create the demo namespace? [yes no] "
 read REPLY
@@ -120,10 +100,10 @@ if [[ "$REPLY" == "yes" ]]; then
 	echo "creating demo namespace" | tee -a $LOG
 
 	kubectl create -f $COROOT/examples/demo-namespace.json
-	#if [[ $? -ne 0 ]]; then
-	#	echo "problem creating Kube demo namespace"
-	##	exit 1
-	#fi
+	if [[ $? -ne 0 ]]; then
+		echo "problem creating Kube demo namespace"
+		exit 1
+	fi
 	Kubectl get namespaces
 	kubectl config view
 
@@ -143,8 +123,7 @@ if [[ "$REPLY" == "yes" ]]; then
 	cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
 
 	echo "deploy the operator to the Kube cluster" | tee -a $LOG
-	cd $COROOT
-	./deploy/deploy.sh
+	$COROOT/deploy/deploy.sh > /dev/null 2> /dev/null | tee -a $LOG
 fi
 
 echo "setting up pgo client auth" | tee -a $LOG
@@ -152,7 +131,7 @@ tail --lines=1 $COROOT/conf/apiserver/pgouser > $HOME/.pgouser
 
 echo "for pgo bash completion you will need to install the bash-completion package" | tee -a $LOG
 
-mv $HOME/pgo-bash-completion $HOME/.bash_completion
+cp $COROOT/examples/pgo-bash-completion $HOME/.bash_completion
 
 echo "install complete" | tee -a $LOG
 
