@@ -13,6 +13,7 @@
                 }
             },
             "spec": {
+	        "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "apiserver",
                     "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",

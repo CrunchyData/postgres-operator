@@ -206,31 +206,26 @@ kubectl config use-context demo
 kubectl config current-context
 ....
 
-Add a cluster role binding to allow the new namespace default service
-account permissions to run the postgres-operator and create
-the Custom Resource Definitions:
+Permissions are granted to the Operator by means of a 
+Service Account called *postgres-operator*.  That service
+account is added to the Operator deployment.
 
-....
-$CO_CMD create clusterrolebinding serviceaccounts-cluster-admin \
-  --clusterrole=cluster-admin \
-    --group=system:serviceaccounts
-....
-
-*WARNING*:  the above RBAC command is very permissive, adjust this
-to a scope that you require for your environment.
+The postgres-operator service account is granted cluster-admin
+priviledges using a cluster role binding *postgres-operator-cluster-role-binding*.
 
 See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
 details on how to enable RBAC roles and modify the scope of the permissions
 to suit your needs.
 
-There are 2 places you will need to update to specify your
-namespace:
+The sample service account and cluster role bindings specify
+the *demo* namespace.  Edit the yaml definitions of these to match
+the namespace you are deploying the operator into.
 
-In the operator configuration file, $COROOT/conf/apiserver/pgo.yaml, you will add
-the *demo* value for the *Namespace*:
-....
-Namespace:  demo
-....
+Edit the following, updating the namespace if not using *demo*:
+
+$COROOT/conf/apiserver/pgo.yaml
+$COROOT/deploy/service-account.yaml
+$COROOT/deploy/cluster-role-binding.yaml
 
 likewise, specify your *CO_NAMESPACE* environment variable will specify *demo*;
 
@@ -436,7 +431,7 @@ kubectl get pgclusters
 kubectl get pgbackups
 kubectl get pgupgrades
 kubectl get pgpolicies
-kubectl get pgpolicylogs
+kubectl get pgtasks
 ....
 
 At this point, you should be ready to start using the *pgo* client!  Be

@@ -1,4 +1,3 @@
-
 package main
 
 /*
@@ -37,7 +36,7 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/backup"
+	//"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/client-go/kubernetes"
 )
@@ -182,7 +181,7 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	go backup.ProcessJobs(Clientset, crdClient, Namespace)
+	//go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")

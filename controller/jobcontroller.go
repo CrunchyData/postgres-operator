@@ -18,7 +18,9 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -96,6 +98,18 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if err != nil {
 			log.Error(err)
 		}
+	} else if job.Status.Succeeded > 0 && labels["pgbackup"] != "" {
+		log.Infof("got a pgbackup job status=%d", job.Status.Succeeded)
+		log.Infof("update the status to completed here for pgbackup %s\n ", labels["pg-database"])
+		//		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, crv1.PgbackupResourcePlural, labels["pg-database"], c.Namespace)
+		dbname := job.ObjectMeta.Labels["pg-database"]
+
+		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, c.Namespace)
+
+		if err != nil {
+			log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
+		}
+
 	}
 }
 
