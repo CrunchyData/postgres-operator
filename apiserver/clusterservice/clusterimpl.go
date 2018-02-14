@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -463,6 +463,46 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap["crunchy-collect"] = "true"
 		}
 
+		if existsGlobalConfig() {
+			userLabelsMap["custom-config"] = util.GLOBAL_CUSTOM_CONFIGMAP
+		}
+
+		if request.StorageConfig != "" {
+			if apiserver.IsValidStorageName(request.StorageConfig) == false {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+				return resp
+			}
+		}
+
+		if request.NodeName != "" {
+			valid, reason, allNodes := apiserver.IsValidNodeName(request.NodeName)
+			if !valid {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.NodeName + " NodeName was not valid, " + reason + " valid nodes are " + allNodes
+				return resp
+			}
+		}
+
+		if request.ReplicaStorageConfig != "" {
+			if apiserver.IsValidStorageName(request.ReplicaStorageConfig) == false {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.ReplicaStorageConfig + " Storage config was not found "
+				return resp
+			}
+		}
+
+		if request.CustomConfig != "" {
+			err = validateCustomConfig(request.CustomConfig)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.CustomConfig + " configmap was not found "
+				return resp
+			}
+			//add a label for the custom config
+			userLabelsMap["custom-config"] = request.CustomConfig
+		}
+
 		if request.SecretFrom != "" {
 			err = validateSecretFrom(request.SecretFrom)
 			if err != nil {
@@ -546,31 +586,24 @@ func validateConfigPolicies(PoliciesFlag string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{}
-	primaryStorageSpec := crv1.PgStorageSpec{}
-	spec.PrimaryStorage = primaryStorageSpec
-	replicaStorageSpec := crv1.PgStorageSpec{}
-	spec.ReplicaStorage = replicaStorageSpec
+
+	if request.StorageConfig != "" {
+		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + request.StorageConfig))
+	} else {
+		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("PrimaryStorage")))
+	}
+
+	if request.ReplicaStorageConfig != "" {
+		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + request.ReplicaStorageConfig))
+	} else {
+		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+	}
+
 	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
 	if request.CCPImageTag != "" {
 		spec.CCPImageTag = request.CCPImageTag
 		log.Debug("using CCPImageTag from command line " + request.CCPImageTag)
 	}
-
-	spec.PrimaryStorage.Name = viper.GetString("PrimaryStorage.Name")
-	spec.PrimaryStorage.StorageClass = viper.GetString("PrimaryStorage.StorageClass")
-	spec.PrimaryStorage.AccessMode = viper.GetString("PrimaryStorage.AccessMode")
-	spec.PrimaryStorage.Size = viper.GetString("PrimaryStorage.Size")
-	spec.PrimaryStorage.StorageType = viper.GetString("PrimaryStorage.StorageType")
-	spec.PrimaryStorage.Fsgroup = viper.GetString("PrimaryStorage.Fsgroup")
-	spec.PrimaryStorage.SupplementalGroups = viper.GetString("PrimaryStorage.SupplementalGroups")
-
-	spec.ReplicaStorage.Name = viper.GetString("ReplicaStorage.Name")
-	spec.ReplicaStorage.StorageClass = viper.GetString("ReplicaStorage.StorageClass")
-	spec.ReplicaStorage.AccessMode = viper.GetString("ReplicaStorage.AccessMode")
-	spec.ReplicaStorage.Size = viper.GetString("ReplicaStorage.Size")
-	spec.ReplicaStorage.StorageType = viper.GetString("ReplicaStorage.StorageType")
-	spec.ReplicaStorage.Fsgroup = viper.GetString("ReplicaStorage.Fsgroup")
-	spec.ReplicaStorage.SupplementalGroups = viper.GetString("ReplicaStorage.SupplementalGroups")
 
 	spec.Name = name
 	spec.ClusterName = name
@@ -628,6 +661,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.BackupPVC != "" {
 		spec.BackupPVCName = request.BackupPVC
 	}
+
+	spec.CustomConfig = request.CustomConfig
 
 	labels := make(map[string]string)
 	labels["name"] = name
@@ -847,4 +882,22 @@ func isPrimary(pod *v1.Pod) bool {
 	}
 	return false
 
+}
+
+func validateCustomConfig(configmapname string) error {
+	var err error
+
+	_, err = apiserver.Clientset.CoreV1().ConfigMaps(apiserver.Namespace).Get(configmapname, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return err
+	}
+	return err
+}
+
+func existsGlobalConfig() bool {
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(apiserver.Namespace).Get(util.GLOBAL_CUSTOM_CONFIGMAP, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return false
+	}
+	return true
 }

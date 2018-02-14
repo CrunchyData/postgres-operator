@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -59,7 +59,7 @@ var userCmd = &cobra.Command{
 	Long: `USER allows you to manage users and passwords across a set of clusters
 For example:
 
-pgo user --selector=name=mycluster --update
+pgo user --selector=name=mycluster --update-passwords
 pgo user --expired=7 --selector=name=mycluster
 pgo user --add-user=bob --selector=name=mycluster
 pgo user --change-password=bob --selector=name=mycluster

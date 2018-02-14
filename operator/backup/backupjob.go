@@ -1,7 +1,7 @@
 package backup
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,12 +19,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"os"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/util"
+	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"github.com/crunchydata/postgres-operator/util"
+	v1batch "k8s.io/api/batch/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	v1batch "k8s.io/api/batch/v1"
 	//v1batch "k8s.io/api/batch/v1"
 
 	"k8s.io/client-go/rest"
@@ -59,10 +59,10 @@ func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, n
 				dbname := gotjob.ObjectMeta.Labels["pg-database"]
 				log.Infoln("pgbackup job " + gotjob.Name + " succeeded" + " marking " + dbname + " completed")
 				//update the backup CRD status to completed
-				err = util.Patch(restclient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, namespace)
-				if err != nil {
-					log.Error("error in backup ProcessJobs " + err.Error())
-				}
+				//err = util.Patch(restclient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, namespace)
+				//if err != nil {
+				//	log.Error("error in backup ProcessJobs " + err.Error())
+				//}
 
 			}
 		default:

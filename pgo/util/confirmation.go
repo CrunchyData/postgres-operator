@@ -31,6 +31,8 @@ func AskForConfirmation(NoPrompt bool) bool {
 	if NoPrompt {
 		return true
 	}
+	fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+
 	_, err := fmt.Scanln(&response)
 	if err != nil {
 		fmt.Println("Please type yes or no and then press enter:")

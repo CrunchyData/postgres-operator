@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -69,6 +69,7 @@ type DeploymentTemplateFields struct {
 	PrimarySecretName string
 	SecurityContext   string
 	NodeSelector      string
+	ConfVolume        string
 	CollectAddon      string
 	//next 2 are for the replica deployment only
 	Replicas    string

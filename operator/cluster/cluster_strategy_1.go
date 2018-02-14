@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -26,28 +26,25 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	jsonpatch "github.com/evanphx/json-patch"
+	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"strconv"
 	"text/template"
 	"time"
 )
 
-//const AffinityInOperator = "In"
-//const AFFINITY_NOTINOperator = "NotIn"
+const AffinityInOperator = "In"
+const AFFINITY_NOTINOperator = "NotIn"
 
 type affinityTemplateFields struct {
-	NODE     string
-	OPERATOR string
+	Node          string
+	OperatorValue string
 }
 
 type collectTemplateFields struct {
@@ -121,6 +118,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
+		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
@@ -130,7 +128,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		return err
 	}
 	deploymentDocString := primaryDoc.String()
-	log.Info(deploymentDocString)
+	log.Debug(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
@@ -495,7 +493,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		return err
 	}
 	replicaDeploymentDocString := replicaDoc.String()
-	log.Info(replicaDeploymentDocString)
+	log.Debug(replicaDeploymentDocString)
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
@@ -535,14 +533,15 @@ func getPrimaryLabels(Name string, ClusterName string, cloneFlag bool, replicaFl
 
 // GetAffinity ...
 func GetAffinity(nodeName string, operator string) string {
+	log.Debugf("GetAffinity with nodeName=[%s] and operator=[%s]\n", nodeName, operator)
 	output := ""
 	if nodeName == "" {
 		return output
 	}
 
 	affinityTemplateFields := affinityTemplateFields{}
-	affinityTemplateFields.NODE = nodeName
-	affinityTemplateFields.OPERATOR = operator
+	affinityTemplateFields.Node = nodeName
+	affinityTemplateFields.OperatorValue = operator
 
 	var affinityDoc bytes.Buffer
 	err := affinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
@@ -552,7 +551,7 @@ func GetAffinity(nodeName string, operator string) string {
 	}
 
 	affinityDocString := affinityDoc.String()
-	log.Info(affinityDocString)
+	log.Debug(affinityDocString)
 
 	return affinityDocString
 }
@@ -560,7 +559,7 @@ func GetAffinity(nodeName string, operator string) string {
 func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 
 	if spec.UserLabels["crunchy-collect"] == "true" {
-		log.Info("crunchy-collect was found as a label on cluster create")
+		log.Debug("crunchy-collect was found as a label on cluster create")
 		collectTemplateFields := collectTemplateFields{}
 		collectTemplateFields.Name = spec.Name
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
@@ -573,8 +572,41 @@ func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 			return ""
 		}
 		collectString := collectDoc.String()
-		log.Info(collectString)
+		log.Debug(collectString)
 		return collectString
 	}
 	return ""
+}
+
+// GetConfVolume ...
+func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace string) string {
+	var err error
+
+	//check for user provided configmap
+	if customConfig != "" {
+		_, err = clientset.CoreV1().ConfigMaps(namespace).Get(customConfig, meta_v1.GetOptions{})
+		if kerrors.IsNotFound(err) {
+			//you should NOT get this error because of apiserver validation of this value!
+			log.Error(customConfig + " was not found, error, skipping user provided configMap")
+		} else if err != nil {
+			log.Error(err)
+			log.Error(customConfig + " lookup error, skipping user provided configMap")
+		}
+		return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
+
+	}
+
+	//check for global custom configmap "pgo-custom-pg-config"
+	_, err = clientset.CoreV1().ConfigMaps(namespace).Get(util.GLOBAL_CUSTOM_CONFIGMAP, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+	} else if err != nil {
+		log.Error(err)
+		log.Error(util.GLOBAL_CUSTOM_CONFIGMAP + " lookup error, skipping global configMap")
+	} else {
+		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
+	}
+
+	//the default situation
+	return "\"emptyDir\": { \"medium\": \"Memory\" }"
 }

@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 # Copyright 2016 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,5 +28,9 @@ $CO_CMD $NS delete deployment postgres-operator
 $CO_CMD $NS delete secret pgo-postgres-user-pass \
 	pgo-primary-user-pass pgo-testuser-user-pass
 
-sleep 10
+$CO_CMD $NS delete serviceaccount postgres-operator
+$CO_CMD $NS delete clusterrolebinding postgres-operator-cluster-role-binding
+
+
+sleep 5
 

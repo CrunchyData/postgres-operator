@@ -1,7 +1,7 @@
 package apiservermsgs
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,18 +21,21 @@ import (
 
 // CreateClusterRequest ...
 type CreateClusterRequest struct {
-	Name        string
-	Namespace   string
-	NodeName    string
-	Password    string
-	SecretFrom  string
-	BackupPVC   string
-	UserLabels  string
-	BackupPath  string
-	Policies    string
-	CCPImageTag string
-	Series      int
-	MetricsFlag bool
+	Name                 string
+	Namespace            string
+	NodeName             string
+	Password             string
+	SecretFrom           string
+	BackupPVC            string
+	UserLabels           string
+	BackupPath           string
+	Policies             string
+	CCPImageTag          string
+	Series               int
+	MetricsFlag          bool
+	CustomConfig         string
+	StorageConfig        string
+	ReplicaStorageConfig string
 }
 
 // CreateClusterResponse ...

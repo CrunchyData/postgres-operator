@@ -1,7 +1,7 @@
 package loadservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,7 +23,6 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
-	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
@@ -208,7 +207,7 @@ func createJob(clusterName, filetype, filepath string) error {
 	LoadConfigTemplate.DbHost = clusterName
 	LoadConfigTemplate.FilePath = filepath
 	LoadConfigTemplate.FileType = filetype
-	LoadConfigTemplate.DbPass, err = util.GetSecretPassword(clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
+	LoadConfigTemplate.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return err

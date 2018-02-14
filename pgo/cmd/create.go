@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,6 +21,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var ReplicaStorageConfig, StorageConfig string
+var CustomConfig string
 var MetricsFlag bool
 var CCPImageTag string
 var Password string
@@ -68,20 +70,6 @@ pgo create cluster mycluster`,
 			}
 		}
 
-		//always have a valid NodeName
-		if NodeName == "" {
-			//NodeName = getValidNodeName()
-		} else {
-			/**
-			err = validateNodeName(NodeName)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			*/
-
-		}
-
 		if UserLabels != "" {
 			/**
 			err = validateUserLabels()
@@ -127,7 +115,10 @@ func init() {
 	CreateCmd.AddCommand(createPolicyCmd)
 
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "m", false, "If set, will cause the crunchy-collect container to be added to the database pod")
-	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "n", "", "The node on which to place the primary database")
+	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "g", "", "The name of a configMap that holds custom PG config files used to override the defaults")
+	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
+	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
+	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "", "", "The node on which to place the primary database, if not set any node is used")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")

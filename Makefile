@@ -13,6 +13,11 @@ endif
 #======= Main functions =======
 macpgo:	check-go-vars
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
+	env GOOS=darwin GOARCH=amd64 go build github.com/blang/expenv && mv expenv $(GOBIN)/expenv-mac
+winpgo:	check-go-vars
+	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
+	env GOOS=windows GOARCH=386 go build github.com/blang/expenv && mv expenv.exe $(GOBIN)/expenv.exe
+
 
 gendeps: 
 	godep save \
@@ -58,23 +63,25 @@ apiserverimage:	check-go-vars
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
-	docker tag pgo-apiserver crunchydata/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
+#	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 postgres-operator:	check-go-vars
 	go install postgres-operator.go
 operatorimage:	check-go-vars
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
 	docker build -t postgres-operator -f $(CO_BASEOS)/Dockerfile.postgres-operator.$(CO_BASEOS) .
-	docker tag postgres-operator crunchydata/postgres-operator:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag postgres-operator $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_BASEOS)-$(CO_VERSION)
+#	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 lsimage:
 	docker build -t pgo-lspvc -f $(CO_BASEOS)/Dockerfile.pgo-lspvc.$(CO_BASEOS) .
-	docker tag pgo-lspvc crunchydata/pgo-lspvc:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-lspvc $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_BASEOS)-$(CO_VERSION)
 loadimage:
 	docker build -t pgo-load -f $(CO_BASEOS)/Dockerfile.pgo-load.$(CO_BASEOS) .
-	docker tag pgo-load crunchydata/pgo-load:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-load $(CO_IMAGE_PREFIX)/pgo-load:$(CO_BASEOS)-$(CO_VERSION)
 rmdataimage:
 	docker build -t pgo-rmdata -f $(CO_BASEOS)/Dockerfile.pgo-rmdata.$(CO_BASEOS) .
-	docker tag pgo-rmdata crunchydata/pgo-rmdata:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-rmdata $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_BASEOS)-$(CO_VERSION)
 all:
 	make operatorimage
 	make apiserverimage
@@ -83,17 +90,25 @@ all:
 	make pgo
 	make rmdataimage
 push:
-	docker push crunchydata/pgo-lspvc:$(CO_IMAGE_TAG)
-	docker push crunchydata/pgo-rmdata:$(CO_IMAGE_TAG)
-	docker push crunchydata/pgo-load:$(CO_IMAGE_TAG)
-	docker push crunchydata/postgres-operator:$(CO_IMAGE_TAG)
-	docker push crunchydata/pgo-apiserver:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 release:	check-go-vars
 	make macpgo
+	make winpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
+	cp -r $(COROOT)/examples $(RELTMPDIR)
+	cp -r $(COROOT)/deploy $(RELTMPDIR)
+	cp -r $(COROOT)/conf $(RELTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
+	cp $(GOBIN)/pgo.exe $(RELTMPDIR)
+	cp $(GOBIN)/expenv $(RELTMPDIR)
+	cp $(GOBIN)/expenv-mac $(RELTMPDIR)
+	cp $(GOBIN)/expenv.exe $(RELTMPDIR)
 	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 default:

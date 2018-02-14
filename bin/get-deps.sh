@@ -16,7 +16,9 @@
 echo "getting project dependencies...."
 #godep restore
 
+go get github.com/inconshreveable/mousetrap
 go get github.com/blang/expenv
+go get github.com/tools/godep
 
 go get k8s.io/client-go
 cd $GOPATH/src/k8s.io/client-go

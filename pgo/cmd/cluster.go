@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -138,6 +138,7 @@ func showCluster(args []string) {
 
 // printCluster
 func printCluster(detail *msgs.ShowClusterDetail) {
+	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
 
 	for _, pod := range detail.Pods {
@@ -198,6 +199,9 @@ func createCluster(args []string) {
 	r.CCPImageTag = CCPImageTag
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
+	r.CustomConfig = CustomConfig
+	r.StorageConfig = StorageConfig
+	r.ReplicaStorageConfig = ReplicaStorageConfig
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"

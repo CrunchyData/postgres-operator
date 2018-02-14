@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -24,6 +24,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -33,7 +34,6 @@ const MajorUpgrade = "major"
 const MinorUpgrade = "minor"
 const SEP = "-"
 
-var CCP_IMAGE_TAG string
 var UpgradeType string
 
 var upgradeCmd = &cobra.Command{
@@ -60,7 +60,7 @@ var upgradeCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(upgradeCmd)
 	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
-	upgradeCmd.Flags().StringVarP(&CCP_IMAGE_TAG, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
+	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
 }
 
 func showUpgrade(args []string) {
@@ -185,6 +185,14 @@ func deleteUpgrade(args []string) {
 func validateCreateUpdate(args []string) error {
 	var err error
 
+	if UpgradeType == MajorUpgrade {
+		if util.AskForConfirmation(NoPrompt) {
+		} else {
+			fmt.Println(`Aborting...`)
+			os.Exit(2)
+		}
+
+	}
 	if UpgradeType == MajorUpgrade || UpgradeType == MinorUpgrade {
 	} else {
 		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")

@@ -1,7 +1,7 @@
 package upgradeservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -310,7 +310,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 
 	if request.CCPImageTag != "" {
 		if request.CCPImageTag == existingImage {
-			log.Error("CCPImageTag is the same as the cluster")
+			log.Error("CCPImageTag is the same as the cluster here ")
 			log.Error("can't upgrade to the same image version")
 			log.Error("requested version is " + request.CCPImageTag)
 			log.Error("existing version is " + existingImage)

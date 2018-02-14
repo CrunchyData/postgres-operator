@@ -5,7 +5,7 @@
 			    "preference": {
 				"matchExpressions": [{
 				    "key": "kubernetes.io/hostname",
-				    "operator": "{{.Operator}}",
+				    "operator": "{{.OperatorValue}}",
 				    "values": [
 					"{{.Node}}"
 				    ]   

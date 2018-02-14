@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,9 +18,13 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/spf13/viper"
 	"io/ioutil"
+
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -33,6 +37,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
 
 // CreateSecContext will generate the JSON security context fragment
 // for a storage type
@@ -279,7 +285,7 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 // RunPsql runs a psql statement
 func RunPsql(password string, hostip string, sqlstring string) {
 
-	log.Debug("RunPsql password [" + password + "] hostip=[" + hostip + "] sql=[" + sqlstring + "]")
+	log.Debug("RunPsql hostip=[" + hostip + "] sql=[" + sqlstring + "]")
 	cmd := exec.Command("runpsql.sh", password, hostip)
 
 	cmd.Stdin = strings.NewReader(sqlstring)
@@ -296,5 +302,45 @@ func RunPsql(password string, hostip string, sqlstring string) {
 		return
 	}
 
-	log.Debugf("runpsql output [%s]\n", out.String())
+	log.Debugf("runpsql output [%s]\n", out.String()[0:20])
+}
+
+// GetSecretPassword ...
+func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace string) (string, error) {
+
+	var err error
+
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
+	secrets, err := clientset.Core().Secrets(Namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return "", err
+	}
+
+	log.Debug("secrets for " + db)
+	secretName := db + suffix
+	for _, s := range secrets.Items {
+		log.Debug("secret : " + s.ObjectMeta.Name)
+		if s.ObjectMeta.Name == secretName {
+			log.Debug("pgprimary password found")
+			return string(s.Data["password"][:]), err
+		}
+	}
+
+	log.Error("primary secret not found for " + db)
+	return "", errors.New("primary secret not found for " + db)
+
+}
+
+// GetStorageSpec ...
+func GetStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
+	storage := crv1.PgStorageSpec{}
+	storage.StorageClass = cfg.GetString("StorageClass")
+	storage.AccessMode = cfg.GetString("AccessMode")
+	storage.Size = cfg.GetString("Size")
+	storage.StorageType = cfg.GetString("StorageType")
+	storage.Fsgroup = cfg.GetString("Fsgroup")
+	storage.SupplementalGroups = cfg.GetString("SupplementalGroups")
+	return storage
+
 }

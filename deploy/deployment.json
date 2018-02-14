@@ -13,9 +13,10 @@
                 }
             },
             "spec": {
+	        "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "apiserver",
-                    "image": "crunchydata/pgo-apiserver:$CO_IMAGE_TAG",
+                    "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
                     "ports": [{
                         "containerPort": 8443
@@ -23,6 +24,9 @@
                     "env": [{
                         "name": "DEBUG",
                         "value": "true"
+                    }, {
+                        "name": "PORT",
+                        "value": "8443"
                     }, {
                         "name": "TLS_NO_VERIFY",
                         "value": "false"
@@ -38,7 +42,7 @@
                     }]
                 }, {
                     "name": "operator",
-                    "image": "crunchydata/postgres-operator:$CO_IMAGE_TAG",
+                    "image": "$CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
                         "name": "CCP_IMAGE_PREFIX",

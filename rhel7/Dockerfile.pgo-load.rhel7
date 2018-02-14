@@ -1,12 +1,12 @@
-FROM registry.access.redhat.com/rhel7.3
+FROM registry.access.redhat.com/rhel7.4
 
 LABEL name="crunchydata/pgo-load" \
         vendor="crunchy data" \
       	PostgresVersion="9.6" \
       	PostgresFullVersion="9.6.6" \
         version="7.3" \
-        release="2.4" \
-        build-date="2017-11-28" \
+        release="2.5" \
+        build-date="2018-02-15" \
         url="https://crunchydata.com" \
         summary="loads a CSV or json file into a database" \
         description="executed by the operator, loads a CSV or json file." \

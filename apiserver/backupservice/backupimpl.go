@@ -1,7 +1,7 @@
 package backupservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,8 +19,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/apiserver/util"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,6 +116,16 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 
 	var newInstance *crv1.Pgbackup
 
+	log.Info("CreateBackup sc " + request.StorageConfig)
+	if request.StorageConfig != "" {
+		if apiserver.IsValidStorageName(request.StorageConfig) == false {
+			log.Info("CreateBackup sc error is found " + request.StorageConfig)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
 
@@ -160,72 +170,73 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	}
 	for _, arg := range request.Args {
 		log.Debug("create backup called for " + arg)
-		result := crv1.Pgbackup{}
 
-		// error if it already exists
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
-		if err == nil {
-			log.Debug("pgbackup " + arg + " was found so we recreate it")
-			dels := make([]string, 1)
-			dels[0] = arg
-			DeleteBackup(arg)
-		} else if kerrors.IsNotFound(err) {
-			msg := "pgbackup " + arg + " not found so we will create it"
-			resp.Results = append(resp.Results, "pgbackup "+msg)
+		if BackupJobExists("backup-" + arg) {
+			resp.Results = append(resp.Results, "please delete job backup-"+arg+" before creating another backup")
 		} else {
-			log.Error("error getting pgbackup " + arg)
-			log.Error(err.Error())
-			resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
-			break
+
+			result := crv1.Pgbackup{}
+
+			// error if it already exists
+			err = apiserver.RESTClient.Get().
+				Resource(crv1.PgbackupResourcePlural).
+				Namespace(apiserver.Namespace).
+				Name(arg).
+				Do().
+				Into(&result)
+			if err == nil {
+				log.Debug("pgbackup " + arg + " was found so we recreate it")
+				dels := make([]string, 1)
+				dels[0] = arg
+				DeleteBackup(arg)
+			} else if kerrors.IsNotFound(err) {
+				msg := "pgbackup " + arg + " not found so we will create it"
+				resp.Results = append(resp.Results, "pgbackup "+msg)
+			} else {
+				log.Error("error getting pgbackup " + arg)
+				log.Error(err.Error())
+				resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+				break
+			}
+			// Create an instance of our CRD
+			newInstance, err = getBackupParams(arg, request.StorageConfig)
+			if err != nil {
+				msg := "error creating backup for " + arg
+				log.Error(err)
+				resp.Results = append(resp.Results, msg)
+				break
+			}
+			err = apiserver.RESTClient.Post().
+				Resource(crv1.PgbackupResourcePlural).
+				Namespace(apiserver.Namespace).
+				Body(newInstance).
+				Do().Into(&result)
+			if err != nil {
+				log.Error("error in creating Pgbackup CRD instance")
+				log.Error(err.Error())
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			resp.Results = append(resp.Results, "created Pgbackup "+arg)
 		}
-		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg)
-		if err != nil {
-			msg := "error creating backup for " + arg
-			log.Error(err)
-			resp.Results = append(resp.Results, msg)
-			break
-		}
-		err = apiserver.RESTClient.Post().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Body(newInstance).
-			Do().Into(&result)
-		if err != nil {
-			log.Error("error in creating Pgbackup CRD instance")
-			log.Error(err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-		resp.Results = append(resp.Results, "created Pgbackup "+arg)
 
 	}
 
 	return resp
 }
 
-func getBackupParams(name string) (*crv1.Pgbackup, error) {
+func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	var err error
 	var newInstance *crv1.Pgbackup
 
-	storageSpec := crv1.PgStorageSpec{}
 	spec := crv1.PgbackupSpec{}
 	spec.Name = name
-	spec.StorageSpec = storageSpec
-	spec.StorageSpec.Name = viper.GetString("BackupStorage.Name")
-	spec.StorageSpec.AccessMode = viper.GetString("BackupStorage.AccessMode")
-	spec.StorageSpec.Size = viper.GetString("BackupStorage.Size")
-	spec.StorageSpec.StorageClass = viper.GetString("BackupStorage.StorageClass")
-	spec.StorageSpec.StorageType = viper.GetString("BackupStorage.StorageType")
-	log.Debug("JEFF in backup setting storagetype to " + spec.StorageSpec.StorageType)
-	spec.StorageSpec.SupplementalGroups = viper.GetString("BackupStorage.SupplementalGroups")
-	spec.StorageSpec.Fsgroup = viper.GetString("BackupStorage.Fsgroup")
+	if storageConfig != "" {
+		spec.StorageSpec = util.GetStorageSpec(viper.Sub("Storage." + storageConfig))
+	} else {
+		spec.StorageSpec = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("BackupStorage")))
+	}
 	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
@@ -242,7 +253,7 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 		Into(&cluster)
 	if err == nil {
 		spec.BackupHost = cluster.Spec.Name
-		spec.BackupPass, err = util.GetSecretPassword(cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
+		spec.BackupPass, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
 		if err != nil {
 			return newInstance, err
 		}
@@ -263,4 +274,21 @@ func getBackupParams(name string) (*crv1.Pgbackup, error) {
 		Spec: spec,
 	}
 	return newInstance, nil
+}
+
+func BackupJobExists(name string) bool {
+
+	options := meta_v1.GetOptions{}
+	resultJob, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Get(name, options)
+	if kerrors.IsNotFound(err) {
+		log.Debug("Job " + err.Error())
+
+		return false
+	}
+	if err != nil {
+		log.Error("error getting Job " + err.Error())
+		return false
+	}
+	log.Debugf("found job %v\n", resultJob)
+	return true
 }

@@ -1,7 +1,40 @@
 = postgres Operator Design
-v2.4, {docdate}
+:toc:
+v2.5, {docdate}
+
 
 image::crunchy_logo.png?raw=true[]
+
+== Reference Architecture
+
+So, what does the Postgres Operator actually deploy
+when you create a cluster?
+
+image::OperatorReferenceDiagram.png?raw=true[]
+
+On this diagram, objects with dashed lines are things
+that are optionally deployed as part of a Postgres Cluster
+by the Operator and objects with solid lines are
+the fundamental and required components.
+
+For example, within the Primary Deployment, the *metrics* container
+is completely optional, you can deploy that component using
+Operator configuration or command line arguments if you want
+to cause metrics to be collected from the Postgres container.
+
+Replica deployments are just like the Primary deployment but
+are optional.  You do not have to create a Replica at all 
+unless you need that capability.  As you scale up your Postgres
+cluster, the  standard set of components gets deployed and
+replication to the Primary is started.
+
+Lastly, in a future release, you will be able to optionally
+deploy a Pgpool service and Deployment that can act as a
+SQL *router* to your Postgres cluster.
+
+Notice that each cluster deployment gets its own unique
+Persistent Volumes.  Each volume can use different storage
+configurations which is quite powerful.
 
 == Custom Resource Definitions
 
@@ -12,8 +45,9 @@ of the postgres Operator to define:
  * Backup - *pgbackups*
  * Upgrade - *pgupgrades*
  * Policy - *pgpolicies*
+ * Tasks - *pgtasks*
 
-A PostgreSQL Cluster is made up of multiple Deployments, Services, and Proxies.
+A PostgreSQL Cluster is made up of multiple Deployments and Services.  Optionally you can add a metrics collection container to your database pods.
 
 
 == Command Line Interface
@@ -46,6 +80,13 @@ for that new cluster request.
 The CLI uses the cobra package to implement CLI functionality
 like help text, config file processing, and command line parsing.
 
+The *pgo* client is essentially a REST client which communicates
+to the *pgo-apiserver* REST server running within the Operator pod.  In
+some cases you might want to split the apiserver out into its own 
+Deployment but the default deployment has a consolidated pod
+that contains both the apiserver and operator containers simply for
+convenience of deployment and updates.
+
 === Verbs
 
 A user works with the CLI by entering verbs to indicate
@@ -58,6 +99,41 @@ pgo create cluster mycluster
 ----
 
 In the above example, the *show*, *backup*, *delete*, and *create* verbs are used.  The CLI is case sensitive and supports only lowercase.
+
+== Affinity
+
+You can have the Operator add an affinity section to
+a new Cluster Deployment if you want to cause Kube to
+attempt to schedule a Primary cluster to a specific Kube node.
+
+You can see the nodes on your Kube cluster by:
+....
+kubectl get nodes
+....
+
+You can then specify one of those names (e.g. kubeadm-node2)  when creating a cluster:
+....
+pgo create cluster thatcluster --node-name=kubeadm-node2
+....
+
+The affinity rule inserted in the Deployment will used a *preferred*
+strategy so that if the node were down or not available, Kube would
+go ahead and schedule the Pod on another node.
+
+You can always view the actual node your cluster pod is scheduled
+on by:
+....
+kubectl get pod -o wide
+....
+
+When you scale up a Cluster and add a replica, the scaling will
+take into account the use of "--node-name".  If it sees that a 
+cluster was created with a specific node name, then the replica
+Deployment will add an affinity rule to attempt to schedule
+the replica on a different node than the node the primary is
+schedule on.  This gets you a simple for of High Availability so
+that your primary and replicas will not live on the same Kube node.
+
 
 == Debugging
 
@@ -83,11 +159,16 @@ pgtasks.cr.client-go.k8s.io        CustomResourceDefinition.v1beta1.apiextension
 
 == Persistent Volumes
 
-Currently the operator does not delete persistent volumes, it will
-delete the claims on the volumes.  The cleanup and allocation of
-PV (persistent volumes) is up to the administrator and insures that
-no data is deleted by the operator.
+Currently the operator does not delete persistent volumes by default, it will
+delete the claims on the volumes.  Starting with release 2.4, the Operator
+will create Jobs that actually run *rm* commands on the data volumes before
+actually removing the Persistent Volumes 
+if the user passes a *--delete-data* flag when deleting a database
+cluster.
 
+Likewise, if the user passes *--delete-backups* during cluster deletion
+a Job is created to remove all the backups for a cluster include
+the related Persistent Volume.
 
 == PostgreSQL Operator Deployment Strategies
 
@@ -154,23 +235,30 @@ are stored within the ConfigMap.
 Using the default cluster strategy, a *cluster* when created by the operator will create the
 following on a Kube cluster:
 
-image::operator-diagram-cluster.png?raw=true[]
-
-The default cluster strategy creates the following:
-
- * deployment running a Postgres *master* container with replica count of 1
- * service mapped to the *master* Postgres database
+ * deployment running a Postgres *primary* container with replica count of 1
+ * service mapped to the *primary* Postgres database
  * service mapped to the *replica* Postgres database
- * PVC for the *master* will be created if not specified in configuration, this
+ * PVC for the *primary* will be created if not specified in configuration, this
    assumes you are using a non-shared volume technology (e.g. Amazon EBS),
    if the CLUSTER.PVC_NAME value is set in your configuration then a
    shared volume technology is assumed (e.g. HostPath or NFS), if a PVC
-   is created for the master, the naming convention is *clustername-pvc*
+   is created for the primary, the naming convention is *clustername-pvc*
    where clustername is the name of your cluster.
 
 If you want to add a Postgres replica to a cluster, you will
 *scale* the cluster, for each *replica-count*, a Deployment
 will be created that acts as a Postgres replica.
+
+This is very different than using say a StatefulSet to scale
+up Postgres.  Why would I do it this way?  Imagine a case
+where you want different parts of your Postgres cluster to
+use different storage configurations, I can do that by doing
+specific placement and deployments of each part of the cluster.
+
+This same concept applies to node selection for your Postgres
+cluster components.  The Operator will let you define precisely
+which node you want each Postgres component to be placed upon
+using node affinity rules.
 
 === Cluster Deletion
 
@@ -209,4 +297,100 @@ issues the following command to remove the files:
 ....
 rm -rf /pgdata/<some path>
 ....
+
+=== Custom Postgres Configurations
+
+Starting in release 2.5, users and administrators can specify a
+custom set of Postgres configuration files be used when creating
+a new Postgres cluster.  The configuration files you can
+change include:
+
+ * postgresql.conf
+ * pg_hba.conf
+ * setup.sql
+
+Different configurations for Postgres might be defined for
+the following:
+
+ * OLTP types of databases
+ * OLAP types of databases
+ * High Memory
+ * Minimal Configuration for Development
+ * Project Specific configurations
+ * Special Security Requirements
+
+==== Global ConfigMap
+
+If you create a *configMap* called *pgo-custom-pg-config* with any
+of the above files within it, new clusters will use those configuration
+files when setting up a new database instance.  You do *NOT* have to
+specify all of the configuration files, its up to your use case
+which ones to use.
+
+An example set of configuration files and a script to create the
+global configMap is found at:
+....
+$COROOT/examples/custom-config
+....
+
+If you run the *create.sh* script there, it will create the configMap
+that will include the Postgres configuration files within that directory.
+
+==== Config Files Purpose
+
+The *postgresql.conf* file is the main Postgresql configuration file allowing you to define a wide variety of tuning parameters and features.
+
+The *pg_hba.conf* file is the way Postgresql secures down client access.
+
+The *setup.sql* file is a Crunchy Container Suite configuration
+file used to initially populate the database after the initial *initdb*
+is run when the database is first created.  You would make changes
+to this if you wanted to define what database objects always
+are created.
+
+==== Granular Config Maps
+
+So, lets say you want to use a different set of configuration
+files for different clusters instead of having just a single
+configuration (e.g. Global Config Map).  You can create
+your own set of ConfigMaps with their own set of Postgresql
+configuration files.  When creating new clusters, you 
+can pass a *--custom-config* flag along with the name of your
+ConfigMap and that will be used for that specific cluster or
+set of clusters.
+
+==== Default
+
+Lets say you are happy with the default Postgresql configuration
+files that ship with the Crunchy Postgres container.  You don't have
+to do anything essentially, just keep using the Operator as normal.
+Just be sure to not define a global configMap or pass the
+command line flag.
+
+==== Labeling
+
+You will notice that when a custom configMap is used in cluster
+creation, the Operator labels the primary Postgres Deployment
+with a label that hase a *custom-config* label and a value
+of what configMap was used when creating the database.
+
+Commands coming in future releases will take advantage of this
+labeling.
+
+=== Metrics Collection
+
+If you add a *--metrics* flag to *pgo create cluster* it will 
+cause the *crunchy-collect* container to be added to your
+Postgres cluster.
+
+That container requires you run the *crunchy-metrics* containers
+as defined within the *crunchy-containers* project.  
+
+The *prometheus push gateway* that is deployed as part of the
+*crunchy-metrics* example is a current requirement for the
+metrics solution.  This will change in an upcoming
+release of the *crunchy-containers* project and there will
+no longer be a requirement for the push gateway to be deployed.
+
+See https://github.com/CrunchyData/crunchy-containers/blob/master/docs/metrics.adoc and https://github.com/CrunchyData/crunchy-containers/blob/master/docs/examples.adoc#metrics-collection for more details on setting up the *crunchy-metrics* solution.
 

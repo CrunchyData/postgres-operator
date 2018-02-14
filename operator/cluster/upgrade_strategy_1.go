@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -26,11 +26,9 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	"k8s.io/client-go/kubernetes"
-	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	v1batch "k8s.io/api/batch/v1"
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"text/template"
 )
@@ -88,12 +86,14 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		BackupPVCName:     util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
 		BackupPath:        cl.Spec.BackupPath,
 		DataPathOverride:  cl.Spec.Name,
-		RootSecretName:    cl.Spec.RootSecretName,
-		UserSecretName:    cl.Spec.UserSecretName,
-		PrimarySecretName: cl.Spec.PrimarySecretName,
 		Database:          cl.Spec.Database,
-		NodeSelector:      cl.Spec.NodeName,
 		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:    cl.Spec.RootSecretName,
+		PrimarySecretName: cl.Spec.PrimarySecretName,
+		UserSecretName:    cl.Spec.UserSecretName,
+		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
+		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
 	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
@@ -102,7 +102,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		return err
 	}
 	deploymentDocString := primaryDoc.String()
-	log.Info(deploymentDocString)
+	log.Debug(deploymentDocString)
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
@@ -214,11 +214,13 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		BackupPVCName:     util.CreateBackupPVCSnippet(upgrade.Spec.BackupPVCName),
 		DataPathOverride:  upgrade.Spec.NewDatabaseName,
 		Database:          cl.Spec.Database,
-		NodeSelector:      cl.Spec.NodeName,
-		RootSecretName:    cl.Spec.RootSecretName,
-		UserSecretName:    cl.Spec.UserSecretName,
-		PrimarySecretName: cl.Spec.PrimarySecretName,
 		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:    cl.Spec.RootSecretName,
+		PrimarySecretName: cl.Spec.PrimarySecretName,
+		UserSecretName:    cl.Spec.UserSecretName,
+		NodeSelector:      cl.Spec.NodeName,
+		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
 	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)

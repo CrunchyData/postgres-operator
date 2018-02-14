@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -56,7 +56,7 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 		}
 
 		replicaServiceDocString := replicaServiceDoc.String()
-		log.Info(replicaServiceDocString)
+		log.Debug(replicaServiceDocString)
 
 		replicaService := v1.Service{}
 		err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)

@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,6 +23,7 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -64,6 +65,8 @@ const TreeBranch = "├── "
 
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]string
+
+var StorageMap map[string]interface{}
 
 func init() {
 	BasicAuth = true
@@ -181,6 +184,13 @@ func initConfig() {
 
 	log.Info("namespace is " + viper.GetString("Namespace"))
 
+	StorageMap = viper.GetStringMap("Storage")
+
+	if !validStorageSettings() {
+		log.Error("Storage Settings are not defined correctly, can't continue")
+		os.Exit(2)
+	}
+
 }
 
 func file2lines(filePath string) []string {
@@ -253,19 +263,18 @@ func Authn(where string, w http.ResponseWriter, r *http.Request) error {
 		log.Infof("[audit] %s username=[%s] method=[%s]\n", where, username, r.Method)
 	}
 
-	log.Debugf("Authn Attempt %s username=[%s] password=[%s]\n", where, username, password)
+	log.Debugf("Authn Attempt %s username=[%s]\n", where, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
 		return errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
-		log.Errorf("Authn Failed %s username=[%s] password=[%s]\n", where, username, password)
+		log.Errorf("Authn Failed %s username=[%s]\n", where, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
 		return errors.New("Not Authenticated")
 	}
 	log.Debug("Authn Success")
-	//log.Debugf("Authn Success %s username=[%s] password=[%s]\n", where, username, password)
 	return err
 
 }
@@ -278,4 +287,69 @@ func verifySecrets() {
 	}
 	log.Info("got required secrets for passwords during startup check")
 
+}
+
+func validStorageSettings() bool {
+	log.Infof("Storage has %d definitions\n", len(StorageMap))
+
+	ps := viper.GetString("PrimaryStorage")
+	if IsValidStorageName(ps) {
+		log.Info(ps + " is valid")
+	} else {
+		log.Error(ps + " is NOT valid")
+		return false
+	}
+	rs := viper.GetString("ReplicaStorage")
+	if IsValidStorageName(rs) {
+		log.Info(rs + " is valid")
+	} else {
+		log.Error(rs + " is NOT valid")
+		return false
+	}
+	bs := viper.GetString("BackupStorage")
+	if IsValidStorageName(bs) {
+		log.Info(bs + " is valid")
+	} else {
+		log.Error(bs + " is NOT valid")
+		return false
+	}
+	return true
+
+}
+
+func IsValidStorageName(name string) bool {
+	_, ok := StorageMap[name]
+	return ok
+}
+
+// IsValidNodeName returns true or false if
+// a node is valid, returns a string that
+// describes the not valid condition, and
+// lastly a string of all valid nodes found
+func IsValidNodeName(nodeName string) (bool, string, string) {
+
+	var err error
+	found := false
+	allNodes := ""
+
+	lo := meta_v1.ListOptions{}
+	nodes, err := Clientset.CoreV1().Nodes().List(lo)
+	if err != nil {
+		log.Error(err)
+		return false, err.Error(), allNodes
+	}
+
+	for _, node := range nodes.Items {
+		log.Infof("%v\n", node)
+		if node.Name == nodeName {
+			found = true
+		}
+		allNodes += node.Name + " "
+	}
+
+	if found == false {
+		return false, "not found", allNodes
+	}
+
+	return true, "", allNodes
 }

@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 # Copyright 2016 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $CO_CMD --namespace=$CO_NAMESPACE delete pgbackups --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgclones --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all

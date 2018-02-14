@@ -1,5 +1,7 @@
+package main
+
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,9 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-// Note: the example only works with the code within the same release/branch.
-package main
 
 import (
 	"context"
@@ -37,7 +36,7 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/backup"
+	//"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/client-go/kubernetes"
 )
@@ -182,7 +181,7 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	go backup.ProcessJobs(Clientset, crdClient, Namespace)
+	//go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")

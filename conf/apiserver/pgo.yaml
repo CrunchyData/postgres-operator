@@ -9,22 +9,27 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
-PrimaryStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-BackupStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
-ReplicaStorage:
-  AccessMode:  ReadWriteMany
-  Size:  200M
-  StorageType:  create
+PrimaryStorage: storage1
+BackupStorage: storage1
+ReplicaStorage: storage1
+Storage:
+  storage1:
+    AccessMode:  ReadWriteMany
+    Size:  200M
+    StorageType:  create
+    SupplementalGroups:  65534
+  storage2:
+    AccessMode:  ReadWriteMany
+    Size:  333M
+    StorageType:  create
+  storage3:
+    AccessMode:  ReadWriteMany
+    Size:  440M
+    StorageType:  create
 Pgo:
   Audit:  false
   Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.4
+  COImageTag:  centos7-2.5

@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -48,6 +48,7 @@ func init() {
 	RootCmd.AddCommand(backupCmd)
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
 }
 
 // showBackup ....
@@ -114,7 +115,6 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup User:\t"+result.Spec.BackupUser)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup Pass:\t"+result.Spec.BackupPass)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }
@@ -180,6 +180,7 @@ func createBackup(args []string) {
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.StorageConfig = StorageConfig
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -214,11 +215,6 @@ func createBackup(args []string) {
 		return
 	}
 
-	if len(response.Results) == 0 {
-		fmt.Println("no backups found")
-		return
-	}
-
 	if response.Status.Code == msgs.Ok {
 		for k := range response.Results {
 			fmt.Println(response.Results[k])
@@ -226,6 +222,11 @@ func createBackup(args []string) {
 	} else {
 		fmt.Println(RED(response.Status.Msg))
 		os.Exit(2)
+	}
+
+	if len(response.Results) == 0 {
+		fmt.Println("no backups found")
+		return
 	}
 
 }

@@ -1,7 +1,7 @@
-FROM registry.access.redhat.com/rhel7.3
+FROM registry.access.redhat.com/rhel7.4
 
 
-LABEL Release="2.4" Vendor="Crunchy Data Solutions" 
+LABEL Release="2.5" Vendor="Crunchy Data Solutions" 
 
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 
@@ -18,7 +18,7 @@ ADD bin/postgres-operator/runpsql.sh /usr/local/bin
 
 VOLUME ["/config", "/operator-conf"]
 
-EXPOSE 8443
+#EXPOSE 8443
 
 USER daemon
 
