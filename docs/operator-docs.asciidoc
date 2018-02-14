@@ -1212,8 +1212,6 @@ The script requires a few things in order to work:
 
  * wget utility installed
  * kubectl utility installed
- * go installed and in the PATH
- * git installe and in the PATH
 
 Executing the script will give you a default Operator deployment
 that assumes *dynamic* storage and a storage class named *standard*, 
