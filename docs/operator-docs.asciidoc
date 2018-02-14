@@ -168,7 +168,6 @@ Then install the project library dependencies, the godep dependency manager is u
 as follows:
 ....
 cd $COROOT
-go get github.com/tools/godep
 make setup
 ....
 
