@@ -28,4 +28,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.4
+  COImageTag:  centos7-2.5

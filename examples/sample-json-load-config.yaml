@@ -1,5 +1,5 @@
 COImagePrefix:  crunchydata
-COImageTag:  centos7-2.4
+COImageTag:  centos7-2.5
 DbDatabase:  userdb
 DbUser:  postgres
 DbPort:  5432

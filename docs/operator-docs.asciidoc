@@ -122,9 +122,9 @@ containers, you can pre-pull them as follows:
 
 For PostgreSQL version 10.1:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-10.1-1.7.1
-docker pull crunchydata/crunchy-backup:centos7-10.1-1.7.1
-docker pull crunchydata/crunchy-upgrade:centos7-10.1-1.7.1
+docker pull crunchydata/crunchy-postgres:centos7-10.2-1.8.0
+docker pull crunchydata/crunchy-backup:centos7-10.2-1.8.0
+docker pull crunchydata/crunchy-upgrade:centos7-10.2-1.8.0
 ....
 
 For PostgreSQL version 9.6:
@@ -519,7 +519,7 @@ The default pgo configuration file, included in
 ....
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.1-1.7.1
+  CCPImageTag:  centos7-10.2-1.8.0
   Port:  5432
   User:  testuser
   Database:  userdb
