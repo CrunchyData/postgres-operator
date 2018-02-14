@@ -15,6 +15,8 @@
 
 LOG="pgo-installer.log"
 
+export PGORELEASE=2.5
+
 echo "installing deps if necessary" | tee -a $LOG
 
 which wget > /dev/null 2> /dev/null
@@ -66,23 +68,14 @@ echo "setting up directory structure" | tee -a $LOG
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
-echo "installing deps if necessary" | tee -a $LOG
-
-go get github.com/blang/expenv
-if [[ $? -ne 0 ]]; then
-	echo "problem installing expenv dependency" | tee -a $LOG
-	exit 1
-fi
-
-
 echo "installing pgo server config" | tee -a $LOG
-wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/2.4/postgres-operator.2.4.tar.gz -O /tmp/postgres-operator.2.4.tar.gz
+wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz -O /tmp/postgres-operator.$PGORELEASE.tar.gz
 if [[ $? -ne 0 ]]; then
 	echo "problem getting pgo server config"
 	exit 1
 fi
 cd $COROOT
-tar xzf /tmp/postgres-operator.2.5.tar.gz
+tar xzf /tmp/postgres-operator.$PGORELEASE.tar.gz
 if [[ $? -ne 0 ]]; then
 	echo "problem getting 2.5 release"
 	exit 1
@@ -93,6 +86,9 @@ echo "installing pgo client" | tee -a $LOG
 mv pgo $GOBIN
 mv pgo-mac $GOBIN
 mv pgo.exe $GOBIN
+mv expenv.exe $GOBIN
+mv expenv-mac $GOBIN
+mv expenv $GOBIN
 
 echo -n "do you want to create the demo namespace? [yes no] "
 read REPLY
