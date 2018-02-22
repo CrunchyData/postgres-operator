@@ -1,4 +1,4 @@
-= PostgreSQL Operator Documentation 
+= PostgreSQL Operator Documentation
 :toc:
 v2.5, {docdate}
 
@@ -14,7 +14,7 @@ from source, you can download them from the following:
 Further details can be found in the link:design.asciidoc[PostgreSQL Operator Design] document on
 how the operator is built and how it operates.
 
-For most users of the Operator who simply want to deploy 
+For most users of the Operator who simply want to deploy
 it on a running Kube cluster will find the Quickstart
 script useful https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh
 
@@ -35,7 +35,7 @@ these versions.
 * *OpenShift Origin 1.7.0+*
 
 The operator is developed with the Golang versions great than or equal to version 1.8  See
-link:https://golang.org/dl/[Golang website] for details on installing golang. 
+link:https://golang.org/dl/[Golang website] for details on installing golang.
 
 Pre-compiled versions of the Operator *pgo* client are provided for the x86_64, Mac OSX, and Windows hosts.
 
@@ -195,7 +195,7 @@ kubectl config use-context demo
 kubectl config current-context
 ....
 
-Permissions are granted to the Operator by means of a 
+Permissions are granted to the Operator by means of a
 Service Account called *postgres-operator*.  That service
 account is added to the Operator deployment.
 
@@ -233,12 +233,12 @@ To run the Operator on Openshift Container Platform note the following:
 === Configure Persistent Storage
 
 The default Operator configuration is defined to use a HostPath
-persistence configuration.  
+persistence configuration.
 
 There are example scripts provided that will create PV and PVC resources
-that can be used in your testing. 
+that can be used in your testing.
 
-These example scripts can create sample HostPath and NFS volumes. 
+These example scripts can create sample HostPath and NFS volumes.
 
 To create sample HostPath Persistent Volumes and CLaims use the following scripts:
 ....
@@ -274,7 +274,7 @@ username:password
 testuser:testpass
 ....
 
-Modify these values to be unique to your environment.  
+Modify these values to be unique to your environment.
 
 If the username and password passed by clients to the *apiserver* do
 not match, the REST call will fail and a log message will be produced
@@ -337,7 +337,7 @@ to be used for PostgresSQL clusters from the following Kube Secrets:
  * pgo-testuser-user-pass
 
 The defaults for these Secrets are set in the *create-secrets.sh* script
-which is executed during the postgres-operator deployment. 
+which is executed during the postgres-operator deployment.
 
 === Configuration
 
@@ -351,11 +351,8 @@ $COROOT/conf/apiserver/pgo.load-template.json
 Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
 your storage configuration.  Adjust this file for NFS or other storage configurations.
 
-Note that the *pgo.yaml* configuration file assumes your Kubernetes configuration file is located in */etc/kubernetes/admin.conf*.  Update this kubeconfig
-path to match your local Kubernetes configuration file location. 
-
 The version of PostgreSQL container the Operator will deploy is determined
-by the *CCPImageTag* setting in the *$COROOT/conf/apiserver/pgo.yaml* 
+by the *CCPImageTag* setting in the *$COROOT/conf/apiserver/pgo.yaml*
 configuration file.  By default, this value is set to the latest
 release of the Crunchy Container Suite.
 
@@ -402,9 +399,9 @@ Strategies for deploying the operator can be found in the link:design.asciidoc[P
 
 === Verify Installation
 
-When you first run the operator, it will look for the presence of the 
-predefined custom resource definitions, and create them if not found. 
-The best way to verify a successful deployment of the Operator is by 
+When you first run the operator, it will look for the presence of the
+predefined custom resource definitions, and create them if not found.
+The best way to verify a successful deployment of the Operator is by
 viewing these custom resource definitions:
 
 ....
@@ -478,10 +475,10 @@ The following table describes the Makefile targets:
 |all        | compile all binaries and build all images
 |setup        | fetch the dependent packages required to build with
 |deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
-|main        | compile the postgres-operator 
+|main        | compile the postgres-operator
 |runmain        | locally execute the postgres-operator
 |pgo        | build the pgo binary
-|runpgo        | run the pgo binary 
+|runpgo        | run the pgo binary
 |runapiserver        | run the apiserver binary outside of Kube
 |clean        | remove binaries and compiled packages, restore dependencies
 |operatorimage        | compile and build the postgres-operator Docker image
@@ -568,7 +565,7 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
 |Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment 
+|PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |BackupStorage    |required, the value of the storage configuration to use for backups
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
@@ -626,13 +623,13 @@ pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-conf
 
 That example will create a cluster and specify a storage configuration
 of *fastdisk* to be used for the primary database storage, the replica
-storage will use the storage configuration *slowdisk*.  
+storage will use the storage configuration *slowdisk*.
 
 ....
 pgo backup testcluster --storage-config=offsitestorage
 ....
 
-That example will create a backup and use the *offsitestorage* 
+That example will create a backup and use the *offsitestorage*
 storage configuration for persisting the backup.
 
 === Disaster Recovery Using Storage Configurations
@@ -861,7 +858,7 @@ pgo delete cluster restoredb
 ....
 
 Note, that this command will not remove the PVC associated with
-this cluster. 
+this cluster.
 
 Selectors also apply to the delete command as follows:
 ....
@@ -869,7 +866,7 @@ pgo delete cluster  --selector=project=xray
 ....
 
 This command will cause any cluster matching the selector
-to be removed. 
+to be removed.
 
 You can remove a cluster and it's data files by running:
 ....
@@ -897,7 +894,7 @@ Deployment is set to a replica count of 1, it can not scale beyond 1.
 The replica Deployment is set to an initial value of 0, you will
 see there are 0 replica databases running.  Those replica databases
 are in read-only mode, but you can scale up the number of replicas
-beyond 0 if you need higher read scaling.  To set the number of 
+beyond 0 if you need higher read scaling.  To set the number of
 replicas issue the following command:
 ....
 pgo scale mycluster --replica-count=1
@@ -954,7 +951,7 @@ container image specified in your pgo configuration file.
 
 The database data files are converted to the new major Postgres
 version as specified by the current Postgres image version
-in your pgo configuration file.  
+in your pgo configuration file.
 
 In this scenario, the upgrade is performed by the Postgres
 pg_upgrade utility which is containerized in the *crunchydata/crunchy-upgrade*
@@ -1034,16 +1031,16 @@ pgo create policy policy1 --url=https://someurl/policy1.sql
 
 When you execute this command, it will create a policy named *policy1*
 using the input file */tmp/policy1.sql* as input.  It will create
-on the server a PgPolicy CRD with the name *policy1* that you can 
+on the server a PgPolicy CRD with the name *policy1* that you can
 examine as follows:
 
 ....
 kubectl get pgpolicies policy1 -o json
 ....
 
-Policies get automatically applied to any cluster you create if 
+Policies get automatically applied to any cluster you create if
 you define in your *pgo.yaml* configuration a CLUSTER.POLICIES
-value.  Policy SQL is executed as the *postgres* user.  
+value.  Policy SQL is executed as the *postgres* user.
 
 To view policies:
 ....
@@ -1087,7 +1084,7 @@ pgo user --delete-user=sally --selector=name=mycluster
 
 To delete that user in all clusters:
 ....
-pgo user --delete-user=sally 
+pgo user --delete-user=sally
 ....
 
 To change the password for a user in the *mycluster* cluster:
@@ -1169,7 +1166,7 @@ The loading is based on a load definition found in the *sample-load-config.json*
 If you include the *--policies* flag, any specified policies will be applied prior to the data being loaded.  For
 example:
 ....
-pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster 
+pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster
 ....
 
 Likewise you can load a sample json file into a database as follows:
@@ -1199,7 +1196,7 @@ The load configuration file has the following YAML attributes:
 There is a bash completion file that is included for users to try, this
 is located in the repo at *example/pgo-bash-completion*.  To use it, copy
 that file to /etc/bash_completion.d/pgo, and log out and back into your
-bash shell to try it out.   
+bash shell to try it out.
 
 
 == Quickstart
@@ -1214,7 +1211,7 @@ The script requires a few things in order to work:
  * kubectl utility installed
 
 Executing the script will give you a default Operator deployment
-that assumes *dynamic* storage and a storage class named *standard*, 
+that assumes *dynamic* storage and a storage class named *standard*,
 things that GKE provides.
 
 The script performs the following:
