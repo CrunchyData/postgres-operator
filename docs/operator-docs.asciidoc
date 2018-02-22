@@ -15,13 +15,13 @@ Further details can be found in the link:design.asciidoc[PostgreSQL Operator Des
 how the operator is built and how it operates.
 
 For most users of the Operator who simply want to deploy
-it on a running Kube cluster will find the Quickstart
-script useful https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh
+it on a running Kubernetes cluster will find the Quickstart
+script useful: https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh
 
 Executing that script will deploy the Operator to your Kube
 cluster and also set up your local user environment with the
 *pgo* client in about 10 seconds.  More details on the Quickstart
-is at the end of this document <<Quickstart>>.
+script is located in the <<Quickstart>> section in this document.
 
 
 == Requirements
@@ -155,7 +155,7 @@ tar xvzf ./postgres-operator.2.5.tar.gz
 
 Lastly, add the *pgo* client into your PATH.
 
-You are now ready to Deploy the operator to your Kube system.
+You are now ready to Deploy the operator to your Kubernetes system.
 
 === Build from Source
 
@@ -240,7 +240,7 @@ that can be used in your testing.
 
 These example scripts can create sample HostPath and NFS volumes.
 
-To create sample HostPath Persistent Volumes and CLaims use the following scripts:
+To create sample HostPath Persistent Volumes and Claims use the following scripts:
 ....
 cd $COROOT/pv
 ./create-pv.sh
@@ -332,6 +332,7 @@ this value is set to *false* if you do not specify a value.
 PostgreSQL passwords are defined in Secrets starting with release
 2.5.  When the *pgo-apiserver* starts, it will read the passwords
 to be used for PostgresSQL clusters from the following Kube Secrets:
+
  * pgo-postgres-user-pass
  * pgo-primary-user-pass
  * pgo-testuser-user-pass
@@ -341,7 +342,7 @@ which is executed during the postgres-operator deployment.
 
 === Configuration
 
-The *apiserver* uses the following  configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
+The *apiserver* uses the following configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
 ....
 $COROOT/conf/apiserver/pgo.yaml
 $COROOT/conf/apiserver/pgo.lspvc-template.json
@@ -422,7 +423,7 @@ name of the *postgres-operator* service or to the IP address of the
 export CO_APISERVER_URL=https://10.105.56.167:8443
 ....
 
-or if you have DNS configured on your client host:
+Or if you have DNS configured on your client host:
 ....
 export CO_APISERVER_URL=https://postgres-operator.demo.svc.cluster.local:8443
 ....
@@ -635,10 +636,10 @@ storage configuration for persisting the backup.
 === Disaster Recovery Using Storage Configurations
 
 A simple support for disaster recovery can be obtained
-by leveraging network storage, Kube storage classes, and
+by leveraging network storage, Kubernetes storage classes, and
 the storage configuration options within the Operator.
 
-For example, if you define a Kube storage class that refers
+For example, if you define a Kubernetes storage class that refers
 to a storage backend that is running within your disaster recovery
 site, and then use that storage class as a storage configuration
 for your backups, you essentially have moved your backup files
@@ -888,7 +889,7 @@ replicas issue the following command:
 pgo scale mycluster --replica-count=1
 ....
 
-There are 2 service connections available to the postgres cluster, one is
+There are 2 service connections available to the PostgreSQL cluster. One is
 to the master database which allows read-write SQL processing, and
 the other is to the set of read-only replica databases.  The replica
 service performs round-robin load balancing to the replica databases.
@@ -1182,10 +1183,11 @@ The load configuration file has the following YAML attributes:
 == bash Completion
 
 There is a bash completion file that is included for users to try, this
-is located in the repo at *example/pgo-bash-completion*.  To use it, copy
-that file to /etc/bash_completion.d/pgo, and log out and back into your
-bash shell to try it out.
-
+is located in the repo at *example/pgo-bash-completion*. To use it:
+....
+cp $COROOT/example/pgo-bash-completion /etc/bash_completion.d/pgo
+su - $USER
+....
 
 == Quickstart
 
@@ -1210,5 +1212,5 @@ The script performs the following:
  * sets your .bashrc to include the Operator environment variables
  * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
 
-Our plans are to provide other more customized versions of the Quickstart script
+Our plans are to provide other customized versions of the Quickstart script
 over time, as well as support Mac and Windows versions of the script.
