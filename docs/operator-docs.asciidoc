@@ -563,7 +563,7 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |Cluster.Replicas        | the number of cluster replicas to create for newly created clusters
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
-|Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 365 days
+|Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
 |Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |BackupStorage    |required, the value of the storage configuration to use for backups
