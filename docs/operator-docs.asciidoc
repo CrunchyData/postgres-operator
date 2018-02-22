@@ -803,28 +803,16 @@ You can view the backup:
 pgo show backup mycluster
 ....
 
-You can view the backup along with a PVC listing:
-....
-pgo show backup mycluster --show-pvc=true
-....
+View the PVC folder and the backups contained therein:
 
-The output of the backup will list the backup snapshots
-found in the backup PVC, for example:
-....
-backup job pods for cluster mycluster...
-└── backup-mycluster-63fw1
-└── mydatabase
+...
+pgo show pvc mycluster-backup-pvc
+pgo show pvc mycluster-backup-pvc --pvc-root=mycluster-backups
+...
 
-database pod mycluster is found
-
-├── mycluster-backups/2017-03-27-13-54-33
-├── mycluster-backups/2017-03-27-13-56-49
-└── mycluster-backups/2017-03-27-14-02-38
-....
-
-This output is important in that it can let you copy/paste
-a backup snapshot path and use it for restoring a database or
-essentially cloning a database with an existing backup archive.
+The output from this command is important in that it can let you
+copy/paste a backup snapshot path and use it for restoring a database
+or essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
