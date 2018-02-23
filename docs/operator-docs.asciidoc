@@ -15,8 +15,8 @@ Further details can be found in the link:design.asciidoc[PostgreSQL Operator Des
 how the operator is built and how it operates.
 
 For most users of the Operator who simply want to deploy
-it on a running Kubernetes cluster will find the Quickstart
-script useful: https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh
+it on a running Kubernetes cluster will find the link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh[Quickstart]
+script useful.
 
 Executing that script will deploy the Operator to your Kube
 cluster and also set up your local user environment with the
