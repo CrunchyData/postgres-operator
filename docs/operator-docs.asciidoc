@@ -88,6 +88,13 @@ export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
 ....
 
+It will be necessary to refresh your .bashrc file in order for the changes to take
+effect.
+
+....
+source ~/.bashrc
+....
+
 The value of CO_IMAGE_PREFIX is used to prefix the Operator
 Docker images.  For example, set this environment variable
 to where you have your Operator images loaded either locally (crunchydata)
@@ -763,6 +770,20 @@ database using the service IP address:
 psql -h 10.105.121.12 -U postgres postgres
 ....
 
+More details are available on user management below, however, you may wish to take note
+that user credentials are created in the file $COROOT/deploy/create-secrets.sh upon
+deployment of the Operator. The following user accounts and passwords are created by
+default for connecting to the PostgreSQL clusters:
+
+*username*: postgres
+*password*: password
+
+*username*: primaryuser
+*password*: password
+
+*username*: testuser
+*password*: password
+
 You can view *all* databases using the special keyword *all*:
 ....
 pgo show cluster all
@@ -806,10 +827,10 @@ pgo show backup mycluster
 
 View the PVC folder and the backups contained therein:
 
-...
+....
 pgo show pvc mycluster-backup-pvc
 pgo show pvc mycluster-backup-pvc --pvc-root=mycluster-backups
-...
+....
 
 The output from this command is important in that it can let you
 copy/paste a backup snapshot path and use it for restoring a database
@@ -1183,7 +1204,7 @@ The load configuration file has the following YAML attributes:
 == bash Completion
 
 There is a bash completion file that is included for users to try, this
-is located in the repo at *example/pgo-bash-completion*. To use it:
+is located in the repository at *example/pgo-bash-completion*. To use it:
 ....
 cp $COROOT/example/pgo-bash-completion /etc/bash_completion.d/pgo
 su - $USER
@@ -1191,8 +1212,8 @@ su - $USER
 
 == Quickstart
 
-The *quickstart.sh* script will allow users to set up a Postgres Operator quickly.
-This script is tested on GKE but can be used for other Kube environments as
+The *quickstart.sh* script will allow users to set up the Postgres Operator quickly.
+This script is tested on GKE but can be modified for use with other Kubernetes environments as
 well.
 
 The script requires a few things in order to work:
