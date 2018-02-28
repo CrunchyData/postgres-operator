@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: apiserver
-          image: "crunchydata/pgo-apiserver:centos7-2.4"
+          image: "crunchydata/pgo-apiserver:centos7-2.5"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
           ports:
