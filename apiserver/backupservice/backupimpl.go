@@ -190,8 +190,9 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 				dels[0] = arg
 				DeleteBackup(arg)
 			} else if kerrors.IsNotFound(err) {
-				msg := "pgbackup " + arg + " not found so we will create it"
-				resp.Results = append(resp.Results, "pgbackup "+msg)
+				log.Debug("pgbackup " + arg + " not found so we create it")
+				//msg := "pgbackup " + arg + " not found so we will create it"
+				//resp.Results = append(resp.Results, "pgbackup "+msg)
 			} else {
 				log.Error("error getting pgbackup " + arg)
 				log.Error(err.Error())
