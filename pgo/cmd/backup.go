@@ -23,7 +23,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -177,12 +176,6 @@ func deleteBackup(args []string) {
 // createBackup ....
 func createBackup(args []string) {
 	log.Debugf("createBackup called %v\n", args)
-
-	err := util.ValidateClusterNames(args)
-	if err != nil {
-		log.Error(err)
-		return
-	}
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args

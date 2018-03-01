@@ -32,6 +32,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"strconv"
 	"strings"
 	"time"
@@ -408,6 +409,13 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 	clusterName := request.Name
+
+	errs := validation.IsDNS1035Label(clusterName)
+	if len(errs) > 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "invalid cluster name format " + errs[0]
+		return resp
+	}
 
 	for i := 0; i < request.Series; i++ {
 		if request.Series > 1 {

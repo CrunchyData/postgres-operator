@@ -21,7 +21,6 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/util"
 	"net/http"
 	"os"
 	"strconv"
@@ -185,12 +184,6 @@ func createCluster(args []string) {
 
 	if len(args) == 0 {
 		log.Error("cluster name argument is required")
-		return
-	}
-
-	err = util.ValidateClusterNames(args)
-	if err != nil {
-		log.Error(err)
 		return
 	}
 

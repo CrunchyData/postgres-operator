@@ -21,7 +21,6 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net/http"
@@ -191,12 +190,6 @@ func createPolicy(args []string) {
 	//PolicyURL, PolicyFile
 
 	//create the request
-
-	err = util.ValidateClusterNames(args)
-	if err != nil {
-		log.Error(err)
-		return
-	}
 
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]

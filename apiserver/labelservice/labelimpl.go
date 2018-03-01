@@ -23,12 +23,12 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	jsonpatch "github.com/evanphx/json-patch"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"strings"
 )
 
@@ -252,6 +252,16 @@ func validateLabel(LabelCmdLabel string) (map[string]string, error) {
 			log.Error("label format incorrect, requires name=value")
 			return labelMap, errors.New("label format incorrect, requires name=value")
 		}
+
+		errs := validation.IsDNS1035Label(pair[0])
+		if len(errs) > 0 {
+			return labelMap, errors.New("label format incorrect, requires name=value " + errs[0])
+		}
+		errs = validation.IsDNS1035Label(pair[1])
+		if len(errs) > 0 {
+			return labelMap, errors.New("label format incorrect, requires name=value " + errs[0])
+		}
+
 		labelMap[pair[0]] = pair[1]
 	}
 	return labelMap, err

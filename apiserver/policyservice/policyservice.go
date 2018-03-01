@@ -21,6 +21,7 @@ import (
 	apiserver "github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"net/http"
 )
 
@@ -37,12 +38,18 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
-
-	err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
-	if err != nil {
-		log.Error(err.Error())
+	errs := validation.IsDNS1035Label(request.Name)
+	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
+		resp.Status.Msg = "invalid policy name format " + errs[0]
+	} else {
+
+		err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
+		if err != nil {
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+		}
 	}
 
 	json.NewEncoder(w).Encode(resp)
