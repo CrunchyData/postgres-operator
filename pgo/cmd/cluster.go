@@ -143,7 +143,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for _, pod := range detail.Pods {
 		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
-		fmt.Println("\t" + TreeBranch + "pvc : " + pod.PVCName)
+		fmt.Println(TreeBranch + "pvc : " + pod.PVCName)
 	}
 
 	for _, d := range detail.Deployments {
@@ -155,7 +155,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for i, service := range detail.Services {
 		if i == len(detail.Services)-1 {
-			fmt.Println(TreeTrunk + "service : " + service.Name + " (" + service.ClusterIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
 		} else {
 			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
 		}

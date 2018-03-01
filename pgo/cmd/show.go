@@ -21,8 +21,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const TreeBranch = "├── "
-const TreeTrunk = "└── "
+const TreeBranch = "\t"
+const TreeTrunk = "\t"
 
 var PostgresVersion string
 var ShowPVC bool
