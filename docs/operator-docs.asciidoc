@@ -129,16 +129,16 @@ containers, you can pre-pull them as follows:
 
 For PostgreSQL version 10.1:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-10.2-1.8.0
-docker pull crunchydata/crunchy-backup:centos7-10.2-1.8.0
-docker pull crunchydata/crunchy-upgrade:centos7-10.2-1.8.0
+docker pull crunchydata/crunchy-postgres:centos7-10.3-1.8.1
+docker pull crunchydata/crunchy-backup:centos7-10.3-1.8.1
+docker pull crunchydata/crunchy-upgrade:centos7-10.3-1.8.1
 ....
 
 For PostgreSQL version 9.6:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-9.6.6-1.7.1
-docker pull crunchydata/crunchy-backup:centos7-9.6.6-1.7.1
-docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.1
+docker pull crunchydata/crunchy-postgres:centos7-9.6.8-1.8.1
+docker pull crunchydata/crunchy-backup:centos7-9.6.8-1.8.1
+docker pull crunchydata/crunchy-upgrade:centos7-9.6.8-1.8.1
 ....
 
 === Get Prebuilt Images
@@ -524,7 +524,7 @@ The default pgo configuration file, included in
 ....
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.2-1.8.0
+  CCPImageTag:  centos7-10.3-1.8.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -565,7 +565,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |Namespace        | the namespace the Operator will run within
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.1-1.7.0), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
@@ -981,8 +981,8 @@ job to know when and how to proceed.
 
 Likewise, you can upgrade the cluster using a command line flag:
 ....
-pgo upgrade mycluster --ccp-image-tag=centos7-9.6.6-1.7.0
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.6-1.7.0
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.8-1.8.1
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.1
 ....
 
 
