@@ -522,6 +522,7 @@ The default pgo configuration file, included in
 
 [source,yaml]
 ....
+BasicAuth:  true
 Namespace:  demo
 Cluster:
   CCPImageTag:  centos7-10.2-1.8.0
@@ -564,6 +565,7 @@ Values in the pgo configuration file have the following meaning:
 [width="90%",cols="m,2",frame="topbot",options="header"]
 |======================
 |Setting | Definition
+|BasicAuth        | if set to *true* will enable Basic Authentication
 |Namespace        | the namespace the Operator will run within
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.1-1.7.0), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
@@ -582,6 +584,7 @@ Values in the pgo configuration file have the following meaning:
 |Storage.storage1.StorageType        |supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|Pgo.Debug        | when set to *true*, will cause debug level messages to be output to the container log
 |Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
 |Pgo.LoadTemplate        | the load template file used for load jobs
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
@@ -887,6 +890,10 @@ You can remove a cluster, it's data files, and all backups by running:
 ....
 pgo delete cluster restoredb --delete-data --delete-backups
 ....
+
+When you specify a destructive delete like above, you will be prompted
+to make sure this is what you want to do.  If you don't want to
+be prompted you can enter the *--no-prompt* command line flag.
 
 
 === pgo scale
