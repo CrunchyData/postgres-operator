@@ -24,8 +24,6 @@ fi
 $CO_CMD create -f $DIR/service-account.yaml
 $CO_CMD create -f $DIR/cluster-role-binding.yaml
 
-$DIR/create-secrets.sh
-
 $CO_CMD $NS create configmap apiserver-conf \
 	--from-file=$COROOT/conf/apiserver/server.crt \
 	--from-file=$COROOT/conf/apiserver/server.key \

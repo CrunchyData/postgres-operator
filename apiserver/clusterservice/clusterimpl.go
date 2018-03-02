@@ -626,14 +626,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Policies = request.Policies
 	}
 
-	//get passwords from secrets
-	primaryPassword, testuserPassword, postgresPassword, _ := util.GetAllPasswords(apiserver.Clientset, apiserver.Namespace)
-
-	spec.PrimaryPassword = primaryPassword
+	spec.PrimaryPassword = ""
 	spec.User = "testuser"
-	spec.Password = testuserPassword
+	spec.Password = ""
 	spec.Database = "userdb"
-	spec.RootPassword = postgresPassword
+	spec.RootPassword = ""
 	spec.Replicas = "0"
 	spec.Strategy = "1"
 	spec.NodeName = request.NodeName

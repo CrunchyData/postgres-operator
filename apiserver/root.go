@@ -21,7 +21,6 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
-	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -80,8 +79,6 @@ func init() {
 	initConfig()
 
 	ConnectToKube()
-
-	verifySecrets()
 
 }
 
@@ -276,16 +273,6 @@ func Authn(where string, w http.ResponseWriter, r *http.Request) error {
 	}
 	log.Debug("Authn Success")
 	return err
-
-}
-
-func verifySecrets() {
-	_, _, _, err := util.GetAllPasswords(Clientset, Namespace)
-	if err != nil {
-		log.Error("password secrets not found, aborting")
-		os.Exit(2)
-	}
-	log.Info("got required secrets for passwords during startup check")
 
 }
 

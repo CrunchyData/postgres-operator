@@ -281,30 +281,3 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	}
 	return err
 }
-
-func GetAllPasswords(clientset *kubernetes.Clientset, namespace string) (string, string, string, error) {
-	var err error
-	var primaryPassword, testuserPassword, postgresPassword string
-
-	_, primaryPassword, err = GetPasswordFromSecret(clientset, namespace, PGO_PRIMARY_USER_PASS_SECRET)
-	if err != nil {
-		log.Error("could not get " + PGO_PRIMARY_USER_PASS_SECRET)
-		log.Error(err.Error())
-		return primaryPassword, postgresPassword, testuserPassword, err
-	}
-	_, testuserPassword, err = GetPasswordFromSecret(clientset, namespace, PGO_TESTUSER_USER_PASS_SECRET)
-	if err != nil {
-		log.Error("could not get " + PGO_TESTUSER_USER_PASS_SECRET)
-		log.Error(err.Error())
-		return primaryPassword, postgresPassword, testuserPassword, err
-	}
-	_, postgresPassword, err = GetPasswordFromSecret(clientset, namespace, PGO_POSTGRES_USER_PASS_SECRET)
-	if err != nil {
-		log.Error("could not get " + PGO_POSTGRES_USER_PASS_SECRET)
-		log.Error(err.Error())
-		return primaryPassword, postgresPassword, testuserPassword, err
-	}
-
-	return primaryPassword, postgresPassword, testuserPassword, err
-
-}
