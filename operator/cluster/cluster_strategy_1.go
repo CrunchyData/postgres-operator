@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 	"strconv"
 	"text/template"
-	"time"
+	//"time"
 )
 
 const AffinityInOperator = "In"
@@ -264,6 +264,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 		return err
 	}
 
+	/**
 	for _, d := range deployments.Items {
 		log.Debug("draining deployment " + d.ObjectMeta.Name)
 		err = util.DrainDeployment(clientset, d.ObjectMeta.Name, namespace)
@@ -274,6 +275,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 
 	//sleep just a bit to give the drain time to work
 	time.Sleep(9000 * time.Millisecond)
+	*/
 
 	//TODO when client-go 3.0 is ready, use propagation_policy
 	//in the delete options to also delete the replica sets
@@ -314,7 +316,6 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 			log.Info("deleted cluster replicaset " + r.Name + " in namespace " + namespace)
 		}
 	}
-	*/
 
 	for _, d := range deployments.Items {
 		log.Debug("making sure deployment " + d.ObjectMeta.Name + " is deleted")
@@ -323,6 +324,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 			log.Error("timeout waiting for deployment " + d.ObjectMeta.Name + " to delete " + err.Error())
 		}
 	}
+	*/
 
 	return err
 
