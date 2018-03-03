@@ -1104,6 +1104,14 @@ SQL against that cluster using the *postgres* user account.
 WARNING:  policies are executed as the superuser in PostgreSQL therefore
 take caution when using them.
 
+If you want to view the clusters than have a specific policy applied
+to them, you can use the *--selector* flag as follows to filter on a
+policy name (e.g. policy1):
+....
+pgo show cluster --selector=policy1=pgpolicy
+....
+
+
 === pgo user
 
 To create a new Postgres user to the *mycluster* cluster, execute:

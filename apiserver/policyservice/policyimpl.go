@@ -21,6 +21,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
@@ -242,6 +243,12 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 		}
 
 		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, apiserver.Namespace, labels)
+		if err != nil {
+			log.Error(err)
+		}
+
+		//update the pgcluster crd labels with the new policy
+		err = labelservice.PatchPgcluster(request.Name+"=pgpolicy", cl)
 		if err != nil {
 			log.Error(err)
 		}
