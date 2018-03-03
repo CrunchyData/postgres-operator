@@ -1038,6 +1038,13 @@ cluster.  The cluster credentials are accessed and used to test
 the database connections.  The equivalent *psql* command is printed
 out as connections are tried, along with the connection status.
 
+Like other commands, you can use the selector to test a series
+of clusters:
+....
+pgo test --selector=env=research
+pgo test all
+....
+
 === pgo create policy
 
 To create a policy use the following syntax:

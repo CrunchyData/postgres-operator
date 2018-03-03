@@ -117,11 +117,16 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
 
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := TestCluster(clustername)
+	resp := TestCluster(clustername, selector)
 
 	json.NewEncoder(w).Encode(resp)
 }

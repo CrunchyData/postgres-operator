@@ -291,18 +291,41 @@ func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
 	return output, err
 }
 
-func TestCluster(name string) msgs.ClusterTestResponse {
+func TestCluster(name, selector string) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
+	response.Results = make([]msgs.ClusterTestResult, 0)
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	cluster := crv1.Pgcluster{}
+	myselector := labels.Everything()
+	log.Debug("selector is " + selector)
+	if selector == "" && name == "all" {
+		log.Debug("selector is empty and name is all")
+	} else {
+		if selector == "" {
+			selector = "name=" + name
+			myselector, err = labels.Parse(selector)
+		} else {
+			myselector, err = labels.Parse(selector)
+		}
+		if err != nil {
+			log.Error("could not parse --selector value " + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	}
+
+	log.Debugf("label selector is [%s]\n", myselector.String())
+
+	//get a list of matching clusters
+	clusterList := crv1.PgclusterList{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).
 		Namespace(apiserver.Namespace).
-		Name(name).
-		Do().Into(&cluster)
+		Param("labelSelector", myselector.String()).
+		Do().Into(&clusterList)
 
 	if kerrors.IsNotFound(err) {
 		log.Error("no clusters found")
@@ -318,44 +341,56 @@ func TestCluster(name string) msgs.ClusterTestResponse {
 		return response
 	}
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
-	services, err := apiserver.Clientset.CoreV1().Services(apiserver.Namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of services" + err.Error())
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
+	//loop thru each cluster
 
-	lo = meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
-	secrets, err := apiserver.Clientset.Core().Secrets(apiserver.Namespace).List(lo)
-	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
+	log.Debug("clusters found len is %d\n", len(clusterList.Items))
 
-	response.Items = make([]msgs.ClusterTestDetail, 0)
+	for _, c := range clusterList.Items {
+		result := msgs.ClusterTestResult{}
+		result.ClusterName = c.Name
 
-	for _, service := range services.Items {
-		for _, s := range secrets.Items {
-			item := msgs.ClusterTestDetail{}
-			username := string(s.Data["username"][:])
-			password := string(s.Data["password"][:])
-			database := "postgres"
-			if username == cluster.Spec.User {
-				database = cluster.Spec.Database
-			}
-			item.PsqlString = "psql -p " + cluster.Spec.Port + " -h " + service.Spec.ClusterIP + " -U " + username + " " + database
-			log.Debug(item.PsqlString)
-			status := query(username, service.Spec.ClusterIP, cluster.Spec.Port, database, password)
-			item.Working = false
-			if status {
-				item.Working = true
-			}
-			response.Items = append(response.Items, item)
+		detail := msgs.ShowClusterDetail{}
+		detail.Cluster = c
+
+		//get the services for this cluster
+		detail.Services, err = getServices(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
 		}
+
+		//get the secrets for this cluster
+		detail.Secrets, err = getSecrets(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		result.Items = make([]msgs.ClusterTestDetail, 0)
+
+		//for each service run a test and add results to output
+		for _, service := range detail.Services {
+			for _, s := range detail.Secrets {
+				item := msgs.ClusterTestDetail{}
+				username := s.Username
+				password := s.Password
+				database := "postgres"
+				if username == c.Spec.User {
+					database = c.Spec.Database
+				}
+				item.PsqlString = "psql -p " + c.Spec.Port + " -h " + service.ClusterIP + " -U " + username + " " + database
+				log.Debug(item.PsqlString)
+				status := query(username, service.ClusterIP, c.Spec.Port, database, password)
+				item.Working = false
+				if status {
+					item.Working = true
+				}
+				result.Items = append(result.Items, item)
+			}
+		}
+		response.Results = append(response.Results, result)
 	}
 
 	return response

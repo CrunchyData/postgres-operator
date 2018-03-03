@@ -29,6 +29,7 @@ var RED func(a ...interface{}) string
 // GREEN ...
 var GREEN func(a ...interface{}) string
 
+var OutputFormat string
 var APIServerURL string
 var Labelselector string
 var DebugFlag bool
