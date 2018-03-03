@@ -21,7 +21,9 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -66,6 +68,7 @@ const TreeBranch = "├── "
 var Credentials map[string]string
 
 var StorageMap map[string]interface{}
+var ContainerResourcesMap map[string]interface{}
 
 func init() {
 	BasicAuth = true
@@ -149,16 +152,6 @@ func initConfig() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	//	if KubeconfigPath == "" {
-	//		KubeconfigPath = viper.GetString("Kubeconfig")
-	//	}
-	//	if KubeconfigPath == "" {
-	//		log.Error("--kubeconfig flag is not set and required")
-	//		os.Exit(2)
-	//	}
-
-	//	log.Debug("kubeconfig path is " + viper.GetString("Kubeconfig"))
-
 	if Namespace == "" {
 		Namespace = viper.GetString("Namespace")
 	}
@@ -185,6 +178,13 @@ func initConfig() {
 
 	if !validStorageSettings() {
 		log.Error("Storage Settings are not defined correctly, can't continue")
+		os.Exit(2)
+	}
+
+	ContainerResourcesMap = viper.GetStringMap("ContainerResources")
+
+	if !validContainerResourcesSettings() {
+		log.Error("Container Resources settings are not defined correctly, can't continue")
 		os.Exit(2)
 	}
 
@@ -276,6 +276,33 @@ func Authn(where string, w http.ResponseWriter, r *http.Request) error {
 
 }
 
+func validContainerResourcesSettings() bool {
+	log.Infof("ContainerResources has %d definitions \n", len(ContainerResourcesMap))
+
+	//validate any Container Resources in pgo.yaml for correct formats
+	//log.Infof("%v is the ContainerResourcesMap\n", ContainerResourcesMap)
+	if !IsValidContainerResourceValues() {
+		return false
+	}
+
+	drs := viper.GetString("DefaultContainerResource")
+	if drs == "" {
+		log.Info("DefaultContainerResources was not specified in pgo.yaml, so no container resources will be specified")
+		return true
+	}
+
+	//validate the DefaultContainerResource value
+	if IsValidContainerResource(drs) {
+		log.Info(drs + " is valid")
+	} else {
+		log.Error(drs + " is NOT valid")
+		return false
+	}
+
+	return true
+
+}
+
 func validStorageSettings() bool {
 	log.Infof("Storage has %d definitions\n", len(StorageMap))
 
@@ -300,8 +327,14 @@ func validStorageSettings() bool {
 		log.Error(bs + " is NOT valid")
 		return false
 	}
+
 	return true
 
+}
+
+func IsValidContainerResource(name string) bool {
+	_, ok := ContainerResourcesMap[name]
+	return ok
 }
 
 func IsValidStorageName(name string) bool {
@@ -339,4 +372,35 @@ func IsValidNodeName(nodeName string) (bool, string, string) {
 	}
 
 	return true, "", allNodes
+}
+
+func IsValidContainerResourceValues() bool {
+
+	var err error
+
+	for k, v := range ContainerResourcesMap {
+		log.Infof("Container Resources %s [%v]\n", k, v)
+		resources := util.GetContainerResources(viper.Sub("ContainerResources." + k))
+		_, err = resource.ParseQuantity(resources.RequestsMemory)
+		if err != nil {
+			log.Errorf("%s.RequestsMemory value invalid format\n", k)
+			return false
+		}
+		_, err = resource.ParseQuantity(resources.RequestsCPU)
+		if err != nil {
+			log.Errorf("%s.RequestsCPU value invalid format\n", k)
+			return false
+		}
+		_, err = resource.ParseQuantity(resources.LimitsMemory)
+		if err != nil {
+			log.Errorf("%s.LimitsMemory value invalid format\n", k)
+			return false
+		}
+		_, err = resource.ParseQuantity(resources.LimitsCPU)
+		if err != nil {
+			log.Errorf("%s.LimitsCPU value invalid format\n", k)
+			return false
+		}
+	}
+	return true
 }

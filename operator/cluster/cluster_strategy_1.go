@@ -47,6 +47,11 @@ type affinityTemplateFields struct {
 	OperatorValue string
 }
 
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
+
 type collectTemplateFields struct {
 	Name           string
 	CCPImageTag    string
@@ -57,6 +62,7 @@ type collectTemplateFields struct {
 type Strategy1 struct{}
 
 var affinityTemplate1 *template.Template
+var containerResourcesTemplate1 *template.Template
 var collectTemplate1 *template.Template
 var deploymentTemplate1 *template.Template
 var replicadeploymentTemplate1 *template.Template
@@ -72,6 +78,7 @@ func init() {
 	deploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
 	collectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
 	affinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
+	containerResourcesTemplate1 = util.LoadTemplate("/operator-conf/container-resources.json")
 }
 
 // AddCluster ...
@@ -102,24 +109,25 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
-		Name:              cl.Spec.Name,
-		ClusterName:       cl.Spec.Name,
-		Port:              cl.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
-		CCPImageTag:       cl.Spec.CCPImageTag,
-		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
-		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
-		BackupPVCName:     util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
-		BackupPath:        cl.Spec.BackupPath,
-		DataPathOverride:  cl.Spec.Name,
-		Database:          cl.Spec.Database,
-		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
-		RootSecretName:    cl.Spec.RootSecretName,
-		PrimarySecretName: cl.Spec.PrimarySecretName,
-		UserSecretName:    cl.Spec.UserSecretName,
-		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
-		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		CollectAddon:      GetCollectAddon(&cl.Spec),
+		Name:               cl.Spec.Name,
+		ClusterName:        cl.Spec.Name,
+		Port:               cl.Spec.Port,
+		CCPImagePrefix:     operator.CCPImagePrefix,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		PVCName:            util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
+		OperatorLabels:     util.GetLabelsFromMap(primaryLabels),
+		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
+		BackupPath:         cl.Spec.BackupPath,
+		DataPathOverride:   cl.Spec.Name,
+		Database:           cl.Spec.Database,
+		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:     cl.Spec.RootSecretName,
+		PrimarySecretName:  cl.Spec.PrimarySecretName,
+		UserSecretName:     cl.Spec.UserSecretName,
+		NodeSelector:       GetAffinity(cl.Spec.NodeName, "In"),
+		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
+		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		CollectAddon:       GetCollectAddon(&cl.Spec),
 	}
 
 	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
@@ -462,21 +470,22 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	replicaLabels := getPrimaryLabels(serviceName, clusterName, cloneFlag, true, cl.Spec.UserLabels)
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:              depName,
-		ClusterName:       clusterName,
-		Port:              cl.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
-		CCPImageTag:       cl.Spec.CCPImageTag,
-		PVCName:           pvcName,
-		PrimaryHost:       cl.Spec.PrimaryHost,
-		Database:          cl.Spec.Database,
-		Replicas:          "1",
-		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
-		SecurityContext:   util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:    cl.Spec.RootSecretName,
-		PrimarySecretName: cl.Spec.PrimarySecretName,
-		UserSecretName:    cl.Spec.UserSecretName,
-		NodeSelector:      GetAffinity(cl.Spec.NodeName, "NotIn"),
+		Name:               depName,
+		ClusterName:        clusterName,
+		Port:               cl.Spec.Port,
+		CCPImagePrefix:     operator.CCPImagePrefix,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		PVCName:            pvcName,
+		PrimaryHost:        cl.Spec.PrimaryHost,
+		Database:           cl.Spec.Database,
+		Replicas:           "1",
+		OperatorLabels:     util.GetLabelsFromMap(replicaLabels),
+		SecurityContext:    util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:     cl.Spec.RootSecretName,
+		PrimarySecretName:  cl.Spec.PrimarySecretName,
+		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
+		UserSecretName:     cl.Spec.UserSecretName,
+		NodeSelector:       GetAffinity(cl.Spec.NodeName, "NotIn"),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -609,4 +618,31 @@ func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace stri
 
 	//the default situation
 	return "\"emptyDir\": { \"medium\": \"Memory\" }"
+}
+
+// GetContainerResources ...
+func GetContainerResources(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	var doc bytes.Buffer
+	err := containerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	docString := doc.String()
+	log.Debug(docString)
+
+	return docString
 }

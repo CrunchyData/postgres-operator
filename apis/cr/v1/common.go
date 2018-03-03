@@ -48,3 +48,11 @@ type PgStorageSpec struct {
 	Fsgroup            string `json:"fsgroup"`
 	SupplementalGroups string `json:"supplementalgroups"`
 }
+
+// PgContainerResource ...
+type PgContainerResources struct {
+	RequestsMemory string `json:"requestsmemory"`
+	RequestsCPU    string `json:"requestscpu"`
+	LimitsMemory   string `json:"limitsmemory"`
+	LimitsCPU      string `json:"limitscpu"`
+}

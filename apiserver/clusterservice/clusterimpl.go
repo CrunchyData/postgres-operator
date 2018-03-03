@@ -535,6 +535,14 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			}
 		}
 
+		if request.ContainerResources != "" {
+			if apiserver.IsValidContainerResource(request.ContainerResources) == false {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.ContainerResources + " ContainerResource config was not found "
+				return resp
+			}
+		}
+
 		if request.CustomConfig != "" {
 			err = validateCustomConfig(request.CustomConfig)
 			if err != nil {
@@ -629,6 +637,15 @@ func validateConfigPolicies(PoliciesFlag string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{}
+
+	if request.ContainerResources != "" {
+		spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + request.ContainerResources))
+	} else {
+		defaultContainerResource := viper.GetString("DefaultContainerResource")
+		if defaultContainerResource != "" {
+			spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + defaultContainerResource))
+		}
+	}
 
 	if request.StorageConfig != "" {
 		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + request.StorageConfig))

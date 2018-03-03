@@ -344,3 +344,14 @@ func GetStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
 	return storage
 
 }
+
+// GetContainerResources ...
+func GetContainerResources(cfg *viper.Viper) crv1.PgContainerResources {
+	r := crv1.PgContainerResources{}
+	r.RequestsMemory = cfg.GetString("RequestsMemory")
+	r.RequestsCPU = cfg.GetString("RequestsCPU")
+	r.LimitsMemory = cfg.GetString("LimitsMemory")
+	r.LimitsCPU = cfg.GetString("LimitsCPU")
+	return r
+
+}

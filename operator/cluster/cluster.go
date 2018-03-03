@@ -53,24 +53,25 @@ type ServiceTemplateFields struct {
 
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name              string
-	ClusterName       string
-	Port              string
-	CCPImagePrefix    string
-	CCPImageTag       string
-	Database          string
-	OperatorLabels    string
-	DataPathOverride  string
-	PVCName           string
-	BackupPVCName     string
-	BackupPath        string
-	RootSecretName    string
-	UserSecretName    string
-	PrimarySecretName string
-	SecurityContext   string
-	NodeSelector      string
-	ConfVolume        string
-	CollectAddon      string
+	Name               string
+	ClusterName        string
+	Port               string
+	CCPImagePrefix     string
+	CCPImageTag        string
+	Database           string
+	OperatorLabels     string
+	DataPathOverride   string
+	PVCName            string
+	BackupPVCName      string
+	BackupPath         string
+	RootSecretName     string
+	UserSecretName     string
+	PrimarySecretName  string
+	SecurityContext    string
+	ContainerResources string
+	NodeSelector       string
+	ConfVolume         string
+	CollectAddon       string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string

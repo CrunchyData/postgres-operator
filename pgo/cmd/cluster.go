@@ -217,6 +217,7 @@ func createCluster(args []string) {
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
+	r.ContainerResources = ContainerResources
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"

@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
 var MetricsFlag bool
@@ -149,6 +150,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation, if specified overrides the .pgo.yaml setting")
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series, defaults to 1")
+	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy")
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to filter on clusters")

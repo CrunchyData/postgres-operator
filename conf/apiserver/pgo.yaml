@@ -26,6 +26,18 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  440M
     StorageType:  create
+DefaultContainerResource: small
+ContainerResources:
+  small:
+    RequestsMemory:  2Gi
+    RequestsCPU:  0.5
+    LimitsMemory:  2Gi
+    LimitsCPU:  1.0
+  large:
+    RequestsMemory:  8Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  12Gi
+    LimitsCPU:  4.0
 Pgo:
   Audit:  false
   Metrics:  false

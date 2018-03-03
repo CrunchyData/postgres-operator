@@ -37,6 +37,9 @@
                         "initialDelaySeconds": 15,
                         "timeoutSeconds": 8
                     },
+
+		    {{.ContainerResources }}
+
                     "env": [{
                         "name": "PG_PRIMARY_PORT",
                         "value": "{{.Port}}"

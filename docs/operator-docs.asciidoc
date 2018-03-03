@@ -549,6 +549,18 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  440M
     StorageType:  create
+DefaultContainerResource: small
+ContainerResources:
+  small:
+    RequestsMemory:  2Gi
+    RequestsCPU:  0.5
+    LimitsMemory:  2Gi
+    LimitsCPU:  1.0
+  large:
+    RequestsMemory:  8Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  12Gi
+    LimitsCPU:  4.0
 Pgo:
   Audit:  false
   Metrics:  false
@@ -584,6 +596,15 @@ Values in the pgo configuration file have the following meaning:
 |Storage.storage1.StorageType        |supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
 |Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
+|ContainerResources.small.RequestsMemory        | request size of memory in bytes
+|ContainerResources.small.RequestsCPU        | request size of CPU cores
+|ContainerResources.small.LimitsMemory        | request size of memory in bytes
+|ContainerResources.small.LimitsCPU        | request size of CPU cores
+|ContainerResources.large.RequestsMemory        | request size of memory in bytes
+|ContainerResources.large.RequestsCPU        | request size of CPU cores
+|ContainerResources.large.LimitsMemory        | request size of memory in bytes
+|ContainerResources.large.LimitsCPU        | request size of CPU cores
 |Pgo.Debug        | when set to *true*, will cause debug level messages to be output to the container log
 |Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
 |Pgo.LoadTemplate        | the load template file used for load jobs
@@ -616,6 +637,30 @@ You can set the storage AccessMode values to the following:
 These Storage configurations are validated when the *pgo-apiserver* starts, if a
 non-valid configuration is found, the apiserver will abort.  These Storage values are
 only read at apiserver start time.
+
+=== Overriding Container Resources Configuration Defaults
+
+In the *pgo.yaml* configuration file you have the option
+to configure a default container resources configuration
+that when set will add CPU and memory resource limits and requests
+values into each database container when the container is created.
+
+You can also override the default value using the *--resources-config* 
+command flag when creating a new cluster:
+....
+pgo create cluster testcluster --resources-config=large
+....
+
+Note, if you try to allocate more resources than your
+host or Kube cluster has available then you will see your
+pods wait in a *Pending* status.   The output from a *kubectl describe pod*
+command will show output like this in this case:
+....
+Events:
+  Type     Reason            Age               From               Message
+  ----     ------            ----              ----               -------
+  Warning  FailedScheduling  49s (x8 over 1m)  default-scheduler  No nodes are available that match all of the predicates: Insufficient memory (1).
+....
 
 === Overriding Storage Configuration Defaults
 

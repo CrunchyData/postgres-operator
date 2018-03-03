@@ -65,7 +65,7 @@ apiserverimage:	check-go-vars
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
 	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
 #	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
-postgres-operator:	check-go-vars
+operator:	check-go-vars
 	go install postgres-operator.go
 operatorimage:	check-go-vars
 	go install postgres-operator.go
