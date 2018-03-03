@@ -123,6 +123,15 @@ func showCluster(args []string) {
 			return
 		}
 
+		if OutputFormat == "json" {
+			b, err := json.MarshalIndent(response, "", "  ")
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			fmt.Println(string(b))
+			return
+		}
+
 		if len(response.Results) == 0 {
 			fmt.Println("no clusters found")
 			return
@@ -160,6 +169,12 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
 		}
 	}
+
+	fmt.Printf("%s%s", TreeBranch, "labels : ")
+	for k, v := range detail.Cluster.ObjectMeta.Labels {
+		fmt.Printf("%s=%s ", k, v)
+	}
+	fmt.Println("")
 
 	if ShowSecrets {
 		for _, s := range detail.Secrets {

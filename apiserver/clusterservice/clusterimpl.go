@@ -189,6 +189,7 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+
 		response.Results = append(response.Results, detail)
 	}
 
@@ -211,8 +212,7 @@ func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, erro
 		d.Name = dep.Name
 		d.PolicyLabels = make([]string, 0)
 
-		labels := dep.ObjectMeta.Labels
-		for k, v := range labels {
+		for k, v := range dep.ObjectMeta.Labels {
 			if v == "pgpolicy" {
 				d.PolicyLabels = append(d.PolicyLabels, k)
 			}

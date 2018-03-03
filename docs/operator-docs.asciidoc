@@ -765,6 +765,11 @@ You can then view that database as:
 pgo show cluster mydatabase
 ....
 
+Also, if you like to see JSON formatted output, add the *-o json* flag:
+....
+pgo show cluster mydatabase -o json
+....
+
 The output will give you the current status of the database pod
 and the IP address of the database service.  If you have *postgresql*
 installed on your test system you can connect to the

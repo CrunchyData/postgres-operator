@@ -82,6 +82,7 @@ func init() {
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
+	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
 
 }
 
