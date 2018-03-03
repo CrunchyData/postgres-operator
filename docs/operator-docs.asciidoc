@@ -1045,6 +1045,11 @@ pgo test --selector=env=research
 pgo test all
 ....
 
+You can get output using the *--output* flag:
+....
+pgo test all -o json
+....
+
 === pgo create policy
 
 To create a policy use the following syntax:
