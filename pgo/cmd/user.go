@@ -140,3 +140,18 @@ func userManager() {
 	}
 
 }
+
+func createUser(args []string) {
+
+	if len(args) == 0 {
+		log.Error("policy name argument is required")
+		return
+	}
+	//var err error
+	log.Infof("args=%v selector=%s\n", args, Selector)
+
+	request := msgs.UserRequest{}
+	request.Selector = Selector
+	request.AddUser = AddUser
+
+}

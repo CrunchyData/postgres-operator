@@ -36,8 +36,8 @@ var Series int
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Cluster or Policy",
-	Long: `CREATE allows you to create a new Cluster or Policy
+	Short: "Create a Cluster, Policy, or User",
+	Long: `CREATE allows you to create a new Cluster, Policy, User
 For example:
 
 pgo create cluster
@@ -109,10 +109,32 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	},
 }
 
+// createUserCmd ...
+var createUserCmd = &cobra.Command{
+	Use:   "user",
+	Short: "Create a postgres user",
+	Long: `Create a postgres user. For example:
+pgo create user user1 --selector=name=mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("create user called ")
+		if Selector == "" {
+			log.Error("--selector is required to create a user")
+			return
+		}
+
+		if len(args) == 0 {
+			log.Error("a user name is required for this command")
+		} else {
+			createUser(args)
+		}
+	},
+}
+
 func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
+	//CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "m", false, "If set, will cause the crunchy-collect container to be added to the database pod")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "g", "", "The name of a configMap that holds custom PG config files used to override the defaults")
@@ -129,6 +151,7 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series, defaults to 1")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy")
+	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to filter on clusters")
 	//UserLabelsMap = make(map[string]string)
 
 }
