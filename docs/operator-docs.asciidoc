@@ -605,7 +605,6 @@ Values in the pgo configuration file have the following meaning:
 |ContainerResources.large.RequestsCPU        | request size of CPU cores
 |ContainerResources.large.LimitsMemory        | request size of memory in bytes
 |ContainerResources.large.LimitsCPU        | request size of CPU cores
-|Pgo.Debug        | when set to *true*, will cause debug level messages to be output to the container log
 |Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
 |Pgo.LoadTemplate        | the load template file used for load jobs
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
@@ -711,8 +710,7 @@ Execute the Makefile target *deployoperator* to deploy the Operator.
 
 You can also create NFS PV(s) using the create-pv-nfs.sh script.
 
-To enable DEBUG messages from the operator pod, set the *Debug* environment
-variable to *true* within its deployment file *deployment.json*.
+To enable *debug* level messages from the operator pod, set the *CRUNCHY_DEBUG* environment variable to *true* within its deployment file *deployment.json*.
 
 ==== Operator Templates
 

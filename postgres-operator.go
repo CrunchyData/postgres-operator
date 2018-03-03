@@ -36,7 +36,6 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
-	//"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/client-go/kubernetes"
 )
@@ -47,7 +46,7 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
-	debugFlag := os.Getenv("DEBUG")
+	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")

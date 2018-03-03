@@ -15,7 +15,6 @@ package main
  limitations under the License.
 */
 
-
 import (
 	"crypto/tls"
 	"crypto/x509"
@@ -48,7 +47,7 @@ func main() {
 		PORT = tmp
 	}
 
-	debugFlag := os.Getenv("DEBUG")
+	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")

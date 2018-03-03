@@ -147,11 +147,6 @@ func initConfig() {
 		log.Info("metrics flag is set to true")
 	}
 
-	if DebugFlag || viper.GetBool("Pgo.Debug") {
-		log.Debug("debug flag is set to true")
-		log.SetLevel(log.DebugLevel)
-	}
-
 	if Namespace == "" {
 		Namespace = viper.GetString("Namespace")
 	}

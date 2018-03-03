@@ -18,20 +18,15 @@ package util
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
 	"time"
 )
-
-const PGO_PRIMARY_USER_PASS_SECRET = "pgo-primary-user-pass"
-const PGO_TESTUSER_USER_PASS_SECRET = "pgo-testuser-user-pass"
-const PGO_POSTGRES_USER_PASS_SECRET = "pgo-postgres-user-pass"
 
 const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 

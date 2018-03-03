@@ -22,7 +22,7 @@
                         "containerPort": 8443
                     }],
                     "env": [{
-                        "name": "DEBUG",
+                        "name": "CRUNCHY_DEBUG",
                         "value": "true"
                     }, {
                         "name": "PORT",
@@ -54,7 +54,7 @@
                         "name": "CO_IMAGE_TAG",
                         "value": "$CO_IMAGE_TAG"
                     }, {
-                        "name": "DEBUG",
+                        "name": "CRUNCHY_DEBUG",
                         "value": "true"
                     }, {
                         "name": "NAMESPACE",
