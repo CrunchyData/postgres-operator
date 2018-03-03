@@ -22,7 +22,8 @@ if [ "$CO_CMD" = "kubectl" ]; then
 fi
 
 $CO_CMD create -f $DIR/service-account.yaml
-$CO_CMD create -f $DIR/cluster-role-binding.yaml
+#$CO_CMD create -f $DIR/cluster-role-binding.yaml
+$CO_CMD create -f $DIR/rbac.yaml
 
 $CO_CMD $NS create configmap apiserver-conf \
 	--from-file=$COROOT/conf/apiserver/server.crt \
