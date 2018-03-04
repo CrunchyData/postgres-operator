@@ -68,24 +68,37 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	policyname := vars["name"]
 
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-
+	/**
 	err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
 	if err != nil {
 		return
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
+	*/
 
 	switch r.Method {
 	case "GET":
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
+		err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
+		if err != nil {
+			return
+		}
 		log.Debug("policyservice.ShowPolicyHandler GET called")
 		resp := msgs.ShowPolicyResponse{}
+		resp.Status.Code = msgs.Ok
+		resp.Status.Msg = ""
 		resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname)
 
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
+		err := apiserver.Authn(apiserver.DELETE_POLICY_PERM, w, r)
+		if err != nil {
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
 		log.Debug("policyservice.ShowPolicyHandler DELETE called")
 		resp := DeletePolicy(apiserver.RESTClient, policyname)
 		json.NewEncoder(w).Encode(resp)

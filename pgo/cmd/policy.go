@@ -139,7 +139,6 @@ func showPolicy(args []string) {
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			//log.Info("here after new req")
 			log.Fatal("NewRequest: ", err)
 			return
 		}

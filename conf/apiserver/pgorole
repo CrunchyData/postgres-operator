@@ -1,3 +1,3 @@
-pgoadmin: ShowCluster, CreateCluster, TestCluster, ShowBackup, CreateBackup, Label, Load, CreatePolicy, ShowPolicy, ApplyPolicy, ShowPVC, CreateUpgrade, ShowUpgrade, DeleteUpgrade, User, Version
+pgoadmin: ShowCluster, CreateCluster, TestCluster, ShowBackup, CreateBackup, Label, Load, CreatePolicy, DeletePolicy, ShowPolicy, ApplyPolicy, ShowPVC, CreateUpgrade, ShowUpgrade, DeleteUpgrade, User, Version
 
 pgoreader: ShowCluster, TestCluster, ShowBackup, ShowPolicy, ShowPVC, ShowUpgrade, Version
