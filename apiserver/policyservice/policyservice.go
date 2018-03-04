@@ -68,6 +68,8 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	policyname := vars["name"]
 
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
 	err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
 	if err != nil {
 		return

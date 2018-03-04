@@ -56,6 +56,8 @@ func deleteCluster(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 		var response msgs.DeleteClusterResponse
@@ -111,6 +113,8 @@ func showCluster(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -237,6 +241,9 @@ func createCluster(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 

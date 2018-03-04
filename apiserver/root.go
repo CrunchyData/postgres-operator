@@ -257,7 +257,17 @@ func BasicAuthCheck(username, password string) bool {
 
 func BasicAuthzCheck(username, perm string) bool {
 
-	return true
+	creds := Credentials[username]
+	if creds == (CredentialDetail{}) {
+		//this means username not found in pgouser file
+		//should not happen at this point in code!
+		log.Error("%s not found in pgouser file\n", username)
+		return false
+	}
+
+	log.Infof(" BasicAuthzCheck %s %s %v\n", creds.Role, perm, HasPerm(creds.Role, perm))
+	return HasPerm(creds.Role, perm)
+
 }
 
 func Authn(perm string, w http.ResponseWriter, r *http.Request) error {

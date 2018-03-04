@@ -54,6 +54,7 @@ type ApplyResults struct {
 // ShowPolicyResponse ...
 type ShowPolicyResponse struct {
 	PolicyList crv1.PgpolicyList
+	Status
 }
 
 // DeletePolicyResponse ...

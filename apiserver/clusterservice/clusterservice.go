@@ -45,9 +45,7 @@ type ClusterDetail struct {
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.CreateClusterHandler called")
-	var request msgs.CreateClusterRequest
-	_ = json.NewDecoder(r.Body).Decode(&request)
-
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	err := apiserver.Authn(apiserver.CREATE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
@@ -55,6 +53,9 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+
+	var request msgs.CreateClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
 	resp = CreateCluster(&request)

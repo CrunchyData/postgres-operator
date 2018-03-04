@@ -85,6 +85,8 @@ func showUpgrade(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -152,6 +154,8 @@ func deleteUpgrade(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -233,6 +237,8 @@ func createUpgrade(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 

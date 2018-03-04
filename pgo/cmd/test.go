@@ -77,6 +77,7 @@ func showTest(args []string) {
 			return
 		}
 		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 

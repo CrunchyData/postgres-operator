@@ -75,6 +75,8 @@ func showBackup(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -143,6 +145,8 @@ func deleteBackup(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -203,6 +207,8 @@ func createBackup(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 

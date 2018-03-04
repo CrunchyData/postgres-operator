@@ -75,6 +75,8 @@ func scaleCluster(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
