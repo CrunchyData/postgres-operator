@@ -1,2 +1,2 @@
-username:password
-testuser:testpass
+username:password:pgoadmin
+testuser:testpass:pgoadmin

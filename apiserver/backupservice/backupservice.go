@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -30,6 +31,11 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("backupservice.ShowBackupHandler %v\n", vars)
 
 	backupname := vars["name"]
+
+	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -58,6 +64,11 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.CreateBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err = apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

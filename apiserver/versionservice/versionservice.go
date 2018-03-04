@@ -30,26 +30,10 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	err := apiserver.Authn("VersionHandler", w, r)
+	err := apiserver.Authn(apiserver.VERSION_PERM, w, r)
 	if err != nil {
 		return
 	}
-
-	/**
-	username, password, authOK := r.BasicAuth()
-	if authOK == false {
-		http.Error(w, "Not authorized", 401)
-		return
-	}
-
-	log.Debugf("versionservice.VersionHandler username=[%s] password=[%s]\n", username, password)
-
-	if !apiserver.BasicAuthCheck(username, password) {
-		log.Error("authentication failed for " + username + " in VersionHandler")
-		http.Error(w, "Not authenticated in apiserver", 401)
-		return
-	}
-	*/
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

@@ -64,8 +64,14 @@ const TreeTrunk = "└── "
 // TreeBranch is for debugging only in this context
 const TreeBranch = "├── "
 
+type CredentialDetail struct {
+	Username string
+	Password string
+	Role     string
+}
+
 // Credentials holds the BasicAuth credentials found in the config
-var Credentials map[string]string
+var Credentials map[string]CredentialDetail
 
 var StorageMap map[string]interface{}
 var ContainerResourcesMap map[string]interface{}
@@ -205,25 +211,28 @@ func file2lines(filePath string) []string {
 	return lines
 }
 
-func parseUserMap(dat string) (string, string) {
+func parseUserMap(dat string) CredentialDetail {
+
+	creds := CredentialDetail{}
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
 	//log.Infof("%v\n", fields)
-	//log.Infof("username=[%s] password=[%s]\n", fields[0], fields[1])
-	return fields[0], fields[1]
+	//log.Infof("username=[%s] password=[%s] role=[%s]\n", fields[0], fields[1], fields[2])
+	creds.Username = fields[0]
+	creds.Password = fields[1]
+	creds.Role = fields[2]
+	return creds
 }
 
 // getCredentials ...
 func getCredentials() {
-	var Username, Password string
 
-	Credentials = make(map[string]string)
+	Credentials = make(map[string]CredentialDetail)
 
 	lines := file2lines(pgouserPath)
 	for _, v := range lines {
-		Username, Password = parseUserMap(v)
-		//log.Debugf("username=%s password=%s\n", Username, Password)
-		Credentials[Username] = Password
+		creds := parseUserMap(v)
+		Credentials[creds.Username] = creds
 	}
 
 }
@@ -235,37 +244,49 @@ func BasicAuthCheck(username, password string) bool {
 	}
 
 	value := Credentials[username]
-	if value == "" {
+	if (CredentialDetail{}) == value {
 		return false
 	}
 
-	if value != password {
+	if value.Password != password {
 		return false
 	}
 
 	return true
 }
 
-func Authn(where string, w http.ResponseWriter, r *http.Request) error {
+func BasicAuthzCheck(username, perm string) bool {
+
+	return true
+}
+
+func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
 	var err error
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	username, password, authOK := r.BasicAuth()
 	if AuditFlag {
-		log.Infof("[audit] %s username=[%s] method=[%s]\n", where, username, r.Method)
+		log.Infof("[audit] %s username=[%s] method=[%s]\n", perm, username, r.Method)
 	}
 
-	log.Debugf("Authn Attempt %s username=[%s]\n", where, username)
+	log.Debugf("Authn Attempt %s username=[%s]\n", perm, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
 		return errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
-		log.Errorf("Authn Failed %s username=[%s]\n", where, username)
+		log.Errorf("Authn Failed %s username=[%s]\n", perm, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
 		return errors.New("Not Authenticated")
 	}
+
+	if !BasicAuthzCheck(username, perm) {
+		log.Errorf("Authn Failed %s username=[%s]\n", perm, username)
+		http.Error(w, "Not authorized for this apiserver action", 401)
+		return errors.New("Not Authorized for this apiserver action")
+	}
+
 	log.Debug("Authn Success")
 	return err
 

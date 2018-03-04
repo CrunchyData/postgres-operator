@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -41,6 +42,11 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("pvcservice.ShowPVCHandler GET called")
 	case "DELETE":
 		log.Debug("pvcservice.ShowPVCHandler DELETE called")
+	}
+
+	err = apiserver.Authn(apiserver.SHOW_PVC_PERM, w, r)
+	if err != nil {
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

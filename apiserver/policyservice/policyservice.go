@@ -37,6 +37,11 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreatePolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
+	err := apiserver.Authn(apiserver.CREATE_POLICY_PERM, w, r)
+	if err != nil {
+		return
+	}
+
 	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
 	errs := validation.IsDNS1035Label(request.Name)
 	if len(errs) > 0 {
@@ -62,6 +67,11 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("policyservice.ShowPolicyHandler %v\n", vars)
 
 	policyname := vars["name"]
+
+	err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -89,6 +99,11 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.ApplyPolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err := apiserver.Authn(apiserver.APPLY_POLICY_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

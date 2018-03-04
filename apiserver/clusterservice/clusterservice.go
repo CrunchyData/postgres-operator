@@ -48,6 +48,11 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
+	err := apiserver.Authn(apiserver.CREATE_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -88,7 +93,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
-	err := apiserver.Authn("ShowClusterHandler", w, r)
+	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -120,6 +125,11 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
+	}
+
+	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
 )
@@ -29,6 +30,11 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.LabelRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err := apiserver.Authn(apiserver.LABEL_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
