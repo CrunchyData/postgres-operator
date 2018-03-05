@@ -1,0 +1,97 @@
+= Upgrade Notes for Migrating to Release 2.6
+v2.6, {docdate}
+
+image::crunchy_logo.png?raw=true[]
+
+== pgo.yaml
+
+2.6 changed the pgo.yaml file to remove Debug flag
+
+=== Required Changes
+
+You can remove Pgo.Debug from the pgo.yaml file, the debug flag is
+now called CRUNCHY_DEBUG and is set in the deployment.json file as
+an environment variable.
+
+== Container Resources
+
+Release 2.6 added the concept of container resource configurations
+to the *pgo.yaml* file.
+
+=== Required Changes
+
+If you want to specify container resource configurations, which are
+optional, you can add a section as follows to your *pgo.yaml* file:
+....
+DefaultContainerResource: small
+ContainerResources:
+  small:
+    RequestsMemory:  2Gi
+    RequestsCPU:  0.5
+    LimitsMemory:  2Gi
+    LimitsCPU:  1.0
+  large:
+    RequestsMemory:  8Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  12Gi
+    LimitsCPU:  4.0
+....
+
+Be careful with these settings, you can cause your deployments to
+go into a *pending* state if your Kube cluster can not meet these
+memory and CPU requirements!
+
+== Kube RBAC
+
+Release 2.6 added a *rbac.yaml* file to capture the Kube RBAC
+rules applied to enable the *apiserver* and *postgres-operator*
+containers access to the Kube resources required for
+the operator to work.
+
+=== Required Changes
+
+As part of your deployment process, you will execute
+the *rbac.yaml* file to set the roles and bindings required
+by the operator.  Adjust these to suit your local security
+requirements.
+
+== Application RBAC
+
+Release 2.6 added an RBAC capability to secure the *pgo*
+application.  
+
+=== Required Changes
+
+The *pgouser* now has a role appended at the end of
+of each user definition as follows:
+....
+username:password:pgoadmin
+testuser:testpass:pgoadmin
+readonlyuser:testpass:pgoreader
+....
+
+To match the behavior of the pre 2.6 releases, the *pgadmin* role
+is set on the previous user definitions, but a *readonlyuser* is
+now defined to test other role definitions.
+
+You will want to adjust these default settings to meet your
+local security requirements.
+
+The roles are defined in a new file called *pgorole*.  This
+file defines each role and the permissions for that role.  By
+default, two roles are defined as samples:
+....
+pgoadmin
+pgoreader
+....
+
+You can adjust these to meet your local security requirements.  The
+format of this file is as follows:
+....
+rolename: permissionA, permissionB
+....
+
+The complete set of permissions is documented in the Operator Documentation.
+
+
+
