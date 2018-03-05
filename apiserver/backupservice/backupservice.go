@@ -32,20 +32,27 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	backupname := vars["name"]
 
-	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
-	if err != nil {
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-
 	switch r.Method {
 	case "GET":
+		err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+		if err != nil {
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
+
 		log.Debug("backupservice.ShowBackupHandler GET called")
 		resp := ShowBackup(backupname)
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
+		err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
+		if err != nil {
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
 		log.Debug("backupservice.ShowBackupHandler DELETE called")
 		resp := DeleteBackup(backupname)
 		json.NewEncoder(w).Encode(resp)
