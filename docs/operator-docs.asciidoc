@@ -129,16 +129,16 @@ containers, you can pre-pull them as follows:
 
 For PostgreSQL version 10.1:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-10.2-1.8.0
-docker pull crunchydata/crunchy-backup:centos7-10.2-1.8.0
-docker pull crunchydata/crunchy-upgrade:centos7-10.2-1.8.0
+docker pull crunchydata/crunchy-postgres:centos7-10.3-1.8.1
+docker pull crunchydata/crunchy-backup:centos7-10.3-1.8.1
+docker pull crunchydata/crunchy-upgrade:centos7-10.3-1.8.1
 ....
 
 For PostgreSQL version 9.6:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-9.6.6-1.7.1
-docker pull crunchydata/crunchy-backup:centos7-9.6.6-1.7.1
-docker pull crunchydata/crunchy-upgrade:centos7-9.6.6-1.7.1
+docker pull crunchydata/crunchy-postgres:centos7-9.6.8-1.8.1
+docker pull crunchydata/crunchy-backup:centos7-9.6.8-1.8.1
+docker pull crunchydata/crunchy-upgrade:centos7-9.6.8-1.8.1
 ....
 
 === Get Prebuilt Images
