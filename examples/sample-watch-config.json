@@ -1,0 +1,12 @@
+  {
+      "WatchDir": "/",
+      "DBHost": "mycluster",
+      "DBPort": "5432",
+      "DBName": "userdb",
+      "DBSecret": "mycluster-testuser-secret",
+      "DBTable": "users",
+      "DBColumn": "name",
+      "MaxJobs": 2,
+      "PVCName": "pgo-ingest-watch-pvc",
+      "SecurityContext": ""
+  }

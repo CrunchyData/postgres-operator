@@ -120,6 +120,13 @@ func main() {
 	if taskcrd != nil {
 		fmt.Println(taskcrd.Name + " exists ")
 	}
+	ingestcrd, err := crdclient.PgingestCreateCustomResourceDefinition(apiextensionsclientset)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		panic(err)
+	}
+	if ingestcrd != nil {
+		fmt.Println(ingestcrd.Name + " exists ")
+	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
 	crdClient, crdScheme, err := crdclient.NewClient(config)
@@ -134,6 +141,12 @@ func main() {
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
 		Namespace:       Namespace,
+	}
+	pgIngestcontroller := controller.PgingestController{
+		PgingestClient:    crdClient,
+		PgingestScheme:    crdScheme,
+		PgingestClientset: Clientset,
+		Namespace:         Namespace,
 	}
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
@@ -173,6 +186,7 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go pgTaskcontroller.Run(ctx)
+	go pgIngestcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)
 	go pgUpgradecontroller.Run(ctx)

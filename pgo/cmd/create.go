@@ -31,6 +31,7 @@ var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var NodeName string
 var UserLabels string
+var IngestConfig string
 
 //var UserLabelsMap map[string]string
 var Series int
@@ -110,6 +111,27 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	},
 }
 
+// createIngestCmd ...
+var createIngestCmd = &cobra.Command{
+	Use:   "ingest",
+	Short: "Create an ingest",
+	Long: `Create an ingest. For example:
+pgo create ingest myingest --ingest-config=./ingest.json`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("create ingest called ")
+
+		if len(args) == 0 {
+			log.Error("an ingest name is required for this command")
+		} else {
+			if IngestConfig == "" {
+				fmt.Println("You must specify the ingest-config flag")
+				return
+			}
+			createIngest(args)
+		}
+	},
+}
+
 // createUserCmd ...
 var createUserCmd = &cobra.Command{
 	Use:   "user",
@@ -135,8 +157,10 @@ func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
+	CreateCmd.AddCommand(createIngestCmd)
 	//CreateCmd.AddCommand(createUserCmd)
 
+	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "i", "", "The path of an ingest configuration file")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "m", false, "If set, will cause the crunchy-collect container to be added to the database pod")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "g", "", "The name of a configMap that holds custom PG config files used to override the defaults")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")

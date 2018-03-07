@@ -19,6 +19,7 @@ $CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgtasks --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgingests --all
 
 $CO_CMD --namespace=$CO_NAMESPACE delete crd \
 	pgbackups.cr.client-go.k8s.io \

@@ -41,6 +41,9 @@ const SHOW_UPGRADE_PERM = "ShowUpgrade"
 const DELETE_UPGRADE_PERM = "DeleteUpgrade"
 const USER_PERM = "User"
 const VERSION_PERM = "Version"
+const CREATE_INGEST_PERM = "CreateIngest"
+const SHOW_INGEST_PERM = "ShowIngest"
+const DELETE_INGEST_PERM = "DeleteIngest"
 
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
@@ -69,6 +72,9 @@ func init() {
 	PermMap[DELETE_UPGRADE_PERM] = "yes"
 	PermMap[USER_PERM] = "yes"
 	PermMap[VERSION_PERM] = "yes"
+	PermMap[CREATE_INGEST_PERM] = "yes"
+	PermMap[SHOW_INGEST_PERM] = "yes"
+	PermMap[DELETE_INGEST_PERM] = "yes"
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
 	readRoles()

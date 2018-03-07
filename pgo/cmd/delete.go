@@ -42,12 +42,14 @@ pgo delete upgrade mycluster`,
 	* policy
 	* cluster
 	* backup
+	* ingest
 	* upgrade`)
 		} else {
 			switch args[0] {
 			case "policy":
 			case "cluster":
 			case "backup":
+			case "ingest":
 			case "upgrade":
 				break
 			default:
@@ -55,6 +57,7 @@ pgo delete upgrade mycluster`,
 	* policy
 	* cluster
 	* backup
+	* ingest
 	* upgrade`)
 			}
 		}
@@ -68,6 +71,7 @@ var NoPrompt bool
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
+	deleteCmd.AddCommand(deleteIngestCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
 	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
@@ -78,6 +82,24 @@ func init() {
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
 
+}
+
+var deleteIngestCmd = &cobra.Command{
+	Use:   "ingest",
+	Short: "delete an ingest",
+	Long: `delete an ingest. For example:
+	pgo delete ingest myingest`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("a ingest name is required for this command")
+		} else {
+			if util.AskForConfirmation(NoPrompt) {
+				deleteIngest(args)
+			} else {
+				fmt.Println(`Aborting...`)
+			}
+		}
+	},
 }
 
 var deleteUpgradeCmd = &cobra.Command{
