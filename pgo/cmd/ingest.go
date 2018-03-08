@@ -183,14 +183,14 @@ func showIngest(args []string) {
 			return
 		}
 
-		if len(response.Results) == 0 {
+		if len(response.IngestList.Items) == 0 {
 			fmt.Println("no ingests found")
 			return
 		}
 
 		log.Debugf("response = %v\n", response)
-		for _, ingest := range response.Results {
-			showIngestItem(&ingest.Ingest)
+		for _, ingest := range response.IngestList.Items {
+			showIngestItem(&ingest)
 		}
 
 	}

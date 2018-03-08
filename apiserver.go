@@ -74,6 +74,7 @@ func main() {
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/ingest", ingestservice.CreateIngestHandler).Methods("POST")
+	r.HandleFunc("/ingest/{name}", ingestservice.ShowIngestHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")

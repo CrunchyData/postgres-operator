@@ -25,6 +25,12 @@
                         "name": "CO_IMAGE_PREFIX",
                         "value": "{{.COImagePrefix}}"
                     }, {
+                        "name": "INGEST_NAME",
+                        "value": "{{.Name}}"
+                    }, {
+                        "name": "INGEST_PVC_NAME",
+                        "value": "{{.PvcName}}"
+                    }, {
                         "name": "CO_IMAGE_TAG",
                         "value": "{{.COImageTag}}"
                     }, {

@@ -96,3 +96,78 @@ func CreateIngest(RESTClient *rest.RESTClient, request *msgs.CreateIngestRequest
 	return resp
 
 }
+
+// ShowIngest ...
+func ShowIngest(name string) msgs.ShowIngestResponse {
+	response := msgs.ShowIngestResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	if name == "all" {
+		//get a list of all ingests
+		err := apiserver.RESTClient.Get().
+			Resource(crv1.PgingestResourcePlural).
+			Namespace(apiserver.Namespace).
+			Do().Into(&response.IngestList)
+		if err != nil {
+			log.Error("error getting list of ingests" + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		log.Debug("ingests found len is %d\n", len(response.IngestList.Items))
+	} else {
+		ingest := crv1.Pgingest{}
+		err := apiserver.RESTClient.Get().
+			Resource(crv1.PgingestResourcePlural).
+			Namespace(apiserver.Namespace).
+			Name(name).
+			Do().Into(&ingest)
+		if err != nil {
+			log.Error("error getting ingest" + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.IngestList.Items = make([]crv1.Pgingest, 1)
+		response.IngestList.Items[0] = ingest
+	}
+
+	return response
+
+}
+
+// DeleteIngest ...
+func DeleteIngest(name string) msgs.DeleteIngestResponse {
+	response := msgs.DeleteIngestResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 1)
+
+	if name == "all" {
+		err := apiserver.RESTClient.Delete().
+			Resource(crv1.PgingestResourcePlural).
+			Namespace(apiserver.Namespace).
+			Do().Error()
+		if err != nil {
+			log.Error("error deleting all ingests" + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results[0] = "all"
+	} else {
+		err := apiserver.RESTClient.Delete().
+			Resource(crv1.PgingestResourcePlural).
+			Namespace(apiserver.Namespace).
+			Name(name).
+			Do().Error()
+		if err != nil {
+			log.Error("error deleting ingest" + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results[0] = name
+	}
+
+	return response
+
+}

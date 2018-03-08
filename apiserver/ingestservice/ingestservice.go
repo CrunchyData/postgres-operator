@@ -20,7 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	apiserver "github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	//"github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 	//"k8s.io/apimachinery/pkg/util/validation"
 	"net/http"
 )
@@ -43,4 +43,38 @@ func CreateIngestHandler(w http.ResponseWriter, r *http.Request) {
 	resp := CreateIngest(apiserver.RESTClient, &request)
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("ingestservice.ShowIngestHandler %v\n", vars)
+
+	ingestName := vars["name"]
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	switch r.Method {
+	case "GET":
+		log.Debug("ingestservice.ShowIngestHandler GET called")
+
+		err := apiserver.Authn(apiserver.SHOW_INGEST_PERM, w, r)
+		if err != nil {
+			return
+		}
+
+		resp := ShowIngest(ingestName)
+		json.NewEncoder(w).Encode(resp)
+	case "DELETE":
+		log.Debug("ingestservice.ShowIngestHandler DELETE called")
+
+		err := apiserver.Authn(apiserver.DELETE_INGEST_PERM, w, r)
+		if err != nil {
+			return
+		}
+
+		resp := DeleteIngest(ingestName)
+		json.NewEncoder(w).Encode(resp)
+	}
+
 }

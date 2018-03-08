@@ -40,14 +40,9 @@ type CreateIngestResponse struct {
 	Status
 }
 
-// ShowIngestDetail ...
-type ShowIngestDetail struct {
-	Ingest crv1.Pgingest
-}
-
 // ShowIngestResponse ...
 type ShowIngestResponse struct {
-	Results []ShowIngestDetail
+	IngestList crv1.PgingestList
 	Status
 }
 
