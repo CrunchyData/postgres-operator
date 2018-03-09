@@ -101,19 +101,28 @@ func CreateIngest(RESTClient *rest.RESTClient, request *msgs.CreateIngestRequest
 func ShowIngest(name string) msgs.ShowIngestResponse {
 	response := msgs.ShowIngestResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if name == "all" {
 		//get a list of all ingests
+		ingestList := crv1.PgingestList{}
 		err := apiserver.RESTClient.Get().
 			Resource(crv1.PgingestResourcePlural).
 			Namespace(apiserver.Namespace).
-			Do().Into(&response.IngestList)
+			Do().Into(&ingestList)
 		if err != nil {
 			log.Error("error getting list of ingests" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		log.Debug("ingests found len is %d\n", len(response.IngestList.Items))
+		log.Debug("ingests found len is %d\n", len(ingestList.Items))
+		for _, i := range ingestList.Items {
+			detail := msgs.ShowIngestResponseDetail{}
+			detail.Ingest = i
+			detail.JobCountRunning, detail.JobCountCompleted = getJobCounts(i.Name)
+			response.Details = append(response.Details, detail)
+		}
+		return response
 	} else {
 		ingest := crv1.Pgingest{}
 		err := apiserver.RESTClient.Get().
@@ -127,8 +136,11 @@ func ShowIngest(name string) msgs.ShowIngestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
-		response.IngestList.Items = make([]crv1.Pgingest, 1)
-		response.IngestList.Items[0] = ingest
+		detail := msgs.ShowIngestResponseDetail{}
+		detail.Ingest = ingest
+		detail.JobCountRunning, detail.JobCountCompleted = getJobCounts(name)
+		response.Details = make([]msgs.ShowIngestResponseDetail, 1)
+		response.Details[0] = detail
 	}
 
 	return response
@@ -170,4 +182,28 @@ func DeleteIngest(name string) msgs.DeleteIngestResponse {
 
 	return response
 
+}
+
+func getJobCounts(ingestName string) (int, int) {
+	var running, completed int
+
+	lo := meta_v1.ListOptions{LabelSelector: "ingest=" + ingestName, FieldSelector: "status.phase=Succeeded"}
+	pods, err := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).List(lo)
+	if err != nil {
+		log.Error(err)
+		return 0, 0
+	}
+	log.Debugf("There are %d ingest load pods completed\n", len(pods.Items))
+	completed = len(pods.Items)
+
+	lo = meta_v1.ListOptions{LabelSelector: "ingest=" + ingestName, FieldSelector: "status.phase!=Succeeded"}
+	pods, err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).List(lo)
+	if err != nil {
+		log.Error(err)
+		return 0, 0
+	}
+	log.Debugf("There are %d ingest load pods running\n", len(pods.Items))
+	running = len(pods.Items)
+
+	return running, completed
 }

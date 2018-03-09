@@ -120,6 +120,7 @@ func main() {
 	if taskcrd != nil {
 		fmt.Println(taskcrd.Name + " exists ")
 	}
+
 	ingestcrd, err := crdclient.PgingestCreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		panic(err)
@@ -142,12 +143,14 @@ func main() {
 		PgtaskClientset: Clientset,
 		Namespace:       Namespace,
 	}
+
 	pgIngestcontroller := controller.PgingestController{
 		PgingestClient:    crdClient,
 		PgingestScheme:    crdScheme,
 		PgingestClientset: Clientset,
 		Namespace:         Namespace,
 	}
+
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,

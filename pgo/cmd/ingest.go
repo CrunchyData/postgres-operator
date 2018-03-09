@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	//"github.com/spf13/cobra"
 	"io/ioutil"
@@ -183,32 +183,34 @@ func showIngest(args []string) {
 			return
 		}
 
-		if len(response.IngestList.Items) == 0 {
+		if len(response.Details) == 0 {
 			fmt.Println("no ingests found")
 			return
 		}
 
 		log.Debugf("response = %v\n", response)
-		for _, ingest := range response.IngestList.Items {
-			showIngestItem(&ingest)
+		for _, d := range response.Details {
+			showIngestItem(&d)
 		}
 
 	}
 
 }
 
-func showIngestItem(ingest *crv1.Pgingest) {
+func showIngestItem(detail *msgs.ShowIngestResponseDetail) {
 	fmt.Printf("%s%s\n", "", "")
-	fmt.Printf("%s%s\n", "", "pgingest : "+ingest.Spec.Name)
-	fmt.Printf("%s%s\n", TreeBranch, "name : "+ingest.Spec.Name)
-	fmt.Printf("%s%s\n", TreeBranch, "watchdir : "+ingest.Spec.WatchDir)
-	fmt.Printf("%s%s\n", TreeBranch, "dbhost : "+ingest.Spec.DBHost)
-	fmt.Printf("%s%s\n", TreeBranch, "dbport : "+ingest.Spec.DBPort)
-	fmt.Printf("%s%s\n", TreeBranch, "dbname : "+ingest.Spec.DBName)
-	fmt.Printf("%s%s\n", TreeBranch, "dbsecret : "+ingest.Spec.DBSecret)
-	fmt.Printf("%s%s\n", TreeBranch, "dbtable : "+ingest.Spec.DBTable)
-	fmt.Printf("%s%s\n", TreeBranch, "dbcolumn : "+ingest.Spec.DBColumn)
-	fmt.Printf("%s%s%d\n", TreeBranch, "maxjobs : ", ingest.Spec.MaxJobs)
+	fmt.Printf("%s%s\n", "", "pgingest : "+detail.Ingest.Spec.Name)
+	fmt.Printf("%s%s\n", TreeBranch, "name : "+detail.Ingest.Spec.Name)
+	fmt.Printf("%s%s\n", TreeBranch, "watchdir : "+detail.Ingest.Spec.WatchDir)
+	fmt.Printf("%s%s\n", TreeBranch, "dbhost : "+detail.Ingest.Spec.DBHost)
+	fmt.Printf("%s%s\n", TreeBranch, "dbport : "+detail.Ingest.Spec.DBPort)
+	fmt.Printf("%s%s\n", TreeBranch, "dbname : "+detail.Ingest.Spec.DBName)
+	fmt.Printf("%s%s\n", TreeBranch, "dbsecret : "+detail.Ingest.Spec.DBSecret)
+	fmt.Printf("%s%s\n", TreeBranch, "dbtable : "+detail.Ingest.Spec.DBTable)
+	fmt.Printf("%s%s\n", TreeBranch, "dbcolumn : "+detail.Ingest.Spec.DBColumn)
+	fmt.Printf("%s%s%d\n", TreeBranch, "maxjobs : ", detail.Ingest.Spec.MaxJobs)
+	fmt.Printf("%s%s%d\n", TreeBranch, "Running Jobs : ", detail.JobCountRunning)
+	fmt.Printf("%s%s%d\n", TreeBranch, "Completed Jobs : ", detail.JobCountCompleted)
 
 	fmt.Println("")
 
