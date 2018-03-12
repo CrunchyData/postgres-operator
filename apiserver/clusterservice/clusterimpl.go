@@ -506,6 +506,13 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap["crunchy-collect"] = "true"
 		}
 
+		if request.PgpoolFlag {
+			userLabelsMap["crunchy-pgpool"] = "true"
+			userLabelsMap["pgpool-secret"] = request.PgpoolSecret
+			log.Debug("userLabelsMap")
+			log.Debugf("%v", userLabelsMap)
+		}
+
 		if existsGlobalConfig() {
 			userLabelsMap["custom-config"] = util.GLOBAL_CUSTOM_CONFIGMAP
 		}

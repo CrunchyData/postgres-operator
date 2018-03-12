@@ -138,6 +138,11 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
+	//add pgpool deployment if requested
+	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
+		AddPgpool(clientset, client, cl, namespace, cl.Spec.UserLabels["pgpool-secret"])
+	}
+
 	//replaced with ccpimagetag instead of pg version
 	//setFullVersion(client, cl, namespace)
 
