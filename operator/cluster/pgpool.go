@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	//"k8s.io/api/core/v1"
 	//kerrors "k8s.io/apimachinery/pkg/api/errors"
-	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -104,4 +104,32 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 		log.Error(err)
 		return
 	}
+}
+
+// DeletePgpool
+func DeletePgpool(clientset *kubernetes.Clientset, clusterName, namespace string) {
+
+	var delProp meta_v1.DeletionPropagation
+	delOptions := meta_v1.DeleteOptions{}
+	delProp = meta_v1.DeletePropagationBackground
+	delOptions.PropagationPolicy = &delProp
+	pgpoolDepName := clusterName + "-pgpool"
+
+	log.Debug("deleting pgpool deployment " + pgpoolDepName)
+
+	err := clientset.ExtensionsV1beta1().Deployments(namespace).Delete(pgpoolDepName, &delOptions)
+	if err != nil {
+		log.Error("error deleting Deployment " + pgpoolDepName + err.Error())
+	}
+
+	//delete the service name=<clustename>-pgpool
+
+	err = clientset.Core().Services(namespace).Delete(pgpoolDepName,
+		&meta_v1.DeleteOptions{})
+	if err != nil {
+		log.Error("error deleting pgpool Service " + err.Error())
+	} else {
+		log.Info("deleted pgpool service " + pgpoolDepName)
+	}
+
 }

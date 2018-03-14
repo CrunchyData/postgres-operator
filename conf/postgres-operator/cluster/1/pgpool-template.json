@@ -14,6 +14,7 @@
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
+		    "crunchy-pgpool": "true",
 		    "pg-cluster": "{{.ClusterName}}"
                 }
             },
@@ -42,13 +43,14 @@
                     "volumeMounts": [{
                     "name": "pgpool-conf",
                     "mountPath": "/pgconf/pgpoolconfigdir",
-                    "readOnly": true
+                    "readOnly": false
                     }]
                 }],
                 "volumes": [{
                 "name": "pgpool-conf",
                 "secret": {
-                    "secretName": "{{.SecretsName}}"
+                    "secretName": "{{.SecretsName}}",
+                    "defaultMode": 511
                     }
                 }],
                 "restartPolicy": "Always",

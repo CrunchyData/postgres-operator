@@ -919,6 +919,17 @@ flag:
 pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
 ....
 
+You can also add a pgpool deployment into a cluster by using the *--pgpool*
+command flag as follows:
+....
+pgo create cluster testcluster --pgpool
+....
+
+This will cause a *crunchy-pgpool* container to be started and initially
+configured for a cluster and the *testuser* cluster credential.  See
+below for more details on running a pgpool deployment as part of
+your cluster.
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -1406,3 +1417,89 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 ....
 curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/backups/mycluster
 ....
+
+== Deploying pgpool 
+
+It is optional but you can cause a pgpool Deployment to be
+created as part of a Postgres cluster.  Running pgpool only 
+makes sense when you have both a primary and some number of
+replicas deployed as part of your Postgres cluster.  The current
+pgpool configuration deployed by the operator only works when
+you have both a primary and replica running.
+
+When a user creates the cluster they can pass a command flag as follows:
+....
+pgo create cluster cluster1 --pgpool
+pgo scale cluster1 --replica-count=1
+....
+
+This will cause the operator to create a Deployment that includes
+the *crunchy-pgpool* container along with a replica.  That container will create
+a configuration that will perform SQL routing to your
+cluster services, both for the primary and replica services.  
+
+Pgpool examines the SQL it receives and routes the SQL statement
+to either the primary or replica based on the SQL action specifically
+it will send writes and updates to only the *primary* service.  It
+will send read-only statements to the *replica* service.
+
+When the operator deploys the pgpool container, it creates a 
+secret (e.g. mycluster-pgpool-secret) that contains pgpool
+configuration files.  It fills out templated versions of these
+configuration files specifically for this postgres cluster.
+
+Part of the pgpool deployment also includes creating a *pool_passwd*
+file that will allow the *testuser* credential to authenticate
+to pgpool.  Adding additional users to the pgpool configuration
+currently requires human intervention specifically creating
+a new pgpool secret and bouncing the pgpool pod to pick up the
+updated secret.  Future operator releases will attempt to 
+provide *pgo* commands to let you automate the addition or removal
+of a pgpool user.
+
+Currently to update a pgpool user within the *pool_passwd* configuration
+file, you will have to copy the existing files from the 
+secret to your local system, update the credentials in *pool_passwd*
+with your new user credentials, and then recreate the pgpool
+secret, and finally restart the pgpool pod to pick up the updated
+configuration files.
+
+Example:
+....
+kubectl cp demo/wed10-pgpool-6cc6f6598d-wcnmf:/pgconf/ /tmp/foo
+....
+
+That command gets a running set of secret pgpool configuration
+files and places them locally on your system for you to edit.
+
+*pgpool* requires a specially formatted password credential
+to be placed into *pool_passwd*.  There is a golang program
+included in $COROOT/golang-examples/gen-pgpool-pass.go* that
+when run will generate the value to use within the *pgpool_passwd*
+configuration file.
+....
+go run $COROOT/golang-examples/gen-pgpool-pass.go
+Enter Username: testuser
+Enter Password: 
+Password typed: e99Mjt1dLz
+hash of password is [md59c4017667828b33762665dc4558fbd76]
+....
+
+The value *md59c4017667828b33762665dc4558fbd76* is what you will use
+in the *pool_passwd* file.
+
+Then, create the new secrets file based on those updated files:
+....
+$COROOT/bin/create-pgpool-secrets.sh
+....
+
+Lastly for pgpool to pick up the new secret file, delete the existing
+deployment pod:
+....
+kubectl get deployment wed-pgpool
+kubectl delete pod wed10-pgpool-6cc6f6598d-wcnmf
+....
+
+The pgpool deployment will spin up another pgpool which will pick up
+the updated secret file.
+

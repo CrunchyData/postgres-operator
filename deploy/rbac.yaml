@@ -18,6 +18,7 @@ rules:
       - jobs
       - jobs/status
       - pgbackups
+      - pgingests
       - pgclusters
       - pgpolicies
       - pgpolicylogs

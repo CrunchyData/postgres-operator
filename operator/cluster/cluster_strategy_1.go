@@ -246,6 +246,12 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	}
 	log.Info("deleted replica service " + cl.Spec.Name + ReplicaSuffix + " in namespace " + namespace)
 
+	//delete the pgpool deployment if necessary
+
+	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
+		DeletePgpool(clientset, cl.Spec.Name, namespace)
+	}
+
 	return err
 
 }

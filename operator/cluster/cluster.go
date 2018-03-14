@@ -119,7 +119,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
-	err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
+	var testPassword string
+	_, _, testPassword, err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error("error in create secrets " + err.Error())
 		return
@@ -140,7 +141,17 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	//add pgpool deployment if requested
 	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
-		AddPgpool(clientset, client, cl, namespace, cl.Spec.UserLabels["pgpool-secret"])
+		//generate a secret for pgpool using the testuser credential
+		secretName := cl.Spec.Name + "-pgpool-secret"
+		primaryName := cl.Spec.Name
+		replicaName := cl.Spec.Name + "-replica"
+		err = util.CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		//create the pgpool deployment using that credential
+		AddPgpool(clientset, client, cl, namespace, secretName)
 	}
 
 	//replaced with ccpimagetag instead of pg version

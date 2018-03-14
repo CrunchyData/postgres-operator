@@ -16,15 +16,20 @@ package util
 */
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"bytes"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -33,11 +38,38 @@ const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+type PgpoolPasswdFields struct {
+	PG_USERNAME     string
+	PG_PASSWORD_MD5 string
+}
+
+type PgpoolHBAFields struct {
+}
+
+type PgpoolConfFields struct {
+	PG_PRIMARY_SERVICE_NAME string
+	PG_REPLICA_SERVICE_NAME string
+	PG_USERNAME             string
+	PG_PASSWORD             string
+}
+
 var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
+var pgpoolConfTemplate *template.Template
+var pgpoolPasswdTemplate *template.Template
+var pgpoolTemplate *template.Template
+var pgpoolHBATemplate *template.Template
+
+func init() {
+	pgpoolConfTemplate = LoadTemplate("/operator-conf/pgpool.conf")
+	pgpoolPasswdTemplate = LoadTemplate("/operator-conf/pool_passwd")
+	pgpoolHBATemplate = LoadTemplate("/operator-conf/pool_hba.conf")
+
+}
+
 // CreateDatabaseSecrets create pgroot, pgprimary, and pguser secrets
-func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
+func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) (string, string, string, error) {
 
 	//pgroot
 	username := "postgres"
@@ -47,7 +79,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	var err error
 
 	secretName = cl.Spec.Name + suffix
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.RootPassword, namespace)
+	pgPassword := GeneratePassword(10)
+	if cl.Spec.RootPassword != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		pgPassword = cl.Spec.RootPassword
+	}
+
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, pgPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret" + err.Error())
 	}
@@ -63,7 +101,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	suffix = crv1.PrimarySecretSuffix
 
 	secretName = cl.Spec.Name + suffix
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.PrimaryPassword, namespace)
+	primaryPassword := GeneratePassword(10)
+	if cl.Spec.PrimaryPassword != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		primaryPassword = cl.Spec.PrimaryPassword
+	}
+
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, primaryPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret2" + err.Error())
 	}
@@ -79,7 +123,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	suffix = crv1.UserSecretSuffix
 
 	secretName = cl.Spec.Name + suffix
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, cl.Spec.Password, namespace)
+	testPassword := GeneratePassword(10)
+	if cl.Spec.Password != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		testPassword = cl.Spec.Password
+	}
+
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, testPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret " + err.Error())
 	}
@@ -90,18 +140,13 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 		log.Error("error patching cluster " + err.Error())
 	}
 
-	return err
+	return pgPassword, primaryPassword, testPassword, err
 }
 
 // CreateSecret create the secret, user, and primary secrets
 func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, password, namespace string) error {
 
 	var enUsername = username
-	var enPassword = GeneratePassword(10)
-	if password != "" {
-		log.Debug("using user specified password for secret " + secretName)
-		enPassword = password
-	}
 
 	secret := v1.Secret{}
 
@@ -110,7 +155,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	secret.ObjectMeta.Labels["pg-database"] = db
 	secret.Data = make(map[string][]byte)
 	secret.Data["username"] = []byte(enUsername)
-	secret.Data["password"] = []byte(enPassword)
+	secret.Data["password"] = []byte(password)
 
 	_, err := clientset.Core().Secrets(namespace).Create(&secret)
 	if err != nil {
@@ -142,30 +187,24 @@ func GenerateRandString(length int) string {
 	return stringWithCharset(length, lowercharset)
 }
 
-// DeleteDatabaseSecrets delete pgroot, pgprimary, and pguser secrets
+// DeleteDatabaseSecrets delete secrets that match pg-database=somecluster
 func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) {
+	//get all that match pg-database=db
+	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
+	secrets, err := clientset.Core().Secrets(namespace).List(lo)
+	if err != nil {
+		log.Error("error getting list of secrets" + err.Error())
+		return
+	}
 
 	options := meta_v1.DeleteOptions{}
-	secretName := db + crv1.PrimarySecretSuffix
-	err := clientset.Core().Secrets(namespace).Delete(secretName, &options)
-	if err != nil {
-		log.Error("error deleting pgprimary secret" + err.Error())
-	} else {
-		log.Info("deleted secret " + secretName)
-	}
-	secretName = db + crv1.RootSecretSuffix
-	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
-	if err != nil {
-		log.Error("error deleting pgroot secret" + err.Error())
-	} else {
-		log.Info("deleted secret " + secretName)
-	}
-	secretName = db + crv1.UserSecretSuffix
-	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
-	if err != nil {
-		log.Error("error deleting pguser secret" + err.Error())
-	} else {
-		log.Info("deleted secret " + secretName)
+	for _, s := range secrets.Items {
+		err = clientset.Core().Secrets(namespace).Delete(s.ObjectMeta.Name, &options)
+		if err != nil {
+			log.Error("error deleting secret" + err.Error())
+		} else {
+			log.Info("deleted database secrets =" + s.ObjectMeta.Name)
+		}
 	}
 }
 
@@ -228,7 +267,12 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	var err error
 
 	secretName := clustername + "-" + username + "-secret"
-	err = CreateSecret(clientset, clustername, secretName, username, password, namespace)
+	var enPassword = GeneratePassword(10)
+	if password != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		enPassword = password
+	}
+	err = CreateSecret(clientset, clustername, secretName, username, enPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret" + err.Error())
 	}
@@ -275,4 +319,108 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 		log.Debug("deleted secret " + secretName)
 	}
 	return err
+}
+
+// CreatePgpoolSecret create a secret used by pgpool
+func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, username, password, namespace string) error {
+
+	var err error
+	var pgpoolHBABytes, pgpoolConfBytes, pgpoolPasswdBytes []byte
+
+	pgpoolHBABytes, err = getPgpoolHBA()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	pgpoolConfBytes, err = getPgpoolConf(primary, replica, username, password)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	pgpoolPasswdBytes, err = getPgpoolPasswd(username, password)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	secret := v1.Secret{}
+
+	secret.Name = secretName
+	secret.ObjectMeta.Labels = make(map[string]string)
+	secret.ObjectMeta.Labels["pg-database"] = db
+	secret.ObjectMeta.Labels["pgpool"] = "true"
+	secret.Data = make(map[string][]byte)
+	secret.Data["pgpool.conf"] = pgpoolConfBytes
+	secret.Data["pool_hba.conf"] = pgpoolHBABytes
+	secret.Data["pool_passwd"] = pgpoolPasswdBytes
+
+	_, err = clientset.Core().Secrets(namespace).Create(&secret)
+	if err != nil {
+		log.Error("error creating pgpool secret" + err.Error())
+	} else {
+		log.Debug("created pgpool secret " + secret.Name)
+	}
+
+	return err
+
+}
+
+func getPgpoolHBA() ([]byte, error) {
+	var err error
+
+	fields := PgpoolHBAFields{}
+
+	var doc bytes.Buffer
+	err = pgpoolHBATemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err)
+		return doc.Bytes(), err
+	}
+	log.Debug(doc.String())
+
+	return doc.Bytes(), err
+}
+
+func getPgpoolConf(primary, replica, username, password string) ([]byte, error) {
+	var err error
+
+	fields := PgpoolConfFields{}
+	fields.PG_PRIMARY_SERVICE_NAME = primary
+	fields.PG_REPLICA_SERVICE_NAME = replica
+	fields.PG_USERNAME = username
+	fields.PG_PASSWORD = password
+
+	var doc bytes.Buffer
+	err = pgpoolConfTemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err)
+		return doc.Bytes(), err
+	}
+	log.Debug(doc.String())
+
+	return doc.Bytes(), err
+}
+
+func getPgpoolPasswd(username, password string) ([]byte, error) {
+	var err error
+
+	fields := PgpoolPasswdFields{}
+	fields.PG_USERNAME = username
+	fields.PG_PASSWORD_MD5 = "md5" + GetMD5Hash(password+username)
+
+	var doc bytes.Buffer
+	err = pgpoolPasswdTemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err)
+		return doc.Bytes(), err
+	}
+	log.Debug(doc.String())
+
+	return doc.Bytes(), err
+}
+
+func GetMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }

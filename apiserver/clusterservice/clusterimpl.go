@@ -226,7 +226,7 @@ func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, erro
 func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cluster.Spec.Name}
+	lo := meta_v1.ListOptions{LabelSelector: "crunchy-pgpool!=true,pg-cluster=" + cluster.Spec.Name}
 	pods, err := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of pods" + err.Error())
@@ -272,7 +272,7 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
 
 	output := make([]msgs.ShowClusterSecret, 0)
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + cluster.Spec.Name}
+	lo := meta_v1.ListOptions{LabelSelector: "pgpool!=true,pg-database=" + cluster.Spec.Name}
 	secrets, err := apiserver.Clientset.Core().Secrets(apiserver.Namespace).List(lo)
 	if err != nil {
 		log.Error("error getting list of secrets" + err.Error())
