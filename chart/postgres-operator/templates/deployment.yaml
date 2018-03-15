@@ -18,13 +18,13 @@ spec:
     spec:
       containers:
         - name: apiserver
-          image: "crunchydata/pgo-apiserver:centos7-2.5"
+          image: "{{ .Values.env.co_image_prefix }}/pgo-apiserver:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
           ports:
             - containerPort: 8443
           env:
-            - name: DEBUG
+            - name: CRUNCHY_DEBUG
               value: "{{ .Values.env.debug }}"
           volumeMounts:
             - name: apiserver-conf
@@ -33,12 +33,12 @@ spec:
             - name: operator-conf
               mountPath: /operator-conf
               readOnly: true
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - name: operator
+          image: "{{ .Values.env.co_image_prefix }}/postgres-operator:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
           env:
-            - name: DEBUG
+            - name: CRUNCHY_DEBUG
               value: "{{ .Values.env.debug }}"
             - name: CCP_IMAGE_PREFIX
               value: "{{ .Values.env.ccp_image_prefix }}"
@@ -54,12 +54,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-          resources:
-{{ toYaml .Values.resources | indent 12 }}
           volumeMounts:
             - name: operator-conf
               mountPath: /operator-conf
               readOnly: true
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
       volumes:
         - name: operator-conf
           configMap:

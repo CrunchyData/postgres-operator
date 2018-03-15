@@ -23,7 +23,7 @@
 
                 "containers": [{
                     "name": "backup",
-                    "image": "crunchydata/crunchy-backup:{{.CCPImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/crunchy-backup:{{.CCPImageTag}}",
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",

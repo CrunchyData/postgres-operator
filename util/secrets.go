@@ -16,20 +16,16 @@ package util
 */
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"bytes"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -38,35 +34,8 @@ const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-type PgpoolPasswdFields struct {
-	PG_USERNAME     string
-	PG_PASSWORD_MD5 string
-}
-
-type PgpoolHBAFields struct {
-}
-
-type PgpoolConfFields struct {
-	PG_PRIMARY_SERVICE_NAME string
-	PG_REPLICA_SERVICE_NAME string
-	PG_USERNAME             string
-	PG_PASSWORD             string
-}
-
 var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
-
-var pgpoolConfTemplate *template.Template
-var pgpoolPasswdTemplate *template.Template
-var pgpoolTemplate *template.Template
-var pgpoolHBATemplate *template.Template
-
-func init() {
-	pgpoolConfTemplate = LoadTemplate("/operator-conf/pgpool.conf")
-	pgpoolPasswdTemplate = LoadTemplate("/operator-conf/pool_passwd")
-	pgpoolHBATemplate = LoadTemplate("/operator-conf/pool_hba.conf")
-
-}
 
 // CreateDatabaseSecrets create pgroot, pgprimary, and pguser secrets
 func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) (string, string, string, error) {
@@ -319,108 +288,4 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 		log.Debug("deleted secret " + secretName)
 	}
 	return err
-}
-
-// CreatePgpoolSecret create a secret used by pgpool
-func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, username, password, namespace string) error {
-
-	var err error
-	var pgpoolHBABytes, pgpoolConfBytes, pgpoolPasswdBytes []byte
-
-	pgpoolHBABytes, err = getPgpoolHBA()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	pgpoolConfBytes, err = getPgpoolConf(primary, replica, username, password)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	pgpoolPasswdBytes, err = getPgpoolPasswd(username, password)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	secret := v1.Secret{}
-
-	secret.Name = secretName
-	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels["pg-database"] = db
-	secret.ObjectMeta.Labels["pgpool"] = "true"
-	secret.Data = make(map[string][]byte)
-	secret.Data["pgpool.conf"] = pgpoolConfBytes
-	secret.Data["pool_hba.conf"] = pgpoolHBABytes
-	secret.Data["pool_passwd"] = pgpoolPasswdBytes
-
-	_, err = clientset.Core().Secrets(namespace).Create(&secret)
-	if err != nil {
-		log.Error("error creating pgpool secret" + err.Error())
-	} else {
-		log.Debug("created pgpool secret " + secret.Name)
-	}
-
-	return err
-
-}
-
-func getPgpoolHBA() ([]byte, error) {
-	var err error
-
-	fields := PgpoolHBAFields{}
-
-	var doc bytes.Buffer
-	err = pgpoolHBATemplate.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err)
-		return doc.Bytes(), err
-	}
-	log.Debug(doc.String())
-
-	return doc.Bytes(), err
-}
-
-func getPgpoolConf(primary, replica, username, password string) ([]byte, error) {
-	var err error
-
-	fields := PgpoolConfFields{}
-	fields.PG_PRIMARY_SERVICE_NAME = primary
-	fields.PG_REPLICA_SERVICE_NAME = replica
-	fields.PG_USERNAME = username
-	fields.PG_PASSWORD = password
-
-	var doc bytes.Buffer
-	err = pgpoolConfTemplate.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err)
-		return doc.Bytes(), err
-	}
-	log.Debug(doc.String())
-
-	return doc.Bytes(), err
-}
-
-func getPgpoolPasswd(username, password string) ([]byte, error) {
-	var err error
-
-	fields := PgpoolPasswdFields{}
-	fields.PG_USERNAME = username
-	fields.PG_PASSWORD_MD5 = "md5" + GetMD5Hash(password+username)
-
-	var doc bytes.Buffer
-	err = pgpoolPasswdTemplate.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err)
-		return doc.Bytes(), err
-	}
-	log.Debug(doc.String())
-
-	return doc.Bytes(), err
-}
-
-func GetMD5Hash(text string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
 }

@@ -145,7 +145,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		secretName := cl.Spec.Name + "-pgpool-secret"
 		primaryName := cl.Spec.Name
 		replicaName := cl.Spec.Name + "-replica"
-		err = util.CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
+		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
 		if err != nil {
 			log.Error(err)
 			return
