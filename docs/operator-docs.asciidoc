@@ -458,8 +458,12 @@ CustomResourceDefinitions. You can view these as follows:
 kubectl get crd
 ....
 
-Strategies for deploying the operator can be found in the link:design.asciidoc[PostgreSQL Operator Design] document.
-
+Instead of using the bash script you can also deploy the operator using the provided Helm chart:
+....
+cd $COROOT/chart
+helm install ./postgres-operator
+helm ls
+....
 
 === Verify Installation
 
@@ -474,6 +478,7 @@ kubectl get pgclusters
 kubectl get pgbackups
 kubectl get pgupgrades
 kubectl get pgpolicies
+kubectl get pgingests
 kubectl get pgtasks
 ....
 
@@ -581,7 +586,7 @@ The default pgo configuration file, included in
 BasicAuth:  true
 Namespace:  demo
 Cluster:
-  CCPImageTag:  centos7-10.2-1.8.0
+  CCPImageTag:  centos7-10.3-1.8.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -634,7 +639,7 @@ Values in the pgo configuration file have the following meaning:
 |Setting | Definition
 |BasicAuth        | if set to *true* will enable Basic Authentication
 |Namespace        | the namespace the Operator will run within
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.1-1.7.0), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
