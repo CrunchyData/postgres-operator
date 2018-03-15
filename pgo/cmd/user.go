@@ -145,15 +145,64 @@ func userManager() {
 
 func createUser(args []string) {
 
+	if Selector == "" {
+		log.Error("selector flag is required")
+		return
+	}
+
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		log.Error("user name argument is required")
 		return
 	}
 	//var err error
 	log.Infof("args=%v selector=%s\n", args, Selector)
 
-	request := msgs.UserRequest{}
-	request.Selector = Selector
-	request.AddUser = AddUser
+	r := new(msgs.CreateUserRequest)
+	r.Name = args[0]
+	r.Selector = Selector
+	r.ManagedUser = ManagedUser
+	r.UserDBAccess = UserDBAccess
+	r.PasswordAgeDays = PasswordAgeDays
+
+	jsonValue, _ := json.Marshal(r)
+	url := APIServerURL + "/users"
+	log.Debug("createUser called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
+
+	defer resp.Body.Close()
+
+	var response msgs.CreateUserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
+	}
 
 }

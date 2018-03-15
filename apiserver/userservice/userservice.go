@@ -44,3 +44,25 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(resp)
 }
+
+// CreateUserHandler ...
+// pgo create user
+func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debug("userservice.CreateUserHandler called")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	err := apiserver.Authn(apiserver.CREATE_USER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	var request msgs.CreateUserRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	resp := msgs.CreateUserResponse{}
+	resp = CreateUser(&request)
+	json.NewEncoder(w).Encode(resp)
+
+}

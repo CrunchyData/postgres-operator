@@ -392,6 +392,7 @@ The following list shows the current *pgo* permissions:
 |CreateUpgrade | allow *pgo upgrade*
 |ShowUpgrade   | allow *pgo show upgrade*
 |DeleteUpgrade | allow *pgo delete upgrade*
+|CreateUser    | allow *pgo create user*
 |User          | allow *pgo user*
 |Version       | allow *pgo version*
 |======================
@@ -523,7 +524,7 @@ the following:
  * create a series of clusters  (*pgo create cluster myseries --series=2*)
  * apply labels at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray*)
  * apply a label to an existing set of clusters (*pgo label --label=env=research --selector=project=xray*)
- * create a user for a given cluster (*pgo user --add-user=user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
+ * create a user for a given cluster (*pgo create user user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
  * load a csv file into a cluster (*pgo load --load-config=./sample-load-config.json --selector=project=xray*)
  * extend a user's password allowed age (*pgo user --change-password=user0 --valid-days=10 --selector=name=xraydb1*)
  * drop user access (*pgo user --delete-user=user2 --selector=project=xray*)
@@ -1230,7 +1231,7 @@ pgo show cluster --selector=policy1=pgpolicy
 
 To create a new Postgres user to the *mycluster* cluster, execute:
 ....
-pgo user --add-user=sally --selector=name=mycluster
+pgo createa user sally --selector=name=mycluster
 ....
 
 To delete a Postgres user in the *mycluster* cluster, execute:
@@ -1258,7 +1259,7 @@ pgo user --expired=7 --selector=name=mycluster
 
 To assign users to a cluster:
 ....
-pgo user --add-user=user1 --valid-days=30 --managed --db=userdb --selector=name=xraydb1
+pgo create user user1 --valid-days=30 --managed --db=userdb --selector=name=xraydb1
 ....
 
 In this example, a user named *user1* is created with a *valid until* password date set to expire in 30 days.  That user will be granted access to the *userdb* database.  This user account also will have an associated *secret* created to hold the password that was generated for this user.  Any clusters that match the selector value will have this user created on it.

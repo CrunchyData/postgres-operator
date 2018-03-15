@@ -38,3 +38,18 @@ type UserResponse struct {
 	Results []string
 	Status
 }
+
+// CreateUserRequest ...
+type CreateUserRequest struct {
+	Name            string
+	Selector        string
+	ManagedUser     bool
+	UserDBAccess    string
+	PasswordAgeDays int
+}
+
+// CreateUserResponse ...
+type CreateUserResponse struct {
+	Results []string
+	Status
+}

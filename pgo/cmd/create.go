@@ -46,12 +46,14 @@ For example:
 
 pgo create cluster
 pgo create policy
+pgo create user
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
-		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") {
+		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") && args[0] != "user" {
 			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
 	* cluster
+	* user
 	* policy`)
 		}
 	},
@@ -160,7 +162,7 @@ func init() {
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createIngestCmd)
-	//CreateCmd.AddCommand(createUserCmd)
+	CreateCmd.AddCommand(createUserCmd)
 
 	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "i", "", "The path of an ingest configuration file")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "If set, will cause the crunchy-pgpool container to be added to the database cluster")
@@ -182,6 +184,9 @@ func init() {
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy")
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to filter on clusters")
+	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
+	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
+
 	//UserLabelsMap = make(map[string]string)
 
 }

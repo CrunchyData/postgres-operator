@@ -479,3 +479,77 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 	return err
 
 }
+
+// CreateUser ...
+// pgo create user user1
+func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
+	var err error
+	resp := msgs.CreateUserResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	myselector := labels.Everything()
+	log.Debug("createUser selector is " + request.Selector)
+	if request.Selector == "" {
+		log.Error("--selector value is empty not allowed")
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "error in selector"
+		return resp
+	} else {
+		myselector, err = labels.Parse(request.Selector)
+	}
+	if err != nil {
+		log.Error("could not parse --selector value " + err.Error())
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	log.Debugf("createUser label selector is [%s]\n", myselector.String())
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(apiserver.Namespace).
+		Param("labelSelector", myselector.String()).
+		//LabelsSelectorParam(myselector).
+		Do().Into(&clusterList)
+	if err != nil {
+		log.Error("error getting list of clusters" + err.Error())
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	log.Debug("createUser clusters found len is %d\n", len(clusterList.Items))
+
+	for _, c := range clusterList.Items {
+		info := getPostgresUserInfo(apiserver.Namespace, c.Name)
+
+		err = addUser(request.UserDBAccess, apiserver.Namespace, c.Name, info, request.Name, request.ManagedUser)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		} else {
+			msg := "adding new user " + request.Name + " to " + c.Name
+			log.Debug(msg)
+			resp.Results = append(resp.Results, msg)
+		}
+		newPassword := util.GeneratePassword(defaultPasswordLength)
+		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
+		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, apiserver.Namespace)
+		if err != nil {
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+	}
+	return resp
+
+}
