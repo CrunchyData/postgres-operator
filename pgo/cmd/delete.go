@@ -25,10 +25,11 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a policy, cluster, backup, or upgrade",
-	Long: `delete allows you to delete a policy, cluster, backup, or upgrade
+	Short: "Delete a user, policy, cluster, backup, or upgrade",
+	Long: `delete allows you to delete a user, policy, cluster, backup, or upgrade
 For example:
 
+pgo delete user jeffmc --selector=name=mycluster
 pgo delete policy mypolicy
 pgo delete cluster mycluster
 pgo delete cluster mycluster --delete-data
@@ -40,6 +41,7 @@ pgo delete upgrade mycluster`,
 		if len(args) == 0 {
 			fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
 	* policy
+	* user
 	* cluster
 	* backup
 	* ingest
@@ -47,6 +49,7 @@ pgo delete upgrade mycluster`,
 		} else {
 			switch args[0] {
 			case "policy":
+			case "user":
 			case "cluster":
 			case "backup":
 			case "ingest":
@@ -55,6 +58,7 @@ pgo delete upgrade mycluster`,
 			default:
 				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
 	* policy
+	* user
 	* cluster
 	* backup
 	* ingest
@@ -70,12 +74,14 @@ var NoPrompt bool
 
 func init() {
 	RootCmd.AddCommand(deleteCmd)
+	deleteCmd.AddCommand(deleteUserCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteIngestCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
 	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "--delete-data causes the data for this cluster to be removed permanently ")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "--delete-backups causes the backups for this cluster to be removed permanently ")
 
@@ -131,6 +137,29 @@ var deleteBackupCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt) {
 				deleteBackup(args)
+			} else {
+				fmt.Println(`Aborting...`)
+			}
+		}
+	},
+}
+
+// deleteUserCmd ...
+var deleteUserCmd = &cobra.Command{
+	Use:   "user",
+	Short: "delete a user",
+	Long: `delete a user. For example:
+	pgo delete user someuser --selector=name=mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if len(args) == 0 {
+			log.Error("a user name is required for this command")
+		} else if Selector == "" {
+			log.Error("a selector is required for this command")
+		} else {
+			if util.AskForConfirmation(NoPrompt) {
+				deleteUser(args[0])
+
 			} else {
 				fmt.Println(`Aborting...`)
 			}

@@ -79,6 +79,7 @@ func main() {
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
+	r.HandleFunc("/users/{name}", userservice.DeleteUserHandler).Methods("DELETE")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
 	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")

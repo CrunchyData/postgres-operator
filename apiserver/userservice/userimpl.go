@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strconv"
@@ -59,7 +60,7 @@ func init() {
 }
 
 //  User ...
-// pgo user --add-user=bob --change-password=bob --db=userdb --delete-user=bob
+// pgo user --change-password=bob --db=userdb
 //  --expired=7 --managed=true --selector=env=research --update-passwords=true
 //  --valid-days=30
 func User(request *msgs.UserRequest) msgs.UserResponse {
@@ -134,40 +135,6 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, apiserver.Namespace)
-				if err != nil {
-					log.Error(err.Error())
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				}
-			}
-			if request.DeleteUser != "" {
-				err = deleteUser(apiserver.Namespace, cluster.Spec.Name, info, request.DeleteUser, request.ManagedUser)
-				if err != nil {
-					log.Error(err)
-				} else {
-					msg := "deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name
-					log.Debug(msg)
-					resp.Results = append(resp.Results, msg)
-
-					//if managed, if so, delete secret
-					util.DeleteUserSecret(apiserver.Clientset, d.ObjectMeta.Name, request.DeleteUser, apiserver.Namespace)
-				}
-			}
-			if request.AddUser != "" {
-				err = addUser(request.UserDBAccess, apiserver.Namespace, d.ObjectMeta.Name, info, request.AddUser, request.ManagedUser)
-				if err != nil {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				} else {
-					msg := "adding new user " + request.AddUser + " to " + d.ObjectMeta.Name
-					log.Debug(msg)
-					resp.Results = append(resp.Results, msg)
-				}
-				newPassword := util.GeneratePassword(defaultPasswordLength)
-				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.AddUser, newPassword, newExpireDate, apiserver.Namespace)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -551,5 +518,96 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 
 	}
 	return resp
+
+}
+
+// DeleteUser ...
+func DeleteUser(name, selector string) msgs.DeleteUserResponse {
+	var err error
+
+	response := msgs.DeleteUserResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 0)
+
+	myselector := labels.Everything()
+
+	myselector, err = labels.Parse(selector)
+	if err != nil {
+		log.Error("could not parse selector value of " + selector + " " + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	log.Debugf("username is %s label selector is [%s]\n", name, myselector.String())
+
+	clusterList := crv1.PgclusterList{}
+
+	//get the clusters list
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(apiserver.Namespace).
+		Param("labelSelector", myselector.String()).
+		Do().
+		Into(&clusterList)
+	if err != nil {
+		log.Error("error getting cluster list" + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+	if len(clusterList.Items) == 0 {
+		log.Debug("no clusters found")
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no clusters found"
+		return response
+	}
+
+	var managed bool
+	var msg, clusterName string
+
+	for _, cluster := range clusterList.Items {
+		clusterName = cluster.Spec.Name
+		info := getPostgresUserInfo(apiserver.Namespace, clusterName)
+
+		secretName := clusterName + "-" + name + "-secret"
+
+		managed, err = isManaged(secretName)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		err = deleteUser(apiserver.Namespace, clusterName, info, name, managed)
+		if err != nil {
+			log.Error(err)
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		msg = name + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
+		log.Debug(msg)
+		response.Results = append(response.Results, msg)
+
+	}
+
+	return response
+
+}
+
+func isManaged(secretName string) (bool, error) {
+	_, err := apiserver.Clientset.Core().Secrets(apiserver.Namespace).Get(secretName, meta_v1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		log.Error("not found error secret " + secretName)
+		return false, err
+	}
+	if err != nil {
+		log.Error(err)
+		return false, err
+	}
+
+	return true, err
 
 }

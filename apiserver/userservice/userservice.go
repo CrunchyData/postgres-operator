@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -64,5 +65,41 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreateUserResponse{}
 	resp = CreateUser(&request)
 	json.NewEncoder(w).Encode(resp)
+
+}
+
+// DeleteUserHandler ...
+// pgo delete user someuser
+// parameters name
+// parameters selector
+// returns a DeleteUserResponse
+func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("userservice.DeleteUserHandler %v\n", vars)
+
+	username := vars["name"]
+
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+
+	err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	switch r.Method {
+	case "GET":
+		log.Debug("userservice.DeleteUserHandler GET called")
+	case "DELETE":
+		log.Debug("userservice.DeleteUserHandler DELETE called")
+		resp := DeleteUser(username, selector)
+		json.NewEncoder(w).Encode(resp)
+	}
 
 }

@@ -33,6 +33,12 @@ type UserRequest struct {
 	ManagedUser           bool
 }
 
+// DeleteUserResponse ...
+type DeleteUserResponse struct {
+	Results []string
+	Status
+}
+
 // UserResponse ...
 type UserResponse struct {
 	Results []string
