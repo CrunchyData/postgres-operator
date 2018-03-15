@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo $1 is the password
-echo $2 is the host ip
+#echo $1 is the password
+#echo $2 is the host ip
 
 SLEEP_TIME=2 
 FAILURES=0
