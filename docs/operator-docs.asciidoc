@@ -127,7 +127,7 @@ itself:
 The Operator works with the Crunchy Container Suite
 containers, you can pre-pull them as follows:
 
-For PostgreSQL version 10.1:
+For PostgreSQL version 10:
 ....
 docker pull crunchydata/crunchy-postgres:centos7-10.3-1.8.1
 docker pull crunchydata/crunchy-backup:centos7-10.3-1.8.1
@@ -1359,9 +1359,8 @@ su - $USER
 
 == Quickstart
 
-The *quickstart.sh* script will allow users to set up the Postgres Operator quickly.
-This script is tested on GKE but can be modified for use with other Kubernetes environments as
-well.
+The *quickstart-for-gke.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
+This script is tested on GKE but can be modified for use with other Kubernetes environments as well.
 
 The script requires a few things in order to work:
 

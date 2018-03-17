@@ -186,6 +186,7 @@ func init() {
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to filter on clusters")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
+	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
 
 	//UserLabelsMap = make(map[string]string)
 
