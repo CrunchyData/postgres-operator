@@ -269,7 +269,7 @@ This example specifies a username of *testuser* and a password of
 to the *apiserver* on each REST API call.
 
 For the *apiserver*, a list of usernames and passwords is
-specified in the *apiserver-conf* ConfigMap.  The values specified
+specified in the *apiserver-conf-secret* Secret.  The values specified
 in a deployment are found in the following location:
 ....
 $COROOT/conf/apiserver/pgouser
@@ -324,7 +324,7 @@ The sample server keys are used as the client keys, adjust to suit
 your requirements.
 
 For the *apiserver* TLS configuration, the keys are included
-in the *apiserver-conf* configMap when the *apiserver* is deployed.
+in the *apiserver-conf-secret* Secret when the *apiserver* is deployed.
 See the $COROOT/deploy/deploy.sh script which is where the
 configMap is created.
 
