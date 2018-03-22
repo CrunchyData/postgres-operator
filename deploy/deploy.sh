@@ -25,14 +25,14 @@ $CO_CMD create -f $DIR/service-account.yaml
 #$CO_CMD create -f $DIR/cluster-role-binding.yaml
 $CO_CMD create -f $DIR/rbac.yaml
 
-$CO_CMD $NS create configmap apiserver-conf \
-	--from-file=$COROOT/conf/apiserver/server.crt \
-	--from-file=$COROOT/conf/apiserver/server.key \
-	--from-file=$COROOT/conf/apiserver/pgouser \
-	--from-file=$COROOT/conf/apiserver/pgorole \
-	--from-file=$COROOT/conf/apiserver/pgo.yaml \
-	--from-file=$COROOT/conf/apiserver/pgo.load-template.json \
-	--from-file=$COROOT/conf/apiserver/pgo.lspvc-template.json 
+$CO_CMD create secret generic apiserver-conf-secret \
+        --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
+        --from-file=server.key=$COROOT/conf/apiserver/server.key \
+        --from-file=pgouser=$COROOT/conf/apiserver/pgouser \
+        --from-file=pgorole=$COROOT/conf/apiserver/pgorole \
+        --from-file=pgo.yaml=$COROOT/conf/apiserver/pgo.yaml \
+        --from-file=pgo.load-template.json=$COROOT/conf/apiserver/pgo.load-template.json \
+        --from-file=pgo.lspvc-template.json=$COROOT/conf/apiserver/pgo.lspvc-template.json
 
 $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \

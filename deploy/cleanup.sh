@@ -19,7 +19,8 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
-$CO_CMD $NS delete configmap operator-conf apiserver-conf
+$CO_CMD $NS delete configmap operator-conf 
+$CO_CMD $NS delete secret apiserver-conf-secret
 
 $CO_CMD $NS delete service postgres-operator
 
