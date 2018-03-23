@@ -23,6 +23,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -38,7 +39,11 @@ var backupCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
 		} else {
-			createBackup(args)
+			if util.AskForConfirmation(NoPrompt) {
+				createBackup(args)
+			} else {
+				fmt.Println("Aborting...")
+			}
 		}
 
 	},
@@ -49,6 +54,8 @@ func init() {
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
+	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
+
 }
 
 // showBackup ....

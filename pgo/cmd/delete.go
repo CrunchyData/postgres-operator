@@ -102,7 +102,7 @@ var deleteIngestCmd = &cobra.Command{
 			if util.AskForConfirmation(NoPrompt) {
 				deleteIngest(args)
 			} else {
-				fmt.Println(`Aborting...`)
+				fmt.Println("Aborting...")
 			}
 		}
 	},
@@ -120,7 +120,7 @@ var deleteUpgradeCmd = &cobra.Command{
 			if util.AskForConfirmation(NoPrompt) {
 				deleteUpgrade(args)
 			} else {
-				fmt.Println(`Aborting...`)
+				fmt.Println("Aborting...")
 			}
 		}
 	},
@@ -138,7 +138,7 @@ var deleteBackupCmd = &cobra.Command{
 			if util.AskForConfirmation(NoPrompt) {
 				deleteBackup(args)
 			} else {
-				fmt.Println(`Aborting...`)
+				fmt.Println("Aborting...")
 			}
 		}
 	},
@@ -161,7 +161,7 @@ var deleteUserCmd = &cobra.Command{
 				deleteUser(args[0])
 
 			} else {
-				fmt.Println(`Aborting...`)
+				fmt.Println("Aborting...")
 			}
 		}
 	},
@@ -181,7 +181,7 @@ var deleteClusterCmd = &cobra.Command{
 				deleteCluster(args)
 
 			} else {
-				fmt.Println(`Aborting...`)
+				fmt.Println("Aborting...")
 			}
 		}
 	},
@@ -199,7 +199,7 @@ var deletePolicyCmd = &cobra.Command{
 			if util.AskForConfirmation(NoPrompt) {
 				deletePolicy(args)
 			} else {
-				fmt.Println(`Aborting...`)
+				fmt.Println("Aborting...")
 			}
 		}
 	},

@@ -976,6 +976,12 @@ pgo backup  --selector=project=xray
 In this example, any cluster that matches the selector will cause
 a backup job to be created.
 
+When you request a backup, *pgo* will prompt you if you want
+to proceed because this action will delete any existing backup job
+for this cluster that might exist.  The backup files will still 
+be left intact but the actual Kubernetes Job will be removed prior
+to creating a new Job with the same name.
+
 === pgo delete backup
 
 To delete a backup enter the following:
