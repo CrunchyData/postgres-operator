@@ -62,9 +62,9 @@ func init() {
 
 func createLoad(args []string) {
 	if PoliciesFlag != "" {
-		log.Infoln("policies=" + PoliciesFlag)
+		log.Debug("policies=" + PoliciesFlag)
 	} else {
-		log.Infoln("policies is blank")
+		log.Debug("policies is blank")
 	}
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
