@@ -278,7 +278,7 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 func RemoveBackupJob(name string) {
 
 	options := meta_v1.GetOptions{}
-	resultJob, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Get(name, options)
+	_, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Get(name, options)
 	if kerrors.IsNotFound(err) {
 		log.Debug("Job " + err.Error())
 

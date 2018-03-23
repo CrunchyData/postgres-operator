@@ -51,6 +51,22 @@ func init() {
 func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 	pvcList := make([]string, 1)
 
+	if pvcName == "all" {
+		lo := meta_v1.ListOptions{LabelSelector: "pgremove=true"}
+
+		pvcs, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(apiserver.Namespace).List(lo)
+		if err != nil {
+			log.Error(err.Error())
+			return pvcList, err
+		}
+
+		log.Debugf("got %d PVCs from ShowPVC query\n", len(pvcs.Items))
+		for _, p := range pvcs.Items {
+			pvcList = append(pvcList, p.Name)
+		}
+		return pvcList, err
+	}
+
 	pvc, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(apiserver.Namespace).Get(pvcName, meta_v1.GetOptions{})
 	if err != nil {
 		log.Error("\nPVC %s\n", pvcName+" is not found")

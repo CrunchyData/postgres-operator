@@ -1142,6 +1142,13 @@ you can specify the path option as follows:
 pgo show pvc mycluster-pvc --pvc-root=mycluster-backups
 ....
 
+You can also list all PVCs that are created by the operator
+using:
+....
+pgo show pvc all
+....
+
+
 === pgo show cluster
 
 You can view the passwords used by the cluster as follows:

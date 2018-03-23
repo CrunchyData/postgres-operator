@@ -111,6 +111,7 @@ var ShowPVCCmd = &cobra.Command{
 	Short: "Show pvc information",
 	Long: `Show pvc information. For example:
 
+				pgo show pvc all
 				pgo show pvc mycluster-pvc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
