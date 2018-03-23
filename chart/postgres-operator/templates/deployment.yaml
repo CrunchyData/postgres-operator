@@ -65,5 +65,5 @@ spec:
           configMap:
             name: operator-conf
         - name: apiserver-conf
-          configMap:
-            name: apiserver-conf
+          secret:
+            secretName: apiserver-conf-secret
