@@ -6,5 +6,5 @@ DbPort:  5432
 TableToLoad:  JSON_COLLECTION
 FilePath:  sample.json
 FileType:  json
-PVCName:  crunchy-pvc
+PVCName:  csv-pvc
 SecurityContext:  
