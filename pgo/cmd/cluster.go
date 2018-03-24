@@ -174,6 +174,10 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		}
 	}
 
+	for _, replica := range detail.Replicas {
+		fmt.Println(TreeBranch + "replica : " + replica.Name)
+	}
+
 	fmt.Printf("%s%s", TreeBranch, "labels : ")
 	for k, v := range detail.Cluster.ObjectMeta.Labels {
 		fmt.Printf("%s=%s ", k, v)

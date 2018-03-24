@@ -126,11 +126,10 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
-	oldExample := oldObj.(*crv1.Pgcluster)
+	//oldExample := oldObj.(*crv1.Pgcluster)
 	newExample := newObj.(*crv1.Pgcluster)
+	log.Debug("pgcluster " + newExample.ObjectMeta.Name + " updated ")
 
-	//look for scale commands
-	clusteroperator.ScaleCluster(c.PgclusterClientset, c.PgclusterClient, newExample, oldExample, oldExample.ObjectMeta.Namespace)
 }
 
 // onDelete is called when a pgcluster is deleted

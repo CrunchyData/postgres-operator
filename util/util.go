@@ -23,6 +23,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"math/rand"
+	"time"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/exec"
@@ -38,7 +40,14 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+
+}
 
 // CreateSecContext will generate the JSON security context fragment
 // for a storage type
@@ -212,11 +221,8 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace 
 }
 
 // GetLabels ...
-func GetLabels(name, clustername string, clone, replica bool) string {
+func GetLabels(name, clustername string, replica bool) string {
 	var output string
-	if clone {
-		output += fmt.Sprintf("\"clone\": \"%s\",\n", "true")
-	}
 	if replica {
 		output += fmt.Sprintf("\"replica\": \"%s\",\n", "true")
 	}
@@ -354,4 +360,13 @@ func GetContainerResources(cfg *viper.Viper) crv1.PgContainerResources {
 	r.LimitsCPU = cfg.GetString("LimitsCPU")
 	return r
 
+}
+
+// RandStringBytesRmndr ...
+func RandStringBytesRmndr(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
+	}
+	return string(b)
 }

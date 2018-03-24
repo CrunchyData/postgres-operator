@@ -189,6 +189,12 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		detail.Replicas, err = getReplicas(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 
 		response.Results = append(response.Results, detail)
 	}
@@ -248,6 +254,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 	return output, err
 
 }
+
 func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
@@ -354,6 +361,15 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 
 		//get the services for this cluster
 		detail.Services, err = getServices(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		//get the replicas for this cluster
+		log.Debug("calling getReplicas")
+		detail.Replicas, err = getReplicas(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -964,4 +980,39 @@ func existsGlobalConfig() bool {
 		return false
 	}
 	return true
+}
+
+func getReplicas(cluster *crv1.Pgcluster) ([]msgs.ShowClusterReplica, error) {
+
+	output := make([]msgs.ShowClusterReplica, 0)
+	replicaList := crv1.PgreplicaList{}
+
+	myselector, err := labels.Parse("pg-cluster=" + cluster.Spec.Name)
+	log.Debugf("getReplicas label selector is [%s]\n", myselector.String())
+
+	//get the clusters list
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgreplicaResourcePlural).
+		Namespace(apiserver.Namespace).
+		Param("labelSelector", myselector.String()).
+		//LabelsSelectorParam(myselector).
+		Do().
+		Into(&replicaList)
+	if err != nil {
+		log.Error("error getting replica list" + err.Error())
+		return output, err
+	}
+
+	if len(replicaList.Items) == 0 {
+		log.Debug("no replicas found")
+		return output, err
+	}
+
+	for _, replica := range replicaList.Items {
+		d := msgs.ShowClusterReplica{}
+		d.Name = replica.Spec.Name
+		output = append(output, d)
+	}
+
+	return output, err
 }

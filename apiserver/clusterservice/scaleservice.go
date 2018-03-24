@@ -37,6 +37,14 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if replicaCount != "" {
 		log.Debug("replica-count param was [" + replicaCount + "]")
 	}
+	resourcesConfig := r.URL.Query().Get("resources-config")
+	if resourcesConfig != "" {
+		log.Debug("resources-config param was [" + resourcesConfig + "]")
+	}
+	storageConfig := r.URL.Query().Get("storage-config")
+	if storageConfig != "" {
+		log.Debug("storage-config param was [" + storageConfig + "]")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -46,6 +54,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ScaleCluster(clusterName, replicaCount)
+	resp := ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig)
 	json.NewEncoder(w).Encode(resp)
 }

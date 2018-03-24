@@ -14,6 +14,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+$CO_CMD --namespace=$CO_NAMESPACE delete pgreplicas --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgbackups --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
@@ -23,6 +24,7 @@ $CO_CMD --namespace=$CO_NAMESPACE delete pgingests --all
 
 $CO_CMD --namespace=$CO_NAMESPACE delete crd \
 	pgbackups.cr.client-go.k8s.io \
+	pgreplicas.cr.client-go.k8s.io \
 	pgclusters.cr.client-go.k8s.io \
 	pgpolicies.cr.client-go.k8s.io \
 	pgtasks.cr.client-go.k8s.io \

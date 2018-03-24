@@ -24,7 +24,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/extensions/v1beta1"
@@ -34,9 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"strconv"
 	"text/template"
-	//"time"
 )
 
 const AffinityInOperator = "In"
@@ -103,7 +100,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		return err
 	}
 
-	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
 	log.Debug("CCPImagePrefix before create cluster " + operator.CCPImagePrefix)
 
@@ -160,29 +157,6 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	if err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
-	}
-
-	newReplicas, err := strconv.Atoi(cl.Spec.Replicas)
-	if err != nil {
-		log.Error("could not convert Replicas config setting")
-	} else {
-		if newReplicas > 0 {
-			//create the replica service
-			serviceName := cl.Spec.Name + "-replica"
-			repserviceFields := ServiceTemplateFields{
-				Name:        serviceName,
-				ClusterName: cl.Spec.Name,
-				Port:        cl.Spec.Port,
-			}
-
-			err = CreateService(clientset, &repserviceFields, namespace)
-			if err != nil {
-				log.Error("error in creating replica service " + err.Error())
-				return err
-			}
-
-			ScaleReplicasBase(serviceName, clientset, cl, newReplicas, namespace)
-		}
 	}
 
 	return err
@@ -247,10 +221,12 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	log.Info("deleted replica service " + cl.Spec.Name + ReplicaSuffix + " in namespace " + namespace)
 
 	//delete the pgpool deployment if necessary
-
 	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
 	}
+
+	//delete the pgreplicas if necessary
+	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
 
 	return err
 
@@ -270,22 +246,6 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 		return err
 	}
 
-	/**
-	for _, d := range deployments.Items {
-		log.Debug("draining deployment " + d.ObjectMeta.Name)
-		err = util.DrainDeployment(clientset, d.ObjectMeta.Name, namespace)
-		if err != nil {
-			log.Error("error deleting replica Deployment " + err.Error())
-		}
-	}
-
-	//sleep just a bit to give the drain time to work
-	time.Sleep(9000 * time.Millisecond)
-	*/
-
-	//TODO when client-go 3.0 is ready, use propagation_policy
-	//in the delete options to also delete the replica sets
-
 	//delete the deployments
 	delOptions := meta_v1.DeleteOptions{}
 	var delProp meta_v1.DeletionPropagation
@@ -298,92 +258,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 		if err != nil {
 			log.Error("error deleting replica Deployment " + err.Error())
 		}
-	}
 
-	/**
-	//TODO for k8s 1.6 and client-go 3.0 we can use propagation_policy
-	// to have the replica sets removed as part of the deployment remove
-	//delete replica sets if they exist
-	options := meta_v1.ListOptions{}
-	options.LabelSelector = "pg-cluster=" + cl.Spec.Name
-
-	var reps *v1beta1.ReplicaSetList
-	reps, err = clientset.ReplicaSets(namespace).List(options)
-	if err != nil {
-		log.Error("error getting cluster replicaset name" + err.Error())
-	} else {
-		for _, r := range reps.Items {
-			err = clientset.ReplicaSets(namespace).Delete(r.Name,
-				&meta_v1.DeleteOptions{})
-			if err != nil {
-				log.Error("error deleting cluster replicaset " + err.Error())
-			}
-
-			log.Info("deleted cluster replicaset " + r.Name + " in namespace " + namespace)
-		}
-	}
-
-	for _, d := range deployments.Items {
-		log.Debug("making sure deployment " + d.ObjectMeta.Name + " is deleted")
-		err := util.WaitUntilDeploymentIsDeleted(clientset, d.ObjectMeta.Name, time.Second*39, namespace)
-		if err != nil {
-			log.Error("timeout waiting for deployment " + d.ObjectMeta.Name + " to delete " + err.Error())
-		}
-	}
-	*/
-
-	return err
-
-}
-
-// PrepareClone ...
-func (r Strategy1) PrepareClone(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cloneName string, cl *crv1.Pgcluster, namespace string) error {
-	var err error
-
-	log.Info("creating clone deployment using Strategy 1 in namespace " + namespace)
-
-	//create a PVC
-	pvcName, err := pvc.CreatePVC(clientset, cloneName, &cl.Spec.ReplicaStorage, namespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	//create the clone replica service and deployment
-	replicaServiceFields := ServiceTemplateFields{
-		Name:        cloneName,
-		ClusterName: cloneName,
-		Port:        cl.Spec.Port,
-	}
-
-	err = CreateService(clientset, &replicaServiceFields, namespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	r.CreateReplica(cloneName, clientset, cl, cloneName, pvcName, namespace, true)
-
-	//get the original deployment
-	d, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(cl.Spec.ClusterName, meta_v1.GetOptions{})
-	if err != nil {
-		log.Error("getPolicyLabels deployment " + cl.Spec.ClusterName + " error " + err.Error())
-		return err
-	}
-
-	//get the policy labels from it
-	labels := d.ObjectMeta.Labels
-	polyLabels := make(map[string]string)
-	for key, value := range labels {
-		if value == "pgpolicy" {
-			polyLabels[key] = value
-		}
-	}
-
-	//apply policy labels to new clone deployment
-	err = r.UpdatePolicyLabels(clientset, cloneName, namespace, polyLabels)
-	if err != nil {
-		log.Error("getPolicyLabels error updating poly labels")
 	}
 
 	return err
@@ -464,18 +339,14 @@ func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterNa
 }
 
 // CreateReplica ...
-func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string, cloneFlag bool) error {
+func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string) error {
 	var replicaDoc bytes.Buffer
 	var err error
 	var replicaDeploymentResult *v1beta1.Deployment
 
 	clusterName := cl.Spec.ClusterName
 
-	if cloneFlag {
-		clusterName = depName
-	}
-
-	replicaLabels := getPrimaryLabels(serviceName, clusterName, cloneFlag, true, cl.Spec.UserLabels)
+	replicaLabels := getPrimaryLabels(serviceName, clusterName, true, cl.Spec.UserLabels)
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:               depName,
@@ -530,11 +401,8 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 }
 
 // getPrimaryLabels ...
-func getPrimaryLabels(Name string, ClusterName string, cloneFlag bool, replicaFlag bool, userLabels map[string]string) map[string]string {
+func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
-	if cloneFlag {
-		primaryLabels["clone"] = "true"
-	}
 	if replicaFlag {
 		primaryLabels["replica"] = "true"
 	}
@@ -653,4 +521,72 @@ func GetContainerResources(resources *crv1.PgContainerResources) string {
 	log.Debug(docString)
 
 	return docString
+}
+
+// Scale ...
+func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace, pvcName string, cluster *crv1.Pgcluster) error {
+	var err error
+	log.Debug("Scale called for " + replica.Name)
+	log.Debug("Scale called pvcName " + pvcName)
+	log.Debug("Scale called namespace " + namespace)
+
+	var replicaDoc bytes.Buffer
+	var replicaDeploymentResult *v1beta1.Deployment
+
+	serviceName := replica.Spec.ClusterName + "-replica"
+	replicaFlag := true
+
+	replicaLabels := getPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
+
+	//create the replica deployment
+	replicaDeploymentFields := DeploymentTemplateFields{
+		Name:              replica.Spec.Name,
+		ClusterName:       replica.Spec.ClusterName,
+		Port:              cluster.Spec.Port,
+		CCPImagePrefix:    operator.CCPImagePrefix,
+		CCPImageTag:       cluster.Spec.CCPImageTag,
+		PVCName:           pvcName,
+		PrimaryHost:       cluster.Spec.PrimaryHost,
+		Database:          cluster.Spec.Database,
+		Replicas:          "1",
+		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
+		SecurityContext:   util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:    cluster.Spec.RootSecretName,
+		PrimarySecretName: cluster.Spec.PrimarySecretName,
+		UserSecretName:    cluster.Spec.UserSecretName,
+		NodeSelector:      GetAffinity(cluster.Spec.NodeName, "NotIn"),
+	}
+
+	switch replica.Spec.ReplicaStorage.StorageType {
+	case "", "emptydir":
+		log.Debug("PrimaryStorage.StorageType is emptydir")
+		err = replicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+	case "existing", "create", "dynamic":
+		log.Debug("using the shared replica template ")
+		err = replicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+	}
+
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	replicaDeploymentDocString := replicaDoc.String()
+	log.Debug(replicaDeploymentDocString)
+
+	replicaDeployment := v1beta1.Deployment{}
+	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
+	if err != nil {
+		log.Error("error unmarshalling replica json into Deployment " + err.Error())
+		return err
+	}
+
+	replicaDeploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&replicaDeployment)
+	if err != nil {
+		log.Error("error creating replica Deployment " + err.Error())
+		return err
+	}
+
+	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
+
+	return err
 }

@@ -77,6 +77,11 @@ type ShowClusterSecret struct {
 	Password string
 }
 
+// ShowClusterReplica
+type ShowClusterReplica struct {
+	Name string
+}
+
 // ShowClusterDetail ...
 type ShowClusterDetail struct {
 	Cluster     crv1.Pgcluster
@@ -84,6 +89,7 @@ type ShowClusterDetail struct {
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
 	Secrets     []ShowClusterSecret
+	Replicas    []ShowClusterReplica
 }
 
 // ShowClusterResponse ...
@@ -118,5 +124,6 @@ type ClusterTestResponse struct {
 
 // ClusterScaleResponse ...
 type ClusterScaleResponse struct {
+	Results []string
 	Status
 }

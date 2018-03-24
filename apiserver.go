@@ -20,7 +20,6 @@ import (
 	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
-	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
@@ -68,7 +67,6 @@ func main() {
 	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()
 	r.HandleFunc("/version", versionservice.VersionHandler)
-	r.HandleFunc("/clones", cloneservice.CreateCloneHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
 	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")

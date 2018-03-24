@@ -476,6 +476,7 @@ viewing these custom resource definitions:
 ....
 kubectl get crd
 kubectl get pgclusters
+kubectl get pgreplicas
 kubectl get pgbackups
 kubectl get pgupgrades
 kubectl get pgpolicies
@@ -505,7 +506,7 @@ the following:
 
  * get version information (*pgo version*)
  * create a cluster (*pgo create cluster testcluster*)
- * scale a cluster (*pgo scale testcluster --replica-count=1*)
+ * scale a cluster (*pgo scale testcluster *)
  * show a cluster (*pgo show cluster testcluster*)
  * show all clusters (*pgo show cluster all*)
  * backup a cluster (*pgo backup testcluster*)
@@ -1026,29 +1027,32 @@ be prompted you can enter the *--no-prompt* command line flag.
 
 When you create a Cluster, you will see in the output a variety of Kubernetes objects were created including:
 
- * a Deployment holding the master PostgreSQL database
+ * a Deployment holding the primary PostgreSQL database
  * a Deployment holding the replica PostgreSQL database
- * a service for the master database
+ * a service for the primary database
  * a service for the replica databases
 
-Since Postgres is a single-master database by design, the master
+Since Postgres is a single-primary database by design, the primary
 Deployment is set to a replica count of 1, it can not scale beyond 1.
 
-The replica Deployment is set to an initial value of 0, you will
-see there are 0 replica databases running.  Those replica databases
-are in read-only mode, but you can scale up the number of replicas
-beyond 0 if you need higher read scaling.  To set the number of
-replicas issue the following command:
+With Postgres, you can any n-number of replicas each of which
+connect to the primary forming a streaming replication postgres cluster.
+The Postgres replicas are read-only, whereas the primary is read-write.
+To create a Postgres replica enter a command such as:
 ....
-pgo scale mycluster --replica-count=1
+pgo scale mycluster 
 ....
 
+The *pgo scale* command is additive, in that each time you execute
+it, it will create another replica which is added to the Postgres
+cluster.
+
 There are 2 service connections available to the PostgreSQL cluster. One is
-to the master database which allows read-write SQL processing, and
+to the primary database which allows read-write SQL processing, and
 the other is to the set of read-only replica databases.  The replica
 service performs round-robin load balancing to the replica databases.
 
-You can connect to the master database and verify that it is replicating
+You can connect to the primary database and verify that it is replicating
 to the replica databases as follows:
 ....
 psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'
@@ -1166,7 +1170,7 @@ pgo test mycluster
 ....
 
 This command will test each service defined for the cluster using
-the postgres, master, and normal user accounts defined for the
+the postgres, primary, and normal user accounts defined for the
 cluster.  The cluster credentials are accessed and used to test
 the database connections.  The equivalent *psql* command is printed
 out as connections are tried, along with the connection status.
@@ -1448,7 +1452,7 @@ you have both a primary and replica running.
 When a user creates the cluster they can pass a command flag as follows:
 ....
 pgo create cluster cluster1 --pgpool
-pgo scale cluster1 --replica-count=1
+pgo scale cluster1 
 ....
 
 This will cause the operator to create a Deployment that includes

@@ -15,8 +15,8 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $CO_CMD --namespace=$CO_NAMESPACE get pgbackups
-$CO_CMD --namespace=$CO_NAMESPACE get pgclones
 $CO_CMD --namespace=$CO_NAMESPACE get pgclusters
+$CO_CMD --namespace=$CO_NAMESPACE get pgreplicas
 $CO_CMD --namespace=$CO_NAMESPACE get pgpolicies 
 $CO_CMD --namespace=$CO_NAMESPACE get pgpolicylogs
 $CO_CMD --namespace=$CO_NAMESPACE get pgupgrades

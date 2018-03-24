@@ -21,11 +21,14 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/util"
+	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount string) msgs.ClusterScaleResponse {
+func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig string) msgs.ClusterScaleResponse {
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -52,14 +55,92 @@ func ScaleCluster(name, replicaCount string) msgs.ClusterScaleResponse {
 		return response
 	}
 
-	log.Debug("scaling %s to %d\n", name, replicaCount)
-	err = util.Patch(apiserver.RESTClient, "/spec/replicas", replicaCount, crv1.PgclusterResourcePlural, name, apiserver.Namespace)
+	spec := crv1.PgreplicaSpec{}
+
+	//get the resource-config
+	if resourcesConfig != "" {
+		spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + resourcesConfig))
+	} else {
+		defaultContainerResource := viper.GetString("DefaultContainerResource")
+		if defaultContainerResource != "" {
+			spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + defaultContainerResource))
+		}
+	}
+
+	//get the storage-config
+	if storageConfig != "" {
+		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + storageConfig))
+	} else {
+		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+	}
+
+	labels := make(map[string]string)
+	labels["pg-cluster"] = cluster.Spec.Name
+	spec.ClusterName = cluster.Spec.Name
+
+	var rc int
+	rc, err = strconv.Atoi(replicaCount)
 	if err != nil {
 		log.Error(err.Error())
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
 	}
+
+	for i := 0; i < rc; i++ {
+
+		uniqueName := util.RandStringBytesRmndr(4)
+		labels["name"] = cluster.Spec.Name + "-" + uniqueName
+		spec.Name = labels["name"]
+
+		//copy cluster info over to replica to avoid a CRD read later
+		//spec.Strategy = cluster.Spec.Strategy
+		//		spec.Port = cluster.Spec.Port
+		//spec.CCPImageTag = cluster.Spec.CCPImageTag
+		//spec.PrimaryHost = cluster.Spec.PrimaryHost
+		//spec.Database = cluster.Spec.Database
+		//spec.RootSecretName = cluster.Spec.RootSecretName
+		//spec.PrimarySecretName = cluster.Spec.PrimarySecretName
+		//spec.UserSecretName = cluster.Spec.UserSecretName
+		//spec.UserLabels = cluster.Spec.UserLabels
+
+		newInstance := &crv1.Pgreplica{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name:   labels["name"],
+				Labels: labels,
+			},
+			Spec: spec,
+			Status: crv1.PgreplicaStatus{
+				State:   crv1.PgreplicaStateCreated,
+				Message: "Created, not processed yet",
+			},
+		}
+
+		result := crv1.Pgreplica{}
+
+		err = apiserver.RESTClient.Post().
+			Resource(crv1.PgreplicaResourcePlural).
+			Namespace(apiserver.Namespace).
+			Body(newInstance).
+			Do().Into(&result)
+		if err != nil {
+			log.Error(" in creating Pgreplica instance" + err.Error())
+		}
+
+		response.Results = append(response.Results, "created Pgreplica "+labels["name"])
+	}
+
+	/**
+	futureReplicas := currentReplicas + replicaCount
+	log.Debug("scaling %s to %d from %d\n", name, futureReplicas, currentReplicas)
+	err = util.Patch(apiserver.RESTClient, "/spec/replicas", futureReplicas, crv1.PgclusterResourcePlural, name, apiserver.Namespace)
+	if err != nil {
+		log.Error(err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+	*/
 
 	return response
 }

@@ -73,7 +73,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 
 	//create the primary deployment
 
-	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
 	deploymentFields := DeploymentTemplateFields{
 		Name:              cl.Spec.Name,
@@ -200,7 +200,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 
 	log.Info("major cluster upgrade finalize using Strategy 1 in namespace " + namespace)
 
-	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, false, cl.Spec.UserLabels)
+	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
 	//start the primary deployment
 	deploymentFields := DeploymentTemplateFields{

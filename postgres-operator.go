@@ -88,6 +88,13 @@ func main() {
 	if clustercrd != nil {
 		fmt.Println(clustercrd.Name + " exists ")
 	}
+	replicacrd, err := crdclient.PgreplicaCreateCustomResourceDefinition(apiextensionsclientset)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		panic(err)
+	}
+	if replicacrd != nil {
+		fmt.Println(replicacrd.Name + " exists ")
+	}
 	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
 
 	backupcrd, err := crdclient.PgbackupCreateCustomResourceDefinition(apiextensionsclientset)
@@ -157,6 +164,12 @@ func main() {
 		PgclusterClientset: Clientset,
 		Namespace:          Namespace,
 	}
+	pgReplicacontroller := controller.PgreplicaController{
+		PgreplicaClient:    crdClient,
+		PgreplicaScheme:    crdScheme,
+		PgreplicaClientset: Clientset,
+		Namespace:          Namespace,
+	}
 	pgUpgradecontroller := controller.PgupgradeController{
 		PgupgradeClientset: Clientset,
 		PgupgradeClient:    crdClient,
@@ -191,6 +204,7 @@ func main() {
 	go pgTaskcontroller.Run(ctx)
 	go pgIngestcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
+	go pgReplicacontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)
 	go pgUpgradecontroller.Run(ctx)
 	go pgPolicycontroller.Run(ctx)
