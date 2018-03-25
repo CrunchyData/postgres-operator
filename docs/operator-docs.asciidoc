@@ -80,7 +80,6 @@ export CO_BASEOS=centos7
 export CO_VERSION=2.6
 export CO_IMAGE_PREFIX=crunchydata
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
-export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export CO_APISERVER_URL=https://postgres-operator:8443
 export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
@@ -219,22 +218,14 @@ the namespace you are deploying the operator into.
 
 If you are not using the *demo* namespace, you will edit the following:
 
- * $COROOT/conf/apiserver/pgo.yaml
  * $COROOT/deploy/service-account.yaml
  * $COROOT/deploy/cluster-role-binding.yaml
-
-likewise, specify your *CO_NAMESPACE* environment variable:
-
-....
-export CO_NAMESPACE=demo
-....
 
 === Openshift Container Platform
 
 To run the Operator on Openshift Container Platform note the following:
 
  * Openshift Container Platform 3.7 or greater is required since the Operator is based on Custom Resource Definitions which were first supported in OCP starting with version 3.7
- * the Openshift Project is synonymous with the CO_NAMESPACE environment variable setting
  * the OC_CMD environment variable should be set to *oc* when operating in an Openshift environment
 
 === Configure Persistent Storage
@@ -586,7 +577,6 @@ The default pgo configuration file, included in
 [source,yaml]
 ....
 BasicAuth:  true
-Namespace:  demo
 Cluster:
   CCPImageTag:  centos7-10.3-1.8.1
   Port:  5432
@@ -640,7 +630,6 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |BasicAuth        | if set to *true* will enable Basic Authentication
-|Namespace        | the namespace the Operator will run within
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name

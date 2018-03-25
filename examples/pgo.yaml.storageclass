@@ -1,4 +1,3 @@
-Namespace:  demo
 Cluster:
   CCPImagePrefix:  crunchydata
   CCPImageTag:  centos7-10.2-1.8.0

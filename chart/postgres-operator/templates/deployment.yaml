@@ -26,6 +26,10 @@ spec:
           env:
             - name: CRUNCHY_DEBUG
               value: "{{ .Values.env.debug }}"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
           volumeMounts:
             - name: apiserver-conf
               mountPath: /config
