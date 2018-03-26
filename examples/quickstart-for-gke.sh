@@ -127,9 +127,6 @@ cp $COROOT/examples/pgo-bash-completion $HOME/.bash_completion
 echo -n "do you want to deploy the operator? [yes no] "
 read REPLY
 if [[ "$REPLY" == "yes" ]]; then
-	echo "setting up pgo storage configuration for GCE standard storageclass" | tee -a $LOG
-	cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-
 	echo "deploy the operator to the Kube cluster" | tee -a $LOG
 	$COROOT/deploy/deploy.sh | tee -a $LOG
 fi
