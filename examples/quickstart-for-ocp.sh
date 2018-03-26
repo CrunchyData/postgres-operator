@@ -89,8 +89,7 @@ mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
 echo ""
 echo "installing pgo server config" | tee -a $LOG
-#wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz -O /tmp/postgres-operator.$PGORELEASE.tar.gz
-#cp /tmp/postgres-operator.$PGORELEASE.tar.gz.orig /tmp/postgres-operator.$PGORELEASE.tar.gz
+wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz -O /tmp/postgres-operator.$PGORELEASE.tar.gz
 #if [[ $? -ne 0 ]]; then
 #	echo "problem getting pgo server config"
 #	exit 1
