@@ -40,8 +40,9 @@ const AffinityInOperator = "In"
 const AFFINITY_NOTINOperator = "NotIn"
 
 type affinityTemplateFields struct {
-	Node          string
-	OperatorValue string
+	NodeLabelKey   string
+	NodeLabelValue string
+	OperatorValue  string
 }
 
 type containerResourcesTemplateFields struct {
@@ -121,7 +122,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.NodeName, "In"),
+		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:       GetCollectAddon(&cl.Spec),
@@ -364,7 +365,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.NodeName, "NotIn"),
+		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -417,15 +418,16 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 }
 
 // GetAffinity ...
-func GetAffinity(nodeName string, operator string) string {
-	log.Debugf("GetAffinity with nodeName=[%s] and operator=[%s]\n", nodeName, operator)
+func GetAffinity(nodeLabelKey, nodeLabelValue string, operator string) string {
+	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, operator)
 	output := ""
-	if nodeName == "" {
+	if nodeLabelKey == "" {
 		return output
 	}
 
 	affinityTemplateFields := affinityTemplateFields{}
-	affinityTemplateFields.Node = nodeName
+	affinityTemplateFields.NodeLabelKey = nodeLabelKey
+	affinityTemplateFields.NodeLabelValue = nodeLabelValue
 	affinityTemplateFields.OperatorValue = operator
 
 	var affinityDoc bytes.Buffer
@@ -554,7 +556,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,
-		NodeSelector:      GetAffinity(cluster.Spec.NodeName, "NotIn"),
+		NodeSelector:      GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "NotIn"),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

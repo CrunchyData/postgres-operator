@@ -91,7 +91,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		RootSecretName:    cl.Spec.RootSecretName,
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
-		NodeSelector:      GetAffinity(cl.Spec.NodeName, "In"),
+		NodeSelector:      GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
 		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}

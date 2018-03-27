@@ -242,7 +242,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d := msgs.ShowClusterPod{}
 		d.Name = p.Name
 		d.Phase = string(p.Status.Phase)
-		d.NodeName = p.Spec.NodeName
+		d.NodeLabel = ""
 		d.ReadyStatus = getReadyStatus(&p)
 		//log.Infof("pod details are %v\n", p)
 		d.PVCName = getPVCName(&p)
@@ -541,13 +541,33 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			}
 		}
 
-		if request.NodeName != "" {
-			valid, reason, allNodes := apiserver.IsValidNodeName(request.NodeName)
-			if !valid {
+		if request.NodeLabel != "" {
+			parts := strings.Split(request.NodeLabel, "=")
+			if len(parts) != 2 {
 				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.NodeName + " NodeName was not valid, " + reason + " valid nodes are " + allNodes
+				resp.Status.Msg = request.NodeLabel + " node label does not follow key=value format"
 				return resp
 			}
+
+			keyValid, valueValid, err := apiserver.IsValidNodeLabel(parts[0], parts[1])
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+
+			if !keyValid {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.NodeLabel + " key was not valid .. check node labels for correct values to specify"
+				return resp
+			}
+			if !valueValid {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.NodeLabel + " node label value was not valid .. check node labels for correct values to specify"
+				return resp
+			}
+			userLabelsMap["NodeLabelKey"] = parts[0]
+			userLabelsMap["NodeLabelValue"] = parts[1]
 		}
 
 		if request.ReplicaStorageConfig != "" {
@@ -587,15 +607,6 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 
 		// Create an instance of our CRD
-
-		if request.NodeName != "" {
-			err = validateNodeName(request.NodeName)
-			if err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-		}
 
 		newInstance := getClusterParams(request, clusterName, userLabelsMap)
 		validateConfigPolicies(request.Policies)
@@ -708,7 +719,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.RootPassword = ""
 	spec.Replicas = "0"
 	spec.Strategy = "1"
-	spec.NodeName = request.NodeName
 	spec.UserLabels = userLabelsMap
 
 	//override any values from config file
@@ -797,32 +807,6 @@ func validateSecretFrom(secretname string) error {
 	}
 
 	return err
-}
-
-func validateNodeName(nodeName string) error {
-	var err error
-	lo := meta_v1.ListOptions{}
-	nodes, err := apiserver.Clientset.CoreV1().Nodes().List(lo)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	found := false
-	allNodes := ""
-
-	for _, node := range nodes.Items {
-		if node.Name == nodeName {
-			found = true
-		}
-		allNodes += node.Name + " "
-	}
-
-	if found == false {
-		return errors.New("node name was not found...valid nodes include " + allNodes)
-	}
-
-	return err
-
 }
 
 func getReadyStatus(pod *v1.Pod) string {

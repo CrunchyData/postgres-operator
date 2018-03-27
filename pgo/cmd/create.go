@@ -31,7 +31,7 @@ var CCPImageTag string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
-var NodeName string
+var NodeLabel string
 var UserLabels string
 var IngestConfig string
 
@@ -171,7 +171,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "g", "", "The name of a configMap that holds custom PG config files used to override the defaults")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
-	createClusterCmd.Flags().StringVarP(&NodeName, "node-name", "", "", "The node on which to place the primary database, if not set any node is used")
+	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database, if not set any node is used")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")

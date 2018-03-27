@@ -23,7 +23,7 @@ import (
 type CreateClusterRequest struct {
 	Name                 string
 	Namespace            string
-	NodeName             string
+	NodeLabel            string
 	Password             string
 	SecretFrom           string
 	BackupPVC            string
@@ -58,7 +58,7 @@ type ShowClusterService struct {
 type ShowClusterPod struct {
 	Name        string
 	Phase       string
-	NodeName    string
+	NodeLabel   string
 	PVCName     string
 	ReadyStatus string
 	Primary     bool

@@ -368,36 +368,34 @@ func IsValidStorageName(name string) bool {
 	return ok
 }
 
-// IsValidNodeName returns true or false if
-// a node is valid, returns a string that
-// describes the not valid condition, and
-// lastly a string of all valid nodes found
-func IsValidNodeName(nodeName string) (bool, string, string) {
+// IsValidNodeLabel
+// returns bool for key validity
+// returns bool for value validity
+// returns error
+func IsValidNodeLabel(key, value string) (bool, bool, error) {
 
 	var err error
-	found := false
-	allNodes := ""
+	keyValid := false
+	valueValid := false
 
-	lo := meta_v1.ListOptions{}
-	nodes, err := Clientset.CoreV1().Nodes().List(lo)
+	nodes, err := Clientset.CoreV1().Nodes().List(meta_v1.ListOptions{})
 	if err != nil {
 		log.Error(err)
-		return false, err.Error(), allNodes
+		return false, false, err
 	}
 
+	var v string
 	for _, node := range nodes.Items {
-		log.Infof("%v\n", node)
-		if node.Name == nodeName {
-			found = true
+		v = node.ObjectMeta.Labels[key]
+		if v != "" {
+			keyValid = true
 		}
-		allNodes += node.Name + " "
+		if v == value {
+			valueValid = true
+		}
 	}
 
-	if found == false {
-		return false, "not found", allNodes
-	}
-
-	return true, "", allNodes
+	return keyValid, valueValid, err
 }
 
 func IsValidContainerResourceValues() bool {
