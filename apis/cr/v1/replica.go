@@ -38,6 +38,7 @@ type PgreplicaSpec struct {
 	ReplicaStorage     PgStorageSpec        `json:"replicastorage"`
 	ContainerResources PgContainerResources `json:"containerresources"`
 	Status             string               `json:"status"`
+	UserLabels         map[string]string    `json:"userlabels"`
 	//Strategy           string               `json:"strategy"`
 	//Port               string               `json:"port"`
 	//CCPImageTag        string               `json:"ccpimagetag"`
@@ -47,7 +48,6 @@ type PgreplicaSpec struct {
 	//NodeName           string               `json:"NodeName"`
 	//PrimarySecretName  string               `json:"primarysecretname"`
 	//UserSecretName     string               `json:"usersecretname"`
-	//UserLabels         map[string]string    `json:"userlabels"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

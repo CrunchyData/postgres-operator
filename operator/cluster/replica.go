@@ -30,55 +30,6 @@ import (
 	//"strconv"
 )
 
-// ScaleReplicasBase ...
-/**
-func ScaleReplicasBase(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) {
-
-	serviceName := cl.Spec.Name + "-replica"
-
-	//create the service if it doesn't exist
-	serviceFields := ServiceTemplateFields{
-		Name:        serviceName,
-		ClusterName: cl.Spec.Name,
-		Port:        cl.Spec.Port,
-	}
-
-	err := CreateService(clientset, &serviceFields, namespace)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	//get the strategy to use
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-		log.Info("using default cluster strategy")
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
-		return
-	}
-
-	log.Debug("scale up called ")
-
-	//generate a unique name suffix
-	uniqueName := util.RandStringBytesRmndr(4)
-	depName := cl.Spec.Name + "-replica-" + uniqueName
-
-	//create a PVC
-	pvcName, err := pvc.CreatePVC(clientset, depName, &cl.Spec.ReplicaStorage, namespace)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
-}
-*/
-
 // DeletePgreplicas
 func DeletePgreplicas(restclient *rest.RESTClient, clusterName, namespace string) {
 

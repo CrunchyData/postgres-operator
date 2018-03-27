@@ -51,6 +51,7 @@ func init() {
 	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", 1, "The replica count to apply to the clusters, defaults to 1")
 	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits")
 	scaleCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the replica storage.")
+	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the replica pod, if not set any node is used")
 
 }
 
@@ -58,7 +59,7 @@ func scaleCluster(args []string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig
+		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)

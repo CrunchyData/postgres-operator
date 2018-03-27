@@ -25,10 +25,11 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
+	"strings"
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig string) msgs.ClusterScaleResponse {
+func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel string) msgs.ClusterScaleResponse {
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -74,8 +75,43 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig string) msg
 		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
 	}
 
+	spec.UserLabels = make(map[string]string)
+
+	var parts []string
+	//validate nodeLabel
+	if nodeLabel != "" {
+		parts = strings.Split(nodeLabel, "=")
+		if len(parts) != 2 {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = nodeLabel + " node label does not follow key=value format"
+			return response
+		}
+
+		keyValid, valueValid, err := apiserver.IsValidNodeLabel(parts[0], parts[1])
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		if !keyValid {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = nodeLabel + " key was not valid .. check node labels for correct values to specify"
+			return response
+		}
+		if !valueValid {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = nodeLabel + " node label value was not valid .. check node labels for correct values to specify"
+			return response
+		}
+		spec.UserLabels["NodeLabelKey"] = parts[0]
+		spec.UserLabels["NodeLabelValue"] = parts[1]
+
+	}
+
 	labels := make(map[string]string)
 	labels["pg-cluster"] = cluster.Spec.Name
+
 	spec.ClusterName = cluster.Spec.Name
 
 	var rc int

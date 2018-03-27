@@ -242,7 +242,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d := msgs.ShowClusterPod{}
 		d.Name = p.Name
 		d.Phase = string(p.Status.Phase)
-		d.NodeLabel = ""
+		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus = getReadyStatus(&p)
 		//log.Infof("pod details are %v\n", p)
 		d.PVCName = getPVCName(&p)

@@ -417,6 +417,28 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 	return primaryLabels
 }
 
+// GetReplicaAffinity ...
+// use NotIn as an operator when a node-label is not specified on the
+// replica, use the node labels from the primary in this case
+// use In as an operator when a node-label is specified on the replica
+// use the node labels from the replica in this case
+func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
+	var operator, key, value string
+	log.Debug("GetReplicaAffinity ")
+	if replicaLabels["NodeLabelKey"] != "" {
+		//use the replica labels
+		operator = "In"
+		key = replicaLabels["NodeLabelKey"]
+		value = replicaLabels["NodeLabelValue"]
+	} else {
+		//use the cluster labels
+		operator = "NotIn"
+		key = clusterLabels["NodeLabelKey"]
+		value = clusterLabels["NodeLabelValue"]
+	}
+	return GetAffinity(key, value, operator)
+}
+
 // GetAffinity ...
 func GetAffinity(nodeLabelKey, nodeLabelValue string, operator string) string {
 	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, operator)
@@ -556,7 +578,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,
-		NodeSelector:      GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "NotIn"),
+		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

@@ -155,7 +155,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
 
 	for _, pod := range detail.Pods {
-		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeLabel + ") (" + pod.ReadyStatus + ")")
+		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
 		fmt.Println(TreeBranch + "pvc : " + pod.PVCName)
 	}
 

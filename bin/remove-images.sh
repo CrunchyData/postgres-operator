@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-docker rmi -f pgo-lspvc crunchydata/pgo-lspvc:$CO_IMAGE_TAG  \
-postgres-operator crunchydata/postgres-operator:$CO_IMAGE_TAG  \
-pgo-load crunchydata/pgo-load:$CO_IMAGE_TAG  \
-pgo-apiserver crunchydata/pgo-apiserver:$CO_IMAGE_TAG \
-pgo-rmdata crunchydata/pgo-rmdata:$CO_IMAGE_TAG 
+docker rmi -f pgo-lspvc $CO_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG  
+docker rmi -f postgres-operator $CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG  
+docker rmi -f pgo-load $CO_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG  
+docker rmi -f pgo-apiserver $CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG 
+docker rmi -f pgo-rmdata $CO_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG 

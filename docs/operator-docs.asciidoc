@@ -1060,6 +1060,23 @@ You can filter the results by Postgres version:
 pgo show cluster all --version=9.6.2
 ....
 
+The scale command will let you specify a *--node-label* flag which
+can be used to influence what Kube node the replica will be scheduled
+upon.
+
+....
+pgo scale mycluster --node-label=speed=fast
+....
+
+If you don't specify a *--node-label* flag, a node affinity 
+rule of *NotIn* will be specified to *prefer* that the replica
+be schedule on a node that the primary is not running on.
+
+You can also dictate what container resource and storage configurations
+will be used for a replica by passing in extra command flags:
+....
+pgo scale mycluster --storage-config=storage1 --resources-config=small
+....
 
 === pgo upgrade
 

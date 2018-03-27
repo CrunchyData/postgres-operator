@@ -58,7 +58,7 @@ type ShowClusterService struct {
 type ShowClusterPod struct {
 	Name        string
 	Phase       string
-	NodeLabel   string
+	NodeName    string
 	PVCName     string
 	ReadyStatus string
 	Primary     bool

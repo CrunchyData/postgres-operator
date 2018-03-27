@@ -573,7 +573,7 @@ func (in *Pgreplica) DeepCopyInto(out *Pgreplica) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	out.Status = in.Status
 	return
 }
@@ -636,6 +636,13 @@ func (in *PgreplicaSpec) DeepCopyInto(out *PgreplicaSpec) {
 	*out = *in
 	out.ReplicaStorage = in.ReplicaStorage
 	out.ContainerResources = in.ContainerResources
+	if in.UserLabels != nil {
+		in, out := &in.UserLabels, &out.UserLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

@@ -45,6 +45,10 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if storageConfig != "" {
 		log.Debug("storage-config param was [" + storageConfig + "]")
 	}
+	nodeLabel := r.URL.Query().Get("node-label")
+	if nodeLabel != "" {
+		log.Debug("node-label param was [" + nodeLabel + "]")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -54,6 +58,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig)
+	resp := ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel)
 	json.NewEncoder(w).Encode(resp)
 }
