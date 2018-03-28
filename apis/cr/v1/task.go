@@ -23,6 +23,7 @@ import (
 const PgtaskResourcePlural = "pgtasks"
 
 const PgtaskDeleteData = "delete-data"
+const PgtaskFailover = "failover"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {

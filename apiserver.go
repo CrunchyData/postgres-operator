@@ -21,6 +21,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
+	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
 	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
@@ -86,6 +87,7 @@ func main() {
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
+	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

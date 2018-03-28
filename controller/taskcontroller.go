@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
 
@@ -124,6 +125,12 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskFailover:
+		log.Info("failover task added")
+		log.Info("cluster name is " + task.Spec.Parameters)
+		log.Info("dbname is " + task.Spec.Name)
+		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
 		log.Info("pvc is " + task.Spec.Parameters)
@@ -145,7 +152,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	if err != nil {
 		log.Errorf("ERROR deleting pgtask status: %s %v\n", task.ObjectMeta.Name, err)
 	} else {
-		log.Errorf("UPDATED deleted pgtask %s\n", task.ObjectMeta.Name)
+		log.Errorf("deleted pgtask %s\n", task.ObjectMeta.Name)
 	}
 
 }
