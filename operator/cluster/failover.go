@@ -26,7 +26,7 @@ import (
 )
 
 // FailoverBase ...
-func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask) {
+func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
 	var err error
 
 	//look up the pgcluster for this task
@@ -58,6 +58,6 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		return
 	}
 
-	strategy.Failover(clientset, client, clusterName, task.ObjectMeta.Labels["target"], namespace)
+	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
 
 }

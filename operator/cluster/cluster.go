@@ -33,7 +33,7 @@ import (
 type Strategy interface {
 	Scale(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgreplica, string, string, *crv1.Pgcluster) error
 	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
-	Failover(*kubernetes.Clientset, *rest.RESTClient, string, string, string) error
+	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
 	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
 

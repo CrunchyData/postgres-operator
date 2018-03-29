@@ -348,6 +348,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	clusterName := cl.Spec.ClusterName
 
 	replicaLabels := getPrimaryLabels(serviceName, clusterName, true, cl.Spec.UserLabels)
+
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:               depName,
@@ -561,6 +562,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	replicaFlag := true
 
 	replicaLabels := getPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
+	replicaLabels["replica-name"] = replica.Spec.Name
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{

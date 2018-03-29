@@ -145,6 +145,7 @@ func main() {
 	// start a controller on instances of our custom resource
 
 	pgTaskcontroller := controller.PgtaskController{
+		PgtaskConfig:    config,
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,

@@ -32,6 +32,7 @@ import (
 
 // PgtaskController holds connections for the controller
 type PgtaskController struct {
+	PgtaskConfig    *rest.Config
 	PgtaskClient    *rest.RESTClient
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
@@ -102,7 +103,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		return
 	}
 
-	//update the status of the task as completed
+	//update the status of the task as processed to prevent reprocessing
 	taskCopy := copyObj.(*crv1.Pgtask)
 	taskCopy.Status = crv1.PgtaskStatus{
 		State:   crv1.PgtaskStateProcessed,
@@ -129,7 +130,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Info("failover task added")
 		log.Info("cluster name is " + task.Spec.Parameters)
 		log.Info("dbname is " + task.Spec.Name)
-		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
 
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
@@ -140,7 +141,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Info("unknown task type on pgtask added")
 	}
 
-	//for now, remove the pgtask in all cases
+	/**
 	err = c.PgtaskClient.Delete().
 		Name(task.ObjectMeta.Name).
 		Namespace(task.ObjectMeta.Namespace).
@@ -154,6 +155,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	} else {
 		log.Errorf("deleted pgtask %s\n", task.ObjectMeta.Name)
 	}
+	*/
 
 }
 

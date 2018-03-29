@@ -16,11 +16,12 @@ package util
 */
 
 import (
-	//log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	//"k8s.io/apimachinery/pkg/api/errors"
-	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
 	//"k8s.io/client-go/rest"
@@ -30,17 +31,36 @@ import (
 )
 
 // GetBestTarget
-func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (string, error) {
+func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (*v1.Pod, error) {
 
 	var err error
-	var podName string
-	return podName, err
+	var pod *v1.Pod
+	return pod, err
 }
 
 // GetPodName from a deployment name
-func GetPodName(clientset *kubernetes.Clientset, deploymentName, namespace string) (string, error) {
+func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (*v1.Pod, error) {
 
 	var err error
-	var podName string
-	return podName, err
+
+	var pod *v1.Pod
+	var pods *v1.PodList
+	lo := meta_v1.ListOptions{LabelSelector: "replica-name=" + deploymentName}
+	pods, err = clientset.CoreV1().Pods(namespace).List(lo)
+	if err != nil {
+		log.Error(err)
+		return pod, err
+	}
+	if len(pods.Items) != 1 {
+		return pod, errors.New("could not determine which pod to failover to")
+	}
+
+	for _, v := range pods.Items {
+		pod = &v
+	}
+	if len(pod.Spec.Containers) != 1 {
+		return pod, errors.New("could not find a container in the pod")
+	}
+
+	return pod, err
 }

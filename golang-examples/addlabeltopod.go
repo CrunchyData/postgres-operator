@@ -11,7 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	//"k8s.io/client-go/pkg/api/errors"
 	"encoding/json"
-	"k8s.io/api/extensions/v1beta1"
+	//"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/core/v1"
+
 	//"k8s.io/client-go/pkg/runtime"
 	//"k8s.io/client-go/pkg/runtime/serializer"
 
@@ -41,21 +43,21 @@ func main() {
 		panic(err.Error())
 	}
 
-	//get the deployment
-	depName := "eggs"
-	var deployment *v1beta1.Deployment
-	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+	//get the pod
+	podName := "eggs-d84778bfb-b7669"
+	var pod *v1.Pod
+	pod, err = clientset.CoreV1().Pods(namespace).Get(podName, meta_v1.GetOptions{})
 	if err != nil {
 		panic(err.Error())
 	} else {
-		fmt.Println("got the deployment" + deployment.Name)
+		fmt.Println("got the pod" + pod.Name)
 	}
-	origData, err5 := json.Marshal(deployment)
+	origData, err5 := json.Marshal(pod)
 	if err != nil {
 		panic(err5)
 	}
 
-	accessor, err2 := meta.Accessor(deployment)
+	accessor, err2 := meta.Accessor(pod)
 	if err2 != nil {
 		panic(err2.Error())
 	}
@@ -66,7 +68,7 @@ func main() {
 	}
 	fmt.Printf("current labels are %v\n", objLabels)
 
-	//update the deployment labels
+	//update the pod labels
 	newLabels := make(map[string]string)
 	newLabels["policytest2"] = "jeffsays"
 
@@ -78,13 +80,9 @@ func main() {
 	accessor.SetLabels(objLabels)
 	//accessor.SetResourceVersion("718408")
 
-	newData, err4 := json.Marshal(deployment)
+	newData, err4 := json.Marshal(pod)
 	if err != nil {
 		panic(err4)
-	}
-	if len(newData) > 0 {
-	}
-	if len(origData) > 0 {
 	}
 
 	patchBytes, err6 := jsonpatch.CreateMergePatch(origData, newData)
@@ -98,9 +96,9 @@ func main() {
 		fmt.Println("created merge patch")
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(depName, types.MergePatchType, patchBytes, "")
+	_, err = clientset.CoreV1().Pods(namespace).Patch(podName, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		panic("error patching deployment " + err.Error())
+		panic("error patching pod " + err.Error())
 	}
 
 }
