@@ -304,8 +304,8 @@ _pgo_create_cluster()
     flags+=("--metrics")
     flags+=("-m")
     local_nonpersistent_flags+=("--metrics")
-    flags+=("--node-name=")
-    local_nonpersistent_flags+=("--node-name=")
+    flags+=("--node-label=")
+    local_nonpersistent_flags+=("--node-label=")
     flags+=("--password=")
     two_word_flags+=("-w")
     local_nonpersistent_flags+=("--password=")
@@ -595,6 +595,32 @@ _pgo_delete()
     noun_aliases=()
 }
 
+_pgo_failover()
+{
+    last_command="pgo_failover"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--query")
+    local_nonpersistent_flags+=("--query")
+    flags+=("--target=")
+    local_nonpersistent_flags+=("--target=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_label()
 {
     last_command="pgo_label"
@@ -665,6 +691,8 @@ _pgo_scale()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--node-label=")
+    local_nonpersistent_flags+=("--node-label=")
     flags+=("--replica-count=")
     two_word_flags+=("-r")
     local_nonpersistent_flags+=("--replica-count=")
@@ -954,6 +982,7 @@ _pgo()
     commands+=("backup")
     commands+=("create")
     commands+=("delete")
+    commands+=("failover")
     commands+=("label")
     commands+=("load")
     commands+=("scale")

@@ -50,12 +50,12 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
 
-	if target == "" {
-		log.Debug("failover target not set, will use best estimate")
-		pod, err = util.GetBestTarget(clientset, clusterName, namespace)
-	} else {
-		pod, err = util.GetPod(clientset, target, namespace)
-	}
+	//if target == "" {
+	//	log.Debug("failover target not set, will use best estimate")
+	//	pod, target, err = util.GetBestTarget(clientset, clusterName, namespace)
+	//} else {
+	pod, err = util.GetPod(clientset, target, namespace)
+	//}
 	if err != nil {
 		log.Error(err)
 		return err
@@ -71,12 +71,12 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	updateFailoverStatus(client, task, namespace, clusterName, "deleting primary deployment "+clusterName)
 
 	//trigger the failover on the replica
-	err = promote(pod, clientset, client, namespace, target, restconfig)
+	err = promote(pod, clientset, client, namespace, restconfig)
 	//if err != nil {
 	//log.Error(err)
 	//return err
 	//}
-	updateFailoverStatus(client, task, namespace, clusterName, "promoting replica"+target)
+	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
 	//relabel the deployment with primary labels
 	err = relabel(pod, clientset, namespace, clusterName, target)
@@ -84,7 +84,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	//log.Error(err)
 	////return err
 	//}
-	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling replica")
+	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling deployment...pod "+pod.Name+"was the failover target...failover completed")
 
 	return err
 
@@ -144,7 +144,10 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 	return err
 }
 
-func promote(pod *v1.Pod, clientset *kubernetes.Clientset, client *rest.RESTClient, namespace, target string, restconfig *rest.Config) error {
+func promote(
+	pod *v1.Pod,
+	clientset *kubernetes.Clientset,
+	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
 	var err error
 
 	//get the target pod that matches the replica-name=target
@@ -175,7 +178,6 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 	//set replica=false on the deployment
 	//set name=clustername on the deployment
 	newLabels := make(map[string]string)
-	newLabels["replica"] = "false"
 	newLabels["name"] = clusterName
 
 	err = updateLabels(namespace, clientset, targetDeployment, target, newLabels)
@@ -183,6 +185,7 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 		log.Error(err)
 	}
 
+	newLabels["replica"] = "false"
 	err = updatePodLabels(namespace, clientset, pod, target, newLabels)
 	if err != nil {
 		log.Error(err)

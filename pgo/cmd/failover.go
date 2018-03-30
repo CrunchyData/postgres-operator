@@ -41,6 +41,10 @@ var failoverCmd = &cobra.Command{
 			if Query {
 				createFailover(args)
 			} else if util.AskForConfirmation(NoPrompt) {
+				if Target == "" {
+					fmt.Println(`--target is required for failover.`)
+					return
+				}
 				createFailover(args)
 			} else {
 				fmt.Println("Aborting...")
