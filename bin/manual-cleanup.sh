@@ -17,3 +17,6 @@ $CO_CMD delete pvc $1-pvc
 $CO_CMD delete secret --selector=pg-database=$1
 $CO_CMD delete deployment $1
 $CO_CMD delete service --selector=pg-cluster=$1
+$CO_CMD delete pgcluster $1
+$CO_CMD delete pgtask $1-failover
+
