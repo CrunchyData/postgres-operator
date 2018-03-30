@@ -512,14 +512,14 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 
 		//set the metrics flag with the global setting first
-		userLabelsMap["crunchy-collect"] = strconv.FormatBool(apiserver.MetricsFlag)
+		userLabelsMap["crunchy_collect"] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//if metrics is chosen on the pgo command, stick it into the user labels
 		if request.MetricsFlag {
-			userLabelsMap["crunchy-collect"] = "true"
+			userLabelsMap["crunchy_collect"] = "true"
 		}
 
 		if request.PgpoolFlag {

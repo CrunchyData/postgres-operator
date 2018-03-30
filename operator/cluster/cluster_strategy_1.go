@@ -51,9 +51,10 @@ type containerResourcesTemplateFields struct {
 }
 
 type collectTemplateFields struct {
-	Name           string
-	CCPImageTag    string
-	CCPImagePrefix string
+	Name            string
+	PrimaryPassword string
+	CCPImageTag     string
+	CCPImagePrefix  string
 }
 
 // Strategy1  ...
@@ -102,8 +103,6 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	}
 
 	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
-
-	log.Debug("CCPImagePrefix before create cluster " + operator.CCPImagePrefix)
 
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
@@ -468,10 +467,11 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, operator string) string {
 
 func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels["crunchy-collect"] == "true" {
-		log.Debug("crunchy-collect was found as a label on cluster create")
+	if spec.UserLabels["crunchy_collect"] == "true" {
+		log.Debug("crunchy_collect was found as a label on cluster create")
 		collectTemplateFields := collectTemplateFields{}
 		collectTemplateFields.Name = spec.Name
+		collectTemplateFields.PrimaryPassword = spec.PrimaryPassword
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
 		collectTemplateFields.CCPImagePrefix = operator.CCPImagePrefix
 
