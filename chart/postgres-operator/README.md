@@ -17,12 +17,12 @@ Introduction
 This chart bootstraps a PostgreSQL Operator.
 
 The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes.
-The PostgreSQL Operator leverages Kubernetes Third Party Resources to define custom resource types such as:
+The PostgreSQL Operator leverages Kubernetes Custom Resources to define resource types such as:
 
  * *pgcluster*
  * *pgbackups*
+ * *pgreplicas*
  * *pgupgrades*
- * *pgclones*
  * *pgpolicies*
  * *pgpolicylogs*
 
@@ -41,7 +41,6 @@ Once the objects are detected, the PostgreSQL Operator enables users to perform 
 * Upgrade a PostgreSQL Cluster
 * View PVC
 * Test Connections to a PostgreSQL Cluster
-* Clone a PostgreSQL Cluster
 * Create a SQL-based Policy
 * Apply a SQL-based Policy to a PostgreSQL Cluster
 * Perform User Management

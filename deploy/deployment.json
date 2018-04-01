@@ -13,7 +13,7 @@
                 }
             },
             "spec": {
-	        "serviceAccountName": "postgres-operator",
+                "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "apiserver",
                     "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",
@@ -22,11 +22,18 @@
                         "containerPort": 8443
                     }],
                     "env": [{
-                        "name": "DEBUG",
+                        "name": "CRUNCHY_DEBUG",
                         "value": "true"
                     }, {
                         "name": "PORT",
                         "value": "8443"
+                    }, {
+                        "name": "NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
                     }, {
                         "name": "TLS_NO_VERIFY",
                         "value": "false"
@@ -54,7 +61,7 @@
                         "name": "CO_IMAGE_TAG",
                         "value": "$CO_IMAGE_TAG"
                     }, {
-                        "name": "DEBUG",
+                        "name": "CRUNCHY_DEBUG",
                         "value": "true"
                     }, {
                         "name": "NAMESPACE",
@@ -84,8 +91,9 @@
                     }
                 }, {
                     "name": "apiserver-conf",
-                    "configMap": {
-                        "name": "apiserver-conf"
+                    "secret": {
+                        "secretName": "apiserver-conf-secret",
+                        "defaultMode": 511
                     }
                 }]
             }

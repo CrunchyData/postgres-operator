@@ -1,7 +1,7 @@
 package backupservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -20,40 +20,31 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 // ShowBackup ...
 func ShowBackup(name string) msgs.ShowBackupResponse {
+	var err error
 	response := msgs.ShowBackupResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	if name == "all" {
 		//get a list of all backups
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().Into(&response.BackupList)
+		err = kubeapi.Getpgbackups(apiserver.RESTClient, &response.BackupList, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of backups" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-		log.Debug("backups found len is %d\n", len(response.BackupList.Items))
+		log.Debugf("backups found len is %d\n", len(response.BackupList.Items))
 	} else {
 		backup := crv1.Pgbackup{}
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(name).
-			Do().Into(&backup)
+		_, err := kubeapi.Getpgbackup(apiserver.RESTClient, &backup, name, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting backup" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -76,25 +67,14 @@ func DeleteBackup(backupName string) msgs.DeleteBackupResponse {
 	var err error
 
 	if backupName == "all" {
-		err = apiserver.RESTClient.Delete().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().
-			Error()
+		err = kubeapi.DeleteAllpgbackup(apiserver.RESTClient, apiserver.Namespace)
 		resp.Results = append(resp.Results, "all")
 	} else {
-		err = apiserver.RESTClient.Delete().
-			Resource(crv1.PgbackupResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(backupName).
-			Do().
-			Error()
+		err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, apiserver.Namespace)
 		resp.Results = append(resp.Results, backupName)
 	}
 
 	if err != nil {
-		log.Error("error deleting pgbackup ")
-		log.Error(err.Error())
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 	}
@@ -108,7 +88,6 @@ func DeleteBackup(backupName string) msgs.DeleteBackupResponse {
 // pgo backup all
 // pgo backup --selector=name=mycluster
 func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
-	var err error
 	resp := msgs.CreateBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -129,27 +108,10 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
 
-		myselector, err := labels.Parse(request.Selector)
-		if err != nil {
-			log.Error(err)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-
-		log.Debug("myselector is " + myselector.String())
-
-		//get the clusters list
 		clusterList := crv1.PgclusterList{}
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(apiserver.Namespace).
-			Param("labelSelector", myselector.String()).
-			//LabelsSelectorParam(myselector).
-			Do().
-			Into(&clusterList)
+
+		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting cluster list" + err.Error())
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
@@ -171,55 +133,41 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	for _, arg := range request.Args {
 		log.Debug("create backup called for " + arg)
 
-		if BackupJobExists("backup-" + arg) {
-			resp.Results = append(resp.Results, "please delete job backup-"+arg+" before creating another backup")
+		//remove any existing backup job
+		RemoveBackupJob("backup-" + arg)
+
+		result := crv1.Pgbackup{}
+
+		// error if it already exists
+		found, err := kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, apiserver.Namespace)
+		if !found {
+			log.Debug("pgbackup " + arg + " not found so we create it")
+		} else if err != nil {
+			resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+			break
 		} else {
-
-			result := crv1.Pgbackup{}
-
-			// error if it already exists
-			err = apiserver.RESTClient.Get().
-				Resource(crv1.PgbackupResourcePlural).
-				Namespace(apiserver.Namespace).
-				Name(arg).
-				Do().
-				Into(&result)
-			if err == nil {
-				log.Debug("pgbackup " + arg + " was found so we recreate it")
-				dels := make([]string, 1)
-				dels[0] = arg
-				DeleteBackup(arg)
-			} else if kerrors.IsNotFound(err) {
-				msg := "pgbackup " + arg + " not found so we will create it"
-				resp.Results = append(resp.Results, "pgbackup "+msg)
-			} else {
-				log.Error("error getting pgbackup " + arg)
-				log.Error(err.Error())
-				resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
-				break
-			}
-			// Create an instance of our CRD
-			newInstance, err = getBackupParams(arg, request.StorageConfig)
-			if err != nil {
-				msg := "error creating backup for " + arg
-				log.Error(err)
-				resp.Results = append(resp.Results, msg)
-				break
-			}
-			err = apiserver.RESTClient.Post().
-				Resource(crv1.PgbackupResourcePlural).
-				Namespace(apiserver.Namespace).
-				Body(newInstance).
-				Do().Into(&result)
-			if err != nil {
-				log.Error("error in creating Pgbackup CRD instance")
-				log.Error(err.Error())
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-			resp.Results = append(resp.Results, "created Pgbackup "+arg)
+			log.Debug("pgbackup " + arg + " was found so we recreate it")
+			dels := make([]string, 1)
+			dels[0] = arg
+			DeleteBackup(arg)
 		}
+
+		// Create an instance of our CRD
+		newInstance, err = getBackupParams(arg, request.StorageConfig)
+		if err != nil {
+			msg := "error creating backup for " + arg
+			log.Error(err)
+			resp.Results = append(resp.Results, msg)
+			break
+		}
+
+		err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, apiserver.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		resp.Results = append(resp.Results, "created Pgbackup "+arg)
 
 	}
 
@@ -245,12 +193,7 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	spec.BackupPort = "5432"
 
 	cluster := crv1.Pgcluster{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(apiserver.Namespace).
-		Name(name).
-		Do().
-		Into(&cluster)
+	_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, name, apiserver.Namespace)
 	if err == nil {
 		spec.BackupHost = cluster.Spec.Name
 		spec.BackupPass, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
@@ -258,12 +201,7 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 			return newInstance, err
 		}
 		spec.BackupPort = cluster.Spec.Port
-	} else if kerrors.IsNotFound(err) {
-		log.Debug(name + " is not a cluster")
-		return newInstance, err
 	} else {
-		log.Error("error getting pgcluster " + name)
-		log.Error(err.Error())
 		return newInstance, err
 	}
 
@@ -276,19 +214,14 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	return newInstance, nil
 }
 
-func BackupJobExists(name string) bool {
+func RemoveBackupJob(name string) {
 
-	options := meta_v1.GetOptions{}
-	resultJob, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Get(name, options)
-	if kerrors.IsNotFound(err) {
-		log.Debug("Job " + err.Error())
+	_, found := kubeapi.GetJob(apiserver.Clientset, name, apiserver.Namespace)
+	if !found {
+		return
+	}
 
-		return false
-	}
-	if err != nil {
-		log.Error("error getting Job " + err.Error())
-		return false
-	}
-	log.Debugf("found job %v\n", resultJob)
-	return true
+	log.Debugf("found backup job %s will remove\n", name)
+
+	kubeapi.DeleteJob(apiserver.Clientset, name, apiserver.Namespace)
 }

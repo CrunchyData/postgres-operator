@@ -1,0 +1,1 @@
+{{.PG_USERNAME}}:{{.PG_PASSWORD_MD5}}

@@ -1,7 +1,7 @@
 package v1
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -33,32 +33,33 @@ type Pgcluster struct {
 
 // PgclusterSpec ...
 type PgclusterSpec struct {
-	Name              string            `json:"name"`
-	ClusterName       string            `json:"clustername"`
-	Policies          string            `json:"policies"`
-	CCPImageTag       string            `json:"ccpimagetag"`
-	Port              string            `json:"port"`
-	NodeName          string            `json:"nodename"`
-	PrimaryStorage    PgStorageSpec     `json:primarystorage`
-	ReplicaStorage    PgStorageSpec     `json:replicastorage`
-	PrimaryHost       string            `json:"primaryhost"`
-	PrimaryPassword   string            `json:"primarypassword"`
-	User              string            `json:"user"`
-	Password          string            `json:"password"`
-	Database          string            `json:"database"`
-	RootPassword      string            `json:"rootpassword"`
-	Replicas          string            `json:"replicas"`
-	Strategy          string            `json:"strategy"`
-	SecretFrom        string            `json:"secretfrom"`
-	BackupPVCName     string            `json:"backuppvcname"`
-	BackupPath        string            `json:"backuppath"`
-	UserSecretName    string            `json:"usersecretname"`
-	RootSecretName    string            `json:"rootsecretname"`
-	PrimarySecretName string            `json:"primarysecretname"`
-	Status            string            `json:"status"`
-	PswLastUpdate     string            `json:"pswlastupdate"`
-	CustomConfig      string            `json:"customconfig"`
-	UserLabels        map[string]string `json:"userlabels"`
+	Name               string               `json:"name"`
+	ClusterName        string               `json:"clustername"`
+	Policies           string               `json:"policies"`
+	CCPImageTag        string               `json:"ccpimagetag"`
+	Port               string               `json:"port"`
+	NodeName           string               `json:"nodename"`
+	PrimaryStorage     PgStorageSpec        `json:primarystorage`
+	ReplicaStorage     PgStorageSpec        `json:replicastorage`
+	ContainerResources PgContainerResources `json:containerresources`
+	PrimaryHost        string               `json:"primaryhost"`
+	PrimaryPassword    string               `json:"primarypassword"`
+	User               string               `json:"user"`
+	Password           string               `json:"password"`
+	Database           string               `json:"database"`
+	RootPassword       string               `json:"rootpassword"`
+	Replicas           string               `json:"replicas"`
+	Strategy           string               `json:"strategy"`
+	SecretFrom         string               `json:"secretfrom"`
+	BackupPVCName      string               `json:"backuppvcname"`
+	BackupPath         string               `json:"backuppath"`
+	UserSecretName     string               `json:"usersecretname"`
+	RootSecretName     string               `json:"rootsecretname"`
+	PrimarySecretName  string               `json:"primarysecretname"`
+	Status             string               `json:"status"`
+	PswLastUpdate      string               `json:"pswlastupdate"`
+	CustomConfig       string               `json:"customconfig"`
+	UserLabels         map[string]string    `json:"userlabels"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

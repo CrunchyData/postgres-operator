@@ -14,7 +14,8 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "primary": "true",
-                    "pg-cluster": "{{.ClusterName}}"
+                    "pg-cluster": "{{.ClusterName}}",
+            {{.OperatorLabels }}
                 }
             },
             "spec": {
@@ -37,6 +38,9 @@
                         "initialDelaySeconds": 15,
                         "timeoutSeconds": 8
                     },
+
+		    {{.ContainerResources }}
+
                     "env": [{
                         "name": "PG_PRIMARY_PORT",
                         "value": "{{.Port}}"

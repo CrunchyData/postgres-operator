@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -126,11 +126,10 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
-	oldExample := oldObj.(*crv1.Pgcluster)
+	//oldExample := oldObj.(*crv1.Pgcluster)
 	newExample := newObj.(*crv1.Pgcluster)
+	log.Debug("pgcluster " + newExample.ObjectMeta.Name + " updated ")
 
-	//look for scale commands
-	clusteroperator.ScaleCluster(c.PgclusterClientset, c.PgclusterClient, newExample, oldExample, oldExample.ObjectMeta.Namespace)
 }
 
 // onDelete is called when a pgcluster is deleted

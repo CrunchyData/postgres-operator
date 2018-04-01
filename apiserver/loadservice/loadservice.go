@@ -1,7 +1,7 @@
 package loadservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
-	//apiserver "github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	//"github.com/gorilla/mux"
 	"net/http"
@@ -32,6 +32,11 @@ func LoadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.LoadRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err := apiserver.Authn(apiserver.LOAD_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

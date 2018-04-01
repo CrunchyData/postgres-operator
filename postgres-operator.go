@@ -1,7 +1,7 @@
 package main
 
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2017-2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
-	//"github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/client-go/kubernetes"
 )
@@ -47,7 +46,7 @@ func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
-	debugFlag := os.Getenv("DEBUG")
+	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
@@ -89,6 +88,13 @@ func main() {
 	if clustercrd != nil {
 		fmt.Println(clustercrd.Name + " exists ")
 	}
+	replicacrd, err := crdclient.PgreplicaCreateCustomResourceDefinition(apiextensionsclientset)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		panic(err)
+	}
+	if replicacrd != nil {
+		fmt.Println(replicacrd.Name + " exists ")
+	}
 	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
 
 	backupcrd, err := crdclient.PgbackupCreateCustomResourceDefinition(apiextensionsclientset)
@@ -122,6 +128,14 @@ func main() {
 		fmt.Println(taskcrd.Name + " exists ")
 	}
 
+	ingestcrd, err := crdclient.PgingestCreateCustomResourceDefinition(apiextensionsclientset)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		panic(err)
+	}
+	if ingestcrd != nil {
+		fmt.Println(ingestcrd.Name + " exists ")
+	}
+
 	// make a new config for our extension's API group, using the first config as a baseline
 	crdClient, crdScheme, err := crdclient.NewClient(config)
 	if err != nil {
@@ -131,15 +145,30 @@ func main() {
 	// start a controller on instances of our custom resource
 
 	pgTaskcontroller := controller.PgtaskController{
+		PgtaskConfig:    config,
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
 		Namespace:       Namespace,
 	}
+
+	pgIngestcontroller := controller.PgingestController{
+		PgingestClient:    crdClient,
+		PgingestScheme:    crdScheme,
+		PgingestClientset: Clientset,
+		Namespace:         Namespace,
+	}
+
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
+		Namespace:          Namespace,
+	}
+	pgReplicacontroller := controller.PgreplicaController{
+		PgreplicaClient:    crdClient,
+		PgreplicaScheme:    crdScheme,
+		PgreplicaClientset: Clientset,
 		Namespace:          Namespace,
 	}
 	pgUpgradecontroller := controller.PgupgradeController{
@@ -174,7 +203,9 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go pgTaskcontroller.Run(ctx)
+	go pgIngestcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
+	go pgReplicacontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)
 	go pgUpgradecontroller.Run(ctx)
 	go pgPolicycontroller.Run(ctx)

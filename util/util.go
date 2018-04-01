@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,24 +21,30 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/spf13/viper"
 	"io/ioutil"
-
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"math/rand"
 	"os/exec"
 	"strconv"
 	"strings"
 	"text/template"
-
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	jsonpatch "github.com/evanphx/json-patch"
-
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"time"
 )
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+
+}
 
 // CreateSecContext will generate the JSON security context fragment
 // for a storage type
@@ -81,7 +87,7 @@ func CreateSecContext(fsGroup string, suppGroup string) string {
 func LoadTemplate(path string) *template.Template {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error("error loading template" + err.Error())
+		log.Error("error loading template path=" + path + err.Error())
 		panic(err.Error())
 	}
 	return template.Must(template.New(path).Parse(string(buf)))
@@ -212,11 +218,8 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace 
 }
 
 // GetLabels ...
-func GetLabels(name, clustername string, clone, replica bool) string {
+func GetLabels(name, clustername string, replica bool) string {
 	var output string
-	if clone {
-		output += fmt.Sprintf("\"clone\": \"%s\",\n", "true")
-	}
 	if replica {
 		output += fmt.Sprintf("\"replica\": \"%s\",\n", "true")
 	}
@@ -310,10 +313,9 @@ func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace st
 
 	var err error
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
-	secrets, err := clientset.Core().Secrets(Namespace).List(lo)
+	selector := "pg-database=" + db
+	secrets, err := kubeapi.GetSecrets(clientset, selector, Namespace)
 	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
 		return "", err
 	}
 
@@ -343,4 +345,24 @@ func GetStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
 	storage.SupplementalGroups = cfg.GetString("SupplementalGroups")
 	return storage
 
+}
+
+// GetContainerResources ...
+func GetContainerResources(cfg *viper.Viper) crv1.PgContainerResources {
+	r := crv1.PgContainerResources{}
+	r.RequestsMemory = cfg.GetString("RequestsMemory")
+	r.RequestsCPU = cfg.GetString("RequestsCPU")
+	r.LimitsMemory = cfg.GetString("LimitsMemory")
+	r.LimitsCPU = cfg.GetString("LimitsCPU")
+	return r
+
+}
+
+// RandStringBytesRmndr ...
+func RandStringBytesRmndr(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
+	}
+	return string(b)
 }

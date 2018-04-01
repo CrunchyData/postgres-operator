@@ -1,0 +1,74 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgopclusterrole
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+    apiGroups:
+      - '*'
+    resources:
+      - customresourcedefinitions
+      - customresourcedefinitions/status
+      - jobs
+      - jobs/status
+      - pgbackups
+      - pgingests
+      - pgclusters
+      - pgpolicies
+      - pgpolicylogs
+      - pgupgrades
+      - pgtasks
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: pgopclusterbinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pgopclusterrole
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:serviceaccount:demo:postgres-operator
+
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: nspostgresrole
+  namespace: demo
+rules:
+  - verbs:
+      - '*'
+    apiGroups:
+      - '*'
+    resources:
+      - '*'
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: nspgrolebind
+  namespace: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: nspostgresrole
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: demo
+
+---

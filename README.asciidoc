@@ -1,6 +1,6 @@
 = PostgreSQL Operator
 :toc:
-v2.5, {docdate}
+v2.6, {docdate}
 
 == Overview
 
@@ -13,6 +13,7 @@ image::docs/tty.gif?raw=true[]
 The PostgreSQL Operator leverages Kubernetes Custom Resource Definitions to define custom resource types such as:
 
  * *pgcluster*
+ * *pgreplica*
  * *pgbackups*
  * *pgpolicies*
 

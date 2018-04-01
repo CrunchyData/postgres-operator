@@ -1,5 +1,5 @@
 #!/bin/bash 
-# Copyright 2016 Crunchy Data Solutions, Inc.
+# Copyright 2017-2018 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,14 +14,17 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+$CO_CMD --namespace=$CO_NAMESPACE delete pgreplicas --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgbackups --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgtasks --all
+$CO_CMD --namespace=$CO_NAMESPACE delete pgingests --all
 
 $CO_CMD --namespace=$CO_NAMESPACE delete crd \
 	pgbackups.cr.client-go.k8s.io \
+	pgreplicas.cr.client-go.k8s.io \
 	pgclusters.cr.client-go.k8s.io \
 	pgpolicies.cr.client-go.k8s.io \
 	pgtasks.cr.client-go.k8s.io \

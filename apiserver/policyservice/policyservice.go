@@ -1,7 +1,7 @@
 package policyservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,6 +21,7 @@ import (
 	apiserver "github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"net/http"
 )
 
@@ -36,13 +37,24 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreatePolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
-
-	err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
+	err := apiserver.Authn(apiserver.CREATE_POLICY_PERM, w, r)
 	if err != nil {
-		log.Error(err.Error())
+		return
+	}
+
+	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
+	errs := validation.IsDNS1035Label(request.Name)
+	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
+		resp.Status.Msg = "invalid policy name format " + errs[0]
+	} else {
+
+		err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
+		if err != nil {
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+		}
 	}
 
 	json.NewEncoder(w).Encode(resp)
@@ -56,17 +68,37 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	policyname := vars["name"]
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
+	/**
+	err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
+	if err != nil {
+		return
+	}
+	*/
 
 	switch r.Method {
 	case "GET":
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
+		err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
+		if err != nil {
+			return
+		}
 		log.Debug("policyservice.ShowPolicyHandler GET called")
 		resp := msgs.ShowPolicyResponse{}
+		resp.Status.Code = msgs.Ok
+		resp.Status.Msg = ""
 		resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname)
 
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
+		err := apiserver.Authn(apiserver.DELETE_POLICY_PERM, w, r)
+		if err != nil {
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
 		log.Debug("policyservice.ShowPolicyHandler DELETE called")
 		resp := DeletePolicy(apiserver.RESTClient, policyname)
 		json.NewEncoder(w).Encode(resp)
@@ -82,6 +114,11 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.ApplyPolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err := apiserver.Authn(apiserver.APPLY_POLICY_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

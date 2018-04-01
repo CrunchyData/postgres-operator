@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -26,14 +26,20 @@ import (
 func showPVC(args []string) {
 	log.Debugf("showPVC called %v\n", args)
 
-	//args are a list of pvc names
-	for _, arg := range args {
-		log.Debug("show pvc called for " + arg)
-		printPVC(arg, PVCRoot)
+	if args[0] == "all" {
+		//special case to just list all the PVCs
+		printPVC(args[0], "")
+	} else {
+		//args are a list of pvc names...for this case show details
+		for _, arg := range args {
+			log.Debug("show pvc called for " + arg)
+			printPVC(arg, PVCRoot)
 
+		}
 	}
 
 }
+
 func printPVC(pvcName, pvcRoot string) {
 
 	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot
@@ -52,6 +58,9 @@ func printPVC(pvcName, pvcRoot string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
+
 	defer resp.Body.Close()
 	var response apiservermsgs.ShowPVCResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -71,11 +80,21 @@ func printPVC(pvcName, pvcRoot string) {
 		return
 	}
 
+	if pvcName == "all" {
+		fmt.Println("All Operator Labeled PVCs")
+	}
+
 	for k, v := range response.Results {
-		if k == len(response.Results)-1 {
-			fmt.Printf("%s%s\n", TreeTrunk, "/"+v)
+		if pvcName == "all" {
+			if v != "" {
+				fmt.Printf("%s%s\n", TreeTrunk, v)
+			}
 		} else {
-			fmt.Printf("%s%s\n", TreeBranch, "/"+v)
+			if k == len(response.Results)-1 {
+				fmt.Printf("%s%s\n", TreeTrunk, "/"+v)
+			} else {
+				fmt.Printf("%s%s\n", TreeBranch, "/"+v)
+			}
 		}
 	}
 

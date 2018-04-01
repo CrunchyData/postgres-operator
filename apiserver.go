@@ -1,7 +1,7 @@
 package main
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -15,14 +15,14 @@ package main
  limitations under the License.
 */
 
-
 import (
 	"crypto/tls"
 	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
-	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
+	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
+	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
@@ -48,7 +48,7 @@ func main() {
 		PORT = tmp
 	}
 
-	debugFlag := os.Getenv("DEBUG")
+	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
@@ -68,14 +68,17 @@ func main() {
 	log.Infoln("postgres-operator apiserver starts")
 	r := mux.NewRouter()
 	r.HandleFunc("/version", versionservice.VersionHandler)
-	r.HandleFunc("/clones", cloneservice.CreateCloneHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
 	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
+	r.HandleFunc("/ingest", ingestservice.CreateIngestHandler).Methods("POST")
+	r.HandleFunc("/ingest/{name}", ingestservice.ShowIngestHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
+	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
+	r.HandleFunc("/users/{name}", userservice.DeleteUserHandler).Methods("DELETE")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
 	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
@@ -84,6 +87,7 @@ func main() {
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
+	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

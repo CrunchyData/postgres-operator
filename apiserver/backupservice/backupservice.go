@@ -1,7 +1,7 @@
 package backupservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
@@ -31,15 +32,27 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	backupname := vars["name"]
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-
 	switch r.Method {
 	case "GET":
+		err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+		if err != nil {
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
+
 		log.Debug("backupservice.ShowBackupHandler GET called")
 		resp := ShowBackup(backupname)
 		json.NewEncoder(w).Encode(resp)
 	case "DELETE":
+		err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
+		if err != nil {
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+		w.Header().Set("Content-Type", "application/json")
 		log.Debug("backupservice.ShowBackupHandler DELETE called")
 		resp := DeleteBackup(backupname)
 		json.NewEncoder(w).Encode(resp)
@@ -58,6 +71,11 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.CreateBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err = apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

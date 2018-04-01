@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -96,6 +96,8 @@ func applyPolicy(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 
@@ -137,11 +139,11 @@ func showPolicy(args []string) {
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			//log.Info("here after new req")
 			log.Fatal("NewRequest: ", err)
 			return
 		}
 
+		req.Header.Set("Content-Type", "application/json")
 		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		resp, err := httpclient.Do(req)
@@ -149,8 +151,9 @@ func showPolicy(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
-		//log.Info("here after Do2")
 		defer resp.Body.Close()
 
 		var response msgs.ShowPolicyResponse
@@ -160,6 +163,11 @@ func showPolicy(args []string) {
 			log.Error(err)
 			log.Println(err)
 			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			fmt.Println(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if len(response.PolicyList.Items) == 0 {
@@ -222,11 +230,12 @@ func createPolicy(args []string) {
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 	resp, err := httpclient.Do(req)
-	//log.Info("here after Do")
 	if err != nil {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 
@@ -282,6 +291,8 @@ func deletePolicy(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 		var response msgs.DeletePolicyResponse

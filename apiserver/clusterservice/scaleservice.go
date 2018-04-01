@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -37,6 +37,18 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if replicaCount != "" {
 		log.Debug("replica-count param was [" + replicaCount + "]")
 	}
+	resourcesConfig := r.URL.Query().Get("resources-config")
+	if resourcesConfig != "" {
+		log.Debug("resources-config param was [" + resourcesConfig + "]")
+	}
+	storageConfig := r.URL.Query().Get("storage-config")
+	if storageConfig != "" {
+		log.Debug("storage-config param was [" + storageConfig + "]")
+	}
+	nodeLabel := r.URL.Query().Get("node-label")
+	if nodeLabel != "" {
+		log.Debug("node-label param was [" + nodeLabel + "]")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -46,6 +58,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ScaleCluster(clusterName, replicaCount)
+	resp := ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel)
 	json.NewEncoder(w).Encode(resp)
 }

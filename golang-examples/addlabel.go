@@ -4,20 +4,21 @@ import (
 	"flag"
 	"fmt"
 	jsonpatch "github.com/evanphx/json-patch"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/util/json"
+	//"k8s.io/client-go/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
 	//"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"encoding/json"
+	"k8s.io/api/extensions/v1beta1"
 	//"k8s.io/client-go/pkg/runtime"
 	//"k8s.io/client-go/pkg/runtime/serializer"
 
 	//"k8s.io/client-go/pkg/api/unversioned"
 	//"k8s.io/client-go/pkg/api/v1"
 	//"k8s.io/client-go/rest"
-	//"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -29,7 +30,7 @@ var (
 func main() {
 	flag.Parse()
 	// uses the current context in kubeconfig
-	var namespace = "default"
+	var namespace = "demo"
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err.Error())
@@ -41,9 +42,9 @@ func main() {
 	}
 
 	//get the deployment
-	depName := "janky"
+	depName := "eggs"
 	var deployment *v1beta1.Deployment
-	deployment, err = clientset.Deployments(namespace).Get(depName)
+	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -67,7 +68,7 @@ func main() {
 
 	//update the deployment labels
 	newLabels := make(map[string]string)
-	newLabels["policytest2"] = "pgpolicy"
+	newLabels["policytest2"] = "jeffsays"
 
 	for key, value := range newLabels {
 		objLabels[key] = value
@@ -97,7 +98,7 @@ func main() {
 		fmt.Println("created merge patch")
 	}
 
-	_, err = clientset.Deployments(namespace).Patch(depName, api.MergePatchType, patchBytes, "")
+	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(depName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		panic("error patching deployment " + err.Error())
 	}

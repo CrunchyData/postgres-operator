@@ -1,7 +1,7 @@
 package upgradeservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,8 +21,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/spf13/viper"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strconv"
@@ -44,12 +44,9 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 
 	if name == "all" {
 		//get a list of all upgrades
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().Into(&response.UpgradeList)
+		err := kubeapi.Getpgupgrades(apiserver.RESTClient,
+			&response.UpgradeList, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of upgrades" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -57,13 +54,9 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 		log.Debug("upgrades found len is %d\n", len(response.UpgradeList.Items))
 	} else {
 		upgrade := crv1.Pgupgrade{}
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(name).
-			Do().Into(&upgrade)
+		_, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
+			&upgrade, name, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting upgrade" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -83,25 +76,18 @@ func DeleteUpgrade(name string) msgs.DeleteUpgradeResponse {
 	response.Results = make([]string, 1)
 
 	if name == "all" {
-		err := apiserver.RESTClient.Delete().
-			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().Error()
+		err := kubeapi.DeleteAllpgupgrade(apiserver.RESTClient,
+			apiserver.Namespace)
 		if err != nil {
-			log.Error("error deleting all upgrades" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
 		response.Results[0] = "all"
 	} else {
-		err := apiserver.RESTClient.Delete().
-			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(name).
-			Do().Error()
+		err := kubeapi.Deletepgupgrade(apiserver.RESTClient,
+			name, apiserver.Namespace)
 		if err != nil {
-			log.Error("error deleting upgrade" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -121,7 +107,6 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 
 	log.Debug("createUpgrade called %v\n", request)
 
-	var err error
 	var newInstance *crv1.Pgupgrade
 
 	if request.Selector != "" {
@@ -138,15 +123,9 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(apiserver.Namespace).
-			Param("labelSelector", myselector.String()).
-			//LabelsSelectorParam(myselector).
-			Do().
-			Into(&clusterList)
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting cluster list" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -170,23 +149,17 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		result := crv1.Pgupgrade{}
 
 		// error if it already exists
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgupgradeResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(arg).
-			Do().
-			Into(&result)
+		found, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
+			&result, arg, apiserver.Namespace)
 		if err == nil {
 			log.Warn("previous pgupgrade " + arg + " was found so we will remove it.")
 			delMsg := DeleteUpgrade(arg)
 			if delMsg.Status.Code == msgs.Error {
 				log.Error("could not delete previous pgupgrade " + arg)
 			}
-		} else if kerrors.IsNotFound(err) {
+		} else if !found {
 			log.Debug("pgupgrade " + arg + " not found so we will create it")
 		} else {
-			log.Error("error getting pgupgrade " + arg)
-			log.Error(err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -194,14 +167,9 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 
 		cl := crv1.Pgcluster{}
 
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(arg).
-			Do().
-			Into(&cl)
-		if kerrors.IsNotFound(err) {
-			log.Error("error getting pgupgrade " + arg)
+		found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
+			&cl, arg, apiserver.Namespace)
+		if !found {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -217,13 +185,10 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		// Create an instance of our CRD
 		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, request)
 		if err == nil {
-			err = apiserver.RESTClient.Post().
-				Resource(crv1.PgupgradeResourcePlural).
-				Namespace(apiserver.Namespace).
-				Body(newInstance).
-				Do().Into(&result)
+			err = kubeapi.Createpgupgrade(apiserver.RESTClient,
+				newInstance,
+				apiserver.Namespace)
 			if err != nil {
-				log.Error("error in creating Pgupgrade CRD instance", err.Error())
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
@@ -246,6 +211,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeRequest) (*crv1.Pgupgrade, error) {
 
 	var err error
+	var found bool
 	var existingImage, strRep string
 	var existingMajorVersion float64
 
@@ -280,12 +246,8 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 	}
 
 	cluster := crv1.Pgcluster{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(apiserver.Namespace).
-		Name(name).
-		Do().
-		Into(&cluster)
+	found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
+		&cluster, name, apiserver.Namespace)
 	if err == nil {
 		spec.ResourceType = "cluster"
 		spec.OldDatabaseName = cluster.Spec.Name
@@ -298,14 +260,14 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		if err != nil {
 			return nil, err
 		}
-	} else if kerrors.IsNotFound(err) {
+	} else if !found {
 		log.Debug(name + " is not a cluster")
 		return nil, err
 	} else {
-		log.Error("error getting pgcluster " + name)
 		log.Error(err.Error())
 		return nil, err
 	}
+
 	var requestedMajorVersion float64
 
 	if request.CCPImageTag != "" {

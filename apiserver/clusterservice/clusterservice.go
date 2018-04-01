@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -45,11 +45,17 @@ type ClusterDetail struct {
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.CreateClusterHandler called")
-	var request msgs.CreateClusterRequest
-	_ = json.NewDecoder(r.Body).Decode(&request)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	err := apiserver.Authn(apiserver.CREATE_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+
+	var request msgs.CreateClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
 	resp = CreateCluster(&request)
@@ -88,7 +94,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
-	err := apiserver.Authn("ShowClusterHandler", w, r)
+	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -117,11 +123,21 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
 
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+
+	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := TestCluster(clustername)
+	resp := TestCluster(clustername, selector)
 
 	json.NewEncoder(w).Encode(resp)
 }

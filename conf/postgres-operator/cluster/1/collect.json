@@ -9,16 +9,7 @@
         "protocol": "TCP"
     }],
     "env": [{
-        "name": "PROM_GATEWAY",
-        "value": "http://crunchy-metrics:9091"
-    }, {
         "name": "DATA_SOURCE_NAME",
-        "value": "postgresql://primaryuser:password@127.0.0.1:5432/postgres?sslmode=disable"
-    }, {
-        "name": "POSTGRES_EXPORTER_URL",
-        "value": "http://localhost:9187/metrics"
-    }, {
-        "name": "NODE_EXPORTER_URL",
-        "value": "http://localhost:9100/metrics"
+        "value": "postgresql://primaryuser:{{.PrimaryPassword}}@127.0.0.1:5432/postgres?sslmode=disable"
     }]
 },

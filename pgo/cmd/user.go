@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -41,9 +41,6 @@ var ValidDays string
 // UserDBAccess user db access flag
 var UserDBAccess string
 
-// AddUser add user flag
-var AddUser string
-
 // Expired expired flag
 var Expired string
 
@@ -61,7 +58,6 @@ For example:
 
 pgo user --selector=name=mycluster --update-passwords
 pgo user --expired=7 --selector=name=mycluster
-pgo user --add-user=bob --selector=name=mycluster
 pgo user --change-password=bob --selector=name=mycluster
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -76,7 +72,6 @@ func init() {
 	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
 	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
-	userCmd.Flags().StringVarP(&AddUser, "add-user", "a", "", "--add-user=bob adds a new user to selective clusters")
 	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
 	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
 	userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
@@ -95,7 +90,6 @@ func userManager() {
 	request.DeleteUser = DeleteUser
 	request.ValidDays = ValidDays
 	request.UserDBAccess = UserDBAccess
-	request.AddUser = AddUser
 	request.Expired = Expired
 	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
@@ -119,6 +113,8 @@ func userManager() {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 
@@ -137,6 +133,113 @@ func userManager() {
 	} else {
 		fmt.Println(RED(response.Status.Msg))
 		os.Exit(2)
+	}
+
+}
+
+func createUser(args []string) {
+
+	if Selector == "" {
+		log.Error("selector flag is required")
+		return
+	}
+
+	if len(args) == 0 {
+		log.Error("user name argument is required")
+		return
+	}
+
+	r := new(msgs.CreateUserRequest)
+	r.Name = args[0]
+	r.Selector = Selector
+	r.ManagedUser = ManagedUser
+	r.UserDBAccess = UserDBAccess
+	r.PasswordAgeDays = PasswordAgeDays
+
+	jsonValue, _ := json.Marshal(r)
+	url := APIServerURL + "/users"
+	log.Debug("createUser called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
+
+	defer resp.Body.Close()
+
+	var response msgs.CreateUserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
+		os.Exit(2)
+	}
+
+}
+
+// deleteUser ...
+func deleteUser(username string) {
+	log.Debugf("deleteUser called %v\n", username)
+
+	log.Debug("deleting user " + username + " selector " + Selector)
+
+	url := APIServerURL + "/users/" + username + "?selector=" + Selector
+
+	log.Debug("delete users called [" + url + "]")
+
+	action := "DELETE"
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
+	defer resp.Body.Close()
+	var response msgs.DeleteUserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		for _, result := range response.Results {
+			fmt.Println(result)
+		}
+	} else {
+		fmt.Println(RED(response.Status.Msg))
 	}
 
 }

@@ -1,7 +1,7 @@
 package apiservermsgs
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,7 +23,7 @@ import (
 type CreateClusterRequest struct {
 	Name                 string
 	Namespace            string
-	NodeName             string
+	NodeLabel            string
 	Password             string
 	SecretFrom           string
 	BackupPVC            string
@@ -33,9 +33,12 @@ type CreateClusterRequest struct {
 	CCPImageTag          string
 	Series               int
 	MetricsFlag          bool
+	PgpoolFlag           bool
+	PgpoolSecret         string
 	CustomConfig         string
 	StorageConfig        string
 	ReplicaStorageConfig string
+	ContainerResources   string
 }
 
 // CreateClusterResponse ...
@@ -47,6 +50,7 @@ type CreateClusterResponse struct {
 // ShowClusterService
 type ShowClusterService struct {
 	Name      string
+	Data      string
 	ClusterIP string
 }
 
@@ -73,6 +77,11 @@ type ShowClusterSecret struct {
 	Password string
 }
 
+// ShowClusterReplica
+type ShowClusterReplica struct {
+	Name string
+}
+
 // ShowClusterDetail ...
 type ShowClusterDetail struct {
 	Cluster     crv1.Pgcluster
@@ -80,6 +89,7 @@ type ShowClusterDetail struct {
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
 	Secrets     []ShowClusterSecret
+	Replicas    []ShowClusterReplica
 }
 
 // ShowClusterResponse ...
@@ -100,13 +110,20 @@ type ClusterTestDetail struct {
 	Working    bool
 }
 
+// ClusterTestResult ...
+type ClusterTestResult struct {
+	ClusterName string
+	Items       []ClusterTestDetail
+}
+
 // ClusterTestResponse ...
 type ClusterTestResponse struct {
-	Items []ClusterTestDetail
+	Results []ClusterTestResult
 	Status
 }
 
 // ClusterScaleResponse ...
 type ClusterScaleResponse struct {
+	Results []string
 	Status
 }

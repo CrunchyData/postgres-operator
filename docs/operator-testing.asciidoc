@@ -1,0 +1,42 @@
+= PostgreSQL Operator Testing
+:toc:
+v2.6, {docdate}
+
+== Performing a Smoke Test
+
+A simple *smoke test* of the postgres operator includes testing
+the following:
+
+ * get version information (*pgo version*)
+ * create a cluster (*pgo create cluster testcluster*)
+ * test a cluster (*pgo test restoredcluster*)
+ * scale a cluster (*pgo scale testcluster*)
+ * show a cluster (*pgo show cluster testcluster*)
+ * show all clusters (*pgo show cluster all*)
+ * backup a cluster (*pgo backup testcluster*)
+ * show backup of cluster (*pgo show backup testcluster*)
+ * show backup pvc of cluster (*pgo show pvc testcluster-backup-pvc*)
+ * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup-pvc --backup-path=testcluster-backups/2017-01-01-01-01-01 --secret-from=testcluster*)
+ * create cluster using image tag (*pgo create minor --ccp-image-tag=cenots7-10.3-1.8.1*)
+ * minor upgrade a cluster (*pgo upgrade minor*)
+ * delete a cluster (*pgo delete cluster restored --delete-data --delete-backups*)
+ * create a policy from local file (*pgo create policy xrayapp --in-file=./examples/policy/xrayapp.sql*)
+ * apply a policy to cluster (*pgo apply xrayapp --selector=name=testcluster*)
+ * repeat testing using emptydir storage type
+ * repeat testing using create storage type
+ * repeat testing using existing storage type
+ * create a series of clusters  (*pgo create cluster myseries --series=2*)
+ * apply labels at cluster creation (*pgo create cluster xraydb --series=2 --labels=project=xray*)
+ * apply a label to an existing set of clusters (*pgo label --label=env=research --selector=project=xray*)
+ * create a user for a given cluster (*pgo create user user0 --valid-days=30 --managed --db=userdb --selector=name=xraydb0*)
+ * show user credentials for a cluster (*pgo show cluster testcluster --show-secrets*)
+ * load a csv file into a cluster (*pgo load --load-config=./sample-load-config.json --selector=name=testcluster*)
+ * extend a user's password allowed age (*pgo user --change-password=user0 --valid-days=10 --selector=name=testcluster*)
+ * drop user access (*pgo user --delete-user=user2 --selector=project=xray*)
+ * check password age (*pgo user --expired=10 --selector=project=xray*)
+ * backup an entire project (*pgo backup --selector=project=xray*)
+ * delete an entire project (*pgo delete cluster --selector=project=xray*)
+ * create a cluster with a crunchy-collect sidecar(*pgo create cluster testcluster --metrics*)
+ * perform a failover (*pgo failover testcluster --query*)
+ * major upgrade a cluster (*pgo upgrade testcluster --upgrade-type=major*)
+

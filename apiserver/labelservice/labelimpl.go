@@ -1,7 +1,7 @@
 package labelservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -22,13 +22,12 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
-	"k8s.io/apimachinery/pkg/api/meta"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
-	//"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"strings"
 )
 
@@ -58,27 +57,11 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	}
 
 	clusterList := crv1.PgclusterList{}
-	myselector := labels.Everything()
 	if request.Selector != "" {
 		log.Debug("selector is " + request.Selector)
 
-		myselector, err = labels.Parse(request.Selector)
-		if err != nil {
-			log.Error("could not parse --selector value " + err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "could not parse --selector value " + err.Error()
-			return resp
-		}
-
-		log.Debugf("label selector is [%s]\n", myselector.String())
-
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(apiserver.Namespace).
-			Param("labelSelector", myselector.String()).
-			//LabelsSelectorParam(myselector).
-			Do().
-			Into(&clusterList)
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, apiserver.Namespace)
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -95,14 +78,9 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
 			result := crv1.Pgcluster{}
-			err := apiserver.RESTClient.Get().
-				Resource(crv1.PgclusterResourcePlural).
-				Namespace(apiserver.Namespace).
-				Name(cluster).
-				Do().
-				Into(&result)
+			_, err := kubeapi.Getpgcluster(apiserver.RESTClient,
+				&result, cluster, apiserver.Namespace)
 			if err != nil {
-				log.Error("error getting list of clusters" + err.Error())
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
 				return resp
@@ -139,12 +117,12 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
-		lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + items[i].Spec.Name}
-		deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
+		selector := "pg-cluster=" + items[i].Spec.Name
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of deployments" + err.Error())
 			return
 		}
+
 		for _, d := range deployments.Items {
 			//update Deployment with the label
 			//fmt.Println(TreeBranch + "deployment : " + d.ObjectMeta.Name)
@@ -252,6 +230,16 @@ func validateLabel(LabelCmdLabel string) (map[string]string, error) {
 			log.Error("label format incorrect, requires name=value")
 			return labelMap, errors.New("label format incorrect, requires name=value")
 		}
+
+		errs := validation.IsDNS1035Label(pair[0])
+		if len(errs) > 0 {
+			return labelMap, errors.New("label format incorrect, requires name=value " + errs[0])
+		}
+		errs = validation.IsDNS1035Label(pair[1])
+		if len(errs) > 0 {
+			return labelMap, errors.New("label format incorrect, requires name=value " + errs[0])
+		}
+
 		labelMap[pair[0]] = pair[1]
 	}
 	return labelMap, err

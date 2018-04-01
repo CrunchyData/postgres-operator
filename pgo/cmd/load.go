@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -62,9 +62,9 @@ func init() {
 
 func createLoad(args []string) {
 	if PoliciesFlag != "" {
-		log.Infoln("policies=" + PoliciesFlag)
+		log.Debug("policies=" + PoliciesFlag)
 	} else {
-		log.Infoln("policies is blank")
+		log.Debug("policies is blank")
 	}
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
@@ -104,6 +104,8 @@ func createLoad(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 

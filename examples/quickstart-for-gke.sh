@@ -15,9 +15,9 @@
 
 LOG="pgo-installer.log"
 
-export PGORELEASE=2.5
+export PGORELEASE=2.6
 
-echo "installing deps if necessary" | tee -a $LOG
+echo "testing for dependencies " | tee -a $LOG
 
 which wget > /dev/null 2> /dev/null
 if [[ $? -ne 0 ]]; then
@@ -30,50 +30,62 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+echo ""
 echo "testing kubectl connection" | tee -a $LOG
+echo ""
 kubectl get namespaces 
 if [[ $? -ne 0 ]]; then
 	echo "kubectl is not connecting to your Kube Cluster, required to proceed" | tee -a $LOG
 	exit 1
 fi
 
+NAMESPACE=`kubectl config current-context`
+echo "will install postgres-operator into the current namespace which is ["$NAMESPACE"]"
 
-echo "setting environment variables" | tee -a $LOG
+echo -n "do you want to continue the installation? [yes no] "
+read REPLY
+if [[ "$REPLY" != "yes" ]]; then
+	echo "aborting installation"
+	exit 1
+fi
+
+export CO_CMD=kubectl
+export GOPATH=$HOME/odev
+export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOPATH/bin
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-2.6
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_APISERVER_URL=https://127.0.0.1:18443
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+
+echo "setting environment variables in $HOME/.bashrc" | tee -a $LOG
 
 cat <<'EOF' >> $HOME/.bashrc
 
 # operator env vars
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-export CO_BASEOS=centos7
-export CO_VERSION=2.5
-export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
-export CO_NAMESPACE=demo
-export CO_CMD=kubectl
-export CO_APISERVER_URL=https://127.0.0.1:8443
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
-# 
-
+export CO_APISERVER_URL=https://127.0.0.1:18443
+export PGO_CA_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/apiserver/server.key
+#
 EOF
 
-source $HOME/.bashrc
-
-echo "setting up directory structure" | tee -a $LOG
+echo "setting up installation directory " | tee -a $LOG
 
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
+echo ""
 echo "installing pgo server config" | tee -a $LOG
 wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz -O /tmp/postgres-operator.$PGORELEASE.tar.gz
 if [[ $? -ne 0 ]]; then
 	echo "problem getting pgo server config"
 	exit 1
 fi
+
 cd $COROOT
 tar xzf /tmp/postgres-operator.$PGORELEASE.tar.gz
 if [[ $? -ne 0 ]]; then
@@ -81,6 +93,7 @@ if [[ $? -ne 0 ]]; then
 	exit 1
 fi
 
+echo ""
 echo "installing pgo client" | tee -a $LOG
 
 mv pgo $GOBIN
@@ -90,49 +103,46 @@ mv expenv.exe $GOBIN
 mv expenv-mac $GOBIN
 mv expenv $GOBIN
 
-echo -n "do you want to create the demo namespace? [yes no] "
-read REPLY
-if [[ "$REPLY" == "yes" ]]; then
-	echo "creating demo namespace" | tee -a $LOG
+echo "storage classes on your system..."
+kubectl get sc
+echo ""
+echo -n "enter the name of the storage class to use: "
+read STORAGE_CLASS
 
-	kubectl create -f $COROOT/examples/demo-namespace.json
-	if [[ $? -ne 0 ]]; then
-		echo "problem creating Kube demo namespace"
-		exit 1
-	fi
-	kubectl get namespaces
-	kubectl config view
+echo ""
+echo "setting up pgo storage configuration for storageclass" | tee -a $LOG
+cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/service-account.yaml
+sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/rbac.yaml
 
-	echo "enter your Kube cluster name: "
-	read CLUSTERNAME
-	echo "enter your Kube user name: "
-	read USERNAME
-
-	kubectl config set-context demo --namespace=demo --cluster=$CLUSTERNAME --user=$USERNAME
-	kubectl config use-context demo
-fi
-
-echo -n "do you want to deploy the operator? [yes no] "
-read REPLY
-if [[ "$REPLY" == "yes" ]]; then
-	echo "setting up pgo storage configuration for GCE standard storageclass" | tee -a $LOG
-	cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-
-	echo "deploy the operator to the Kube cluster" | tee -a $LOG
-	$COROOT/deploy/deploy.sh > /dev/null 2> /dev/null | tee -a $LOG
-fi
-
+echo ""
 echo "setting up pgo client auth" | tee -a $LOG
-tail --lines=1 $COROOT/conf/apiserver/pgouser > $HOME/.pgouser
+echo "username:password" > $HOME/.pgouser
 
 echo "for pgo bash completion you will need to install the bash-completion package" | tee -a $LOG
 
 cp $COROOT/examples/pgo-bash-completion $HOME/.bash_completion
 
+echo -n "do you want to deploy the operator? [yes no] "
+read REPLY
+if [[ "$REPLY" == "yes" ]]; then
+	echo "deploy the operator to the Kube cluster" | tee -a $LOG
+	$COROOT/deploy/deploy.sh | tee -a $LOG
+fi
+
 echo "install complete" | tee -a $LOG
+echo ""
 
 echo "At this point you can access the operator by using a port-forward command similar to:"
 podname=`kubectl get pod --selector=name=postgres-operator -o jsonpath={..metadata.name}`
-echo "kubectl port-forward " $podname " 8443:8443"
+echo "kubectl port-forward " $podname " 18443:8443"
 echo "do this in another terminal or run in the background"
+
+echo ""
+echo "WARNING:  for the postgres-operator settings to take effect, log out of your session and back in, or reload your .bashrc file"
+
+echo ""
+echo "NOTE:  to access the pgo CLI, place it within your PATH, it is located in $HOME/odev/bin/pgo"
+
 

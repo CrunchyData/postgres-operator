@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -26,11 +26,13 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
 
 // PgtaskController holds connections for the controller
 type PgtaskController struct {
+	PgtaskConfig    *rest.Config
 	PgtaskClient    *rest.RESTClient
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
@@ -101,7 +103,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		return
 	}
 
-	//update the status of the task as completed
+	//update the status of the task as processed to prevent reprocessing
 	taskCopy := copyObj.(*crv1.Pgtask)
 	taskCopy.Status = crv1.PgtaskStatus{
 		State:   crv1.PgtaskStateProcessed,
@@ -124,6 +126,12 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskFailover:
+		log.Info("failover task added")
+		log.Info("cluster name is " + task.Spec.Parameters)
+		log.Info("dbname is " + task.Spec.Name)
+		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
+
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
 		log.Info("pvc is " + task.Spec.Parameters)
@@ -133,7 +141,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Info("unknown task type on pgtask added")
 	}
 
-	//for now, remove the pgtask in all cases
+	/**
 	err = c.PgtaskClient.Delete().
 		Name(task.ObjectMeta.Name).
 		Namespace(task.ObjectMeta.Namespace).
@@ -145,8 +153,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	if err != nil {
 		log.Errorf("ERROR deleting pgtask status: %s %v\n", task.ObjectMeta.Name, err)
 	} else {
-		log.Errorf("UPDATED deleted pgtask %s\n", task.ObjectMeta.Name)
+		log.Errorf("deleted pgtask %s\n", task.ObjectMeta.Name)
 	}
+	*/
 
 }
 

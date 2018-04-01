@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2016 Crunchy Data Solutions, Inc.
+# Copyright 2017-2018 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -22,20 +22,21 @@ if [ "$CO_CMD" = "kubectl" ]; then
 fi
 
 $CO_CMD create -f $DIR/service-account.yaml
-$CO_CMD create -f $DIR/cluster-role-binding.yaml
+#$CO_CMD create -f $DIR/cluster-role-binding.yaml
+$CO_CMD create -f $DIR/rbac.yaml
 
-$DIR/create-secrets.sh
-
-$CO_CMD $NS create configmap apiserver-conf \
-	--from-file=$COROOT/conf/apiserver/server.crt \
-	--from-file=$COROOT/conf/apiserver/server.key \
-	--from-file=$COROOT/conf/apiserver/pgouser \
-	--from-file=$COROOT/conf/apiserver/pgo.yaml \
-	--from-file=$COROOT/conf/apiserver/pgo.load-template.json \
-	--from-file=$COROOT/conf/apiserver/pgo.lspvc-template.json 
+$CO_CMD create secret generic apiserver-conf-secret \
+        --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
+        --from-file=server.key=$COROOT/conf/apiserver/server.key \
+        --from-file=pgouser=$COROOT/conf/apiserver/pgouser \
+        --from-file=pgorole=$COROOT/conf/apiserver/pgorole \
+        --from-file=pgo.yaml=$COROOT/conf/apiserver/pgo.yaml \
+        --from-file=pgo.load-template.json=$COROOT/conf/apiserver/pgo.load-template.json \
+        --from-file=pgo.lspvc-template.json=$COROOT/conf/apiserver/pgo.lspvc-template.json
 
 $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
+	--from-file=$COROOT/conf/postgres-operator/pgo-ingest-watch-job.json \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ func main() {
 	}
 
 	lo := meta_v1.ListOptions{}
-	pods, err := clientset.CoreV1().Pods("default").List(lo)
+	pods, err := clientset.CoreV1().Pods("demo").List(lo)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -65,7 +65,7 @@ func main() {
 			}
 		}
 		fmt.Printf("Ready %d/%d\n", readyCount, containerCount)
-		//fmt.Printf("%v\n", pod)
+		fmt.Printf("NodeName is %s\n", pod.Spec.NodeName)
 		//fmt.Printf("%v\n", pod.Spec.Volumes)
 		for _, v := range pod.Spec.Volumes {
 			if v.Name == "pgdata" {

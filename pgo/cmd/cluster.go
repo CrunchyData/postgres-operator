@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -56,6 +56,8 @@ func deleteCluster(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 		var response msgs.DeleteClusterResponse
@@ -111,6 +113,8 @@ func showCluster(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -120,6 +124,15 @@ func showCluster(args []string) {
 			log.Printf("%v\n", resp.Body)
 			log.Error(err)
 			log.Println(err)
+			return
+		}
+
+		if OutputFormat == "json" {
+			b, err := json.MarshalIndent(response, "", "  ")
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			fmt.Println(string(b))
 			return
 		}
 
@@ -143,7 +156,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for _, pod := range detail.Pods {
 		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
-		fmt.Println("\t" + TreeBranch + "pvc : " + pod.PVCName)
+		fmt.Println(TreeBranch + "pvc : " + pod.PVCName)
 	}
 
 	for _, d := range detail.Deployments {
@@ -155,11 +168,21 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for i, service := range detail.Services {
 		if i == len(detail.Services)-1 {
-			fmt.Println(TreeTrunk + "service : " + service.Name + " (" + service.ClusterIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
 		} else {
 			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
 		}
 	}
+
+	for _, replica := range detail.Replicas {
+		fmt.Println(TreeBranch + "replica : " + replica.Name)
+	}
+
+	fmt.Printf("%s%s", TreeBranch, "labels : ")
+	for k, v := range detail.Cluster.ObjectMeta.Labels {
+		fmt.Printf("%s=%s ", k, v)
+	}
+	fmt.Println("")
 
 	if ShowSecrets {
 		for _, s := range detail.Secrets {
@@ -189,7 +212,7 @@ func createCluster(args []string) {
 
 	r := new(msgs.CreateClusterRequest)
 	r.Name = args[0]
-	r.NodeName = NodeName
+	r.NodeLabel = NodeLabel
 	r.Password = Password
 	r.SecretFrom = SecretFrom
 	r.BackupPVC = BackupPVC
@@ -199,9 +222,12 @@ func createCluster(args []string) {
 	r.CCPImageTag = CCPImageTag
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
+	r.PgpoolFlag = PgpoolFlag
+	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
+	r.ContainerResources = ContainerResources
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"
@@ -221,6 +247,9 @@ func createCluster(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 

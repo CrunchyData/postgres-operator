@@ -1,6 +1,6 @@
 FROM centos:7
 
-LABEL Release="2.5" Vendor="Crunchy Data Solutions" 
+LABEL Release="2.6" Vendor="Crunchy Data Solutions" 
 
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
 

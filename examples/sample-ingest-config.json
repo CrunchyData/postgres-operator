@@ -1,0 +1,12 @@
+  {
+      "WatchDir": "/",
+      "DBHost": "cluster7",
+      "DBPort": "5432",
+      "DBName": "userdb",
+      "DBSecret": "cluster7-postgres-secret",
+      "DBTable": "json_collection",
+      "DBColumn": "json_imported",
+      "MaxJobs": 2,
+      "PVCName": "pgo-ingest-watch-pvc",
+      "SecurityContext": ""
+  }

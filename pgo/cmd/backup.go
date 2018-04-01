@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -23,6 +23,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -38,7 +39,11 @@ var backupCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
 		} else {
-			createBackup(args)
+			if util.AskForConfirmation(NoPrompt) {
+				createBackup(args)
+			} else {
+				fmt.Println("Aborting...")
+			}
 		}
 
 	},
@@ -49,6 +54,8 @@ func init() {
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
+	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
+
 }
 
 // showBackup ....
@@ -75,6 +82,8 @@ func showBackup(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -143,6 +152,8 @@ func deleteBackup(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -203,6 +214,8 @@ func createBackup(args []string) {
 		log.Fatal("Do: ", err)
 		return
 	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
 
 	defer resp.Body.Close()
 

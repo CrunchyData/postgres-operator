@@ -1,7 +1,7 @@
 package userservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,11 +23,10 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"strconv"
 	"time"
 )
@@ -59,7 +58,7 @@ func init() {
 }
 
 //  User ...
-// pgo user --add-user=bob --change-password=bob --db=userdb --delete-user=bob
+// pgo user --change-password=bob --db=userdb
 //  --expired=7 --managed=true --selector=env=research --update-passwords=true
 //  --valid-days=30
 func User(request *msgs.UserRequest) msgs.UserResponse {
@@ -82,26 +81,11 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 
 	log.Debug("selector string=[" + sel + "]")
 
-	myselector, err := labels.Parse(sel)
-	if err != nil {
-		log.Error("could not parse selector flag")
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-	log.Debug("myselector string=[" + myselector.String() + "]")
-
 	//get the clusters list
 	clusterList := crv1.PgclusterList{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(apiserver.Namespace).
-		Param("labelSelector", myselector.String()).
-		//LabelsSelectorParam(myselector).
-		Do().
-		Into(&clusterList)
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, sel, apiserver.Namespace)
 	if err != nil {
-		log.Error("error getting cluster list" + err.Error())
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -114,11 +98,9 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		sel = "pg-cluster=" + cluster.Spec.Name + ",!replica"
-		lo := meta_v1.ListOptions{LabelSelector: sel}
-		deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
+		selector := "pg-cluster=" + cluster.Spec.Name + ",!replica"
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of deployments" + err.Error())
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
@@ -134,40 +116,6 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, apiserver.Namespace)
-				if err != nil {
-					log.Error(err.Error())
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				}
-			}
-			if request.DeleteUser != "" {
-				err = deleteUser(apiserver.Namespace, cluster.Spec.Name, info, request.DeleteUser, request.ManagedUser)
-				if err != nil {
-					log.Error(err)
-				} else {
-					msg := "deleting user " + request.DeleteUser + " from " + d.ObjectMeta.Name
-					log.Debug(msg)
-					resp.Results = append(resp.Results, msg)
-
-					//if managed, if so, delete secret
-					util.DeleteUserSecret(apiserver.Clientset, d.ObjectMeta.Name, request.DeleteUser, apiserver.Namespace)
-				}
-			}
-			if request.AddUser != "" {
-				err = addUser(request.UserDBAccess, apiserver.Namespace, d.ObjectMeta.Name, info, request.AddUser, request.ManagedUser)
-				if err != nil {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				} else {
-					msg := "adding new user " + request.AddUser + " to " + d.ObjectMeta.Name
-					log.Debug(msg)
-					resp.Results = append(resp.Results, msg)
-				}
-				newPassword := util.GeneratePassword(defaultPasswordLength)
-				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.AddUser, newPassword, newExpireDate, apiserver.Namespace)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -341,19 +289,18 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 	info := connInfo{}
 
 	//get the service for the cluster
-	service, err := apiserver.Clientset.CoreV1().Services(namespace).Get(clusterName, meta_v1.GetOptions{})
-	if err != nil {
-		log.Error("error getting list of services" + err.Error())
+	service, found, err := kubeapi.GetService(apiserver.Clientset, clusterName, namespace)
+	if !found || err != nil {
 		return info
 	}
 
 	//get the secrets for this cluster
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + clusterName}
-	secrets, err := apiserver.Clientset.CoreV1().Secrets(namespace).List(lo)
+	selector := "pg-database=" + clusterName
+	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
 		return info
 	}
+
 	//get the postgres user secret info
 	var username, password, database, hostip string
 	for _, s := range secrets.Items {
@@ -477,5 +424,133 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 		}
 	}
 	return err
+
+}
+
+// CreateUser ...
+// pgo create user user1
+func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
+	var err error
+	resp := msgs.CreateUserResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	log.Debug("createUser selector is " + request.Selector)
+	if request.Selector == "" {
+		log.Error("--selector value is empty not allowed")
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "error in selector"
+		return resp
+	}
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, request.Selector, apiserver.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	log.Debug("createUser clusters found len is %d\n", len(clusterList.Items))
+
+	for _, c := range clusterList.Items {
+		info := getPostgresUserInfo(apiserver.Namespace, c.Name)
+
+		err = addUser(request.UserDBAccess, apiserver.Namespace, c.Name, info, request.Name, request.ManagedUser)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		} else {
+			msg := "adding new user " + request.Name + " to " + c.Name
+			log.Debug(msg)
+			resp.Results = append(resp.Results, msg)
+		}
+		newPassword := util.GeneratePassword(defaultPasswordLength)
+		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
+		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, apiserver.Namespace)
+		if err != nil {
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+	}
+	return resp
+
+}
+
+// DeleteUser ...
+func DeleteUser(name, selector string) msgs.DeleteUserResponse {
+	var err error
+
+	response := msgs.DeleteUserResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 0)
+
+	clusterList := crv1.PgclusterList{}
+
+	//get the clusters list
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, selector, apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	if len(clusterList.Items) == 0 {
+		log.Debug("no clusters found")
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no clusters found"
+		return response
+	}
+
+	var managed bool
+	var msg, clusterName string
+
+	for _, cluster := range clusterList.Items {
+		clusterName = cluster.Spec.Name
+		info := getPostgresUserInfo(apiserver.Namespace, clusterName)
+
+		secretName := clusterName + "-" + name + "-secret"
+
+		managed, err = isManaged(secretName)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		err = deleteUser(apiserver.Namespace, clusterName, info, name, managed)
+		if err != nil {
+			log.Error(err)
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		msg = name + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
+		log.Debug(msg)
+		response.Results = append(response.Results, msg)
+
+	}
+
+	return response
+
+}
+
+func isManaged(secretName string) (bool, error) {
+	_, found, err := kubeapi.GetSecret(apiserver.Clientset, secretName, apiserver.Namespace)
+	if !found || err != nil {
+		return false, err
+	}
+
+	return true, err
 
 }

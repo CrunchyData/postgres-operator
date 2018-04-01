@@ -1,0 +1,156 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "extensions/v1beta1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            {{.OperatorLabels }}
+        }
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{.Name}}",
+                    "primary": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+
+                {{.SecurityContext }}
+
+                "containers": [
+		
+                {{.CollectAddon }}
+
+		    {
+                    "name": "database",
+                    "image": "{{.CCPImagePrefix}}/crunchy-postgres:{{.CCPImageTag}}",
+                    "readinessProbe": {
+                        "exec": {
+                            "command": [
+                                "/opt/cpm/bin/readiness.sh"
+                            ]
+                        },
+                        "initialDelaySeconds": 15,
+                        "timeoutSeconds": 8
+                    },
+
+		    {{.ContainerResources }}
+
+                    "env": [{
+                        "name": "PG_PRIMARY_PORT",
+                        "value": "{{.Port}}"
+                    }, {
+                        "name": "PG_MODE",
+                        "value": "primary"
+                    }, {
+                        "name": "PG_LOCALE",
+                        "value": "en_US.UTF8"
+                    }, {
+                        "name": "PGDATA_PATH_OVERRIDE",
+                        "value": "{{.DataPathOverride}}"
+                    }, {
+                        "name": "BACKUP_PATH",
+                        "value": "{{.BackupPath}}"
+                    }, {
+                        "name": "PG_DATABASE",
+                        "value": "{{.Database}}"
+                    }, {
+                        "name": "PGHOST",
+                        "value": "/tmp"
+                    }],
+                    "volumeMounts": [{
+                            "mountPath": "/pgdata",
+                            "name": "pgdata",
+                            "readOnly": false
+                        }, {
+                            "mountPath": "/backup",
+                            "name": "backup",
+                            "readOnly": true
+                        }, {
+                            "mountPath": "/pguser",
+                            "name": "user-volume"
+                        }, {
+                            "mountPath": "/pgprimary",
+                            "name": "primary-volume"
+                        }, {
+                            "mountPath": "/pgroot",
+                            "name": "root-volume"
+                        }, {
+                            "mountPath": "/pgwal",
+                            "name": "pgwal-volume"
+                        }, {
+                            "mountPath": "/pgconf",
+                            "name": "pgconf-volume"
+                        }, {
+                            "mountPath": "/recover",
+                            "name": "recover-volume"
+                        }, {
+                            "mountPath": "/backrestrepo",
+                            "name": "backrestrepo-volume"
+                        }
+
+                    ],
+
+                    "ports": [{
+                        "containerPort": 5432,
+                        "protocol": "TCP"
+                    }],
+                    "resources": {},
+                    "imagePullPolicy": "IfNotPresent"
+                }],
+                "volumes": [{
+                        "name": "pgdata",
+                        {{.PVCName}}
+                    }, {
+                        "name": "backup",
+                        {{.BackupPVCName}}
+                    }, {
+                        "name": "user-volume",
+                        "secret": {
+                            "secretName": "{{.UserSecretName}}"
+                        }
+                    }, {
+                        "name": "primary-volume",
+                        "secret": {
+                            "secretName": "{{.PrimarySecretName}}"
+                        }
+                    }, {
+                        "name": "root-volume",
+                        "secret": {
+                            "secretName": "{{.RootSecretName}}"
+                        }
+                    }, {
+                        "name": "pgwal-volume",
+			"emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "backrestrepo-volume",
+			"emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "recover-volume",
+			"emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "pgconf-volume",
+			{{.ConfVolume}}
+                    }
+
+                ],
+
+		{{.NodeSelector}}
+
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

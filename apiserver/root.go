@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,9 +21,10 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -63,10 +64,17 @@ const TreeTrunk = "└── "
 // TreeBranch is for debugging only in this context
 const TreeBranch = "├── "
 
+type CredentialDetail struct {
+	Username string
+	Password string
+	Role     string
+}
+
 // Credentials holds the BasicAuth credentials found in the config
-var Credentials map[string]string
+var Credentials map[string]CredentialDetail
 
 var StorageMap map[string]interface{}
+var ContainerResourcesMap map[string]interface{}
 
 func init() {
 	BasicAuth = true
@@ -80,8 +88,6 @@ func init() {
 	initConfig()
 
 	ConnectToKube()
-
-	verifySecrets()
 
 }
 
@@ -147,21 +153,6 @@ func initConfig() {
 		log.Info("metrics flag is set to true")
 	}
 
-	if DebugFlag || viper.GetBool("Pgo.Debug") {
-		log.Debug("debug flag is set to true")
-		log.SetLevel(log.DebugLevel)
-	}
-
-	//	if KubeconfigPath == "" {
-	//		KubeconfigPath = viper.GetString("Kubeconfig")
-	//	}
-	//	if KubeconfigPath == "" {
-	//		log.Error("--kubeconfig flag is not set and required")
-	//		os.Exit(2)
-	//	}
-
-	//	log.Debug("kubeconfig path is " + viper.GetString("Kubeconfig"))
-
 	if Namespace == "" {
 		Namespace = viper.GetString("Namespace")
 	}
@@ -191,6 +182,13 @@ func initConfig() {
 		os.Exit(2)
 	}
 
+	ContainerResourcesMap = viper.GetStringMap("ContainerResources")
+
+	if !validContainerResourcesSettings() {
+		log.Error("Container Resources settings are not defined correctly, can't continue")
+		os.Exit(2)
+	}
+
 }
 
 func file2lines(filePath string) []string {
@@ -213,25 +211,28 @@ func file2lines(filePath string) []string {
 	return lines
 }
 
-func parseUserMap(dat string) (string, string) {
+func parseUserMap(dat string) CredentialDetail {
+
+	creds := CredentialDetail{}
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
 	//log.Infof("%v\n", fields)
-	//log.Infof("username=[%s] password=[%s]\n", fields[0], fields[1])
-	return fields[0], fields[1]
+	//log.Infof("username=[%s] password=[%s] role=[%s]\n", fields[0], fields[1], fields[2])
+	creds.Username = fields[0]
+	creds.Password = fields[1]
+	creds.Role = fields[2]
+	return creds
 }
 
 // getCredentials ...
 func getCredentials() {
-	var Username, Password string
 
-	Credentials = make(map[string]string)
+	Credentials = make(map[string]CredentialDetail)
 
 	lines := file2lines(pgouserPath)
 	for _, v := range lines {
-		Username, Password = parseUserMap(v)
-		//log.Debugf("username=%s password=%s\n", Username, Password)
-		Credentials[Username] = Password
+		creds := parseUserMap(v)
+		Credentials[creds.Username] = creds
 	}
 
 }
@@ -243,49 +244,88 @@ func BasicAuthCheck(username, password string) bool {
 	}
 
 	value := Credentials[username]
-	if value == "" {
+	if (CredentialDetail{}) == value {
 		return false
 	}
 
-	if value != password {
+	if value.Password != password {
 		return false
 	}
 
 	return true
 }
 
-func Authn(where string, w http.ResponseWriter, r *http.Request) error {
+func BasicAuthzCheck(username, perm string) bool {
+
+	creds := Credentials[username]
+	if creds == (CredentialDetail{}) {
+		//this means username not found in pgouser file
+		//should not happen at this point in code!
+		log.Error("%s not found in pgouser file\n", username)
+		return false
+	}
+
+	log.Infof(" BasicAuthzCheck %s %s %v\n", creds.Role, perm, HasPerm(creds.Role, perm))
+	return HasPerm(creds.Role, perm)
+
+}
+
+func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
 	var err error
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	username, password, authOK := r.BasicAuth()
 	if AuditFlag {
-		log.Infof("[audit] %s username=[%s] method=[%s]\n", where, username, r.Method)
+		log.Infof("[audit] %s username=[%s] method=[%s]\n", perm, username, r.Method)
 	}
 
-	log.Debugf("Authn Attempt %s username=[%s]\n", where, username)
+	log.Debugf("Authn Attempt %s username=[%s]\n", perm, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
 		return errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
-		log.Errorf("Authn Failed %s username=[%s]\n", where, username)
+		log.Errorf("Authn Failed %s username=[%s]\n", perm, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
 		return errors.New("Not Authenticated")
 	}
+
+	if !BasicAuthzCheck(username, perm) {
+		log.Errorf("Authn Failed %s username=[%s]\n", perm, username)
+		http.Error(w, "Not authorized for this apiserver action", 401)
+		return errors.New("Not Authorized for this apiserver action")
+	}
+
 	log.Debug("Authn Success")
 	return err
 
 }
 
-func verifySecrets() {
-	_, _, _, err := util.GetAllPasswords(Clientset, Namespace)
-	if err != nil {
-		log.Error("password secrets not found, aborting")
-		os.Exit(2)
+func validContainerResourcesSettings() bool {
+	log.Infof("ContainerResources has %d definitions \n", len(ContainerResourcesMap))
+
+	//validate any Container Resources in pgo.yaml for correct formats
+	//log.Infof("%v is the ContainerResourcesMap\n", ContainerResourcesMap)
+	if !IsValidContainerResourceValues() {
+		return false
 	}
-	log.Info("got required secrets for passwords during startup check")
+
+	drs := viper.GetString("DefaultContainerResource")
+	if drs == "" {
+		log.Info("DefaultContainerResources was not specified in pgo.yaml, so no container resources will be specified")
+		return true
+	}
+
+	//validate the DefaultContainerResource value
+	if IsValidContainerResource(drs) {
+		log.Info(drs + " is valid")
+	} else {
+		log.Error(drs + " is NOT valid")
+		return false
+	}
+
+	return true
 
 }
 
@@ -313,8 +353,14 @@ func validStorageSettings() bool {
 		log.Error(bs + " is NOT valid")
 		return false
 	}
+
 	return true
 
+}
+
+func IsValidContainerResource(name string) bool {
+	_, ok := ContainerResourcesMap[name]
+	return ok
 }
 
 func IsValidStorageName(name string) bool {
@@ -322,34 +368,62 @@ func IsValidStorageName(name string) bool {
 	return ok
 }
 
-// IsValidNodeName returns true or false if
-// a node is valid, returns a string that
-// describes the not valid condition, and
-// lastly a string of all valid nodes found
-func IsValidNodeName(nodeName string) (bool, string, string) {
+// IsValidNodeLabel
+// returns bool for key validity
+// returns bool for value validity
+// returns error
+func IsValidNodeLabel(key, value string) (bool, bool, error) {
 
 	var err error
-	found := false
-	allNodes := ""
+	keyValid := false
+	valueValid := false
 
-	lo := meta_v1.ListOptions{}
-	nodes, err := Clientset.CoreV1().Nodes().List(lo)
+	nodes, err := kubeapi.GetNodes(Clientset)
 	if err != nil {
-		log.Error(err)
-		return false, err.Error(), allNodes
+		return false, false, err
 	}
 
+	var v string
 	for _, node := range nodes.Items {
-		log.Infof("%v\n", node)
-		if node.Name == nodeName {
-			found = true
+		v = node.ObjectMeta.Labels[key]
+		if v != "" {
+			keyValid = true
 		}
-		allNodes += node.Name + " "
+		if v == value {
+			valueValid = true
+		}
 	}
 
-	if found == false {
-		return false, "not found", allNodes
-	}
+	return keyValid, valueValid, err
+}
 
-	return true, "", allNodes
+func IsValidContainerResourceValues() bool {
+
+	var err error
+
+	for k, v := range ContainerResourcesMap {
+		log.Infof("Container Resources %s [%v]\n", k, v)
+		resources := util.GetContainerResources(viper.Sub("ContainerResources." + k))
+		_, err = resource.ParseQuantity(resources.RequestsMemory)
+		if err != nil {
+			log.Errorf("%s.RequestsMemory value invalid format\n", k)
+			return false
+		}
+		_, err = resource.ParseQuantity(resources.RequestsCPU)
+		if err != nil {
+			log.Errorf("%s.RequestsCPU value invalid format\n", k)
+			return false
+		}
+		_, err = resource.ParseQuantity(resources.LimitsMemory)
+		if err != nil {
+			log.Errorf("%s.LimitsMemory value invalid format\n", k)
+			return false
+		}
+		_, err = resource.ParseQuantity(resources.LimitsCPU)
+		if err != nil {
+			log.Errorf("%s.LimitsCPU value invalid format\n", k)
+			return false
+		}
+	}
+	return true
 }

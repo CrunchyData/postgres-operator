@@ -1,7 +1,7 @@
 package cluster
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,9 +18,9 @@ package cluster
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -30,22 +30,12 @@ import (
 
 // AddUpgrade creates a pgupgrade job
 func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string) {
-	var err error
 	cl := crv1.Pgcluster{}
 
 	//not a db so get the pgcluster CRD
-	err = restclient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
-		Name(upgrade.Spec.Name).
-		Do().
-		Into(&cl)
+	_, err := kubeapi.Getpgcluster(restclient, &cl,
+		upgrade.Spec.Name, namespace)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Debug("pgcluster " + upgrade.Spec.Name + " not found ")
-		} else {
-			log.Error("error getting pgcluster " + upgrade.Spec.Name + err.Error())
-		}
 		return
 	}
 
@@ -68,13 +58,7 @@ func DeleteUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
 	//delete the job
-	err := clientset.Batch().Jobs(namespace).Delete(jobName,
-		&meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting Job " + jobName + err.Error())
-		return
-	}
-	log.Debug("deleted Job " + jobName)
+	kubeapi.DeleteJob(clientset, jobName, namespace)
 }
 
 // MajorUpgradeProcess process major upgrade completions
@@ -142,33 +126,17 @@ func finishUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 		return
 	}
 
-	err := restclient.Get().
-		Resource(crv1.PgupgradeResourcePlural).
-		Namespace(namespace).
-		Name(name).
-		Do().Into(&upgrade)
+	_, err := kubeapi.Getpgupgrade(restclient, &upgrade, name, namespace)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Error(name + " pgupgrade crv1 is not found")
-		} else {
-			log.Error("error in crv1 get upgrade" + err.Error())
-		}
+		return
 	}
-	log.Info(name + " pgupgrade crv1 is found")
+	log.Debug(name + " pgupgrade crv1 is found")
 
-	err = restclient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
-		Name(name).
-		Do().Into(&cl)
+	_, err = kubeapi.Getpgcluster(restclient, &cl, name, namespace)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Error(name + " pgcluster crv1 is not found")
-		} else {
-			log.Error("error in crv1 get cluster" + err.Error())
-		}
+		return
 	}
-	log.Info(name + " pgcluster crv1 is found")
+	log.Debug(name + " pgcluster crv1 is found")
 
 	var clusterStrategy Strategy
 

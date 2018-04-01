@@ -1,4 +1,3 @@
-Namespace:  demo
 Cluster:
   CCPImagePrefix:  crunchydata
   CCPImageTag:  centos7-10.3-1.8.1
@@ -24,4 +23,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.5
+  COImageTag:  centos7-2.6

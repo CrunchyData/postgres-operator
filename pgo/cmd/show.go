@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,8 +21,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const TreeBranch = "├── "
-const TreeTrunk = "└── "
+const TreeBranch = "\t"
+const TreeTrunk = "\t"
 
 var PostgresVersion string
 var ShowPVC bool
@@ -38,6 +38,7 @@ For example:
 	pgo show policy policy1
 	pgo show pvc mypvc
 	pgo show backup mycluster
+	pgo show ingest myingest
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -46,6 +47,7 @@ Valid resource types include:
 	* cluster
 	* pvc
 	* policy
+	* ingest
 	* upgrade
 	* backup`)
 		} else {
@@ -53,6 +55,7 @@ Valid resource types include:
 			case "cluster":
 			case "pvc":
 			case "policy":
+			case "ingest":
 			case "upgrade":
 			case "backup":
 				break
@@ -62,6 +65,7 @@ Valid resource types include:
 	* cluster
 	* pvc
 	* policy
+	* ingest
 	* upgrade
 	* backup`)
 			}
@@ -76,12 +80,14 @@ func init() {
 	ShowCmd.AddCommand(ShowBackupCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
+	ShowCmd.AddCommand(ShowIngestCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 
 	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "x", false, "Show secrets ")
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
+	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
 
 }
 
@@ -105,6 +111,7 @@ var ShowPVCCmd = &cobra.Command{
 	Short: "Show pvc information",
 	Long: `Show pvc information. For example:
 
+				pgo show pvc all
 				pgo show pvc mycluster-pvc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -158,6 +165,22 @@ var ShowClusterCmd = &cobra.Command{
 			log.Error("cluster name(s) required for this command")
 		} else {
 			showCluster(args)
+		}
+	},
+}
+
+// ShowIngestCmd represents the show ingest command
+var ShowIngestCmd = &cobra.Command{
+	Use:   "ingest",
+	Short: "Show ingest information",
+	Long: `Show a crunchy ingest. For example:
+
+				pgo show ingest myingest`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Selector == "" && len(args) == 0 {
+			log.Error("ingest name(s) required for this command")
+		} else {
+			showIngest(args)
 		}
 	},
 }

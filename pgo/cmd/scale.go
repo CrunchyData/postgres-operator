@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -37,9 +37,7 @@ pgo scale mycluster --replica-count=1
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("scale called")
-		if ReplicaCount < 0 {
-			fmt.Println(`--replica-count command line flag is required`)
-		} else if len(args) == 0 {
+		if len(args) == 0 {
 			fmt.Println(`You must specify the clusters to scale.`)
 		} else {
 			scaleCluster(args)
@@ -50,7 +48,10 @@ pgo scale mycluster --replica-count=1
 func init() {
 	RootCmd.AddCommand(scaleCmd)
 
-	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", -1, "The replica count to apply to the clusters")
+	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", 1, "The replica count to apply to the clusters, defaults to 1")
+	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits")
+	scaleCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the replica storage.")
+	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the replica pod, if not set any node is used")
 
 }
 
@@ -58,7 +59,7 @@ func scaleCluster(args []string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount)
+		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)
@@ -75,6 +76,8 @@ func scaleCluster(args []string) {
 			log.Fatal("Do: ", err)
 			return
 		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
 
 		defer resp.Body.Close()
 
@@ -87,7 +90,9 @@ func scaleCluster(args []string) {
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println("Ok")
+			for _, v := range response.Results {
+				fmt.Println(v)
+			}
 		} else {
 			fmt.Println("Error")
 			fmt.Println(response.Status.Msg)

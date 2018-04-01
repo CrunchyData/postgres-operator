@@ -1,7 +1,7 @@
 package loadservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -141,15 +142,10 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(apiserver.Namespace).
-			Param("labelSelector", myselector.String()).
-			//LabelsSelectorParam(myselector).
-			Do().
-			Into(&clusterList)
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector,
+			apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting cluster list" + err.Error())
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
@@ -229,12 +225,8 @@ func createJob(clusterName, filetype, filepath string) error {
 		return err
 	}
 
-	resultJob, err := apiserver.Clientset.Batch().Jobs(apiserver.Namespace).Create(&newjob)
-	if err != nil {
-		log.Error("error creating Job " + err.Error())
-		return err
-	}
-	log.Debug("created load Job " + resultJob.Name)
+	err = kubeapi.CreateJob(apiserver.Clientset, &newjob, apiserver.Namespace)
+
 	return err
 
 }

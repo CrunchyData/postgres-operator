@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,26 +21,26 @@ package cluster
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"math/rand"
-	"strconv"
-	"time"
+	//"strconv"
 )
 
 // Strategy ....
 type Strategy interface {
+	Scale(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgreplica, string, string, *crv1.Pgcluster) error
 	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
-	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string, bool) error
+	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
+	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
 	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	PrepareClone(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgcluster, string) error
 	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
 }
 
@@ -53,24 +53,25 @@ type ServiceTemplateFields struct {
 
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name              string
-	ClusterName       string
-	Port              string
-	CCPImagePrefix    string
-	CCPImageTag       string
-	Database          string
-	OperatorLabels    string
-	DataPathOverride  string
-	PVCName           string
-	BackupPVCName     string
-	BackupPath        string
-	RootSecretName    string
-	UserSecretName    string
-	PrimarySecretName string
-	SecurityContext   string
-	NodeSelector      string
-	ConfVolume        string
-	CollectAddon      string
+	Name               string
+	ClusterName        string
+	Port               string
+	CCPImagePrefix     string
+	CCPImageTag        string
+	Database           string
+	OperatorLabels     string
+	DataPathOverride   string
+	PVCName            string
+	BackupPVCName      string
+	BackupPath         string
+	RootSecretName     string
+	UserSecretName     string
+	PrimarySecretName  string
+	SecurityContext    string
+	ContainerResources string
+	NodeSelector       string
+	ConfVolume         string
+	CollectAddon       string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
@@ -81,10 +82,8 @@ const ReplicaSuffix = "-replica"
 
 var strategyMap map[string]Strategy
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyz"
-
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	//rand.Seed(time.Now().UnixNano())
 	strategyMap = make(map[string]Strategy)
 	strategyMap["1"] = Strategy1{}
 }
@@ -118,7 +117,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
-	err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
+	var testPassword string
+	_, _, testPassword, err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error("error in create secrets " + err.Error())
 		return
@@ -135,6 +135,21 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	} else {
 		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
+	}
+
+	//add pgpool deployment if requested
+	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
+		//generate a secret for pgpool using the testuser credential
+		secretName := cl.Spec.Name + "-pgpool-secret"
+		primaryName := cl.Spec.Name
+		replicaName := cl.Spec.Name + "-replica"
+		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		//create the pgpool deployment using that credential
+		AddPgpool(clientset, client, cl, namespace, secretName)
 	}
 
 	//replaced with ccpimagetag instead of pg version
@@ -174,12 +189,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 
-	err := client.Delete().
-		Resource(crv1.PgupgradeResourcePlural).
-		Namespace(namespace).
-		Name(cl.Spec.Name).
-		Do().
-		Error()
+	err := kubeapi.Deletepgupgrade(client, cl.Spec.Name, namespace)
 	if err == nil {
 		log.Info("deleted pgupgrade " + cl.Spec.Name)
 	} else if kerrors.IsNotFound(err) {
@@ -233,90 +243,73 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 
 }
 
-// ScaleCluster ...
-func ScaleCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, oldcluster *crv1.Pgcluster, namespace string) {
+// ScaleBase ...
+func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
+	var err error
 
-	//log.Debug("updateCluster on pgcluster called..something changed")
-
-	if oldcluster.Spec.Replicas != cl.Spec.Replicas {
-		log.Debug("detected change to Replicas for " + cl.Spec.Name + " from " + oldcluster.Spec.Replicas + " to " + cl.Spec.Replicas)
-		oldCount, err := strconv.Atoi(oldcluster.Spec.Replicas)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		newCount, err := strconv.Atoi(cl.Spec.Replicas)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if oldCount > newCount {
-			log.Error("scale down is not implemented yet")
-			return
-		}
-		newReps := newCount - oldCount
-		if newReps > 0 {
-			serviceName := cl.Spec.Name + "-replica"
-			ScaleReplicasBase(serviceName, clientset, cl, newReps, namespace)
-		} else {
-			log.Error("scale to the same number does nothing")
-		}
+	if replica.Spec.Status == crv1.UpgradeCompletedStatus {
+		log.Warn("crv1 pgreplica " + replica.Spec.Name + " is already marked complete, will not recreate")
+		return
 	}
 
-}
-
-// ScaleReplicasBase ...
-func ScaleReplicasBase(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, newReplicas int, namespace string) {
-
-	//create the service if it doesn't exist
-	serviceFields := ServiceTemplateFields{
-		Name:        serviceName,
-		ClusterName: cl.Spec.Name,
-		Port:        cl.Spec.Port,
+	//get the pgcluster CRD to base the replica off of
+	cluster := crv1.Pgcluster{}
+	_, err = kubeapi.Getpgcluster(client, &cluster,
+		replica.Spec.ClusterName, namespace)
+	if err != nil {
+		return
 	}
 
-	err := CreateService(clientset, &serviceFields, namespace)
+	//create the PVC
+	pvcName, err := pvc.CreatePVC(clientset, replica.Spec.Name, &replica.Spec.ReplicaStorage, namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	//get the strategy to use
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-		log.Info("using default cluster strategy")
+	log.Debug("created replica pvc [" + pvcName + "]")
+
+	//update the replica CRD pvcname
+	err = util.Patch(client, "/spec/replicastorage/name", pvcName, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	strategy, ok := strategyMap[cl.Spec.Strategy]
+	log.Debug("creating Pgreplica object strategy is [" + cluster.Spec.Strategy + "]")
+
+	if cluster.Spec.Strategy == "" {
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[cluster.Spec.Strategy]
 	if ok {
 		log.Info("strategy found")
 	} else {
-		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
+		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
 		return
 	}
 
-	log.Debug("scale up called ")
-
-	for i := 0; i < newReplicas; i++ {
-		//generate a unique name suffix
-		uniqueName := RandStringBytesRmndr(4)
-		depName := cl.Spec.Name + "-replica-" + uniqueName
-
-		//create a PVC
-		pvcName, err := pvc.CreatePVC(clientset, depName, &cl.Spec.ReplicaStorage, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		strategy.CreateReplica(serviceName, clientset, cl, depName, pvcName, namespace, false)
+	//create the replica service if it doesnt exist
+	serviceName := replica.Spec.ClusterName + "-replica"
+	serviceFields := ServiceTemplateFields{
+		Name:        serviceName,
+		ClusterName: replica.Spec.ClusterName,
+		Port:        cluster.Spec.Port,
 	}
-}
 
-// RandStringBytesRmndr ...
-func RandStringBytesRmndr(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
+	err = CreateService(clientset, &serviceFields, namespace)
+	if err != nil {
+		log.Error(err)
+		return
 	}
-	return string(b)
+
+	//instantiate the replica
+	strategy.Scale(clientset, client, replica, namespace, pvcName, &cluster)
+
+	//update the replica CRD status
+	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in status patch " + err.Error())
+	}
+
 }
