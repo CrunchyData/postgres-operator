@@ -21,6 +21,7 @@ package cluster
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -33,15 +34,9 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	clusterName := task.Spec.Parameters
 
 	cluster := crv1.Pgcluster{}
-	err = client.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
-		Name(clusterName).
-		Do().
-		Into(&cluster)
+	_, err = kubeapi.Getpgcluster(client, &cluster,
+		clusterName, namespace)
 	if err != nil {
-		log.Error("error getting pgcluster " + clusterName)
-		log.Error(err)
 		return
 	}
 

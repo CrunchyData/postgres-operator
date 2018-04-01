@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
@@ -62,7 +63,6 @@ func init() {
 func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
 	var err error
 	var primaryDoc bytes.Buffer
-	var deploymentResult *v1beta1.Deployment
 
 	log.Info("minor cluster upgrade using Strategy 1 in namespace " + namespace)
 
@@ -111,12 +111,10 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		return err
 	}
 
-	deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
+	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
-		log.Error("error creating primary Deployment " + err.Error())
 		return err
 	}
-	log.Info("created primary Deployment " + deploymentResult.Name + " in namespace " + namespace)
 
 	//update the upgrade CRD status to completed
 	err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
@@ -172,12 +170,10 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		return err
 	}
 
-	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
+	err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {
-		log.Error("error creating Job " + err.Error())
 		return err
 	}
-	log.Info("created Job " + resultJob.Name)
 
 	//patch the upgrade crv1 with the new pvc name
 	err = util.Patch(restclient, "/spec/newpvcname", pvcName, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
@@ -196,7 +192,6 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
 	var err error
 	var primaryDoc bytes.Buffer
-	var deploymentResult *v1beta1.Deployment
 
 	log.Info("major cluster upgrade finalize using Strategy 1 in namespace " + namespace)
 
@@ -238,12 +233,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		return err
 	}
 
-	deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
-	if err != nil {
-		log.Error("error creating primary Deployment " + err.Error())
-		return err
-	}
-	log.Info("created primary Deployment " + deploymentResult.Name + " in namespace " + namespace)
+	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 
 	return err
 

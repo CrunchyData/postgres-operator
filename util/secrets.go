@@ -18,10 +18,8 @@ package util
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"math/rand"
@@ -126,12 +124,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	secret.Data["username"] = []byte(enUsername)
 	secret.Data["password"] = []byte(password)
 
-	_, err := clientset.Core().Secrets(namespace).Create(&secret)
-	if err != nil {
-		log.Error("error creating secret" + err.Error())
-	} else {
-		log.Debug("created secret " + secret.Name)
-	}
+	err := kubeapi.CreateSecret(clientset, &secret, namespace)
 
 	return err
 
@@ -159,21 +152,14 @@ func GenerateRandString(length int) string {
 // DeleteDatabaseSecrets delete secrets that match pg-database=somecluster
 func DeleteDatabaseSecrets(clientset *kubernetes.Clientset, db, namespace string) {
 	//get all that match pg-database=db
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
-	secrets, err := clientset.Core().Secrets(namespace).List(lo)
+	selector := "pg-database=" + db
+	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
 		return
 	}
 
-	options := meta_v1.DeleteOptions{}
 	for _, s := range secrets.Items {
-		err = clientset.Core().Secrets(namespace).Delete(s.ObjectMeta.Name, &options)
-		if err != nil {
-			log.Error("error deleting secret" + err.Error())
-		} else {
-			log.Info("deleted database secrets =" + s.ObjectMeta.Name)
-		}
+		kubeapi.DeleteSecret(clientset, s.ObjectMeta.Name, namespace)
 	}
 }
 
@@ -186,10 +172,8 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 	log.Infoln("namespace=" + namespace)
 	log.Infoln("secretName=" + secretName)
 
-	options := meta_v1.GetOptions{}
-	secret, err := clientset.Core().Secrets(namespace).Get(secretName, options)
-	if errors.IsNotFound(err) {
-		log.Error("not found error secret " + secretName)
+	secret, found, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	if !found || err != nil {
 		return "", "", err
 	}
 
@@ -201,10 +185,10 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
 
 	log.Debug("CopySecrets " + fromCluster + " to " + toCluster)
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + fromCluster}
-	secrets, err := clientset.Core().Secrets(namespace).List(lo)
+	selector := "pg-database=" + fromCluster
+
+	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
 		return err
 	}
 
@@ -218,12 +202,7 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 		secret.Data["username"] = s.Data["username"][:]
 		secret.Data["password"] = s.Data["password"][:]
 
-		_, err := clientset.Core().Secrets(namespace).Create(&secret)
-		if err != nil {
-			log.Error("error creating secret" + err.Error())
-		} else {
-			log.Debug("created secret " + secret.Name)
-		}
+		kubeapi.CreateSecret(clientset, &secret, namespace)
 
 	}
 	return err
@@ -257,10 +236,8 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	secretName := clustername + "-" + username + "-secret"
 
 	//delete current secret
-	options := meta_v1.DeleteOptions{}
-	err = clientset.Core().Secrets(namespace).Delete(secretName, &options)
+	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
 	if err == nil {
-		log.Debug("deleted secret " + secretName)
 		//create secret with updated password
 		err = CreateUserSecret(clientset, clustername, username, password, namespace)
 		if err != nil {
@@ -268,8 +245,6 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 		} else {
 			log.Debug("created secret " + secretName)
 		}
-	} else {
-		log.Error("error deleting secret" + err.Error())
 	}
 
 	return err
@@ -280,12 +255,6 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	//delete current secret
 	secretName := clustername + "-" + username + "-secret"
 
-	options := meta_v1.DeleteOptions{}
-	err := clientset.Core().Secrets(namespace).Delete(secretName, &options)
-	if err != nil {
-		log.Error("DeleteUserSecret error deleting secret" + err.Error())
-	} else {
-		log.Debug("deleted secret " + secretName)
-	}
+	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
 	return err
 }

@@ -148,8 +148,6 @@ func createUser(args []string) {
 		log.Error("user name argument is required")
 		return
 	}
-	//var err error
-	log.Infof("args=%v selector=%s\n", args, Selector)
 
 	r := new(msgs.CreateUserRequest)
 	r.Name = args[0]

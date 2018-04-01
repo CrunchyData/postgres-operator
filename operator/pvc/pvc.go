@@ -20,9 +20,8 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
@@ -132,13 +131,12 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 		log.Error("error unmarshalling json into PVC " + err.Error())
 		return err
 	}
-	var result *v1.PersistentVolumeClaim
-	result, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Create(&newpvc)
+
+	err = kubeapi.CreatePVC(clientset, &newpvc, namespace)
 	if err != nil {
-		log.Error("error creating pvc " + err.Error() + " in namespace " + namespace)
 		return err
 	}
-	log.Debug("created PVC " + result.Name + " in namespace " + namespace)
+
 	//TODO replace sleep with proper wait
 	time.Sleep(3000 * time.Millisecond)
 	return nil
@@ -149,13 +147,12 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 func Delete(clientset *kubernetes.Clientset, name string, namespace string) error {
 	log.Debug("in pvc.Delete")
 	var err error
-
+	var found bool
 	var pvc *v1.PersistentVolumeClaim
 
 	//see if the PVC exists
-	options := meta_v1.GetOptions{}
-	pvc, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
-	if err != nil {
+	pvc, found, err = kubeapi.GetPVC(clientset, name, namespace)
+	if err != nil || !found {
 		log.Info("\nPVC %s\n", name+" is not found, will not attempt delete")
 		return nil
 	}
@@ -166,9 +163,8 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 	if pvc.ObjectMeta.Labels["pgremove"] == "true" {
 		log.Info("pgremove is true on this pvc")
 		log.Debug("delete PVC " + name + " in namespace " + namespace)
-		err = clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
+		err = kubeapi.DeletePVC(clientset, name, namespace)
 		if err != nil {
-			log.Error("error deleting PVC " + name + err.Error() + " in namespace " + namespace)
 			return err
 		}
 	}
@@ -179,16 +175,7 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 
 // Exists test to see if pvc exists
 func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
-	options := meta_v1.GetOptions{}
-	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
-	if err == nil {
-		return true
-	}
+	_, found, _ := kubeapi.GetPVC(clientset, name, namespace)
 
-	if errors.IsNotFound(err) {
-		return false
-	}
-	log.Error("error getting PVC " + name + " " + err.Error() + " in namespace " + namespace)
-
-	return false
+	return found
 }

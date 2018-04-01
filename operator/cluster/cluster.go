@@ -21,6 +21,7 @@ package cluster
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -188,12 +189,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 
-	err := client.Delete().
-		Resource(crv1.PgupgradeResourcePlural).
-		Namespace(namespace).
-		Name(cl.Spec.Name).
-		Do().
-		Error()
+	err := kubeapi.Deletepgupgrade(client, cl.Spec.Name, namespace)
 	if err == nil {
 		log.Info("deleted pgupgrade " + cl.Spec.Name)
 	} else if kerrors.IsNotFound(err) {
@@ -258,15 +254,9 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 
 	//get the pgcluster CRD to base the replica off of
 	cluster := crv1.Pgcluster{}
-	err = client.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
-		Name(replica.Spec.ClusterName).
-		Do().
-		Into(&cluster)
+	_, err = kubeapi.Getpgcluster(client, &cluster,
+		replica.Spec.ClusterName, namespace)
 	if err != nil {
-		log.Error("error getting pgcluster " + replica.Spec.ClusterName)
-		log.Error(err)
 		return
 	}
 

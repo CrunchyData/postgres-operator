@@ -26,11 +26,11 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	jsonpatch "github.com/evanphx/json-patch"
 	//remotecommandconsts "k8s.io/apimachinery/pkg/util/remotecommand"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
-	//"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
 	//kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -92,35 +92,23 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace, clusterName, message string) {
 
-	taskName := clusterName + "-failover"
 	log.Debug("updateFailoverStatus namespace=[" + namespace + "] taskName=[" + task.Name + "] message=[" + message + "]")
 
 	//update the task
 
-	err := client.Get().
-		Name(task.ObjectMeta.Name).
-		Namespace(task.ObjectMeta.Namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Do().
-		Into(task)
+	_, err := kubeapi.Getpgtask(client, task, task.ObjectMeta.Name,
+		task.ObjectMeta.Namespace)
 	if err != nil {
-		log.Error("error getting pgtask for update " + taskName)
-		log.Error(err)
 		return
 	}
 
 	task.Status.Message = message
 
-	err = client.Put().
-		Name(task.ObjectMeta.Name).
-		Namespace(task.ObjectMeta.Namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Body(task).
-		Do().
-		Error()
+	err = kubeapi.Updatepgtask(client,
+		task,
+		task.ObjectMeta.Name,
+		task.ObjectMeta.Namespace)
 	if err != nil {
-		log.Error("error updating pgtask message " + taskName)
-		log.Error(err)
 		return
 	}
 
@@ -129,17 +117,7 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName string) error {
 	var err error
 
-	//delete the deployments
-	delOptions := meta_v1.DeleteOptions{}
-	var delProp meta_v1.DeletionPropagation
-	delProp = meta_v1.DeletePropagationForeground
-	delOptions.PropagationPolicy = &delProp
-
-	log.Debug("deleting deployment " + clusterName)
-	err = clientset.ExtensionsV1beta1().Deployments(namespace).Delete(clusterName, &delOptions)
-	if err != nil {
-		log.Error("error deleting primary Deployment " + err.Error())
-	}
+	err = kubeapi.DeleteDeployment(clientset, clusterName, namespace)
 
 	return err
 }
@@ -167,11 +145,8 @@ func promote(
 func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterName, target string) error {
 	var err error
 
-	var targetDeployment *v1beta1.Deployment
-
-	targetDeployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(target, meta_v1.GetOptions{})
-	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
+	targetDeployment, found, err := kubeapi.GetDeployment(clientset, target, namespace)
+	if !found {
 		return err
 	}
 

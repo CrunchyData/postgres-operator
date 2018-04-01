@@ -17,39 +17,32 @@ limitations under the License.
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"k8s.io/client-go/rest"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 )
 
 // CreatePolicy ...
 func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile string) error {
-	var err error
 
 	log.Debug("create policy called for " + policyName)
 	result := crv1.Pgpolicy{}
 
 	// error if it already exists
-	err = RESTClient.Get().
-		Resource(crv1.PgpolicyResourcePlural).
-		Namespace(apiserver.Namespace).
-		Name(policyName).
-		Do().
-		Into(&result)
+	found, err := kubeapi.Getpgpolicy(RESTClient,
+		&result, policyName, apiserver.Namespace)
 	if err == nil {
 		log.Debug("pgpolicy " + policyName + " was found so we will not create it")
 		return err
-	} else if kerrors.IsNotFound(err) {
+	} else if !found {
 		log.Debug("pgpolicy " + policyName + " not found so we will create it")
 	} else {
-		log.Error("error getting pgpolicy " + policyName + err.Error())
 		return err
 	}
 
@@ -66,17 +59,13 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 		Spec: spec,
 	}
 
-	err = RESTClient.Post().
-		Resource(crv1.PgpolicyResourcePlural).
-		Namespace(apiserver.Namespace).
-		Body(newInstance).
-		Do().Into(&result)
+	err = kubeapi.Createpgpolicy(RESTClient,
+		newInstance, apiserver.Namespace)
 
 	if err != nil {
-		log.Error(" in creating Pgpolicy instance" + err.Error())
 		return err
 	}
-	log.Debug("created Pgpolicy " + policyName)
+
 	return err
 
 }
@@ -87,23 +76,17 @@ func ShowPolicy(RESTClient *rest.RESTClient, name string) crv1.PgpolicyList {
 
 	if name == "all" {
 		//get a list of all policies
-		err := RESTClient.Get().
-			Resource(crv1.PgpolicyResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().Into(&policyList)
+		err := kubeapi.Getpgpolicies(RESTClient,
+			&policyList,
+			apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of policies" + err.Error())
 			return policyList
 		}
 	} else {
 		policy := crv1.Pgpolicy{}
-		err := RESTClient.Get().
-			Resource(crv1.PgpolicyResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(name).
-			Do().Into(&policy)
+		_, err := kubeapi.Getpgpolicy(RESTClient,
+			&policy, name, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of policies" + err.Error())
 			return policyList
 		}
 		policyList.Items = make([]crv1.Pgpolicy, 1)
@@ -123,9 +106,9 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 	var err error
 
 	policyList := crv1.PgpolicyList{}
-	err = RESTClient.Get().Resource(crv1.PgpolicyResourcePlural).Do().Into(&policyList)
+	err = kubeapi.Getpgpolicies(RESTClient,
+		&policyList, apiserver.Namespace)
 	if err != nil {
-		log.Error("error getting policy list" + err.Error())
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -136,16 +119,11 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 	for _, policy := range policyList.Items {
 		if policyName == "all" || policyName == policy.Spec.Name {
 			policyFound = true
-			err = RESTClient.Delete().
-				Resource(crv1.PgpolicyResourcePlural).
-				Namespace(apiserver.Namespace).
-				Name(policy.Spec.Name).
-				Do().
-				Error()
+			err = kubeapi.Deletepgpolicy(RESTClient,
+				policy.Spec.Name, apiserver.Namespace)
 			if err == nil {
 				log.Debug("deleted pgpolicy " + policy.Spec.Name)
 			} else {
-				log.Error("error deleting pgpolicy " + policyName + err.Error())
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
@@ -153,6 +131,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 
 		}
 	}
+
 	if !policyFound {
 		log.Debug("policy " + policyName + " not found")
 		resp.Status.Code = msgs.Error
@@ -167,6 +146,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	var err error
+
 	resp := msgs.ApplyPolicyResponse{}
 	resp.Name = make([]string, 0)
 	resp.Status.Msg = ""
@@ -181,10 +161,10 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	}
 
 	//get filtered list of Deployments
-	sel := request.Selector + ",!replica"
-	log.Debug("selector string=[" + sel + "]")
-	lo := meta_v1.ListOptions{LabelSelector: sel}
-	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
+	selector := request.Selector + ",!replica"
+	log.Debug("selector string=[" + selector + "]")
+
+	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -203,7 +183,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	labels[request.Name] = "pgpolicy"
 
 	for _, d := range deployments.Items {
-		log.Debug("apply policy " + request.Name + " on deployment " + d.ObjectMeta.Name + " based on selector " + sel)
+		log.Debug("apply policy " + request.Name + " on deployment " + d.ObjectMeta.Name + " based on selector " + selector)
 
 		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.Namespace, request.Name, d.ObjectMeta.Name)
 		if err != nil {
@@ -214,14 +194,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 		}
 
 		cl := crv1.Pgcluster{}
-		err = apiserver.RESTClient.Get().
-			Resource(crv1.PgclusterResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(d.ObjectMeta.Name).
-			Do().
-			Into(&cl)
+		_, err = kubeapi.Getpgcluster(apiserver.RESTClient,
+			&cl, d.ObjectMeta.Name, apiserver.Namespace)
 		if err != nil {
-			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp

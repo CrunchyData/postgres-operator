@@ -21,10 +21,10 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -378,9 +378,8 @@ func IsValidNodeLabel(key, value string) (bool, bool, error) {
 	keyValid := false
 	valueValid := false
 
-	nodes, err := Clientset.CoreV1().Nodes().List(meta_v1.ListOptions{})
+	nodes, err := kubeapi.GetNodes(Clientset)
 	if err != nil {
-		log.Error(err)
 		return false, false, err
 	}
 

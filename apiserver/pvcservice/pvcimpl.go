@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"io"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
@@ -52,11 +52,10 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 	pvcList := make([]string, 1)
 
 	if pvcName == "all" {
-		lo := meta_v1.ListOptions{LabelSelector: "pgremove=true"}
+		selector := "pgremove=true"
 
-		pvcs, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(apiserver.Namespace).List(lo)
+		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
-			log.Error(err.Error())
 			return pvcList, err
 		}
 
@@ -67,14 +66,13 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 		return pvcList, err
 	}
 
-	pvc, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(apiserver.Namespace).Get(pvcName, meta_v1.GetOptions{})
+	pvc, _, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, apiserver.Namespace)
 	if err != nil {
-		log.Error("\nPVC %s\n", pvcName+" is not found")
-		log.Error(err.Error())
-	} else {
-		log.Debug("\nPVC %s\n", pvc.Name+" is found")
-		pvcList, err = printPVCListing(pvc.Name, PVCRoot)
+		return pvcList, err
 	}
+
+	log.Debug("\nPVC %s\n", pvc.Name+" is found")
+	pvcList, err = printPVCListing(pvc.Name, PVCRoot)
 
 	return pvcList, err
 
@@ -88,18 +86,16 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 	var podName = "lspvc-" + pvcName
 
 	//delete lspvc pod if it was not deleted for any reason prior
-	_, err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).Get(podName, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
+	_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, apiserver.Namespace)
+	if !found {
 		//
 	} else if err != nil {
 		log.Error(err.Error())
 		return newlines, err
 	} else {
 		log.Debug("deleting prior pod " + podName)
-		err = apiserver.Clientset.Core().Pods(apiserver.Namespace).Delete(podName,
-			&meta_v1.DeleteOptions{})
+		err = kubeapi.DeletePod(apiserver.Clientset, podName, apiserver.Namespace)
 		if err != nil {
-			log.Error("delete pod error " + err.Error()) //TODO this is debug info
 			return newlines, err
 		}
 		//sleep a bit for the pod to be deleted
@@ -138,13 +134,12 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 		log.Error("error unmarshalling json into Pod " + err.Error())
 		return newlines, err
 	}
-	var resultPod *v1.Pod
-	resultPod, err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).Create(&newpod)
+
+	_, err = kubeapi.CreatePod(apiserver.Clientset, &newpod, apiserver.Namespace)
 	if err != nil {
-		log.Error("error creating lspvc Pod " + err.Error())
 		return newlines, err
 	}
-	log.Debug("created pod " + resultPod.Name)
+
 	timeout := time.Duration(6 * time.Second)
 	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
 	podPhase := v1.PodSucceeded
@@ -194,13 +189,7 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	//delete lspvc pod
-	err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).Delete(podName,
-		&meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error(err.Error())
-		log.Error("error deleting lspvc pod " + podName)
-	}
-
+	err = kubeapi.DeletePod(apiserver.Clientset, podName, apiserver.Namespace)
 	return newlines, err
 
 }

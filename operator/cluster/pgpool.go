@@ -17,17 +17,15 @@ package cluster
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
-	//kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/watch"
-	"crypto/md5"
-	"encoding/hex"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -109,13 +107,11 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 		return
 	}
 
-	var deploymentResult *v1beta1.Deployment
-	deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
+	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
 		log.Error("error creating pgpool Deployment " + err.Error())
 		return
 	}
-	log.Info("created pgpool Deployment " + deploymentResult.Name + " in namespace " + namespace)
 
 	//create a service for the pgpool
 	svcFields := ServiceTemplateFields{}
@@ -133,28 +129,13 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 // DeletePgpool
 func DeletePgpool(clientset *kubernetes.Clientset, clusterName, namespace string) {
 
-	var delProp meta_v1.DeletionPropagation
-	delOptions := meta_v1.DeleteOptions{}
-	delProp = meta_v1.DeletePropagationBackground
-	delOptions.PropagationPolicy = &delProp
 	pgpoolDepName := clusterName + "-pgpool"
 
-	log.Debug("deleting pgpool deployment " + pgpoolDepName)
-
-	err := clientset.ExtensionsV1beta1().Deployments(namespace).Delete(pgpoolDepName, &delOptions)
-	if err != nil {
-		log.Error("error deleting Deployment " + pgpoolDepName + err.Error())
-	}
+	kubeapi.DeleteDeployment(clientset, pgpoolDepName, namespace)
 
 	//delete the service name=<clustename>-pgpool
 
-	err = clientset.Core().Services(namespace).Delete(pgpoolDepName,
-		&meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting pgpool Service " + err.Error())
-	} else {
-		log.Info("deleted pgpool service " + pgpoolDepName)
-	}
+	kubeapi.DeleteService(clientset, pgpoolDepName, namespace)
 
 }
 
@@ -191,12 +172,7 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 	secret.Data["pool_hba.conf"] = pgpoolHBABytes
 	secret.Data["pool_passwd"] = pgpoolPasswdBytes
 
-	_, err = clientset.Core().Secrets(namespace).Create(&secret)
-	if err != nil {
-		log.Error("error creating pgpool secret" + err.Error())
-	} else {
-		log.Debug("created pgpool secret " + secret.Name)
-	}
+	err = kubeapi.CreateSecret(clientset, &secret, namespace)
 
 	return err
 

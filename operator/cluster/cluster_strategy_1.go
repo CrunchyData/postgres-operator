@@ -23,13 +23,12 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/extensions/v1beta1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -84,7 +83,6 @@ func init() {
 func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, primaryPVCName string) error {
 	var primaryDoc bytes.Buffer
 	var err error
-	var deploymentResult *v1beta1.Deployment
 
 	log.Info("creating Pgcluster object using Strategy 1" + " in namespace " + namespace)
 	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
@@ -143,12 +141,10 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	}
 
 	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
-		deploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
+		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 		if err != nil {
-			log.Error("error creating primary Deployment " + err.Error())
 			return err
 		}
-		log.Info("created primary Deployment " + deploymentResult.Name + " in namespace " + namespace)
 	} else {
 		log.Info("primary Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
@@ -177,48 +173,23 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	}
 
 	//delete any remaining pods that may be left lingering
-	listOptions := meta_v1.ListOptions{}
-	listOptions.LabelSelector = "pg-cluster=" + cl.Spec.Name
-	pods, err := clientset.CoreV1().Pods(namespace).List(listOptions)
+	pods, err := kubeapi.GetPods(clientset, "pg-cluster="+cl.Spec.Name,
+		namespace)
 	for _, pod := range pods.Items {
-		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
-		err = clientset.Core().Pods(namespace).Delete(pod.Name,
-			&meta_v1.DeleteOptions{})
-		if err != nil {
-			log.Error("error deleting pod " + pod.Name + err.Error())
-		}
-		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
-
+		err = kubeapi.DeletePod(clientset, pod.Name, namespace)
 	}
-	listOptions.LabelSelector = "name=" + cl.Spec.Name + ReplicaSuffix
-	pods, err = clientset.CoreV1().Pods(namespace).List(listOptions)
+	pods, err = kubeapi.GetPods(clientset,
+		"name="+cl.Spec.Name+ReplicaSuffix, namespace)
 	for _, pod := range pods.Items {
-		log.Info("deleting pod " + pod.Name + " in namespace " + namespace)
-		err = clientset.Core().Pods(namespace).Delete(pod.Name,
-			&meta_v1.DeleteOptions{})
-		if err != nil {
-			log.Error("error deleting pod " + pod.Name + err.Error())
-		}
-		log.Info("deleted pod " + pod.Name + " in namespace " + namespace)
-
+		err = kubeapi.DeletePod(clientset, pod.Name, namespace)
 	}
 
 	//delete the primary service
 
-	err = clientset.Core().Services(namespace).Delete(cl.Spec.Name,
-		&meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting primary Service " + err.Error())
-	}
-	log.Info("deleted primary service " + cl.Spec.Name)
+	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
 
 	//delete the replica service
-	err = clientset.Core().Services(namespace).Delete(cl.Spec.Name+ReplicaSuffix,
-		&meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error("error deleting replica Service " + err.Error())
-	}
-	log.Info("deleted replica service " + cl.Spec.Name + ReplicaSuffix + " in namespace " + namespace)
+	kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
 
 	//delete the pgpool deployment if necessary
 	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
@@ -236,29 +207,20 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 	var err error
 
-	//var replicaName = cl.Spec.Name + ReplicaSuffix
-
-	//get the deployments
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + cl.Spec.Name}
-	deployments, err := clientset.ExtensionsV1beta1().Deployments(namespace).List(lo)
+	deployments, err := kubeapi.GetDeployments(clientset,
+		"pg-cluster="+cl.Spec.Name, namespace)
 	if err != nil {
-		log.Error("error getting list of deployments" + err.Error())
 		return err
 	}
 
 	//delete the deployments
-	delOptions := meta_v1.DeleteOptions{}
-	var delProp meta_v1.DeletionPropagation
-	delProp = meta_v1.DeletePropagationForeground
-	delOptions.PropagationPolicy = &delProp
+	//delOptions := meta_v1.DeleteOptions{}
+	//var delProp meta_v1.DeletionPropagation
+	//delProp = meta_v1.DeletePropagationForeground
+	//delOptions.PropagationPolicy = &delProp
 
 	for _, d := range deployments.Items {
-		log.Debug("deleting deployment " + d.ObjectMeta.Name)
-		err = clientset.ExtensionsV1beta1().Deployments(namespace).Delete(d.ObjectMeta.Name, &delOptions)
-		if err != nil {
-			log.Error("error deleting replica Deployment " + err.Error())
-		}
-
+		err = kubeapi.DeleteDeployment(clientset, d.ObjectMeta.Name, namespace)
 	}
 
 	return err
@@ -268,29 +230,17 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 // deploymentExists ...
 func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName string) bool {
 
-	_, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(clusterName, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
-		return false
-	} else if err != nil {
-		log.Error("deployment " + clusterName + " error " + err.Error())
-		return false
-	}
-
-	return true
+	_, found, _ := kubeapi.GetDeployment(clientset, clusterName, namespace)
+	return found
 }
 
 // UpdatePolicyLabels ...
 func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
 
-	var err error
-	var deployment *v1beta1.Deployment
-
-	//get the deployment
-	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(clusterName, meta_v1.GetOptions{})
-	if err != nil {
+	deployment, found, err := kubeapi.GetDeployment(clientset, clusterName, namespace)
+	if !found {
 		return err
 	}
-	log.Debug("got the deployment" + deployment.Name)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)
@@ -342,7 +292,6 @@ func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterNa
 func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string) error {
 	var replicaDoc bytes.Buffer
 	var err error
-	var replicaDeploymentResult *v1beta1.Deployment
 
 	clusterName := cl.Spec.ClusterName
 
@@ -391,13 +340,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		return err
 	}
 
-	replicaDeploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&replicaDeployment)
-	if err != nil {
-		log.Error("error creating replica Deployment " + err.Error())
-		return err
-	}
-
-	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
+	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 	return err
 }
 
@@ -490,29 +433,23 @@ func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 
 // GetConfVolume ...
 func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace string) string {
-	var err error
+	var found bool
 
 	//check for user provided configmap
 	if customConfig != "" {
-		_, err = clientset.CoreV1().ConfigMaps(namespace).Get(customConfig, meta_v1.GetOptions{})
-		if kerrors.IsNotFound(err) {
+		_, found = kubeapi.GetConfigMap(clientset, customConfig, namespace)
+		if !found {
 			//you should NOT get this error because of apiserver validation of this value!
 			log.Error(customConfig + " was not found, error, skipping user provided configMap")
-		} else if err != nil {
-			log.Error(err)
-			log.Error(customConfig + " lookup error, skipping user provided configMap")
 		}
 		return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
 
 	}
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	_, err = clientset.CoreV1().ConfigMaps(namespace).Get(util.GLOBAL_CUSTOM_CONFIGMAP, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
+	_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_CUSTOM_CONFIGMAP, namespace)
+	if !found {
 		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
-	} else if err != nil {
-		log.Error(err)
-		log.Error(util.GLOBAL_CUSTOM_CONFIGMAP + " lookup error, skipping global configMap")
 	} else {
 		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
 	}
@@ -556,7 +493,6 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	log.Debug("Scale called namespace " + namespace)
 
 	var replicaDoc bytes.Buffer
-	var replicaDeploymentResult *v1beta1.Deployment
 
 	serviceName := replica.Spec.ClusterName + "-replica"
 	replicaFlag := true
@@ -606,13 +542,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		return err
 	}
 
-	replicaDeploymentResult, err = clientset.ExtensionsV1beta1().Deployments(namespace).Create(&replicaDeployment)
-	if err != nil {
-		log.Error("error creating replica Deployment " + err.Error())
-		return err
-	}
-
-	log.Info("created replica Deployment " + replicaDeploymentResult.Name)
+	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 
 	return err
 }

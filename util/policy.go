@@ -16,15 +16,13 @@ package util
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"io/ioutil"
-	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"net/http"
 )
@@ -45,10 +43,8 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 	}
 	//get the host ip address
 	var service *v1.Service
-	options := meta_v1.GetOptions{}
-	service, err = clientset.Core().Services(namespace).Get(clusterName, options)
+	service, _, err = kubeapi.GetService(clientset, clusterName, namespace)
 	if err != nil {
-		log.Error(err)
 		return err
 	}
 

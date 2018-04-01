@@ -21,6 +21,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,15 +75,9 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 		Spec: spec,
 	}
 
-	result := crv1.Pgtask{}
-
-	err = apiserver.RESTClient.Post().
-		Resource(crv1.PgtaskResourcePlural).
-		Namespace(apiserver.Namespace).
-		Body(newInstance).
-		Do().Into(&result)
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
 	if err != nil {
-		log.Error(err.Error())
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -119,8 +114,9 @@ func QueryFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverRespo
 	//get failover targets for this cluster
 	//deployments with --selector=replica=true,pg-cluster=ClusterName
 
-	lo := meta_v1.ListOptions{LabelSelector: "replica=true,pg-cluster=" + request.ClusterName}
-	deployments, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).List(lo)
+	selector := "replica=true,pg-cluster=" + request.ClusterName
+
+	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found ")
 		resp.Status.Msg = "no replicas found for " + request.ClusterName
@@ -144,33 +140,21 @@ func QueryFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverRespo
 }
 
 func validateClusterName(clusterName string) (*crv1.Pgcluster, error) {
-	//get the clusters list
 	cluster := crv1.Pgcluster{}
-	err := apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(apiserver.Namespace).
-		Name(clusterName).
-		Do().
-		Into(&cluster)
-	if kerrors.IsNotFound(err) {
-		log.Debug("no clusters found")
+	found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
+		&cluster, clusterName, apiserver.Namespace)
+	if !found {
 		return &cluster, errors.New("no cluster found named " + clusterName)
-	} else if err != nil {
-		log.Error("error validating cluster name" + err.Error())
-		return &cluster, err
 	}
+
 	return &cluster, err
 }
 
 func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
 
-	deployment, err := apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Get(deployName, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
-		log.Debug("no deployment found with that target name")
+	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, apiserver.Namespace)
+	if !found {
 		return deployment, errors.New("no target found named " + deployName)
-	} else if err != nil {
-		log.Error("error getting deployment" + err.Error())
-		return deployment, err
 	}
 
 	return deployment, err

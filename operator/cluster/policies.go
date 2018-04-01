@@ -18,9 +18,9 @@ package cluster
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -81,18 +81,8 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient
 	//dep *v1beta1.Deployment
 	//get the crv1 which holds the requested labels if any
 	cl := crv1.Pgcluster{}
-	err := restclient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(namespace).
-		Name(clusterName).
-		Do().
-		Into(&cl)
-	if err == nil {
-	} else if kerrors.IsNotFound(err) {
-		log.Error("could not get cluster in policy processing using " + clusterName)
-		return
-	} else {
-		log.Error("error in policy processing " + err.Error())
+	_, err := kubeapi.Getpgcluster(restclient, &cl, clusterName, namespace)
+	if err != nil {
 		return
 	}
 

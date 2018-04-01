@@ -22,12 +22,10 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"text/template"
 )
 
@@ -41,13 +39,11 @@ func init() {
 
 // CreateService ...
 func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateFields, namespace string) error {
-	var err error
 	var replicaServiceDoc bytes.Buffer
-	var replicaServiceResult *v1.Service
 
 	//create the replica service if it doesn't exist
-	_, err = clientset.CoreV1().Services(namespace).Get(fields.Name, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
+	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
+	if !found || err != nil {
 
 		err = ServiceTemplate1.Execute(&replicaServiceDoc, fields)
 		if err != nil {
@@ -65,12 +61,7 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 			return err
 		}
 
-		replicaServiceResult, err = clientset.Core().Services(namespace).Create(&replicaService)
-		if err != nil {
-			log.Error("error creating replica Service " + err.Error())
-			return err
-		}
-		log.Info("created replica service " + replicaServiceResult.Name + " in namespace " + namespace)
+		_, err = kubeapi.CreateService(clientset, &replicaService, namespace)
 	}
 
 	return err

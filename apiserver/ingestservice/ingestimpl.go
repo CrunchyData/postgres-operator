@@ -20,15 +20,13 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"k8s.io/client-go/rest"
-	//	"github.com/crunchydata/postgres-operator/util"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 )
 
 // CreateIngest ...
 func CreateIngest(RESTClient *rest.RESTClient, request *msgs.CreateIngestRequest) msgs.CreateIngestResponse {
-	var err error
 
 	resp := msgs.CreateIngestResponse{}
 	resp.Status.Code = msgs.Ok
@@ -39,22 +37,17 @@ func CreateIngest(RESTClient *rest.RESTClient, request *msgs.CreateIngestRequest
 
 	// error if it already exists
 	result := crv1.Pgingest{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgingestResourcePlural).
-		Namespace(apiserver.Namespace).
-		Name(request.Name).
-		Do().
-		Into(&result)
-	if err == nil {
-		log.Debug("pgingest " + request.Name + " was found so we will not create it")
-		resp.Status.Msg = "pingest " + request.Name + " was found so we will not create it"
-		return resp
-	} else if kerrors.IsNotFound(err) {
+	found, err := kubeapi.Getpgingest(apiserver.RESTClient,
+		&result, request.Name, apiserver.Namespace)
+	if !found {
 		log.Debug("pgingest " + request.Name + " not found so we will create it")
-	} else {
-		log.Error("error getting pgingest " + request.Name + err.Error())
+	} else if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "error getting pgingest " + request.Name + err.Error()
+		return resp
+	} else {
+		log.Debug("pgingest " + request.Name + " was found so we will not create it")
+		resp.Status.Msg = "pingest " + request.Name + " was found so we will not create it"
 		return resp
 	}
 
@@ -83,15 +76,13 @@ func CreateIngest(RESTClient *rest.RESTClient, request *msgs.CreateIngestRequest
 		},
 	}
 
-	err = apiserver.RESTClient.Post().
-		Resource(crv1.PgingestResourcePlural).
-		Namespace(apiserver.Namespace).
-		Body(newInstance).
-		Do().Into(&result)
+	err = kubeapi.Createpgingest(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
 	if err != nil {
-		log.Error(" in creating Pgingest instance" + err.Error())
+		resp.Results = append(resp.Results, "error creating Pgingest "+err.Error())
+	} else {
+		resp.Results = append(resp.Results, "created Pgingest "+request.Name)
 	}
-	resp.Results = append(resp.Results, "created Pgingest "+request.Name)
 
 	return resp
 
@@ -105,17 +96,16 @@ func ShowIngest(name string) msgs.ShowIngestResponse {
 	if name == "all" {
 		//get a list of all ingests
 		ingestList := crv1.PgingestList{}
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgingestResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().Into(&ingestList)
+		err := kubeapi.Getpgingests(apiserver.RESTClient,
+			&ingestList, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting list of ingests" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
+
 		log.Debug("ingests found len is %d\n", len(ingestList.Items))
+
 		for _, i := range ingestList.Items {
 			detail := msgs.ShowIngestResponseDetail{}
 			detail.Ingest = i
@@ -125,13 +115,9 @@ func ShowIngest(name string) msgs.ShowIngestResponse {
 		return response
 	} else {
 		ingest := crv1.Pgingest{}
-		err := apiserver.RESTClient.Get().
-			Resource(crv1.PgingestResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(name).
-			Do().Into(&ingest)
+		_, err := kubeapi.Getpgingest(apiserver.RESTClient,
+			&ingest, name, apiserver.Namespace)
 		if err != nil {
-			log.Error("error getting ingest" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -154,10 +140,8 @@ func DeleteIngest(name string) msgs.DeleteIngestResponse {
 	response.Results = make([]string, 1)
 
 	if name == "all" {
-		err := apiserver.RESTClient.Delete().
-			Resource(crv1.PgingestResourcePlural).
-			Namespace(apiserver.Namespace).
-			Do().Error()
+		err := kubeapi.DeleteAllpgingest(apiserver.RESTClient,
+			apiserver.Namespace)
 		if err != nil {
 			log.Error("error deleting all ingests" + err.Error())
 			response.Status.Code = msgs.Error
@@ -166,13 +150,9 @@ func DeleteIngest(name string) msgs.DeleteIngestResponse {
 		}
 		response.Results[0] = "all"
 	} else {
-		err := apiserver.RESTClient.Delete().
-			Resource(crv1.PgingestResourcePlural).
-			Namespace(apiserver.Namespace).
-			Name(name).
-			Do().Error()
+		err := kubeapi.Deletepgingest(apiserver.RESTClient,
+			name, apiserver.Namespace)
 		if err != nil {
-			log.Error("error deleting ingest" + err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -187,19 +167,18 @@ func DeleteIngest(name string) msgs.DeleteIngestResponse {
 func getJobCounts(ingestName string) (int, int) {
 	var running, completed int
 
-	lo := meta_v1.ListOptions{LabelSelector: "ingest=" + ingestName, FieldSelector: "status.phase=Succeeded"}
-	pods, err := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).List(lo)
+	selector := "ingest=" + ingestName
+	fieldselector := "status.phase=Succeeded"
+	pods, err := kubeapi.GetPodsWithBothSelectors(apiserver.Clientset, selector, fieldselector, apiserver.Namespace)
 	if err != nil {
-		log.Error(err)
 		return 0, 0
 	}
 	log.Debugf("There are %d ingest load pods completed\n", len(pods.Items))
 	completed = len(pods.Items)
 
-	lo = meta_v1.ListOptions{LabelSelector: "ingest=" + ingestName, FieldSelector: "status.phase!=Succeeded"}
-	pods, err = apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).List(lo)
+	fieldselector = "status.phase!=Succeeded"
+	pods, err = kubeapi.GetPodsWithBothSelectors(apiserver.Clientset, selector, fieldselector, apiserver.Namespace)
 	if err != nil {
-		log.Error(err)
 		return 0, 0
 	}
 	log.Debugf("There are %d ingest load pods running\n", len(pods.Items))

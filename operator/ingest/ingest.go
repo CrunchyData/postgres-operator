@@ -18,12 +18,11 @@ package ingest
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	//"github.com/crunchydata/postgres-operator/util"
 	"io/ioutil"
 	//v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/extensions/v1beta1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	"bytes"
@@ -104,13 +103,11 @@ func CreateIngest(namespace string, clientset *kubernetes.Clientset, client *res
 		return
 	}
 
-	deploymentResult, err := clientset.ExtensionsV1beta1().Deployments(namespace).Create(&deployment)
+	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
 		log.Error("error creating ingest Deployment " + err.Error())
 		return
 	}
-
-	log.Info("created ingestDeployment " + deploymentResult.Name)
 
 }
 
@@ -119,16 +116,12 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 	log.Debug("in ingest.Delete")
 	var err error
 
-	delOptions := meta_v1.DeleteOptions{}
-	var delProp meta_v1.DeletionPropagation
-	delProp = meta_v1.DeletePropagationForeground
-	delOptions.PropagationPolicy = &delProp
-
-	err = clientset.ExtensionsV1beta1().Deployments(namespace).Delete(name, &delOptions)
+	err = kubeapi.DeleteDeployment(clientset, name, namespace)
 	if err != nil {
 		log.Error("error deleting replica Deployment " + err.Error())
+		return err
 	}
 
-	return nil
+	return err
 
 }

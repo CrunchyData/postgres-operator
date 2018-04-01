@@ -21,23 +21,20 @@ import (
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"math/rand"
-	"time"
-
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os/exec"
 	"strconv"
 	"strings"
 	"text/template"
-
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	jsonpatch "github.com/evanphx/json-patch"
-
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"time"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -90,7 +87,7 @@ func CreateSecContext(fsGroup string, suppGroup string) string {
 func LoadTemplate(path string) *template.Template {
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Error("error loading template" + err.Error())
+		log.Error("error loading template path=" + path + err.Error())
 		panic(err.Error())
 	}
 	return template.Must(template.New(path).Parse(string(buf)))
@@ -316,10 +313,9 @@ func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace st
 
 	var err error
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + db}
-	secrets, err := clientset.Core().Secrets(Namespace).List(lo)
+	selector := "pg-database=" + db
+	secrets, err := kubeapi.GetSecrets(clientset, selector, Namespace)
 	if err != nil {
-		log.Error("error getting list of secrets" + err.Error())
 		return "", err
 	}
 

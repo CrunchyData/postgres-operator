@@ -21,13 +21,8 @@ package cluster
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"github.com/crunchydata/postgres-operator/operator/pvc"
-	//"github.com/crunchydata/postgres-operator/util"
-	//kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	//"k8s.io/client-go/kubernetes"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/client-go/rest"
-	//"strconv"
 )
 
 // DeletePgreplicas
@@ -35,32 +30,18 @@ func DeletePgreplicas(restclient *rest.RESTClient, clusterName, namespace string
 
 	replicaList := crv1.PgreplicaList{}
 
-	myselector, err := labels.Parse("pg-cluster=" + clusterName)
-
 	//get a list of pgreplicas for this cluster
-	err = restclient.Get().
-		Resource(crv1.PgreplicaResourcePlural).
-		Namespace(namespace).
-		Param("labelSelector", myselector.String()).
-		Do().Into(&replicaList)
+	err := kubeapi.GetpgreplicasBySelector(restclient,
+		&replicaList, "pg-cluster="+clusterName,
+		namespace)
 	if err != nil {
-		log.Error("error getting list of pgreplicas" + err.Error())
 		return
 	}
 
 	log.Debug("pgreplicas found len is %d\n", len(replicaList.Items))
 
 	for _, r := range replicaList.Items {
-		err = restclient.Delete().
-			Resource(crv1.PgreplicaResourcePlural).
-			Namespace(namespace).
-			Name(r.Spec.Name).
-			Do().
-			Error()
-		if err != nil {
-			log.Error(err)
-		}
-
+		err = kubeapi.Deletepgreplica(restclient, r.Spec.Name, namespace)
 	}
 
 }

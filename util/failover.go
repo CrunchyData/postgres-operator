@@ -16,19 +16,12 @@ package util
 */
 
 import (
-	log "github.com/Sirupsen/logrus"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"k8s.io/api/core/v1"
-	//"k8s.io/apimachinery/pkg/api/errors"
 	"errors"
+	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/rest"
-	//"math/rand"
-	//"strings"
-	//"time"
 )
 
 // GetBestTarget
@@ -44,12 +37,14 @@ func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace strin
 
 	//selector=replica=true,pg-cluster=clusterName
 	var pods *v1.PodList
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + clusterName + ",replica=true"}
-	pods, err = clientset.CoreV1().Pods(namespace).List(lo)
+
+	selector := "pg-cluster=" + clusterName + ",replica=true"
+
+	pods, err = kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
-		log.Error(err)
 		return &pod, &deployment, err
 	}
+
 	if len(pods.Items) == 0 {
 		return &pod, &deployment, errors.New("no replica pods found for cluster " + clusterName)
 	}
@@ -78,10 +73,10 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 
 	var pod *v1.Pod
 	var pods *v1.PodList
-	lo := meta_v1.ListOptions{LabelSelector: "replica-name=" + deploymentName}
-	pods, err = clientset.CoreV1().Pods(namespace).List(lo)
+
+	selector := "replica-name=" + deploymentName
+	pods, err = kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
-		log.Error(err)
 		return pod, err
 	}
 	if len(pods.Items) != 1 {

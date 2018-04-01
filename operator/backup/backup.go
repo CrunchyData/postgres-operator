@@ -20,14 +20,13 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	"io/ioutil"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	//v1batch "k8s.io/client-go/pkg/apis/batch/v1"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"text/template"
 )
@@ -114,12 +113,10 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 		return
 	}
 
-	resultJob, err := clientset.Batch().Jobs(namespace).Create(&newjob)
+	err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {
-		log.Error("error creating Job " + err.Error())
 		return
 	}
-	log.Info("created Job " + resultJob.Name)
 
 	//update the backup CRD status to submitted
 	err = util.Patch(client, "/spec/backupstatus", crv1.UpgradeSubmittedStatus, "pgbackups", job.Spec.Name, namespace)
@@ -132,14 +129,10 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 // DeleteBackupBase deletes a backup job
 func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var jobName = "backup-" + job.Spec.Name
-	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
 
-	//delete the job
-	err := clientset.Batch().Jobs(namespace).Delete(jobName,
-		&meta_v1.DeleteOptions{})
+	err := kubeapi.DeleteJob(clientset, jobName, namespace)
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())
 		return
 	}
-	log.Debug("deleted Job " + jobName)
 }
