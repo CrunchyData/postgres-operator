@@ -1,6 +1,6 @@
 = GKE Notes
 :toc:
-v2.5, {docdate}
+v2.6, {docdate}
 
 == Overview
 
