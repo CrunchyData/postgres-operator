@@ -24,11 +24,11 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	"io/ioutil"
+	//"io/ioutil"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"text/template"
+	//	"text/template"
 )
 
 type jobTemplateFields struct {
@@ -41,23 +41,6 @@ type jobTemplateFields struct {
 	BackupUser      string
 	BackupPass      string
 	BackupPort      string
-}
-
-const jobPath = "/operator-conf/backup-job.json"
-
-var jobTemplate *template.Template
-
-func init() {
-	var err error
-	var buf []byte
-
-	buf, err = ioutil.ReadFile(jobPath)
-	if err != nil {
-		log.Error("error in backup.go init " + err.Error())
-		panic(err.Error())
-	}
-	jobTemplate = template.Must(template.New("backup job template").Parse(string(buf)))
-
 }
 
 // AddBackupBase creates a backup job and its pvc
@@ -98,7 +81,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	}
 
 	var doc2 bytes.Buffer
-	err = jobTemplate.Execute(&doc2, jobFields)
+	err = operator.JobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return

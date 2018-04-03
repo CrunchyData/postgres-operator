@@ -16,18 +16,15 @@ package task
 */
 
 import (
+	"bytes"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
-	"io/ioutil"
 	v1batch "k8s.io/api/batch/v1"
-
-	"bytes"
-	"encoding/json"
 	"k8s.io/client-go/kubernetes"
-	"text/template"
 )
 
 type rmdatajobTemplateFields struct {
@@ -37,23 +34,6 @@ type rmdatajobTemplateFields struct {
 	COImageTag      string
 	SecurityContext string
 	DataRoot        string
-}
-
-const rmdatajobPath = "/operator-conf/rmdata-job.json"
-
-var rmdatajobTemplate *template.Template
-
-func init() {
-	var err error
-	var buf []byte
-
-	buf, err = ioutil.ReadFile(rmdatajobPath)
-	if err != nil {
-		log.Error("error in backup.go init " + err.Error())
-		panic(err.Error())
-	}
-	rmdatajobTemplate = template.Must(template.New("rmdata job template").Parse(string(buf)))
-
 }
 
 // RemoveData ...
@@ -71,7 +51,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	}
 
 	var doc2 bytes.Buffer
-	err := rmdatajobTemplate.Execute(&doc2, jobFields)
+	err := operator.RmdatajobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return

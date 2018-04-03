@@ -31,11 +31,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"text/template"
 )
-
-// JobTemplate1 ...
-var JobTemplate1 *template.Template
 
 // JobTemplateFields ...
 type JobTemplateFields struct {
@@ -49,14 +45,6 @@ type JobTemplateFields struct {
 	OldVersion      string
 	NewVersion      string
 	SecurityContext string
-}
-
-// UpgradeJobPath ...
-const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
-
-func init() {
-
-	JobTemplate1 = util.LoadTemplate(UpgradeJobPath)
 }
 
 // MinorUpgrade ..
@@ -96,7 +84,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
-	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error("error in DeploymentTemplate Execute" + err.Error())
 		return err
@@ -155,7 +143,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	}
 
 	var doc bytes.Buffer
-	err = JobTemplate1.Execute(&doc, jobFields)
+	err = operator.UpgradeJobTemplate1.Execute(&doc, jobFields)
 	if err != nil {
 		log.Error("error in job template execute " + err.Error())
 		return err
@@ -218,7 +206,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		CollectAddon:      GetCollectAddon(&cl.Spec),
 	}
 
-	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error("error in dep template execute " + err.Error())
 		return err

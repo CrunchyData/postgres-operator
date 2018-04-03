@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
@@ -66,6 +67,9 @@ func main() {
 	tlsNoVerify, _ := strconv.ParseBool(tmp)
 
 	log.Infoln("postgres-operator apiserver starts")
+
+	apiserver.Initialize()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)

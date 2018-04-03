@@ -27,12 +27,9 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"os"
 	"strings"
-	"text/template"
 )
 
 type loadJobTemplateFields struct {
@@ -54,37 +51,6 @@ type loadJobTemplateFields struct {
 // LoadConfig ...
 var LoadConfig string
 
-// LoadConfigTemplate ....
-var LoadConfigTemplate loadJobTemplateFields
-
-// LoadTemplatePath ...
-var LoadTemplatePath string
-
-// JobTemplate ...
-var JobTemplate *template.Template
-
-func init() {
-
-	log.Debug("loadimpl init called")
-
-	LoadTemplatePath = viper.GetString("Pgo.LoadTemplate")
-	if LoadTemplatePath == "" {
-		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
-		os.Exit(2)
-	}
-
-	//get the job template
-	var err error
-	var buf []byte
-
-	buf, err = ioutil.ReadFile(LoadTemplatePath)
-	if err != nil {
-		log.Error("error loading pgo-load job template..." + err.Error())
-		os.Exit(2)
-	}
-	JobTemplate = template.Must(template.New("pgo-load job template").Parse(string(buf)))
-}
-
 // Load ...
 // pgo load  --policies=jsonload --selector=name=mycluster --load-config=./sample-load-config.json
 func Load(request *msgs.LoadRequest) msgs.LoadResponse {
@@ -94,16 +60,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
-	/**
-	LoadTemplatePath = viper.GetString("Pgo.LoadTemplate")
-	if LoadTemplatePath == "" {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "Pgo.LoadTemplate not defined in pgo config 2."
-		return resp
-	}
-	*/
-
-	LoadConfigTemplate = loadJobTemplateFields{}
+	LoadConfigTemplate := loadJobTemplateFields{}
 
 	viper.SetConfigType("yaml")
 
@@ -163,8 +120,11 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 	}
 
-	log.Debug("policies to apply before loading are %v\n", request.Policies)
-	policies := strings.Split(request.Policies, ",")
+	var policies []string
+	if request.Policies != "" {
+		policies = strings.Split(request.Policies, ",")
+	}
+	log.Debugf("policies to apply before loading are %v len=%d\n", request.Policies, len(policies))
 
 	for _, arg := range args {
 		for _, p := range policies {
@@ -178,12 +138,15 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 			applyResp := policyservice.ApplyPolicy(&applyReq)
 			if applyResp.Status.Code != msgs.Ok {
 				log.Error("error in applying policy " + applyResp.Status.Msg)
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
 			}
 		}
 
 		//create the load job for this cluster
 		log.Debug("created load for " + arg)
-		err = createJob(arg, LoadConfigTemplate.FileType, LoadConfigTemplate.FilePath)
+		err = createJob(arg, &LoadConfigTemplate)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -196,21 +159,20 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 }
 
-func createJob(clusterName, filetype, filepath string) error {
+func createJob(clusterName string, template *loadJobTemplateFields) error {
 	var err error
+
 	randStr := operutil.GenerateRandString(3)
-	LoadConfigTemplate.Name = "pgo-load-" + clusterName + "-" + randStr
-	LoadConfigTemplate.DbHost = clusterName
-	LoadConfigTemplate.FilePath = filepath
-	LoadConfigTemplate.FileType = filetype
-	LoadConfigTemplate.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
+	template.Name = "pgo-load-" + clusterName + "-" + randStr
+	template.DbHost = clusterName
+	template.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
 	var doc2 bytes.Buffer
-	err = JobTemplate.Execute(&doc2, LoadConfigTemplate)
+	err = apiserver.JobTemplate.Execute(&doc2, template)
 	if err != nil {
 		log.Error(err.Error())
 		return err

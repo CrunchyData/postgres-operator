@@ -24,11 +24,9 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/viper"
 	"io"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -40,12 +38,14 @@ type lspvcTemplateFields struct {
 	PVCName       string
 }
 
-var lspvcTemplate *template.Template
+//var lspvcTemplate *template.Template
 
-func init() {
+/**
+func Initialize() {
 	lspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
 
 }
+*/
 
 // ShowPVC ...
 func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
@@ -119,7 +119,7 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 		PVCName:       pvcName,
 	}
 
-	err = lspvcTemplate.Execute(&doc2, pvcFields)
+	err = apiserver.LspvcTemplate.Execute(&doc2, pvcFields)
 	if err != nil {
 		log.Error(err.Error())
 		return newlines, err

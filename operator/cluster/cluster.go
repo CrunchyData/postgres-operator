@@ -83,7 +83,6 @@ const ReplicaSuffix = "-replica"
 var strategyMap map[string]Strategy
 
 func init() {
-	//rand.Seed(time.Now().UnixNano())
 	strategyMap = make(map[string]Strategy)
 	strategyMap["1"] = Strategy1{}
 }

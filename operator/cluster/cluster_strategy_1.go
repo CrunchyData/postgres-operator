@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"text/template"
 )
 
 const AffinityInOperator = "In"
@@ -58,26 +57,6 @@ type collectTemplateFields struct {
 
 // Strategy1  ...
 type Strategy1 struct{}
-
-var affinityTemplate1 *template.Template
-var containerResourcesTemplate1 *template.Template
-var collectTemplate1 *template.Template
-var deploymentTemplate1 *template.Template
-var replicadeploymentTemplate1 *template.Template
-var replicadeploymentTemplate1Shared *template.Template
-
-//var ServiceTemplate1 *template.Template
-
-func init() {
-
-	//ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
-	replicadeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
-	replicadeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
-	deploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
-	collectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
-	affinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
-	containerResourcesTemplate1 = util.LoadTemplate("/operator-conf/container-resources.json")
-}
 
 // AddCluster ...
 func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, primaryPVCName string) error {
@@ -125,7 +104,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		CollectAddon:       GetCollectAddon(&cl.Spec),
 	}
 
-	err = deploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -320,10 +299,10 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = replicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = replicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {
@@ -383,8 +362,8 @@ func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 }
 
 // GetAffinity ...
-func GetAffinity(nodeLabelKey, nodeLabelValue string, operator string) string {
-	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, operator)
+func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {
+	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, affoperator)
 	output := ""
 	if nodeLabelKey == "" {
 		return output
@@ -393,10 +372,10 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, operator string) string {
 	affinityTemplateFields := affinityTemplateFields{}
 	affinityTemplateFields.NodeLabelKey = nodeLabelKey
 	affinityTemplateFields.NodeLabelValue = nodeLabelValue
-	affinityTemplateFields.OperatorValue = operator
+	affinityTemplateFields.OperatorValue = affoperator
 
 	var affinityDoc bytes.Buffer
-	err := affinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
+	err := operator.AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return output
@@ -419,7 +398,7 @@ func GetCollectAddon(spec *crv1.PgclusterSpec) string {
 		collectTemplateFields.CCPImagePrefix = operator.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
-		err := collectTemplate1.Execute(&collectDoc, collectTemplateFields)
+		err := operator.CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
@@ -473,7 +452,7 @@ func GetContainerResources(resources *crv1.PgContainerResources) string {
 	fields.LimitsCPU = resources.LimitsCPU
 
 	var doc bytes.Buffer
-	err := containerResourcesTemplate1.Execute(&doc, fields)
+	err := operator.ContainerResourcesTemplate1.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
@@ -522,10 +501,10 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = replicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = replicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {

@@ -32,6 +32,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 // pgouserPath ...
@@ -76,7 +77,10 @@ var Credentials map[string]CredentialDetail
 var StorageMap map[string]interface{}
 var ContainerResourcesMap map[string]interface{}
 
-func init() {
+var LspvcTemplate *template.Template
+var JobTemplate *template.Template
+
+func Initialize() {
 	BasicAuth = true
 	MetricsFlag = false
 	AuditFlag = false
@@ -86,6 +90,10 @@ func init() {
 	getCredentials()
 
 	initConfig()
+
+	initTemplates()
+
+	InitializePerms()
 
 	ConnectToKube()
 
@@ -102,7 +110,6 @@ func ConnectToKube() {
 		panic(err)
 	}
 
-	//Clientset, err = apiextensionsclient.NewForConfig(config)
 	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
@@ -216,8 +223,6 @@ func parseUserMap(dat string) CredentialDetail {
 	creds := CredentialDetail{}
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	//log.Infof("%v\n", fields)
-	//log.Infof("username=[%s] password=[%s] role=[%s]\n", fields[0], fields[1], fields[2])
 	creds.Username = fields[0]
 	creds.Password = fields[1]
 	creds.Role = fields[2]
@@ -426,4 +431,17 @@ func IsValidContainerResourceValues() bool {
 		}
 	}
 	return true
+}
+
+func initTemplates() {
+	LspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
+
+	LoadTemplatePath := viper.GetString("Pgo.LoadTemplate")
+	if LoadTemplatePath == "" {
+		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
+		os.Exit(2)
+	}
+
+	JobTemplate = util.LoadTemplate(LoadTemplatePath)
+
 }

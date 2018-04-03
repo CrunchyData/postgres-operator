@@ -53,7 +53,7 @@ var PermMap map[string]string
 
 const pgorolePath = "/config/pgorole"
 
-func init() {
+func InitializePerms() {
 	PermMap = make(map[string]string)
 	RoleMap = make(map[string]map[string]string)
 

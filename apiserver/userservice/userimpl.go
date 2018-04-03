@@ -53,10 +53,6 @@ var defaultPasswordAgeDays = 365
 // defaultPasswordLength password length
 var defaultPasswordLength = 8
 
-func init() {
-	getDefaults()
-}
-
 //  User ...
 // pgo user --change-password=bob --db=userdb
 //  --expired=7 --managed=true --selector=env=research --update-passwords=true
@@ -67,6 +63,8 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
+
+	getDefaults()
 
 	//set up the selector
 	var sel string
@@ -435,6 +433,8 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
+
+	getDefaults()
 
 	log.Debug("createUser selector is " + request.Selector)
 	if request.Selector == "" {

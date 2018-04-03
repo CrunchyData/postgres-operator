@@ -16,19 +16,15 @@ package ingest
 */
 
 import (
+	"bytes"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	"io/ioutil"
-	//v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/client-go/rest"
-
-	"bytes"
-	"encoding/json"
 	"k8s.io/client-go/kubernetes"
-	"text/template"
+	"k8s.io/client-go/rest"
 )
 
 type ingestTemplateFields struct {
@@ -46,23 +42,6 @@ type ingestTemplateFields struct {
 	COImageTag      string
 	COImagePrefix   string
 	MaxJobs         int
-}
-
-const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
-
-var ingestjobTemplate *template.Template
-
-func init() {
-	var err error
-	var buf []byte
-
-	buf, err = ioutil.ReadFile(ingestPath)
-	if err != nil {
-		log.Error(err)
-		panic(err.Error())
-	}
-	ingestjobTemplate = template.Must(template.New("ingest template").Parse(string(buf)))
-
 }
 
 // CreateIngest ...
@@ -88,7 +67,7 @@ func CreateIngest(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	var doc2 bytes.Buffer
-	err := ingestjobTemplate.Execute(&doc2, jobFields)
+	err := operator.IngestjobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return

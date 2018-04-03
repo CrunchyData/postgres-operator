@@ -94,4 +94,20 @@ rolename: permissionA, permissionB
 The complete set of permissions is documented in the Operator Documentation.
 
 
+== pgo create user	
+
+Release 2.6 added the *pgo create user* command to be more like
+the other pgo commands.  The previous form of this command *pgo user --add*
+has been removed.
+
+Any scripts you wrote using the older style of command would need
+to be updated to use the new command syntax.
+
+
+== pgreplica CRD
+
+There is a new CRD to hold replica information, pgreplicas.  This
+CRD is populated with the *pgo scale* command.  The pgreplica
+is used to hold per-replica specific information such as the
+resource and storage configurations requested at run time.
 

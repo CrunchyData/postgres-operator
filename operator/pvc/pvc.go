@@ -21,25 +21,11 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"io/ioutil"
-	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api/v1"
+	"github.com/crunchydata/postgres-operator/operator"
 	"k8s.io/api/core/v1"
-	"text/template"
+	"k8s.io/client-go/kubernetes"
 	"time"
 )
-
-// PVCPath ...
-const PVCPath = "/operator-conf/pvc.json"
-
-// PVCSCPath ...
-const PVCSCPath = "/operator-conf/pvc-storageclass.json"
-
-// PVCTemplate ...
-var PVCTemplate *template.Template
-
-// PVCStorageClassTemplate ...
-var PVCStorageClassTemplate *template.Template
 
 // TemplateFields ...
 type TemplateFields struct {
@@ -47,25 +33,6 @@ type TemplateFields struct {
 	AccessMode   string
 	Size         string
 	StorageClass string
-}
-
-func init() {
-	var err error
-	var buf, buf2 []byte
-
-	buf, err = ioutil.ReadFile(PVCPath)
-	if err != nil {
-		log.Error("error in pvc init" + err.Error())
-		panic(err.Error())
-	}
-	PVCTemplate = template.Must(template.New("pvc template").Parse(string(buf)))
-
-	buf2, err = ioutil.ReadFile(PVCSCPath)
-	if err != nil {
-		log.Error("error in pvc storage class init" + err.Error())
-		panic(err.Error())
-	}
-	PVCStorageClassTemplate = template.Must(template.New("pvc sc template").Parse(string(buf2)))
 }
 
 // CreatePVC create a pvc
@@ -112,9 +79,9 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 
 	if storageType == "dynamic" {
 		log.Debug("using dynamic PVC template")
-		err = PVCStorageClassTemplate.Execute(&doc2, pvcFields)
+		err = operator.PVCStorageClassTemplate.Execute(&doc2, pvcFields)
 	} else {
-		err = PVCTemplate.Execute(&doc2, pvcFields)
+		err = operator.PVCTemplate.Execute(&doc2, pvcFields)
 	}
 	if err != nil {
 		log.Error("error in pvc create exec" + err.Error())

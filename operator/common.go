@@ -17,12 +17,39 @@ package operator
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/util"
 	"os"
+	"text/template"
 )
 
 var COImagePrefix string
 var COImageTag string
 var CCPImagePrefix string
+
+const jobPath = "/operator-conf/backup-job.json"
+const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
+const rmdatajobPath = "/operator-conf/rmdata-job.json"
+const PVCPath = "/operator-conf/pvc.json"
+const PVCSCPath = "/operator-conf/pvc-storageclass.json"
+const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
+
+var JobTemplate *template.Template
+var UpgradeJobTemplate1 *template.Template
+var PgpoolTemplate *template.Template
+var PgpoolConfTemplate *template.Template
+var PgpoolPasswdTemplate *template.Template
+var PgpoolHBATemplate *template.Template
+var ServiceTemplate1 *template.Template
+var IngestjobTemplate *template.Template
+var RmdatajobTemplate *template.Template
+var PVCTemplate *template.Template
+var PVCStorageClassTemplate *template.Template
+var AffinityTemplate1 *template.Template
+var ContainerResourcesTemplate1 *template.Template
+var CollectTemplate1 *template.Template
+var DeploymentTemplate1 *template.Template
+var ReplicadeploymentTemplate1 *template.Template
+var ReplicadeploymentTemplate1Shared *template.Template
 
 func Initialize() {
 	CCPImagePrefix = os.Getenv("CCP_IMAGE_PREFIX")
@@ -44,5 +71,23 @@ func Initialize() {
 		log.Error("CO_IMAGE_TAG not set, required ")
 		panic("CO_IMAGE_TAG env var not set")
 	}
+
+	JobTemplate = util.LoadTemplate(jobPath)
+	PgpoolTemplate = util.LoadTemplate("/operator-conf/pgpool-template.json")
+	PgpoolConfTemplate = util.LoadTemplate("/operator-conf/pgpool.conf")
+	PgpoolPasswdTemplate = util.LoadTemplate("/operator-conf/pool_passwd")
+	PgpoolHBATemplate = util.LoadTemplate("/operator-conf/pool_hba.conf")
+	ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
+	IngestjobTemplate = util.LoadTemplate(ingestPath)
+	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
+	PVCTemplate = util.LoadTemplate(PVCPath)
+	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)
+	ReplicadeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
+	ReplicadeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
+	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
+	CollectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
+	AffinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
+	ContainerResourcesTemplate1 = util.LoadTemplate("/operator-conf/container-resources.json")
+	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
 
 }

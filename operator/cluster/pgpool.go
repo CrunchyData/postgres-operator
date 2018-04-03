@@ -24,12 +24,10 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"text/template"
 )
 
 type PgpoolPasswdFields struct {
@@ -59,19 +57,6 @@ type PgpoolTemplateFields struct {
 	ReplicaServiceName string
 }
 
-var pgpoolTemplate *template.Template
-var pgpoolConfTemplate *template.Template
-var pgpoolPasswdTemplate *template.Template
-var pgpoolHBATemplate *template.Template
-
-func init() {
-	pgpoolTemplate = util.LoadTemplate("/operator-conf/pgpool-template.json")
-	pgpoolConfTemplate = util.LoadTemplate("/operator-conf/pgpool.conf")
-	pgpoolPasswdTemplate = util.LoadTemplate("/operator-conf/pool_passwd")
-	pgpoolHBATemplate = util.LoadTemplate("/operator-conf/pool_hba.conf")
-
-}
-
 const PGPOOL_SUFFIX = "-pgpool"
 
 // ProcessPgpool ...
@@ -93,7 +78,7 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 		SecretsName:    secretName,
 	}
 
-	err = pgpoolTemplate.Execute(&doc, fields)
+	err = operator.PgpoolTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return
@@ -184,7 +169,7 @@ func getPgpoolHBA() ([]byte, error) {
 	fields := PgpoolHBAFields{}
 
 	var doc bytes.Buffer
-	err = pgpoolHBATemplate.Execute(&doc, fields)
+	err = operator.PgpoolHBATemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -193,6 +178,7 @@ func getPgpoolHBA() ([]byte, error) {
 
 	return doc.Bytes(), err
 }
+
 func getPgpoolConf(primary, replica, username, password string) ([]byte, error) {
 	var err error
 
@@ -203,7 +189,7 @@ func getPgpoolConf(primary, replica, username, password string) ([]byte, error) 
 	fields.PG_PASSWORD = password
 
 	var doc bytes.Buffer
-	err = pgpoolConfTemplate.Execute(&doc, fields)
+	err = operator.PgpoolConfTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -212,6 +198,7 @@ func getPgpoolConf(primary, replica, username, password string) ([]byte, error) 
 
 	return doc.Bytes(), err
 }
+
 func getPgpoolPasswd(username, password string) ([]byte, error) {
 	var err error
 
@@ -220,7 +207,7 @@ func getPgpoolPasswd(username, password string) ([]byte, error) {
 	fields.PG_PASSWORD_MD5 = "md5" + GetMD5Hash(password+username)
 
 	var doc bytes.Buffer
-	err = pgpoolPasswdTemplate.Execute(&doc, fields)
+	err = operator.PgpoolPasswdTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -229,6 +216,7 @@ func getPgpoolPasswd(username, password string) ([]byte, error) {
 
 	return doc.Bytes(), err
 }
+
 func GetMD5Hash(text string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(text))

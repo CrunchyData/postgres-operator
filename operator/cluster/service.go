@@ -23,19 +23,10 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/operator"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"text/template"
 )
-
-// ServiceTemplate1 ...
-var ServiceTemplate1 *template.Template
-
-func init() {
-	ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
-
-}
 
 // CreateService ...
 func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateFields, namespace string) error {
@@ -45,7 +36,7 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
 	if !found || err != nil {
 
-		err = ServiceTemplate1.Execute(&replicaServiceDoc, fields)
+		err = operator.ServiceTemplate1.Execute(&replicaServiceDoc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return err
