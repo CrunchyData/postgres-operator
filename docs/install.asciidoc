@@ -70,6 +70,13 @@ cd $COROOT
 make deployoperator
 ....
 
+Instead of using the bash script you can also deploy the operator using the provided Helm chart:
+....
+cd $COROOT/chart
+helm install ./postgres-operator
+helm ls
+....
+
 === Verify Operator Status
 
 To verify that the operator is deployed and running, run the following:
@@ -119,6 +126,8 @@ The *pgo* client needs the URL to connect to the operator.
 Depending on your Kube environment this can be done the following ways:
 
 ==== Running Kube Locally
+
+If your local host is not set up to resolve Kube Service DNS names, you can specify the operator IP address as follows:
 ....
 kubectl get service postgres-operator
 NAME                TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
@@ -127,6 +136,13 @@ postgres-operator   NodePort   10.109.184.8   <none>        8443:30894/TCP   5m
 export CO_APISERVER_URL=https://10.109.184.8:8443
 pgo version
 ....
+
+You can also define a bash alias like:
+....
+alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
+....
+
+This alias will set the CO_APISERVER_URL IP address for you!
 
 ==== Running Kube Remotely
 
