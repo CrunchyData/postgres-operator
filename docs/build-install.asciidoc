@@ -1,0 +1,714 @@
+= PostgreSQL Operator Build and Install
+:toc: 
+v2.6, {docdate}
+
+== Project Structure
+
+To build or manually install the *postgres-operator* a golang project
+structure is required and is built as follows:
+....
+export GOPATH=$HOME/odev
+export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_BASEOS=centos7
+export CO_VERSION=2.6
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
+export CO_CMD=kubectl
+export CO_APISERVER_URL=https://postgres-operator:8443
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+source ~/.bashrc
+mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
+mkdir -p $GOPATH/src/github.com/crunchydata/
+cd $GOPATH/src/github.com/crunchydata
+git clone https://github.com/CrunchyData/postgres-operator.git
+cd postgres-operator
+git checkout 2.6
+....
+
+== Prebuilt Images and Binaries
+
+To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, execute the following Makefile target:
+....
+make pull
+....
+
+To pull down the prebuilt *pgo* binaries, click on the following link:
+
+ * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]  (pgo client and client configuration files, extracted to your $HOME)
+
+== Deploy
+
+To deploy the *postgres-operator* controller to your Kube cluster, execute the following Makefile target:
+....
+make deployoperator
+....
+
+Once deployed, verify that *postgres-operator* pod is running. 
+
+== *pgo* Setup
+
+On the host you will be testing from, get the *pgo* client, go to the Releases page and download the tar ball, uncompress it into your $HOME directory, and set up a *pgouser* credential file:
+....
+cd $HOME
+wget https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz
+tar xvzf ./postgres-operator.2.6.tar.gz
+export PATH=$PATH:$HOME
+echo "username:password" > $HOME/.pgouser
+....
+
+If you are testing from a host that is different that your Kube host, you will likely need to set up port forwarding to reach the *postgres-operator* pod as follows:
+....
+kubectl port-forward postgres-operator-XXXX 8443:8443
+....
+
+If your *postgres-operator* service is found at IP address 127.0.0.1, specify the CO_APISERVER_URL environment variable as follows:
+....
+export CO_APISERVER_URL=https://127.0.0.1:8443
+....
+
+Lastly, test the connection to the *postgres-operator*:
+....
+pgo version
+....
+
+== Installation
+
+=== Create Project and Clone
+
+The value of CO_IMAGE_PREFIX is used to prefix the Operator
+Docker images.  For example, set this environment variable
+to where you have your Operator images loaded either locally (crunchydata)
+or a private Docker registry (e.g. kubeadm-master:5000/crunchydata).
+
+The value of CO_APISERVER_URL is used by the *pgo* client to connect
+to the postgres-operator *apiserver*.  This URL should include
+either a DNS name for the postgres-operator service or it's Service
+IP address.
+
+Next, set up a project directory structure and pull down the project:
+....
+....
+
+
+
+You are now ready to Deploy the operator to your Kubernetes system.
+
+=== Build from Source
+
+Install a golang compiler, this can be done with either
+your package manager or by following directions
+from https://golang.org/dl/.  The operator is currently built
+using golang version 1.8.X but also runs using golang version 1.9.X
+
+Then install the project library dependencies, the godep dependency manager is used
+as follows:
+....
+cd $COROOT
+make setup
+....
+
+==== Compiling the PostgreSQL Operator
+....
+cd $COROOT
+make all
+which pgo
+....
+
+=== Create Namespace
+
+This example is based on a kubeadm installation with the admin
+user being already created. The example below assumes the cluster name is *kubernetes* and the cluster default user is *kubernetes-admin*.
+....
+kubectl create -f $COROOT/examples/demo-namespace.json
+kubectl get namespaces
+....
+then set your context to the new demo namespace
+....
+sudo chmod o+w /etc/kubernetes
+sudo chmod o+w /etc/kubernetes/admin.conf
+kubectl config set-context demo --namespace=demo --cluster=kubernetes --user=kubernetes-admin
+kubectl config use-context demo
+kubectl config current-context
+....
+
+Permissions are granted to the Operator by means of a
+Service Account called *postgres-operator*.  That service
+account is added to the Operator deployment.
+
+The postgres-operator service account is granted cluster-admin
+priviledges using a cluster role binding *postgres-operator-cluster-role-binding*.
+
+See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
+details on how to enable RBAC roles and modify the scope of the permissions
+to suit your needs.
+
+The sample service account and cluster role bindings specify
+the *demo* namespace.  Edit the yaml definitions of these to match
+the namespace you are deploying the operator into.
+
+If you are not using the *demo* namespace, you will edit the following:
+
+ * $COROOT/deploy/service-account.yaml
+ * $COROOT/deploy/cluster-role-binding.yaml
+
+=== Openshift Container Platform
+
+To run the Operator on Openshift Container Platform note the following:
+
+ * Openshift Container Platform 3.7 or greater is required since the Operator is based on Custom Resource Definitions which were first supported in OCP starting with version 3.7
+ * the OC_CMD environment variable should be set to *oc* when operating in an Openshift environment
+
+=== Configure Persistent Storage
+
+The default Operator configuration is defined to use a HostPath
+persistence configuration.
+
+There are example scripts provided that will create PV and PVC resources
+that can be used in your testing.
+
+These example scripts can create sample HostPath and NFS volumes.
+
+To create sample HostPath Persistent Volumes and Claims use the following scripts:
+....
+cd $COROOT/pv
+./create-pv.sh
+....
+
+=== Security
+==== Configure Basic Authentication
+
+Starting in Operator version 2.3, Basic Authentication is required by the *apiserver*.
+You will configure the *pgo* client to specify a basic authentication
+username and password by creating a file in the user's home
+directory named *.pgouser* that looks similar to this, containing only a single line:
+....
+testuser:testpass
+....
+
+This example specifies a username of *testuser* and a password of
+*testpass*.  These values will be read by the *pgo* client and passed
+to the *apiserver* on each REST API call.
+
+For the *apiserver*, a list of usernames and passwords is
+specified in the *apiserver-conf-secret* Secret.  The values specified
+in a deployment are found in the following location:
+....
+$COROOT/conf/apiserver/pgouser
+....
+
+The sample configuration for *pgouser* is as follows:
+....
+username:password
+testuser:testpass
+....
+
+Modify these values to be unique to your environment.
+
+If the username and password passed by clients to the *apiserver* do
+not match, the REST call will fail and a log message will be produced
+in the *apiserver* container log.  The client will receive a 401 http
+status code if they are not able to authenticate.
+
+If the *pgouser* file is not found in the home directory of the *pgo* user
+then the next searched location is */etc/pgo/pgouser*, and if not found
+there then lastly the *PGOUSER* environment variable is searched for
+a path to the basic authentication file.
+
+You can turn off Basic Authentication entirely if you set
+the BasicAuth setting in the pgo.yaml configuration file to false.
+
+==== Configure TLS
+
+As of Operator 2.3, TLS is used to secure communications to
+the *apiserver*.  Sample keys/certs used by TLS are found
+here:
+....
+$COROOT/conf/apiserver/server.crt
+$COROOT/conf/apiserver/server.key
+....
+
+If you want to generate your own keys, you can use the script found in:
+....
+$COROOT/bin/make-certs.sh
+....
+
+The *pgo* client is required to use keys to connect to the *apiserver*.
+Specify the keys to *pgo* by setting the following environment
+variables:
+....
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+....
+
+The sample server keys are used as the client keys, adjust to suit
+your requirements.
+
+For the *apiserver* TLS configuration, the keys are included
+in the *apiserver-conf-secret* Secret when the *apiserver* is deployed.
+See the $COROOT/deploy/deploy.sh script which is where the
+configMap is created.
+
+The *apiserver* listens on port 8443 (e.g. https://postgres-operator:8443).
+
+You can set *InsecureSkipVerify* to true if you set the NO_TLS_VERIFY
+environment variable in the *deployment.json* file to *true*.  By default
+this value is set to *false* if you do not specify a value.
+
+==== RBAC
+
+===== Kube RBAC
+The *apiserver* and *postgres-operator* containers access
+Kube resources and need priviledges for interacting with Kube.
+The *rbac.yaml* file includes a set of roles and bindings
+that allow the operator to work.  These are fine grained
+controls that you can adjust to your local Kube cluster depending
+on your security requirements
+
+The *rbac.yaml* file gets executed when you deploy the operator
+to your Kube cluster.
+
+===== pgo RBAC
+The *pgo* command line utility talks to the *apiserver* REST API
+instead of the Kube API.  Therefore it requires its own RBAC
+configuration.
+
+Starting in Release 2.6, the */conf/apiserver/pgorole* is used to
+define some sample pgo roles, *pgadmin* and *pgoreader*.
+
+These roles are meant as samples that you can configure to suite
+your own security requirements.  The *pgadmin* role grants a user
+authorization to all pgo commands.  The *pgoreader* only grants
+access to pgo commands that display information such as *pgo show cluster*.
+
+The *pgorole* file is read at start up time when the operator is deployed
+to your Kube cluster.
+
+Also, the *pguser* file now includes the role that is assigned to
+a specific user as follows:
+....
+username:password:pgoadmin
+testuser:testpass:pgoadmin
+readonlyuser:testpass:pgoreader
+....
+
+The following list shows the current *pgo* permissions:
+.pgo Permissions
+[width="60%",frame="topbot",options="header,footer"]
+|======================
+|Permission | Description
+|ShowCluster   | allow *pgo show cluster*
+|CreateCluster | allow *pgo create cluster*
+|TestCluster   | allow *pgo test mycluster*
+|ShowBackup    | allow *pgo show backup*
+|CreateBackup  | allow *pgo backup mycluster*
+|DeleteBackup  | allow *pgo delete backup mycluster*
+|Label         | allow *pgo label*
+|Load          | allow *pgo load*
+|CreatePolicy  | allow *pgo create policy*
+|DeletePolicy  | allow *pgo delete policy*
+|ShowPolicy    | allow *pgo show policy*
+|ApplyPolicy   | allow *pgo apply policy*
+|ShowPVC       | allow *pgo show pvc*
+|CreateUpgrade | allow *pgo upgrade*
+|ShowUpgrade   | allow *pgo show upgrade*
+|DeleteUpgrade | allow *pgo delete upgrade*
+|CreateUser    | allow *pgo create user*
+|User          | allow *pgo user*
+|Version       | allow *pgo version*
+|======================
+
+If you are not authorized for a *pgo* command the user will
+get back this response:
+....
+....
+
+
+
+=== Configuration
+
+The *apiserver* uses the following configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
+....
+$COROOT/conf/apiserver/pgo.yaml
+$COROOT/conf/apiserver/pgo.lspvc-template.json
+$COROOT/conf/apiserver/pgo.load-template.json
+....
+
+Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
+your storage configuration.  Adjust this file for NFS or other storage configurations.
+
+The version of PostgreSQL container the Operator will deploy is determined
+by the *CCPImageTag* setting in the *$COROOT/conf/apiserver/pgo.yaml*
+configuration file.  By default, this value is set to the latest
+release of the Crunchy Container Suite.
+
+More in-depth explanations of postgres operator configurations are available below.
+
+=== Deploy the PostgreSQL Operator
+*NOTE*: This will create and use */data* on your
+local system as the persistent store for the operator to use
+for its persistent volume.
+....
+cd $COROOT
+make deployoperator
+kubectl get pod -l 'name=postgres-operator'
+....
+
+You should see output similar to:
+....
+NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-7f8db87c7b-4tk52   2/2       Running   0          8s
+....
+
+This output shows that both the *apiserver* and *postgres-operator* containers
+are in ready state and the pod is running.
+
+You can find the operator service IP address as follows:
+....
+kubectl get service postgres-operator
+NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
+postgres-operator   ClusterIP   10.105.56.167   <none>        8080/TCP,8443/TCP   1m
+....
+
+In this example, the *apiserver* is reachable at *https://10.105.56.167:8443*.
+
+
+When you first run the operator, it will create the required
+CustomResourceDefinitions. You can view these as follows:
+
+....
+kubectl get crd
+....
+
+Instead of using the bash script you can also deploy the operator using the provided Helm chart:
+....
+cd $COROOT/chart
+helm install ./postgres-operator
+helm ls
+....
+
+=== Verify Installation
+
+When you first run the operator, it will look for the presence of the
+predefined custom resource definitions, and create them if not found.
+The best way to verify a successful deployment of the Operator is by
+viewing these custom resource definitions:
+
+....
+kubectl get crd
+kubectl get pgclusters
+kubectl get pgreplicas
+kubectl get pgbackups
+kubectl get pgupgrades
+kubectl get pgpolicies
+kubectl get pgingests
+kubectl get pgtasks
+....
+
+At this point, you should be ready to start using the *pgo* client!  Be
+sure to set the environment variable *CO_APISERVER_URL* to the DNS
+name of the *postgres-operator* service or to the IP address of the
+*postgres-operator* service IP address.  For example:
+
+....
+export CO_APISERVER_URL=https://10.105.56.167:8443
+....
+
+Or if you have DNS configured on your client host:
+....
+export CO_APISERVER_URL=https://postgres-operator.demo.svc.cluster.local:8443
+....
+
+== Makefile Targets
+
+The following table describes the Makefile targets:
+.Makefile Targets
+[width="80%",frame="topbot",options="header,footer"]
+|======================
+|Target | Description
+|all        | compile all binaries and build all images
+|setup        | fetch the dependent packages required to build with
+|deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
+|main        | compile the postgres-operator
+|runmain        | locally execute the postgres-operator
+|pgo        | build the pgo binary
+|runpgo        | run the pgo binary
+|runapiserver        | run the apiserver binary outside of Kube
+|clean        | remove binaries and compiled packages, restore dependencies
+|operatorimage        | compile and build the postgres-operator Docker image
+|apiserverimage        | compile and build the apiserver Docker image
+|lsimage        | build the lspvc Docker image
+|loadimage        | build the file load Docker image
+|rmdataimage        | build the data deletion Docker image
+|release        | build the postgres-operator release
+|======================
+
+
+== Operator Configuration
+
+This document describes the configuration options
+for the *PostgreSQL operator*.
+
+=== pgo Client Configuration
+
+Starting with Operator version 2.1, the *pgo.yaml* configuration
+file is used solely by the *apiserver* and has no effect on the *pgo* client.  With this change, the Operator configuration is centralized to
+the *apiserver* container which is deployed alongside the *postgres-operator* container.
+
+Sample Operator configuration files for various storage configurations are located in the $COROOT/examples directory.
+
+To configure the Operator, modify the settings found in
+*$COROOT/conf/apiserver/pgo.yaml* to meet your project needs.  Typically
+you will modify the storage and namespace settings.
+
+==== pgo Configuration Format
+
+The default pgo configuration file, included in
+*$COROOT/conf/apiserver/pgo.yaml*, looks like this:
+
+[source,yaml]
+....
+BasicAuth:  true
+Cluster:
+  CCPImageTag:  centos7-10.3-1.8.1
+  Port:  5432
+  User:  testuser
+  Database:  userdb
+  PasswordAgeDays:  60
+  PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
+PrimaryStorage: storage1
+BackupStorage: storage1
+ReplicaStorage: storage1
+Storage:
+  storage1:
+    AccessMode:  ReadWriteMany
+    Size:  200M
+    StorageType:  create
+  storage2:
+    AccessMode:  ReadWriteMany
+    Size:  333M
+    StorageType:  create
+  storage3:
+    AccessMode:  ReadWriteMany
+    Size:  440M
+    StorageType:  create
+DefaultContainerResource: small
+ContainerResources:
+  small:
+    RequestsMemory:  2Gi
+    RequestsCPU:  0.5
+    LimitsMemory:  2Gi
+    LimitsCPU:  1.0
+  large:
+    RequestsMemory:  8Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  12Gi
+    LimitsCPU:  4.0
+Pgo:
+  Audit:  false
+  Metrics:  false
+  LSPVCTemplate:  /config/pgo.lspvc-template.json
+  CSVLoadTemplate:  /config/pgo.load-template.json
+  COImagePrefix:  crunchydata
+  COImageTag:  centos7-2.6
+....
+
+Values in the pgo configuration file have the following meaning:
+
+.pgo Configuration File Definitions
+[width="90%",cols="m,2",frame="topbot",options="header"]
+|======================
+|Setting | Definition
+|BasicAuth        | if set to *true* will enable Basic Authentication
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag
+|Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
+|Cluster.User        | the PostgreSQL normal user name
+|Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
+|Cluster.Replicas        | the number of cluster replicas to create for newly created clusters
+|Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
+|Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
+|Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
+|PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
+|BackupStorage    |required, the value of the storage configuration to use for backups
+|ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
+|Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|Storage.storage1.AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|Storage.storage1.Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|Storage.storage1.StorageType        |supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
+|ContainerResources.small.RequestsMemory        | request size of memory in bytes
+|ContainerResources.small.RequestsCPU        | request size of CPU cores
+|ContainerResources.small.LimitsMemory        | request size of memory in bytes
+|ContainerResources.small.LimitsCPU        | request size of CPU cores
+|ContainerResources.large.RequestsMemory        | request size of memory in bytes
+|ContainerResources.large.RequestsCPU        | request size of CPU cores
+|ContainerResources.large.LimitsMemory        | request size of memory in bytes
+|ContainerResources.large.LimitsCPU        | request size of CPU cores
+|Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
+|Pgo.LoadTemplate        | the load template file used for load jobs
+|Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
+|Pgo.COImageTag        | image tag to use for the Operator containers
+|Pgo.Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
+|Pgo.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
+|======================
+
+=== Storage Configurations
+
+Starting with release 2.5, you can now define n-number of Storage configurations
+within the *pgo.yaml* file.  Those Storage configurations follow these conventions:
+
+ * they must have lowercase name (e.g. storage1)
+ * they must be unique names (e.g. mydrstorage, faststorage, slowstorage)
+
+These Storage configurations are referenced in the BcakupStorage, ReplicaStorage,
+and PrimaryStorage configuration values.  However, there are command line
+options in the *pgo* client that will let a user override these default global
+values to offer you the user a way to specify very targeted storage configurations
+when needed (e.g. disaster recovery storage for certain backups).
+
+You can set the storage AccessMode values to the following:
+
+* *ReadWriteMany* - mounts the volume as read-write by many nodes
+* *ReadWriteOnce* - mounts the PVC as read-write by a single node
+* *ReadOnlyMany* - mounts the PVC as read-only by many nodes
+
+These Storage configurations are validated when the *pgo-apiserver* starts, if a
+non-valid configuration is found, the apiserver will abort.  These Storage values are
+only read at apiserver start time.
+
+=== Overriding Container Resources Configuration Defaults
+
+In the *pgo.yaml* configuration file you have the option
+to configure a default container resources configuration
+that when set will add CPU and memory resource limits and requests
+values into each database container when the container is created.
+
+You can also override the default value using the *--resources-config* 
+command flag when creating a new cluster:
+....
+pgo create cluster testcluster --resources-config=large
+....
+
+Note, if you try to allocate more resources than your
+host or Kube cluster has available then you will see your
+pods wait in a *Pending* status.   The output from a *kubectl describe pod*
+command will show output like this in this case:
+....
+Events:
+  Type     Reason            Age               From               Message
+  ----     ------            ----              ----               -------
+  Warning  FailedScheduling  49s (x8 over 1m)  default-scheduler  No nodes are available that match all of the predicates: Insufficient memory (1).
+....
+
+=== Overriding Storage Configuration Defaults
+
+....
+pgo create cluster testcluster --storage-config=bigdisk
+....
+
+That example will create a cluster and specify a storage configuration
+of *bigdisk* to be used for the primary database storage, the replica
+storage will default to the value of ReplicaStorage as specified
+in *pgo.yaml*.
+
+....
+pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk
+....
+
+That example will create a cluster and specify a storage configuration
+of *fastdisk* to be used for the primary database storage, the replica
+storage will use the storage configuration *slowdisk*.
+
+....
+pgo backup testcluster --storage-config=offsitestorage
+....
+
+That example will create a backup and use the *offsitestorage*
+storage configuration for persisting the backup.
+
+=== Disaster Recovery Using Storage Configurations
+
+A simple support for disaster recovery can be obtained
+by leveraging network storage, Kubernetes storage classes, and
+the storage configuration options within the Operator.
+
+For example, if you define a Kubernetes storage class that refers
+to a storage backend that is running within your disaster recovery
+site, and then use that storage class as a storage configuration
+for your backups, you essentially have moved your backup files
+automatically to your DR site thanks to network storage.
+
+image::Operator-DR-Storage.png?raw=true[]
+
+=== Operator Configuration (Server)
+
+The operator is run as a Kubernetes Deployment on the Kubernetes cluster
+within a namespace.
+
+Execute the Makefile target *deployoperator* to deploy the Operator.
+
+You can also create NFS PV(s) using the create-pv-nfs.sh script.
+
+To enable *debug* level messages from the operator pod, set the *CRUNCHY_DEBUG* environment variable to *true* within its deployment file *deployment.json*.
+
+==== Operator Templates
+
+The database and cluster Kubernetes objects that get created by the operator
+are based on json templates that are added into the operator deployment
+by means of a mounted volume.
+
+The templates are located in the *$COROOT/conf/postgres-operator* directory
+and get added into a config map which is mounted by the operator deployment.
+
+==== Persistence
+
+Different ways of handling storage are specified by a user in
+the *.pgo.yaml* configuration file by specifying values within
+the ReplicaStorage, PrimaryStorage, and BackupStorage settings.
+
+The following StorageType values are possible:
+
+ * *dynamic* - this will allow for dynamic provisioning of storage using a StorageClass.
+ * *existing* - This setting allows you to use a PVC that already exists.
+ For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters
+ can write to that NFS volume mount via a common PVC. When set, the Name
+ setting is used for the PVC.
+ * *create* - This setting allows for the creation of a new PVC for
+ each PostgreSQL cluster using a naming convention of *clustername*-pvc*.
+ When set, the *Size*, *AccessMode* settings are used in
+ constructing the new PVC.
+ * *emptydir* - If a StorageType value is not defined, *emptydir* is used by default.
+ This is a volume type that’s created when a pod is assigned to a node and exists as
+ long as that pod remains running on that node; it is deleted as soon as the pod is
+ manually deleted or removed from the node.
+
+The operator will create new PVCs using this naming convention:
+*dbname-pvc* where *dbname* is the database name you have specified.  For
+example, if you run:
+....
+pgo create cluster example1
+....
+
+It will result in a PVC being created named *example1-pvc* and in
+the case of a backup job, the pvc is named *example1-backup-pvc*
+
+There are currently 3 sample pgo configuration files provided
+for users to use as a starting configuration:
+
+ * pgo.yaml.emptydir - this configuration specifies *emptydir* storage
+ to be used for databases
+ * pgo.yaml.nfs - this configuration specifies *create* storage to
+ be used, this is used for NFS storage for example where you want to
+ have a unique PVC created for each database
+ * pgo.yaml.dynamic - this configuration specifies *dynamic* storage
+ to be used, namely a *storageclass* that refers to a dynamic provisioning
+ strorage such as StorageOS or Portworx, or GCE.
+

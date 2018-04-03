@@ -36,7 +36,7 @@ Quickstart scripts are provided for GKE and Openshift currently.  More informati
 
 == Build and Install Instructions
 
-To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:docs/operator-docs.asciidoc[Build and Install] page.
+To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:docs/build-install.asciidoc[Build and Install] page.
 
 == Configuration
 
