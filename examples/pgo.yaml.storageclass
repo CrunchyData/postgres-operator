@@ -1,6 +1,6 @@
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.3-1.8.2
+  CCPImageTag:  centos7-10.3-1.8.1
   Port:  5432
   User:  testuser
   Database:  userdb
