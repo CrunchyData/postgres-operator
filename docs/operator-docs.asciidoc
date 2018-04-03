@@ -1,5 +1,5 @@
 = PostgreSQL Operator Documentation
-:toc:
+:toc: 
 v2.6, {docdate}
 
 == Overview
@@ -14,18 +14,6 @@ from source, you can download them from the following:
 Further details can be found in the link:design.asciidoc[PostgreSQL Operator Design] document on
 how the operator is built and how it operates.
 
-There are currently *quickstart* scripts that seek to automate
-the deployment to popular Kube environments:
- * quickstart-for-gke.sh
- * quickstart-for-ocp.sh
-
-The *quickstart-for-gke* script will deploy the operator to 
-a GKE Kube cluster.
-
-The *quickstart-for-ocp* script will deploy the operator to
-an Openshift Container Platform cluster.
-
-Both scripts assume you have a StorageClass defined for persistence.
 
 == Requirements
 
@@ -782,6 +770,7 @@ for users to use as a starting configuration:
  strorage such as StorageOS or Portworx, or GCE.
 
 == pgo Commands
+link:/commands.asciidoc[this is the commands link]
 
 Prior to using *pgo*, users will need to specify the
 *postgres-operator* URL as follows:
@@ -1385,37 +1374,6 @@ is located in the repository at *example/pgo-bash-completion*. To use it:
 cp $COROOT/example/pgo-bash-completion /etc/bash_completion.d/pgo
 su - $USER
 ....
-
-== Quickstart
-
-=== GKE/PKS
-The *quickstart-for-gke.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
-This script is tested on GKE but can be modified for use with other Kubernetes environments as well.
-
-The script requires a few things in order to work:
-
- * wget utility installed
- * kubectl utility installed
- * StorageClass defined
-
-Executing the script will give you a default Operator deployment
-that assumes *dynamic* storage and a storage class named *standard*,
-things that GKE provides.
-
-The script performs the following:
-
- * downloads the Operator configuration files
- * sets the $HOME/.pgouser file to default settings
- * deploys the Operator Deployment
- * sets your .bashrc to include the Operator environment variables
- * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
-
-
-=== Openshift Container Platform
-
-A similar script for installing the operator on OCP is
-offered with similar features as the GKE script.  This script is 
-tested on OCP 3.7 with a StorageClass defined.
 
 == REST API
 
