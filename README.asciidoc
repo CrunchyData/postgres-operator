@@ -1,3 +1,5 @@
+[[id_of_hyla_picture]]
+image::docs/crunchy_logo.png[Hyla Arborea,width="40%",height="40%", align="center"]
 = PostgreSQL Operator
 
 v2.6, {docdate}
@@ -40,7 +42,7 @@ To build and deploy the Operator on your Kubernetes system, follow the instructi
 
 == Configuration
 
-The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:docs/operator-docs.asciidoc[Configuration] page.
+The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:docs/configuration.asciidoc[Configuration] page.
 
 == Commands
 
