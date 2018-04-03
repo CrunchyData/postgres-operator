@@ -14,7 +14,7 @@ You will need to change your pgo.yaml file to look like:
 $COROOT/conf/apiserver/pgo.yaml
 ....
 
-In terms of the Storage Configuration sections.
+in terms of the Storage Configuration sections.
 
 == Database Credentials Secrets
 

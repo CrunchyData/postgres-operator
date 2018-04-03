@@ -34,9 +34,9 @@ CRD (custom resource definitions).
 
 Quickstart scripts are provided for GKE and Openshift currently.  More information is found on the link:docs/quickstarts.asciidoc[Quickstarts] page.
 
-== Build and Install Instructions
+== Installation
 
-To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:docs/build-install.asciidoc[Build and Install] page.
+To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:docs/install.asciidoc[Installation] page.
 
 == Configuration
 
