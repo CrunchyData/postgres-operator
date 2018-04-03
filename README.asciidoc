@@ -27,6 +27,8 @@ The *postgres-operator* design incorporates the following concepts:
  * provides a command line client (*pgo*) and REST API for interfacing with the postgres-operator
  * provides for very customized deployments including container resources, storage configurations, and PostgreSQL custom configurations
 
+More design information is found on the link:docs/design.asciidoc[Design] page.
+
 == Requirements
 
 The *postgres-operator* runs on Kubernetes and Openshift platforms that support 
