@@ -49,3 +49,7 @@ The operator is template-driven; this makes it simple to configure both the clie
 == Commands
 
 *postgres-operator* commands are documented on the link:docs/commands.asciidoc[Commands] page.
+
+== Building From Source
+
+For people wanting to build from source, instructions are documented on the link:docs/build.asciidoc[Build] page.
