@@ -89,7 +89,7 @@ fi
 cd $COROOT
 tar xzf /tmp/postgres-operator.$PGORELEASE.tar.gz
 if [[ $? -ne 0 ]]; then
-	echo "problem getting 2.5 release"
+	echo "problem getting 2.6 release"
 	exit 1
 fi
 

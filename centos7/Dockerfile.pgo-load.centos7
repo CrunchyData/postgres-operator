@@ -3,7 +3,7 @@ FROM centos:7
 LABEL name="crunchydata/pgo-load" \
         vendor="crunchy data" \
       	PostgresVersion="9.6" \
-      	PostgresFullVersion="9.6.6" \
+      	PostgresFullVersion="9.6.8" \
         version="7.3" \
         release="2.6" \
         build-date="2018-03-30" \

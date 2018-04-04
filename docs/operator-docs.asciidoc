@@ -119,16 +119,16 @@ containers, you can pre-pull them as follows:
 
 For PostgreSQL version 10:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-10.3-1.8.1
-docker pull crunchydata/crunchy-backup:centos7-10.3-1.8.1
-docker pull crunchydata/crunchy-upgrade:centos7-10.3-1.8.1
+docker pull crunchydata/crunchy-postgres:centos7-10.3-1.8.2
+docker pull crunchydata/crunchy-backup:centos7-10.3-1.8.2
+docker pull crunchydata/crunchy-upgrade:centos7-10.3-1.8.2
 ....
 
 For PostgreSQL version 9.6:
 ....
-docker pull crunchydata/crunchy-postgres:centos7-9.6.8-1.8.1
-docker pull crunchydata/crunchy-backup:centos7-9.6.8-1.8.1
-docker pull crunchydata/crunchy-upgrade:centos7-9.6.8-1.8.1
+docker pull crunchydata/crunchy-postgres:centos7-9.6.8-1.8.2
+docker pull crunchydata/crunchy-backup:centos7-9.6.8-1.8.2
+docker pull crunchydata/crunchy-upgrade:centos7-9.6.8-1.8.2
 ....
 
 === Get Prebuilt Images
@@ -531,7 +531,7 @@ The default pgo configuration file, included in
 ....
 BasicAuth:  true
 Cluster:
-  CCPImageTag:  centos7-10.3-1.8.1
+  CCPImageTag:  centos7-10.3-1.8.2
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -583,7 +583,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |BasicAuth        | if set to *true* will enable Basic Authentication
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.2), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
@@ -847,7 +847,7 @@ pgo show cluster all
 
 You can filter the results based on the Postgres Version:
 ....
-pgo show cluster all --version=9.6.2
+pgo show cluster all --version=9.6.8
 ....
 
 You can also add metrics collection to a cluster by using the *--metrics*
@@ -866,7 +866,7 @@ based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
 can override this value using the *--ccp-image-tag* command line
 flag:
 ....
-pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
+pgo create cluster mycluster --ccp-image-tag=centos7-9.6.8-1.8.2
 ....
 
 You can also add a pgpool deployment into a cluster by using the *--pgpool*
@@ -1008,7 +1008,7 @@ pgo show cluster all
 
 You can filter the results by Postgres version:
 ....
-pgo show cluster all --version=9.6.2
+pgo show cluster all --version=9.6.8
 ....
 
 The scale command will let you specify a *--node-label* flag which
@@ -1078,8 +1078,8 @@ job to know when and how to proceed.
 
 Likewise, you can upgrade the cluster using a command line flag:
 ....
-pgo upgrade mycluster --ccp-image-tag=centos7-9.6.8-1.8.1
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.1
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.8-1.8.2
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.2
 ....
 
 

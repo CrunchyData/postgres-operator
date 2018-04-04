@@ -1,6 +1,6 @@
 = postgres Operator Design
 :toc:
-v2.5, {docdate}
+v2.6, {docdate}
 
 
 image::crunchy_logo.png?raw=true[]
