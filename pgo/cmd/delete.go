@@ -99,7 +99,7 @@ var deleteIngestCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a ingest name is required for this command")
 		} else {
-			if util.AskForConfirmation(NoPrompt) {
+			if util.AskForConfirmation(NoPrompt, "") {
 				deleteIngest(args)
 			} else {
 				fmt.Println("Aborting...")
@@ -117,7 +117,7 @@ var deleteUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			if util.AskForConfirmation(NoPrompt) {
+			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUpgrade(args)
 			} else {
 				fmt.Println("Aborting...")
@@ -135,7 +135,7 @@ var deleteBackupCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a database or cluster name is required for this command")
 		} else {
-			if util.AskForConfirmation(NoPrompt) {
+			if util.AskForConfirmation(NoPrompt, "") {
 				deleteBackup(args)
 			} else {
 				fmt.Println("Aborting...")
@@ -157,7 +157,7 @@ var deleteUserCmd = &cobra.Command{
 		} else if Selector == "" {
 			log.Error("a selector is required for this command")
 		} else {
-			if util.AskForConfirmation(NoPrompt) {
+			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUser(args[0])
 
 			} else {
@@ -177,7 +177,7 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			log.Error("a cluster name or selector is required for this command")
 		} else {
-			if util.AskForConfirmation(NoPrompt) {
+			if util.AskForConfirmation(NoPrompt, "") {
 				deleteCluster(args)
 
 			} else {
@@ -196,7 +196,7 @@ var deletePolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			log.Error("a policy name is required for this command")
 		} else {
-			if util.AskForConfirmation(NoPrompt) {
+			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args)
 			} else {
 				fmt.Println("Aborting...")

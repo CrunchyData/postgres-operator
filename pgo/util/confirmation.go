@@ -24,18 +24,22 @@ import (
 // confirmations. If the input is not recognized, it will ask again. The function does not return
 // until it gets a valid response from the user. Typically, you should use fmt to print out a question
 // before calling AskForConfirmation. E.g. fmt.Println("WARNING: Are you sure? (yes/no)")
-func AskForConfirmation(NoPrompt bool) bool {
+func AskForConfirmation(NoPrompt bool, msg string) bool {
 	var response string
 
 	if NoPrompt {
 		return true
 	}
-	fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+	if msg == "" {
+		fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+	} else {
+		fmt.Print("WARNING - " + msg + " (yes/no): ")
+	}
 
 	_, err := fmt.Scanln(&response)
 	if err != nil {
 		fmt.Println("Please type yes or no and then press enter:")
-		return AskForConfirmation(NoPrompt)
+		return AskForConfirmation(NoPrompt, msg)
 	}
 	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
 	nokayResponses := []string{"n", "N", "no", "No", "NO", ""}
@@ -45,7 +49,7 @@ func AskForConfirmation(NoPrompt bool) bool {
 		return false
 	} else {
 		fmt.Println("Please type yes or no and then press enter:")
-		return AskForConfirmation(NoPrompt)
+		return AskForConfirmation(NoPrompt, msg)
 	}
 }
 

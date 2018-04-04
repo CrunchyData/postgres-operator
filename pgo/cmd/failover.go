@@ -40,7 +40,7 @@ var failoverCmd = &cobra.Command{
 		} else {
 			if Query {
 				createFailover(args)
-			} else if util.AskForConfirmation(NoPrompt) {
+			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
 					fmt.Println(`--target is required for failover.`)
 					return

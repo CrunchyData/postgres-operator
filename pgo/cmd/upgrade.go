@@ -190,9 +190,9 @@ func validateCreateUpdate(args []string) error {
 	var err error
 
 	if UpgradeType == MajorUpgrade {
-		if util.AskForConfirmation(NoPrompt) {
+		if util.AskForConfirmation(NoPrompt, "") {
 		} else {
-			fmt.Println(`Aborting...`)
+			fmt.Println("Aborting...")
 			os.Exit(2)
 		}
 
