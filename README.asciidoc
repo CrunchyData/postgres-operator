@@ -1,187 +1,51 @@
+[[id_of_hyla_picture]]
+image::docs/crunchy_logo.png[Hyla Arborea,width="40%",height="40%", align="center"]
 = PostgreSQL Operator
-:toc:
+
 v2.6, {docdate}
 
-== Overview
+The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
 
-The PostgreSQL Operator provides a Kubernetes operator capability for managing PostgreSQL Clusters deployed within a Kubernetes environment.  The project
-also incorporates a REST API and REST client for interfacing with the
-Operator.
+Use the *postgres-operator* to:
 
-image::docs/tty.gif?raw=true[]
+ * deploy PostgreSQL containers including streaming replication clusters
+ * scale up PostgreSQL clusters with extra replicas
+ * add pgpool and metrics sidecars to PostgreSQL clusters
+ * apply SQL policies to PostgreSQL clusters
+ * assign metadata tags to PostgreSQL clusters
+ * maintain PostgreSQL users and passwords
+ * perform minor and major upgrades to PostgreSQL clusters
+ * load simple CSV and JSON files into PostgreSQL clusters
+ * perform database backups
 
-The PostgreSQL Operator leverages Kubernetes Custom Resource Definitions to define custom resource types such as:
+== Design
 
- * *pgcluster*
- * *pgreplica*
- * *pgbackups*
- * *pgpolicies*
+The *postgres-operator* design incorporates the following concepts:
 
-Kubernetes provides the ability to create and manage Custom Resource Definitions similar to any other native Kubernetes object.
+ * adds Custom Resource Definitions for PostgreSQL to Kubernetes
+ * adds controller logic that watches events on PostgreSQL resources
+ * provides a command line client (*pgo*) and REST API for interfacing with the postgres-operator
+ * provides for very customized deployments including container resources, storage configurations, and PostgreSQL custom configurations
 
-The PostgreSQL Operator runs within Kubernetes detecting these custom object types as they are created, updated, or removed.
+More design information is found on the link:docs/design.asciidoc[Design] page.
 
-The PostgreSQL Operator enables users to perform operations, including:
-
-* Create, Delete, Scale, Restore, and Backup a PostgreSQL Cluster
-* Upgrade a PostgreSQL Cluster
-* View PVCs used by PostgreSQL clusters
-* Test Connections to a PostgreSQL Cluster
-* Create and apply a SQL-based Policy to a PostgreSQL Cluster
-* Perform User and Password Management
-* Apply User Defined Labels to PostgreSQL Clusters
-
-
-[#Requirements]
 == Requirements
 
-CRD (custom resource definitions) are supported starting with Kube 1.7.X and
-with the PostgreSQL Operator version 2.0.
+The *postgres-operator* runs on Kubernetes and Openshift platforms that support 
+CRD (custom resource definitions).
 
-If you require an older version of Kube (< 1.7), you can work
-with the PostgreSQL Operator version 1.5.2 which resides in the github 1.5.X branch.
-Note however, that the older operator will be deprecated and no longer 
-maintained in the future.
+== Quickstart 
 
-The CRD version of the operator is tested on the following platforms:
+Quickstart scripts are provided for GKE and Openshift currently.  More information is found on the link:docs/quickstarts.asciidoc[Quickstarts] page.
 
-* *Kubernetes 1.7.X+*
-* *Kubernetes 1.8.0+*
-* *Openshift Container Platform 3.7*
+== Installation
 
-This Operator has also been tested on the following operating systems:
+To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:docs/install.asciidoc[Installation] page.
 
-* *CentOS 7.3+*
-* *RHEL 7.3+*
-
-[#Build and Install Instructions]
-== Build and Install Instructions
-
-To build and deploy the Operator on your Kubernetes system, follow
-the instructions documented on the link:docs/operator-docs.asciidoc[Build and Install] page.
-
-With the operator deployed, the *pgo* command line
-interface can execute commands that the *postgres-operator* understands
-and reacts to.
-
-[#Configuration]
 == Configuration
 
-The operator is template-driven; this makes it simple to configure both the client and the operator. The
-configuration options are documented on the link:docs/operator-docs.asciidoc[Configuration] page.
+The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:docs/configuration.asciidoc[Configuration] page.
 
-[#Examples]
-== Examples
+== Commands
 
-Some examples of using the *pgo* command line interface are as follows.
-
-.Display Cluster Information
-[source,bash]
-----
-pgo show cluster all
-pgo show cluster db1 db2 db3
-pgo show cluster mycluster
-pgo show cluster mycluster --show-secrets=true
-----
-
-.Create Cluster
-[source,bash]
-----
-pgo create cluster mycluster
-----
-
-.Scale Cluster
-[source,bash]
-----
-pgo scale mycluster --replica-count=2
-----
-
-.Delete a Cluster
-[source,bash]
-----
-pgo delete cluster mycluster
-----
-
-.Backup Cluster
-[source,bash]
-----
-pgo create backup mycluster
-----
-
-.Restore Cluster
-[source,bash]
-----
-pgo create cluster myrestore --secret-from=foo --backup-pvc=mypvc --backup-path=foo-backups/2017-03-21-15-57-21
-----
-
-.Upgrade Cluster (minor Postgres version upgrade)
-[source,bash]
-----
-pgo create upgrade mycluster
-----
-
-.Upgrade Cluster (major Postgres version upgrade from 9.5 to 9.6)
-[source,bash]
-----
-pgo create upgrade mycluster --upgrade-type=major
-----
-
-.View PVC
-[source,bash]
-----
-pgo show pvc mypvc
-----
-
-.Test Connections
-[source,bash]
-----
-pgo test mycluster
-----
-
-.Create a Policy
-[source,bash]
-----
-pgo create policy policy1 --in-file=./policy1.sql
-pgo create policy policy1 --url=https://someurl/policy1.sql
-----
-
-.Apply a Policy
-WARNING:  policies are POWERFUL because they are executed as the superuser in PostgreSQL
-which allows for any sort of SQL to be executed.
-[source,bash]
-----
-pgo apply policy1 --selector=name=mycluster
-----
-
-Details on the *pgo* commands and complex examples are found in the
-link:docs/operator-docs.asciidoc[User Guide]
-
-== PostgreSQL Operator Container
-
-The following diagram depicts the components of the PostgreSQL Operator,
-here the PostgreSQL operator client, *pgo*, is
-shown interacting with the PostgreSQL operator that runs within
-a Kubernetes cluster.  The operator is responsible for creating
-or modifying PostgreSQL databases deployed within the Kubernetes cluster.
-
-image::docs/operator-diagram.png?raw=true[]
-
-The *pgo* client is a REST client which interacts 
-with the *apiserver*.  The *apiserver* is a REST API that interacts
-with the Kube API including creating Custom Resource Definition resources
-implemented by the PostgreSQL Operator.
-
-The operator functionality runs in a Kubernetes Deployment on your
-Kubernetes cluster.  
-
-The *postgres-operator* Docker container image is available on link:https://hub.docker.com/r/crunchydata/postgres-operator/[Dockerhub]. 
-The *postgres-operator-apiserver* Docker container image is available on link:https://hub.docker.com/r/crunchydata/apiserver/[Dockerhub].
-The *pgo* client is available on in the Releases section of
-this github repo site.
-
-What actually gets created on the Kubernetes cluster for a
-*pgcluster* resource is defined as a *deployment strategy*.  Strategies
-are documented in detail in link:docs/design.asciidoc#postgresql-operator-deployment-strategies[Deployment Strategies].
-
-You can also build the project Docker images using
-the build instructions located on the link:docs/operator-docs.asciidoc[Build and Setup] page.
+*postgres-operator* commands are documented on the link:docs/commands.asciidoc[Commands] page.
