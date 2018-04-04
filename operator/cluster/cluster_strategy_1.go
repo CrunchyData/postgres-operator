@@ -151,20 +151,7 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 		log.Error("error deleting primary Deployment " + err.Error())
 	}
 
-	//delete any remaining pods that may be left lingering
-	pods, err := kubeapi.GetPods(clientset, "pg-cluster="+cl.Spec.Name,
-		namespace)
-	for _, pod := range pods.Items {
-		err = kubeapi.DeletePod(clientset, pod.Name, namespace)
-	}
-	pods, err = kubeapi.GetPods(clientset,
-		"name="+cl.Spec.Name+ReplicaSuffix, namespace)
-	for _, pod := range pods.Items {
-		err = kubeapi.DeletePod(clientset, pod.Name, namespace)
-	}
-
 	//delete the primary service
-
 	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
 
 	//delete the replica service
@@ -177,6 +164,9 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 
 	//delete the pgreplicas if necessary
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
+
+	//delete the pgbackups if necessary
+	kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
 
 	return err
 
