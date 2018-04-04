@@ -238,7 +238,7 @@ func createBackup(args []string) {
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no backups found")
+		fmt.Println("no clusters found")
 		return
 	}
 

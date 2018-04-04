@@ -47,6 +47,9 @@ func GetpgclustersBySelector(client *rest.RESTClient, clusterList *crv1.Pgcluste
 		Param("labelSelector", myselector.String()).
 		Do().
 		Into(clusterList)
+	if kerrors.IsNotFound(err) {
+		log.Debug("clusters for  " + myselector.String() + " not found")
+	}
 	if err != nil {
 		log.Error("error getting list of clusters " + err.Error())
 	}

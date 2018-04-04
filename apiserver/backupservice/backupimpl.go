@@ -119,7 +119,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 
 		if len(clusterList.Items) == 0 {
 			log.Debug("no clusters found")
-			resp.Status.Msg = "no clusters found"
+			resp.Results = append(resp.Results, "no clusters found with that selector")
 			return resp
 		} else {
 			newargs := make([]string, 0)
@@ -130,8 +130,21 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		}
 
 	}
+
 	for _, arg := range request.Args {
 		log.Debug("create backup called for " + arg)
+
+		cluster := crv1.Pgcluster{}
+		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, arg, apiserver.Namespace)
+		if !found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = arg + " was not found, verify cluster name"
+			return resp
+		} else if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 
 		//remove any existing backup job
 		RemoveBackupJob("backup-" + arg)
@@ -139,7 +152,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		result := crv1.Pgbackup{}
 
 		// error if it already exists
-		found, err := kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, apiserver.Namespace)
+		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, apiserver.Namespace)
 		if !found {
 			log.Debug("pgbackup " + arg + " not found so we create it")
 		} else if err != nil {
