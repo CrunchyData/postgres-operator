@@ -113,8 +113,8 @@ echo ""
 echo "setting up pgo storage configuration for storageclass" | tee -a $LOG
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/service-account.yaml
-sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/rbac.yaml
+sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/service-account.yaml
+sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
 echo "setting up pgo client auth" | tee -a $LOG

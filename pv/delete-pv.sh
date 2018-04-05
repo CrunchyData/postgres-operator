@@ -15,7 +15,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-for i in {1..15}
+for i in {1..100}
 do
    	echo "deleting PV crunchy-pv$i"
 	$CO_CMD delete pv crunchy-pv$i
