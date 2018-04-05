@@ -21,9 +21,9 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
-$CO_CMD create -f $DIR/service-account.yaml
+expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
 #$CO_CMD create -f $DIR/cluster-role-binding.yaml
-$CO_CMD create -f $DIR/rbac.yaml
+expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
 
 $CO_CMD create secret generic apiserver-conf-secret \
         --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
