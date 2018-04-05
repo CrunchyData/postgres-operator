@@ -2,9 +2,6 @@
 :toc:
 v2.6, {docdate}
 
-
-image::crunchy_logo.png?raw=true[]
-
 == Reference Architecture
 
 So, what does the Postgres Operator actually deploy
@@ -127,7 +124,7 @@ kubectl get pod -o wide
 ....
 
 When you scale up a Cluster and add a replica, the scaling will
-take into account the use of "--node-name".  If it sees that a 
+take into account the use of ``--node-name''.  If it sees that a
 cluster was created with a specific node name, then the replica
 Deployment will add an affinity rule to attempt to schedule
 the replica on a different node than the node the primary is
@@ -212,13 +209,14 @@ that gets mounted into */operator-conf* within the operator pod.
 The directory structure of the strategy templates is as
 follows:
 ....
-├── backup-job.json
-├── cluster
-│   └── 1
-│       ├── cluster-deployment-1.json
-│       ├── cluster-replica-deployment-1.json
-│       └── cluster-service-1.json
-├── pvc.json
+|-- backup-job.json
+|-- cluster
+|   |-- 1
+|       |-- cluster-deployment-1.json
+|       |-- cluster-replica-deployment-1.json
+|       |-- cluster-service-1.json
+|
+|-- pvc.json
 ....
 
 In this structure, each strategy's templates live in a subdirectory

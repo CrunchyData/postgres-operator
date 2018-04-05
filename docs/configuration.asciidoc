@@ -126,7 +126,7 @@ readonlyuser:testpass:pgoreader
 
 The following list shows the current *pgo* permissions:
 .pgo Permissions
-[width="60%",frame="topbot",options="header,footer"]
+[width="60%",frame="topbot",options="header"]
 |======================
 |Permission | Description
 |ShowCluster   | allow *pgo show cluster*
