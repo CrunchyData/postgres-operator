@@ -1,5 +1,5 @@
-= PostgreSQL Operator Documentation
-:toc: 
+configMap= PostgreSQL Operator Documentation
+:toc:
 v2.6, {docdate}
 
 == Overview
@@ -85,14 +85,14 @@ effect.
 source ~/.bashrc
 ....
 
-The value of CO_IMAGE_PREFIX is used to prefix the Operator
+The value of `CO_IMAGE_PREFIX` is used to prefix the Operator
 Docker images.  For example, set this environment variable
 to where you have your Operator images loaded either locally (crunchydata)
 or a private Docker registry (e.g. kubeadm-master:5000/crunchydata).
 
-The value of CO_APISERVER_URL is used by the *pgo* client to connect
+The value of `CO_APISERVER_URL` is used by the *pgo* client to connect
 to the postgres-operator *apiserver*.  This URL should include
-either a DNS name for the postgres-operator service or it's Service
+either a DNS name for the postgres-operator service or its service
 IP address.
 
 Next, set up a project directory structure and pull down the project:
@@ -197,14 +197,14 @@ Service Account called *postgres-operator*.  That service
 account is added to the Operator deployment.
 
 The postgres-operator service account is granted cluster-admin
-priviledges using a cluster role binding *postgres-operator-cluster-role-binding*.
+privileges using the cluster role binding *postgres-operator-cluster-role-binding*.
 
 See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more
 details on how to enable RBAC roles and modify the scope of the permissions
 to suit your needs.
 
 The sample service account and cluster role bindings specify
-the *demo* namespace.  Edit the yaml definitions of these to match
+the *demo* namespace.  Edit the YAML definitions of these to match
 the namespace you are deploying the operator into.
 
 If you are not using the *demo* namespace, you will edit the following:
@@ -212,12 +212,12 @@ If you are not using the *demo* namespace, you will edit the following:
  * $COROOT/deploy/service-account.yaml
  * $COROOT/deploy/cluster-role-binding.yaml
 
-=== Openshift Container Platform
+=== OpenShift Container Platform
 
-To run the Operator on Openshift Container Platform note the following:
+To run the Operator on OpenShift Container Platform note the following:
 
- * Openshift Container Platform 3.7 or greater is required since the Operator is based on Custom Resource Definitions which were first supported in OCP starting with version 3.7
- * the OC_CMD environment variable should be set to *oc* when operating in an Openshift environment
+ * OpenShift Container Platform 3.7 or greater is required since the Operator is based on Custom Resource Definitions which were first supported in OCP starting with version 3.7
+ * the `OC_CMD` environment variable should be set to *oc* when operating in an OpenShift environment
 
 === Configure Persistent Storage
 
@@ -267,21 +267,21 @@ Modify these values to be unique to your environment.
 
 If the username and password passed by clients to the *apiserver* do
 not match, the REST call will fail and a log message will be produced
-in the *apiserver* container log.  The client will receive a 401 http
+in the *apiserver* container log.  The client will receive a 401 HTTP
 status code if they are not able to authenticate.
 
-If the *pgouser* file is not found in the home directory of the *pgo* user
-then the next searched location is */etc/pgo/pgouser*, and if not found
-there then lastly the *PGOUSER* environment variable is searched for
+If the `pgouser` file is not found in the home directory of the *pgo* user
+then the next searched location is `/etc/pgo/pgouser`, and if not found
+there then lastly the `PGOUSER` environment variable is searched for
 a path to the basic authentication file.
 
 You can turn off Basic Authentication entirely if you set
-the BasicAuth setting in the pgo.yaml configuration file to false.
+the `BasicAuth` setting in the `pgo.yaml`configuration file to false.
 
 ==== Configure TLS
 
 As of Operator 2.3, TLS is used to secure communications to
-the *apiserver*.  Sample keys/certs used by TLS are found
+the *apiserver*.  Sample keys and certificates used by TLS are found
 here:
 ....
 $COROOT/conf/apiserver/server.crt
@@ -306,46 +306,46 @@ The sample server keys are used as the client keys, adjust to suit
 your requirements.
 
 For the *apiserver* TLS configuration, the keys are included
-in the *apiserver-conf-secret* Secret when the *apiserver* is deployed.
-See the $COROOT/deploy/deploy.sh script which is where the
+in the *apiserver-conf-secret* Secret when the apiserver is deployed.
+See the `$COROOT/deploy/deploy.sh` script which is where the
 configMap is created.
 
-The *apiserver* listens on port 8443 (e.g. https://postgres-operator:8443).
+The apiserver listens on port 8443 (e.g. https://postgres-operator:8443).
 
-You can set *InsecureSkipVerify* to true if you set the NO_TLS_VERIFY
-environment variable in the *deployment.json* file to *true*.  By default
+You can set `InsecureSkipVerify` to true if you set the `NO_TLS_VERIFY`
+environment variable in the `deployment.json` file to *true*.  By default
 this value is set to *false* if you do not specify a value.
 
 ==== RBAC
 
-===== Kube RBAC
+===== Kubernetes RBAC
 The *apiserver* and *postgres-operator* containers access
-Kube resources and need priviledges for interacting with Kube.
-The *rbac.yaml* file includes a set of roles and bindings
+Kubernetes resources and require privileges for interacting with Kubernetes.
+The `rbac.yaml` file includes a set of roles and bindings
 that allow the operator to work.  These are fine grained
-controls that you can adjust to your local Kube cluster depending
-on your security requirements
+controls that you can adjust within your local Kubernetes cluster depending
+on your security requirements.
 
-The *rbac.yaml* file gets executed when you deploy the operator
-to your Kube cluster.
+The `rbac.yaml` file gets executed when you deploy the operator
+to your Kubernetes cluster.
 
 ===== pgo RBAC
 The *pgo* command line utility talks to the *apiserver* REST API
-instead of the Kube API.  Therefore it requires its own RBAC
+instead of the Kubernetes API.  Therefore, it requires its own RBAC
 configuration.
 
-Starting in Release 2.6, the */conf/apiserver/pgorole* is used to
-define some sample pgo roles, *pgadmin* and *pgoreader*.
+Starting in Release 2.6, the file `$COROOT/conf/apiserver/pgorole` is used to
+define some sample pgo roles - *pgadmin* and *pgoreader*.
 
-These roles are meant as samples that you can configure to suite
+These roles are meant as examples that you can configure to suit
 your own security requirements.  The *pgadmin* role grants a user
-authorization to all pgo commands.  The *pgoreader* only grants
-access to pgo commands that display information such as *pgo show cluster*.
+authorization to all pgo commands. The *pgoreader* only grants
+access to pgo commands that display information such as `pgo show cluster`.
 
-The *pgorole* file is read at start up time when the operator is deployed
-to your Kube cluster.
+The `pgorole` file is read at start up time when the operator is deployed
+to your Kubernetes cluster.
 
-Also, the *pguser* file now includes the role that is assigned to
+Also, the `pgouser` file now includes the role that is assigned to
 a specific user as follows:
 ....
 username:password:pgoadmin
@@ -353,7 +353,8 @@ testuser:testpass:pgoadmin
 readonlyuser:testpass:pgoreader
 ....
 
-The following list shows the current *pgo* permissions:
+The following list shows the current pgo permissions:
+
 .pgo Permissions
 [width="60%",frame="topbot",options="header,footer"]
 |======================
@@ -379,34 +380,29 @@ The following list shows the current *pgo* permissions:
 |Version       | allow *pgo version*
 |======================
 
-If you are not authorized for a *pgo* command the user will
-get back this response:
-....
-....
-
-
 
 === Configuration
 
-The *apiserver* uses the following configuration files found in $COROOT/conf/apiserver to determine how the Operator will provision PostgreSQL containers:
+The *apiserver* uses the following configuration files found in `$COROOT/conf/apiserver` to determine how the Operator will provision PostgreSQL containers:
 ....
 $COROOT/conf/apiserver/pgo.yaml
 $COROOT/conf/apiserver/pgo.lspvc-template.json
 $COROOT/conf/apiserver/pgo.load-template.json
 ....
 
-Note that the default *pgo.yaml* file assumes you are going to use *HostPath* Persistent Volumes for
-your storage configuration.  Adjust this file for NFS or other storage configurations.
+NOTE: The default `pgo.yaml` file assumes you are going to use *HostPath* Persistent Volumes for
+your storage configuration. Adjust this file for NFS or other storage configurations.
 
 The version of PostgreSQL container the Operator will deploy is determined
-by the *CCPImageTag* setting in the *$COROOT/conf/apiserver/pgo.yaml*
+by the `CCPImageTag` setting in the `$COROOT/conf/apiserver/pgo.yaml`
 configuration file.  By default, this value is set to the latest
 release of the Crunchy Container Suite.
 
-More in-depth explanations of postgres operator configurations are available below.
+More in-depth explanations of possible configurations are available below.
 
 === Deploy the PostgreSQL Operator
-*NOTE*: This will create and use */data* on your
+
+NOTE: This will create and use `/data` on your
 local system as the persistent store for the operator to use
 for its persistent volume.
 ....
@@ -467,9 +463,8 @@ kubectl get pgtasks
 ....
 
 At this point, you should be ready to start using the *pgo* client!  Be
-sure to set the environment variable *CO_APISERVER_URL* to the DNS
-name of the *postgres-operator* service or to the IP address of the
-*postgres-operator* service IP address.  For example:
+sure to set the environment variable `CO_APISERVER_URL` to either the DNS
+name or IP address of the *postgres-operator* service.  For example:
 
 ....
 export CO_APISERVER_URL=https://10.105.56.167:8443
@@ -483,6 +478,7 @@ export CO_APISERVER_URL=https://postgres-operator.demo.svc.cluster.local:8443
 == Makefile Targets
 
 The following table describes the Makefile targets:
+
 .Makefile Targets
 [width="80%",frame="topbot",options="header,footer"]
 |======================
@@ -507,25 +503,24 @@ The following table describes the Makefile targets:
 
 == Operator Configuration
 
-This document describes the configuration options
-for the *PostgreSQL operator*.
+This section describes the configuration options for the PostgreSQL operator.
 
 === pgo Client Configuration
 
-Starting with Operator version 2.1, the *pgo.yaml* configuration
+Starting with Operator version 2.1, the `pgo.yaml` configuration
 file is used solely by the *apiserver* and has no effect on the *pgo* client.  With this change, the Operator configuration is centralized to
 the *apiserver* container which is deployed alongside the *postgres-operator* container.
 
-Sample Operator configuration files for various storage configurations are located in the $COROOT/examples directory.
+Sample Operator configuration files for various storage configurations are located in the `$COROOT/examples` directory.
 
 To configure the Operator, modify the settings found in
-*$COROOT/conf/apiserver/pgo.yaml* to meet your project needs.  Typically
+`$COROOT/conf/apiserver/pgo.yaml` to meet your project needs.  Typically
 you will modify the storage and namespace settings.
 
 ==== pgo Configuration Format
 
 The default pgo configuration file, included in
-*$COROOT/conf/apiserver/pgo.yaml*, looks like this:
+`$COROOT/conf/apiserver/pgo.yaml`, looks like this:
 
 [source,yaml]
 ....
@@ -583,7 +578,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |BasicAuth        | if set to *true* will enable Basic Authentication
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.2), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.2), unless you override it using the `--ccp-image-tag` command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
@@ -614,13 +609,13 @@ Values in the pgo configuration file have the following meaning:
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
 |Pgo.COImageTag        | image tag to use for the Operator containers
 |Pgo.Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
-|Pgo.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
+|Pgo.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag `--metrics`
 |======================
 
 === Storage Configurations
 
 Starting with release 2.5, you can now define n-number of Storage configurations
-within the *pgo.yaml* file.  Those Storage configurations follow these conventions:
+within the `pgo.yaml` file.  Those Storage configurations follow these conventions:
 
  * they must have lowercase name (e.g. storage1)
  * they must be unique names (e.g. mydrstorage, faststorage, slowstorage)
@@ -643,21 +638,21 @@ only read at apiserver start time.
 
 === Overriding Container Resources Configuration Defaults
 
-In the *pgo.yaml* configuration file you have the option
+In the `pgo.yaml` configuration file you have the option
 to configure a default container resources configuration
 that when set will add CPU and memory resource limits and requests
 values into each database container when the container is created.
 
-You can also override the default value using the *--resources-config* 
+You can also override the default value using the `--resources-config`
 command flag when creating a new cluster:
 ....
 pgo create cluster testcluster --resources-config=large
 ....
 
-Note, if you try to allocate more resources than your
-host or Kube cluster has available then you will see your
-pods wait in a *Pending* status.   The output from a *kubectl describe pod*
-command will show output like this in this case:
+NOTE: If you try to allocate more resources than your
+host or Kubernetes cluster has available then you will see your
+pods wait in a *Pending* status. The output from a `kubectl describe pod`
+command will show output like this in this event:
 ....
 Events:
   Type     Reason            Age               From               Message
@@ -672,9 +667,9 @@ pgo create cluster testcluster --storage-config=bigdisk
 ....
 
 That example will create a cluster and specify a storage configuration
-of *bigdisk* to be used for the primary database storage, the replica
+of *bigdisk* to be used for the primary database storage. The replica
 storage will default to the value of ReplicaStorage as specified
-in *pgo.yaml*.
+in `pgo.yaml`.
 
 ....
 pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk
@@ -712,24 +707,24 @@ within a namespace.
 
 Execute the Makefile target *deployoperator* to deploy the Operator.
 
-You can also create NFS PV(s) using the create-pv-nfs.sh script.
+You can also create NFS PV(s) using the `create-pv-nfs.sh` script.
 
-To enable *debug* level messages from the operator pod, set the *CRUNCHY_DEBUG* environment variable to *true* within its deployment file *deployment.json*.
+To enable *debug* level messages from the operator pod, set the `CRUNCHY_DEBUG` environment variable to *true* within its deployment file `deployment.json`.
 
 ==== Operator Templates
 
 The database and cluster Kubernetes objects that get created by the operator
-are based on json templates that are added into the operator deployment
+are based on JSON templates that are added into the operator deployment
 by means of a mounted volume.
 
-The templates are located in the *$COROOT/conf/postgres-operator* directory
-and get added into a config map which is mounted by the operator deployment.
+The templates are located in the `$COROOT/conf/postgres-operator` directory
+and get added into a ConfigMap which is mounted by the operator deployment.
 
 ==== Persistence
 
 Different ways of handling storage are specified by a user in
-the *.pgo.yaml* configuration file by specifying values within
-the ReplicaStorage, PrimaryStorage, and BackupStorage settings.
+the `pgo.yaml` configuration file by specifying values within
+the `ReplicaStorage`, `PrimaryStorage`, and `BackupStorage` settings.
 
 The following StorageType values are possible:
 
@@ -755,7 +750,7 @@ pgo create cluster example1
 ....
 
 It will result in a PVC being created named *example1-pvc* and in
-the case of a backup job, the pvc is named *example1-backup-pvc*
+the case of a backup job, the PVC is named *example1-backup-pvc*
 
 There are currently 3 sample pgo configuration files provided
 for users to use as a starting configuration:
@@ -803,54 +798,44 @@ as:
 pgo create cluster xraydb --series=3 --labels=project=xray --policies=xrayapp,rlspolicy
 ....
 
-In the example above, we provision 3 clusters that have a number appended
-into their resulting cluster name, apply a user defined label to each
-cluster, and also apply user defined policies to each cluster after
-they are created.
+In the example above, 3 clusters are provisioned that have a number appended
+into their resulting cluster name. Then, a user defined label is applied to each
+cluster, and user defined policies are applied to each cluster after they are created.
 
 You can then view that database as:
 ....
 pgo show cluster mydatabase
 ....
 
-Also, if you like to see JSON formatted output, add the *-o json* flag:
+Also, in order to view JSON formatted output, add the `-o json` flag:
 ....
 pgo show cluster mydatabase -o json
 ....
 
 The output will give you the current status of the database pod
-and the IP address of the database service.  If you have *postgresql*
+and the IP address of the database service. If you have PostgreSQL
 installed on your test system you can connect to the
 database using the service IP address:
 ....
 psql -h 10.105.121.12 -U postgres postgres
 ....
 
-More details are available on user management below, however, you may wish to take note
-that user credentials are created in the file $COROOT/deploy/create-secrets.sh upon
-deployment of the Operator. The following user accounts and passwords are created by
-default for connecting to the PostgreSQL clusters:
+NOTE: User credentials are generated through Kubernetes Secrets automatically for the
+*testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed
+by running the `pgo show cluster` command with the `--show-secrets` command. More details
+are available on user management below.
 
-*username*: postgres
-*password*: password
-
-*username*: primaryuser
-*password*: password
-
-*username*: testuser
-*password*: password
-
-You can view *all* databases using the special keyword *all*:
+You can view all databases using the special keyword `all`:
 ....
 pgo show cluster all
 ....
 
-You can filter the results based on the Postgres Version:
+You can filter the results based on the PostgreSQL Version:
 ....
 pgo show cluster all --version=9.6.8
 ....
 
-You can also add metrics collection to a cluster by using the *--metrics*
+You can also add metrics collection to a cluster by using the `--metrics`
 command flag as follows:
 ....
 pgo create cluster testcluster --metrics
@@ -862,14 +847,14 @@ For this to work, you will need to configure the Crunchy metrics
 example as found in the Crunchy Container Suite.
 
 New clusters typically pick up the container image version to use
-based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
-can override this value using the *--ccp-image-tag* command line
+based on the *pgo* configuration file's `CCP_IMAGE_TAG` setting.  You
+can override this value using the `--ccp-image-tag` command line
 flag:
 ....
 pgo create cluster mycluster --ccp-image-tag=centos7-9.6.8-1.8.2
 ....
 
-You can also add a pgpool deployment into a cluster by using the *--pgpool*
+You can also add a pgpool deployment into a cluster by using the `--pgpool`
 command flag as follows:
 ....
 pgo create cluster testcluster --pgpool
@@ -922,7 +907,7 @@ a backup job to be created.
 
 When you request a backup, *pgo* will prompt you if you want
 to proceed because this action will delete any existing backup job
-for this cluster that might exist.  The backup files will still 
+for this cluster that might exist.  The backup files will still
 be left intact but the actual Kubernetes Job will be removed prior
 to creating a new Job with the same name.
 
@@ -940,7 +925,7 @@ You can remove a cluster by running:
 pgo delete cluster restoredb
 ....
 
-Note, that this command will not remove the PVC associated with
+NOTE: This command will not remove the PVC associated with
 this cluster.
 
 Selectors also apply to the delete command as follows:
@@ -962,8 +947,8 @@ pgo delete cluster restoredb --delete-data --delete-backups
 ....
 
 When you specify a destructive delete like above, you will be prompted
-to make sure this is what you want to do.  If you don't want to
-be prompted you can enter the *--no-prompt* command line flag.
+to make sure this is what you want to do. To prevent the prompt,
+enter the `--no-prompt` command line flag.
 
 
 === pgo scale
@@ -975,18 +960,18 @@ When you create a Cluster, you will see in the output a variety of Kubernetes ob
  * a service for the primary database
  * a service for the replica databases
 
-Since Postgres is a single-primary database by design, the primary
-Deployment is set to a replica count of 1, it can not scale beyond 1.
+Since PostgreSQL is a single-primary database by design, the primary
+deployment is set to a replica count of 1 by default and it can not scale beyond that.
 
-With Postgres, you can any n-number of replicas each of which
-connect to the primary forming a streaming replication postgres cluster.
-The Postgres replicas are read-only, whereas the primary is read-write.
-To create a Postgres replica enter a command such as:
+With PostgreSQL, you can any n-number of replicas each of which
+connect to the primary forming a streaming replication PostgreSQL cluster.
+The replicas are read-only, whereas the primary is read-write.
+To create a replica enter a command such as:
 ....
-pgo scale mycluster 
+pgo scale mycluster
 ....
 
-The *pgo scale* command is additive, in that each time you execute
+The `pgo scale` command is additive, in that each time you execute
 it, it will create another replica which is added to the Postgres
 cluster.
 
@@ -1011,17 +996,17 @@ You can filter the results by Postgres version:
 pgo show cluster all --version=9.6.8
 ....
 
-The scale command will let you specify a *--node-label* flag which
-can be used to influence what Kube node the replica will be scheduled
+The scale command will let you specify a `--node-label` flag which
+can be used to influence what Kubernetes node the replica will be scheduled
 upon.
 
 ....
 pgo scale mycluster --node-label=speed=fast
 ....
 
-If you don't specify a *--node-label* flag, a node affinity 
+If you don't specify a `--node-label` flag, a node affinity
 rule of *NotIn* will be specified to *prefer* that the replica
-be schedule on a node that the primary is not running on.
+be scheduled on a node that the primary is not running on.
 
 You can also dictate what container resource and storage configurations
 will be used for a replica by passing in extra command flags:
@@ -1031,7 +1016,7 @@ pgo scale mycluster --storage-config=storage1 --resources-config=small
 
 === pgo upgrade
 
-You can perform a minor Postgres version upgrade
+You can perform a minor PostgreSQL version upgrade
 of either a database or cluster as follows:
 ....
 pgo upgrade mycluster
@@ -1039,13 +1024,13 @@ pgo upgrade mycluster
 
 When you run this command, it will cause the operator
 to delete the existing containers of the database or cluster
-and recreate them using the currently defined Postgres
+and recreate them using the currently defined PostgreSQL
 container image specified in your pgo configuration file.
 
 The database data files remain untouched, only the container
-is updated, this will upgrade your Postgres server version only.
+is updated, this will upgrade your PostgreSQL server version only.
 
-You can perform a major Postgres version upgrade
+You can perform a major PostgreSQL version upgrade
 of either a database or cluster as follows:
 ....
 pgo upgrade mycluster --upgrade-type=major
@@ -1053,17 +1038,17 @@ pgo upgrade mycluster --upgrade-type=major
 
 When you run this command, it will cause the operator
 to delete the existing containers of the database or cluster
-and recreate them using the currently defined Postgres
+and recreate them using the currently defined PostgreSQL
 container image specified in your pgo configuration file.
 
-The database data files are converted to the new major Postgres
-version as specified by the current Postgres image version
+The database data files are converted to the new major PostgreSQL
+version as specified by the current image version
 in your pgo configuration file.
 
-In this scenario, the upgrade is performed by the Postgres
+In this scenario, the upgrade is performed by the
 pg_upgrade utility which is containerized in the *crunchydata/crunchy-upgrade*
 container.  The operator will create a Job which runs the upgrade container,
-using the existing Postgres database files as input, and output
+using the existing database files as input, and output
 the updated database files to a new PVC.
 
 Once the upgrade job is completed, the operator will create the
@@ -1142,7 +1127,7 @@ pgo test --selector=env=research
 pgo test all
 ....
 
-You can get output using the *--output* flag:
+You can get output using the `--output` or `-o` flag:
 ....
 pgo test all -o json
 ....
@@ -1156,7 +1141,7 @@ pgo create policy policy1 --url=https://someurl/policy1.sql
 ....
 
 When you execute this command, it will create a policy named *policy1*
-using the input file */tmp/policy1.sql* as input.  It will create
+using the file `/tmp/policy1.sql` as input.  It will create
 on the server a PgPolicy CRD with the name *policy1* that you can
 examine as follows:
 
@@ -1165,7 +1150,7 @@ kubectl get pgpolicies policy1 -o json
 ....
 
 Policies get automatically applied to any cluster you create if
-you define in your *pgo.yaml* configuration a CLUSTER.POLICIES
+you define in your `pgo.yaml` configuration a `CLUSTER.POLICIES`
 value.  Policy SQL is executed as the *postgres* user.
 
 To view policies:
@@ -1197,7 +1182,7 @@ WARNING:  policies are executed as the superuser in PostgreSQL therefore
 take caution when using them.
 
 If you want to view the clusters than have a specific policy applied
-to them, you can use the *--selector* flag as follows to filter on a
+to them, you can use the `--selector` flag as follows to filter on a
 policy name (e.g. policy1):
 ....
 pgo show cluster --selector=policy1=pgpolicy
@@ -1208,17 +1193,12 @@ pgo show cluster --selector=policy1=pgpolicy
 
 To create a new Postgres user to the *mycluster* cluster, execute:
 ....
-pgo createa user sally --selector=name=mycluster
+pgo create user sally --selector=name=mycluster
 ....
 
 To delete a Postgres user in the *mycluster* cluster, execute:
 ....
 pgo user --delete-user=sally --selector=name=mycluster
-....
-
-To delete that user in all clusters:
-....
-pgo user --delete-user=sally
 ....
 
 To change the password for a user in the *mycluster* cluster:
@@ -1295,15 +1275,15 @@ Then you can load a sample CSV file into a database as follows:
 pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name=mycluster
 ....
 
-The loading is based on a load definition found in the *sample-load-config.json* file.  In that file, the data to be loaded is specified. When the *pgo load* command is executed, Jobs will be created to perform the loading for each cluster that matches the selector filter.
+The loading is based on a load definition found in the `sample-load-config.json` file.  In that file, the data to be loaded is specified. When the *pgo load* command is executed, Jobs will be created to perform the loading for each cluster that matches the selector filter.
 
-If you include the *--policies* flag, any specified policies will be applied prior to the data being loaded.  For
+If you include the `--policies` flag, any specified policies will be applied prior to the data being loaded.  For
 example:
 ....
 pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster
 ....
 
-Likewise you can load a sample json file into a database as follows:
+Likewise, you can load a sample JSON file into a database as follows:
 ....
 pgo load --policies=jsonload --load-config=$COROOT/examples/sample-json-load-config.json  --selector=name=mycluster
 ....
@@ -1320,7 +1300,7 @@ The load configuration file has the following YAML attributes:
 |DbPort|  the database port of the database to load
 |TableToLoad|  the PostgreSQL table to load
 |FilePath|  the name of the file to be loaded
-|FileType|  either csv or json, determines the type of data to be loaded
+|FileType|  either CSV or JSON, determines the type of data to be loaded
 |PVCName|  the name of the PVC that holds the data file to be loaded
 |SecurityContext| either fsGroup or SupplementalGroup values
 |======================
@@ -1360,7 +1340,7 @@ by viewing it:
 kubectl get pgtasks mycluster-failover -o yaml
 ....
 
-Once completed, you will see a new replica has been started to replace 
+Once completed, you will see a new replica has been started to replace
 the promoted replica, this happens automatically due to the re-lable, the
 Deployment will recreate its pod because of this.   The failover typically
 takes only a few seconds, however, the creation of the replacement
@@ -1369,17 +1349,17 @@ replica can take longer depending on how much data is being replicated.
 == bash Completion
 
 There is a bash completion file that is included for users to try, this
-is located in the repository at *example/pgo-bash-completion*. To use it:
+is located in the repository at `$COROOT/examples/pgo-bash-completion`. To use it:
 ....
-cp $COROOT/example/pgo-bash-completion /etc/bash_completion.d/pgo
+sudo cp $COROOT/examples/pgo-bash-completion /etc/bash_completion.d/pgo
 su - $USER
 ....
 
 == REST API
 
-Because the *apiserver* implements a REST API, you can integrate
-with it using your own application code.  To demostrate this, the
-following *curl* commands show the API usage:
+Because the apiserver implements a REST API, it is possible to integrate
+customized application code with the apiserver. To demonstrate this, the
+following `curl` commands show the API usage:
 
 *pgo version*
 ....
@@ -1416,47 +1396,47 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/backups/mycluster
 ....
 
-== Deploying pgpool 
+== Deploying pgpool
 
-It is optional but you can cause a pgpool Deployment to be
-created as part of a Postgres cluster.  Running pgpool only 
+It is optional but you can cause a pgpool deployment to be
+created as part of a PostgreSQL cluster.  Running pgpool only
 makes sense when you have both a primary and some number of
-replicas deployed as part of your Postgres cluster.  The current
+replicas deployed as part of your PostgreSQL cluster.  The current
 pgpool configuration deployed by the operator only works when
 you have both a primary and replica running.
 
 When a user creates the cluster they can pass a command flag as follows:
 ....
 pgo create cluster cluster1 --pgpool
-pgo scale cluster1 
+pgo scale cluster1
 ....
 
 This will cause the operator to create a Deployment that includes
 the *crunchy-pgpool* container along with a replica.  That container will create
 a configuration that will perform SQL routing to your
-cluster services, both for the primary and replica services.  
+cluster services, both for the primary and replica services.
 
 Pgpool examines the SQL it receives and routes the SQL statement
 to either the primary or replica based on the SQL action specifically
 it will send writes and updates to only the *primary* service.  It
 will send read-only statements to the *replica* service.
 
-When the operator deploys the pgpool container, it creates a 
-secret (e.g. mycluster-pgpool-secret) that contains pgpool
-configuration files.  It fills out templated versions of these
-configuration files specifically for this postgres cluster.
+When the operator deploys the pgpool container, it creates a
+secret (e.g. `mycluster-pgpool-secret`) that contains pgpool
+configuration files. It fills out templated versions of these
+configuration files specifically for this PostgreSQL cluster.
 
 Part of the pgpool deployment also includes creating a *pool_passwd*
 file that will allow the *testuser* credential to authenticate
 to pgpool.  Adding additional users to the pgpool configuration
 currently requires human intervention specifically creating
 a new pgpool secret and bouncing the pgpool pod to pick up the
-updated secret.  Future operator releases will attempt to 
+updated secret.  Future operator releases will attempt to
 provide *pgo* commands to let you automate the addition or removal
 of a pgpool user.
 
 Currently to update a pgpool user within the *pool_passwd* configuration
-file, you will have to copy the existing files from the 
+file, you will have to copy the existing files from the
 secret to your local system, update the credentials in *pool_passwd*
 with your new user credentials, and then recreate the pgpool
 secret, and finally restart the pgpool pod to pick up the updated
@@ -1478,7 +1458,7 @@ configuration file.
 ....
 go run $COROOT/golang-examples/gen-pgpool-pass.go
 Enter Username: testuser
-Enter Password: 
+Enter Password:
 Password typed: e99Mjt1dLz
 hash of password is [md59c4017667828b33762665dc4558fbd76]
 ....
@@ -1500,4 +1480,3 @@ kubectl delete pod wed10-pgpool-6cc6f6598d-wcnmf
 
 The pgpool deployment will spin up another pgpool which will pick up
 the updated secret file.
-
