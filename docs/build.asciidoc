@@ -46,7 +46,7 @@ cd $COROOT
 make setup
 ....
 
-==== Compiling the PostgreSQL Operator
+=== Compiling the PostgreSQL Operator
 ....
 cd $COROOT
 make all
@@ -163,7 +163,7 @@ export CO_APISERVER_URL=https://postgres-operator.demo.svc.cluster.local:8443
 
 The following table describes the Makefile targets:
 .Makefile Targets
-[width="80%",frame="topbot",options="header,footer"]
+[width="80%",frame="topbot",options="header"]
 |======================
 |Target | Description
 |all        | compile all binaries and build all images
@@ -182,5 +182,3 @@ The following table describes the Makefile targets:
 |rmdataimage        | build the data deletion Docker image
 |release        | build the postgres-operator release
 |======================
-
-
