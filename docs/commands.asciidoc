@@ -162,7 +162,7 @@ to creating a new Job with the same name.
 
 To delete a backup enter the following:
 ....
-pgo delete backup mybackup
+pgo delete backup mycluster
 ....
 
 === pgo delete cluster

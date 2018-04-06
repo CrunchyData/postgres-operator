@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright 2017-2018 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "getting project dependencies...."
+echo "Getting project dependencies..."
 #godep restore
 
 go get github.com/inconshreveable/mousetrap
@@ -47,4 +47,3 @@ git fetch --all --tags --prune
 git checkout kubernetes-1.8.5
 cd $GOPATH/src/github.com/kubernetes/code-generator/cmd/deepcopy-gen
 go build main.go && mv main $GOPATH/bin/deepcopy-gen
-

@@ -38,7 +38,7 @@ roleRef:
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: system:serviceaccount:demo:postgres-operator
+  name: system:serviceaccount:$CO_NAMESPACE:postgres-operator
 
 ---
 
@@ -46,7 +46,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: nspostgresrole
-  namespace: demo
+  namespace: $CO_NAMESPACE
 rules:
   - verbs:
       - '*'
@@ -61,7 +61,7 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
   name: nspgrolebind
-  namespace: demo
+  namespace: $CO_NAMESPACE
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -69,6 +69,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: postgres-operator
-  namespace: demo
+  namespace: $CO_NAMESPACE
 
 ---
