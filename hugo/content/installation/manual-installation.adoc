@@ -1,0 +1,188 @@
+---
+title: "Manual Installation"
+date: 2018-04-26T15:22:21-07:00
+draft: false
+weight: 20
+---
+
+:toc:
+v2.6, {docdate}
+
+== Project Structure
+
+To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
+....
+export GOPATH=$HOME/odev
+mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
+mkdir -p $GOPATH/src/github.com/crunchydata/
+....
+
+Next, get a tagged release of the source code -
+....
+cd $GOPATH/src/github.com/crunchydata
+git clone https://github.com/CrunchyData/postgres-operator.git
+cd postgres-operator
+git checkout 2.6
+....
+
+== Installation Prerequsites
+
+To run the operator and the *pgo* client, you will need the following -
+
+ * a running Kubernetes or OpenShift cluster
+ * the kubectl or oc clients installed in your PATH and configured to connect to the cluster (e.g. export KUBECONFIG=/etc/kubernetes/admin.conf)
+ * a Kubernetes namespace created and set to where you want the operator installed. For this install we assume a namespace of *demo* has been created.
+....
+kubectl create -f examples/demo-namespace.json
+kubectl config set-context $(kubectl config current-context) --namespace=demo
+kubectl config view | grep namespace
+....
+
+[WARNING]
+====
+If you are not using the *demo* namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.
+
+`$COROOT/deploy/service-account.yaml`
+
+`$COROOT/deploy/cluster-role-binding.yaml`
+====
+
+Permissions are granted to the Operator by means of a Service Account called *postgres-operator*.  That service account is added to the Operator deployment.
+
+The postgres-operator service account is granted cluster-admin priviledges using a cluster role binding *postgres-operator-cluster-role-binding*.
+
+See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.
+
+== Basic Installation
+
+The basic installation uses the default operator configuration settings, these settings assume you want to use HostPath storage on your Kube cluster for database persistence.  Other persistent options are available but require the Advanced Installation below.
+
+=== Create HostPath Directory
+
+The default Persistent Volume script assumes a default HostPath directory be created called */data*:
+....
+sudo mkdir /data
+sudo chown 777 /data
+....
+
+Create some sample Persistent Volumes using the following script:
+....
+export CO_NAMESPACE=demo
+export CO_CMD=kubectl
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+go get github.com/blang/expenv
+$COROOT/pv/create-pv.sh
+....
+
+== Build Images & Deploy
+
+{{%expand "Packaged Images" %}}
+
+=== Packaged Images
+
+To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, specify the image versions, and execute the following Makefile target -
+....
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-2.6
+make pull
+....
+
+To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link -
+
+ * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]
+ * extract (e.g. tar xvzf postgres-operator.2.6-rc1.tar.gz)
+....
+cd $HOME
+tar xvzf ./postgres-operator.2.6-rc1.tar.gz
+....
+ * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
+
+Next, deploy the operator to your Kubernetes cluster -
+....
+cd $COROOT
+make deployoperator
+....
+
+{{% /expand%}}
+
+{{%expand "Build from Source" %}}
+
+=== Build from Source
+
+The purpose of this section is to illustrate how to build the PostgreSQL
+Operator from source. These are considered advanced installation steps and
+should be primarily used by developers or those wishing a more precise
+installation method.
+
+==== Requirements
+
+The postgres-operator runs on any Kubernetes and Openshift platform that supports
+Custom Resource Definitions. The Operator is tested on Kubeadm and OpenShift
+Container Platform environments.
+
+The operator is developed with the Golang versions greater than or equal to version 1.8. See
+link:https://golang.org/dl/[Golang website] for details on installing golang.
+
+The Operator project builds and operates with the following containers -
+
+* link:https://hub.docker.com/r/crunchydata/pgo-lspvc/[PVC Listing Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-rmdata/[Remove Data Container]
+* link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
+
+This Operator is developed and tested on the following operating systems but is known to run on other operating systems -
+
+* *CentOS 7*
+* *RHEL 7*
+
+First, install the project library dependencies. The godep dependency manager is used for this purpose. -
+....
+cd $COROOT
+make setup
+....
+
+Then, compile the PostgreSQL Operator using the Makefile.
+....
+cd $COROOT
+make all
+which pgo
+....
+
+Finally, deploy the operator to your Kubernetes cluster.
+....
+cd $COROOT
+make deployoperator
+....
+
+{{% /expand%}}
+
+== Makefile Targets
+
+The following table describes the Makefile targets -
+  
+.Makefile Targets
+[width="80%",frame="topbot",options="header"]
+|======================
+|Target | Description
+|all        | compile all binaries and build all images
+|setup        | fetch the dependent packages required to build with
+|deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
+|main        | compile the postgres-operator
+|runmain        | locally execute the postgres-operator
+|pgo        | build the pgo binary
+|runpgo        | run the pgo binary
+|runapiserver        | run the apiserver binary outside of Kube
+|clean        | remove binaries and compiled packages, restore dependencies
+|operatorimage        | compile and build the postgres-operator Docker image
+|apiserverimage        | compile and build the apiserver Docker image
+|lsimage        | build the lspvc Docker image
+|loadimage        | build the file load Docker image
+|rmdataimage        | build the data deletion Docker image
+|release        | build the postgres-operator release
+|======================
+
+== Next Steps
+
+Next, visit the link:/installation/deployment/[Deployment] page to deploy the
+Operator, verify the installation, and view various storage configurations.

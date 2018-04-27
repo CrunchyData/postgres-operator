@@ -1,0 +1,62 @@
+---
+title: "Quick Installation"
+date: 2018-04-26T15:22:14-07:00
+draft: false
+weight: 10
+---
+
+:toc:
+v2.6, {docdate}
+
+== Overview
+
+There are currently *quickstart* scripts that seek to automate
+the deployment to popular Kubernetes environments -
+
+ * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-gke.sh[quickstart-for-gke.sh]
+ * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-ocp.sh[quickstart-for-ocp.sh]
+
+The *quickstart-for-gke* script will deploy the operator to
+a GKE Kube cluster.
+
+The *quickstart-for-ocp* script will deploy the operator to
+an Openshift Container Platform cluster.
+
+Both scripts assume you have a StorageClass defined for persistence.
+
+Pre-compiled versions of the Operator *pgo* client are provided for the x86_64, Mac OSX, and Windows hosts.
+
+== Quickstart
+
+=== GKE/PKS
+The *quickstart-for-gke.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
+This script is tested on GKE but can be modified for use with other Kubernetes environments as well.
+
+The script requires a few things in order to work -
+
+ * wget utility installed
+ * kubectl utility installed
+ * StorageClass defined
+
+Executing the script will give you a default Operator deployment
+that assumes *dynamic* storage and a storage class named *standard*,
+things that GKE provides.
+
+The script performs the following -
+
+ * downloads the Operator configuration files
+ * sets the $HOME/.pgouser file to default settings
+ * deploys the Operator Deployment
+ * sets your .bashrc to include the Operator environment variables
+ * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
+
+=== Openshift Container Platform
+
+A similar script for installing the operator on OCP is
+offered with similar features as the GKE script.  This script is
+tested on OCP 3.7 with a StorageClass defined.
+
+== Next Steps
+
+Next, visit the link:/installation/deployment/[Deployment] page to deploy the
+Operator, verify the installation, and view various storage configurations.
