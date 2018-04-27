@@ -95,33 +95,30 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use backupScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgbackupScheme.Copy(backup)
-	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of backup object: %v\n", err)
-		return
-	}
+	//copyObj, err := c.PgbackupScheme.Copy(backup)
+	copyObj := backup.DeepCopy()
 
-	backupCopy := copyObj.(*crv1.Pgbackup)
-	backupCopy.Status = crv1.PgbackupStatus{
+	//backupCopy := copyObj.(*crv1.Pgbackup)
+	copyObj.Status = crv1.PgbackupStatus{
 		State:   crv1.PgbackupStateProcessed,
 		Message: "Successfully processed Pgbackup by controller",
 	}
 
-	err = c.PgbackupClient.Put().
+	err := c.PgbackupClient.Put().
 		Name(backup.ObjectMeta.Name).
 		Namespace(backup.ObjectMeta.Namespace).
 		Resource(crv1.PgbackupResourcePlural).
-		Body(backupCopy).
+		Body(copyObj).
 		Do().
 		Error()
 
 	if err != nil {
 		fmt.Printf("ERROR updating status: %v\n", err)
 	} else {
-		fmt.Printf("UPDATED status: %#v\n", backupCopy)
+		fmt.Printf("UPDATED status: %#v\n", copyObj)
 	}
 
-	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backupCopy, backup.ObjectMeta.Namespace)
+	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, copyObj, backup.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgbackup is updated

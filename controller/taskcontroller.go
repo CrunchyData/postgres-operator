@@ -97,31 +97,26 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use taskScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgtaskScheme.Copy(task)
-	if err != nil {
-		log.Errorf("ERROR creating a deep copy of task object: %v\n", err)
-		return
-	}
+	copyObj := task.DeepCopy()
 
 	//update the status of the task as processed to prevent reprocessing
-	taskCopy := copyObj.(*crv1.Pgtask)
-	taskCopy.Status = crv1.PgtaskStatus{
+	copyObj.Status = crv1.PgtaskStatus{
 		State:   crv1.PgtaskStateProcessed,
 		Message: "Successfully processed Pgtask by controller",
 	}
 
-	err = c.PgtaskClient.Put().
+	err := c.PgtaskClient.Put().
 		Name(task.ObjectMeta.Name).
 		Namespace(task.ObjectMeta.Namespace).
 		Resource(crv1.PgtaskResourcePlural).
-		Body(taskCopy).
+		Body(copyObj).
 		Do().
 		Error()
 
 	if err != nil {
 		log.Errorf("ERROR updating status: %v\n", err)
 	} else {
-		log.Errorf("UPDATED status: %#v\n", taskCopy)
+		log.Errorf("UPDATED status: %#v\n", copyObj)
 	}
 
 	//process the incoming task
@@ -140,22 +135,6 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	default:
 		log.Info("unknown task type on pgtask added")
 	}
-
-	/**
-	err = c.PgtaskClient.Delete().
-		Name(task.ObjectMeta.Name).
-		Namespace(task.ObjectMeta.Namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Body(taskCopy).
-		Do().
-		Error()
-
-	if err != nil {
-		log.Errorf("ERROR deleting pgtask status: %s %v\n", task.ObjectMeta.Name, err)
-	} else {
-		log.Errorf("deleted pgtask %s\n", task.ObjectMeta.Name)
-	}
-	*/
 
 }
 

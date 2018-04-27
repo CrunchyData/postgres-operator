@@ -95,33 +95,28 @@ func (c *PgingestController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use clusterScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgingestScheme.Copy(ingest)
-	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of ingest object: %v\n", err)
-		return
-	}
+	copyObj := ingest.DeepCopy()
 
-	ingestCopy := copyObj.(*crv1.Pgingest)
-	ingestCopy.Status = crv1.PgingestStatus{
+	copyObj.Status = crv1.PgingestStatus{
 		State:   crv1.PgingestStateProcessed,
 		Message: "Successfully processed Pgingest by controller",
 	}
 
-	err = c.PgingestClient.Put().
+	err := c.PgingestClient.Put().
 		Name(ingest.ObjectMeta.Name).
 		Namespace(ingest.ObjectMeta.Namespace).
 		Resource(crv1.PgingestResourcePlural).
-		Body(ingestCopy).
+		Body(copyObj).
 		Do().
 		Error()
 
 	if err != nil {
 		fmt.Printf("ERROR updating ingest status: %v\n", err)
 	} else {
-		fmt.Printf("UPDATED ingest status: %#v\n", ingestCopy)
+		fmt.Printf("UPDATED ingest status: %#v\n", copyObj)
 	}
 
-	ingestoperator.CreateIngest(ingest.ObjectMeta.Namespace, c.PgingestClientset, c.PgingestClient, ingestCopy)
+	ingestoperator.CreateIngest(ingest.ObjectMeta.Namespace, c.PgingestClientset, c.PgingestClient, copyObj)
 }
 
 // onUpdate is called when a pgingest is updated
