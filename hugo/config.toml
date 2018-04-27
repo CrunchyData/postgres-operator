@@ -1,4 +1,4 @@
-baseURL = "https://xenophenes.github.io/pgo-docs/"
+baseURL = "https://crunchydata.github.io/postgres-operator/"
 #baseURL= "/"
 
 languageCode = "en-us"
