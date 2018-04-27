@@ -154,7 +154,7 @@ a backup job to be created.
 
 When you request a backup, *pgo* will prompt you if you want
 to proceed because this action will delete any existing backup job
-for this cluster that might exist.  The backup files will still 
+for this cluster that might exist.  The backup files will still
 be left intact but the actual Kubernetes Job will be removed prior
 to creating a new Job with the same name.
 
@@ -215,7 +215,7 @@ connect to the primary forming a streaming replication postgres cluster.
 The Postgres replicas are read-only, whereas the primary is read-write.
 To create a Postgres replica enter a command such as:
 ....
-pgo scale mycluster 
+pgo scale mycluster
 ....
 
 The *pgo scale* command is additive, in that each time you execute
@@ -251,7 +251,7 @@ upon.
 pgo scale mycluster --node-label=speed=fast
 ....
 
-If you don't specify a *--node-label* flag, a node affinity 
+If you don't specify a *--node-label* flag, a node affinity
 rule of *NotIn* will be specified to *prefer* that the replica
 be schedule on a node that the primary is not running on.
 
@@ -565,6 +565,7 @@ can be used to promote a replica to a primary role in a PostgreSQL
 cluster.
 
 This process includes the following actions:
+
  * pick a target replica to become the new primary
  * delete the current primary deployment to avoid user requests from
    going to multiple primary databases (split brain)
@@ -593,9 +594,8 @@ by viewing it:
 kubectl get pgtasks mycluster-failover -o yaml
 ....
 
-Once completed, you will see a new replica has been started to replace 
+Once completed, you will see a new replica has been started to replace
 the promoted replica, this happens automatically due to the re-lable, the
 Deployment will recreate its pod because of this.   The failover typically
 takes only a few seconds, however, the creation of the replacement
 replica can take longer depending on how much data is being replicated.
-
