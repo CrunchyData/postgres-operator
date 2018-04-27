@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Crunchy Data PostgreSQL Operator Documentation</title>
+    
+      <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="generator" content="Hugo 0.40" />
+
+<title>Configuration :: Crunchy Data PostgreSQL Operator Documentation</title>
+<link rel="shortcut icon" href="https://xenophenes.github.io/pgo-docs/favicon.ico" type="image/x-icon" />
+<link href="https://xenophenes.github.io/pgo-docs/css/nucleus.css" rel="stylesheet">
+<link href="https://xenophenes.github.io/pgo-docs/css/font-awesome.min.css" rel="stylesheet">
+<link href="https://xenophenes.github.io/pgo-docs/css/hybrid.css" rel="stylesheet">
+<link href="https://xenophenes.github.io/pgo-docs/css/featherlight.min.css" rel="stylesheet">
+<link href="https://xenophenes.github.io/pgo-docs/css/auto-complete.css" rel="stylesheet">
+<link href="https://xenophenes.github.io/pgo-docs/theme-original/style.css" rel="stylesheet">
+
+<link rel="stylesheet" href="https://xenophenes.github.io/pgo-docs/css/bootstrap.min.css">
+<script src="https://xenophenes.github.io/pgo-docs/js/jquery-2.x.min.js"></script>
+<style type="text/css">
+  :root #header + #content > #left > #rlblock_left {
+    display:none !important;
+  }
+</style>
+<meta name="description" content="">
+
+
+    
+  </head>
+  <body data-url="/installation/configuration/">
+    
+      <div id="headermain"></div>
+<nav id="sidebar" class="">
+
+
+
+<div class="highlightable">
+  <div id="header-wrapper">
+    <div id="header">
+      
+	
+  
+    <a class="baselink" href="https://xenophenes.github.io/pgo-docs/">Crunchy Data PostgreSQL Operator Documentation</a>
+  
+
+    </div>
+        <div class="searchbox">
+		    <label for="search-by"><i class="fa fa-search"></i></label>
+		    <input data-search-input id="search-by" type="text" placeholder="Search...">
+		    <span data-search-clear=""><i class="fa fa-close"></i></span>
+		</div>
+		<script type="text/javascript" src="https://xenophenes.github.io/pgo-docs/js/lunr.min.js"></script>
+		<script type="text/javascript" src="https://xenophenes.github.io/pgo-docs/js/auto-complete.js"></script>
+		<script type="text/javascript">
+        
+            var baseurl = "https:\/\/xenophenes.github.io\/pgo-docs\/";
+        
+		</script>
+		<script type="text/javascript" src="https://xenophenes.github.io/pgo-docs/js/search.js"></script>
+  </div>
+
+      <ul class="topics">
+    <li data-nav-id="/installation/" class="dd-item parent haschildren
+        ">
+      <div>
+      <a href="https://xenophenes.github.io/pgo-docs/installation/">Installation</a>
+            <i class="fa fa-angle-down fa-lg category-icon"></i>
+
+      </div>
+        <ul>
+      <li data-nav-id="/installation/quick-installation/" class="dd-item">
+        <div>
+          <a href="https://xenophenes.github.io/pgo-docs/installation/quick-installation/">
+            Quick Installation
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/manual-installation/" class="dd-item">
+        <div>
+          <a href="https://xenophenes.github.io/pgo-docs/installation/manual-installation/">
+            Manual Installation
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/helm-chart/" class="dd-item">
+        <div>
+          <a href="https://xenophenes.github.io/pgo-docs/installation/helm-chart/">
+            Helm Chart
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
+        <div>
+          <a href="https://xenophenes.github.io/pgo-docs/installation/upgrading-the-operator/">
+            Upgrading the Operator
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/deployment/" class="dd-item">
+        <div>
+          <a href="https://xenophenes.github.io/pgo-docs/installation/deployment/">
+            Deployment
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/configuration/" class="dd-item active">
+        <div>
+          <a href="https://xenophenes.github.io/pgo-docs/installation/configuration/">
+            Configuration
+          </a>
+        </div>
+    </li>
+        </ul>
+    </li>
+    <li data-nav-id="/how-it-works/" class="dd-item
+        ">
+      <div>
+      <a href="https://xenophenes.github.io/pgo-docs/how-it-works/">How it Works</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/getting-started/" class="dd-item
+        ">
+      <div>
+      <a href="https://xenophenes.github.io/pgo-docs/getting-started/">Getting Started</a>
+
+      </div>
+    </li>
+
+
+
+        <section id="shortcuts">
+                <li class="" role=""><h3>More</h3><a href="https://github.com/CrunchyData/postgres-operator" target="_blank" rel="noopener"><i class='fa fa-github'></i> <label>Github repo</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
+                <li class="" role=""><a href="https://kubernetes.io/docs/" target="_blank" rel="noopener"><i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label></a></li>
+        </section>
+
+    <hr />
+    <li></li>
+
+    </ul>
+
+ <section id="footer">
+    </section>
+  </div>
+</nav>
+
+
+
+<section id="body">
+<div id="overlay"></div>
+<div class="padding highlightable">
+
+  <div id="top-bar">
+    
+      
+      
+      
+    <div id="top-github-link">
+      <a class="github-link" href="https://github.com/crunchydata/postgres-operatorinstallation/configuration.adoc" target="blank">
+        <i class="fa fa-code-fork"></i>
+        Improve this page
+      </a>
+    </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+        <span id="sidebar-toggle-span">
+          <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+            <i class="fa fa-bars"></i>
+          </a>
+        </span>
+        <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+        <span class="links">
+        
+
+
+
+
+
+
+
+ <a href='https://xenophenes.github.io/pgo-docs/'>Crunchy Data PostgreSQL Operator</a> > <a href='https://xenophenes.github.io/pgo-docs/installation/'>Installation</a> > Configuration
+
+
+
+
+
+
+        </span>
+    </div>
+
+    
+    <div class="progress">
+        <div class="wrapper">
+    
+        </div>
+    </div>
+    
+
+  </div>
+
+
+<div id="body-inner">
+  
+    <h1>Configuration</h1>
+  
+
+
+
+    
+    
+    
+    <div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_overview">Overview</a></li>
+<li><a href="#_openshift_container_platform">Openshift Container Platform</a></li>
+<li><a href="#_security_configuration">Security Configuration</a>
+<ul class="sectlevel2">
+<li><a href="#_kube_rbac">Kube RBAC</a></li>
+<li><a href="#_basic_authentication">Basic Authentication</a></li>
+<li><a href="#_configure_tls">Configure TLS</a></li>
+<li><a href="#_pgo_rbac">pgo RBAC</a></li>
+<li><a href="#_strong_apiserver_strong_configuration"><strong>apiserver</strong> Configuration</a></li>
+<li><a href="#_strong_postgres_operator_strong_container_configuration"><strong>postgres-operator</strong> Container Configuration</a></li>
+</ul>
+</li>
+<li><a href="#_bash_completion">bash Completion</a></li>
+<li><a href="#_rest_api">REST API</a></li>
+<li><a href="#_deploying_pgpool">Deploying pgpool</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>v2.6, 2018-04-27</p>
+</div>
+<div class="sect1">
+<h2 id="_overview">Overview</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This document describes how to configure the operator beyond the default configurations in addition to detailing what the configuration settings mean.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_openshift_container_platform">Openshift Container Platform</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To run the Operator on Openshift Container Platform note the following requirements -</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Openshift Container Platform 3.7 or greater is required due to the dependence on Custom Resource Definitions.</p>
+</li>
+<li>
+<p>The <code>CO_CMD</code> environment variable should be set to <code>oc</code> when operating in an Openshift environment.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_security_configuration">Security Configuration</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_kube_rbac">Kube RBAC</h3>
+<div class="paragraph">
+<p>The <strong>apiserver</strong> and <strong>postgres-operator</strong> containers access
+Kubernetes resources and therefore require privileges for successful
+Kubernetes interactions. The <code>rbac.yaml</code> file includes a set of roles
+and bindings that allow the operator to work. These are fine grained
+controls that you can adjust to your local Kubernetes cluster depending
+on specific security requirements. The <code>rbac.yaml</code> file is executed when
+the operator is first deployed to the Kubernetes cluster.</p>
+</div>
+<div class="paragraph">
+<p>Permissions are granted to the Operator by means of a Service Account called
+<strong>postgres-operator</strong>. That service account is added through the Operator
+deployment.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you are not using the <strong>demo</strong> namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.</p>
+</div>
+<div class="paragraph">
+<p><code>$COROOT/deploy/service-account.yaml</code></p>
+</div>
+<div class="paragraph">
+<p><code>$COROOT/deploy/cluster-role-binding.yaml</code></p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="paragraph">
+<div class="notices tip" ><div class="paragraph">
+<p>See <a href="https://kubernetes.io/docs/admin/authorization/rbac/">here</a> for more
+details on how to enable RBAC roles and modify the scope of the permissions
+to suit your needs.</p>
+</div>
+</div>
+
+</div>
+</div>
+<div class="sect2">
+<h3 id="_basic_authentication">Basic Authentication</h3>
+<div class="paragraph">
+<p>Basic authentication between the host and the apiserver is required. It will
+be necessary to configure the pgo client to specify a basic authentication
+username and password through the creation a file in the user&#8217;s home directory
+named <code>.pgouser</code>. It will look similar to this, and contain only a single line -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>username:password</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The above excerpt specifies a username of <strong>username</strong> and a password of <strong>password</strong>.
+These values will be read by the <strong>pgo</strong> client and passed to the <strong>apiserver</strong> on each
+REST API call.</p>
+</div>
+<div class="paragraph">
+<p>For the <strong>apiserver</strong>, a list of usernames and passwords is specified in the
+<strong>apiserver-conf-secret</strong> Secret.  The values specified in a deployment are found in
+the following location -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgouser</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The sample configuration for <code>pgouser</code> is as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>username:password
+testuser:testpass</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Modify these values to be unique to your environment.</p>
+</div>
+<div class="paragraph">
+<p>If the username and password passed by clients to the <strong>apiserver</strong> do
+not match, the REST call will fail and a log message will be produced
+in the <strong>apiserver</strong> container log. The client will receive a 401 HTTP
+status code if they are not able to authenticate.</p>
+</div>
+<div class="paragraph">
+<p>If the <code>pgouser</code> file is not found in the <strong>home</strong> directory of the pgo user
+then the next searched location is <code>/etc/pgo/pgouser</code>. If the file is not
+found in either of the locations, the pgo client searches for the existence
+of a <code>PGOUSER</code> environment variable in order to locate a path to the basic
+authentication file.</p>
+</div>
+<div class="paragraph">
+<p>Basic authentication can be entirely disabled by setting the BasicAuth
+setting in the <code>pgo.yaml</code> configuration file to <code>false</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configure_tls">Configure TLS</h3>
+<div class="paragraph">
+<p>TLS is used to secure communications to the apiserver. Sample keys and
+certifications that can be used by TLS are found here -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/server.crt
+$COROOT/conf/apiserver/server.key</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you want to generate your own keys, you can use the script found in -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/bin/make-certs.sh</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <strong>pgo</strong> client is required to use keys to connect to the <strong>apiserver</strong>.
+Specify the keys for pgo by setting the following environment variables -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The sample server keys are used as the client keys; adjust to suit
+security requirements.</p>
+</div>
+<div class="paragraph">
+<p>For the <strong>apiserver TLS configuration</strong>, the keys are included in the
+<strong>apiserver-conf-secret</strong> Secret when the apiserver is deployed. See the
+<code>$COROOT/deploy/deploy.sh script</code> which is where the secret is created.</p>
+</div>
+<div class="paragraph">
+<p>The apiserver listens on port 8443 (e.g. <a href="https://postgres-operator:8443" class="bare">https://postgres-operator:8443</a>)
+by default.</p>
+</div>
+<div class="paragraph">
+<p>You can set <code>InsecureSkipVerify</code> to <strong>true</strong> by setting the <code>NO_TLS_VERIFY</code>
+environment variable in the <code>deployment.json</code> file to <strong>true</strong>. By default
+this value is set to <strong>false</strong> if you do not specify a value.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pgo_rbac">pgo RBAC</h3>
+<div class="paragraph">
+<p>The pgo command line utility talks to the apiserver REST API instead of
+the Kubernetes API. It is therefore necessary for the pgo client to make
+use of RBAC configuration.</p>
+</div>
+<div class="paragraph">
+<p>Starting in Release 2.6, the <code>/conf/apiserver/pgorole</code> file is used to define
+some sample pgo roles, <strong>pgadmin</strong> and <strong>pgoreader</strong>.</p>
+</div>
+<div class="paragraph">
+<p>These roles are meant as examples that you can configure to suit security
+requirements as necessary. The <strong>pgadmin</strong> role grants a user authorization to
+all pgo commands. The <strong>pgoreader</strong> only grants access to pgo commands that
+display information such as <code>pgo show cluster</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>pgorole</code> file is read at start up time when the operator is deployed to
+the Kubernetes cluster.</p>
+</div>
+<div class="paragraph">
+<p>Also, the <code>pgouser</code> file now includes the role that is assigned to a specific
+user as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>username:password:pgoadmin
+testuser:testpass:pgoadmin
+readonlyuser:testpass:pgoreader</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The following list shows the current complete list of possible pgo
+permissions -</p>
+</div>
+<table class="tableblock frame-topbot grid-all" style="width: 60%;">
+<caption class="title">Table 1. pgo Permissions</caption>
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Permission</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowCluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show cluster</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CreateCluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo create cluster</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">TestCluster</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo test mycluster</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowBackup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show backup</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CreateBackup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo backup mycluster</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DeleteBackup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo delete backup mycluster</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Label</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo label</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Load</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo load</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CreatePolicy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo create policy</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DeletePolicy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo delete policy</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowPolicy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show policy</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ApplyPolicy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo apply policy</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowPVC</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show pvc</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CreateUpgrade</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo upgrade</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowUpgrade</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show upgrade</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DeleteUpgrade</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo delete upgrade</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CreateUser</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo create user</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CreateFailover</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo failover</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">User</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo user</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Version</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo version</strong></p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>If the user is unauthorized for a pgo command, the user will
+get back this response -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>FATA[0000] Authentication Failed: 40</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_strong_apiserver_strong_configuration"><strong>apiserver</strong> Configuration</h3>
+<div class="paragraph">
+<p>The postgres-operator pod includes the apiserver which is a REST API that pgo
+users are able to communicate with.</p>
+</div>
+<div class="paragraph">
+<p>The apiserver uses the following configuration files found in <code>$COROOT/conf/apiserver</code>
+to determine how the Operator will provision PostgreSQL containers -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgo.yaml
+$COROOT/conf/apiserver/pgo.lspvc-template.json
+$COROOT/conf/apiserver/pgo.load-template.json</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the default pgo.yaml file assumes you are going to use <strong>HostPath</strong> Persistent
+Volumes for your storage configuration. It will be necessary to adjust this file for NFS
+or other storage configurations. Some examples of how are listed in the manual installation
+document.</p>
+</div>
+<div class="paragraph">
+<p>The version of PostgreSQL container the Operator will deploy is determined by the <strong>CCPImageTag</strong>
+setting in the <code>$COROOT/conf/apiserver/pgo.yaml</code> configuration file. By default, this value is
+set to the latest release of the Crunchy Container Suite.</p>
+</div>
+<div class="sect3">
+<h4 id="_strong_pgo_yaml_strong"><strong>pgo.yaml</strong></h4>
+<div class="paragraph">
+<p>The default pgo.yaml configuration file, included in <code>$COROOT/conf/apiserver/pgo.yaml</code>,
+looks like this -</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">BasicAuth:  true
+Cluster:
+  CCPImageTag:  centos7-10.3-1.8.2
+  Port:  5432
+  User:  testuser
+  Database:  userdb
+  PasswordAgeDays:  60
+  PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
+PrimaryStorage: storage1
+BackupStorage: storage1
+ReplicaStorage: storage1
+Storage:
+  storage1:
+    AccessMode:  ReadWriteMany
+    Size:  200M
+    StorageType:  create
+  storage2:
+    AccessMode:  ReadWriteMany
+    Size:  333M
+    StorageType:  create
+  storage3:
+    AccessMode:  ReadWriteMany
+    Size:  440M
+    StorageType:  create
+DefaultContainerResource: small
+ContainerResources:
+  small:
+    RequestsMemory:  2Gi
+    RequestsCPU:  0.5
+    LimitsMemory:  2Gi
+    LimitsCPU:  1.0
+  large:
+    RequestsMemory:  8Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  12Gi
+    LimitsCPU:  4.0
+Pgo:
+  Audit:  false
+  Metrics:  false
+  LSPVCTemplate:  /config/pgo.lspvc-template.json
+  CSVLoadTemplate:  /config/pgo.load-template.json
+  COImagePrefix:  crunchydata
+  COImageTag:  centos7-2.6</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Values in the pgo configuration file have the following meaning:</p>
+</div>
+<table class="tableblock frame-topbot grid-all" style="width: 90%;">
+<caption class="title">Table 2. pgo Configuration File Definitions</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Setting</th>
+<th class="tableblock halign-left valign-top">Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>BasicAuth</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">if set to <strong>true</strong> will enable Basic Authentication</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.CCPImageTag</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Port</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the PostgreSQL port to use for new containers (e.g. 5432)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.User</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the PostgreSQL normal user name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Strategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">sets the deployment strategy to be used for deploying a cluster, currently there is only strategy <strong>1</strong></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Replicas</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the number of cluster replicas to create for newly created clusters</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Policies</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.PasswordAgeDays</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.PasswordLength</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will determine the password length used when creating passwords, defaults to 8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PrimaryStorage</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">required, the value of the storage configuration to use for the primary PostgreSQL deployment</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>BackupStorage</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">required, the value of the storage configuration to use for backups</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ReplicaStorage</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">required, the value of the storage configuration to use for the replica PostgreSQL deployments</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.StorageClass</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.AccessMode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.Size</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the size to use when creating new PVCs (e.g. 100M, 1Gi)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.StorageType</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">supported values are either <strong>dynamic</strong>, <strong>existing</strong>, <strong>create</strong>, or <strong>emptydir</strong>, if not supplied, <strong>emptydir</strong> is used</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.Fsgroup</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will cause a <strong>SecurityContext</strong> and <strong>fsGroup</strong> attributes to be added to generated Pod and Deployment definitions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.SupplementalGroups</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultContainerResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.small.RequestsMemory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of memory in bytes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.small.RequestsCPU</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of CPU cores</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.small.LimitsMemory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of memory in bytes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.small.LimitsCPU</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of CPU cores</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.large.RequestsMemory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of memory in bytes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.large.RequestsCPU</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of CPU cores</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.large.LimitsMemory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of memory in bytes</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.large.LimitsCPU</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">request size of CPU cores</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.LSPVCTemplate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the PVC lspvc template file that lists PVC contents</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.LoadTemplate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">the load template file used for load jobs</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.COImagePrefix</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">image tag prefix to use for the Operator containers</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.COImageTag</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">image tag to use for the Operator containers</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.Audit</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, if set to true will cause each apiserver call to be logged with an <strong>audit</strong> marking</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.Metrics</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_storage_configurations">Storage Configurations</h4>
+<div class="paragraph">
+<p>You can now define n-number of Storage configurations within the <strong>pgo.yaml</strong> file. Those Storage configurations follow these conventions -</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>they must have lowercase name (e.g. storage1)</p>
+</li>
+<li>
+<p>they must be unique names (e.g. mydrstorage, faststorage, slowstorage)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These Storage configurations are referenced in the BackupStorage, ReplicaStorage, and PrimaryStorage configuration values. However, there are command line
+options in the <strong>pgo</strong> client that will let a user override these default global
+values to offer you the user a way to specify very targeted storage configurations
+when needed (e.g. disaster recovery storage for certain backups).</p>
+</div>
+<div class="paragraph">
+<p>You can set the storage AccessMode values to the following -</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>ReadWriteMany</strong> - mounts the volume as read-write by many nodes</p>
+</li>
+<li>
+<p><strong>ReadWriteOnce</strong> - mounts the PVC as read-write by a single node</p>
+</li>
+<li>
+<p><strong>ReadOnlyMany</strong> - mounts the PVC as read-only by many nodes</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>These Storage configurations are validated when the <strong>pgo-apiserver</strong> starts, if a
+non-valid configuration is found, the apiserver will abort.  These Storage values are only read at <strong>apiserver</strong> start time.</p>
+</div>
+<div class="paragraph">
+<p>The following StorageType values are possible -</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>dynamic</strong> - this will allow for dynamic provisioning of storage using a StorageClass.</p>
+</li>
+<li>
+<p><strong>existing</strong> - This setting allows you to use a PVC that already exists.  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters can write to that NFS volume mount via a common PVC. When set, the Name setting is used for the PVC.</p>
+</li>
+<li>
+<p><strong>create</strong> - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of <strong>clustername</strong>-pvc*.  When set, the <strong>Size</strong>, <strong>AccessMode</strong> settings are used in constructing the new PVC.</p>
+</li>
+<li>
+<p><strong>emptydir</strong> - If a StorageType value is not defined, <strong>emptydir</strong> is used by default.  This is a volume type that’s created when a pod is assigned to a node and exists as long as that pod remains running on that node; it is deleted as soon as the pod is manually deleted or removed from the node.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The operator will create new PVCs using the naming convention
+<strong>dbname-pvc</strong> where <strong>dbname</strong> is the database name you have specified. For
+example, if you run -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster example1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It will result in a PVC being created named <strong>example1-pvc</strong> and in
+the case of a backup job, the pvc is named <strong>example1-backup-pvc</strong></p>
+</div>
+<div class="paragraph">
+<p>There are currently 3 sample pgo configuration files provided
+for users to use as a starting configuration -</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>pgo.yaml.emptydir</code> - this configuration specifies <strong>emptydir</strong> storage to be used for databases</p>
+</li>
+<li>
+<p><code>pgo.yaml.nfs</code> - this configuration specifies <strong>create</strong> storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database</p>
+</li>
+<li>
+<p><code>pgo.yaml.dynamic</code> - this configuration specifies <strong>dynamic</strong> storage to be used, namely a <strong>storageclass</strong> that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_overriding_container_resources_configuration_defaults">Overriding Container Resources Configuration Defaults</h4>
+<div class="paragraph">
+<p>In the <strong>pgo.yaml</strong> configuration file you have the option to configure a default container resources configuration that when set will add CPU and memory resource limits and requests values into each database container when the container is created.</p>
+</div>
+<div class="paragraph">
+<p>You can also override the default value using the <code>--resources-config</code> command flag when creating a new cluster -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --resources-config=large</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note, if you try to allocate more resources than your
+host or Kube cluster has available then you will see your
+pods wait in a <strong>Pending</strong> status. The output from a <code>kubectl describe pod</code>
+command will show output like this in this event -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Events:
+  Type     Reason            Age               From               Message
+  ----     ------            ----              ----               -------
+  Warning  FailedScheduling  49s (x8 over 1m)  default-scheduler  No nodes are available that match all of the predicates: Insufficient memory (1).</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_overriding_storage_configuration_defaults">Overriding Storage Configuration Defaults</h4>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --storage-config=bigdisk</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That example will create a cluster and specify a storage configuration
+of <strong>bigdisk</strong> to be used for the primary database storage. The replica
+storage will default to the value of ReplicaStorage as specified in
+<strong>pgo.yaml</strong>.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That example will create a cluster and specify a storage configuration of
+<strong>fastdisk</strong> to be used for the primary database storage, while the replica
+storage will use the storage configuration <strong>slowdisk</strong>.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo backup testcluster --storage-config=offsitestorage</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That example will create a backup and use the <strong>offsitestorage</strong> storage configuration
+for persisting the backup.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_disaster_recovery_using_storage_configurations">Disaster Recovery Using Storage Configurations</h4>
+<div class="paragraph">
+<p>A simple mechanism for partial disaster recovery can be obtained by leveraging network
+storage, Kubernetes storage classes, and the storage configuration options within the
+Operator.</p>
+</div>
+<div class="paragraph">
+<p>For example, if you define a Kubernetes storage class that refers to a storage backend
+that is running within your disaster recovery site, and then use that storage class as
+a storage configuration for your backups, you essentially have moved your backup files
+automatically to your disaster recovery site thanks to network storage.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://xenophenes.github.io/pgo-docs/Operator-DR-Storage.png" alt="Operator Storage">
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_strong_postgres_operator_strong_container_configuration"><strong>postgres-operator</strong> Container Configuration</h3>
+<div class="paragraph">
+<p>To enable <strong>debug</strong> level messages from the operator pod, set the <code>CRUNCHY_DEBUG</code> environment
+variable to <strong>true</strong> within its deployment file <code>deployment.json</code>.</p>
+</div>
+<div class="sect3">
+<h4 id="_operator_templates">Operator Templates</h4>
+<div class="paragraph">
+<p>The database and cluster Kubernetes objects that get created by the operator are based on JSON
+templates that are added into the operator deployment by means of a mounted volume.</p>
+</div>
+<div class="paragraph">
+<p>The templates are located in the <code>$COROOT/conf/postgres-operator</code> directory and are added into
+a config map which is mounted by the operator deployment.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bash_completion">bash Completion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There is a bash completion file that is included for users to try
+located in the repository at <code>examples/pgo-bash-completion</code>. To use it -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo-bash-completion /etc/bash_completion.d/pgo
+su - $USER</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_rest_api">REST API</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Because the <strong>apiserver</strong> implements a REST API, it is possible to integrate with it using your own
+application code. To demonstrate this, the following <strong>curl</strong> commands show the API usage -</p>
+</div>
+<div class="paragraph">
+<p><strong>pgo version</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/version</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show policy all</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/all</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show pvc danger-pvc</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger-pvc</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show cluster mycluster</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show upgrade mycluster</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgrades/mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo test mycluster</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/test/mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show backup mycluster</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/backups/mycluster</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_deploying_pgpool">Deploying pgpool</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>One option with pgo is enabling the creation of a pgpool deployment in addition to the PostgreSQL cluster.
+Running pgpool is a logical inclusion when the Kubernetes cluster includes both a primary database in addition
+to some number of replicas deployed. The current pgpool configuration deployed by the operator only works when
+both a primary and a replica are running.</p>
+</div>
+<div class="paragraph">
+<p>When a user creates the cluster a command flag can be passed as follows to enable the creation of the pgpool
+deployment.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster cluster1 --pgpool
+pgo scale cluster1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will cause the operator to create a Deployment that includes the <strong>crunchy-pgpool</strong> container along with a
+replica.  That container will create a configuration that will perform SQL routing to your cluster services,
+both for the primary and replica services.</p>
+</div>
+<div class="paragraph">
+<p>Pgpool examines the SQL it receives and routes the SQL statement to either the primary or replica based on
+the SQL action. Specifically, it will send writes and updates to only the <strong>primary</strong> service. It will send
+read-only statements to the <strong>replica</strong> service.</p>
+</div>
+<div class="paragraph">
+<p>When the operator deploys the pgpool container, it creates a secret (e.g. mycluster-pgpool-secret) that contains
+pgpool configuration files. It fills out templated versions of these configuration files specifically for this
+PostgreSQL cluster.</p>
+</div>
+<div class="paragraph">
+<p>Part of the pgpool deployment also includes creating a <code>pool_passwd</code> file that will allow the <strong>testuser</strong> credential
+to authenticate to pgpool. Adding additional users to the pgpool configuration currently requires human intervention
+specifically creating a new pgpool secret and bouncing the pgpool pod to pick up the updated secret. Future operator
+releases will attempt to provide <strong>pgo</strong> commands to let you automate the addition or removal of a pgpool user.</p>
+</div>
+<div class="paragraph">
+<p>Currently to update a pgpool user within the <code>pool_passwd</code> configuration file, it is necessary to copy the existing
+files from the secret to your local system, update the credentials in <code>pool_passwd</code> with the new user credentials,
+recreate the pgpool secret, and finally restart the pgpool pod to pick up the updated configuration files.</p>
+</div>
+<div class="paragraph">
+<p>As an example -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl cp demo/wed10-pgpool-6cc6f6598d-wcnmf:/pgconf/ /tmp/foo</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That command gets a running set of secret pgpool configuration files and places them locally on your system for you
+to edit.</p>
+</div>
+<div class="paragraph">
+<p><strong>pgpool</strong> requires a specially formatted password credential to be placed into <code>pool_passwd</code>. There is a golang program
+included in <code>$COROOT/golang-examples/gen-pgpool-pass.go</code> that, when run, will generate the value to use within the
+<strong>pgpool_passwd</strong> configuration file.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>go run $COROOT/golang-examples/gen-pgpool-pass.go
+Enter Username: testuser
+Enter Password:
+Password typed: e99Mjt1dLz
+hash of password is [md59c4017667828b33762665dc4558fbd76]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The value <strong>md59c4017667828b33762665dc4558fbd76</strong> is what you will use
+in the <strong>pool_passwd</strong> file.</p>
+</div>
+<div class="paragraph">
+<p>Then, create the new secrets file based on those updated files -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/bin/create-pgpool-secrets.sh</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Lastly for pgpool to pick up the new secret file, delete the existing
+deployment pod -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get deployment wed-pgpool
+kubectl delete pod wed10-pgpool-6cc6f6598d-wcnmf</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The pgpool deployment will spin up another pgpool which will pick up
+the updated secret file.</p>
+</div>
+</div>
+</div>
+
+
+    
+    
+          <footer class=" footline" >
+	
+</footer>
+  </div>
+</div>
+
+<div id="navigation">
+<a class="nav nav-prev" href="https://xenophenes.github.io/pgo-docs/installation/deployment/" title="Deployment"> <i class="fa fa-chevron-left"></i><label>Deployment</label></a>
+    <a class="nav nav-next" href="https://xenophenes.github.io/pgo-docs/how-it-works/" title="How it Works" style="margin-right: 0px;"><label>How it Works</label><i class="fa fa-chevron-right"></i></a></div>
+
+</section>
+<div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+  <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+</div>    
+
+<script src="https://xenophenes.github.io/pgo-docs/js/clipboard.min.js"></script>
+<script src="https://xenophenes.github.io/pgo-docs/js/featherlight.min.js"></script>
+<script src="https://xenophenes.github.io/pgo-docs/js/html5shiv-printshiv.min.js"></script>
+
+<script src="https://xenophenes.github.io/pgo-docs/js/modernizr.custom.71422.js"></script>
+<script src="https://xenophenes.github.io/pgo-docs/js/docdock.js"></script>
+<script src="https://xenophenes.github.io/pgo-docs/theme-original/script.js"></script>
+
+
+    
+
+    
+    
+
+    
+  </body>
+</html>
