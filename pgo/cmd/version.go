@@ -26,7 +26,7 @@ import (
 	"os"
 )
 
-const ClientVersion = "2.6"
+const ClientVersion = "2.7-rc1"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",

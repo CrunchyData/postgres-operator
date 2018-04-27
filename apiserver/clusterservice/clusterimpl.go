@@ -27,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -557,7 +556,8 @@ func validateConfigPolicies(PoliciesFlag string) error {
 	var err error
 	var configPolicies string
 	if PoliciesFlag == "" {
-		configPolicies = viper.GetString("Cluster.Policies")
+		log.Println(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
+		configPolicies = apiserver.Pgo.Cluster.Policies
 	} else {
 		configPolicies = PoliciesFlag
 	}
@@ -594,27 +594,31 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec := crv1.PgclusterSpec{}
 
 	if request.ContainerResources != "" {
-		spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + request.ContainerResources))
+		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(request.ContainerResources)
 	} else {
-		defaultContainerResource := viper.GetString("DefaultContainerResource")
+		log.Println(apiserver.Pgo.DefaultContainerResources + " is Pgo.DefaultContainerResources")
+		defaultContainerResource := apiserver.Pgo.DefaultContainerResources
 		if defaultContainerResource != "" {
-			spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + defaultContainerResource))
+			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
 		}
 	}
 
 	if request.StorageConfig != "" {
-		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + request.StorageConfig))
+		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	} else {
-		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("PrimaryStorage")))
+		log.Printf("%v", apiserver.Pgo.PrimaryStorage)
+		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	}
 
 	if request.ReplicaStorageConfig != "" {
-		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + request.ReplicaStorageConfig))
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.ReplicaStorageConfig)
 	} else {
-		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
+		log.Printf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
-	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
+	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
+	log.Println(apiserver.Pgo.Cluster.CCPImageTag + " is Pgo.Cluster.CCPImageTag")
 	if request.CCPImageTag != "" {
 		spec.CCPImageTag = request.CCPImageTag
 		log.Debug("using CCPImageTag from command line " + request.CCPImageTag)
@@ -628,7 +632,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.BackupPVCName = ""
 	spec.PrimaryHost = name
 	if request.Policies == "" {
-		spec.Policies = viper.GetString("Cluster.Policies")
+		spec.Policies = apiserver.Pgo.Cluster.Policies
+		log.Println(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
 	} else {
 		spec.Policies = request.Policies
 	}
@@ -643,23 +648,28 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.UserLabels = userLabelsMap
 
 	//override any values from config file
-	str := viper.GetString("Cluster.Port")
+	str := apiserver.Pgo.Cluster.Port
+	log.Printf("%d", apiserver.Pgo.Cluster.Port)
 	if str != "" {
 		spec.Port = str
 	}
-	str = viper.GetString("Cluster.User")
+	str = apiserver.Pgo.Cluster.User
+	log.Println(apiserver.Pgo.Cluster.User + " is Pgo.Cluster.User")
 	if str != "" {
 		spec.User = str
 	}
-	str = viper.GetString("Cluster.Database")
+	str = apiserver.Pgo.Cluster.Database
+	log.Println(apiserver.Pgo.Cluster.Database + " is Pgo.Cluster.Database")
 	if str != "" {
 		spec.Database = str
 	}
-	str = viper.GetString("Cluster.Strategy")
+	str = apiserver.Pgo.Cluster.Strategy
+	log.Printf("%d", apiserver.Pgo.Cluster.Strategy)
 	if str != "" {
 		spec.Strategy = str
 	}
-	str = viper.GetString("Cluster.Replicas")
+	str = apiserver.Pgo.Cluster.Replicas
+	log.Printf("%d", apiserver.Pgo.Cluster.Replicas)
 	if str != "" {
 		spec.Replicas = str
 	}

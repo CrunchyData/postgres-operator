@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	//"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -26,7 +26,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
-	"github.com/spf13/viper"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
@@ -49,7 +48,7 @@ type loadJobTemplateFields struct {
 }
 
 // LoadConfig ...
-var LoadConfig string
+//var LoadConfig string
 
 // Load ...
 // pgo load  --policies=jsonload --selector=name=mycluster --load-config=./sample-load-config.json
@@ -62,27 +61,26 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 	LoadConfigTemplate := loadJobTemplateFields{}
 
-	viper.SetConfigType("yaml")
+	var LoadCfg LoadConfig
+	LoadCfg.getConf(bytes.NewBufferString(request.LoadConfig))
 
-	viper.ReadConfig(bytes.NewBufferString(request.LoadConfig))
-
-	err = validateConfig()
+	err = LoadCfg.validate()
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	LoadConfigTemplate.COImagePrefix = viper.GetString("COImagePrefix")
-	LoadConfigTemplate.COImageTag = viper.GetString("COImageTag")
-	LoadConfigTemplate.DbDatabase = viper.GetString("DbDatabase")
-	LoadConfigTemplate.DbUser = viper.GetString("DbUser")
-	LoadConfigTemplate.DbPort = viper.GetString("DbPort")
-	LoadConfigTemplate.TableToLoad = viper.GetString("TableToLoad")
-	LoadConfigTemplate.FilePath = viper.GetString("FilePath")
-	LoadConfigTemplate.FileType = viper.GetString("FileType")
-	LoadConfigTemplate.PVCName = viper.GetString("PVCName")
-	LoadConfigTemplate.SecurityContext = viper.GetString("SecurityContext")
+	LoadConfigTemplate.COImagePrefix = LoadCfg.COImagePrefix
+	LoadConfigTemplate.COImageTag = LoadCfg.COImageTag
+	LoadConfigTemplate.DbDatabase = LoadCfg.DbDatabase
+	LoadConfigTemplate.DbUser = LoadCfg.DbUser
+	LoadConfigTemplate.DbPort = LoadCfg.DbPort
+	LoadConfigTemplate.TableToLoad = LoadCfg.TableToLoad
+	LoadConfigTemplate.FilePath = LoadCfg.FilePath
+	LoadConfigTemplate.FileType = LoadCfg.FileType
+	LoadConfigTemplate.PVCName = LoadCfg.PVCName
+	LoadConfigTemplate.SecurityContext = LoadCfg.SecurityContext
 
 	args := request.Args
 	if request.Selector != "" {
@@ -191,33 +189,4 @@ func createJob(clusterName string, template *loadJobTemplateFields) error {
 
 	return err
 
-}
-
-func validateConfig() error {
-	var err error
-	if viper.GetString("COImagePrefix") == "" {
-		return errors.New("COImagePrefix is not supplied")
-	}
-	if viper.GetString("COImageTag") == "" {
-		return errors.New("COImageTag is not supplied")
-	}
-	if viper.GetString("DbDatabase") == "" {
-		return errors.New("DbDatabase is not supplied")
-	}
-	if viper.GetString("DbUser") == "" {
-		return errors.New("DbUser is not supplied")
-	}
-	if viper.GetString("DbPort") == "" {
-		return errors.New("DbPort is not supplied")
-	}
-	if viper.GetString("TableToLoad") == "" {
-		return errors.New("TableToLoad is not supplied")
-	}
-	if viper.GetString("FilePath") == "" {
-		return errors.New("FilePath is not supplied")
-	}
-	if viper.GetString("PVCName") == "" {
-		return errors.New("PVCName is not supplied")
-	}
-	return err
 }

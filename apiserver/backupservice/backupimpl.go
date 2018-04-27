@@ -22,7 +22,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	"github.com/spf13/viper"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -194,11 +193,11 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	spec := crv1.PgbackupSpec{}
 	spec.Name = name
 	if storageConfig != "" {
-		spec.StorageSpec = util.GetStorageSpec(viper.Sub("Storage." + storageConfig))
+		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
 	} else {
-		spec.StorageSpec = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("BackupStorage")))
+		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackupStorage)
 	}
-	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
+	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
 	spec.BackupUser = "primaryuser"

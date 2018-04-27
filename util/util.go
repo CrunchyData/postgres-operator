@@ -24,7 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/spf13/viper"
+	//"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -334,6 +334,7 @@ func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace st
 
 }
 
+/**
 // GetStorageSpec ...
 func GetStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
 	storage := crv1.PgStorageSpec{}
@@ -357,6 +358,7 @@ func GetContainerResources(cfg *viper.Viper) crv1.PgContainerResources {
 	return r
 
 }
+*/
 
 // RandStringBytesRmndr ...
 func RandStringBytesRmndr(n int) string {

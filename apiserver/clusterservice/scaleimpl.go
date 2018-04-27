@@ -21,7 +21,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/util"
-	"github.com/spf13/viper"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
@@ -60,19 +59,19 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 
 	//get the resource-config
 	if resourcesConfig != "" {
-		spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + resourcesConfig))
+		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(resourcesConfig)
 	} else {
-		defaultContainerResource := viper.GetString("DefaultContainerResource")
+		defaultContainerResource := apiserver.Pgo.DefaultContainerResources
 		if defaultContainerResource != "" {
-			spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + defaultContainerResource))
+			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
 		}
 	}
 
 	//get the storage-config
 	if storageConfig != "" {
-		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + storageConfig))
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
 	} else {
-		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
 	}
 
 	spec.UserLabels = make(map[string]string)

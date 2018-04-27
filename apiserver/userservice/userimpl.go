@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
 	"strconv"
 	"time"
 )
@@ -268,13 +267,13 @@ func GeneratePasswordExpireDate(daysFromNow int) string {
 
 // getDefaults ....
 func getDefaults() {
-	str := viper.GetString("Cluster.PasswordAgeDays")
+	str := apiserver.Pgo.Cluster.PasswordAgeDays
 	if str != "" {
 		defaultPasswordAgeDays, _ = strconv.Atoi(str)
 		log.Debugf("PasswordAgeDays set to %d\n", defaultPasswordAgeDays)
 
 	}
-	str = viper.GetString("Cluster.PasswordLength")
+	str = apiserver.Pgo.Cluster.PasswordLength
 	if str != "" {
 		defaultPasswordLength, _ = strconv.Atoi(str)
 		log.Debugf("PasswordLength set to %d\n", defaultPasswordLength)
