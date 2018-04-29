@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.40" />
 
-<title>Tags :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Contributing :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/css/font-awesome.min.css" rel="stylesheet">
@@ -28,7 +28,7 @@
 
     
   </head>
-  <body data-url="/tags/">
+  <body data-url="/contributing/">
     
       <div id="headermain"></div>
 <nav id="sidebar" class="">
@@ -115,7 +115,7 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/contributing/" class="dd-item
+    <li data-nav-id="/contributing/" class="dd-item parent active
         ">
       <div>
       <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
@@ -163,7 +163,20 @@
 <div class="padding highlightable">
 
   <div id="top-bar">
-    <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+    
+      
+      
+      
+    <div id="top-github-link">
+      <a class="github-link" href="https://crunchydata.github.io/postgres-operator/contributing/" target="blank">
+        <i class="fa fa-info-circle"></i>
+        How to contribute
+      </a>
+      <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/contributing/_index.adoc" target="blank">
+        <i class="fa fa-code-fork"></i>
+        Improve this page
+      </a>
+    </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
         <span id="sidebar-toggle-span">
           <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
             <i class="fa fa-bars"></i>
@@ -173,7 +186,12 @@
         <span class="links">
         
 
- Tags
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/'>Crunchy Data PostgreSQL Operator</a> > Contributing
+
+
 
 
         </span>
@@ -192,7 +210,7 @@
 
 <div id="body-inner">
   
-    <h1>Tags</h1>
+    <h1>Contributing</h1>
   
 
 
@@ -201,27 +219,47 @@
     
     
 
-
-
-<div class="extra-pagination inner">
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number">Page 1 of 0</span>
-	
-</nav>
-
+<div class="paragraph">
+<p>v2.6, 2018-04-29</p>
 </div>
-
-
-
-<div style="margin-bottom:2rem"></div>
-
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number">Page 1 of 0</span>
-	
-</nav>
-
+<div class="sect1">
+<h2 id="_getting_started">Getting Started</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Welcome! Thank you for your interest in contributing. Before submitting a new <a href="https://github.com/CrunchyData/postgres-operator/issues/new">issue</a>
+or <a href="https://github.com/CrunchyData/postgres-operator/pulls">pull request</a> to the <a href="https://github.com/CrunchyData/postgres-operator/">Crunchy Data
+PostgreSQL Operator</a> project on GitHub, <strong>please review any open or closed issues</strong> <a href="https://github.com/crunchydata/postgres-operator/issues">here</a>
+in addition to any existing open pull requests.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_documentation">Documentation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The documentation website (located at <a href="https://crunchydata.github.io/postgres-operator/" class="bare">https://crunchydata.github.io/postgres-operator/</a>) is generated using <a href="https://gohugo.io/">Hugo</a> and
+<a href="https://pages.github.com/">GitHub Pages</a>. If you would like to build the documentation locally, view the
+<a href="https://gohugo.io/getting-started/installing/">official Installing Hugo</a> guide to set up Hugo locally. You can then start the server by
+running the following commands -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cd $COROOT/hugo/
+vi config.toml
+hugo server</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you edit <strong>config.toml</strong>, you&#8217;ll set <code>baseURL = "/"</code>. This will make the local version of the Hugo server accessible by default from
+<code>localhost:1313</code>. Once you&#8217;ve run <code>hugo server</code>, that will let you interactively make changes to the documentation as desired and view the updates
+in real-time.</p>
+</div>
+<div class="paragraph">
+<p><strong>When you&#8217;re ready to commit a change</strong>, please view and run the script located at <code>$COROOT/generate-docs.sh</code> which will automatically generate a new
+set of webpages using Hugo that will update the live website after the change has been committed to the repository.</p>
+</div>
+</div>
+</div>
 
 
 
@@ -234,7 +272,8 @@
 </div>
 
 <div id="navigation">
-<a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/" title="Installation" style="margin-right: 0px;"><label>Installation</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration"> <i class="fa fa-chevron-left"></i><label>Configuration</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/how-it-works/" title="How it Works" style="margin-right: 0px;"><label>How it Works</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>
 <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">

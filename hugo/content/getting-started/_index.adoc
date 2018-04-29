@@ -56,26 +56,19 @@ pgo show cluster mydatabase -o json
 ....
 
 The output will give you the current status of the database pod
-and the IP address of the database service.  If you have *postgresql*
+and the IP address of the database service.  If you have *psql*
 installed on your test system you can connect to the
 database using the service IP address -
 ....
 psql -h 10.105.121.12 -U postgres postgres
 ....
 
-More details are available on user management below, however, you may wish to take note
-that user credentials are created in the file `$COROOT/deploy/create-secrets.sh` upon
-deployment of the Operator. The following user accounts and passwords are created by
-default for connecting to the PostgreSQL clusters -
-
-*username*: postgres
-*password*: password
-
-*username*: primaryuser
-*password*: password
-
-*username*: testuser
-*password*: password
+{{% notice tip %}}
+User credentials are generated through Kubernetes Secrets automatically for the
+*testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed
+by running the `pgo show cluster` command with the `--show-secrets` flag. More details
+are available on user management below.
+{{% /notice %}}
 
 You can view *all* databases using the special keyword *all* -
 ....
@@ -88,7 +81,7 @@ pgo show cluster all --version=9.6.2
 ....
 
 You can also add metrics collection to a cluster by using the *--metrics*
-command flag as follows:
+command flag as follows -
 ....
 pgo create cluster testcluster --metrics
 ....
@@ -99,9 +92,9 @@ For this to work, you will need to configure the Crunchy metrics
 example as found in the Crunchy Container Suite.
 
 New clusters typically pick up the container image version to use
-based on the *pgo* configuration file's CCP_IMAGE_TAG setting.  You
+based on the pgo configuration file's `CCP_IMAGE_TAG` setting.  You
 can override this value using the *--ccp-image-tag* command line
-flag:
+flag -
 ....
 pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
 ....

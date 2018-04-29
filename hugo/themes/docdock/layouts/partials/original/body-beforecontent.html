@@ -76,6 +76,10 @@
       {{ $Site := .Site }}
       {{with $File.Path }}
     <div id="top-github-link">
+      <a class="github-link" href="/contributing/" target="blank">
+        <i class="fa fa-info-circle"></i>
+        {{T "Contributing-guidelines"}}
+      </a>
       <a class="github-link" href="{{ $Site.Params.editURL }}{{ replace $File.Dir "\\" "/" }}{{ $File.LogicalName }}" target="blank">
         <i class="fa fa-code-fork"></i>
         {{T "Edit-this-page"}}

@@ -61,6 +61,9 @@
   </div>
 
       <ul class="topics">
+            <li data-nav-id="/" class="dd-item">
+            <a href="https://crunchydata.github.io/postgres-operator/"><i class="fa fa-fw fa-home"></i></a>
+            </li>
     <li data-nav-id="/installation/" class="dd-item haschildren
         ">
       <div>
@@ -112,6 +115,13 @@
     </li>
         </ul>
     </li>
+    <li data-nav-id="/contributing/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
+
+      </div>
+    </li>
     <li data-nav-id="/how-it-works/" class="dd-item
         ">
       <div>
@@ -133,6 +143,7 @@
                 <li class="" role=""><h3>More</h3><a href="https://github.com/CrunchyData/postgres-operator" target="_blank" rel="noopener"><i class='fa fa-github'></i> <label>Github repo</label></a></li>
                 <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
                 <li class="" role=""><a href="https://kubernetes.io/docs/" target="_blank" rel="noopener"><i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md" target="_blank" rel="noopener"><i class='fa fa-file'></i> <label>License</label></a></li>
         </section>
 
     <hr />
@@ -157,7 +168,11 @@
       
       
     <div id="top-github-link">
-      <a class="github-link" href="https://github.com/crunchydata/postgres-operatorgetting-started/_index.adoc" target="blank">
+      <a class="github-link" href="https://crunchydata.github.io/postgres-operator/contributing/" target="blank">
+        <i class="fa fa-info-circle"></i>
+        How to contribute
+      </a>
+      <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/getting-started/_index.adoc" target="blank">
         <i class="fa fa-code-fork"></i>
         Improve this page
       </a>
@@ -232,7 +247,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v2.6, 2018-04-27</p>
+<p>v2.6, 2018-04-29</p>
 </div>
 <div class="sect1">
 <h2 id="_pgo_commands">pgo Commands</h2>
@@ -305,7 +320,7 @@ they are created.</p>
 </div>
 <div class="paragraph">
 <p>The output will give you the current status of the database pod
-and the IP address of the database service.  If you have <strong>postgresql</strong>
+and the IP address of the database service.  If you have <strong>psql</strong>
 installed on your test system you can connect to the
 database using the service IP address -</p>
 </div>
@@ -315,22 +330,14 @@ database using the service IP address -</p>
 </div>
 </div>
 <div class="paragraph">
-<p>More details are available on user management below, however, you may wish to take note
-that user credentials are created in the file <code>$COROOT/deploy/create-secrets.sh</code> upon
-deployment of the Operator. The following user accounts and passwords are created by
-default for connecting to the PostgreSQL clusters -</p>
+<div class="notices tip" ><div class="paragraph">
+<p>User credentials are generated through Kubernetes Secrets automatically for the
+<strong>testuser</strong>, <strong>primaryuser</strong> and <strong>postgres</strong> accounts. The generated passwords can be viewed
+by running the <code>pgo show cluster</code> command with the <code>--show-secrets</code> flag. More details
+are available on user management below.</p>
 </div>
-<div class="paragraph">
-<p><strong>username</strong>: postgres
-<strong>password</strong>: password</p>
 </div>
-<div class="paragraph">
-<p><strong>username</strong>: primaryuser
-<strong>password</strong>: password</p>
-</div>
-<div class="paragraph">
-<p><strong>username</strong>: testuser
-<strong>password</strong>: password</p>
+
 </div>
 <div class="paragraph">
 <p>You can view <strong>all</strong> databases using the special keyword <strong>all</strong> -</p>
@@ -350,7 +357,7 @@ default for connecting to the PostgreSQL clusters -</p>
 </div>
 <div class="paragraph">
 <p>You can also add metrics collection to a cluster by using the <strong>--metrics</strong>
-command flag as follows:</p>
+command flag as follows -</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -365,9 +372,9 @@ example as found in the Crunchy Container Suite.</p>
 </div>
 <div class="paragraph">
 <p>New clusters typically pick up the container image version to use
-based on the <strong>pgo</strong> configuration file&#8217;s CCP_IMAGE_TAG setting.  You
+based on the pgo configuration file&#8217;s <code>CCP_IMAGE_TAG</code> setting.  You
 can override this value using the <strong>--ccp-image-tag</strong> command line
-flag:</p>
+flag -</p>
 </div>
 <div class="literalblock">
 <div class="content">
