@@ -21,20 +21,9 @@
   font-weight: 700;
   src: local("Lato Bold"), local("Lato-Bold"), url(../fonts/Lato-Bold.woff2) format("woff2"), url(../fonts/Lato-Bold.ttf) format("truetype"); }
 */
-@font-face {
-  font-family: 'IBM+Plex+Sans';
-  src: url('https://fonts.googleapis.com/css?family=IBM+Plex+Sans');
-  font-style: normal; }
-@font-face {
-  font-family: "Source Sans Pro";
-  font-style: normal;
-  font-weight: 400;
-  src: url('https://fonts.googleapis.com/css?family=Source+Sans+Pro'); }
-@font-face {
-  font-family: "Source Sans Pro";
-  font-style: normal;
-  font-weight: 700;
-  src: url('https://fonts.googleapis.com/css?family=Source+Sans+Pro'); }
+
+@import url('https://fonts.googleapis.com/css?family=Roboto:200,400,700');
+
 /* Table of contents */
 .progress ul {
   list-style: none;
@@ -286,14 +275,14 @@ h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
   font-weight: inherit; }
 
 h2 {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   line-height: 110% !important;
-  margin: 2.5rem 0 1.5rem 0;
+  margin: 1.5rem 0;
   text-transform: capitalize;
   color: #323232 !important }
 
 h3 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   line-height: 110% !important;
   margin: 2rem 0 1rem 0; }
 
@@ -313,10 +302,10 @@ h6 {
   margin: 0.5rem 0 0.2rem 0; }
 
 p {
-  margin: 1rem 0; }
+  margin: 0.8rem 0; }
 
 figcaption h4 {
-  font-weight: 300 !important;
+  font-weight: 200 !important;
   opacity: .85;
   font-size: 1em;
   text-align: center;
@@ -468,7 +457,7 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
   border: 0;
   padding: 0 25px 0 30px;
   margin: 0;
-  font-weight: 300; }
+  font-weight: 200; }
 
 .searchbox input::-webkit-input-placeholder {
   color: rgba(255, 255, 255, 0.6); }
@@ -492,7 +481,7 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
   min-height: 100%; }
 
 #body img, #body .video-container {
-  margin: 3rem auto;
+  margin: 2rem auto;
   display: block;
   text-align: center; }
 
@@ -562,8 +551,8 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
   max-width: 80%; }
 
 #chapter h3 {
-  font-family: "Lato", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
-  font-weight: 300;
+  font-family: "Roboto", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
+  font-weight: 200;
   text-align: center; }
 
 #chapter h1 {
@@ -583,22 +572,23 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
   margin: 0; }
 
 body {
-  font-family: "Lato", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
-  font-weight: normal;
-  line-height: 1.6; }
+  font-family: "Roboto", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
+  font-weight: 400;
+  line-height: 1.5; }
   body strong {
-    font-family: "Lato Bold", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
-    font-weight: bold; }
+    font-family: "Roboto", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
+    font-weight: 700; }
 
 h2, h3, h4, h5, h6 {
-  font-family: "Lato", "Work Sans Bold", "Helvetica Bold", "Tahoma Bold", "Geneva Bold", "Arial Bold", sans-serif;
+  font-family: "Roboto", "Work Sans Bold", "Helvetica Bold", "Tahoma Bold", "Geneva Bold", "Arial Bold", sans-serif;
   text-rendering: optimizeLegibility;
   color: #5e5e5e;
   font-weight: 400; }
 
 h1 {
-  font-family: "Lato", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
+  font-family: "Roboto", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
   text-align: center;
+  font-size: 2rem;
   font-weight: 200; }
 
 blockquote {
@@ -696,8 +686,7 @@ code + .copy-to-clipboard {
 pre {
   padding: 1rem;
   border: 1px solid #272a2c;
-  border-radius: 2px;
-  line-height: 1.15; }
+  border-radius: 2px; }
 
 pre code {
   background: inherit;
@@ -1029,6 +1018,10 @@ td {
   height: 0;
   min-height: 3rem; }
 
+a.github-link {
+    margin: 0.3rem;
+}
+
 #top-github-link {
   position: relative;
   z-index: 1;
@@ -1232,7 +1225,7 @@ pre .copy-to-clipboard:hover {
       padding-right: 0rem; }
     #sidebar ul li.active > div > a {
       background: white;
-      color: gray !important;
+      color: #2053AB !important;
       padding-right: 0rem; }
     #sidebar ul li.active > div > a:hover {
       color: #b5b5b5 !important;
@@ -1284,9 +1277,10 @@ pre .copy-to-clipboard:hover {
     width: 100%; }
   #sidebar #shortcuts label {
     display: inline;
-    font-weight: 100; }
+    cursor: pointer;
+    font-weight: 400; }
   #sidebar #shortcuts h3 {
-    font-family: 'Lato', 'Helvetica', 'Tahoma', 'Geneva', 'Arial', sans-serif;
+    font-family: 'Roboto', 'Helvetica', 'Tahoma', 'Geneva', 'Arial', sans-serif;
     color: #fff; }
 
 /*

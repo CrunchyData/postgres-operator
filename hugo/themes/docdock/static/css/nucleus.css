@@ -531,8 +531,7 @@ p {
   margin: 1.7rem 0; }
 
 ul, ol {
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem; }
+  margin: 1rem 0; }
   ul ul, ul ol, ol ul, ol ol {
     margin-top: 0;
     margin-bottom: 0; }
@@ -548,7 +547,7 @@ cite {
     content: "\2014 \0020"; }
 
 pre {
-  margin: 1.7rem 0;
+  margin: 1.2rem 0;
   padding: 0.938rem; }
 
 code {

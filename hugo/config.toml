@@ -25,12 +25,12 @@ enableMissingTranslationPlaceholders = false
 
 
 [params]
-editURL = "https://github.com/crunchydata/postgres-operator"
+editURL = "https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/"
 showVisitedLinks = false # default is false
 themeStyle = "original" # "original" or "flex" # default "flex"
 themeVariant = "" # choose theme variant "green", "gold" , "gray", "blue" (default)
 ordersectionsby = "weight" # ordersectionsby = "title"
-disableHomeIcon = true # default is false
+disableHomeIcon = false # default is false
 disableSearch = false # default is false
 disableNavChevron = false # set true to hide next/prev chevron, default is false
 highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
@@ -57,3 +57,8 @@ name = "<i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label>"
 identifier = "kubedoc"
 url = "https://kubernetes.io/docs/"
 weight = 20
+
+[[menu.shortcuts]]
+name = "<i class='fa fa-file'></i> <label>License</label>"
+url = "https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"
+weight = 22

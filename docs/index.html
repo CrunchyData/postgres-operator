@@ -61,6 +61,9 @@
   </div>
 
       <ul class="topics">
+            <li data-nav-id="/" class="dd-item">
+            <a href="https://crunchydata.github.io/postgres-operator/"><i class="fa fa-fw fa-home"></i></a>
+            </li>
     <li data-nav-id="/installation/" class="dd-item haschildren
         ">
       <div>
@@ -112,6 +115,13 @@
     </li>
         </ul>
     </li>
+    <li data-nav-id="/contributing/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
+
+      </div>
+    </li>
     <li data-nav-id="/how-it-works/" class="dd-item
         ">
       <div>
@@ -133,6 +143,7 @@
                 <li class="" role=""><h3>More</h3><a href="https://github.com/CrunchyData/postgres-operator" target="_blank" rel="noopener"><i class='fa fa-github'></i> <label>Github repo</label></a></li>
                 <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
                 <li class="" role=""><a href="https://kubernetes.io/docs/" target="_blank" rel="noopener"><i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md" target="_blank" rel="noopener"><i class='fa fa-file'></i> <label>License</label></a></li>
         </section>
 
     <hr />
@@ -166,13 +177,25 @@
  
 <div class="imageblock" style="text-align: center">
 <div class="content">
-<img src="crunchy_logo.png" alt="Crunchy Data Logo" width="40%" height="40%">
+<img src="crunchy_logo.png" alt="Crunchy Data Logo" width="25%" height="25%">
 </div>
 </div>
 <h1 id="_postgresql_operator" class="sect0">PostgreSQL Operator</h1>
 <div class="paragraph">
-<p>v2.6, 2018-04-27</p>
+<p>v2.6, 2018-04-29</p>
 </div>
+<div class="sect1">
+<h2 id="_documentation">Documentation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Please view the official Crunchy Data PostgreSQL Operator documentation <a href="https://crunchydata.github.io/postgres-operator/">here</a>. If you are
+interested in contributing or making an update to the documentation, please view the <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing Guidelines</a>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_what_is_the_operator">What is the Operator?</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>The <strong>postgres-operator</strong> is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.</p>
 </div>
@@ -209,6 +232,8 @@
 <p>perform database backups</p>
 </li>
 </ul>
+</div>
+</div>
 </div>
 <div class="sect1">
 <h2 id="_design">Design</h2>
