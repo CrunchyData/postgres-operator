@@ -63,7 +63,8 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	spec := crv1.PgtaskSpec{}
 	spec.Name = request.ClusterName + "-failover"
 	spec.TaskType = crv1.PgtaskFailover
-	spec.Parameters = request.ClusterName
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[request.ClusterName] = request.ClusterName
 	labels := make(map[string]string)
 	labels["target"] = request.Target
 

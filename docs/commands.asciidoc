@@ -112,6 +112,14 @@ configured for a cluster and the *testuser* cluster credential.  See
 below for more details on running a pgpool deployment as part of
 your cluster.
 
+You can also enable archive logging into a dedicated PVC by using the *--archive* command flag as follows:
+....
+pgo create cluster testcluster --archive
+....
+
+This will cause a new PVC to be created to hold archive logs.  Space
+is consumed by these logs but archives enable you to perform Point-In-Time-Recovery.
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -127,8 +135,8 @@ pgo show backup mycluster
 View the PVC folder and the backups contained therein:
 
 ....
-pgo show pvc mycluster-backup-pvc
-pgo show pvc mycluster-backup-pvc --pvc-root=mycluster-backups
+pgo show pvc mycluster-backup
+pgo show pvc mycluster-backup --pvc-root=mycluster-backups
 ....
 
 The output from this command is important in that it can let you
@@ -137,7 +145,7 @@ or essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
-pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster-pvc --secret-from=mycluster
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster --secret-from=mycluster
 ....
 
 This will create a new database called *restoredb* based on the
@@ -326,16 +334,16 @@ pgo delete upgrade
 
 You can view the files on a PVC as follows:
 ....
-pgo show pvc mycluster-pvc
+pgo show pvc mycluster
 ....
 
-In this example, the PVC is *mycluster-pvc*.  This command is useful
+In this example, the PVC is *mycluster*.  This command is useful
 in some cases to examine what files are on a given PVC.
 
 In the case where you want to list a specific path on a PVC
 you can specify the path option as follows:
 ....
-pgo show pvc mycluster-pvc --pvc-root=mycluster-backups
+pgo show pvc mycluster --pvc-root=mycluster-backups
 ....
 
 You can also list all PVCs that are created by the operator

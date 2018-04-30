@@ -36,7 +36,7 @@ var ShowCmd = &cobra.Command{
 For example:
 
 	pgo show policy policy1
-	pgo show pvc mypvc
+	pgo show pvc mycluster
 	pgo show backup mycluster
 	pgo show ingest myingest
 	pgo show cluster mycluster`,
@@ -112,7 +112,9 @@ var ShowPVCCmd = &cobra.Command{
 	Long: `Show pvc information. For example:
 
 				pgo show pvc all
-				pgo show pvc mycluster-pvc`,
+				pgo show pvc mycluster-backup
+				pgo show pvc mycluster-xlog
+				pgo show pvc mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			log.Error("PVC name(s) required for this command")

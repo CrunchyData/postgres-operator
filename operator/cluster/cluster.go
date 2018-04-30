@@ -61,6 +61,9 @@ type DeploymentTemplateFields struct {
 	Database           string
 	OperatorLabels     string
 	DataPathOverride   string
+	ArchiveMode        string
+	ArchivePVCName     string
+	ArchiveTimeout     string
 	PVCName            string
 	BackupPVCName      string
 	BackupPath         string
@@ -96,12 +99,20 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name, &cl.Spec.PrimaryStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	log.Debug("created primary pvc [" + pvcName + "]")
+
+	if cl.Spec.UserLabels["archive"] == "true" {
+		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-xlog", cl.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
 
 	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.Strategy + "]")
 
@@ -260,7 +271,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//create the PVC
-	pvcName, err := pvc.CreatePVC(clientset, replica.Spec.Name, &replica.Spec.ReplicaStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, &replica.Spec.ReplicaStorage, replica.Spec.Name, cluster.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err)
 		return

@@ -156,7 +156,9 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for _, pod := range detail.Pods {
 		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
-		fmt.Println(TreeBranch + "pvc : " + pod.PVCName)
+		for _, pvc := range pod.PVCName {
+			fmt.Println(TreeBranch + "pvc : " + pvc)
+		}
 	}
 
 	for _, d := range detail.Deployments {
@@ -223,6 +225,7 @@ func createCluster(args []string) {
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
 	r.PgpoolFlag = PgpoolFlag
+	r.ArchiveFlag = ArchiveFlag
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

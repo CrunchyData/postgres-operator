@@ -124,13 +124,13 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	switch task.Spec.TaskType {
 	case crv1.PgtaskFailover:
 		log.Info("failover task added")
-		log.Info("cluster name is " + task.Spec.Parameters)
+		log.Infof("cluster name is %v\n", task.Spec.Parameters)
 		log.Info("dbname is " + task.Spec.Name)
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
 
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
-		log.Info("pvc is " + task.Spec.Parameters)
+		log.Infof("pvc is %v\n", task.Spec.Parameters)
 		log.Info("dbname is " + task.Spec.Name)
 		taskoperator.RemoveData(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:

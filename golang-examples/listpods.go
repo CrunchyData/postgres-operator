@@ -41,7 +41,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	lo := meta_v1.ListOptions{}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=dinner"}
 	pods, err := clientset.CoreV1().Pods("demo").List(lo)
 	if err != nil {
 		panic(err.Error())
@@ -67,9 +67,12 @@ func main() {
 		fmt.Printf("Ready %d/%d\n", readyCount, containerCount)
 		fmt.Printf("NodeName is %s\n", pod.Spec.NodeName)
 		//fmt.Printf("%v\n", pod.Spec.Volumes)
-		for _, v := range pod.Spec.Volumes {
-			if v.Name == "pgdata" {
-				fmt.Printf("pod.Name %s pgdata %s\n", pod.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+		for k, v := range pod.Spec.Volumes {
+
+			if v.Name == "pgdata" || v.Name == "pgwal-volume" {
+				if v.VolumeSource.PersistentVolumeClaim != nil {
+					fmt.Printf("key %d volname %s pvc %s\n", k, pod.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+				}
 			}
 		}
 	}

@@ -8,6 +8,8 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1

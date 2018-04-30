@@ -189,6 +189,8 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1
@@ -241,6 +243,8 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
 |Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
+|Cluster.ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
+|Cluster.ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |BackupStorage    |required, the value of the storage configuration to use for backups
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
@@ -292,18 +296,18 @@ The following StorageType values are possible:
 
  * *dynamic* - this will allow for dynamic provisioning of storage using a StorageClass.
  * *existing* - This setting allows you to use a PVC that already exists.  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters can write to that NFS volume mount via a common PVC. When set, the Name setting is used for the PVC.
- * *create* - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of *clustername*-pvc*.  When set, the *Size*, *AccessMode* settings are used in constructing the new PVC.
+ * *create* - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of *clustername*.  When set, the *Size*, *AccessMode* settings are used in constructing the new PVC.
  * *emptydir* - If a StorageType value is not defined, *emptydir* is used by default.  This is a volume type that’s created when a pod is assigned to a node and exists as long as that pod remains running on that node; it is deleted as soon as the pod is manually deleted or removed from the node.
 
 The operator will create new PVCs using this naming convention:
-*dbname-pvc* where *dbname* is the database name you have specified.  For
+*dbname* where *dbname* is the database name you have specified.  For
 example, if you run:
 ....
 pgo create cluster example1
 ....
 
-It will result in a PVC being created named *example1-pvc* and in
-the case of a backup job, the pvc is named *example1-backup-pvc*
+It will result in a PVC being created named *example1* and in
+the case of a backup job, the pvc is named *example1-backup*
 
 There are currently 3 sample pgo configuration files provided
 for users to use as a starting configuration:
@@ -394,9 +398,9 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/all
 ....
 
-*pgo show pvc danger-pvc*
+*pgo show pvc danger*
 ....
-curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger-pvc
+curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger
 ....
 
 *pgo show cluster mycluster*

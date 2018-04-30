@@ -81,6 +81,15 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 
 	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
+	archivePVCName := ""
+	archiveMode := "off"
+	archiveTimeout := "60"
+	if cl.Spec.UserLabels["archive"] == "true" {
+		archiveMode = "on"
+		archiveTimeout = cl.Spec.UserLabels["archive-timeout"]
+		archivePVCName = cl.Spec.Name + "-xlog"
+	}
+
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
 		Name:               cl.Spec.Name,
@@ -94,6 +103,9 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		BackupPath:         cl.Spec.BackupPath,
 		DataPathOverride:   cl.Spec.Name,
 		Database:           cl.Spec.Database,
+		ArchiveMode:        archiveMode,
+		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
+		ArchiveTimeout:     archiveTimeout,
 		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,

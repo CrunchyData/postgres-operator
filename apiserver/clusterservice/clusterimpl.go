@@ -201,8 +201,9 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus = getReadyStatus(&p)
-		//log.Infof("pod details are %v\n", p)
 		d.PVCName = getPVCName(&p)
+		log.Infof("after getPVCName call")
+
 		d.Primary = isPrimary(&p)
 		output = append(output, d)
 
@@ -447,6 +448,15 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		if request.MetricsFlag {
 			userLabelsMap["crunchy_collect"] = "true"
 		}
+
+		if request.ArchiveFlag {
+			userLabelsMap["archive"] = "true"
+			log.Debug("archive set to true in user labels")
+		} else {
+			log.Debug("using ArchiveMode from pgo.yaml")
+			userLabelsMap["archive"] = apiserver.Pgo.Cluster.ArchiveMode
+		}
+		userLabelsMap["archive-timeout"] = apiserver.Pgo.Cluster.ArchiveTimeout
 
 		if request.PgpoolFlag {
 			userLabelsMap["crunchy-pgpool"] = "true"
@@ -806,7 +816,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	}
 	if deleteBackups {
 
-		backupPVCName := clusterName + "-backup-pvc"
+		backupPVCName := clusterName + "-backup"
 		//verify backup pvc exists
 		_, err = pvcservice.ShowPVC(backupPVCName, "")
 		if err != nil {
@@ -820,7 +830,8 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		spec.TaskType = crv1.PgtaskDeleteData
 		spec.StorageSpec = storageSpec
 
-		spec.Parameters = backupPVCName
+		spec.Parameters = make(map[string]string)
+		spec.Parameters[backupPVCName] = backupPVCName
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -838,17 +849,19 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 }
 
-func getPVCName(pod *v1.Pod) string {
-	pvcName := "unknown"
+func getPVCName(pod *v1.Pod) map[string]string {
+	pvcList := make(map[string]string)
 
 	for _, v := range pod.Spec.Volumes {
-		if v.Name == "pgdata" {
-			pvcName = v.VolumeSource.PersistentVolumeClaim.ClaimName
-			log.Infof("pod.Name %s pgdata %s\n", pod.Name, pvcName)
+		if v.Name == "pgdata" || v.Name == "pgwal-volume" {
+			if v.VolumeSource.PersistentVolumeClaim != nil {
+				//log.Debugf("pvc.Name %v volume %v", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
+			}
 		}
 	}
 
-	return pvcName
+	return pvcList
 
 }
 

@@ -21,6 +21,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"strconv"
 )
 
 type ClusterStruct struct {
@@ -28,6 +29,8 @@ type ClusterStruct struct {
 	CCPImageTag     string `yaml:"CCPImageTag"`
 	Policies        string `yaml:"Policies"`
 	Port            string `yaml:"Port"`
+	ArchiveTimeout  string `yaml:"ArchiveTimeout"`
+	ArchiveMode     string `yaml:"ArchiveMode"`
 	User            string `yaml:"User"`
 	Database        string `yaml:"Database"`
 	PasswordAgeDays string `yaml:"PasswordAgeDays"`
@@ -108,6 +111,24 @@ func (c *PgoConfig) validate() error {
 		}
 	}
 
+	if c.Cluster.ArchiveMode == "" {
+		log.Info("Pgo.Cluster.ArchiveMode not set, using 'false'")
+		c.Cluster.ArchiveMode = "false"
+	} else {
+		if c.Cluster.ArchiveMode != "true" && c.Cluster.ArchiveMode != "false" {
+			return errors.New("Cluster.ArchiveMode invalid value, can either be 'true' or 'false'")
+		}
+	}
+
+	if c.Cluster.ArchiveTimeout == "" {
+		log.Info("Pgo.Cluster.ArchiveTimeout not set, using '60'")
+	} else {
+		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
+		if err != nil {
+			return errors.New("Cluster.ArchiveTimeout invalid int value found")
+		}
+	}
+
 	if c.Cluster.CCPImagePrefix == "" {
 		return errors.New("Cluster.CCPImagePrefix is required")
 	}
@@ -131,22 +152,6 @@ func (c *PgoConfig) getConf() *PgoConfig {
 
 	return c
 }
-
-/**
-var Pgo PgoConfig
-
-func main() {
-	Pgo.getConf()
-
-	log.Println(Pgo.Cluster.CCPImageTag)
-	log.Println(Pgo.PrimaryStorage)
-	log.Println(Pgo.Pgo.COImageTag)
-	log.Println(Pgo.ContainerResources)
-	log.Println(Pgo.Storage)
-
-	Pgo.validate()
-}
-*/
 
 func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	var err error

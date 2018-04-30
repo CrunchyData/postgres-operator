@@ -125,7 +125,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	}
 
 	//create the PVC if necessary
-	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name+"-upgrade", &cl.Spec.PrimaryStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-upgrade", cl.Spec.Name, namespace)
 	log.Debug("created pvc for upgrade as [" + pvcName + "]")
 
 	//upgrade the primary data

@@ -31,7 +31,12 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	var err error
 
 	//look up the pgcluster for this task
-	clusterName := task.Spec.Parameters
+	//in the case, the clustername is passed as a key in the
+	//parameters map
+	var clusterName string
+	for k, _ := range task.Spec.Parameters {
+		clusterName = k
+	}
 
 	cluster := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(client, &cluster,
