@@ -48,6 +48,14 @@ make setup
 
 === Compiling the PostgreSQL Operator
 ....
+export CO_BASEOS=centos7
+export CO_VERSION=2.7
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
+export GOPATH=$HOME/odev
+export CO_NAMESPACE=demo
+export CO_CMD=kubectl
+
 cd $COROOT
 make all
 which pgo
