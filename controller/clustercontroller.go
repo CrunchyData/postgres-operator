@@ -95,9 +95,10 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use clusterScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj := cluster.DeepCopy()
+	copyObj := cluster.DeepCopyObject()
+	clusterCopy := copyObj.(*crv1.Pgcluster)
 
-	copyObj.Status = crv1.PgclusterStatus{
+	clusterCopy.Status = crv1.PgclusterStatus{
 		State:   crv1.PgclusterStateProcessed,
 		Message: "Successfully processed Pgcluster by controller",
 	}
@@ -106,17 +107,17 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		Name(cluster.ObjectMeta.Name).
 		Namespace(cluster.ObjectMeta.Namespace).
 		Resource(crv1.PgclusterResourcePlural).
-		Body(copyObj).
+		Body(clusterCopy).
 		Do().
 		Error()
 
 	if err != nil {
 		fmt.Printf("ERROR updating status: %v\n", err)
 	} else {
-		fmt.Printf("UPDATED status: %#v\n", copyObj)
+		fmt.Printf("UPDATED status: %#v\n", clusterCopy)
 	}
 
-	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, copyObj, cluster.ObjectMeta.Namespace)
+	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgcluster is updated

@@ -96,9 +96,10 @@ func (c *PgupgradeController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use upgradeScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj := upgrade.DeepCopy()
+	copyObj := upgrade.DeepCopyObject()
+	upgradeCopy := copyObj.(*crv1.Pgupgrade)
 
-	copyObj.Status = crv1.PgupgradeStatus{
+	upgradeCopy.Status = crv1.PgupgradeStatus{
 		State:   crv1.PgupgradeStateProcessed,
 		Message: "Successfully processed Pgupgrade by controller",
 	}
@@ -107,17 +108,17 @@ func (c *PgupgradeController) onAdd(obj interface{}) {
 		Name(upgrade.ObjectMeta.Name).
 		Namespace(upgrade.ObjectMeta.Namespace).
 		Resource(crv1.PgupgradeResourcePlural).
-		Body(copyObj).
+		Body(upgradeCopy).
 		Do().
 		Error()
 
 	if err != nil {
 		fmt.Printf("ERROR updating status: %v\n", err)
 	} else {
-		fmt.Printf("UPDATED status: %#v\n", copyObj)
+		fmt.Printf("UPDATED status: %#v\n", upgradeCopy)
 	}
 
-	upgradeoperator.AddUpgrade(c.PgupgradeClientset, c.PgupgradeClient, copyObj, upgrade.ObjectMeta.Namespace)
+	upgradeoperator.AddUpgrade(c.PgupgradeClientset, c.PgupgradeClient, upgradeCopy, upgrade.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgupgrade is updated

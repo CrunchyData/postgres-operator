@@ -96,10 +96,10 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 	// You can use backupScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	//copyObj, err := c.PgbackupScheme.Copy(backup)
-	copyObj := backup.DeepCopy()
+	copyObj := backup.DeepCopyObject()
 
-	//backupCopy := copyObj.(*crv1.Pgbackup)
-	copyObj.Status = crv1.PgbackupStatus{
+	backupCopy := copyObj.(*crv1.Pgbackup)
+	backupCopy.Status = crv1.PgbackupStatus{
 		State:   crv1.PgbackupStateProcessed,
 		Message: "Successfully processed Pgbackup by controller",
 	}
@@ -108,17 +108,17 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 		Name(backup.ObjectMeta.Name).
 		Namespace(backup.ObjectMeta.Namespace).
 		Resource(crv1.PgbackupResourcePlural).
-		Body(copyObj).
+		Body(backupCopy).
 		Do().
 		Error()
 
 	if err != nil {
 		fmt.Printf("ERROR updating status: %v\n", err)
 	} else {
-		fmt.Printf("UPDATED status: %#v\n", copyObj)
+		fmt.Printf("UPDATED status: %#v\n", backupCopy)
 	}
 
-	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, copyObj, backup.ObjectMeta.Namespace)
+	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backupCopy, backup.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgbackup is updated

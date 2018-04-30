@@ -97,10 +97,11 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use taskScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj := task.DeepCopy()
+	copyObj := task.DeepCopyObject()
+	taskCopy := copyObj.(*crv1.Pgtask)
 
 	//update the status of the task as processed to prevent reprocessing
-	copyObj.Status = crv1.PgtaskStatus{
+	taskCopy.Status = crv1.PgtaskStatus{
 		State:   crv1.PgtaskStateProcessed,
 		Message: "Successfully processed Pgtask by controller",
 	}
@@ -109,14 +110,14 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		Name(task.ObjectMeta.Name).
 		Namespace(task.ObjectMeta.Namespace).
 		Resource(crv1.PgtaskResourcePlural).
-		Body(copyObj).
+		Body(taskCopy).
 		Do().
 		Error()
 
 	if err != nil {
 		log.Errorf("ERROR updating status: %v\n", err)
 	} else {
-		log.Errorf("UPDATED status: %#v\n", copyObj)
+		log.Errorf("UPDATED status: %#v\n", taskCopy)
 	}
 
 	//process the incoming task
