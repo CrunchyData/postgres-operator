@@ -607,3 +607,20 @@ Deployment will recreate its pod because of this.   The failover typically
 takes only a few seconds, however, the creation of the replacement
 replica can take longer depending on how much data is being replicated.
 
+=== pgo df
+
+You can use the *pgo df* command to see the disk capacity of a cluster's PVC
+versus that of the PostgreSQL data that has been written to disk.  If
+the capacity is less than 50% then the output is printed in red to
+alert the user.
+
+Run the command as follows:
+....
+pgo df mycluster
+pgo df --selector=name=mycluster
+pgo df --selector=name=hang
+CLUSTER             STATUS    PGSIZE    CAPACITY  PCTUSED   
+
+mycluster           up        30 MB     1Gi       2
+....
+
