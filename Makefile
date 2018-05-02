@@ -63,7 +63,7 @@ apiserverimage:	check-go-vars
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
-	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 #	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 operator:	check-go-vars
 	go install postgres-operator.go
@@ -71,20 +71,20 @@ operatorimage:	check-go-vars
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
 	docker build -t postgres-operator -f $(CO_BASEOS)/Dockerfile.postgres-operator.$(CO_BASEOS) .
-	docker tag postgres-operator $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag postgres-operator $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 #	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 deepsix:
 	cd $(COROOT)/apis/cr/v1
 	deepcopy-gen --go-header-file=$(COROOT)/apis/cr/v1/header.go.txt --input-dirs=.
 lsimage:
 	docker build -t pgo-lspvc -f $(CO_BASEOS)/Dockerfile.pgo-lspvc.$(CO_BASEOS) .
-	docker tag pgo-lspvc $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-lspvc $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 loadimage:
 	docker build -t pgo-load -f $(CO_BASEOS)/Dockerfile.pgo-load.$(CO_BASEOS) .
-	docker tag pgo-load $(CO_IMAGE_PREFIX)/pgo-load:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-load $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
 rmdataimage:
 	docker build -t pgo-rmdata -f $(CO_BASEOS)/Dockerfile.pgo-rmdata.$(CO_BASEOS) .
-	docker tag pgo-rmdata $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-rmdata $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
 all:
 	make operatorimage
 	make apiserverimage
