@@ -137,7 +137,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 		//spec.RootSecretName = cluster.Spec.RootSecretName
 		//spec.PrimarySecretName = cluster.Spec.PrimarySecretName
 		//spec.UserSecretName = cluster.Spec.UserSecretName
-		//spec.UserLabels = cluster.Spec.UserLabels
+		spec.UserLabels = cluster.Spec.UserLabels
 
 		newInstance := &crv1.Pgreplica{
 			ObjectMeta: meta_v1.ObjectMeta{

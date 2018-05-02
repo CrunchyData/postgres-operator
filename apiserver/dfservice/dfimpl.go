@@ -83,7 +83,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 				return response
 			}
 			result.PGSize = pgSizePretty
-			result.ClaimSize = getClaimCapacity(apiserver.Clientset, c.Spec.Name+"-pvc")
+			result.ClaimSize = getClaimCapacity(apiserver.Clientset, c.Spec.Name)
 			diskSize := resource.MustParse(result.ClaimSize)
 			diskSizeInt64, _ := diskSize.AsInt64()
 			diskSizeFloat := float64(diskSizeInt64)

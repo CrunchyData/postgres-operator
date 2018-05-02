@@ -481,6 +481,15 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	replicaLabels := getPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
 	replicaLabels["replica-name"] = replica.Spec.Name
 
+	archivePVCName := ""
+	archiveMode := "off"
+	archiveTimeout := "60"
+	if cluster.Spec.UserLabels["archive"] == "true" {
+		archiveMode = "on"
+		archiveTimeout = cluster.Spec.UserLabels["archive-timeout"]
+		archivePVCName = replica.Spec.Name + "-xlog"
+	}
+
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:              replica.Spec.Name,
@@ -491,6 +500,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		PVCName:           pvcName,
 		PrimaryHost:       cluster.Spec.PrimaryHost,
 		Database:          cluster.Spec.Database,
+		ArchiveMode:       archiveMode,
+		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
+		ArchiveTimeout:    archiveTimeout,
 		Replicas:          "1",
 		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:   util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),

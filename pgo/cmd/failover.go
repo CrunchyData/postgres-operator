@@ -124,6 +124,7 @@ func createFailover(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
+		//fmt.Printf("%v\n", response)
 		fmt.Println(RED(response.Status.Msg))
 		os.Exit(2)
 	}

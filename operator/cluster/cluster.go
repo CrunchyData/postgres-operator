@@ -277,6 +277,14 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
+	if cluster.Spec.UserLabels["archive"] == "true" {
+		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 	log.Debug("created replica pvc [" + pvcName + "]")
 
 	//update the replica CRD pvcname
