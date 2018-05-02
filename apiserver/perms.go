@@ -48,6 +48,7 @@ const CREATE_INGEST_PERM = "CreateIngest"
 const SHOW_INGEST_PERM = "ShowIngest"
 const DELETE_INGEST_PERM = "DeleteIngest"
 const CREATE_FAILOVER_PERM = "CreateFailover"
+const STATUS_PERM = "Status"
 
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
@@ -58,6 +59,7 @@ func InitializePerms() {
 	PermMap = make(map[string]string)
 	RoleMap = make(map[string]map[string]string)
 
+	PermMap[STATUS_PERM] = "yes"
 	PermMap[DF_CLUSTER_PERM] = "yes"
 	PermMap[SHOW_CLUSTER_PERM] = "yes"
 	PermMap[CREATE_CLUSTER_PERM] = "yes"

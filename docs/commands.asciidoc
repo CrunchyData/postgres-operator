@@ -624,3 +624,23 @@ CLUSTER             STATUS    PGSIZE    CAPACITY  PCTUSED
 mycluster           up        30 MB     1Gi       2
 ....
 
+=== pgo status
+
+You can use the *pgo status* command to see overall pgo status.  Selective
+metrics are displayed to provide some insights to the pgo user and administrator as to what is running currently in this namespace related to pgo.
+
+Run the command as follows:
+....
+pgo status 
+Operator Start:          2018-05-02 15:59:41 +0000 UTC
+Databases:               2
+Backups:                 2
+Claims:                  18
+Total Volume Size:       18Gi      
+
+Database Images:
+                         4	crunchydata/crunchy-postgres:centos7-10.3-1.8.2
+
+Databases Not Ready:
+....
+

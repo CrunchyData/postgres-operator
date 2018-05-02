@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
+	"github.com/crunchydata/postgres-operator/apiserver/statusservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
@@ -90,6 +91,7 @@ func main() {
 	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET", "DELETE")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
+	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
