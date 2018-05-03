@@ -81,6 +81,38 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("selector param was [" + selector + "]")
 	}
 
+	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	log.Debug("clusterservice.ShowClusterHandler GET called")
+	resp := ShowCluster(clustername, selector)
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+// DeleteClusterHandler ...
+// pgo delete mycluster
+// parameters showsecrets
+// parameters selector
+// parameters postgresversion
+// returns a ShowClusterResponse
+func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("clusterservice.DeleteClusterHandler %v\n", vars)
+
+	clustername := vars["name"]
+
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+
 	deleteData := false
 	deleteDataStr := r.URL.Query().Get("delete-data")
 	if deleteDataStr != "" {
@@ -94,7 +126,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
-	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
+	err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -103,16 +135,9 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	switch r.Method {
-	case "GET":
-		log.Debug("clusterservice.ShowClusterHandler GET called")
-		resp := ShowCluster(clustername, selector)
-		json.NewEncoder(w).Encode(resp)
-	case "DELETE":
-		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
-		resp := DeleteCluster(clustername, selector, deleteData, deleteBackups)
-		json.NewEncoder(w).Encode(resp)
-	}
+	log.Debug("clusterservice.DeleteClusterHandler called")
+	resp := DeleteCluster(clustername, selector, deleteData, deleteBackups)
+	json.NewEncoder(w).Encode(resp)
 
 }
 

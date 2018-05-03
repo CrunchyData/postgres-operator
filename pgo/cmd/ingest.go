@@ -101,10 +101,10 @@ func deleteIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingest/" + v
+		url := APIServerURL + "/ingestdelete/" + v
 		log.Debug("deleteIngest called...[" + url + "]")
 
-		action := "DELETE"
+		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
 			log.Fatal("NewRequest: ", err)

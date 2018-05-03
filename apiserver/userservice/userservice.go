@@ -93,13 +93,8 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	switch r.Method {
-	case "GET":
-		log.Debug("userservice.DeleteUserHandler GET called")
-	case "DELETE":
-		log.Debug("userservice.DeleteUserHandler DELETE called")
-		resp := DeleteUser(username, selector)
-		json.NewEncoder(w).Encode(resp)
-	}
+	log.Debug("userservice.DeleteUserHandler DELETE called")
+	resp := DeleteUser(username, selector)
+	json.NewEncoder(w).Encode(resp)
 
 }

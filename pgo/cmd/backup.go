@@ -128,11 +128,11 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v
+		url := APIServerURL + "/backupsdelete/" + v
 
 		log.Debug("delete backup called [" + url + "]")
 
-		action := "DELETE"
+		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
 			//log.Info("here after new req")

@@ -274,11 +274,11 @@ func deletePolicy(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		url := APIServerURL + "/policies/" + arg
+		url := APIServerURL + "/policiesdelete/" + arg
 
 		log.Debug("delete policy called [" + url + "]")
 
-		action := "DELETE"
+		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
 			log.Fatal("NewRequest: ", err)

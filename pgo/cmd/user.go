@@ -205,11 +205,11 @@ func deleteUser(username string) {
 
 	log.Debug("deleting user " + username + " selector " + Selector)
 
-	url := APIServerURL + "/users/" + username + "?selector=" + Selector
+	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector
 
 	log.Debug("delete users called [" + url + "]")
 
-	action := "DELETE"
+	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
 		log.Fatal("NewRequest: ", err)

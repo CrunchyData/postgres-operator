@@ -75,26 +75,37 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
-	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET", "DELETE")
+	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET")
+	//here
+	r.HandleFunc("/policiesdelete/{name}", policyservice.DeletePolicyHandler).Methods("GET")
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/ingest", ingestservice.CreateIngestHandler).Methods("POST")
-	r.HandleFunc("/ingest/{name}", ingestservice.ShowIngestHandler).Methods("GET", "DELETE")
+	r.HandleFunc("/ingest/{name}", ingestservice.ShowIngestHandler).Methods("GET")
+	//here
+	r.HandleFunc("/ingestdelete/{name}", ingestservice.DeleteIngestHandler).Methods("GET")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
-	r.HandleFunc("/users/{name}", userservice.DeleteUserHandler).Methods("DELETE")
+	//here
+	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
-	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET", "DELETE")
+	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET")
+	//here
+	r.HandleFunc("/upgradesdelete/{name}", upgradeservice.DeleteUpgradeHandler).Methods("GET")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
-	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET", "DELETE")
+	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET")
+	//here
+	r.HandleFunc("/clustersdelete/{name}", clusterservice.DeleteClusterHandler).Methods("GET")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 
-	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET", "DELETE")
+	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
+	//here
+	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 
