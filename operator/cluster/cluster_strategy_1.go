@@ -510,6 +510,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,
 		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:      GetCollectAddon(&cluster.Spec),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

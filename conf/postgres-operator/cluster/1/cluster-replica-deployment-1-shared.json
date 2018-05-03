@@ -16,7 +16,11 @@
 
 	    	{{.SecurityContext}}
 
-                "containers": [{
+                "containers": [
+		
+	        {{.CollectAddon }}
+
+		    {
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/crunchy-postgres:{{.CCPImageTag}}",
 
