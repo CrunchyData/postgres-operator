@@ -35,11 +35,12 @@ cd $GOPATH/src/github.com/spf13/cobra
 git checkout a3cd8ab85aeba3522b9b59242f3b86ddbc67f8bd
 
 go get github.com/kubernetes/apiextensions-apiserver
-cd $GOPATH/src/github.com/kubernetes/apiextensions-apiserver
-git fetch --all --tags --prune
-git checkout kubernetes-1.8.5
-rm -rf  $GOPATH/src/github.com/kubernetes/apiextensions-apiserver/vendor
-rm -rf  $GOPATH/src/k8s.io/apiextensions-apiserver/vendor
+for D in 'github.com/kubernetes' 'k8s.io'; do
+  cd $GOPATH/src/${D}/apiextensions-apiserver
+  git fetch --all --tags --prune
+  git checkout kubernetes-1.8.5
+  rm -rf  $GOPATH/src/${D}/apiextensions-apiserver/vendor
+done
 
 go get github.com/kubernetes/code-generator
 cd $GOPATH/src/github.com/kubernetes/code-generator
