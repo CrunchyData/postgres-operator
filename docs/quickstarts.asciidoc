@@ -1,5 +1,5 @@
 = PostgreSQL Operator Quickstarts
-v2.6, {docdate}
+v2.7, {docdate}
 
 == Overview
 

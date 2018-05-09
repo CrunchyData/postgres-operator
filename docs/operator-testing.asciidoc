@@ -1,6 +1,6 @@
 = PostgreSQL Operator Testing
 :toc:
-v2.6, {docdate}
+v2.7, {docdate}
 
 == Performing a Smoke Test
 
@@ -17,7 +17,7 @@ the following:
  * show backup of cluster (*pgo show backup testcluster*)
  * show backup pvc of cluster (*pgo show pvc testcluster-backup*)
  * restore a cluster (*pgo create cluster restoredcluster --backup-pvc=testcluster-backup --backup-path=testcluster-backups/2017-01-01-01-01-01 --secret-from=testcluster*)
- * create cluster using image tag (*pgo create minor --ccp-image-tag=cenots7-10.3-1.8.2*)
+ * create cluster using image tag (*pgo create minor --ccp-image-tag=cenots7-10.4-1.8.3*)
  * minor upgrade a cluster (*pgo upgrade minor*)
  * delete a cluster (*pgo delete cluster restored --delete-data --delete-backups*)
  * create a policy from local file (*pgo create policy xrayapp --in-file=./examples/policy/xrayapp.sql*)

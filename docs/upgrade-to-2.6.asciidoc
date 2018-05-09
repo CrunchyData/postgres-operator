@@ -1,11 +1,11 @@
-= Upgrade Notes for Migrating to Release 2.6
-v2.6, {docdate}
+= Upgrade Notes for Migrating to Release 2.7
+v2.7, {docdate}
 
 image::crunchy_logo.png?raw=true[]
 
 == pgo.yaml
 
-2.6 changed the pgo.yaml file to remove Debug flag
+2.7 changed the pgo.yaml file to remove Debug flag
 
 === Required Changes
 
@@ -15,7 +15,7 @@ an environment variable.
 
 == Container Resources
 
-Release 2.6 added the concept of container resource configurations
+Release 2.7 added the concept of container resource configurations
 to the *pgo.yaml* file.
 
 === Required Changes
@@ -43,7 +43,7 @@ memory and CPU requirements!
 
 == Kube RBAC
 
-Release 2.6 added a *rbac.yaml* file to capture the Kube RBAC
+Release 2.7 added a *rbac.yaml* file to capture the Kube RBAC
 rules applied to enable the *apiserver* and *postgres-operator*
 containers access to the Kube resources required for
 the operator to work.
@@ -57,7 +57,7 @@ requirements.
 
 == Application RBAC
 
-Release 2.6 added an RBAC capability to secure the *pgo*
+Release 2.7 added an RBAC capability to secure the *pgo*
 application.  
 
 === Required Changes
@@ -70,7 +70,7 @@ testuser:testpass:pgoadmin
 readonlyuser:testpass:pgoreader
 ....
 
-To match the behavior of the pre 2.6 releases, the *pgadmin* role
+To match the behavior of the pre 2.7 releases, the *pgadmin* role
 is set on the previous user definitions, but a *readonlyuser* is
 now defined to test other role definitions.
 
@@ -96,7 +96,7 @@ The complete set of permissions is documented in the Operator Documentation.
 
 == pgo create user	
 
-Release 2.6 added the *pgo create user* command to be more like
+Release 2.7 added the *pgo create user* command to be more like
 the other pgo commands.  The previous form of this command *pgo user --add*
 has been removed.
 

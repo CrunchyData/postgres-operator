@@ -1,6 +1,6 @@
 = PostgreSQL Operator Configuration
 :toc: 
-v2.6, {docdate}
+v2.7, {docdate}
 
 == Overview
 
@@ -111,7 +111,7 @@ this value is set to *false* if you do not specify a value.
 
 The *pgo* command line utility talks to the *apiserver* REST API instead of the Kube API.  Therefore it requires its own RBAC configuration.
 
-Starting in Release 2.6, the */conf/apiserver/pgorole* is used to define some sample pgo roles, *pgadmin* and *pgoreader*.
+Starting in Release 2.7, the */conf/apiserver/pgorole* is used to define some sample pgo roles, *pgadmin* and *pgoreader*.
 
 These roles are meant as samples that you can configure to suite your own security requirements.  The *pgadmin* role grants a user authorization to all pgo commands.  The *pgoreader* only grants access to pgo commands that display information such as *pgo show cluster*.
 
@@ -181,7 +181,7 @@ The default *pgo.yaml* configuration file, included in *$COROOT/conf/apiserver/p
 ....
 BasicAuth:  true
 Cluster:
-  CCPImageTag:  centos7-10.3-1.8.2
+  CCPImageTag:  centos7-10.4-1.8.3
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -225,7 +225,7 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.6
+  COImageTag:  centos7-2.7
 ....
 
 Values in the pgo configuration file have the following meaning:
@@ -235,7 +235,7 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |BasicAuth        | if set to *true* will enable Basic Authentication
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag
+|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*

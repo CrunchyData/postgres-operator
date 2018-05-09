@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build Instructions
 :toc: 
-v2.6, {docdate}
+v2.7, {docdate}
 
 == Overview
 
