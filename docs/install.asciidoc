@@ -31,10 +31,10 @@ make pull
 To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link:
 
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]  
- * extract (e.g. tar xvzf postgres-operator.2.7-rc1.tar.gz)
+ * extract (e.g. tar xvzf postgres-operator.2.7.tar.gz)
 ....
 cd $HOME
-tar xvzf ./postgres-operator.2.7-rc1.tar.gz
+tar xvzf ./postgres-operator.2.7.tar.gz
 ....
  * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
 
