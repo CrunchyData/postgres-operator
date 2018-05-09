@@ -568,7 +568,7 @@ The load configuration file has the following YAML attributes:
 
 === pgo failover
 
-Starting with Release 2.7, there is a manual failover command which
+Starting with Release 2.6, there is a manual failover command which
 can be used to promote a replica to a primary role in a PostgreSQL
 cluster.
 
