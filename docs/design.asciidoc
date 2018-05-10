@@ -1,6 +1,6 @@
 = postgres Operator Design
 :toc:
-v2.6, {docdate}
+v2.7, {docdate}
 
 == Reference Architecture
 

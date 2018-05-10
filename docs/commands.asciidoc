@@ -1,6 +1,6 @@
 = PostgreSQL Operator Commands
 :toc:
-v2.6, {docdate}
+v2.7, {docdate}
 
 == pgo Commands
 
@@ -318,8 +318,8 @@ job to know when and how to proceed.
 
 Likewise, you can upgrade the cluster using a command line flag:
 ....
-pgo upgrade mycluster --ccp-image-tag=centos7-9.6.8-1.8.1
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.1
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3
 ....
 
 
@@ -639,7 +639,7 @@ Claims:                  18
 Total Volume Size:       18Gi      
 
 Database Images:
-                         4	crunchydata/crunchy-postgres:centos7-10.3-1.8.2
+                         4	crunchydata/crunchy-postgres:centos7-10.4-1.8.3
 
 Databases Not Ready:
 ....
