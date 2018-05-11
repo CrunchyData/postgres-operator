@@ -4,6 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            "vendor": "crunchydata",
             {{.OperatorLabels }}
         }
     },
@@ -13,6 +14,7 @@
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
+                    "vendor": "crunchydata",
                     "primary": "true",
                     "pg-cluster": "{{.ClusterName}}",
             {{.OperatorLabels }}

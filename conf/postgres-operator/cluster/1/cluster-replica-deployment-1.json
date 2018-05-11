@@ -2,6 +2,7 @@
     "kind": "Deployment",
     "apiVersion": "extensions/v1beta1",
     "metadata": {
+        "vendor": "crunchydata",
         "name": "{{.Name}}"
     },
     "spec": {
@@ -9,6 +10,7 @@
         "template": {
             "metadata": {
                 "labels": {
+                "vendor": "crunchydata",
 	        {{.OperatorLabels}}
                 }
             },
