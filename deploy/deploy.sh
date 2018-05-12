@@ -30,7 +30,7 @@ fi
 expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
 expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
 
-$CO_CMD create secret generic apiserver-conf-secret \
+$CO_CMD $NS create secret generic apiserver-conf-secret \
         --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
         --from-file=server.key=$COROOT/conf/apiserver/server.key \
         --from-file=pgouser=$COROOT/conf/apiserver/pgouser \

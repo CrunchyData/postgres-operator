@@ -15,6 +15,7 @@ rules:
     resources:
       - customresourcedefinitions
       - customresourcedefinitions/status
+      - nodes
       - jobs
       - jobs/status
       - pgbackups
