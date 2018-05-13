@@ -9,14 +9,12 @@
         }
     },
     "spec": {
-        "replicas": 1,
+        "replicas": {{.Replicas}},
         "template": {
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
-                    "primary": "true",
-                    "pg-cluster": "{{.ClusterName}}",
             {{.OperatorLabels }}
                 }
             },
@@ -26,7 +24,6 @@
 
                 "containers": [
 		
-                {{.CollectAddon }}
 
 		    {
                     "name": "database",
@@ -48,16 +45,19 @@
                         "value": "{{.Port}}"
                     }, {
                         "name": "PG_MODE",
-                        "value": "primary"
+                        "value": "{{.PgMode}}"
+                    }, {
+                        "name": "PG_PRIMARY_HOST",
+                        "value": "{{.PrimaryHost}}"
                     }, {
                         "name": "PG_LOCALE",
                         "value": "en_US.UTF8"
                     }, {
-                        "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.DataPathOverride}}"
-                    }, {
                         "name": "BACKUP_PATH",
                         "value": "{{.BackupPath}}"
+                    }, {
+                        "name": "PGDATA_PATH_OVERRIDE",
+                        "value": "{{.DataPathOverride}}"
                     }, {
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
@@ -70,7 +70,11 @@
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
-                    }],
+                    }
+
+                {{.CollectAddon }}
+
+		    ],
                     "volumeMounts": [{
                             "mountPath": "/pgdata",
                             "name": "pgdata",

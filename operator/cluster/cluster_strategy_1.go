@@ -93,7 +93,10 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
 		Name:               cl.Spec.Name,
+		Replicas:           "1",
+		PgMode:             "primary",
 		ClusterName:        cl.Spec.Name,
+		PrimaryHost:        cl.Spec.Name,
 		Port:               cl.Spec.Port,
 		CCPImagePrefix:     operator.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
@@ -194,12 +197,6 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 		return err
 	}
 
-	//delete the deployments
-	//delOptions := meta_v1.DeleteOptions{}
-	//var delProp meta_v1.DeletionPropagation
-	//delProp = meta_v1.DeletePropagationForeground
-	//delOptions.PropagationPolicy = &delProp
-
 	for _, d := range deployments.Items {
 		err = kubeapi.DeleteDeployment(clientset, d.ObjectMeta.Name, namespace)
 	}
@@ -282,13 +279,18 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:               depName,
 		ClusterName:        clusterName,
+		PgMode:             "replica",
 		Port:               cl.Spec.Port,
 		CCPImagePrefix:     operator.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
-		PVCName:            pvcName,
+		PVCName:            util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
+		DataPathOverride:   depName,
 		PrimaryHost:        cl.Spec.PrimaryHost,
+		BackupPath:         "",
 		Database:           cl.Spec.Database,
 		Replicas:           "1",
+		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		OperatorLabels:     util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:    util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
@@ -301,10 +303,12 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {
@@ -330,6 +334,10 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 	primaryLabels := make(map[string]string)
 	if replicaFlag {
 		primaryLabels["replica"] = "true"
+		primaryLabels["primary"] = "false"
+	} else {
+		primaryLabels["replica"] = "false"
+		primaryLabels["primary"] = "true"
 	}
 
 	primaryLabels["name"] = Name
@@ -494,16 +502,21 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:              replica.Spec.Name,
 		ClusterName:       replica.Spec.ClusterName,
+		PgMode:            "replica",
 		Port:              cluster.Spec.Port,
 		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       cluster.Spec.CCPImageTag,
-		PVCName:           pvcName,
+		PVCName:           util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:     util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
 		PrimaryHost:       cluster.Spec.PrimaryHost,
+		BackupPath:        "",
 		Database:          cluster.Spec.Database,
+		DataPathOverride:  replica.Spec.Name,
 		ArchiveMode:       archiveMode,
 		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
 		ArchiveTimeout:    archiveTimeout,
 		Replicas:          "1",
+		ConfVolume:        GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
 		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:   util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:    cluster.Spec.RootSecretName,
@@ -516,10 +529,12 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {

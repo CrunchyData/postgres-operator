@@ -16,10 +16,12 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -80,4 +82,35 @@ func GetDeployments(clientset *kubernetes.Clientset, selector, namespace string)
 	}
 	return deployments, err
 
+}
+
+type ThingSpec struct {
+	Op    string `json:"op"`
+	Path  string `json:"path"`
+	Value string `json:"value"`
+}
+
+// PatchDeployment patches a deployment
+func PatchDeployment(clientset *kubernetes.Clientset, name, namespace, jsonpath, patchvalue string) error {
+	var patchBytes []byte
+	var err error
+
+	things := make([]ThingSpec, 1)
+	things[0].Op = "replace"
+	things[0].Path = jsonpath
+	things[0].Value = patchvalue
+
+	patchBytes, err = json.Marshal(things)
+	if err != nil {
+		log.Error("error in converting patch " + err.Error())
+		return err
+	}
+
+	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
+	if err != nil {
+		log.Error(err)
+		log.Error("error patching Deployment " + name)
+	}
+	log.Info("patch deployment " + name)
+	return err
 }

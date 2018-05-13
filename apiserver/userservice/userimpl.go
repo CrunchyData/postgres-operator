@@ -68,7 +68,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		sel = request.Selector + ",pg-cluster,!replica"
+		sel = request.Selector + ",pg-cluster,replica=false"
 	} else {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector is required"
@@ -95,7 +95,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		selector := "pg-cluster=" + cluster.Spec.Name + ",!replica"
+		selector := "pg-cluster=" + cluster.Spec.Name + ",replica=false"
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
