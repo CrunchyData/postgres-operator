@@ -77,7 +77,7 @@ func main() {
 	thisconfig.PgoDef.LSPVCTemplate = "this lspvc template"
 	thisconfig.PgoDef.LoadTemplate = "loadtempaltepath"
 	thisconfig.PgoDef.COImagePrefix = "crunchydata"
-	thisconfig.PgoDef.COImageTag = "centos7-2.7"
+	thisconfig.PgoDef.COImageTag = "centos7-3.0"
 
 	//json.Unmarshal(buf, &c)
 

@@ -1,6 +1,6 @@
 = PostgreSQL Operator Configuration
 :toc: 
-v2.7, {docdate}
+v3.0, {docdate}
 
 == Overview
 
@@ -111,7 +111,7 @@ this value is set to *false* if you do not specify a value.
 
 The *pgo* command line utility talks to the *apiserver* REST API instead of the Kube API.  Therefore it requires its own RBAC configuration.
 
-Starting in Release 2.7, the */conf/apiserver/pgorole* is used to define some sample pgo roles, *pgadmin* and *pgoreader*.
+Starting in Release 3.0, the */conf/apiserver/pgorole* is used to define some sample pgo roles, *pgadmin* and *pgoreader*.
 
 These roles are meant as samples that you can configure to suite your own security requirements.  The *pgadmin* role grants a user authorization to all pgo commands.  The *pgoreader* only grants access to pgo commands that display information such as *pgo show cluster*.
 
@@ -225,7 +225,7 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.7
+  COImageTag:  centos7-3.0
 ....
 
 Values in the pgo configuration file have the following meaning:
