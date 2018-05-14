@@ -78,6 +78,13 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	//}
 	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
+	//drain the deployment, this will shutdown the database pod
+	err = kubeapi.PatchReplicas(clientset, target, namespace, "/spec/replicas", 0)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
 	//relabel the deployment with primary labels
 	err = relabel(pod, clientset, namespace, clusterName, target)
 	//if err != nil {
@@ -85,6 +92,13 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	////return err
 	//}
 	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling deployment...pod "+pod.Name+"was the failover target...failover completed")
+
+	//enable the deployment by making replicas equal to 1
+	err = kubeapi.PatchReplicas(clientset, target, namespace, "/spec/replicas", 1)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	return err
 
@@ -115,9 +129,14 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 }
 
 func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName string) error {
-	var err error
 
-	err = kubeapi.DeleteDeployment(clientset, clusterName, namespace)
+	//delete the deployment with pg-cluster=clusterName,primary=true
+	//should only be 1 primary with this name!
+	deps, err := kubeapi.GetDeployments(clientset, "pg-cluster="+clusterName+",primary=true", namespace)
+	for _, d := range deps.Items {
+		log.Debugf("deleting deployment %s\n", d.Name)
+		kubeapi.DeleteDeployment(clientset, d.Name, namespace)
+	}
 
 	return err
 }
@@ -154,17 +173,24 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 	//set name=clustername on the deployment
 	newLabels := make(map[string]string)
 	newLabels["name"] = clusterName
+	newLabels["replica"] = "false"
+	newLabels["primary"] = "true"
 
 	err = updateLabels(namespace, clientset, targetDeployment, target, newLabels)
 	if err != nil {
 		log.Error(err)
 	}
 
-	newLabels["replica"] = "false"
+	err = kubeapi.MergePatchDeployment(clientset, targetDeployment, clusterName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+	/**
 	err = updatePodLabels(namespace, clientset, pod, target, newLabels)
 	if err != nil {
 		log.Error(err)
 	}
+	*/
 
 	return err
 }

@@ -223,6 +223,7 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 		return output, err
 	}
 
+	log.Debugf("got %d services for %s\n", len(services.Items), cluster.Spec.Name)
 	for _, p := range services.Items {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
@@ -244,6 +245,7 @@ func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
 		return output, err
 	}
 
+	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
 	for _, s := range secrets.Items {
 		d := msgs.ShowClusterSecret{}
 		d.Name = s.Name
@@ -284,7 +286,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 
 	//loop thru each cluster
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		result := msgs.ClusterTestResult{}
@@ -301,6 +303,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			return response
 		}
 
+		/**
 		//get the replicas for this cluster
 		log.Debug("calling getReplicas")
 		detail.Replicas, err = getReplicas(&c)
@@ -309,6 +312,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		*/
 
 		//get the secrets for this cluster
 		detail.Secrets, err = getSecrets(&c)
