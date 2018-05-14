@@ -100,12 +100,20 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	pvcName, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error(err)
-		return
+	var pvcName string
+
+	_, found, err := kubeapi.GetPVC(clientset, cl.Spec.Name, namespace)
+	if found {
+		log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", cl.Spec.Name)
+		pvcName = cl.Spec.Name
+	} else {
+		pvcName, err = pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("created primary pvc [" + pvcName + "]")
 	}
-	log.Debug("created primary pvc [" + pvcName + "]")
 
 	if cl.Spec.UserLabels["archive"] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-xlog", cl.Spec.Name, namespace)

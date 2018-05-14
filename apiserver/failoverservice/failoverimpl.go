@@ -71,6 +71,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	spec.Parameters[request.ClusterName] = request.ClusterName
 	labels := make(map[string]string)
 	labels["target"] = request.Target
+	labels["pg-cluster"] = request.ClusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
