@@ -2,7 +2,7 @@
 image::docs/crunchy_logo.png[Hyla Arborea,width="40%",height="40%", align="center"]
 = PostgreSQL Operator
 
-v2.7, {docdate}
+v3.0, {docdate}
 
 The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
 

@@ -1,6 +1,6 @@
 = PostgreSQL Operator Installation
 :toc: 
-v2.7, {docdate}
+v3.0, {docdate}
 
 == Project Structure
 
@@ -16,7 +16,7 @@ Next, get a tagged release of the source code:
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 2.7
+git checkout 3.0
 ....
 
 == Get Images and Binaries
@@ -24,17 +24,17 @@ git checkout 2.7
 To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, specify the image versions, and execute the following Makefile target:
 ....
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-2.7
+export CO_IMAGE_TAG=centos7-3.0
 make pull
 ....
 
 To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link:
 
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]  
- * extract (e.g. tar xvzf postgres-operator.2.7.tar.gz)
+ * extract (e.g. tar xvzf postgres-operator.3.0.tar.gz)
 ....
 cd $HOME
-tar xvzf ./postgres-operator.2.7.tar.gz
+tar xvzf ./postgres-operator.3.0.tar.gz
 ....
  * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
 
@@ -121,7 +121,7 @@ The complete set of environment variables used in the installation
 so far are:
 ....
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-2.7
+export CO_IMAGE_TAG=centos7-3.0
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
@@ -191,8 +191,8 @@ pgo version
 At this point you should be able to connect to the operator as follows:
 ....
 pgo version
-pgo client version 2.7
-apiserver version 2.7
+pgo client version 3.0
+apiserver version 3.0
 ....
 
 *pgo* commands are documented on the link:docs/commands.asciidoc[Commands] page.

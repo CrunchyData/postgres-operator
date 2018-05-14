@@ -1,6 +1,6 @@
 = PostgreSQL Operator Build Instructions
 :toc: 
-v2.7, {docdate}
+v3.0, {docdate}
 
 == Overview
 
@@ -49,7 +49,7 @@ make setup
 === Compiling the PostgreSQL Operator
 ....
 export CO_BASEOS=centos7
-export CO_VERSION=2.7
+export CO_VERSION=3.0
 export CO_IMAGE_PREFIX=crunchydata
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export GOPATH=$HOME/odev
