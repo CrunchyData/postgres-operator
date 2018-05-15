@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhel7.4
+FROM registry.access.redhat.com/rhel7
 
 
 LABEL Release="2.7" Vendor="Crunchy Data Solutions" 

@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Crunchy Data PostgreSQL Operator Documentation</title>
+    
+      <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="generator" content="Hugo 0.40" />
+
+<title>Deployment :: Crunchy Data PostgreSQL Operator Documentation</title>
+<link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
+<link href="https://crunchydata.github.io/postgres-operator/css/nucleus.css" rel="stylesheet">
+<link href="https://crunchydata.github.io/postgres-operator/css/font-awesome.min.css" rel="stylesheet">
+<link href="https://crunchydata.github.io/postgres-operator/css/hybrid.css" rel="stylesheet">
+<link href="https://crunchydata.github.io/postgres-operator/css/featherlight.min.css" rel="stylesheet">
+<link href="https://crunchydata.github.io/postgres-operator/css/auto-complete.css" rel="stylesheet">
+<link href="https://crunchydata.github.io/postgres-operator/theme-original/style.css" rel="stylesheet">
+
+<link rel="stylesheet" href="https://crunchydata.github.io/postgres-operator/css/bootstrap.min.css">
+<script src="https://crunchydata.github.io/postgres-operator/js/jquery-2.x.min.js"></script>
+<style type="text/css">
+  :root #header + #content > #left > #rlblock_left {
+    display:none !important;
+  }
+</style>
+<meta name="description" content="">
+
+
+    
+  </head>
+  <body data-url="/installation/deployment/">
+    
+      <div id="headermain"></div>
+<nav id="sidebar" class="">
+
+
+
+<div class="highlightable">
+  <div id="header-wrapper">
+    <div id="header">
+      
+	
+  
+    <a class="baselink" href="https://crunchydata.github.io/postgres-operator/">Crunchy Data PostgreSQL Operator Documentation</a>
+  
+
+    </div>
+        <div class="searchbox">
+		    <label for="search-by"><i class="fa fa-search"></i></label>
+		    <input data-search-input id="search-by" type="text" placeholder="Search...">
+		    <span data-search-clear=""><i class="fa fa-close"></i></span>
+		</div>
+		<script type="text/javascript" src="https://crunchydata.github.io/postgres-operator/js/lunr.min.js"></script>
+		<script type="text/javascript" src="https://crunchydata.github.io/postgres-operator/js/auto-complete.js"></script>
+		<script type="text/javascript">
+        
+            var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/";
+        
+		</script>
+		<script type="text/javascript" src="https://crunchydata.github.io/postgres-operator/js/search.js"></script>
+  </div>
+
+      <ul class="topics">
+            <li data-nav-id="/" class="dd-item">
+            <a href="https://crunchydata.github.io/postgres-operator/"><i class="fa fa-fw fa-home"></i></a>
+            </li>
+    <li data-nav-id="/installation/" class="dd-item parent haschildren
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/installation/">Installation</a>
+            <i class="fa fa-angle-down fa-lg category-icon"></i>
+
+      </div>
+        <ul>
+      <li data-nav-id="/installation/quick-installation/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/quick-installation/">
+            Quick Installation
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/manual-installation/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/manual-installation/">
+            Manual Installation
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/helm-chart/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/helm-chart/">
+            Helm Chart
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
+            Upgrading the Operator
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/deployment/" class="dd-item active">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
+            Deployment
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/configuration/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
+            Configuration
+          </a>
+        </div>
+    </li>
+        </ul>
+    </li>
+    <li data-nav-id="/contributing/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/how-it-works/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How it Works</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/getting-started/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a>
+
+      </div>
+    </li>
+
+
+
+        <section id="shortcuts">
+                <li class="" role=""><h3>More</h3><a href="https://github.com/CrunchyData/postgres-operator" target="_blank" rel="noopener"><i class='fa fa-github'></i> <label>Github repo</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
+                <li class="" role=""><a href="https://kubernetes.io/docs/" target="_blank" rel="noopener"><i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md" target="_blank" rel="noopener"><i class='fa fa-file'></i> <label>License</label></a></li>
+        </section>
+
+    <hr />
+    <li></li>
+
+    </ul>
+
+ <section id="footer">
+    </section>
+  </div>
+</nav>
+
+
+
+<section id="body">
+<div id="overlay"></div>
+<div class="padding highlightable">
+
+  <div id="top-bar">
+    
+      
+      
+      
+    <div id="top-github-link">
+      <a class="github-link" href="https://crunchydata.github.io/postgres-operator/contributing/" target="blank">
+        <i class="fa fa-info-circle"></i>
+        How to contribute
+      </a>
+      <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/installation/deployment.adoc" target="blank">
+        <i class="fa fa-code-fork"></i>
+        Improve this page
+      </a>
+    </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+        <span id="sidebar-toggle-span">
+          <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+            <i class="fa fa-bars"></i>
+          </a>
+        </span>
+        <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+        <span class="links">
+        
+
+
+
+
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/'>Crunchy Data PostgreSQL Operator</a> > <a href='https://crunchydata.github.io/postgres-operator/installation/'>Installation</a> > Deployment
+
+
+
+
+
+
+        </span>
+    </div>
+
+    
+    <div class="progress">
+        <div class="wrapper">
+    
+        </div>
+    </div>
+    
+
+  </div>
+
+
+<div id="body-inner">
+  
+    <h1>Deployment</h1>
+  
+
+
+
+    
+    
+    
+    <div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_verify_operator_status">Verify Operator Status</a></li>
+<li><a href="#_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</a></li>
+<li><a href="#_verify_pgo_client">Verify pgo Client</a></li>
+<li><a href="#_storage_configuration">Storage Configuration</a></li>
+<li><a href="#_next_steps">Next Steps</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>v2.6, 2018-04-29</p>
+</div>
+<div class="paragraph">
+<p>This document details verifying the installation of the PostgreSQL Operator
+is successful, in addition to detailing some different storage configurations
+that can be made.</p>
+</div>
+<div class="sect1">
+<h2 id="_verify_operator_status">Verify Operator Status</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To verify that the operator is deployed and running, run the following:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get pod --selector=name=postgres-operator</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see output similar to this:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-56598999cd-tbg4w   2/2       Running   0          1m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There are 2 containers in the operator pod, both should be <strong>ready</strong> as above.</p>
+</div>
+<div class="paragraph">
+<p>When you first run the operator, it will create the required
+CustomResourceDefinitions. You can view these as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get crd</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The operator creates the following Custom Resource Definitions over time as the
+associated commands are triggered.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get crd
+NAME                             AGE
+pgbackups.cr.client-go.k8s.io    2d
+pgclusters.cr.client-go.k8s.io   2d
+pgingests.cr.client-go.k8s.io    2d
+pgpolicies.cr.client-go.k8s.io   2d
+pgreplicas.cr.client-go.k8s.io   2d
+pgtasks.cr.client-go.k8s.io      2d
+pgupgrades.cr.client-go.k8s.io   2d</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, the server side of the operator is deployed and ready.</p>
+</div>
+<div class="paragraph">
+<p>The complete set of environment variables used in the installation
+so far are -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-2.6
+export GOPATH=$HOME/odev
+export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_CMD=kubectl</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You would normally add these into your <strong>.bashrc</strong> at this point to be used later on or if you want to redeploy the operator.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pgo command line client requires TLS for securing the connection to the operator&#8217;s REST API.  This configuration is performed as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The pgo client uses Basic Authentication to authenticate to the operator REST API, for authentication, add the following <code>.pgouser</code> file to your $HOME -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>echo "username:password" &gt; $HOME/.pgouser</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <strong>pgo</strong> client needs the URL to connect to the operator.</p>
+</div>
+<div class="paragraph">
+<p>Depending on your Kubernetes environment this can be done the following ways.</p>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Running Kubernetes Locally
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_running_kubernetes_locally">Running Kubernetes Locally</h3>
+<div class="paragraph">
+<p>If your local host is not set up to resolve Kubernetes Service DNS names, you can specify the operator IP address as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get service postgres-operator
+NAME                TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+postgres-operator   NodePort   10.109.184.8   &lt;none&gt;        8443:30894/TCP   5m
+
+export CO_APISERVER_URL=https://10.109.184.8:8443
+pgo version</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is also possible to define a bash alias such as -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This alias will set the <code>CO_APISERVER_URL</code> IP address for you.</p>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Running Kubernetes Remotely
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect3">
+<h4 id="_running_kubernetes_remotely">Running Kubernetes Remotely</h4>
+<div class="paragraph">
+<p>Set up a port-forward tunnel from your host to the Kube remote host, specifying the operator pod -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get pod --selector=name=postgres-operator
+NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-56598999cd-tbg4w   2/2       Running   0          8m
+
+kubectl port-forward postgres-operator-56598999cd-tbg4w 8443:8443</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In another terminal -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_APISERVER_URL=https://127.0.0.1:8443
+pgo version</pre>
+</div>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_pgo_client">Verify pgo Client</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point you should be able to connect to the operator as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo version
+pgo client version 2.6
+apiserver version 2.6</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Operator commands are documented on the <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a> page.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_configuration">Storage Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.</p>
+</div>
+<div class="paragraph">
+<p>The operator will work with HostPath, NFS, Dynamic, and GKE Storage.</p>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        NFS
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_nfs">NFS</h3>
+<div class="paragraph">
+<p>To configure the operator to use NFS for storage, a sample <strong>pgo.yaml.nfs</strong> file is provided.  Overlay the default <code>pgo.yaml</code> file with that file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the <strong>pgo.yaml</strong> file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is <strong>nfsnobody</strong> as the GID (65534).  Update the value to meet your NFS security settings.</p>
+</div>
+<div class="paragraph">
+<p>There is currently no script available to create your NFS Persistent Volumes but you can typically modify the <code>$COROOT/pv/create-pv.sh</code> script to work with NFS.</p>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Dynamic
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_dynamic">Dynamic</h3>
+<div class="paragraph">
+<p>To configure the operator to use Dynamic Storage classes for storage, a sample <strong>pgo.yaml.storageclass</strong> file is provided.  Overlay the default <strong>pgo.yaml</strong> file with that file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the <strong>pgo.yaml</strong> file to specify the storage class you will be using, the default value assumed is <strong>standard</strong> which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.</p>
+</div>
+<div class="paragraph">
+<p>Notice that the <strong>FsGroup</strong> setting is required for most block storage and is set to the value of <strong>26</strong> since the PostgreSQL container runs as UID <strong>26</strong>.</p>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        GKE
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_gke">GKE</h3>
+<div class="paragraph">
+<p>Some notes for setting up GKE for the Operator deployment.</p>
+</div>
+<div class="sect3">
+<h4 id="_install_kubectl">Install Kubectl</h4>
+<div class="paragraph">
+<p>On your host you will be working from, install the kubectl command -</p>
+</div>
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/" class="bare">https://kubernetes.io/docs/tasks/tools/install-kubectl/</a></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_gcp">GCP</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Select your project</p>
+</li>
+<li>
+<p>Create a Kube cluster in that project</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By default a storage class called <strong>standard</strong> is created.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_install_gcloud">Install GCloud</h4>
+<div class="paragraph">
+<p>To access the Kubernetes cluster, install the gcloud utility -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>https://cloud.google.com/sdk/downloads
+cd google-cloud-sdk
+./install.sh</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configure_kubectl_for_cluster_access">Configure Kubectl for Cluster Access</h4>
+<div class="literalblock">
+<div class="content">
+<pre>gcloud auth login
+
+gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
+
+kubectl get storageclass</pre>
+</div>
+</div>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are many ways to configure the operator further. Some sample configurations are
+documented on the <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">Configuration</a> page.</p>
+</div>
+<div class="paragraph">
+<p>You may also want to find out more information on how the operator is designed to work and
+deploy. This information can be found in the <a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a> page.</p>
+</div>
+<div class="paragraph">
+<p>Information can be found on the full scope of commands on the
+<a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a> page.</p>
+</div>
+</div>
+</div>
+
+
+    
+    
+          <footer class=" footline" >
+	
+</footer>
+  </div>
+</div>
+
+<div id="navigation">
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/" title="Upgrading the Operator"> <i class="fa fa-chevron-left"></i><label>Upgrading the Operator</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration" style="margin-right: 0px;"><label>Configuration</label><i class="fa fa-chevron-right"></i></a></div>
+
+</section>
+<div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+  <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+</div>    
+
+<script src="https://crunchydata.github.io/postgres-operator/js/clipboard.min.js"></script>
+<script src="https://crunchydata.github.io/postgres-operator/js/featherlight.min.js"></script>
+<script src="https://crunchydata.github.io/postgres-operator/js/html5shiv-printshiv.min.js"></script>
+
+<script src="https://crunchydata.github.io/postgres-operator/js/modernizr.custom.71422.js"></script>
+<script src="https://crunchydata.github.io/postgres-operator/js/docdock.js"></script>
+<script src="https://crunchydata.github.io/postgres-operator/theme-original/script.js"></script>
+
+
+    
+
+    
+    
+
+    
+  </body>
+</html>
