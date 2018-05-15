@@ -32,31 +32,38 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	backupname := vars["name"]
 
-	switch r.Method {
-	case "GET":
-		err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
-		if err != nil {
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-		w.Header().Set("Content-Type", "application/json")
-
-		log.Debug("backupservice.ShowBackupHandler GET called")
-		resp := ShowBackup(backupname)
-		json.NewEncoder(w).Encode(resp)
-	case "DELETE":
-		err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
-		if err != nil {
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-		w.Header().Set("Content-Type", "application/json")
-		log.Debug("backupservice.ShowBackupHandler DELETE called")
-		resp := DeleteBackup(backupname)
-		json.NewEncoder(w).Encode(resp)
+	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+	if err != nil {
+		return
 	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Debug("backupservice.ShowBackupHandler GET called")
+	resp := ShowBackup(backupname)
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+// DeleteBackupHandler ...
+// returns a ShowBackupResponse
+func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("backupservice.DeleteBackupHandler %v\n", vars)
+
+	backupname := vars["name"]
+
+	err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	log.Debug("backupservice.DeleteBackupHandler called")
+	resp := DeleteBackup(backupname)
+	json.NewEncoder(w).Encode(resp)
 
 }
 

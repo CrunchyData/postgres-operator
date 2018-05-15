@@ -22,7 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	"github.com/spf13/viper"
 	"io"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,8 +112,8 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 
 	pvcFields := lspvcTemplateFields{
 		Name:          podName,
-		COImagePrefix: viper.GetString("Pgo.COImagePrefix"),
-		COImageTag:    viper.GetString("Pgo.COImageTag"),
+		COImagePrefix: apiserver.Pgo.Pgo.COImagePrefix,
+		COImageTag:    apiserver.Pgo.Pgo.COImageTag,
 		BackupRoot:    pvcRoot,
 		PVCName:       pvcName,
 	}

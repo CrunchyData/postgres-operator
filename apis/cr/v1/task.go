@@ -31,7 +31,8 @@ type PgtaskSpec struct {
 	StorageSpec PgStorageSpec `json:"storagespec"`
 	TaskType    string        `json:"tasktype"`
 	Status      string        `json:"status"`
-	Parameters  string        `json:"parameters"`
+	//Parameters  string            `json:"parameters"`
+	Parameters map[string]string `json:"parameters"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

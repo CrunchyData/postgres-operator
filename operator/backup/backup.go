@@ -57,7 +57,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 
 	//create the PVC if necessary
 	var pvcName string
-	pvcName, err = pvc.CreatePVC(clientset, job.Spec.Name+"-backup", &job.Spec.StorageSpec, namespace)
+	pvcName, err = pvc.CreatePVC(clientset, &job.Spec.StorageSpec, job.Spec.Name+"-backup", job.Spec.BackupHost, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	} else {

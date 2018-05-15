@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
 	"strconv"
 	"time"
 )
@@ -69,7 +68,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		sel = request.Selector + ",pg-cluster,!replica"
+		sel = request.Selector + ",pg-cluster,replica=false"
 	} else {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector is required"
@@ -96,7 +95,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		selector := "pg-cluster=" + cluster.Spec.Name + ",!replica"
+		selector := "pg-cluster=" + cluster.Spec.Name + ",replica=false"
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -268,13 +267,13 @@ func GeneratePasswordExpireDate(daysFromNow int) string {
 
 // getDefaults ....
 func getDefaults() {
-	str := viper.GetString("Cluster.PasswordAgeDays")
+	str := apiserver.Pgo.Cluster.PasswordAgeDays
 	if str != "" {
 		defaultPasswordAgeDays, _ = strconv.Atoi(str)
 		log.Debugf("PasswordAgeDays set to %d\n", defaultPasswordAgeDays)
 
 	}
-	str = viper.GetString("Cluster.PasswordLength")
+	str = apiserver.Pgo.Cluster.PasswordLength
 	if str != "" {
 		defaultPasswordLength, _ = strconv.Atoi(str)
 		log.Debugf("PasswordLength set to %d\n", defaultPasswordLength)

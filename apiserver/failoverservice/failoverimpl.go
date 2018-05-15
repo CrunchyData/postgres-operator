@@ -62,10 +62,16 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
 	spec.Name = request.ClusterName + "-failover"
+
+	// previous failovers will leave a pgtask so remove it first
+	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, apiserver.Namespace)
+
 	spec.TaskType = crv1.PgtaskFailover
-	spec.Parameters = request.ClusterName
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[request.ClusterName] = request.ClusterName
 	labels := make(map[string]string)
 	labels["target"] = request.Target
+	labels["pg-cluster"] = request.ClusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

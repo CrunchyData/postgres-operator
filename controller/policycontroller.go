@@ -95,19 +95,15 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use policyScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgpolicyScheme.Copy(policy)
-	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of policy object: %v\n", err)
-		return
-	}
-
+	copyObj := policy.DeepCopyObject()
 	policyCopy := copyObj.(*crv1.Pgpolicy)
+
 	policyCopy.Status = crv1.PgpolicyStatus{
 		State:   crv1.PgpolicyStateProcessed,
 		Message: "Successfully processed Pgpolicy by controller",
 	}
 
-	err = c.PgpolicyClient.Put().
+	err := c.PgpolicyClient.Put().
 		Name(policy.ObjectMeta.Name).
 		Namespace(policy.ObjectMeta.Namespace).
 		Resource(crv1.PgpolicyResourcePlural).

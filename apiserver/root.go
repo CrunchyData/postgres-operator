@@ -23,7 +23,6 @@ import (
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -74,13 +73,26 @@ type CredentialDetail struct {
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
 
-var StorageMap map[string]interface{}
-var ContainerResourcesMap map[string]interface{}
+//var StorageMap map[string]interface{}
+//var ContainerResourcesMap map[string]interface{}
 
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
+var Pgo PgoConfig
+
 func Initialize() {
+
+	Pgo.getConf()
+	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
+	Pgo.validate()
+
+	Namespace = os.Getenv("NAMESPACE")
+	if Namespace == "" {
+		log.Error("NAMESPACE env var is required")
+		os.Exit(2)
+	}
+	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
 	AuditFlag = false
@@ -132,42 +144,18 @@ func buildConfig(kubeconfig string) (*rest.Config, error) {
 }
 
 func initConfig() {
-	//	if cfgFile != "" { // enable ability to specify config file via flag
-	//		viper.SetConfigFile(cfgFile)
-	//	}
 
-	viper.SetConfigName("pgo")     // name of config file (without extension)
-	viper.AddConfigPath(".")       // adding current directory as first search path
-	viper.AddConfigPath("$HOME")   // adding home directory as second search path
-	viper.AddConfigPath("/config") // adding /config directory as third search path
-	viper.AutomaticEnv()           // read in environment variables that match
-
-	// If a config file is found, read it in.
-	err := viper.ReadInConfig()
-	if err == nil {
-		log.Debugf("Using config file:", viper.ConfigFileUsed())
-	} else {
-		log.Debug("config file not found")
-	}
-
-	AuditFlag = viper.GetBool("Pgo.Audit")
+	AuditFlag = Pgo.Pgo.Audit
 	if AuditFlag {
 		log.Info("audit flag is set to true")
 	}
 
-	MetricsFlag = viper.GetBool("Pgo.Metrics")
+	MetricsFlag = Pgo.Pgo.Metrics
 	if MetricsFlag {
 		log.Info("metrics flag is set to true")
 	}
 
-	if Namespace == "" {
-		Namespace = viper.GetString("Namespace")
-	}
-	if Namespace == "" {
-		log.Error("--namespace flag is not set and required")
-		os.Exit(2)
-	}
-	tmp := viper.GetString("BasicAuth")
+	tmp := Pgo.BasicAuth
 	if tmp == "" {
 		BasicAuth = true
 	} else {
@@ -180,16 +168,10 @@ func initConfig() {
 	}
 	log.Infof("BasicAuth is %v\n", BasicAuth)
 
-	log.Info("namespace is " + viper.GetString("Namespace"))
-
-	StorageMap = viper.GetStringMap("Storage")
-
 	if !validStorageSettings() {
 		log.Error("Storage Settings are not defined correctly, can't continue")
 		os.Exit(2)
 	}
-
-	ContainerResourcesMap = viper.GetStringMap("ContainerResources")
 
 	if !validContainerResourcesSettings() {
 		log.Error("Container Resources settings are not defined correctly, can't continue")
@@ -308,7 +290,7 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
 }
 
 func validContainerResourcesSettings() bool {
-	log.Infof("ContainerResources has %d definitions \n", len(ContainerResourcesMap))
+	log.Infof("ContainerResources has %d definitions \n", len(Pgo.ContainerResources))
 
 	//validate any Container Resources in pgo.yaml for correct formats
 	//log.Infof("%v is the ContainerResourcesMap\n", ContainerResourcesMap)
@@ -316,7 +298,7 @@ func validContainerResourcesSettings() bool {
 		return false
 	}
 
-	drs := viper.GetString("DefaultContainerResource")
+	drs := Pgo.DefaultContainerResources
 	if drs == "" {
 		log.Info("DefaultContainerResources was not specified in pgo.yaml, so no container resources will be specified")
 		return true
@@ -335,23 +317,23 @@ func validContainerResourcesSettings() bool {
 }
 
 func validStorageSettings() bool {
-	log.Infof("Storage has %d definitions\n", len(StorageMap))
+	log.Infof("Storage has %d definitions\n", len(Pgo.Storage))
 
-	ps := viper.GetString("PrimaryStorage")
+	ps := Pgo.PrimaryStorage
 	if IsValidStorageName(ps) {
 		log.Info(ps + " is valid")
 	} else {
 		log.Error(ps + " is NOT valid")
 		return false
 	}
-	rs := viper.GetString("ReplicaStorage")
+	rs := Pgo.ReplicaStorage
 	if IsValidStorageName(rs) {
 		log.Info(rs + " is valid")
 	} else {
 		log.Error(rs + " is NOT valid")
 		return false
 	}
-	bs := viper.GetString("BackupStorage")
+	bs := Pgo.BackupStorage
 	if IsValidStorageName(bs) {
 		log.Info(bs + " is valid")
 	} else {
@@ -364,12 +346,12 @@ func validStorageSettings() bool {
 }
 
 func IsValidContainerResource(name string) bool {
-	_, ok := ContainerResourcesMap[name]
+	_, ok := Pgo.ContainerResources[name]
 	return ok
 }
 
 func IsValidStorageName(name string) bool {
-	_, ok := StorageMap[name]
+	_, ok := Pgo.Storage[name]
 	return ok
 }
 
@@ -406,9 +388,9 @@ func IsValidContainerResourceValues() bool {
 
 	var err error
 
-	for k, v := range ContainerResourcesMap {
+	for k, v := range Pgo.ContainerResources {
 		log.Infof("Container Resources %s [%v]\n", k, v)
-		resources := util.GetContainerResources(viper.Sub("ContainerResources." + k))
+		resources, _ := Pgo.GetContainerResource(k)
 		_, err = resource.ParseQuantity(resources.RequestsMemory)
 		if err != nil {
 			log.Errorf("%s.RequestsMemory value invalid format\n", k)
@@ -436,7 +418,7 @@ func IsValidContainerResourceValues() bool {
 func initTemplates() {
 	LspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
 
-	LoadTemplatePath := viper.GetString("Pgo.LoadTemplate")
+	LoadTemplatePath := Pgo.Pgo.LoadTemplate
 	if LoadTemplatePath == "" {
 		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
 		os.Exit(2)

@@ -95,11 +95,8 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use backupScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgbackupScheme.Copy(backup)
-	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of backup object: %v\n", err)
-		return
-	}
+	//copyObj, err := c.PgbackupScheme.Copy(backup)
+	copyObj := backup.DeepCopyObject()
 
 	backupCopy := copyObj.(*crv1.Pgbackup)
 	backupCopy.Status = crv1.PgbackupStatus{
@@ -107,7 +104,7 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 		Message: "Successfully processed Pgbackup by controller",
 	}
 
-	err = c.PgbackupClient.Put().
+	err := c.PgbackupClient.Put().
 		Name(backup.ObjectMeta.Name).
 		Namespace(backup.ObjectMeta.Namespace).
 		Resource(crv1.PgbackupResourcePlural).

@@ -138,10 +138,10 @@ func deleteUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v
+		url := APIServerURL + "/upgradesdelete/" + v
 		log.Debug("deleteUpgrade called...[" + url + "]")
 
-		action := "DELETE"
+		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
 			log.Fatal("NewRequest: ", err)

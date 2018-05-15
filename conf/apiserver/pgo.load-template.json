@@ -9,6 +9,7 @@
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
+                    "vendor": "crunchydata",
                     "pgo-load": "true",
                     "pg-database": "{{.DbHost}}"
                 }

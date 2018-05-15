@@ -38,11 +38,11 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clusters/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
+		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
 
 		log.Debug("delete cluster called [" + url + "]")
 
-		action := "DELETE"
+		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
 			log.Fatal("NewRequest: ", err)
@@ -156,7 +156,9 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for _, pod := range detail.Pods {
 		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
-		fmt.Println(TreeBranch + "pvc : " + pod.PVCName)
+		for _, pvc := range pod.PVCName {
+			fmt.Println(TreeBranch + "pvc : " + pvc)
+		}
 	}
 
 	for _, d := range detail.Deployments {
@@ -223,6 +225,7 @@ func createCluster(args []string) {
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
 	r.PgpoolFlag = PgpoolFlag
+	r.ArchiveFlag = ArchiveFlag
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

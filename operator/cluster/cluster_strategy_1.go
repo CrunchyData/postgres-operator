@@ -81,10 +81,22 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 
 	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
+	archivePVCName := ""
+	archiveMode := "off"
+	archiveTimeout := "60"
+	if cl.Spec.UserLabels["archive"] == "true" {
+		archiveMode = "on"
+		archiveTimeout = cl.Spec.UserLabels["archive-timeout"]
+		archivePVCName = cl.Spec.Name + "-xlog"
+	}
+
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
 		Name:               cl.Spec.Name,
+		Replicas:           "1",
+		PgMode:             "primary",
 		ClusterName:        cl.Spec.Name,
+		PrimaryHost:        cl.Spec.Name,
 		Port:               cl.Spec.Port,
 		CCPImagePrefix:     operator.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
@@ -94,6 +106,9 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		BackupPath:         cl.Spec.BackupPath,
 		DataPathOverride:   cl.Spec.Name,
 		Database:           cl.Spec.Database,
+		ArchiveMode:        archiveMode,
+		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
+		ArchiveTimeout:     archiveTimeout,
 		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
@@ -182,12 +197,6 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 		return err
 	}
 
-	//delete the deployments
-	//delOptions := meta_v1.DeleteOptions{}
-	//var delProp meta_v1.DeletionPropagation
-	//delProp = meta_v1.DeletePropagationForeground
-	//delOptions.PropagationPolicy = &delProp
-
 	for _, d := range deployments.Items {
 		err = kubeapi.DeleteDeployment(clientset, d.ObjectMeta.Name, namespace)
 	}
@@ -270,13 +279,18 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:               depName,
 		ClusterName:        clusterName,
+		PgMode:             "replica",
 		Port:               cl.Spec.Port,
 		CCPImagePrefix:     operator.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
-		PVCName:            pvcName,
+		PVCName:            util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
+		DataPathOverride:   depName,
 		PrimaryHost:        cl.Spec.PrimaryHost,
+		BackupPath:         "",
 		Database:           cl.Spec.Database,
 		Replicas:           "1",
+		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		OperatorLabels:     util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:    util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
@@ -289,10 +303,12 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {
@@ -318,6 +334,10 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 	primaryLabels := make(map[string]string)
 	if replicaFlag {
 		primaryLabels["replica"] = "true"
+		primaryLabels["primary"] = "false"
+	} else {
+		primaryLabels["replica"] = "false"
+		primaryLabels["primary"] = "true"
 	}
 
 	primaryLabels["name"] = Name
@@ -469,32 +489,52 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	replicaLabels := getPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
 	replicaLabels["replica-name"] = replica.Spec.Name
 
+	archivePVCName := ""
+	archiveMode := "off"
+	archiveTimeout := "60"
+	if cluster.Spec.UserLabels["archive"] == "true" {
+		archiveMode = "on"
+		archiveTimeout = cluster.Spec.UserLabels["archive-timeout"]
+		archivePVCName = replica.Spec.Name + "-xlog"
+	}
+
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:              replica.Spec.Name,
 		ClusterName:       replica.Spec.ClusterName,
+		PgMode:            "replica",
 		Port:              cluster.Spec.Port,
 		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       cluster.Spec.CCPImageTag,
-		PVCName:           pvcName,
+		PVCName:           util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:     util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
 		PrimaryHost:       cluster.Spec.PrimaryHost,
+		BackupPath:        "",
 		Database:          cluster.Spec.Database,
+		DataPathOverride:  replica.Spec.Name,
+		ArchiveMode:       archiveMode,
+		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
+		ArchiveTimeout:    archiveTimeout,
 		Replicas:          "1",
+		ConfVolume:        GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
 		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:   util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,
 		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:      GetCollectAddon(&cluster.Spec),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {

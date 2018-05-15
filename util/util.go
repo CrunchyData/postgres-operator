@@ -24,7 +24,6 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -331,30 +330,6 @@ func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace st
 
 	log.Error("primary secret not found for " + db)
 	return "", errors.New("primary secret not found for " + db)
-
-}
-
-// GetStorageSpec ...
-func GetStorageSpec(cfg *viper.Viper) crv1.PgStorageSpec {
-	storage := crv1.PgStorageSpec{}
-	storage.StorageClass = cfg.GetString("StorageClass")
-	storage.AccessMode = cfg.GetString("AccessMode")
-	storage.Size = cfg.GetString("Size")
-	storage.StorageType = cfg.GetString("StorageType")
-	storage.Fsgroup = cfg.GetString("Fsgroup")
-	storage.SupplementalGroups = cfg.GetString("SupplementalGroups")
-	return storage
-
-}
-
-// GetContainerResources ...
-func GetContainerResources(cfg *viper.Viper) crv1.PgContainerResources {
-	r := crv1.PgContainerResources{}
-	r.RequestsMemory = cfg.GetString("RequestsMemory")
-	r.RequestsCPU = cfg.GetString("RequestsCPU")
-	r.LimitsMemory = cfg.GetString("LimitsMemory")
-	r.LimitsCPU = cfg.GetString("LimitsCPU")
-	return r
 
 }
 

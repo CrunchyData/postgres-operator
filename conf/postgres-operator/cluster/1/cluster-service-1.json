@@ -4,6 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            "vendor": "crunchydata",
             "pg-cluster": "{{.ClusterName}}",
             "name": "{{.Name}}"
         }

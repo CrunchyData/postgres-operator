@@ -9,6 +9,7 @@
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
+                    "vendor": "crunchydata",
                     "pgupgrade": "true",
                     "pg-database": "{{.Name}}"
                 }

@@ -27,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -202,8 +201,9 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus = getReadyStatus(&p)
-		//log.Infof("pod details are %v\n", p)
 		d.PVCName = getPVCName(&p)
+		log.Infof("after getPVCName call")
+
 		d.Primary = isPrimary(&p)
 		output = append(output, d)
 
@@ -223,6 +223,7 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 		return output, err
 	}
 
+	log.Debugf("got %d services for %s\n", len(services.Items), cluster.Spec.Name)
 	for _, p := range services.Items {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
@@ -244,6 +245,7 @@ func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
 		return output, err
 	}
 
+	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
 	for _, s := range secrets.Items {
 		d := msgs.ShowClusterSecret{}
 		d.Name = s.Name
@@ -284,7 +286,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 
 	//loop thru each cluster
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		result := msgs.ClusterTestResult{}
@@ -301,6 +303,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			return response
 		}
 
+		/**
 		//get the replicas for this cluster
 		log.Debug("calling getReplicas")
 		detail.Replicas, err = getReplicas(&c)
@@ -309,6 +312,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		*/
 
 		//get the secrets for this cluster
 		detail.Secrets, err = getSecrets(&c)
@@ -449,6 +453,15 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap["crunchy_collect"] = "true"
 		}
 
+		if request.ArchiveFlag {
+			userLabelsMap["archive"] = "true"
+			log.Debug("archive set to true in user labels")
+		} else {
+			log.Debug("using ArchiveMode from pgo.yaml")
+			userLabelsMap["archive"] = apiserver.Pgo.Cluster.ArchiveMode
+		}
+		userLabelsMap["archive-timeout"] = apiserver.Pgo.Cluster.ArchiveTimeout
+
 		if request.PgpoolFlag {
 			userLabelsMap["crunchy-pgpool"] = "true"
 			userLabelsMap["pgpool-secret"] = request.PgpoolSecret
@@ -557,7 +570,8 @@ func validateConfigPolicies(PoliciesFlag string) error {
 	var err error
 	var configPolicies string
 	if PoliciesFlag == "" {
-		configPolicies = viper.GetString("Cluster.Policies")
+		log.Println(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
+		configPolicies = apiserver.Pgo.Cluster.Policies
 	} else {
 		configPolicies = PoliciesFlag
 	}
@@ -594,27 +608,31 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec := crv1.PgclusterSpec{}
 
 	if request.ContainerResources != "" {
-		spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + request.ContainerResources))
+		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(request.ContainerResources)
 	} else {
-		defaultContainerResource := viper.GetString("DefaultContainerResource")
+		log.Println(apiserver.Pgo.DefaultContainerResources + " is Pgo.DefaultContainerResources")
+		defaultContainerResource := apiserver.Pgo.DefaultContainerResources
 		if defaultContainerResource != "" {
-			spec.ContainerResources = util.GetContainerResources(viper.Sub("ContainerResources." + defaultContainerResource))
+			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
 		}
 	}
 
 	if request.StorageConfig != "" {
-		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + request.StorageConfig))
+		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	} else {
-		spec.PrimaryStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("PrimaryStorage")))
+		log.Printf("%v", apiserver.Pgo.PrimaryStorage)
+		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	}
 
 	if request.ReplicaStorageConfig != "" {
-		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + request.ReplicaStorageConfig))
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.ReplicaStorageConfig)
 	} else {
-		spec.ReplicaStorage = util.GetStorageSpec(viper.Sub("Storage." + viper.GetString("ReplicaStorage")))
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
+		log.Printf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
-	spec.CCPImageTag = viper.GetString("Cluster.CCPImageTag")
+	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
+	log.Println(apiserver.Pgo.Cluster.CCPImageTag + " is Pgo.Cluster.CCPImageTag")
 	if request.CCPImageTag != "" {
 		spec.CCPImageTag = request.CCPImageTag
 		log.Debug("using CCPImageTag from command line " + request.CCPImageTag)
@@ -628,7 +646,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.BackupPVCName = ""
 	spec.PrimaryHost = name
 	if request.Policies == "" {
-		spec.Policies = viper.GetString("Cluster.Policies")
+		spec.Policies = apiserver.Pgo.Cluster.Policies
+		log.Println(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
 	} else {
 		spec.Policies = request.Policies
 	}
@@ -643,23 +662,28 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.UserLabels = userLabelsMap
 
 	//override any values from config file
-	str := viper.GetString("Cluster.Port")
+	str := apiserver.Pgo.Cluster.Port
+	log.Printf("%d", apiserver.Pgo.Cluster.Port)
 	if str != "" {
 		spec.Port = str
 	}
-	str = viper.GetString("Cluster.User")
+	str = apiserver.Pgo.Cluster.User
+	log.Println(apiserver.Pgo.Cluster.User + " is Pgo.Cluster.User")
 	if str != "" {
 		spec.User = str
 	}
-	str = viper.GetString("Cluster.Database")
+	str = apiserver.Pgo.Cluster.Database
+	log.Println(apiserver.Pgo.Cluster.Database + " is Pgo.Cluster.Database")
 	if str != "" {
 		spec.Database = str
 	}
-	str = viper.GetString("Cluster.Strategy")
+	str = apiserver.Pgo.Cluster.Strategy
+	log.Printf("%d", apiserver.Pgo.Cluster.Strategy)
 	if str != "" {
 		spec.Strategy = str
 	}
-	str = viper.GetString("Cluster.Replicas")
+	str = apiserver.Pgo.Cluster.Replicas
+	log.Printf("%d", apiserver.Pgo.Cluster.Replicas)
 	if str != "" {
 		spec.Replicas = str
 	}
@@ -796,7 +820,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	}
 	if deleteBackups {
 
-		backupPVCName := clusterName + "-backup-pvc"
+		backupPVCName := clusterName + "-backup"
 		//verify backup pvc exists
 		_, err = pvcservice.ShowPVC(backupPVCName, "")
 		if err != nil {
@@ -810,7 +834,8 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		spec.TaskType = crv1.PgtaskDeleteData
 		spec.StorageSpec = storageSpec
 
-		spec.Parameters = backupPVCName
+		spec.Parameters = make(map[string]string)
+		spec.Parameters[backupPVCName] = backupPVCName
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -828,17 +853,19 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 }
 
-func getPVCName(pod *v1.Pod) string {
-	pvcName := "unknown"
+func getPVCName(pod *v1.Pod) map[string]string {
+	pvcList := make(map[string]string)
 
 	for _, v := range pod.Spec.Volumes {
-		if v.Name == "pgdata" {
-			pvcName = v.VolumeSource.PersistentVolumeClaim.ClaimName
-			log.Infof("pod.Name %s pgdata %s\n", pod.Name, pvcName)
+		if v.Name == "pgdata" || v.Name == "pgwal-volume" {
+			if v.VolumeSource.PersistentVolumeClaim != nil {
+				//log.Debugf("pvc.Name %v volume %v", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
+			}
 		}
 	}
 
-	return pvcName
+	return pvcList
 
 }
 

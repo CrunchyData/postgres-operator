@@ -4,17 +4,17 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            "vendor": "crunchydata",
             {{.OperatorLabels }}
         }
     },
     "spec": {
-        "replicas": 1,
+        "replicas": {{.Replicas}},
         "template": {
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
-                    "primary": "true",
-                    "pg-cluster": "{{.ClusterName}}",
+                    "vendor": "crunchydata",
             {{.OperatorLabels }}
                 }
             },
@@ -24,7 +24,6 @@
 
                 "containers": [
 		
-                {{.CollectAddon }}
 
 		    {
                     "name": "database",
@@ -46,23 +45,36 @@
                         "value": "{{.Port}}"
                     }, {
                         "name": "PG_MODE",
-                        "value": "primary"
+                        "value": "{{.PgMode}}"
+                    }, {
+                        "name": "PG_PRIMARY_HOST",
+                        "value": "{{.PrimaryHost}}"
                     }, {
                         "name": "PG_LOCALE",
                         "value": "en_US.UTF8"
                     }, {
-                        "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.DataPathOverride}}"
-                    }, {
                         "name": "BACKUP_PATH",
                         "value": "{{.BackupPath}}"
+                    }, {
+                        "name": "PGDATA_PATH_OVERRIDE",
+                        "value": "{{.DataPathOverride}}"
                     }, {
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
                     }, {
+                        "name": "ARCHIVE_MODE",
+                        "value": "{{.ArchiveMode}}"
+                    }, {
+                        "name": "ARCHIVE_TIMEOUT",
+                        "value": "{{.ArchiveTimeout}}"
+                    }, {
                         "name": "PGHOST",
                         "value": "/tmp"
-                    }],
+                    }
+
+                {{.CollectAddon }}
+
+		    ],
                     "volumeMounts": [{
                             "mountPath": "/pgdata",
                             "name": "pgdata",
@@ -126,7 +138,7 @@
                         }
                     }, {
                         "name": "pgwal-volume",
-			"emptyDir": { "medium": "Memory" }
+			{{.ArchivePVCName}}
                     }, {
                         "name": "backrestrepo-volume",
 			"emptyDir": { "medium": "Memory" }

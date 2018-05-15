@@ -95,19 +95,15 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use clusterScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgreplicaScheme.Copy(replica)
-	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of replica object: %v\n", err)
-		return
-	}
-
+	copyObj := replica.DeepCopyObject()
 	replicaCopy := copyObj.(*crv1.Pgreplica)
+
 	replicaCopy.Status = crv1.PgreplicaStatus{
 		State:   crv1.PgreplicaStateProcessed,
 		Message: "Successfully processed Pgreplica by controller",
 	}
 
-	err = c.PgreplicaClient.Put().
+	err := c.PgreplicaClient.Put().
 		Name(replica.ObjectMeta.Name).
 		Namespace(replica.ObjectMeta.Namespace).
 		Resource(crv1.PgreplicaResourcePlural).

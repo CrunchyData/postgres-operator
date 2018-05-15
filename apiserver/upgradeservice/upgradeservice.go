@@ -77,27 +77,38 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	switch r.Method {
-	case "GET":
-		log.Debug("upgradeservice.ShowUpgradeHandler GET called")
+	log.Debug("upgradeservice.ShowUpgradeHandler GET called")
 
-		err := apiserver.Authn(apiserver.SHOW_UPGRADE_PERM, w, r)
-		if err != nil {
-			return
-		}
-
-		resp := ShowUpgrade(upgradename)
-		json.NewEncoder(w).Encode(resp)
-	case "DELETE":
-		log.Debug("upgradeservice.ShowUpgradeHandler DELETE called")
-
-		err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
-		if err != nil {
-			return
-		}
-
-		resp := DeleteUpgrade(upgradename)
-		json.NewEncoder(w).Encode(resp)
+	err := apiserver.Authn(apiserver.SHOW_UPGRADE_PERM, w, r)
+	if err != nil {
+		return
 	}
+
+	resp := ShowUpgrade(upgradename)
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+// DeleteUpgradeHandler ...
+// pgo delete upgrade
+// returns a ShowUpgradeResponse
+func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("upgradeservice.DeleteUpgradeHandler %v\n", vars)
+
+	upgradename := vars["name"]
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Debug("upgradeservice.DeleteUpgradeHandler DELETE called")
+
+	err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	resp := DeleteUpgrade(upgradename)
+	json.NewEncoder(w).Encode(resp)
 
 }

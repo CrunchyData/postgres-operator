@@ -5,7 +5,7 @@ draft: false
 ---
 
 :toc:
-v2.6, {docdate}
+v2.7, {docdate}
 
 == Reference Architecture
 
@@ -241,7 +241,7 @@ following on a Kubernetes cluster -
    assumes you are using a non-shared volume technology (e.g. Amazon EBS),
    if the `CLUSTER.PVC_NAME` value is set in your configuration then a
    shared volume technology is assumed (e.g. HostPath or NFS), if a PVC
-   is created for the primary, the naming convention is *clustername-pvc*
+   is created for the primary, the naming convention is *clustername*
    where clustername is the name of your cluster.
 
 If you want to add a Postgres replica to a cluster, you will

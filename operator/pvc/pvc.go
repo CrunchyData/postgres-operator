@@ -31,13 +31,13 @@ import (
 type TemplateFields struct {
 	Name         string
 	AccessMode   string
+	ClusterName  string
 	Size         string
 	StorageClass string
 }
 
 // CreatePVC create a pvc
-func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.PgStorageSpec, namespace string) (string, error) {
-	var pvcName string
+func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec, pvcName, clusterName, namespace string) (string, error) {
 	var err error
 
 	switch storageSpec.StorageType {
@@ -50,10 +50,9 @@ func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.P
 		pvcName = storageSpec.Name
 	case "create", "dynamic":
 		log.Debug("StorageType is create")
-		pvcName = name + "-pvc"
 		log.Debug("Name=%s Size=%s AccessMode=%s\n",
 			pvcName, storageSpec.AccessMode, storageSpec.Size)
-		err = Create(clientset, pvcName, storageSpec.AccessMode, storageSpec.Size, storageSpec.StorageType, storageSpec.StorageClass, namespace)
+		err = Create(clientset, pvcName, clusterName, storageSpec.AccessMode, storageSpec.Size, storageSpec.StorageType, storageSpec.StorageClass, namespace)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
 			return pvcName, err
@@ -65,7 +64,7 @@ func CreatePVC(clientset *kubernetes.Clientset, name string, storageSpec *crv1.P
 }
 
 // Create a pvc
-func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvcSize string, storageType string, storageClass string, namespace string) error {
+func Create(clientset *kubernetes.Clientset, name, clusterName string, accessMode string, pvcSize string, storageType string, storageClass string, namespace string) error {
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
@@ -74,6 +73,7 @@ func Create(clientset *kubernetes.Clientset, name string, accessMode string, pvc
 		Name:         name,
 		AccessMode:   accessMode,
 		StorageClass: storageClass,
+		ClusterName:  clusterName,
 		Size:         pvcSize,
 	}
 

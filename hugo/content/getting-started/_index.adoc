@@ -5,7 +5,7 @@ draft: false
 ---
 
 :toc:
-v2.6, {docdate}
+v2.7, {docdate}
 
 == pgo Commands
 
@@ -110,6 +110,14 @@ configured for a cluster and the *testuser* cluster credential.  See
 below for more details on running a pgpool deployment as part of
 your cluster.
 
+You can also enable archive logging into a dedicated PVC by using the *--archive* command flag as follows:
+....
+pgo create cluster testcluster --archive
+....
+
+This will cause a new PVC to be created to hold archive logs.  Space
+is consumed by these logs but archives enable you to perform Point-In-Time-Recovery.
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -125,8 +133,8 @@ pgo show backup mycluster
 View the PVC folder and the backups contained therein:
 
 ....
-pgo show pvc mycluster-backup-pvc
-pgo show pvc mycluster-backup-pvc --pvc-root=mycluster-backups
+pgo show pvc mycluster-backup
+pgo show pvc mycluster-backup --pvc-root=mycluster-backups
 ....
 
 The output from this command is important in that it can let you
@@ -135,7 +143,7 @@ or essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
-pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster-pvc --secret-from=mycluster
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster --secret-from=mycluster
 ....
 
 This will create a new database called *restoredb* based on the
@@ -308,8 +316,8 @@ job to know when and how to proceed.
 
 Likewise, you can upgrade the cluster using a command line flag:
 ....
-pgo upgrade mycluster --ccp-image-tag=centos7-9.6.8-1.8.1
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.1
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3
 ....
 
 
@@ -324,16 +332,16 @@ pgo delete upgrade
 
 You can view the files on a PVC as follows:
 ....
-pgo show pvc mycluster-pvc
+pgo show pvc mycluster
 ....
 
-In this example, the PVC is *mycluster-pvc*.  This command is useful
+In this example, the PVC is *mycluster*.  This command is useful
 in some cases to examine what files are on a given PVC.
 
 In the case where you want to list a specific path on a PVC
 you can specify the path option as follows:
 ....
-pgo show pvc mycluster-pvc --pvc-root=mycluster-backups
+pgo show pvc mycluster --pvc-root=mycluster-backups
 ....
 
 You can also list all PVCs that are created by the operator
@@ -598,3 +606,41 @@ the promoted replica, this happens automatically due to the re-lable, the
 Deployment will recreate its pod because of this.   The failover typically
 takes only a few seconds, however, the creation of the replacement
 replica can take longer depending on how much data is being replicated.
+
+=== pgo df
+
+You can use the *pgo df* command to see the disk capacity of a cluster's PVC
+versus that of the PostgreSQL data that has been written to disk.  If
+the capacity is less than 50% then the output is printed in red to
+alert the user.
+
+Run the command as follows:
+....
+pgo df mycluster
+pgo df --selector=name=mycluster
+pgo df --selector=name=hang
+CLUSTER             STATUS    PGSIZE    CAPACITY  PCTUSED   
+
+mycluster           up        30 MB     1Gi       2
+....
+
+=== pgo status
+
+You can use the *pgo status* command to see overall pgo status.  Selective
+metrics are displayed to provide some insights to the pgo user and administrator as to what is running currently in this namespace related to pgo.
+
+Run the command as follows:
+....
+pgo status 
+Operator Start:          2018-05-02 15:59:41 +0000 UTC
+Databases:               2
+Backups:                 2
+Claims:                  18
+Total Volume Size:       18Gi      
+
+Database Images:
+                         4	crunchydata/crunchy-postgres:centos7-10.4-1.8.3
+
+Databases Not Ready:
+....
+

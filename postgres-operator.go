@@ -25,8 +25,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	//apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	//apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -70,10 +70,10 @@ func main() {
 	}
 
 	//TODO is this needed any longer?
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
+	//apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
+	//if err != nil {
+	//panic(err)
+	//}
 
 	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
@@ -81,6 +81,7 @@ func main() {
 		panic(err.Error())
 	}
 
+	/**
 	clustercrd, err := crdclient.PgclusterCreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		panic(err)
@@ -135,6 +136,8 @@ func main() {
 	if ingestcrd != nil {
 		fmt.Println(ingestcrd.Name + " exists ")
 	}
+
+	*/
 
 	// make a new config for our extension's API group, using the first config as a baseline
 	crdClient, crdScheme, err := crdclient.NewClient(config)

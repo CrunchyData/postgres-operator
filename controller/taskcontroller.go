@@ -97,20 +97,16 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use taskScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgtaskScheme.Copy(task)
-	if err != nil {
-		log.Errorf("ERROR creating a deep copy of task object: %v\n", err)
-		return
-	}
+	copyObj := task.DeepCopyObject()
+	taskCopy := copyObj.(*crv1.Pgtask)
 
 	//update the status of the task as processed to prevent reprocessing
-	taskCopy := copyObj.(*crv1.Pgtask)
 	taskCopy.Status = crv1.PgtaskStatus{
 		State:   crv1.PgtaskStateProcessed,
 		Message: "Successfully processed Pgtask by controller",
 	}
 
-	err = c.PgtaskClient.Put().
+	err := c.PgtaskClient.Put().
 		Name(task.ObjectMeta.Name).
 		Namespace(task.ObjectMeta.Namespace).
 		Resource(crv1.PgtaskResourcePlural).
@@ -128,34 +124,18 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	switch task.Spec.TaskType {
 	case crv1.PgtaskFailover:
 		log.Info("failover task added")
-		log.Info("cluster name is " + task.Spec.Parameters)
+		log.Infof("cluster name is %v\n", task.Spec.Parameters)
 		log.Info("dbname is " + task.Spec.Name)
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
 
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
-		log.Info("pvc is " + task.Spec.Parameters)
+		log.Infof("pvc is %v\n", task.Spec.Parameters)
 		log.Info("dbname is " + task.Spec.Name)
 		taskoperator.RemoveData(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}
-
-	/**
-	err = c.PgtaskClient.Delete().
-		Name(task.ObjectMeta.Name).
-		Namespace(task.ObjectMeta.Namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Body(taskCopy).
-		Do().
-		Error()
-
-	if err != nil {
-		log.Errorf("ERROR deleting pgtask status: %s %v\n", task.ObjectMeta.Name, err)
-	} else {
-		log.Errorf("deleted pgtask %s\n", task.ObjectMeta.Name)
-	}
-	*/
 
 }
 

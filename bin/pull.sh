@@ -14,7 +14,7 @@
 # limitations under the License.
 
 export P_IMAGE_PREFIX=registry-dev.crunchydata.com/crunchydata
-export CO_IMAGE_TAG=centos7-2.6
+export CO_IMAGE_TAG=centos7-3.0
 
 docker pull $P_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG
 docker tag $P_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG

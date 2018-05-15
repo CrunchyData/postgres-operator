@@ -31,6 +31,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	//"time"
 )
 
 // JobTemplateFields ...
@@ -50,22 +51,46 @@ type JobTemplateFields struct {
 // MinorUpgrade ..
 func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
 	var err error
-	var primaryDoc bytes.Buffer
+	//var primaryDoc bytes.Buffer
 
 	log.Info("minor cluster upgrade using Strategy 1 in namespace " + namespace)
 
+	//do this instead of deleting the deployment and creating a new one
+	//kubectl patch deploy mango --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"crunchydata/crunchy-postgres:centos7-10.4-1.8.4"}]'
+	//also patch the CRD
+	//kubectl patch pgcluster fango --type='json' -p='[{"op": "replace", "path": "/spec/ccpimagetag", "value":"centos7-10.4-1.8.4"}]'
+
+	err = kubeapi.PatchDeployment(clientset, cl.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.CCPImagePrefix+"/crunchy-postgres:"+upgrade.Spec.CCPImageTag)
+
+	err = util.Patch(restclient, "/spec/ccpimagetag", upgrade.Spec.CCPImageTag, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+
+	/**
 	err = shutdownCluster(clientset, restclient, cl, namespace)
 	if err != nil {
 		log.Error("error in shutdownCluster " + err.Error())
 	}
 
+	time.Sleep(time.Second * time.Duration(6))
+
 	//create the primary deployment
+
+	archivePVCName := ""
+	archiveMode := "off"
+	archiveTimeout := "60"
+	if cl.Spec.UserLabels["archive"] == "true" {
+		archiveMode = "on"
+		archiveTimeout = cl.Spec.UserLabels["archive-timeout"]
+		archivePVCName = cl.Spec.Name + "-xlog"
+	}
 
 	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
 	deploymentFields := DeploymentTemplateFields{
 		Name:              cl.Spec.Name,
+		Replicas:          "1",
 		ClusterName:       cl.Spec.Name,
+		PgMode:            "primary",
+		PrimaryHost:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
 		CCPImagePrefix:    operator.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
@@ -75,6 +100,9 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		BackupPath:        cl.Spec.BackupPath,
 		DataPathOverride:  cl.Spec.Name,
 		Database:          cl.Spec.Database,
+		ArchiveMode:       archiveMode,
+		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
+		ArchiveTimeout:    archiveTimeout,
 		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
 		RootSecretName:    cl.Spec.RootSecretName,
 		PrimarySecretName: cl.Spec.PrimarySecretName,
@@ -103,9 +131,11 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	if err != nil {
 		return err
 	}
+	*/
 
 	//update the upgrade CRD status to completed
-	err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
+	err = kubeapi.Patchpgupgrade(restclient, upgrade.Spec.Name, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, namespace)
+	//err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in upgradestatus patch " + err.Error())
 	}
@@ -125,7 +155,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	}
 
 	//create the PVC if necessary
-	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name+"-upgrade", &cl.Spec.PrimaryStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-upgrade", cl.Spec.Name, namespace)
 	log.Debug("created pvc for upgrade as [" + pvcName + "]")
 
 	//upgrade the primary data

@@ -23,6 +23,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// GetJobs gets a list of jobs using a label selector
+func GetJobs(clientset *kubernetes.Clientset, selector, namespace string) (*v1batch.JobList, error) {
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	jobs, err := clientset.Batch().Jobs(namespace).List(lo)
+	if err != nil {
+		log.Error(err)
+		log.Error("error getting Job list selector[" + selector + "]")
+	}
+	return jobs, err
+
+}
+
 // GetJob gets a Job by name
 func GetJob(clientset *kubernetes.Clientset, name, namespace string) (*v1batch.Job, bool) {
 	job, err := clientset.Batch().Jobs(namespace).Get(name, meta_v1.GetOptions{})

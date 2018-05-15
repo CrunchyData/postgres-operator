@@ -33,6 +33,7 @@ type CreateClusterRequest struct {
 	CCPImageTag          string
 	Series               int
 	MetricsFlag          bool
+	ArchiveFlag          bool
 	PgpoolFlag           bool
 	PgpoolSecret         string
 	CustomConfig         string
@@ -59,7 +60,7 @@ type ShowClusterPod struct {
 	Name        string
 	Phase       string
 	NodeName    string
-	PVCName     string
+	PVCName     map[string]string
 	ReadyStatus string
 	Primary     bool
 }
