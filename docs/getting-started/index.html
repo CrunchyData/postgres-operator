@@ -242,12 +242,14 @@
 <li><a href="#_pgo_label">pgo label</a></li>
 <li><a href="#_pgo_load">pgo load</a></li>
 <li><a href="#_pgo_failover">pgo failover</a></li>
+<li><a href="#_pgo_df">pgo df</a></li>
+<li><a href="#_pgo_status">pgo status</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>v2.6, 2018-04-29</p>
+<p>v2.7, 2018-05-14</p>
 </div>
 <div class="sect1">
 <h2 id="_pgo_commands">pgo Commands</h2>
@@ -396,6 +398,18 @@ configured for a cluster and the <strong>testuser</strong> cluster credential.  
 below for more details on running a pgpool deployment as part of
 your cluster.</p>
 </div>
+<div class="paragraph">
+<p>You can also enable archive logging into a dedicated PVC by using the <strong>--archive</strong> command flag as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --archive</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will cause a new PVC to be created to hold archive logs.  Space
+is consumed by these logs but archives enable you to perform Point-In-Time-Recovery.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_pgo_backup">pgo backup</h3>
@@ -420,8 +434,8 @@ your cluster.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo show pvc mycluster-backup-pvc
-pgo show pvc mycluster-backup-pvc --pvc-root=mycluster-backups</pre>
+<pre>pgo show pvc mycluster-backup
+pgo show pvc mycluster-backup --pvc-root=mycluster-backups</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -434,7 +448,7 @@ or essentially cloning a database with an existing backup archive.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster-pvc --secret-from=mycluster</pre>
+<pre>pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster --secret-from=mycluster</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -683,8 +697,8 @@ job to know when and how to proceed.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo upgrade mycluster --ccp-image-tag=centos7-9.6.8-1.8.1
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.1</pre>
+<pre>pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
+pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3</pre>
 </div>
 </div>
 </div>
@@ -706,11 +720,11 @@ pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.8-1.8.1</
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo show pvc mycluster-pvc</pre>
+<pre>pgo show pvc mycluster</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>In this example, the PVC is <strong>mycluster-pvc</strong>.  This command is useful
+<p>In this example, the PVC is <strong>mycluster</strong>.  This command is useful
 in some cases to examine what files are on a given PVC.</p>
 </div>
 <div class="paragraph">
@@ -719,7 +733,7 @@ you can specify the path option as follows:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo show pvc mycluster-pvc --pvc-root=mycluster-backups</pre>
+<pre>pgo show pvc mycluster --pvc-root=mycluster-backups</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1131,6 +1145,53 @@ the promoted replica, this happens automatically due to the re-lable, the
 Deployment will recreate its pod because of this.   The failover typically
 takes only a few seconds, however, the creation of the replacement
 replica can take longer depending on how much data is being replicated.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pgo_df">pgo df</h3>
+<div class="paragraph">
+<p>You can use the <strong>pgo df</strong> command to see the disk capacity of a cluster&#8217;s PVC
+versus that of the PostgreSQL data that has been written to disk.  If
+the capacity is less than 50% then the output is printed in red to
+alert the user.</p>
+</div>
+<div class="paragraph">
+<p>Run the command as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo df mycluster
+pgo df --selector=name=mycluster
+pgo df --selector=name=hang
+CLUSTER             STATUS    PGSIZE    CAPACITY  PCTUSED
+
+mycluster           up        30 MB     1Gi       2</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pgo_status">pgo status</h3>
+<div class="paragraph">
+<p>You can use the <strong>pgo status</strong> command to see overall pgo status.  Selective
+metrics are displayed to provide some insights to the pgo user and administrator as to what is running currently in this namespace related to pgo.</p>
+</div>
+<div class="paragraph">
+<p>Run the command as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo status
+Operator Start:          2018-05-02 15:59:41 +0000 UTC
+Databases:               2
+Backups:                 2
+Claims:                  18
+Total Volume Size:       18Gi
+
+Database Images:
+                         4	crunchydata/crunchy-postgres:centos7-10.4-1.8.3
+
+Databases Not Ready:</pre>
+</div>
 </div>
 </div>
 </div>

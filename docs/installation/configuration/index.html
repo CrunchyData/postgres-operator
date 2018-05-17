@@ -245,7 +245,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v2.6, 2018-04-29</p>
+<p>v3.0, 2018-05-14</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -438,8 +438,7 @@ the Kubernetes API. It is therefore necessary for the pgo client to make
 use of RBAC configuration.</p>
 </div>
 <div class="paragraph">
-<p>Starting in Release 2.6, the <code>/conf/apiserver/pgorole</code> file is used to define
-some sample pgo roles, <strong>pgadmin</strong> and <strong>pgoreader</strong>.</p>
+<p>Starting in Release 3.0, the <strong>/conf/apiserver/pgorole</strong> is used to define some sample pgo roles, <strong>pgadmin</strong> and <strong>pgoreader</strong>.</p>
 </div>
 <div class="paragraph">
 <p>These roles are meant as examples that you can configure to suit security
@@ -609,7 +608,7 @@ looks like this -</p>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">BasicAuth:  true
 Cluster:
-  CCPImageTag:  centos7-10.3-1.8.2
+  CCPImageTag:  centos7-10.4-1.8.3
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -617,6 +616,8 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1
@@ -651,7 +652,7 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.6</code></pre>
+  COImageTag:  centos7-2.7</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -676,7 +677,7 @@ Pgo:
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.CCPImageTag</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">newly created containers will be based on this image version (e.g. centos7-10.3-1.8.1), unless you override it using the --ccp-image-tag command line flag</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the --ccp-image-tag command line flag</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Port</code></p></td>
@@ -705,6 +706,14 @@ Pgo:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.PasswordLength</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will determine the password length used when creating passwords, defaults to 8</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.ArchiveMode</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set to true will enable archive logging for all clusters created, default is false.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.ArchiveTimeout</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>PrimaryStorage</code></p></td>
@@ -858,7 +867,7 @@ non-valid configuration is found, the apiserver will abort.  These Storage value
 <p><strong>existing</strong> - This setting allows you to use a PVC that already exists.  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters can write to that NFS volume mount via a common PVC. When set, the Name setting is used for the PVC.</p>
 </li>
 <li>
-<p><strong>create</strong> - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of <strong>clustername</strong>-pvc*.  When set, the <strong>Size</strong>, <strong>AccessMode</strong> settings are used in constructing the new PVC.</p>
+<p><strong>create</strong> - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of <strong>clustername</strong>.  When set, the <strong>Size</strong>, <strong>AccessMode</strong> settings are used in constructing the new PVC.</p>
 </li>
 <li>
 <p><strong>emptydir</strong> - If a StorageType value is not defined, <strong>emptydir</strong> is used by default.  This is a volume type that’s created when a pod is assigned to a node and exists as long as that pod remains running on that node; it is deleted as soon as the pod is manually deleted or removed from the node.</p>
@@ -866,9 +875,9 @@ non-valid configuration is found, the apiserver will abort.  These Storage value
 </ul>
 </div>
 <div class="paragraph">
-<p>The operator will create new PVCs using the naming convention
-<strong>dbname-pvc</strong> where <strong>dbname</strong> is the database name you have specified. For
-example, if you run -</p>
+<p>The operator will create new PVCs using this naming convention:
+<strong>dbname</strong> where <strong>dbname</strong> is the database name you have specified.  For
+example, if you run:</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -876,8 +885,8 @@ example, if you run -</p>
 </div>
 </div>
 <div class="paragraph">
-<p>It will result in a PVC being created named <strong>example1-pvc</strong> and in
-the case of a backup job, the pvc is named <strong>example1-backup-pvc</strong></p>
+<p>It will result in a PVC being created named <strong>example1</strong> and in
+the case of a backup job, the pvc is named <strong>example1-backup</strong></p>
 </div>
 <div class="paragraph">
 <p>There are currently 3 sample pgo configuration files provided
@@ -1037,11 +1046,11 @@ application code. To demonstrate this, the following <strong>curl</strong> comma
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show pvc danger-pvc</strong></p>
+<p><strong>pgo show pvc danger</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger-pvc</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger</pre>
 </div>
 </div>
 <div class="paragraph">
