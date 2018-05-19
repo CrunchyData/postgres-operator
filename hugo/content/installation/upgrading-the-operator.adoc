@@ -5,7 +5,7 @@ draft: false
 weight: 40
 ---
 
-v2.6, {docdate}
+v3.0, {docdate}
 
 {{%expand "Upgrading from v2.4 to v2.5" %}}
 
@@ -52,7 +52,7 @@ $COROOT/bin/upgrade-secret.sh
 
 For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page link:https://github.com/CrunchyData/postgres-operator/releases/tag/2.6[here].
+page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.0[here].
 
 == Required Updates
 

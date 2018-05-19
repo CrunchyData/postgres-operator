@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-v2.6, {docdate}
+v3.0, {docdate}
 
 == Project Structure
 
@@ -22,7 +22,7 @@ Next, get a tagged release of the source code -
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 2.6
+git checkout 3.0
 ....
 
 == Installation Prerequsites
@@ -83,17 +83,17 @@ $COROOT/pv/create-pv.sh
 To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, specify the image versions, and execute the following Makefile target -
 ....
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-2.6
+export CO_IMAGE_TAG=centos7-3.0
 make pull
 ....
 
 To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link -
 
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]
- * extract (e.g. tar xvzf postgres-operator.2.6-rc1.tar.gz)
+ * extract (e.g. tar xvzf postgres-operator.3.0.tar.gz)
 ....
 cd $HOME
-tar xvzf ./postgres-operator.2.6-rc1.tar.gz
+tar xvzf ./postgres-operator.3.0.tar.gz
 ....
  * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
 

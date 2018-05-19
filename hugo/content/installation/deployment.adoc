@@ -6,7 +6,7 @@ weight: 50
 ---
 
 :toc:
-v2.6, {docdate}
+v3.0, {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -53,7 +53,7 @@ The complete set of environment variables used in the installation
 so far are -
 ....
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-2.6
+export CO_IMAGE_TAG=centos7-3.0
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
@@ -130,8 +130,8 @@ pgo version
 At this point you should be able to connect to the operator as follows -
 ....
 pgo version
-pgo client version 2.6
-apiserver version 2.6
+pgo client version 3.0
+apiserver version 3.0
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.
