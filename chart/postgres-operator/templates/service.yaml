@@ -1,20 +1,21 @@
+
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ template "postgres-operator.fullname" . }}
   labels:
-    app: "{{ template "name" . }}"
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
-  name: {{ template "fullname" . }}
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 spec:
-  type: "ClusterIP"
+  type: {{ .Values.service.type }}
   ports:
-    - name: apiserver
-      port: 8443
-      protocol: TCP
+    - port: {{ .Values.service.port }}
       targetPort: 8443
+      protocol: TCP
+      name: apiserver
       nodePort: 0
   selector:
-    name: postgres-operator
+    app: {{ template "postgres-operator.name" . }}
     release: {{ .Release.Name }}

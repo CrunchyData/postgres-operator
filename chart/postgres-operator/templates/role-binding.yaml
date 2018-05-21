@@ -2,19 +2,19 @@
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
-  name: {{ template "namespaceRoleName" . }}
+  name: {{ template "postgres-operator.namespaceRoleName" . }}
   namespace: "{{ .Release.Namespace }}"
   labels:
-    app: {{ template "name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ template "namespaceRoleName" . }}
+  name: {{ template "postgres-operator.namespaceRoleName" . }}
 subjects:
 - kind: ServiceAccount
-  name: {{ template "serviceAccountName" . }}
+  name: {{ template "postgres-operator.serviceAccountName" . }}
   namespace: "{{ .Release.Namespace }}"
 {{ end }}

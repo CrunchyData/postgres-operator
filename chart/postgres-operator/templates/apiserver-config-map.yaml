@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ template "fullname" . }}-apiserver
+  name: {{ template "postgres-operator.fullname" . }}-apiserver
   labels:
-    app: {{ template "name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 type: Opaque
