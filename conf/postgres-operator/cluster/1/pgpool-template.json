@@ -5,7 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
-	    "pg-cluster": "{{.ClusterName}}"
+        "pg-cluster": "{{.ClusterName}}"
         }
     },
     "spec": {
@@ -14,8 +14,8 @@
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
-		    "crunchy-pgpool": "true",
-		    "pg-cluster": "{{.ClusterName}}"
+            "crunchy-pgpool": "true",
+            "pg-cluster": "{{.ClusterName}}"
                 }
             },
             "spec": {

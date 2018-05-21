@@ -23,9 +23,9 @@
                 {{.SecurityContext }}
 
                 "containers": [
-		
+        
 
-		    {
+            {
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/crunchy-postgres:{{.CCPImageTag}}",
                     "readinessProbe": {
@@ -38,7 +38,7 @@
                         "timeoutSeconds": 8
                     },
 
-		    {{.ContainerResources }}
+            {{.ContainerResources }}
 
                     "env": [{
                         "name": "PG_PRIMARY_PORT",
@@ -74,7 +74,7 @@
 
                 {{.CollectAddon }}
 
-		    ],
+            ],
                     "volumeMounts": [{
                             "mountPath": "/pgdata",
                             "name": "pgdata",
@@ -138,21 +138,21 @@
                         }
                     }, {
                         "name": "pgwal-volume",
-			{{.ArchivePVCName}}
+            {{.ArchivePVCName}}
                     }, {
                         "name": "backrestrepo-volume",
-			"emptyDir": { "medium": "Memory" }
+            "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "recover-volume",
-			"emptyDir": { "medium": "Memory" }
+            "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "pgconf-volume",
-			{{.ConfVolume}}
+            {{.ConfVolume}}
                     }
 
                 ],
 
-		{{.NodeSelector}}
+        {{.NodeSelector}}
 
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"

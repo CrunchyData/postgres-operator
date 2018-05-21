@@ -5,14 +5,14 @@
         "name": "{{.Name}}",
         "labels": {
             "pgremove": "true",
- 	    "pg-cluster": "{{.ClusterName}}"
+        "pg-cluster": "{{.ClusterName}}"
         }
     },
     "spec": {
         "accessModes": [
             "{{.AccessMode}}"
         ],
-	"storageClassName": "{{.StorageClass}}",
+    "storageClassName": "{{.StorageClass}}",
         "resources": {
             "requests": {
                 "storage": "{{.Size}}"
