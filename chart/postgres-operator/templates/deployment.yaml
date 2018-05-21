@@ -67,7 +67,7 @@ spec:
       volumes:
         - name: operator-conf
           configMap:
-            name: operator-conf
+            name: {{ template "fullname" . }}-operator
         - name: apiserver-conf
           secret:
-            secretName: apiserver-conf-secret
+            secretName: {{ template "fullname" . }}-apiserver
