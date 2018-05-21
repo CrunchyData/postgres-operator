@@ -1,0 +1,19 @@
+{{ if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: {{ template "namespaceRoleName" . }}
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+rules:
+  - verbs:
+      - '*'
+    apiGroups:
+      - '*'
+    resources:
+      - '*'
+{{ end }}

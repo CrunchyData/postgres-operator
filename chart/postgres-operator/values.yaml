@@ -21,3 +21,11 @@ resources:
   requests:
     cpu: 100m
     memory: 128Mi
+
+serviceAccount:
+  create: "true"
+
+rbac:
+  create: "true"
+
+nameOverride: "pgo"
