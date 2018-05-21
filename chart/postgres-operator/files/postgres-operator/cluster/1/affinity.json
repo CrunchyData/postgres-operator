@@ -4,13 +4,14 @@
 			    "weight": 1,
 			    "preference": {
 				"matchExpressions": [{
-				    "key": "kubernetes.io/hostname",
+				    "key": "{{.NodeLabelKey}}",
 				    "operator": "{{.OperatorValue}}",
 				    "values": [
-					"{{.Node}}"
+					"{{.NodeLabelValue}}"
 				    ]   
 				}]  
 			    }   
 			}]  
 		    }   
 		},
+
