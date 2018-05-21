@@ -36,7 +36,7 @@ The script requires a few things in order to work -
 
  * wget utility installed
  * kubectl utility installed
- * StorageClass defined
+ * StorageClass defined on your GKE instance
 
 Executing the script will give you a default Operator deployment
 that assumes *dynamic* storage and a storage class named *standard*,
@@ -49,6 +49,14 @@ The script performs the following -
  * deploys the Operator Deployment
  * sets your .bashrc to include the Operator environment variables
  * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
+
+A tip, if you want to set your Kube context to some particular namespace you 
+can run commands similar to this to set it to a *demo* namespace if
+that namespace has already been created on your GKE cluster:
+....
+kubectl config set-context demo --cluster=gke_crunchy-a-test_us-central1-a_usera-quickstart --namespace=demo --user=gke_crunchy-a-test_us-central1-a_usera-quickstart
+kubectl config use-context demo
+....
 
 === Openshift Container Platform
 
