@@ -4,14 +4,15 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
-            "pgremove": "true"
+            "pgremove": "true",
+        "pg-cluster": "{{.ClusterName}}"
         }
     },
     "spec": {
         "accessModes": [
             "{{.AccessMode}}"
         ],
-	"storageClassName": "{{.StorageClass}}",
+    "storageClassName": "{{.StorageClass}}",
         "resources": {
             "requests": {
                 "storage": "{{.Size}}"
