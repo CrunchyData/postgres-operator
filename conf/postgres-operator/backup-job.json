@@ -16,8 +16,8 @@
             },
             "spec": {
                 "volumes": [{
-                        "name": "pgdata",
-            {{.PvcName}}
+                    "name": "pgdata",
+                    {{.PvcName}}
                 }],
 
         {{.SecurityContext}}

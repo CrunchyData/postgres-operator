@@ -15,7 +15,7 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
-            {{.OperatorLabels }}
+                    {{.OperatorLabels }}
                 }
             },
             "spec": {

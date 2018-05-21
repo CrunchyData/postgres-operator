@@ -7,7 +7,7 @@
                     "key": "{{.NodeLabelKey}}",
                     "operator": "{{.OperatorValue}}",
                     "values": [
-                    "{{.NodeLabelValue}}"
+                        "{{.NodeLabelValue}}"
                     ]   
                 }]  
                 }   

@@ -16,9 +16,9 @@
             },
             "spec": {
                 "volumes": [{
-                        "name": "pgdata",
-            "persistentVolumeClaim" : {
-                "claimName": "{{.PVCName}}"
+                    "name": "pgdata",
+                    "persistentVolumeClaim" : {
+                        "claimName": "{{.PVCName}}"
             }
                 }],
 
