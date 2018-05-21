@@ -9,19 +9,20 @@
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
+                    "vendor": "crunchydata",
                     "pgo-load": "true",
                     "pg-database": "{{.DbHost}}"
                 }
             },
             "spec": {
                 "volumes": [{
-                    	"name": "pgdata",
-			"persistentVolumeClaim" : {
-				"claimName": "{{.PVCName}}"
-			}
+                        "name": "pgdata",
+            "persistentVolumeClaim" : {
+                "claimName": "{{.PVCName}}"
+            }
                 }],
 
-		{{.SecurityContext}}
+        {{.SecurityContext}}
 
                 "containers": [{
                     "name": "csvload",

@@ -4,6 +4,7 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            "vendor": "crunchydata",
             "name": "lspvc",
             "pvcname": "{{.PVCName}}"
         }
