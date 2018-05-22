@@ -64,8 +64,8 @@ __handle_reply()
                 local index flag
                 flag="${cur%%=*}"
                 __index_of_word "${flag}" "${flags_with_completion[@]}"
-                COMPREPLY=()
                 if [[ ${index} -ge 0 ]]; then
+                    COMPREPLY=()
                     PREFIX=""
                     cur="${cur#*=}"
                     ${flags_completion[${index}]}
@@ -201,7 +201,7 @@ __handle_command()
     fi
     c=$((c+1))
     __debug "${FUNCNAME[0]}: looking for ${next_command}"
-    declare -F "$next_command" >/dev/null && $next_command
+    declare -F $next_command >/dev/null && $next_command
 }
 
 __handle_word()
@@ -286,6 +286,8 @@ _pgo_create_cluster()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--archive")
+    local_nonpersistent_flags+=("--archive")
     flags+=("--backup-path=")
     two_word_flags+=("-x")
     local_nonpersistent_flags+=("--backup-path=")
@@ -595,6 +597,28 @@ _pgo_delete()
     noun_aliases=()
 }
 
+_pgo_df()
+{
+    last_command="pgo_df"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_failover()
 {
     last_command="pgo_failover"
@@ -862,6 +886,28 @@ _pgo_show()
     noun_aliases=()
 }
 
+_pgo_status()
+{
+    last_command="pgo_status"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--output=")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--output=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_test()
 {
     last_command="pgo_test"
@@ -966,6 +1012,9 @@ _pgo_version()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--help")
+    flags+=("-h")
+    local_nonpersistent_flags+=("--help")
     flags+=("--apiserver-url=")
     flags+=("--debug")
 
@@ -982,11 +1031,13 @@ _pgo()
     commands+=("backup")
     commands+=("create")
     commands+=("delete")
+    commands+=("df")
     commands+=("failover")
     commands+=("label")
     commands+=("load")
     commands+=("scale")
     commands+=("show")
+    commands+=("status")
     commands+=("test")
     commands+=("upgrade")
     commands+=("user")
