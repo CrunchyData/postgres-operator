@@ -70,11 +70,9 @@
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
-                    }
+                    }],
 
-                {{.CollectAddon }}
 
-		    ],
                     "volumeMounts": [{
                             "mountPath": "/pgdata",
                             "name": "pgdata",
@@ -114,7 +112,11 @@
                     }],
                     "resources": {},
                     "imagePullPolicy": "IfNotPresent"
-                }],
+                }
+
+                {{.CollectAddon }}
+
+		],
                 "volumes": [{
                         "name": "pgdata",
                         {{.PVCName}}

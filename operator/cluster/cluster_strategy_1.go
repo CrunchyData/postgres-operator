@@ -116,9 +116,10 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		CollectAddon:       GetCollectAddon(&cl.Spec),
+		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
 	}
 
+	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
 	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
@@ -397,13 +398,18 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	return affinityDocString
 }
 
-func GetCollectAddon(spec *crv1.PgclusterSpec) string {
+func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
 
 	if spec.UserLabels["crunchy_collect"] == "true" {
 		log.Debug("crunchy_collect was found as a label on cluster create")
+		_, PrimaryPassword, err3 := util.GetPasswordFromSecret(clientset, namespace, spec.PrimarySecretName)
+		if err3 != nil {
+			log.Error(err3)
+		}
+
 		collectTemplateFields := collectTemplateFields{}
 		collectTemplateFields.Name = spec.Name
-		collectTemplateFields.PrimaryPassword = spec.PrimaryPassword
+		collectTemplateFields.PrimaryPassword = PrimaryPassword
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
 		collectTemplateFields.CCPImagePrefix = operator.CCPImagePrefix
 
@@ -523,7 +529,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,
 		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
-		CollectAddon:      GetCollectAddon(&cluster.Spec),
+		CollectAddon:      GetCollectAddon(clientset, namespace, &cluster.Spec),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

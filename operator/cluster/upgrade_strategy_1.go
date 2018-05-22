@@ -233,7 +233,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      cl.Spec.NodeName,
 		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		CollectAddon:      GetCollectAddon(&cl.Spec),
+		CollectAddon:      GetCollectAddon(clientset, namespace, &cl.Spec),
 	}
 
 	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
