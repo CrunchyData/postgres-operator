@@ -1,10 +1,10 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ template "postgres-operator.fullname" . }}
   labels:
-    app: {{ template "name" . }}
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
@@ -12,12 +12,11 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ template "name" . }}
+        app: {{ template "postgres-operator.name" . }}
         release: {{ .Release.Name }}
-        name: postgres-operator
     spec:
       containers:
-        - name: apiserver
+        - name: {{ .Chart.Name }}-apiserver
           image: "{{ .Values.env.co_image_prefix }}/pgo-apiserver:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
@@ -37,7 +36,7 @@ spec:
             - name: operator-conf
               mountPath: /operator-conf
               readOnly: true
-        - name: operator
+        - name: {{ .Chart.Name }}-operator
           image: "{{ .Values.env.co_image_prefix }}/postgres-operator:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
@@ -67,7 +66,7 @@ spec:
       volumes:
         - name: operator-conf
           configMap:
-            name: {{ template "fullname" . }}-operator
+            name: {{ template "postgres-operator.fullname" . }}-operator
         - name: apiserver-conf
           secret:
-            secretName: {{ template "fullname" . }}-apiserver
+            secretName: {{ template "postgres-operator.fullname" . }}-apiserver
