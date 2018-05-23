@@ -1,0 +1,34 @@
+{{ if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: {{ template "postgres-operator.fullname" . }}
+  labels:
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+    apiGroups:
+      - '*'
+    resources:
+      - customresourcedefinitions
+      - customresourcedefinitions/status
+      - nodes
+      - jobs
+      - jobs/status
+      - pgbackups
+      - pgingests
+      - pgclusters
+      - pgpolicies
+      - pgpolicylogs
+      - pgupgrades
+      - pgtasks
+{{ end }}

@@ -14,6 +14,10 @@ env:
   co_image_prefix: "crunchydata"
   co_image_tag: "centos7-3.0"
 
+service:
+  type: ClusterIP
+  port: 8443
+
 resources:
   limits:
     cpu: 100m
@@ -21,3 +25,11 @@ resources:
   requests:
     cpu: 100m
     memory: 128Mi
+
+serviceAccount:
+  create: "true"
+
+rbac:
+  create: "true"
+
+nameOverride: "pgo"
