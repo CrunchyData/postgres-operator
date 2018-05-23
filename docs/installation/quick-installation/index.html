@@ -142,7 +142,7 @@
 
         <section id="shortcuts">
                 <li class="" role=""><h3>More</h3><a href="https://github.com/CrunchyData/postgres-operator" target="_blank" rel="noopener"><i class='fa fa-github'></i> <label>Github repo</label></a></li>
-                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/3.0/postgres-operator.3.0.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
                 <li class="" role=""><a href="https://kubernetes.io/docs/" target="_blank" rel="noopener"><i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label></a></li>
                 <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md" target="_blank" rel="noopener"><i class='fa fa-file'></i> <label>License</label></a></li>
         </section>
@@ -238,7 +238,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-05-14</p>
+<p>v3.0, 2018-05-23</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -294,7 +294,7 @@ This script is tested on GKE but can be modified for use with other Kubernetes e
 <p>kubectl utility installed</p>
 </li>
 <li>
-<p>StorageClass defined</p>
+<p>StorageClass defined on your GKE instance</p>
 </li>
 </ul>
 </div>
@@ -324,6 +324,32 @@ things that GKE provides.</p>
 <p>sets your $HOME/.bash_completion file to be the <strong>pgo</strong> bash_completion file</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>A tip, if you want to set your Kube context to some particular namespace you
+can run commands similar to this to set it to a <strong>demo</strong> namespace if
+that namespace has already been created on your GKE cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl create -f $COROOT/examples/demo-namespace.json
+kubectl config set-context demo --cluster=gke_crunchy-a-test_us-central1-a_usera-quickstart --namespace=demo --user=gke_crunchy-a-test_us-central1-a_usera-quickstart
+kubectl config use-context demo</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>For Mac and Windows users, pre-built <strong>pgo</strong> binaries are included in
+the operator release tar ball:
+ * pgo-mac is the Mac binary
+ * pgo.exe is the Windows binary
+ * pgo is the Linux binary
+ * expenv-mac is the expenv binary for Mac
+ * expenv.exe is the expenv binary for Windows</p>
+</div>
+<div class="paragraph">
+<p>Currently the quickstart scripts are meant for Linux installs, you will
+need to modify this script for Windows or Mac installs until we support
+and provide Windows and Mac installation scripts.</p>
 </div>
 </div>
 <div class="sect2">

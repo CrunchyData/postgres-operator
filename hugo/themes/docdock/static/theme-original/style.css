@@ -287,7 +287,7 @@ h3 {
   margin: 2rem 0 1rem 0; }
 
 h4 {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   line-height: 110% !important;
   margin: 1.5rem 0 0.75rem 0; }
 
@@ -579,17 +579,21 @@ body {
     font-family: "Roboto", "Work Sans", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
     font-weight: 700; }
 
-h2, h3, h4, h5, h6 {
+h3, h4, h5, h6 {
   font-family: "Roboto", "Work Sans Bold", "Helvetica Bold", "Tahoma Bold", "Geneva Bold", "Arial Bold", sans-serif;
   text-rendering: optimizeLegibility;
   color: #5e5e5e;
-  font-weight: 400; }
+  font-weight: 600; }
 
 h1 {
   font-family: "Roboto", "Helvetica", "Tahoma", "Geneva", "Arial", sans-serif;
   text-align: center;
   font-size: 2rem;
-  font-weight: 200; }
+  font-weight: 600; }
+
+h2 {
+  font-weight: 600;
+}
 
 blockquote {
   border-left: 10px solid #f2f2f2; }
