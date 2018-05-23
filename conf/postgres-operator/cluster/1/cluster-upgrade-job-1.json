@@ -27,7 +27,7 @@
                     }
                 }],
 
-		{{.SecurityContext}}
+        {{.SecurityContext}}
 
                 "containers": [{
                     "name": "upgrade",
@@ -44,9 +44,9 @@
                     "env": [{
                         "name": "OLD_DATABASE_NAME",
                         "value": "{{.OldDatabaseName}}"
-			}, {
-			"name": "PG_LOCALE",
-			"value": "en_US.UTF8"
+            }, {
+            "name": "PG_LOCALE",
+            "value": "en_US.UTF8"
                     }, {
                         "name": "NEW_DATABASE_NAME",
                         "value": "{{.NewDatabaseName}}"
