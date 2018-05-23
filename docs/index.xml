@@ -17,7 +17,7 @@
       <pubDate>Thu, 26 Apr 2018 15:22:14 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/quick-installation/</guid>
-      <description>Table of Contents Overview Quickstart GKE/PKS Openshift Container Platform   Next Steps   v3.0, 2018-05-14
+      <description>Table of Contents Overview Quickstart GKE/PKS Openshift Container Platform   Next Steps   v3.0, 2018-05-23
  Overview There are currently quickstart scripts that seek to automate the deployment to popular Kubernetes environments -
    quickstart-for-gke.sh
   quickstart-for-ocp.sh
@@ -31,7 +31,7 @@
       <pubDate>Thu, 26 Apr 2018 15:22:21 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/manual-installation/</guid>
-      <description>Table of Contents Project Structure Installation Prerequsites Basic Installation Create HostPath Directory   Build Images &amp;amp; Deploy Makefile Targets Next Steps   v2.6, 2018-05-14
+      <description>Table of Contents Project Structure Installation Prerequsites Basic Installation Create HostPath Directory   Build Images &amp;amp; Deploy Makefile Targets Next Steps   v3.0, 2018-05-23
  Project Structure To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called odev -
  export GOPATH=$HOME/odev mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg mkdir -p $GOPATH/src/github.com/crunchydata/   Next, get a tagged release of the source code -</description>
     </item>
@@ -42,9 +42,9 @@
       <pubDate>Thu, 26 Apr 2018 15:24:16 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/helm-chart/</guid>
-      <description>v2.6, 2018-05-14
+      <description>v3.0, 2018-05-23
  Helm Chart First, pull prebuilt versions from Dockerhub of the postgres-operator containers, specify the image versions, and execute the following Makefile target -
- export CO_IMAGE_PREFIX=crunchydata export CO_IMAGE_TAG=centos7-2.6 make pull   Then, build and deploy the operator using the provided Helm chart -
+ export CO_IMAGE_PREFIX=crunchydata export CO_IMAGE_TAG=centos7-3.0 make pull   Then, build and deploy the operator using the provided Helm chart -
  cd $COROOT/chart helm install ./postgres-operator helm ls     Next Steps Next, visit the Deployment page to deploy the Operator, verify the installation, and view various storage configurations.</description>
     </item>
     
@@ -54,7 +54,7 @@
       <pubDate>Tue, 24 Apr 2018 18:27:30 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/</guid>
-      <description>v2.6, 2018-05-14
+      <description>v3.0, 2018-05-23
    Upgrading from v2.4 to v2.5   For a full list of additions and revisions that occurred in the PostgreSQL Operator v2.5 release, please view the related release page here.
  Required Updates This section notes some required steps that will need to be taken in the process of upgrading from v2.4 to v2.5.
  Configuration File It will be necessary to update your existing pgo.</description>
@@ -66,7 +66,7 @@
       <pubDate>Thu, 26 Apr 2018 15:26:40 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/deployment/</guid>
-      <description>Table of Contents Verify Operator Status Configure pgo Client Verify pgo Client Storage Configuration Next Steps   v2.6, 2018-05-14
+      <description>Table of Contents Verify Operator Status Configure pgo Client Verify pgo Client Storage Configuration Next Steps   v3.0, 2018-05-23
  This document details verifying the installation of the PostgreSQL Operator is successful, in addition to detailing some different storage configurations that can be made.
  Verify Operator Status To verify that the operator is deployed and running, run the following:
  kubectl get pod --selector=name=postgres-operator   You should see output similar to this:</description>
@@ -78,7 +78,7 @@
       <pubDate>Tue, 24 Apr 2018 18:26:56 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/configuration/</guid>
-      <description>Table of Contents Overview Openshift Container Platform Security Configuration Kube RBAC Basic Authentication Configure TLS pgo RBAC apiserver Configuration postgres-operator Container Configuration   bash Completion REST API Deploying pgpool   v3.0, 2018-05-14
+      <description>Table of Contents Overview Openshift Container Platform Security Configuration Kube RBAC Basic Authentication Configure TLS pgo RBAC apiserver Configuration postgres-operator Container Configuration   bash Completion REST API Deploying pgpool   v3.0, 2018-05-23
  Overview This document describes how to configure the operator beyond the default configurations in addition to detailing what the configuration settings mean.
    Openshift Container Platform To run the Operator on Openshift Container Platform note the following requirements -</description>
     </item>
