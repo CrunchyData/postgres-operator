@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40" />
+<meta name="generator" content="Hugo 0.40.3" />
 
 <title>Manual Installation :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -224,143 +224,77 @@
     
     
     
-    <div id="toc" class="toc">
-<div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
-<li><a href="#_project_structure">Project Structure</a></li>
-<li><a href="#_installation_prerequsites">Installation Prerequsites</a></li>
-<li><a href="#_basic_installation">Basic Installation</a>
-<ul class="sectlevel2">
-<li><a href="#_create_hostpath_directory">Create HostPath Directory</a></li>
-</ul>
-</li>
-<li><a href="#_build_images_deploy">Build Images &amp; Deploy</a></li>
-<li><a href="#_makefile_targets">Makefile Targets</a></li>
-<li><a href="#_next_steps">Next Steps</a></li>
-</ul>
-</div>
-<div class="paragraph">
-<p>v3.0, 2018-05-23</p>
-</div>
-<div class="sect1">
-<h2 id="_project_structure">Project Structure</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called <strong>odev</strong> -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export GOPATH=$HOME/odev
+    :toc:
+v3.0, {docdate}
+
+== Project Structure
+
+To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
+....
+export GOPATH=$HOME/odev
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
-mkdir -p $GOPATH/src/github.com/crunchydata/</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Next, get a tagged release of the source code -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $GOPATH/src/github.com/crunchydata
+mkdir -p $GOPATH/src/github.com/crunchydata/
+....
+
+Next, get a tagged release of the source code -
+....
+cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.0</pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_installation_prerequsites">Installation Prerequsites</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>To run the operator and the <strong>pgo</strong> client, you will need the following -</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>a running Kubernetes or OpenShift cluster</p>
-</li>
-<li>
-<p>the kubectl or oc clients installed in your PATH and configured to connect to the cluster (e.g. export KUBECONFIG=/etc/kubernetes/admin.conf)</p>
-</li>
-<li>
-<p>a Kubernetes namespace created and set to where you want the operator installed. For this install we assume a namespace of <strong>demo</strong> has been created.</p>
-</li>
-</ul>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>kubectl create -f examples/demo-namespace.json
+git checkout 3.0
+....
+
+== Installation Prerequsites
+
+To run the operator and the *pgo* client, you will need the following -
+
+ * a running Kubernetes or OpenShift cluster
+ * the kubectl or oc clients installed in your PATH and configured to connect to the cluster (e.g. export KUBECONFIG=/etc/kubernetes/admin.conf)
+ * a Kubernetes namespace created and set to where you want the operator installed. For this install we assume a namespace of *demo* has been created.
+....
+kubectl create -f examples/demo-namespace.json
 kubectl config set-context $(kubectl config current-context) --namespace=demo
-kubectl config view | grep namespace</pre>
-</div>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>If you are not using the <strong>demo</strong> namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.</p>
-</div>
-<div class="paragraph">
-<p><code>$COROOT/deploy/service-account.yaml</code></p>
-</div>
-<div class="paragraph">
-<p><code>$COROOT/deploy/cluster-role-binding.yaml</code></p>
-</div>
-</td>
-</tr>
-</table>
-</div>
-<div class="paragraph">
-<p>Permissions are granted to the Operator by means of a Service Account called <strong>postgres-operator</strong>.  That service account is added to the Operator deployment.</p>
-</div>
-<div class="paragraph">
-<p>The postgres-operator service account is granted cluster-admin priviledges using a cluster role binding <strong>postgres-operator-cluster-role-binding</strong>.</p>
-</div>
-<div class="paragraph">
-<p>See <a href="https://kubernetes.io/docs/admin/authorization/rbac/">here</a> for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.</p>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_basic_installation">Basic Installation</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The basic installation uses the default operator configuration settings, these settings assume you want to use HostPath storage on your Kube cluster for database persistence.  Other persistent options are available but require the Advanced Installation below.</p>
-</div>
-<div class="sect2">
-<h3 id="_create_hostpath_directory">Create HostPath Directory</h3>
-<div class="paragraph">
-<p>The default Persistent Volume script assumes a default HostPath directory be created called <strong>/data</strong>:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>sudo mkdir /data
-sudo chown 777 /data</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Create some sample Persistent Volumes using the following script:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export CO_NAMESPACE=demo
+kubectl config view | grep namespace
+....
+
+[WARNING]
+====
+If you are not using the *demo* namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.
+
+`$COROOT/deploy/service-account.yaml`
+
+`$COROOT/deploy/cluster-role-binding.yaml`
+====
+
+Permissions are granted to the Operator by means of a Service Account called *postgres-operator*.  That service account is added to the Operator deployment.
+
+The postgres-operator service account is granted cluster-admin priviledges using a cluster role binding *postgres-operator-cluster-role-binding*.
+
+See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.
+
+== Basic Installation
+
+The basic installation uses the default operator configuration settings, these settings assume you want to use HostPath storage on your Kube cluster for database persistence.  Other persistent options are available but require the Advanced Installation below.
+
+=== Create HostPath Directory
+
+The default Persistent Volume script assumes a default HostPath directory be created called */data*:
+....
+sudo mkdir /data
+sudo chown 777 /data
+....
+
+Create some sample Persistent Volumes using the following script:
+....
+export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 go get github.com/blang/expenv
-$COROOT/pv/create-pv.sh</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_build_images_deploy">Build Images &amp; Deploy</h2>
-<div class="sectionbody">
-<div class="paragraph">
+$COROOT/pv/create-pv.sh
+....
+
+== Build Images & Deploy
+
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -372,59 +306,37 @@ $COROOT/pv/create-pv.sh</pre>
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-<div class="sect2">
-<h3 id="_packaged_images">Packaged Images</h3>
-<div class="paragraph">
-<p>To pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers, specify the image versions, and execute the following Makefile target -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export CO_IMAGE_PREFIX=crunchydata
+
+
+=== Packaged Images
+
+To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, specify the image versions, and execute the following Makefile target -
+....
+export CO_IMAGE_PREFIX=crunchydata
 export CO_IMAGE_TAG=centos7-3.0
-make pull</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To pull down the prebuilt <strong>pgo</strong> binaries, download the <strong>tar.gz</strong> release file from the following link -</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://github.com/CrunchyData/postgres-operator/releases">Github Releases</a></p>
-</li>
-<li>
-<p>extract (e.g. tar xvzf postgres-operator.3.0.tar.gz)</p>
-</li>
-</ul>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $HOME
-tar xvzf ./postgres-operator.3.0.tar.gz</pre>
-</div>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>copy <strong>pgo</strong> client to somewhere in your path (e.g. cp pgo /usr/local/bin)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Next, deploy the operator to your Kubernetes cluster -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
-make deployoperator</pre>
-</div>
-</div>
-</div>
+make pull
+....
+
+To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link -
+
+ * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]
+ * extract (e.g. tar xvzf postgres-operator.3.0.tar.gz)
+....
+cd $HOME
+tar xvzf ./postgres-operator.3.0.tar.gz
+....
+ * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
+
+Next, deploy the operator to your Kubernetes cluster -
+....
+cd $COROOT
+make deployoperator
+....
+
 
     </div>
 </div>
-</div>
-<div class="paragraph">
+
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -436,188 +348,89 @@ make deployoperator</pre>
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-<div class="sect2">
-<h3 id="_build_from_source">Build from Source</h3>
-<div class="paragraph">
-<p>The purpose of this section is to illustrate how to build the PostgreSQL
+
+
+=== Build from Source
+
+The purpose of this section is to illustrate how to build the PostgreSQL
 Operator from source. These are considered advanced installation steps and
 should be primarily used by developers or those wishing a more precise
-installation method.</p>
-</div>
-<div class="sect3">
-<h4 id="_requirements">Requirements</h4>
-<div class="paragraph">
-<p>The postgres-operator runs on any Kubernetes and Openshift platform that supports
+installation method.
+
+==== Requirements
+
+The postgres-operator runs on any Kubernetes and Openshift platform that supports
 Custom Resource Definitions. The Operator is tested on Kubeadm and OpenShift
-Container Platform environments.</p>
-</div>
-<div class="paragraph">
-<p>The operator is developed with the Golang versions greater than or equal to version 1.8. See
-<a href="https://golang.org/dl/">Golang website</a> for details on installing golang.</p>
-</div>
-<div class="paragraph">
-<p>The Operator project builds and operates with the following containers -</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://hub.docker.com/r/crunchydata/pgo-lspvc/">PVC Listing Container</a></p>
-</li>
-<li>
-<p><a href="https://hub.docker.com/r/crunchydata/pgo-rmdata/">Remove Data Container</a></p>
-</li>
-<li>
-<p><a href="https://hub.docker.com/r/crunchydata/postgres-operator/">postgres-operator Container</a></p>
-</li>
-<li>
-<p><a href="https://hub.docker.com/r/crunchydata/pgo-apiserver/">apiserver Container</a></p>
-</li>
-<li>
-<p><a href="https://hub.docker.com/r/crunchydata/pgo-load/">file load Container</a></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>This Operator is developed and tested on the following operating systems but is known to run on other operating systems -</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><strong>CentOS 7</strong></p>
-</li>
-<li>
-<p><strong>RHEL 7</strong></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>First, install the project library dependencies. The godep dependency manager is used for this purpose. -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
-make setup</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then, compile the PostgreSQL Operator using the Makefile.</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
+Container Platform environments.
+
+The operator is developed with the Golang versions greater than or equal to version 1.8. See
+link:https://golang.org/dl/[Golang website] for details on installing golang.
+
+The Operator project builds and operates with the following containers -
+
+* link:https://hub.docker.com/r/crunchydata/pgo-lspvc/[PVC Listing Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-rmdata/[Remove Data Container]
+* link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
+
+This Operator is developed and tested on the following operating systems but is known to run on other operating systems -
+
+* *CentOS 7*
+* *RHEL 7*
+
+First, install the project library dependencies. The godep dependency manager is used for this purpose. -
+....
+cd $COROOT
+make setup
+....
+
+Then, compile the PostgreSQL Operator using the Makefile.
+....
+cd $COROOT
 make all
-which pgo</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Finally, deploy the operator to your Kubernetes cluster.</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
-make deployoperator</pre>
-</div>
-</div>
-</div>
-</div>
+which pgo
+....
+
+Finally, deploy the operator to your Kubernetes cluster.
+....
+cd $COROOT
+make deployoperator
+....
+
 
     </div>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_makefile_targets">Makefile Targets</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>The following table describes the Makefile targets -</p>
-</div>
-<table class="tableblock frame-topbot grid-all" style="width: 80%;">
-<caption class="title">Table 1. Makefile Targets</caption>
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Target</th>
-<th class="tableblock halign-left valign-top">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">compile all binaries and build all images</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">deployoperator</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">deploy the Operator (apiserver and postgers-operator) to Kubernetes</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">compile the postgres-operator</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runmain</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">locally execute the postgres-operator</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">pgo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the pgo binary</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runpgo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">run the pgo binary</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runapiserver</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">run the apiserver binary outside of Kube</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">clean</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">remove binaries and compiled packages, restore dependencies</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">operatorimage</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">compile and build the postgres-operator Docker image</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">apiserverimage</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">compile and build the apiserver Docker image</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">lsimage</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the lspvc Docker image</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">loadimage</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the file load Docker image</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">rmdataimage</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the data deletion Docker image</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">release</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the postgres-operator release</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_next_steps">Next Steps</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Next, visit the <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">Deployment</a> page to deploy the
-Operator, verify the installation, and view various storage configurations.</p>
-</div>
-</div>
-</div>
+
+== Makefile Targets
+
+The following table describes the Makefile targets -
+  
+.Makefile Targets
+[width="80%",frame="topbot",options="header"]
+|======================
+|Target | Description
+|all        | compile all binaries and build all images
+|setup        | fetch the dependent packages required to build with
+|deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
+|main        | compile the postgres-operator
+|runmain        | locally execute the postgres-operator
+|pgo        | build the pgo binary
+|runpgo        | run the pgo binary
+|runapiserver        | run the apiserver binary outside of Kube
+|clean        | remove binaries and compiled packages, restore dependencies
+|operatorimage        | compile and build the postgres-operator Docker image
+|apiserverimage        | compile and build the apiserver Docker image
+|lsimage        | build the lspvc Docker image
+|loadimage        | build the file load Docker image
+|rmdataimage        | build the data deletion Docker image
+|release        | build the postgres-operator release
+|======================
+
+== Next Steps
+
+Next, visit the link:/installation/deployment/[Deployment] page to deploy the
+Operator, verify the installation, and view various storage configurations.
 
 
     
