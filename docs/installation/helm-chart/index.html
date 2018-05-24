@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40" />
+<meta name="generator" content="Hugo 0.40.3" />
 
 <title>Helm Chart :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -224,44 +224,29 @@
     
     
     
-    <div class="paragraph">
-<p>v3.0, 2018-05-23</p>
-</div>
-<div class="sect1">
-<h2 id="_helm_chart">Helm Chart</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>First, pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers,
-specify the image versions, and execute the following Makefile target -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export CO_IMAGE_PREFIX=crunchydata
+    v3.0, {docdate}
+
+== Helm Chart
+
+First, pull prebuilt versions from Dockerhub of the *postgres-operator* containers,
+specify the image versions, and execute the following Makefile target -
+....
+export CO_IMAGE_PREFIX=crunchydata
 export CO_IMAGE_TAG=centos7-3.0
-make pull</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then, build and deploy the operator using the provided Helm chart -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT/chart
+make pull
+....
+
+Then, build and deploy the operator using the provided Helm chart -
+....
+cd $COROOT/chart
 helm install ./postgres-operator
-helm ls</pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_next_steps">Next Steps</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Next, visit the <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">Deployment</a> page to deploy the
-Operator, verify the installation, and view various storage configurations.</p>
-</div>
-</div>
-</div>
+helm ls
+....
+
+== Next Steps
+
+Next, visit the link:/installation/deployment/[Deployment] page to deploy the
+Operator, verify the installation, and view various storage configurations.
 
 
     
