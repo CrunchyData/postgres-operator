@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40.3" />
+<meta name="generator" content="Hugo 0.40" />
 
 <title>Upgrading the Operator :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -224,8 +224,10 @@
     
     
     
-    v3.0, {docdate}
-
+    <div class="paragraph">
+<p>v3.0, 2018-05-23</p>
+</div>
+<div class="paragraph">
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -237,50 +239,62 @@
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-For a full list of additions and revisions that occurred in the
+<div class="paragraph">
+<p>For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page link:https://github.com/CrunchyData/postgres-operator/releases/tag/2.5[here].
-
-== Required Updates
-
-This section notes some required steps that will need to be taken
-in the process of upgrading from v2.4 to v2.5.
-
-=== Configuration File
-
-It will be necessary to update your existing `pgo.yaml` configuration
+page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/2.5">here</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_required_updates">Required Updates</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section notes some required steps that will need to be taken
+in the process of upgrading from v2.4 to v2.5.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuration_file">Configuration File</h3>
+<div class="paragraph">
+<p>It will be necessary to update your existing <code>pgo.yaml</code> configuration
 file where the Storage Configuration sections are concerned. The updated
 file for v2.5 can be found
-link:https://github.com/CrunchyData/postgres-operator/blob/2.5/conf/apiserver/pgo.yaml[here].
+<a href="https://github.com/CrunchyData/postgres-operator/blob/2.5/conf/apiserver/pgo.yaml">here</a>.
 The file contained within the local installation of the Operator is located
-by default in the following location -
-....
-$COROOT/conf/apiserver/pgo.yaml
-....
-
-=== Secrets
-
-2.5 changed the names of the database credentials that are created
+by default in the following location -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_secrets">Secrets</h3>
+<div class="paragraph">
+<p>2.5 changed the names of the database credentials that are created
 by default in order to be consistent with the way new database credentials
-are named.
-
-It will be necessary to run the following script to update your
+are named.</p>
+</div>
+<div class="paragraph">
+<p>It will be necessary to run the following script to update your
 existing clusters. This script will essentially copy the existing
 secrets values and create new secrets with those same values but
 named to the new standard. Run the script by passing in the name of
-an existing cluster as a parameter.
-
-....
-$COROOT/bin/upgrade-secret.sh
-....
-
+an existing cluster as a parameter.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/bin/upgrade-secret.sh</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
 
     </div>
 </div>
-
-<div class="expand">
+</div>
+<div class="paragraph">
+<p><div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
         <span>
@@ -291,32 +305,38 @@ $COROOT/bin/upgrade-secret.sh
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-For a full list of additions and revisions that occurred in the
+<div class="paragraph">
+<p>For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.0[here].
-
-== Required Updates
-
-This section notes some required steps that will need to be taken
-in the process of upgrading from v2.5 to v2.6.
-
-=== Configuration File
-
-One update in v2.6 changed the `pgo.yaml` file through removing the Debug flag.
-The `Pgo.Debug` variable can now be removed from the `pgo.yaml` file as a
-result. The debug flag is now called `CRUNCHY_DEBUG` and is set in the
-`deployment.json` file as a default environment variable.
-
-=== Container Resources
-
-Release 2.6 added the concept of container resource configurations
-to the `pgo.yaml` file. In order to specify the optional container
-resource configurations, add a section as follows to your `pgo.yaml`
-file -
-....
-DefaultContainerResource: small
+page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.0">here</a>.</p>
+</div>
+<div class="sect1">
+<h2 id="_required_updates">Required Updates</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section notes some required steps that will need to be taken
+in the process of upgrading from v2.5 to v2.6.</p>
+</div>
+<div class="sect2">
+<h3 id="_configuration_file">Configuration File</h3>
+<div class="paragraph">
+<p>One update in v2.6 changed the <code>pgo.yaml</code> file through removing the Debug flag.
+The <code>Pgo.Debug</code> variable can now be removed from the <code>pgo.yaml</code> file as a
+result. The debug flag is now called <code>CRUNCHY_DEBUG</code> and is set in the
+<code>deployment.json</code> file as a default environment variable.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_container_resources">Container Resources</h3>
+<div class="paragraph">
+<p>Release 2.6 added the concept of container resource configurations
+to the <code>pgo.yaml</code> file. In order to specify the optional container
+resource configurations, add a section as follows to your <code>pgo.yaml</code>
+file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>DefaultContainerResource: small
 ContainerResources:
  small:
    RequestsMemory:  2Gi
@@ -327,81 +347,110 @@ ContainerResources:
    RequestsMemory:  8Gi
    RequestsCPU:  2.0
    LimitsMemory:  12Gi
-   LimitsCPU:  4.0
-....
-
-<div class="notices warning" >
-If these settings are set incorrectly or if the Kubernetes cluster
-cannot meet the defined memory and CPU requirements, deployments will go into
-a *pending* state.
+   LimitsCPU:  4.0</pre>
 </div>
-
-
-=== Kube RBAC
-
-Release 2.6 added a `rbac.yaml` file to capture the Kube RBAC
-rules. These RBAC rules allow the *apiserver* and *postgres-operator*
+</div>
+<div class="paragraph">
+<p>&lt;div class="notices warning" &gt;&lt;div class="paragraph"&gt;
+&lt;p&gt;If these settings are set incorrectly or if the Kubernetes cluster
+cannot meet the defined memory and CPU requirements, deployments will go into
+a &lt;strong&gt;pending&lt;/strong&gt; state.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_kube_rbac">Kube RBAC</h3>
+<div class="paragraph">
+<p>Release 2.6 added a <code>rbac.yaml</code> file to capture the Kube RBAC
+rules. These RBAC rules allow the <strong>apiserver</strong> and <strong>postgres-operator</strong>
 containers access to the Kubernetes resources required for
 the operator to work. As part of the deployment process, it is necessary to
-execute the `rbac.yaml` file to set the roles and bindings required by the
-operator. Adjust this file to suit local security requirements.
-
-=== Application RBAC
-
-Release 2.6 added an RBAC capability to secure the *pgo* application.
-The *pgouser* now has a role appended at the end of of each user definition
-as follows -
-....
-username:password:pgoadmin
+execute the <code>rbac.yaml</code> file to set the roles and bindings required by the
+operator. Adjust this file to suit local security requirements.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_application_rbac">Application RBAC</h3>
+<div class="paragraph">
+<p>Release 2.6 added an RBAC capability to secure the <strong>pgo</strong> application.
+The <strong>pgouser</strong> now has a role appended at the end of of each user definition
+as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>username:password:pgoadmin
 testuser:testpass:pgoadmin
-readonlyuser:testpass:pgoreader
-....
-
-These are defined in the following file -
-....
-$COROOT/conf/apiserver/pgouser
-....
-
-To match the behavior of the pre 2.6 releases, the *pgadmin* role
-is set on the previous user definitions, but a *readonlyuser* is
+readonlyuser:testpass:pgoreader</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These are defined in the following file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgouser</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To match the behavior of the pre 2.6 releases, the <strong>pgadmin</strong> role
+is set on the previous user definitions, but a <strong>readonlyuser</strong> is
 now defined to test other role definitions. The roles are defined in
-a new file called *pgorole*. This file defines each role and the
-permissions for that role. By default, two roles are defined as samples -
-....
-pgoadmin
-pgoreader
-....
-
-Adjust these default settings to meet local security requirements.
-
-The format of this file is as follows -
-....
-rolename: permissionA, permissionB
-....
-
-These are defined in the following file -
-....
-$COROOT/conf/apiserver/pgorole
-....
-
-The complete set of permissions is documented in the link:/installation/configuration/[Configuration] document.
-
-=== User Creation
-
-Release 2.6 replaced the `pgo user --add` command with the `pgo create user`
+a new file called <strong>pgorole</strong>. This file defines each role and the
+permissions for that role. By default, two roles are defined as samples -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgoadmin
+pgoreader</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Adjust these default settings to meet local security requirements.</p>
+</div>
+<div class="paragraph">
+<p>The format of this file is as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>rolename: permissionA, permissionB</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These are defined in the following file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgorole</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The complete set of permissions is documented in the <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">Configuration</a> document.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_user_creation">User Creation</h3>
+<div class="paragraph">
+<p>Release 2.6 replaced the <code>pgo user --add</code> command with the <code>pgo create user</code>
 command to improve consistency across command usage. Any scripts written
 using the older style of command require an update to use the new command
-syntax.
-
-=== Replica CRD
-
-There is a new Kubernetes Custom Resource Definition that serves the purpose
-of holding replica information, called *pgreplicas*. This CRD is populated
+syntax.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_replica_crd">Replica CRD</h3>
+<div class="paragraph">
+<p>There is a new Kubernetes Custom Resource Definition that serves the purpose
+of holding replica information, called <strong>pgreplicas</strong>. This CRD is populated
 with the pgo scale command and is used to hold per-replica specific information
-such as the resource and storage configurations requested at run time.
-
+such as the resource and storage configurations requested at run time.</p>
+</div>
+</div>
+</div>
+</div>
 
     </div>
+</div></p>
 </div>
 
 
