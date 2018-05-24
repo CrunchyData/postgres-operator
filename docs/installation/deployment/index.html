@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40.3" />
+<meta name="generator" content="Hugo 0.40" />
 
 <title>Deployment :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -224,38 +224,63 @@
     
     
     
-    :toc:
-v3.0, {docdate}
-
-This document details verifying the installation of the PostgreSQL Operator
+    <div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_verify_operator_status">Verify Operator Status</a></li>
+<li><a href="#_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</a></li>
+<li><a href="#_verify_pgo_client">Verify pgo Client</a></li>
+<li><a href="#_storage_configuration">Storage Configuration</a></li>
+<li><a href="#_next_steps">Next Steps</a></li>
+</ul>
+</div>
+<div class="paragraph">
+<p>v3.0, 2018-05-23</p>
+</div>
+<div class="paragraph">
+<p>This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
-that can be made.
-
-== Verify Operator Status
-
-To verify that the operator is deployed and running, run the following:
-....
-kubectl get pod --selector=name=postgres-operator
-....
-
-You should see output similar to this:
-....
-NAME                                 READY     STATUS    RESTARTS   AGE
-postgres-operator-56598999cd-tbg4w   2/2       Running   0          1m
-....
-
-There are 2 containers in the operator pod, both should be *ready* as above.
-
-When you first run the operator, it will create the required
-CustomResourceDefinitions. You can view these as follows -
-....
-kubectl get crd
-....
-
-The operator creates the following Custom Resource Definitions over time as the
-associated commands are triggered.
-....
-kubectl get crd
+that can be made.</p>
+</div>
+<div class="sect1">
+<h2 id="_verify_operator_status">Verify Operator Status</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>To verify that the operator is deployed and running, run the following:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get pod --selector=name=postgres-operator</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You should see output similar to this:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-56598999cd-tbg4w   2/2       Running   0          1m</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There are 2 containers in the operator pod, both should be <strong>ready</strong> as above.</p>
+</div>
+<div class="paragraph">
+<p>When you first run the operator, it will create the required
+CustomResourceDefinitions. You can view these as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get crd</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The operator creates the following Custom Resource Definitions over time as the
+associated commands are triggered.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get crd
 NAME                             AGE
 pgbackups.cr.client-go.k8s.io    2d
 pgclusters.cr.client-go.k8s.io   2d
@@ -263,43 +288,60 @@ pgingests.cr.client-go.k8s.io    2d
 pgpolicies.cr.client-go.k8s.io   2d
 pgreplicas.cr.client-go.k8s.io   2d
 pgtasks.cr.client-go.k8s.io      2d
-pgupgrades.cr.client-go.k8s.io   2d
-....
-
-At this point, the server side of the operator is deployed and ready.
-
-The complete set of environment variables used in the installation
-so far are -
-....
-export CO_IMAGE_PREFIX=crunchydata
+pgupgrades.cr.client-go.k8s.io   2d</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>At this point, the server side of the operator is deployed and ready.</p>
+</div>
+<div class="paragraph">
+<p>The complete set of environment variables used in the installation
+so far are -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_IMAGE_PREFIX=crunchydata
 export CO_IMAGE_TAG=centos7-3.0
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-export CO_CMD=kubectl
-....
-
-You would normally add these into your *.bashrc* at this point to be used later on or if you want to redeploy the operator.
-
-== Configure *pgo* Client
-
-The pgo command line client requires TLS for securing the connection to the operator's REST API.  This configuration is performed as follows -
-....
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export CO_CMD=kubectl</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You would normally add these into your <strong>.bashrc</strong> at this point to be used later on or if you want to redeploy the operator.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pgo command line client requires TLS for securing the connection to the operator&#8217;s REST API.  This configuration is performed as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
-....
-
-The pgo client uses Basic Authentication to authenticate to the operator REST API, for authentication, add the following `.pgouser` file to your $HOME -
-....
-echo "username:password" > $HOME/.pgouser
-....
-
-The *pgo* client needs the URL to connect to the operator.
-
-Depending on your Kubernetes environment this can be done the following ways.
-
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The pgo client uses Basic Authentication to authenticate to the operator REST API, for authentication, add the following <code>.pgouser</code> file to your $HOME -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>echo "username:password" &gt; $HOME/.pgouser</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The <strong>pgo</strong> client needs the URL to connect to the operator.</p>
+</div>
+<div class="paragraph">
+<p>Depending on your Kubernetes environment this can be done the following ways.</p>
+</div>
+<div class="paragraph">
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -311,31 +353,38 @@ Depending on your Kubernetes environment this can be done the following ways.
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-=== Running Kubernetes Locally
-
-If your local host is not set up to resolve Kubernetes Service DNS names, you can specify the operator IP address as follows -
-....
-kubectl get service postgres-operator
+<div class="sect2">
+<h3 id="_running_kubernetes_locally">Running Kubernetes Locally</h3>
+<div class="paragraph">
+<p>If your local host is not set up to resolve Kubernetes Service DNS names, you can specify the operator IP address as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get service postgres-operator
 NAME                TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
-postgres-operator   NodePort   10.109.184.8   <none>        8443:30894/TCP   5m
+postgres-operator   NodePort   10.109.184.8   &lt;none&gt;        8443:30894/TCP   5m
 
 export CO_APISERVER_URL=https://10.109.184.8:8443
-pgo version
-....
-
-It is also possible to define a bash alias such as -
-....
-alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
-....
-
-This alias will set the `CO_APISERVER_URL` IP address for you.
-
+pgo version</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is also possible to define a bash alias such as -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This alias will set the <code>CO_APISERVER_URL</code> IP address for you.</p>
+</div>
+</div>
 
     </div>
 </div>
-
+</div>
+<div class="paragraph">
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -347,46 +396,64 @@ This alias will set the `CO_APISERVER_URL` IP address for you.
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-==== Running Kubernetes Remotely
-
-Set up a port-forward tunnel from your host to the Kube remote host, specifying the operator pod -
-....
-kubectl get pod --selector=name=postgres-operator
+<div class="sect3">
+<h4 id="_running_kubernetes_remotely">Running Kubernetes Remotely</h4>
+<div class="paragraph">
+<p>Set up a port-forward tunnel from your host to the Kube remote host, specifying the operator pod -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get pod --selector=name=postgres-operator
 NAME                                 READY     STATUS    RESTARTS   AGE
 postgres-operator-56598999cd-tbg4w   2/2       Running   0          8m
 
-kubectl port-forward postgres-operator-56598999cd-tbg4w 8443:8443
-....
-
-In another terminal -
-....
-export CO_APISERVER_URL=https://127.0.0.1:8443
-pgo version
-....
-
+kubectl port-forward postgres-operator-56598999cd-tbg4w 8443:8443</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In another terminal -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_APISERVER_URL=https://127.0.0.1:8443
+pgo version</pre>
+</div>
+</div>
+</div>
 
     </div>
 </div>
-
-== Verify pgo Client
-
-At this point you should be able to connect to the operator as follows -
-....
-pgo version
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_verify_pgo_client">Verify pgo Client</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>At this point you should be able to connect to the operator as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo version
 pgo client version 3.0
-apiserver version 3.0
-....
-
-Operator commands are documented on the link:/getting-started/[Getting Started] page.
-
-== Storage Configuration
-
-Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.
-
-The operator will work with HostPath, NFS, Dynamic, and GKE Storage.
-
+apiserver version 3.0</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Operator commands are documented on the <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a> page.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_storage_configuration">Storage Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.</p>
+</div>
+<div class="paragraph">
+<p>The operator will work with HostPath, NFS, Dynamic, and GKE Storage.</p>
+</div>
+<div class="paragraph">
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -398,23 +465,28 @@ The operator will work with HostPath, NFS, Dynamic, and GKE Storage.
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-=== NFS
-
-To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file is provided.  Overlay the default `pgo.yaml` file with that file -
-....
-cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
-....
-
-Edit the *pgo.yaml* file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is *nfsnobody* as the GID (65534).  Update the value to meet your NFS security settings.
-
-There is currently no script available to create your NFS Persistent Volumes but you can typically modify the `$COROOT/pv/create-pv.sh` script to work with NFS.
-
+<div class="sect2">
+<h3 id="_nfs">NFS</h3>
+<div class="paragraph">
+<p>To configure the operator to use NFS for storage, a sample <strong>pgo.yaml.nfs</strong> file is provided.  Overlay the default <code>pgo.yaml</code> file with that file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the <strong>pgo.yaml</strong> file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is <strong>nfsnobody</strong> as the GID (65534).  Update the value to meet your NFS security settings.</p>
+</div>
+<div class="paragraph">
+<p>There is currently no script available to create your NFS Persistent Volumes but you can typically modify the <code>$COROOT/pv/create-pv.sh</code> script to work with NFS.</p>
+</div>
+</div>
 
     </div>
 </div>
-
+</div>
+<div class="paragraph">
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -426,23 +498,28 @@ There is currently no script available to create your NFS Persistent Volumes but
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-=== Dynamic
-
-To configure the operator to use Dynamic Storage classes for storage, a sample *pgo.yaml.storageclass* file is provided.  Overlay the default *pgo.yaml* file with that file -
-....
-cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-....
-
-Edit the *pgo.yaml* file to specify the storage class you will be using, the default value assumed is *standard* which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.
-
-Notice that the *FsGroup* setting is required for most block storage and is set to the value of *26* since the PostgreSQL container runs as UID *26*.
-
+<div class="sect2">
+<h3 id="_dynamic">Dynamic</h3>
+<div class="paragraph">
+<p>To configure the operator to use Dynamic Storage classes for storage, a sample <strong>pgo.yaml.storageclass</strong> file is provided.  Overlay the default <strong>pgo.yaml</strong> file with that file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the <strong>pgo.yaml</strong> file to specify the storage class you will be using, the default value assumed is <strong>standard</strong> which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.</p>
+</div>
+<div class="paragraph">
+<p>Notice that the <strong>FsGroup</strong> setting is required for most block storage and is set to the value of <strong>26</strong> since the PostgreSQL container runs as UID <strong>26</strong>.</p>
+</div>
+</div>
 
     </div>
 </div>
-
+</div>
+<div class="paragraph">
 <div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
@@ -454,59 +531,85 @@ Notice that the *FsGroup* setting is required for most block storage and is set 
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-
-
-=== GKE
-
-Some notes for setting up GKE for the Operator deployment.
-
-==== Install Kubectl
-
-On your host you will be working from, install the kubectl command -
-
-https://kubernetes.io/docs/tasks/tools/install-kubectl/
-
-==== GCP
-
-* Select your project
-* Create a Kube cluster in that project
-
-By default a storage class called *standard* is created.
-
-==== Install GCloud
-
-To access the Kubernetes cluster, install the gcloud utility -
-
-....
-https://cloud.google.com/sdk/downloads
+<div class="sect2">
+<h3 id="_gke">GKE</h3>
+<div class="paragraph">
+<p>Some notes for setting up GKE for the Operator deployment.</p>
+</div>
+<div class="sect3">
+<h4 id="_install_kubectl">Install Kubectl</h4>
+<div class="paragraph">
+<p>On your host you will be working from, install the kubectl command -</p>
+</div>
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/" class="bare">https://kubernetes.io/docs/tasks/tools/install-kubectl/</a></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_gcp">GCP</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Select your project</p>
+</li>
+<li>
+<p>Create a Kube cluster in that project</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By default a storage class called <strong>standard</strong> is created.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_install_gcloud">Install GCloud</h4>
+<div class="paragraph">
+<p>To access the Kubernetes cluster, install the gcloud utility -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>https://cloud.google.com/sdk/downloads
 cd google-cloud-sdk
-./install.sh
-....
-
-==== Configure Kubectl for Cluster Access
-
-....
-gcloud auth login
+./install.sh</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configure_kubectl_for_cluster_access">Configure Kubectl for Cluster Access</h4>
+<div class="literalblock">
+<div class="content">
+<pre>gcloud auth login
 
 gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
 
-kubectl get storageclass
-....
-
+kubectl get storageclass</pre>
+</div>
+</div>
+</div>
+</div>
 
     </div>
 </div>
-
-== Next Steps
-
-There are many ways to configure the operator further. Some sample configurations are
-documented on the link:/installation/configuration/[Configuration] page.
-
-You may also want to find out more information on how the operator is designed to work and
-deploy. This information can be found in the link:/how-it-works/[How It Works] page.
-
-Information can be found on the full scope of commands on the
-link:/getting-started/[Getting Started] page.
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_next_steps">Next Steps</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There are many ways to configure the operator further. Some sample configurations are
+documented on the <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">Configuration</a> page.</p>
+</div>
+<div class="paragraph">
+<p>You may also want to find out more information on how the operator is designed to work and
+deploy. This information can be found in the <a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a> page.</p>
+</div>
+<div class="paragraph">
+<p>Information can be found on the full scope of commands on the
+<a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a> page.</p>
+</div>
+</div>
+</div>
 
 
     
