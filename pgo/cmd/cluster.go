@@ -224,6 +224,7 @@ func createCluster(args []string) {
 	r.CCPImageTag = CCPImageTag
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
+	r.AutofailFlag = AutofailFlag
 	r.PgpoolFlag = PgpoolFlag
 	r.ArchiveFlag = ArchiveFlag
 	r.PgpoolSecret = PgpoolSecret

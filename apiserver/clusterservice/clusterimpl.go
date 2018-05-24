@@ -452,6 +452,9 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		if request.MetricsFlag {
 			userLabelsMap["crunchy_collect"] = "true"
 		}
+		if request.AutofailFlag {
+			userLabelsMap["autofail"] = "true"
+		}
 
 		if request.ArchiveFlag {
 			userLabelsMap["archive"] = "true"

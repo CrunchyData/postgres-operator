@@ -33,6 +33,7 @@ type CreateClusterRequest struct {
 	CCPImageTag          string
 	Series               int
 	MetricsFlag          bool
+	AutofailFlag         bool
 	ArchiveFlag          bool
 	PgpoolFlag           bool
 	PgpoolSecret         string

@@ -55,6 +55,8 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 		c.Namespace,
 		fields.Everything())
 
+	//labelSelector := labels.Set(map[string]string{"pg-cluster": "ourdaomain1"}).AsSelector()
+
 	_, controller := cache.NewInformer(
 		source,
 
@@ -83,10 +85,36 @@ func (c *PodController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgcluster is updated
 func (c *PodController) onUpdate(oldObj, newObj interface{}) {
+	oldpod := oldObj.(*apiv1.Pod)
+	newpod := newObj.(*apiv1.Pod)
+	log.Infof("[PodCONTROLLER] OnUpdate %s\n", newpod.ObjectMeta.SelfLink)
+	checkReadyStatus(oldpod, newpod)
 }
 
 // onDelete is called when a pgcluster is deleted
 func (c *PodController) onDelete(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
 	log.Infof("[PodCONTROLLER] OnDelete %s\n", pod.ObjectMeta.SelfLink)
+}
+
+func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
+	//if the pod has a metadata label of  pg-cluster and
+	//eventually pg-failover == true then...
+	//loop thru status.containerStatuses, find the container with name='database'
+	//print out the 'ready' bool
+	//log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
+	if newpod.ObjectMeta.Labels["pg-cluster"] != "" && newpod.ObjectMeta.Labels["autofail"] == "true" {
+		log.Infoln("we have an autofail pg-cluster!")
+		for _, v := range newpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				log.Infof("%s is the containerstatus Name\n", v.Name)
+				if v.Ready {
+					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
+				} else {
+					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
+				}
+			}
+		}
+	}
+
 }
