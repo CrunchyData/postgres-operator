@@ -33,6 +33,9 @@ const PVCPath = "/operator-conf/pvc.json"
 const PVCSCPath = "/operator-conf/pvc-storageclass.json"
 const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
 
+const PG_CLUSTER_LABEL = "pg-cluster"
+const AUTOFAIL_LABEL = "autofail"
+
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
 var PgpoolTemplate *template.Template

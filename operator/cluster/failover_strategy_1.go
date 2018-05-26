@@ -132,7 +132,7 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 
 	//delete the deployment with pg-cluster=clusterName,primary=true
 	//should only be 1 primary with this name!
-	deps, err := kubeapi.GetDeployments(clientset, "pg-cluster="+clusterName+",primary=true", namespace)
+	deps, err := kubeapi.GetDeployments(clientset, util.LABEL_PG_CLUSTER+"="+clusterName+",primary=true", namespace)
 	for _, d := range deps.Items {
 		log.Debugf("deleting deployment %s\n", d.Name)
 		kubeapi.DeleteDeployment(clientset, d.Name, namespace)

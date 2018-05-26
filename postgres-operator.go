@@ -41,6 +41,7 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
+var Namespace string
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
@@ -54,7 +55,7 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	Namespace := os.Getenv("NAMESPACE")
+	Namespace = os.Getenv("NAMESPACE")
 	log.Debug("setting NAMESPACE to " + Namespace)
 	if Namespace == "" {
 		log.Error("NAMESPACE env var not set")
@@ -217,6 +218,8 @@ func main() {
 
 	//go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
+
+	cluster.InitializeAutoFailover(Clientset, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")
 

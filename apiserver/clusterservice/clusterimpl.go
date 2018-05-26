@@ -163,7 +163,7 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, error) {
 	output := make([]msgs.ShowClusterDeployment, 0)
 
-	selector := "pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		return output, err
@@ -189,7 +189,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	selector := "crunchy-pgpool!=true,pg-cluster=" + cluster.Spec.Name
+	selector := "crunchy-pgpool!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -216,7 +216,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
-	selector := "pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -899,7 +899,7 @@ func getReplicas(cluster *crv1.Pgcluster) ([]msgs.ShowClusterReplica, error) {
 	output := make([]msgs.ShowClusterReplica, 0)
 	replicaList := crv1.PgreplicaList{}
 
-	selector := "pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	err := kubeapi.GetpgreplicasBySelector(apiserver.RESTClient,
 		&replicaList, selector, apiserver.Namespace)

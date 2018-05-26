@@ -193,7 +193,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	var err error
 
 	deployments, err := kubeapi.GetDeployments(clientset,
-		"pg-cluster="+cl.Spec.Name, namespace)
+		util.LABEL_PG_CLUSTER+"="+cl.Spec.Name, namespace)
 	if err != nil {
 		return err
 	}
@@ -342,7 +342,7 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 	}
 
 	primaryLabels["name"] = Name
-	primaryLabels["pg-cluster"] = ClusterName
+	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
 		if key == "NodeLabelKey" || key == "NodeLabelValue" {

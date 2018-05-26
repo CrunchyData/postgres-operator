@@ -18,6 +18,8 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -103,15 +105,16 @@ func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//loop thru status.containerStatuses, find the container with name='database'
 	//print out the 'ready' bool
 	//log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
-	if newpod.ObjectMeta.Labels["pg-cluster"] != "" && newpod.ObjectMeta.Labels["autofail"] == "true" {
+	if newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] != "" && newpod.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
 		log.Infoln("we have an autofail pg-cluster!")
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				log.Infof("%s is the containerstatus Name\n", v.Name)
+				clusteroperator.AutofailBase(v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], newpod.ObjectMeta.Namespace)
 				if v.Ready {
-					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
+					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], v.Name)
 				} else {
-					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
+					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], v.Name)
 				}
 			}
 		}

@@ -22,6 +22,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/rest"
 )
 
@@ -32,7 +33,7 @@ func DeletePgreplicas(restclient *rest.RESTClient, clusterName, namespace string
 
 	//get a list of pgreplicas for this cluster
 	err := kubeapi.GetpgreplicasBySelector(restclient,
-		&replicaList, "pg-cluster="+clusterName,
+		&replicaList, util.LABEL_PG_CLUSTER+"="+clusterName,
 		namespace)
 	if err != nil {
 		return

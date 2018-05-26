@@ -109,7 +109,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 	}
 
 	labels := make(map[string]string)
-	labels["pg-cluster"] = cluster.Spec.Name
+	labels[util.LABEL_PG_CLUSTER] = cluster.Spec.Name
 
 	spec.ClusterName = cluster.Spec.Name
 
