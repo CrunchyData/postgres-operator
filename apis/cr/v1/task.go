@@ -24,6 +24,7 @@ const PgtaskResourcePlural = "pgtasks"
 
 const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"
+const PgtaskAutoFailover = "autofailover"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {
