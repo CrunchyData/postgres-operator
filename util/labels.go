@@ -20,3 +20,6 @@ import ()
 // resource labels used by the operator
 const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_AUTOFAIL = "autofail"
+const LABEL_FAILOVER = "failover"
+const LABEL_PRIMARY = "primary"
+const LABEL_RMDATA = "pgrmdata"

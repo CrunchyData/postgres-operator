@@ -814,6 +814,9 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 			},
 			Spec: spec,
 		}
+		newInstance.ObjectMeta.Labels = make(map[string]string)
+		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+		newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient,
 			newInstance, apiserver.Namespace)

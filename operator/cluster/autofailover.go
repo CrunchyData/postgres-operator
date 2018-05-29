@@ -20,15 +20,13 @@ package cluster
 
 import (
 	log "github.com/Sirupsen/logrus"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/rest"
-	//"os"
-	//"os/signal"
-	"sync"
-	//"syscall"
+	"k8s.io/client-go/rest"
 	"time"
 )
 
@@ -37,6 +35,9 @@ import (
 // The StateMachine is executed in a separate goroutine for
 // any cluster founds to be NotReady
 type StateMachine struct {
+	Clientset    *kubernetes.Clientset
+	RESTClient   *rest.RESTClient
+	Namespace    string
 	ClusterName  string
 	SleepSeconds int
 }
@@ -52,27 +53,13 @@ type FailoverEvent struct {
 const FAILOVER_EVENT_NOT_READY = "NotReady"
 const FAILOVER_EVENT_READY = "Ready"
 
-// FailoverMap holds failover events for each cluster that
-// has an associated set of failover events like a 'Not Ready'
-// the map is made consistent with the Mutex, required since
-// multiple goroutines will be mutating the map
-// the key is the cluster name, the map entry is cleared upon
-// a failover being triggered
-type FailoverMap struct {
-	sync.Mutex
-	events map[string][]FailoverEvent
+type AutoFailoverTask struct {
 }
 
-// GlobalFailoverMap holds the failover events for all clusters
-// NotReady status events from the cluster will be logged in this map
-// and processed by failover state machines as part of automated failover
-var GlobalFailoverMap *FailoverMap
+func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) {
+	aftask := AutoFailoverTask{}
 
-func InitializeAutoFailover(clientset *kubernetes.Clientset, ns string) {
-	log.Infoln("autofailover Initialize map")
-	GlobalFailoverMap = &FailoverMap{
-		events: make(map[string][]FailoverEvent),
-	}
+	log.Infoln("autofailover Initialize ")
 
 	pods, _ := kubeapi.GetPods(clientset, util.LABEL_AUTOFAIL, ns)
 	log.Infof("%d autofail pods found\n", len(pods.Items))
@@ -82,10 +69,13 @@ func InitializeAutoFailover(clientset *kubernetes.Clientset, ns string) {
 		for _, c := range p.Status.ContainerStatuses {
 			if c.Name == "database" {
 				if c.Ready {
-					GlobalFailoverMap.AddEvent(clusterName, FAILOVER_EVENT_READY)
+					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, ns)
 				} else {
-					GlobalFailoverMap.AddEvent(clusterName, FAILOVER_EVENT_NOT_READY)
+					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
 					sm := StateMachine{
+						Clientset:    clientset,
+						RESTClient:   restclient,
+						Namespace:    ns,
 						SleepSeconds: 9,
 						ClusterName:  clusterName,
 					}
@@ -97,7 +87,7 @@ func InitializeAutoFailover(clientset *kubernetes.Clientset, ns string) {
 		}
 	}
 
-	GlobalFailoverMap.print()
+	aftask.Print(restclient, ns)
 }
 
 func (s *StateMachine) Print() {
@@ -105,22 +95,14 @@ func (s *StateMachine) Print() {
 	log.Debugf("StateMachine: %s sleeping %d\n", s.ClusterName, s.SleepSeconds)
 }
 
-// Evaluate returns true if the failover events indicate a failover
-// scenario, the algorithm is currently simple, if one of the
-// failover events is a NotReady then we return true
-func (s *StateMachine) Evaluate(events []FailoverEvent) bool {
-	for k, v := range events {
-		log.Debugf("event %d: %s\n", k, v.EventType)
-		if v.EventType == FAILOVER_EVENT_NOT_READY {
-			log.Debugf("Failover scenario caught: NotReady for %s\n", s.ClusterName)
-			//here is where you would call the failover
+// Evaluate returns true if the autofail status is NotReady
+func (s *StateMachine) Evaluate(status string, events map[string]string) bool {
 
-			//clean up to not reprocess the failover event
-			GlobalFailoverMap.Clear(s.ClusterName)
-			return true
-
-		}
+	if status == FAILOVER_EVENT_NOT_READY {
+		log.Debugf("Failover scenario caught: NotReady for %s\n", s.ClusterName)
+		return true
 	}
+
 	return false
 }
 
@@ -129,95 +111,54 @@ func (s *StateMachine) Evaluate(events []FailoverEvent) bool {
 // runs until
 func (s *StateMachine) Run() {
 
+	aftask := AutoFailoverTask{}
+
 	for {
 		time.Sleep(time.Second * time.Duration(s.SleepSeconds))
 		s.Print()
 
-		events := GlobalFailoverMap.GetEvents(s.ClusterName)
+		status, events := aftask.GetEvents(s.RESTClient, s.ClusterName, s.Namespace)
 		if len(events) == 0 {
 			log.Debugf("no events for statemachine, exiting")
 			return
 		}
 
-		failoverRequired := s.Evaluate(events)
+		failoverRequired := s.Evaluate(status, events)
 		if failoverRequired {
 			log.Infof("failoverRequired is true, trigger failover on %s\n", s.ClusterName)
+			s.triggerFailover()
+			//clean up to not reprocess the failover event
+			aftask.Clear(s.RESTClient, s.ClusterName, s.Namespace)
 		} else {
 			log.Infof("failoverRequired is false, no need to trigger failover\n")
-			return
 		}
 
+		//right now, there is no need for looping with this
+		//simple failover check algorithm, later this loop
+		//will be necessary potentially if the logic evaluates
+		//failures over a span of time
+		return
+
 	}
 
-}
-
-func (s *FailoverMap) print() {
-	s.Lock()
-	defer s.Unlock()
-
-	log.Infoln("GlobalFailoverMap....")
-	for k, v := range s.events {
-		log.Infof("k=%s v=%v\n", k, v)
-	}
-}
-
-func (s *FailoverMap) Clear(key string) {
-	s.Lock()
-	defer s.Unlock()
-
-	if _, exists := s.events[key]; !exists {
-		log.Errorf("%s FailoverMap key doesnt exist during Clear\n", key)
-	} else {
-		delete(s.events, key)
-		log.Infof("cleared FailoverMap for %s\n", key)
-	}
-}
-
-func (s *FailoverMap) Exists(key string) bool {
-	s.Lock()
-	defer s.Unlock()
-
-	if _, exists := s.events[key]; !exists {
-		return false
-	}
-	return true
-}
-
-func (s *FailoverMap) GetEvents(key string) []FailoverEvent {
-	s.Lock()
-	defer s.Unlock()
-
-	if c, exists := s.events[key]; !exists {
-		log.Errorf("GetEvents could not find key %s\n", key)
-		return make([]FailoverEvent, 0)
-	} else {
-		return c
-	}
-}
-func (s *FailoverMap) AddEvent(key, e string) {
-	s.Lock()
-	defer s.Unlock()
-
-	_, exists := s.events[key]
-	if !exists {
-		log.Infof("no key for this add event, creating FailoverMap for %s\n", key)
-		s.events[key] = make([]FailoverEvent, 0)
-	}
-
-	s.events[key] = append(s.events[key], FailoverEvent{EventType: e, EventTime: time.Now()})
 }
 
 // AutofailBase ...
-func AutofailBase(ready bool, clusterName, namespace string) {
+func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ready bool, clusterName, namespace string) {
 	log.Infof("AutofailBase ready=%v cluster=%s namespace=%s\n", ready, clusterName, namespace)
 
-	exists := GlobalFailoverMap.Exists(clusterName)
+	aftask := AutoFailoverTask{}
+
+	exists := aftask.Exists(restclient, clusterName, namespace)
 	if exists {
 		if !ready {
 			//add notready event, start a state machine
-			GlobalFailoverMap.AddEvent(clusterName, FAILOVER_EVENT_NOT_READY)
+			aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, namespace)
 			//create a state machine to track the failovers for test cluster
 			sm := StateMachine{
+				Clientset:    clientset,
+				RESTClient:   restclient,
+				Namespace:    namespace,
 				SleepSeconds: 9,
 				ClusterName:  clusterName,
 			}
@@ -227,10 +168,12 @@ func AutofailBase(ready bool, clusterName, namespace string) {
 		}
 
 	} else {
+		//we only register the autofail target once it
+		//goes into a Ready status for the first time
 		if ready {
 			//add new map entry to keep an eye on it
 			log.Infof("adding ready failover event for %s\n", clusterName)
-			GlobalFailoverMap.AddEvent(clusterName, FAILOVER_EVENT_READY)
+			aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, namespace)
 		}
 	}
 
@@ -257,5 +200,138 @@ func AutofailBase(ready bool, clusterName, namespace string) {
 
 	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
 	*/
+
+}
+
+func (*AutoFailoverTask) Exists(restclient *rest.RESTClient, clusterName, namespace string) bool {
+	task := crv1.Pgtask{}
+	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	found, _ := kubeapi.Getpgtask(restclient, &task, taskName, namespace)
+	return found
+}
+
+func (*AutoFailoverTask) AddEvent(restclient *rest.RESTClient, clusterName, eventType, namespace string) {
+	var err error
+	var found bool
+
+	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	task := crv1.Pgtask{}
+	found, err = kubeapi.Getpgtask(restclient, &task, taskName, namespace)
+	if !found {
+		task.Name = taskName
+		task.Spec.Status = eventType
+		task.Spec.Name = clusterName
+		task.ObjectMeta.Labels = make(map[string]string)
+		task.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = "true"
+		task.Spec.TaskType = crv1.PgtaskAutoFailover
+		task.Spec.Parameters = make(map[string]string)
+		task.Spec.Parameters[time.Now().String()] = eventType
+		err = kubeapi.Createpgtask(restclient, &task, namespace)
+		return
+	}
+
+	task.Spec.Status = eventType
+	task.Spec.Parameters[time.Now().String()] = eventType
+	err = kubeapi.Updatepgtask(restclient, &task, taskName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+}
+
+func (*AutoFailoverTask) Print(restclient *rest.RESTClient, namespace string) {
+
+	log.Infoln("AutoFail pgtask List....")
+
+	tasklist := crv1.PgtaskList{}
+
+	err := kubeapi.GetpgtasksBySelector(restclient, &tasklist, util.LABEL_AUTOFAIL, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+
+	}
+	for k, v := range tasklist.Items {
+		log.Infof("k=%s v=%v tasktype=%s\n", k, v.Name, v.Spec.TaskType)
+		for x, y := range v.Spec.Parameters {
+			log.Infof("parameter %s %s\n", x, y)
+		}
+	}
+
+}
+
+func (*AutoFailoverTask) Clear(restclient *rest.RESTClient, clusterName, namespace string) {
+
+	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	kubeapi.Deletepgtask(restclient, taskName, namespace)
+}
+
+func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, namespace string) (string, map[string]string) {
+	task := crv1.Pgtask{}
+	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	found, _ := kubeapi.Getpgtask(restclient, &task, taskName, namespace)
+	if found {
+		return task.Spec.Status, task.Spec.Parameters
+	}
+	return "", make(map[string]string)
+}
+
+func getTargetDeployment(clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
+
+	selector := "replica=true,pg-cluster=" + clusterName
+
+	deployments, err := kubeapi.GetDeployments(clientset, selector, ns)
+	if kerrors.IsNotFound(err) {
+		log.Debug("no replicas found ")
+		return "", err
+	} else if err != nil {
+		log.Error("error getting deployments " + err.Error())
+		return "", err
+	}
+
+	//for now, just return the first replica, in the future
+	//return the most up to date
+	log.Debugf("deps len %d\n", len(deployments.Items))
+	for _, dep := range deployments.Items {
+		log.Debug("found " + dep.Name)
+		return dep.Name, err
+	}
+
+	return "", err
+
+}
+
+func (s *StateMachine) triggerFailover() {
+	targetDeploy, err := getTargetDeployment(s.Clientset, s.ClusterName, s.Namespace)
+	if targetDeploy == "" || err != nil {
+		log.Errorf("could not autofailover with no replicas found for %s\n", s.ClusterName)
+		return
+	}
+
+	spec := crv1.PgtaskSpec{}
+	spec.Name = s.ClusterName + "-" + util.LABEL_FAILOVER
+	kubeapi.Deletepgtask(s.RESTClient, s.ClusterName, s.Namespace)
+	spec.TaskType = crv1.PgtaskFailover
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[s.ClusterName] = s.ClusterName
+	labels := make(map[string]string)
+	labels["target"] = targetDeploy
+	labels["pg-cluster"] = s.ClusterName
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   spec.Name,
+			Labels: labels,
+		},
+		Spec: spec,
+	}
+
+	err = kubeapi.Createpgtask(s.RESTClient,
+		newInstance, s.Namespace)
+	if err != nil {
+		log.Error(err)
+		log.Error("could not create pgtask for autofailover failover task")
+	} else {
+		log.Infof("created pgtask failover by autofailover %s\n", s.ClusterName)
+	}
 
 }

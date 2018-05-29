@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +62,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
-	spec.Name = request.ClusterName + "-failover"
+	spec.Name = request.ClusterName + "-" + util.LABEL_FAILOVER
 
 	// previous failovers will leave a pgtask so remove it first
 	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, apiserver.Namespace)

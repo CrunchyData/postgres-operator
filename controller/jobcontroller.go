@@ -19,6 +19,7 @@ import (
 	"context"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/batch/v1"
@@ -98,6 +99,12 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if err != nil {
 			log.Error(err)
 		}
+
+		//delete the pgtask to cleanup
+		log.Infof("deleting pgtask for rmdata job name is %s\n", job.ObjectMeta.Name)
+		kubeapi.Deletepgtasks(c.JobClient, "pgrmdata=true", c.Namespace)
+		kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
+
 	} else if job.Status.Succeeded > 0 && labels["pgbackup"] != "" {
 		log.Infof("got a pgbackup job status=%d", job.Status.Succeeded)
 		log.Infof("update the status to completed here for pgbackup %s\n ", labels["pg-database"])

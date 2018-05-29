@@ -78,3 +78,19 @@ func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace stri
 	log.Info("created Job " + result.Name)
 	return err
 }
+
+// DeleteJobs deletes all jobs that match a selector
+func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) error {
+	log.Debug("deleting Jobs with selector=" + selector + " in namespace " + namespace)
+
+	//delete the job
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	err := clientset.Batch().Jobs(namespace).DeleteCollection(&meta_v1.DeleteOptions{}, lo)
+	if err != nil {
+		log.Error("error deleting Jobs " + selector + err.Error())
+		return err
+	}
+
+	return err
+}

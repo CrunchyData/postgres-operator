@@ -95,8 +95,6 @@ func init() {
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
-	GlobalFailoverMap.print()
-
 	if cl.Spec.Status == crv1.UpgradeCompletedStatus {
 		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
 		return
@@ -194,7 +192,8 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 
 	log.Debug("deleteCluster called with strategy " + cl.Spec.Strategy)
 
-	GlobalFailoverMap.Clear(cl.Spec.Name)
+	aftask := AutoFailoverTask{}
+	aftask.Clear(client, cl.Spec.Name, namespace)
 
 	if cl.Spec.Strategy == "" {
 		cl.Spec.Strategy = "1"

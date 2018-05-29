@@ -219,7 +219,7 @@ func main() {
 	//go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
-	cluster.InitializeAutoFailover(Clientset, Namespace)
+	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")
 

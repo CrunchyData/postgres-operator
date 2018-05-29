@@ -121,3 +121,22 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 	}
 	return make(map[string]string)
 }
+
+func (*AutoFailoverTask) GetAutoFailoverTasks(restclient *rest.RESTClient, namespace string) {
+
+	tasklist := crv1.PgtaskList{}
+
+	err := kubeapi.GetpgtasksBySelector(restclient, &tasklist, util.LABEL_AUTOFAIL, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+
+	}
+
+	for k, v := range tasklist.Items {
+		for tasktime, status := range v.Spec.Parameters {
+			log.Infof("parameter time: %s status: %s\n", tasktime, status)
+		}
+	}
+
+}
