@@ -47,12 +47,12 @@ they are created.
 
 You can then view that database as -
 ....
-pgo show cluster mydatabase
+pgo show cluster mycluster
 ....
 
 Also, if you like to see JSON formatted output, add the *-o json* flag -
 ....
-pgo show cluster mydatabase -o json
+pgo show cluster mycluster -o json
 ....
 
 The output will give you the current status of the database pod
@@ -448,7 +448,7 @@ pgo show cluster --selector=policy1=pgpolicy
 
 To create a new Postgres user to the *mycluster* cluster, execute:
 ....
-pgo createa user sally --selector=name=mycluster
+pgo create user sally --selector=name=mycluster
 ....
 
 To delete a Postgres user in the *mycluster* cluster, execute:
@@ -619,7 +619,7 @@ Run the command as follows:
 pgo df mycluster
 pgo df --selector=name=mycluster
 pgo df --selector=name=hang
-CLUSTER             STATUS    PGSIZE    CAPACITY  PCTUSED   
+CLUSTER             STATUS    PGSIZE    CAPACITY  PCTUSED
 
 mycluster           up        30 MB     1Gi       2
 ....
@@ -631,16 +631,15 @@ metrics are displayed to provide some insights to the pgo user and administrator
 
 Run the command as follows:
 ....
-pgo status 
+pgo status
 Operator Start:          2018-05-02 15:59:41 +0000 UTC
 Databases:               2
 Backups:                 2
 Claims:                  18
-Total Volume Size:       18Gi      
+Total Volume Size:       18Gi
 
 Database Images:
                          4	crunchydata/crunchy-postgres:centos7-10.4-1.8.3
 
 Databases Not Ready:
 ....
-
