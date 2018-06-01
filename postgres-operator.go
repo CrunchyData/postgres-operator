@@ -82,64 +82,6 @@ func main() {
 		panic(err.Error())
 	}
 
-	/**
-	clustercrd, err := crdclient.PgclusterCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if clustercrd != nil {
-		fmt.Println(clustercrd.Name + " exists ")
-	}
-	replicacrd, err := crdclient.PgreplicaCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if replicacrd != nil {
-		fmt.Println(replicacrd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
-
-	backupcrd, err := crdclient.PgbackupCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if backupcrd != nil {
-		fmt.Println(backupcrd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
-	upgradecrd, err := crdclient.PgupgradeCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if upgradecrd != nil {
-		fmt.Println(upgradecrd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
-	policycrd, err := crdclient.PgpolicyCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if policycrd != nil {
-		fmt.Println(policycrd.Name + " exists ")
-	}
-	taskcrd, err := crdclient.PgtaskCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if taskcrd != nil {
-		fmt.Println(taskcrd.Name + " exists ")
-	}
-
-	ingestcrd, err := crdclient.PgingestCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if ingestcrd != nil {
-		fmt.Println(ingestcrd.Name + " exists ")
-	}
-
-	*/
-
 	// make a new config for our extension's API group, using the first config as a baseline
 	crdClient, crdScheme, err := crdclient.NewClient(config)
 	if err != nil {

@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 const AffinityInOperator = "In"
@@ -125,8 +126,9 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		log.Error(err.Error())
 		return err
 	}
-	deploymentDocString := primaryDoc.String()
-	log.Debug(deploymentDocString)
+
+	//a form of debugging
+	operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)

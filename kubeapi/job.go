@@ -84,9 +84,14 @@ func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) err
 	log.Debug("deleting Jobs with selector=" + selector + " in namespace " + namespace)
 
 	//delete the job
+	delOptions := meta_v1.DeleteOptions{}
+	var delProp meta_v1.DeletionPropagation
+	delProp = meta_v1.DeletePropagationBackground
+	delOptions.PropagationPolicy = &delProp
+
 	lo := meta_v1.ListOptions{LabelSelector: selector}
 
-	err := clientset.Batch().Jobs(namespace).DeleteCollection(&meta_v1.DeleteOptions{}, lo)
+	err := clientset.Batch().Jobs(namespace).DeleteCollection(&delOptions, lo)
 	if err != nil {
 		log.Error("error deleting Jobs " + selector + err.Error())
 		return err

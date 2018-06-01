@@ -30,6 +30,7 @@ import (
 type rmdatajobTemplateFields struct {
 	Name            string
 	PvcName         string
+	ClusterName     string
 	COImagePrefix   string
 	COImageTag      string
 	SecurityContext string
@@ -50,6 +51,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 
 		jobFields := rmdatajobTemplateFields{
 			Name:            task.Spec.Name + "-" + k,
+			ClusterName:     task.Spec.Name,
 			PvcName:         pvcName,
 			COImagePrefix:   operator.COImagePrefix,
 			COImageTag:      operator.COImageTag,
