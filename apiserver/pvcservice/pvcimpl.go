@@ -51,7 +51,7 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 	pvcList := make([]string, 1)
 
 	if pvcName == "all" {
-		selector := "pgremove=true"
+		selector := util.LABEL_PGREMOVE + "=true"
 
 		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
@@ -140,7 +140,7 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	timeout := time.Duration(6 * time.Second)
-	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
+	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + util.LABEL_PVCNAME + "=" + pvcName}
 	podPhase := v1.PodSucceeded
 	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, apiserver.Namespace)
 	if err != nil {

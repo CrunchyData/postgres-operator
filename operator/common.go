@@ -33,9 +33,6 @@ const PVCPath = "/operator-conf/pvc.json"
 const PVCSCPath = "/operator-conf/pvc-storageclass.json"
 const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
 
-const PG_CLUSTER_LABEL = "pg-cluster"
-const AUTOFAIL_LABEL = "autofail"
-
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
 var PgpoolTemplate *template.Template
@@ -85,8 +82,6 @@ func Initialize() {
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)
-	//ReplicadeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
-	//ReplicadeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
 	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
 	CollectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
 	AffinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")

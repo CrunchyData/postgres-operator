@@ -72,7 +72,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	spec.Parameters[request.ClusterName] = request.ClusterName
 	labels := make(map[string]string)
 	labels["target"] = request.Target
-	labels["pg-cluster"] = request.ClusterName
+	labels[util.LABEL_PG_CLUSTER] = request.ClusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -121,7 +121,7 @@ func QueryFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverRespo
 	//get failover targets for this cluster
 	//deployments with --selector=replica=true,pg-cluster=ClusterName
 
-	selector := "replica=true,pg-cluster=" + request.ClusterName
+	selector := util.LABEL_REPLICA + "=true," + util.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {

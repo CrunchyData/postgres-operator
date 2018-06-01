@@ -68,7 +68,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		sel = request.Selector + ",pg-cluster,replica=false"
+		sel = request.Selector + "," + util.LABEL_PG_CLUSTER + ",replica=false"
 	} else {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector is required"
@@ -95,7 +95,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		selector := "pg-cluster=" + cluster.Spec.Name + ",replica=false"
+		selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_REPLICA + "=false"
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -292,7 +292,7 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 	}
 
 	//get the secrets for this cluster
-	selector := "pg-database=" + clusterName
+	selector := util.LABEL_PG_DATABASE + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
 		return info

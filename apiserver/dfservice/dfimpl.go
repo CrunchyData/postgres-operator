@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -125,7 +126,7 @@ func getPrimarySecret(clusterName string) (string, string, error) {
 func getServices(clusterName string) (map[string]string, error) {
 
 	output := make(map[string]string, 0)
-	selector := "pg-cluster=" + clusterName
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -188,7 +189,7 @@ func getPGSize(port, host, databaseName, clusterName string) (string, int, error
 }
 
 func getClaimCapacity(clientset *kubernetes.Clientset, claimname string) string {
-	pvc, found, err := kubeapi.GetPVC(clientset, claimname, "demo")
+	pvc, found, err := kubeapi.GetPVC(clientset, claimname, apiserver.Namespace)
 	if err != nil {
 		return "error"
 	}

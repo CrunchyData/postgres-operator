@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -167,7 +168,7 @@ func DeleteIngest(name string) msgs.DeleteIngestResponse {
 func getJobCounts(ingestName string) (int, int) {
 	var running, completed int
 
-	selector := "ingest=" + ingestName
+	selector := util.LABEL_INGEST + "=" + ingestName
 	fieldselector := "status.phase=Succeeded"
 	pods, err := kubeapi.GetPodsWithBothSelectors(apiserver.Clientset, selector, fieldselector, apiserver.Namespace)
 	if err != nil {

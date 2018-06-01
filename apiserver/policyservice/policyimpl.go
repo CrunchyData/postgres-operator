@@ -161,7 +161,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	}
 
 	//get filtered list of Deployments
-	selector := request.Selector + ",replica=false"
+	selector := request.Selector + "," + util.LABEL_REPLICA + "=false"
 	log.Debug("selector string=[" + selector + "]")
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
