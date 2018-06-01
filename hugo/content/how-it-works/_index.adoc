@@ -5,7 +5,7 @@ draft: false
 ---
 
 :toc:
-v3.0, {docdate}
+v3.1, {docdate}
 
 == Reference Architecture
 

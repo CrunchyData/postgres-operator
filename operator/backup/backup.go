@@ -24,11 +24,10 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	//"io/ioutil"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//	"text/template"
+	"os"
 )
 
 type jobTemplateFields struct {
@@ -86,8 +85,10 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 		log.Error(err.Error())
 		return
 	}
-	jobDocString := doc2.String()
-	log.Debug(jobDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.JobTemplate.Execute(os.Stdout, jobFields)
+	}
 
 	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc2.Bytes(), &newjob)

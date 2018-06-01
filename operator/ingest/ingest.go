@@ -25,6 +25,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 type ingestTemplateFields struct {
@@ -72,8 +73,10 @@ func CreateIngest(namespace string, clientset *kubernetes.Clientset, client *res
 		log.Error(err.Error())
 		return
 	}
-	deploymentDocString := doc2.String()
-	log.Debug(deploymentDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.IngestjobTemplate.Execute(os.Stdout, jobFields)
+	}
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(doc2.Bytes(), &deployment)

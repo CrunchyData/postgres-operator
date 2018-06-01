@@ -17,17 +17,14 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	upgradeoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	upgradeoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
 // PgupgradeController holds the connections for the controller
@@ -40,11 +37,10 @@ type PgupgradeController struct {
 
 // Run starts an pgupgrade resource controller
 func (c *PgupgradeController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgupgrade objects\n")
 
 	_, err := c.watchPgupgrades(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgupgrade resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgupgrade resource: %v", err)
 		return err
 	}
 
@@ -86,7 +82,7 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 // onAdd is called when pgupgrades are added
 func (c *PgupgradeController) onAdd(obj interface{}) {
 	upgrade := obj.(*crv1.Pgupgrade)
-	fmt.Printf("[PgupgradeCONTROLLER] OnAdd %s\n", upgrade.ObjectMeta.SelfLink)
+	log.Debugf("[PgupgradeCONTROLLER] OnAdd %s", upgrade.ObjectMeta.SelfLink)
 
 	if upgrade.Status.State == crv1.PgupgradeStateProcessed {
 		log.Info("pgupgrade " + upgrade.ObjectMeta.Name + " already processed")
@@ -113,9 +109,9 @@ func (c *PgupgradeController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
+		log.Errorf("ERROR updating status: %v", err)
 	} else {
-		fmt.Printf("UPDATED status: %#v\n", upgradeCopy)
+		log.Debugf("UPDATED status: %#v", upgradeCopy)
 	}
 
 	upgradeoperator.AddUpgrade(c.PgupgradeClientset, c.PgupgradeClient, upgradeCopy, upgrade.ObjectMeta.Namespace)
@@ -128,6 +124,6 @@ func (c *PgupgradeController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgupgrade is deleted
 func (c *PgupgradeController) onDelete(obj interface{}) {
 	upgrade := obj.(*crv1.Pgupgrade)
-	fmt.Printf("[PgupgradeCONTROLLER] OnDelete %s\n", upgrade.ObjectMeta.SelfLink)
+	log.Debugf("[PgupgradeCONTROLLER] OnDelete %s", upgrade.ObjectMeta.SelfLink)
 	upgradeoperator.DeleteUpgrade(c.PgupgradeClientset, c.PgupgradeClient, upgrade, upgrade.ObjectMeta.Namespace)
 }

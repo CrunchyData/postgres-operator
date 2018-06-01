@@ -7,7 +7,7 @@ draft: false
 image::crunchy_logo.png[Crunchy Data Logo,width="25%",height="25%", align="center"]
 = PostgreSQL Operator
 
-v2.6, {docdate}
+v3.1, {docdate}
 
 == Documentation
 

@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -40,11 +39,11 @@ type PgbackupController struct {
 
 // Run starts controller
 func (c *PgbackupController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgbackup objects\n")
+	log.Infof("Watch Pgbackup objects")
 
 	_, err := c.watchPgbackups(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgbackup resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgbackup resource: %v", err)
 		return err
 	}
 
@@ -86,7 +85,7 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 // onAdd is called when a pgbackup is added
 func (c *PgbackupController) onAdd(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
-	fmt.Printf("[PgbackupCONTROLLER] OnAdd %s\n", backup.ObjectMeta.SelfLink)
+	log.Infof("[PgbackupCONTROLLER] OnAdd %s", backup.ObjectMeta.SelfLink)
 	if backup.Status.State == crv1.PgbackupStateProcessed {
 		log.Info("pgbackup " + backup.ObjectMeta.Name + " already processed")
 		return
@@ -113,10 +112,10 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
-	} else {
-		fmt.Printf("UPDATED status: %#v\n", backupCopy)
+		log.Errorf("ERROR updating status: %v", err)
 	}
+
+	log.Debugf("UPDATED status: %#v", backupCopy)
 
 	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backupCopy, backup.ObjectMeta.Namespace)
 }
@@ -125,12 +124,10 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
 	//oldExample := oldObj.(*crv1.Pgbackup)
 	//newExample := newObj.(*crv1.Pgbackup)
-	//fmt.Printf("[PgbackupCONTROLLER] OnUpdate oldObj: %s\n", oldExample.ObjectMeta.SelfLink)
-	//fmt.Printf("[PgbackupCONTROLLER] OnUpdate newObj: %s\n", newExample.ObjectMeta.SelfLink)
 }
 
 // onDelete is called when a pgbackup is deleted
 func (c *PgbackupController) onDelete(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
-	fmt.Printf("[PgbackupCONTROLLER] OnDelete %s\n", backup.ObjectMeta.SelfLink)
+	log.Infof("[PgbackupCONTROLLER] OnDelete %s", backup.ObjectMeta.SelfLink)
 }

@@ -197,7 +197,7 @@ func getClaimCapacity(clientset *kubernetes.Clientset, claimname string) string 
 		log.Error("not found")
 		return "not found"
 	}
-	//fmt.Printf("storage cap is %s\n", pvc.Status.Capacity[v1.ResourceStorage])
+	//log.Debugf("storage cap is %s\n", pvc.Status.Capacity[v1.ResourceStorage])
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
 	log.Debugf("storage cap string value %s\n", qty.String())
 

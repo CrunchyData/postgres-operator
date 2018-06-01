@@ -46,7 +46,7 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 	// Watch Example objects
 	_, err := c.watchPgtasks(ctx)
 	if err != nil {
-		log.Errorf("Failed to register watch for Pgtask resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
 		return err
 	}
 
@@ -59,7 +59,6 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 	source := cache.NewListWatchFromClient(
 		c.PgtaskClient,
 		crv1.PgtaskResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -88,7 +87,7 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 // onAdd is called when a pgtask is added
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	log.Errorf("[PgtaskCONTROLLER] OnAdd %s\n", task.ObjectMeta.SelfLink)
+	log.Debugf("[PgtaskCONTROLLER] OnAdd %s", task.ObjectMeta.SelfLink)
 	if task.Status.State == crv1.PgtaskStateProcessed {
 		log.Info("pgtask " + task.ObjectMeta.Name + " already processed")
 		return
@@ -115,24 +114,23 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v\n", err)
+		log.Errorf("ERROR updating status: %v", err)
 	} else {
-		log.Errorf("UPDATED status: %#v\n", taskCopy)
+		log.Debugf("UPDATED status: %#v", taskCopy)
 	}
 
 	//process the incoming task
 	switch task.Spec.TaskType {
 	case crv1.PgtaskFailover:
 		log.Info("failover task added")
-		log.Infof("cluster name is %v\n", task.Spec.Parameters)
-		log.Info("dbname is " + task.Spec.Name)
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
 
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
-		log.Infof("pvc is %v\n", task.Spec.Parameters)
-		log.Info("dbname is " + task.Spec.Name)
 		taskoperator.RemoveData(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskDeleteBackups:
+		log.Info("delete backups task added")
+		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}

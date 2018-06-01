@@ -22,6 +22,8 @@ import (
 	"text/template"
 )
 
+var CRUNCHY_DEBUG bool
+var NAMESPACE string
 var COImagePrefix string
 var COImageTag string
 var CCPImagePrefix string
@@ -70,6 +72,22 @@ func Initialize() {
 	if COImageTag == "" {
 		log.Error("CO_IMAGE_TAG not set, required ")
 		panic("CO_IMAGE_TAG env var not set")
+	}
+
+	tmp := os.Getenv("CRUNCHY_DEBUG")
+	if tmp == "true" {
+		CRUNCHY_DEBUG = true
+		log.Debug("CRUNCHY_DEBUG flag set to true")
+	} else {
+		CRUNCHY_DEBUG = false
+		log.Info("CRUNCHY_DEBUG flag set to false")
+	}
+
+	NAMESPACE = os.Getenv("NAMESPACE")
+	log.Debug("setting NAMESPACE to " + NAMESPACE)
+	if NAMESPACE == "" {
+		log.Error("NAMESPACE env var not set")
+		panic("NAMESPACE env var not set")
 	}
 
 	JobTemplate = util.LoadTemplate(jobPath)

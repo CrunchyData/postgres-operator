@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
+	"os"
 )
 
 type rmdatajobTemplateFields struct {
@@ -65,8 +66,10 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 			log.Error(err.Error())
 			return
 		}
-		jobDocString := doc2.String()
-		log.Debug(jobDocString)
+
+		if operator.CRUNCHY_DEBUG {
+			operator.RmdatajobTemplate.Execute(os.Stdout, jobFields)
+		}
 
 		newjob := v1batch.Job{}
 		err = json.Unmarshal(doc2.Bytes(), &newjob)

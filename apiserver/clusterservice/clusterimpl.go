@@ -821,11 +821,12 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		//proceed with backups removal
 		spec := crv1.PgtaskSpec{}
 		spec.Name = clusterName + "-backups"
-		spec.TaskType = crv1.PgtaskDeleteData
+		spec.TaskType = crv1.PgtaskDeleteBackups
 		spec.StorageSpec = storageSpec
 
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[backupPVCName] = backupPVCName
+		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{

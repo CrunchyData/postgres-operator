@@ -128,7 +128,9 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	}
 
 	//a form of debugging
-	operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+	}
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
@@ -318,8 +320,10 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		log.Error(err.Error())
 		return err
 	}
-	replicaDeploymentDocString := replicaDoc.String()
-	log.Debug(replicaDeploymentDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
+	}
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
@@ -553,8 +557,10 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		log.Error(err.Error())
 		return err
 	}
-	replicaDeploymentDocString := replicaDoc.String()
-	log.Debug(replicaDeploymentDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
+	}
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
