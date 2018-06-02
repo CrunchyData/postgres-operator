@@ -278,7 +278,7 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 
 func getTargetDeployment(clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
 
-	selector := "replica=true,pg-cluster=" + clusterName
+	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + clusterName
 
 	deployments, err := kubeapi.GetDeployments(clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
@@ -315,8 +315,8 @@ func (s *StateMachine) triggerFailover() {
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[s.ClusterName] = s.ClusterName
 	labels := make(map[string]string)
-	labels["target"] = targetDeploy
-	labels["pg-cluster"] = s.ClusterName
+	labels[util.LABEL_TARGET] = targetDeploy
+	labels[util.LABEL_PG_CLUSTER] = s.ClusterName
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   spec.Name,

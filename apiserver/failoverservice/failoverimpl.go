@@ -119,9 +119,9 @@ func QueryFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverRespo
 	log.Debug("query failover called for " + request.ClusterName)
 
 	//get failover targets for this cluster
-	//deployments with --selector=replica=true,pg-cluster=ClusterName
+	//deployments with --selector=primary=false,pg-cluster=ClusterName
 
-	selector := util.LABEL_REPLICA + "=true," + util.LABEL_PG_CLUSTER + "=" + request.ClusterName
+	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {

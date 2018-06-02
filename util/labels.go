@@ -18,6 +18,7 @@ package util
 import ()
 
 // resource labels used by the operator
+const LABEL_NAME = "name"
 const LABEL_OPERATOR = "postgres-operator"
 const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_PG_DATABASE = "pg-database"
@@ -25,6 +26,7 @@ const LABEL_PGBACKUP = "pgbackup"
 const LABEL_AUTOFAIL = "autofail"
 const LABEL_FAILOVER = "failover"
 const LABEL_PRIMARY = "primary"
+const LABEL_TARGET = "target"
 const LABEL_RMDATA = "pgrmdata"
 const LABEL_REPLICA = "replica"
 const LABEL_INGEST = "ingest"
@@ -38,3 +40,4 @@ const LABEL_ARCHIVE_TIMEOUT = "archive-timeout"
 const LABEL_CUSTOM_CONFIG = "custom-config"
 const LABEL_NODE_LABEL_KEY = "NodeLabelKey"
 const LABEL_NODE_LABEL_VALUE = "NodeLabelValue"
+const LABEL_REPLICA_NAME = "replica-name"

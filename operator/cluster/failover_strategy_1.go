@@ -46,7 +46,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	var pod *v1.Pod
 	var err error
-	target := task.ObjectMeta.Labels["target"]
+	target := task.ObjectMeta.Labels[util.LABEL_TARGET]
 
 	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
 
@@ -169,12 +169,11 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 		return err
 	}
 
-	//set replica=false on the deployment
+	//set primary=true on the deployment
 	//set name=clustername on the deployment
 	newLabels := make(map[string]string)
-	newLabels["name"] = clusterName
-	newLabels["replica"] = "false"
-	newLabels["primary"] = "true"
+	newLabels[util.LABEL_NAME] = clusterName
+	newLabels[util.LABEL_PRIMARY] = "true"
 
 	err = updateLabels(namespace, clientset, targetDeployment, target, newLabels)
 	if err != nil {
