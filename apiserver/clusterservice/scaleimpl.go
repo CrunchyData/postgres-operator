@@ -103,8 +103,8 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 			response.Status.Msg = nodeLabel + " node label value was not valid .. check node labels for correct values to specify"
 			return response
 		}
-		spec.UserLabels["NodeLabelKey"] = parts[0]
-		spec.UserLabels["NodeLabelValue"] = parts[1]
+		spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
 
 	}
 
@@ -125,8 +125,8 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 	for i := 0; i < rc; i++ {
 
 		uniqueName := util.RandStringBytesRmndr(4)
-		labels["name"] = cluster.Spec.Name + "-" + uniqueName
-		spec.Name = labels["name"]
+		labels[util.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
+		spec.Name = labels[util.LABEL_NAME]
 
 		//copy cluster info over to replica to avoid a CRD read later
 		//spec.Strategy = cluster.Spec.Strategy
@@ -141,7 +141,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 
 		newInstance := &crv1.Pgreplica{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name:   labels["name"],
+				Name:   labels[util.LABEL_NAME],
 				Labels: labels,
 			},
 			Spec: spec,
@@ -162,7 +162,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 			log.Error(" in creating Pgreplica instance" + err.Error())
 		}
 
-		response.Results = append(response.Results, "created Pgreplica "+labels["name"])
+		response.Results = append(response.Results, "created Pgreplica "+labels[util.LABEL_NAME])
 	}
 
 	/**
