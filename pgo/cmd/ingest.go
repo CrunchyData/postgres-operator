@@ -101,7 +101,7 @@ func deleteIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingestdelete/" + v
+		url := APIServerURL + "/ingestdelete/" + v + "?version=" + ClientVersion
 		log.Debug("deleteIngest called...[" + url + "]")
 
 		action := "GET"
@@ -130,17 +130,16 @@ func deleteIngest(args []string) {
 			return
 		}
 
-		if len(response.Results) == 0 {
-			fmt.Println("no ingests found")
-			return
-		}
-
 		if response.Status.Code == msgs.Ok {
+			if len(response.Results) == 0 {
+				fmt.Println("no ingests found")
+				return
+			}
 			for k := range response.Results {
 				fmt.Println("deleted ingest " + response.Results[k])
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 			os.Exit(2)
 		}
 
@@ -153,7 +152,7 @@ func showIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingest/" + v
+		url := APIServerURL + "/ingest/" + v + "?version=" + ClientVersion
 		log.Debug("showIngest called...[" + url + "]")
 
 		action := "GET"
@@ -181,6 +180,11 @@ func showIngest(args []string) {
 			log.Error(err)
 			log.Println(err)
 			return
+		}
+
+		if response.Status.Code == msgs.Error {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if len(response.Details) == 0 {

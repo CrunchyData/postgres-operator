@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	//msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 	//"strconv"
@@ -37,6 +37,10 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -47,7 +51,13 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := DfCluster(clustername, selector)
+	var resp msgs.DfResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.DfResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = DfCluster(clustername, selector)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }

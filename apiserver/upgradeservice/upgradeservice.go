@@ -56,7 +56,13 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := CreateUpgrade(&request)
+	var resp msgs.CreateUpgradeResponse
+	if request.ClientVersion != apiserver.VERSION {
+		resp = msgs.CreateUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = CreateUpgrade(&request)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -73,6 +79,10 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("upgradeservice.ShowUpgradeHandler %v\n", vars)
 
 	upgradename := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -84,7 +94,14 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := ShowUpgrade(upgradename)
+	var resp msgs.ShowUpgradeResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.ShowUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+		resp = ShowUpgrade(upgradename)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -97,6 +114,10 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("upgradeservice.DeleteUpgradeHandler %v\n", vars)
 
 	upgradename := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -108,7 +129,15 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := DeleteUpgrade(upgradename)
+	var resp msgs.DeleteUpgradeResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.DeleteUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+
+		resp = DeleteUpgrade(upgradename)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }

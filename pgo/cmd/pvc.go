@@ -42,7 +42,7 @@ func showPVC(args []string) {
 
 func printPVC(pvcName, pvcRoot string) {
 
-	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot
+	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + ClientVersion
 	log.Debug("showPolicy called...[" + url + "]")
 
 	action := "GET"
@@ -69,16 +69,17 @@ func printPVC(pvcName, pvcRoot string) {
 		log.Println(err)
 		return
 	}
+
+	if response.Status.Code == apiservermsgs.Error {
+		log.Error(RED(response.Status.Msg))
+		return
+	}
+
 	if len(response.Results) == 0 {
 		fmt.Println("no PVC Results")
 		return
 	}
 	log.Debugf("response = %v\n", response)
-
-	if response.Status.Code == apiservermsgs.Error {
-		log.Error(response.Status.Msg)
-		return
-	}
 
 	if pvcName == "all" {
 		fmt.Println("All Operator Labeled PVCs")

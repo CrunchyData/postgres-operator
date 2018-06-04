@@ -82,6 +82,7 @@ func createLoad(args []string) {
 	request.Selector = Selector
 	request.Policies = PoliciesFlag
 	request.Args = args
+	request.ClientVersion = ClientVersion
 
 	//make the request
 
@@ -119,8 +120,8 @@ func createLoad(args []string) {
 
 	//get the response
 	if response.Status.Code == msgs.Error {
-		log.Error("error in loading...")
-		log.Error(response.Status.Msg)
+		log.Error(RED("error in loading..."))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 

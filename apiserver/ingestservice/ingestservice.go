@@ -51,6 +51,11 @@ func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 	ingestName := vars["name"]
 
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -61,7 +66,15 @@ func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := ShowIngest(ingestName)
+	var resp msgs.ShowIngestResponse
+
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.ShowIngestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+		resp = ShowIngest(ingestName)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -71,6 +84,10 @@ func DeleteIngestHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("ingestservice.DeleteIngestHandler %v\n", vars)
 
 	ingestName := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -82,7 +99,16 @@ func DeleteIngestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := DeleteIngest(ingestName)
+	var resp msgs.DeleteIngestResponse
+
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.DeleteIngestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+
+		resp = DeleteIngest(ingestName)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }

@@ -37,6 +37,9 @@ import (
 // pgouserPath ...
 const pgouserPath = "/config/pgouser"
 
+const VERSION = "3.1"
+const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
+
 // RESTClient ...
 var RESTClient *rest.RESTClient
 

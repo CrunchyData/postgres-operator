@@ -41,6 +41,7 @@ type CreateClusterRequest struct {
 	StorageConfig        string
 	ReplicaStorageConfig string
 	ContainerResources   string
+	ClientVersion        string
 }
 
 // CreateClusterResponse ...

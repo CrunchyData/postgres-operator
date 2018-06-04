@@ -26,7 +26,8 @@ type CreateFailoverResponse struct {
 
 // CreateFailoverRequest ...
 type CreateFailoverRequest struct {
-	ClusterName string
-	Target      string
-	Query       bool
+	ClusterName   string
+	Target        string
+	Query         bool
+	ClientVersion string
 }

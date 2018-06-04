@@ -38,7 +38,7 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
+		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + ClientVersion
 
 		log.Debug("delete cluster called [" + url + "]")
 
@@ -73,7 +73,7 @@ func deleteCluster(args []string) {
 				fmt.Println(result)
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 		}
 
 	}
@@ -93,7 +93,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector
+		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + ClientVersion
 
 		log.Debug("show cluster called [" + url + "]")
 
@@ -134,6 +134,11 @@ func showCluster(args []string) {
 			}
 			fmt.Println(string(b))
 			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if len(response.Results) == 0 {
@@ -232,6 +237,7 @@ func createCluster(args []string) {
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
 	r.ContainerResources = ContainerResources
+	r.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"
@@ -270,7 +276,7 @@ func createCluster(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 

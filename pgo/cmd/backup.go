@@ -64,7 +64,7 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v
+		url := APIServerURL + "/backups/" + v + "?version=" + ClientVersion
 
 		log.Debug("show backup called [" + url + "]")
 
@@ -94,6 +94,11 @@ func showBackup(args []string) {
 			log.Error(err)
 			log.Println(err)
 			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if len(response.BackupList.Items) == 0 {
@@ -133,7 +138,7 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		url := APIServerURL + "/backupsdelete/" + v
+		url := APIServerURL + "/backupsdelete/" + v + "?version=" + ClientVersion
 
 		log.Debug("delete backup called [" + url + "]")
 
@@ -166,17 +171,16 @@ func deleteBackup(args []string) {
 			return
 		}
 
-		if len(response.Results) == 0 {
-			fmt.Println("no backups found")
-			return
-		}
-
 		if response.Status.Code == msgs.Ok {
+			if len(response.Results) == 0 {
+				fmt.Println("no backups found")
+				return
+			}
 			for k := range response.Results {
 				fmt.Println("deleted backup " + response.Results[k])
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 			os.Exit(2)
 		}
 

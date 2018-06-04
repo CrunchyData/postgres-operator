@@ -74,6 +74,7 @@ func createFailover(args []string) {
 	request.ClusterName = args[0]
 	request.Query = Query
 	request.Target = Target
+	request.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -124,8 +125,7 @@ func createFailover(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		//fmt.Printf("%v\n", response)
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 

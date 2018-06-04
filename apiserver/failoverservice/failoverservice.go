@@ -42,10 +42,15 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.CreateFailoverResponse
-	if request.Query {
-		resp = QueryFailover(&request)
+	if request.ClientVersion != apiserver.VERSION {
+		resp = msgs.CreateFailoverResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
-		resp = CreateFailover(&request)
+		if request.Query {
+			resp = QueryFailover(&request)
+		} else {
+			resp = CreateFailover(&request)
+		}
 	}
 
 	json.NewEncoder(w).Encode(resp)
