@@ -62,6 +62,8 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
+	//remove the pgreplica CRD for the promoted replica
+	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
 
 	//scale up the replicas to replace the failover target
 	replaceReplica(client, &cluster)
