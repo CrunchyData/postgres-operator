@@ -143,7 +143,7 @@ or essentially cloning a database with an existing backup archive.
 
 For example, to restore a database from a backup archive:
 ....
-pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster --secret-from=mycluster
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster-backup --secret-from=mycluster
 ....
 
 This will create a new database called *restoredb* based on the
