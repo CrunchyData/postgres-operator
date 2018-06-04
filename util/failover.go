@@ -86,7 +86,7 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	for _, v := range pods.Items {
 		pod = &v
 	}
-	if len(pod.Spec.Containers) != 1 {
+	if len(pod.Spec.Containers) != 1 && pod.Labels["crunchy_collect"] == "false" {
 		return pod, errors.New("could not find a container in the pod")
 	}
 
