@@ -310,11 +310,11 @@ func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClien
 		return errors.New("could not determine which pod to failover to")
 	}
 
-	for _, v := range pods.Items {
-		pod = v
-	}
-	if len(pod.Spec.Containers) != 1 {
-		return errors.New("could not find a container in the pod")
+	pod = pods.Items[0]
+	found := validateDBContainer(&pod)
+	if !found {
+		log.Error("could not find a database container in the target pod, can not failover")
+		return errors.New("could not find database container in target pod")
 	}
 
 	command := make([]string, 1)
@@ -326,7 +326,7 @@ func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClien
 		Namespace(namespace).
 		SubResource("exec")
 	req.VersionedParams(&v1.PodExecOptions{
-		Container: pod.Spec.Containers[0].Name,
+		Container: "database",
 		Command:   command,
 		Stdout:    true,
 		Stderr:    true,
@@ -357,4 +357,16 @@ func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClien
 	log.Debug("promote output [" + execOut.String() + "]")
 
 	return err
+
+}
+func validateDBContainer(pod *v1.Pod) bool {
+	found := false
+
+	for _, c := range pod.Spec.Containers {
+		if c.Name == "database" {
+			return true
+		}
+	}
+	return found
+
 }

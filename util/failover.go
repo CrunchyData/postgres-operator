@@ -66,7 +66,7 @@ func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace strin
 	return &pod, &deployment, err
 }
 
-// GetPodName from a deployment name
+// GetPod determines the best target to fail to
 func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (*v1.Pod, error) {
 
 	var err error
@@ -86,8 +86,18 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	for _, v := range pods.Items {
 		pod = &v
 	}
-	if len(pod.Spec.Containers) != 1 {
-		return pod, errors.New("could not find a container in the pod")
+
+	found := false
+
+	//make sure the pod has a database container it it
+	for _, c := range pod.Spec.Containers {
+		if c.Name == "database" {
+			found = true
+		}
+	}
+
+	if !found {
+		return pod, errors.New("could not find a database container in the pod")
 	}
 
 	return pod, err
