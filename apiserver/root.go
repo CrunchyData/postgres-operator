@@ -21,6 +21,7 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -82,13 +83,13 @@ var Credentials map[string]CredentialDetail
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
-var Pgo PgoConfig
+var Pgo config.PgoConfig
 
 func Initialize() {
 
-	Pgo.getConf()
+	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	Pgo.validate()
+	Pgo.Validate()
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {

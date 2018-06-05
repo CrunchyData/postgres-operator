@@ -82,6 +82,10 @@
                         "mountPath": "/operator-conf",
                         "name": "operator-conf",
                         "readOnly": true
+                    }, {
+                        "mountPath": "/config",
+                        "name": "apiserver-conf",
+                        "readOnly": true
                     }]
                 }],
                 "volumes": [{

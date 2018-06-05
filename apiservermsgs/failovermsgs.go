@@ -17,10 +17,24 @@ limitations under the License.
 
 import ()
 
+type FailoverTargetSpec struct {
+	Name        string
+	ReadyStatus string
+	Node        string
+	RepStatus   string
+}
+
+// QueryFailoverResponse ...
+type QueryFailoverResponse struct {
+	Results []string
+	Targets []FailoverTargetSpec
+	Status
+}
+
 // CreateFailoverResponse ...
 type CreateFailoverResponse struct {
 	Results []string
-	Targets []string
+	Targets string
 	Status
 }
 
@@ -28,6 +42,11 @@ type CreateFailoverResponse struct {
 type CreateFailoverRequest struct {
 	ClusterName   string
 	Target        string
-	Query         bool
+	ClientVersion string
+}
+
+// QueryFailoverRequest ...
+type QueryFailoverRequest struct {
+	ClusterName   string
 	ClientVersion string
 }

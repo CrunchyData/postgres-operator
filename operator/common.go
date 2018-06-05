@@ -17,6 +17,7 @@ package operator
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
 	"os"
 	"text/template"
@@ -52,6 +53,8 @@ var CollectTemplate1 *template.Template
 var DeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1Shared *template.Template
+
+var Pgo config.PgoConfig
 
 func Initialize() {
 	CCPImagePrefix = os.Getenv("CCP_IMAGE_PREFIX")
@@ -106,4 +109,7 @@ func Initialize() {
 	ContainerResourcesTemplate1 = util.LoadTemplate("/operator-conf/container-resources.json")
 	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
 
+	Pgo.GetConf()
+	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
+	Pgo.Validate()
 }

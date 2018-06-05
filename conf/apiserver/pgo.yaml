@@ -43,6 +43,7 @@ ContainerResources:
     LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
+  AutofailSleepSeconds:  9
   Audit:  false
   Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json

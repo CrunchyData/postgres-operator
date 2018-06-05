@@ -19,14 +19,17 @@ package cluster
 */
 
 import (
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"strconv"
 	"time"
 )
 
@@ -72,11 +75,12 @@ func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RE
 					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, ns)
 				} else {
 					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
+					secs, _ := strconv.Atoi(operator.Pgo.Pgo.AutofailSleepSeconds)
 					sm := StateMachine{
 						Clientset:    clientset,
 						RESTClient:   restclient,
 						Namespace:    ns,
-						SleepSeconds: 9,
+						SleepSeconds: secs,
 						ClusterName:  clusterName,
 					}
 
@@ -289,15 +293,47 @@ func getTargetDeployment(clientset *kubernetes.Clientset, clusterName, ns string
 		return "", err
 	}
 
-	//for now, just return the first replica, in the future
-	//return the most up to date
+	//return a deployment target that has a Ready database
 	log.Debugf("deps len %d\n", len(deployments.Items))
+	found := false
 	for _, dep := range deployments.Items {
-		log.Debug("found " + dep.Name)
-		return dep.Name, err
+		ready := getPodStatus(clientset, dep.Name, ns)
+		if ready {
+			log.Debug("autofail: found ready deployment " + dep.Name)
+			found = true
+			return dep.Name, err
+		} else {
+			log.Debug("autofail: found not ready deployment " + dep.Name)
+		}
+	}
+	if !found {
+		log.Error("could not find a ready pod in autofailover for cluster " + clusterName)
+		return "", errors.New("could not find a ready pod to failover to")
 	}
 
 	return "", err
+
+}
+
+func getPodStatus(clientset *kubernetes.Clientset, depname, ns string) bool {
+	//get pods with replica-name=deployName
+	pods, err := kubeapi.GetPods(clientset, util.LABEL_REPLICA_NAME+"="+depname, ns)
+	if err != nil {
+		return false
+	}
+
+	p := pods.Items[0]
+	for _, c := range p.Status.ContainerStatuses {
+		if c.Name == "database" {
+			if c.Ready {
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+
+	return false
 
 }
 
