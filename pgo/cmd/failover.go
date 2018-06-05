@@ -162,7 +162,7 @@ func queryFailover(args []string) {
 		if len(response.Targets) > 0 {
 			fmt.Println("Failover targets include:")
 			for i := 0; i < len(response.Targets); i++ {
-				fmt.Println("\t" + response.Targets[i].Name + " (" + response.Targets[i].ReadyStatus + ")")
+				fmt.Println("\t" + response.Targets[i].Name + " (" + response.Targets[i].ReadyStatus + ") (" + response.Targets[i].Node + ")")
 			}
 		}
 		for k := range response.Results {
