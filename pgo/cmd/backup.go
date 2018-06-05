@@ -123,8 +123,9 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Creation:\t"+result.ObjectMeta.CreationTimestamp.String())
 	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
