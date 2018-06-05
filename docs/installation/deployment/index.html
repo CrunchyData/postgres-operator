@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40" />
+<meta name="generator" content="Hugo 0.40.3" />
 
 <title>Deployment :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -228,14 +228,14 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#_verify_operator_status">Verify Operator Status</a></li>
-<li><a href="#_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</a></li>
+<li><a href="#_configure_pgo_client">Configure <strong>pgo</strong> Client</a></li>
 <li><a href="#_verify_pgo_client">Verify pgo Client</a></li>
 <li><a href="#_storage_configuration">Storage Configuration</a></li>
 <li><a href="#_next_steps">Next Steps</a></li>
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-05-30</p>
+<p>v3.0, 2018-06-04</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -315,7 +315,7 @@ export CO_CMD=kubectl</pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</h2>
+<h2 id="_configure_pgo_client">Configure <strong>pgo</strong> Client</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The pgo command line client requires TLS for securing the connection to the operator&#8217;s REST API.  This configuration is performed as follows -</p>
