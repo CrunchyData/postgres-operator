@@ -393,6 +393,18 @@ no longer be a requirement for the push gateway to be deployed.
 
 See link:https://github.com/CrunchyData/crunchy-containers/blob/master/docs/examples.adoc#metrics-collection[the crunchy-containers Metrics example] for more details on setting up the *crunchy-metrics* solution.
 
+=== Manual Failover
+
+With manual failover some key features include:
+ * when you perform a failover, a new replica is created to replace the
+ replica that was promoted to even out the cluster to the original 
+ number of replicas
+ * when you perform a failover, the promoted replica is removed from the pgreplica CRD to represent the current *truth*
+
+The *pgo failover --query* command will return a list of replica
+targets which you can select from.  That list include the *Ready* status
+of the database as well as the Kube node name it is running on.
+
 === Auto Failover
 
 Starting with release 3.1, there is an *auto* failover mechanism
@@ -424,6 +436,8 @@ The logic of auto failover works like this:
  * if the timer expires and the state is still *Not Ready* then the manual
  failover logic is executed for this cluster which causes a promotion of
  a replica to primary, and also creates a replacement replica 
+ * only replica targets with a status of *Ready* will be used to select
+ the target to promote
 
 The readiness probe settings are defined in the following template:
 ....
