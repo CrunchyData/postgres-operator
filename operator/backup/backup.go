@@ -56,11 +56,15 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 
 	//create the PVC if necessary
 	var pvcName string
-	pvcName, err = pvc.CreatePVC(clientset, &job.Spec.StorageSpec, job.Spec.Name+"-backup", job.Spec.BackupHost, namespace)
-	if err != nil {
-		log.Error(err.Error())
+	if job.Spec.BackupPVC != "" {
+		pvcName = job.Spec.BackupPVC
 	} else {
-		log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
+		pvcName, err = pvc.CreatePVC(clientset, &job.Spec.StorageSpec, job.Spec.Name+"-backup", job.Spec.BackupHost, namespace)
+		if err != nil {
+			log.Error(err.Error())
+		} else {
+			log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
+		}
 	}
 
 	//update the pvc name in the CRD

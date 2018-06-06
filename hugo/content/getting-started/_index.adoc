@@ -127,7 +127,8 @@ pgo create cluster testcluster --autofail
 or watch for *NotReady* events on this cluster, and when those occur
 to create a failover state machine which acts as a timer for the cluster.
 If the timer expires, then a failover is triggered on the cluster turning
-one of the cluster replica pods into the replacement primary pod.
+one of the cluster replica pods into the replacement primary pod.  See
+the How It Works documentation for more details on *auto failover*.
 
 === pgo backup
 
@@ -174,6 +175,14 @@ to proceed because this action will delete any existing backup job
 for this cluster that might exist.  The backup files will still
 be left intact but the actual Kubernetes Job will be removed prior
 to creating a new Job with the same name.
+
+You can override the PVC used by the backup job with the following:
+....
+pgo backup mycluster --pvc-name=myremotepvc
+....
+
+This might be useful for special backup cases, perhaps to create
+a backup on a disaster recovery PVC.
 
 === pgo delete backup
 

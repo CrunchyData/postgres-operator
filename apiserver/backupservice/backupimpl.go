@@ -172,6 +172,10 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			resp.Results = append(resp.Results, msg)
 			break
 		}
+		if request.PVCName != "" {
+			log.Debug("jeff----> backuppvc is " + request.PVCName)
+			newInstance.Spec.BackupPVC = request.PVCName
+		}
 
 		err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, apiserver.Namespace)
 		if err != nil {

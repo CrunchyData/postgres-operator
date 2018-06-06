@@ -29,6 +29,8 @@ import (
 	"os"
 )
 
+var PVCName string
+
 var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "perform a Backup",
@@ -53,6 +55,7 @@ func init() {
 	RootCmd.AddCommand(backupCmd)
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default backup PVC ")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
 	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
 
@@ -196,6 +199,7 @@ func createBackup(args []string) {
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
 
 	jsonValue, _ := json.Marshal(request)
