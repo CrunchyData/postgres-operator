@@ -17,14 +17,13 @@ limitations under the License.
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/client-go/kubernetes"
 )
 
 func Status() msgs.StatusResponse {
@@ -56,7 +55,7 @@ func getStatus(results *msgs.StatusDetail) error {
 }
 
 func getOperatorStart() string {
-	pods, err := kubeapi.GetPods(apiserver.Clientset, "name=postgres-operator", apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, "name="+util.LABEL_OPERATOR, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -76,7 +75,7 @@ func getOperatorStart() string {
 
 func getNumBackups() int {
 	//count the number of Jobs with pgbackup=true and completionTime not nil
-	jobs, err := kubeapi.GetJobs(apiserver.Clientset, "pgbackup", apiserver.Namespace)
+	jobs, err := kubeapi.GetJobs(apiserver.Clientset, util.LABEL_PGBACKUP, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -86,7 +85,7 @@ func getNumBackups() int {
 
 func getNumClaims() int {
 	//count number of PVCs with pgremove=true
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, "pgremove", apiserver.Namespace)
+	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -96,7 +95,7 @@ func getNumClaims() int {
 
 func getNumDatabases() int {
 	//count number of Deployments with pg-cluster
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "pg-cluster", apiserver.Namespace)
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, util.LABEL_PG_CLUSTER, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -106,7 +105,7 @@ func getNumDatabases() int {
 
 func getVolumeCap() string {
 	//sum all PVCs storage capacity
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, "pgremove", apiserver.Namespace)
+	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -126,7 +125,7 @@ func getVolumeCap() string {
 func getDBTags() map[string]int {
 	results := make(map[string]int)
 	//count all pods with pg-cluster, sum by image tag value
-	pods, err := kubeapi.GetPods(apiserver.Clientset, "pg-cluster", apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return results
@@ -144,7 +143,7 @@ func getNotReady() []string {
 	//show all pods with pg-cluster that have status.Phase of not Running
 	agg := make([]string, 0)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, "pg-cluster", apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return agg

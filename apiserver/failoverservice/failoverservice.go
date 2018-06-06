@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -42,10 +43,45 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.CreateFailoverResponse
-	if request.Query {
-		resp = QueryFailover(&request)
+	if request.ClientVersion != apiserver.VERSION {
+		resp = msgs.CreateFailoverResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
 		resp = CreateFailover(&request)
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+// QueryFailoverHandler ...
+// pgo failover mycluster --query
+func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	log.Debug("failoverservice.QueryFailoverHandler called")
+	vars := mux.Vars(r)
+	name := vars["name"]
+
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	err = apiserver.Authn(apiserver.CREATE_FAILOVER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+
+	var resp msgs.QueryFailoverResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.QueryFailoverResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = QueryFailover(name)
 	}
 
 	json.NewEncoder(w).Encode(resp)

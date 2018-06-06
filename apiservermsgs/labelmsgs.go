@@ -25,6 +25,7 @@ type LabelRequest struct {
 	LabelCmdLabel string
 	DryRun        bool
 	DeleteLabel   bool
+	ClientVersion string
 }
 
 // LabelResponse ...

@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -40,11 +39,11 @@ type PgclusterController struct {
 
 // Run starts an pgcluster resource controller
 func (c *PgclusterController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgcluster objects\n")
+	log.Info("Watch Pgcluster objects")
 
 	_, err := c.watchPgclusters(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgcluster resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgcluster resource: %v", err)
 		return err
 	}
 
@@ -86,7 +85,7 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 // onAdd is called when a pgcluster is added
 func (c *PgclusterController) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	fmt.Printf("[PgclusterCONTROLLER] OnAdd %s\n", cluster.ObjectMeta.SelfLink)
+	log.Infof("[PgclusterCONTROLLER] OnAdd %s", cluster.ObjectMeta.SelfLink)
 	if cluster.Status.State == crv1.PgclusterStateProcessed {
 		log.Info("pgcluster " + cluster.ObjectMeta.Name + " already processed")
 		return
@@ -112,10 +111,10 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
-	} else {
-		fmt.Printf("UPDATED status: %#v\n", clusterCopy)
+		log.Errorf("ERROR updating status: %v", err)
 	}
+
+	log.Debugf("UPDATED status: %#v", clusterCopy)
 
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
@@ -131,6 +130,6 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	fmt.Printf("[PgclusterCONTROLLER] OnDelete %s\n", cluster.ObjectMeta.SelfLink)
+	log.Infof("[PgclusterCONTROLLER] OnDelete %s", cluster.ObjectMeta.SelfLink)
 	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }

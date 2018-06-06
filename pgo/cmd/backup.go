@@ -23,10 +23,13 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
 )
+
+var PVCName string
 
 var backupCmd = &cobra.Command{
 	Use:   "backup",
@@ -38,7 +41,11 @@ var backupCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
 		} else {
-			createBackup(args)
+			if util.AskForConfirmation(NoPrompt, "") {
+				createBackup(args)
+			} else {
+				fmt.Println("Aborting...")
+			}
 		}
 
 	},
@@ -48,6 +55,7 @@ func init() {
 	RootCmd.AddCommand(backupCmd)
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default backup PVC ")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
 	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
 
@@ -59,7 +67,7 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v
+		url := APIServerURL + "/backups/" + v + "?version=" + ClientVersion
 
 		log.Debug("show backup called [" + url + "]")
 
@@ -91,6 +99,11 @@ func showBackup(args []string) {
 			return
 		}
 
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
+		}
+
 		if len(response.BackupList.Items) == 0 {
 			fmt.Println("no backups found")
 			return
@@ -113,8 +126,9 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Creation:\t"+result.ObjectMeta.CreationTimestamp.String())
 	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
@@ -128,7 +142,7 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		url := APIServerURL + "/backupsdelete/" + v
+		url := APIServerURL + "/backupsdelete/" + v + "?version=" + ClientVersion
 
 		log.Debug("delete backup called [" + url + "]")
 
@@ -161,17 +175,16 @@ func deleteBackup(args []string) {
 			return
 		}
 
-		if len(response.Results) == 0 {
-			fmt.Println("no backups found")
-			return
-		}
-
 		if response.Status.Code == msgs.Ok {
+			if len(response.Results) == 0 {
+				fmt.Println("no backups found")
+				return
+			}
 			for k := range response.Results {
 				fmt.Println("deleted backup " + response.Results[k])
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 			os.Exit(2)
 		}
 
@@ -186,6 +199,7 @@ func createBackup(args []string) {
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
 
 	jsonValue, _ := json.Marshal(request)

@@ -31,6 +31,7 @@ type UserRequest struct {
 	Expired               string
 	UpdatePasswords       bool
 	ManagedUser           bool
+	ClientVersion         string
 }
 
 // DeleteUserResponse ...
@@ -52,6 +53,7 @@ type CreateUserRequest struct {
 	ManagedUser     bool
 	UserDBAccess    string
 	PasswordAgeDays int
+	ClientVersion   string
 }
 
 // CreateUserResponse ...

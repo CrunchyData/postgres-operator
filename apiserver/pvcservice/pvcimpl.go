@@ -31,27 +31,19 @@ import (
 
 type lspvcTemplateFields struct {
 	Name          string
+	ClusterName   string
 	COImagePrefix string
 	COImageTag    string
 	BackupRoot    string
 	PVCName       string
 }
 
-//var lspvcTemplate *template.Template
-
-/**
-func Initialize() {
-	lspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
-
-}
-*/
-
 // ShowPVC ...
 func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 	pvcList := make([]string, 1)
 
 	if pvcName == "all" {
-		selector := "pgremove=true"
+		selector := util.LABEL_PGREMOVE + "=true"
 
 		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
@@ -71,14 +63,14 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	log.Debug("\nPVC %s\n", pvc.Name+" is found")
-	pvcList, err = printPVCListing(pvc.Name, PVCRoot)
+	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot)
 
 	return pvcList, err
 
 }
 
 // printPVCListing ...
-func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
+func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	newlines := make([]string, 1)
 	var err error
 	var doc2 bytes.Buffer
@@ -112,6 +104,7 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 
 	pvcFields := lspvcTemplateFields{
 		Name:          podName,
+		ClusterName:   clusterName,
 		COImagePrefix: apiserver.Pgo.Pgo.COImagePrefix,
 		COImageTag:    apiserver.Pgo.Pgo.COImageTag,
 		BackupRoot:    pvcRoot,
@@ -140,7 +133,7 @@ func printPVCListing(pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	timeout := time.Duration(6 * time.Second)
-	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc,pvcname=" + pvcName}
+	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + util.LABEL_PVCNAME + "=" + pvcName}
 	podPhase := v1.PodSucceeded
 	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, apiserver.Namespace)
 	if err != nil {

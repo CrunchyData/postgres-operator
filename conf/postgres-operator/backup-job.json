@@ -11,7 +11,7 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgbackup": "true",
-                    "pg-database": "{{.Name}}"
+                    "pg-cluster": "{{.Name}}"
                 }
             },
             "spec": {

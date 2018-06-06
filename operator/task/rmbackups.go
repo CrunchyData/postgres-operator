@@ -1,7 +1,4 @@
-// Package cluster holds the cluster CRD logic and definitions
-// A cluster is comprised of a primary service, replica service,
-// primary deployment, and replica deployment
-package cluster
+package task
 
 /*
  Copyright 2017-2018 Crunchy Data Solutions, Inc.
@@ -23,26 +20,16 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes"
 )
 
-// DeletePgreplicas
-func DeletePgreplicas(restclient *rest.RESTClient, clusterName, namespace string) {
+// RemoveBackups ...
+func RemoveBackups(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
-	replicaList := crv1.PgreplicaList{}
+	//delete any backup jobs for this cluster
+	//kubectl delete job --selector=pg-cluster=clustername
 
-	//get a list of pgreplicas for this cluster
-	err := kubeapi.GetpgreplicasBySelector(restclient,
-		&replicaList, util.LABEL_PG_CLUSTER+"="+clusterName,
-		namespace)
-	if err != nil {
-		return
-	}
-
-	log.Debug("pgreplicas found len is %d\n", len(replicaList.Items))
-
-	for _, r := range replicaList.Items {
-		err = kubeapi.Deletepgreplica(restclient, r.Spec.Name, namespace)
-	}
+	log.Debug("deleting backup jobs with selector=" + util.LABEL_PG_CLUSTER + "=" + task.Spec.Parameters[util.LABEL_PG_CLUSTER])
+	kubeapi.DeleteJobs(clientset, util.LABEL_PG_CLUSTER+"="+task.Spec.Parameters[util.LABEL_PG_CLUSTER], namespace)
 
 }

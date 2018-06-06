@@ -18,6 +18,8 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -34,11 +36,10 @@ type PodController struct {
 
 // Run starts an pod resource controller
 func (c *PodController) Run(ctx context.Context) error {
-	log.Info("Watch pod objects")
 
 	_, err := c.watchPods(ctx)
 	if err != nil {
-		log.Errorf("Failed to register watch for pod resource: %v\n", err)
+		log.Errorf("Failed to register watch for pod resource: %v", err)
 		return err
 	}
 
@@ -85,16 +86,35 @@ func (c *PodController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgcluster is updated
 func (c *PodController) onUpdate(oldObj, newObj interface{}) {
-	//oldpod := oldObj.(*apiv1.Pod)
-	////newpod := newObj.(*apiv1.Pod)
-	//checkReadyStatus(oldpod, newpod)
-	//log.Infof("[PodCONTROLLER] OnUpdate %s\n", newpod.ObjectMeta.SelfLink)
+	oldpod := oldObj.(*apiv1.Pod)
+	newpod := newObj.(*apiv1.Pod)
+	log.Debugf("[PodCONTROLLER] OnUpdate %s", newpod.ObjectMeta.SelfLink)
+	c.checkReadyStatus(oldpod, newpod)
 }
 
 // onDelete is called when a pgcluster is deleted
 func (c *PodController) onDelete(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
-	log.Infof("[PodCONTROLLER] OnDelete %s\n", pod.ObjectMeta.SelfLink)
+	log.Debugf("[PodCONTROLLER] OnDelete %s", pod.ObjectMeta.SelfLink)
+}
+
+func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
+	//if the pod has a metadata label of  pg-cluster and
+	//eventually pg-failover == true then...
+	//loop thru status.containerStatuses, find the container with name='database'
+	//print out the 'ready' bool
+	//log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
+	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" &&
+		newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] != "" &&
+		newpod.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+		log.Infof("an autofail pg-cluster %s!", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+		for _, v := range newpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], newpod.ObjectMeta.Namespace)
+			}
+		}
+	}
+
 }
 
 func checkReadyStatus(oldpod, newpod *apiv1.Pod) {

@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -69,6 +70,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 		}
 
 		//for each service get the database size and append to results
+
 		for svcName, svcIP := range services {
 			result := msgs.DfDetail{}
 			//result.Name = c.Name
@@ -83,7 +85,12 @@ func DfCluster(name, selector string) msgs.DfResponse {
 				return response
 			}
 			result.PGSize = pgSizePretty
-			result.ClaimSize = getClaimCapacity(apiserver.Clientset, c.Spec.Name)
+			result.ClaimSize, err = getClaimCapacity(apiserver.Clientset, c.Spec.Name)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
 			diskSize := resource.MustParse(result.ClaimSize)
 			diskSizeInt64, _ := diskSize.AsInt64()
 			diskSizeFloat := float64(diskSizeInt64)
@@ -125,7 +132,7 @@ func getPrimarySecret(clusterName string) (string, string, error) {
 func getServices(clusterName string) (map[string]string, error) {
 
 	output := make(map[string]string, 0)
-	selector := "pg-cluster=" + clusterName
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -187,19 +194,32 @@ func getPGSize(port, host, databaseName, clusterName string) (string, int, error
 
 }
 
-func getClaimCapacity(clientset *kubernetes.Clientset, claimname string) string {
-	pvc, found, err := kubeapi.GetPVC(clientset, claimname, "demo")
+func getClaimCapacity(clientset *kubernetes.Clientset, clusterName string) (string, error) {
+	var err error
+	var found bool
+	var pvc *v1.PersistentVolumeClaim
+
+	clusterDef := crv1.Pgcluster{}
+
+	//find the pgdata volume claimName for this clusterName
+	//pgcluster.spec.PrimaryStorage.Name
+	found, err = kubeapi.Getpgcluster(apiserver.RESTClient, &clusterDef, clusterName, apiserver.Namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return "", err
+	}
+
+	pvcName := clusterDef.Spec.PrimaryStorage.Name
+	log.Debugf("in df pvc name found to be %s", pvcName)
+
+	pvc, found, err = kubeapi.GetPVC(clientset, pvcName, apiserver.Namespace)
 	if err != nil {
-		return "error"
+		return "", err
 	}
-	if !found {
-		log.Error("not found")
-		return "not found"
-	}
-	//fmt.Printf("storage cap is %s\n", pvc.Status.Capacity[v1.ResourceStorage])
+	//log.Debugf("storage cap is %s\n", pvc.Status.Capacity[v1.ResourceStorage])
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
 	log.Debugf("storage cap string value %s\n", qty.String())
 
-	return qty.String()
+	return qty.String(), err
 
 }

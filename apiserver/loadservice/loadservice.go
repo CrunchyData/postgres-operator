@@ -41,7 +41,13 @@ func LoadHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := Load(&request)
+	var resp msgs.LoadResponse
+	if request.ClientVersion != apiserver.VERSION {
+		resp = msgs.LoadResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = Load(&request)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }

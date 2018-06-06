@@ -21,10 +21,11 @@ import (
 
 // CreatePolicyRequest ...
 type CreatePolicyRequest struct {
-	Name      string
-	URL       string
-	SQL       string
-	Namespace string
+	Name          string
+	URL           string
+	SQL           string
+	Namespace     string
+	ClientVersion string
 }
 
 // CreatePolicyResponse ...
@@ -34,10 +35,11 @@ type CreatePolicyResponse struct {
 
 // ApplyPolicyRequest ...
 type ApplyPolicyRequest struct {
-	Name      string
-	Selector  string
-	DryRun    bool
-	Namespace string
+	Name          string
+	Selector      string
+	DryRun        bool
+	Namespace     string
+	ClientVersion string
 }
 
 // ApplyPolicyResponse ...

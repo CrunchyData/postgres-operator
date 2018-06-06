@@ -142,3 +142,20 @@ func Updatepgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace st
 	log.Debug("updated pgtask " + task.Name)
 	return err
 }
+
+// Deletepgtasks deletes pgtask by selector
+func Deletepgtasks(client *rest.RESTClient, selector, namespace string) error {
+	taskList := crv1.PgtaskList{}
+	err := GetpgtasksBySelector(client, &taskList, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	for _, v := range taskList.Items {
+		err := Deletepgtask(client, v.ObjectMeta.Name, namespace)
+		if err != nil {
+			return err
+		}
+	}
+	return err
+}

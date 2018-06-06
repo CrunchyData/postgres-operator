@@ -163,7 +163,7 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, error) {
 	output := make([]msgs.ShowClusterDeployment, 0)
 
-	selector := "pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		return output, err
@@ -189,7 +189,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	selector := "crunchy-pgpool!=true,pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -216,7 +216,7 @@ func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
-	selector := "pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -238,7 +238,7 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
 
 	output := make([]msgs.ShowClusterSecret, 0)
-	selector := "pgpool!=true,pg-database=" + cluster.Spec.Name
+	selector := "pgpool!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -302,17 +302,6 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
-
-		/**
-		//get the replicas for this cluster
-		log.Debug("calling getReplicas")
-		detail.Replicas, err = getReplicas(&c)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-		*/
 
 		//get the secrets for this cluster
 		detail.Secrets, err = getSecrets(&c)
@@ -443,34 +432,37 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 
 		//set the metrics flag with the global setting first
-		userLabelsMap["crunchy_collect"] = strconv.FormatBool(apiserver.MetricsFlag)
+		userLabelsMap[util.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//if metrics is chosen on the pgo command, stick it into the user labels
 		if request.MetricsFlag {
-			userLabelsMap["crunchy_collect"] = "true"
+			userLabelsMap[util.LABEL_COLLECT] = "true"
+		}
+		if request.AutofailFlag {
+			userLabelsMap[util.LABEL_AUTOFAIL] = "true"
 		}
 
 		if request.ArchiveFlag {
-			userLabelsMap["archive"] = "true"
+			userLabelsMap[util.LABEL_ARCHIVE] = "true"
 			log.Debug("archive set to true in user labels")
 		} else {
 			log.Debug("using ArchiveMode from pgo.yaml")
-			userLabelsMap["archive"] = apiserver.Pgo.Cluster.ArchiveMode
+			userLabelsMap[util.LABEL_ARCHIVE] = apiserver.Pgo.Cluster.ArchiveMode
 		}
-		userLabelsMap["archive-timeout"] = apiserver.Pgo.Cluster.ArchiveTimeout
+		userLabelsMap[util.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
 
 		if request.PgpoolFlag {
-			userLabelsMap["crunchy-pgpool"] = "true"
-			userLabelsMap["pgpool-secret"] = request.PgpoolSecret
+			userLabelsMap[util.LABEL_PGPOOL] = "true"
+			userLabelsMap[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 			log.Debug("userLabelsMap")
 			log.Debugf("%v", userLabelsMap)
 		}
 
 		if existsGlobalConfig() {
-			userLabelsMap["custom-config"] = util.GLOBAL_CUSTOM_CONFIGMAP
+			userLabelsMap[util.LABEL_CUSTOM_CONFIG] = util.GLOBAL_CUSTOM_CONFIGMAP
 		}
 
 		if request.StorageConfig != "" {
@@ -506,8 +498,8 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 				resp.Status.Msg = request.NodeLabel + " node label value was not valid .. check node labels for correct values to specify"
 				return resp
 			}
-			userLabelsMap["NodeLabelKey"] = parts[0]
-			userLabelsMap["NodeLabelValue"] = parts[1]
+			userLabelsMap[util.LABEL_NODE_LABEL_KEY] = parts[0]
+			userLabelsMap[util.LABEL_NODE_LABEL_VALUE] = parts[1]
 		}
 
 		if request.ReplicaStorageConfig != "" {
@@ -718,7 +710,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 func validateSecretFrom(secretname string) error {
 	var err error
-	selector := "pg-database=" + secretname
+	selector := util.LABEL_PG_DATABASE + "=" + secretname
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		return err
@@ -730,8 +722,6 @@ func validateSecretFrom(secretname string) error {
 	pguserFound := false
 
 	for _, s := range secrets.Items {
-		//fmt.Println("")
-		//fmt.Println("secret : " + s.ObjectMeta.Name)
 		if s.ObjectMeta.Name == secretname+crv1.PrimarySecretSuffix {
 			pgprimaryFound = true
 		} else if s.ObjectMeta.Name == secretname+crv1.RootSecretSuffix {
@@ -790,9 +780,6 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	log.Debug("got the cluster...")
 
 	for _, element := range pods {
-		//log.Debugf("the pod details ... %v\n", element)
-		//get the pgdata pvc for each pod
-
 		//create pgtask CRD
 		spec := crv1.PgtaskSpec{}
 		if element.Primary {
@@ -811,6 +798,9 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 			},
 			Spec: spec,
 		}
+		newInstance.ObjectMeta.Labels = make(map[string]string)
+		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+		newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient,
 			newInstance, apiserver.Namespace)
@@ -831,11 +821,12 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		//proceed with backups removal
 		spec := crv1.PgtaskSpec{}
 		spec.Name = clusterName + "-backups"
-		spec.TaskType = crv1.PgtaskDeleteData
+		spec.TaskType = crv1.PgtaskDeleteBackups
 		spec.StorageSpec = storageSpec
 
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[backupPVCName] = backupPVCName
+		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -896,7 +887,7 @@ func getReplicas(cluster *crv1.Pgcluster) ([]msgs.ShowClusterReplica, error) {
 	output := make([]msgs.ShowClusterReplica, 0)
 	replicaList := crv1.PgreplicaList{}
 
-	selector := "pg-cluster=" + cluster.Spec.Name
+	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	err := kubeapi.GetpgreplicasBySelector(apiserver.RESTClient,
 		&replicaList, selector, apiserver.Namespace)

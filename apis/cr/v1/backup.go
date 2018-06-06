@@ -32,6 +32,7 @@ type PgbackupSpec struct {
 	BackupPass   string        `json:"backuppass"`
 	BackupPort   string        `json:"backupport"`
 	BackupStatus string        `json:"backupstatus"`
+	BackupPVC    string        `json:"backuppvc"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -76,6 +76,7 @@ func applyPolicy(args []string) {
 	r.Name = args[0]
 	r.Selector = Selector
 	r.DryRun = DryRun
+	r.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(r)
 
@@ -133,7 +134,7 @@ func applyPolicy(args []string) {
 func showPolicy(args []string) {
 
 	for _, v := range args {
-		url := APIServerURL + "/policies/" + v
+		url := APIServerURL + "/policies/" + v + "?version=" + ClientVersion
 		log.Debug("showPolicy called...[" + url + "]")
 
 		action := "GET"
@@ -166,7 +167,7 @@ func showPolicy(args []string) {
 		}
 
 		if response.Status.Code != msgs.Ok {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 			os.Exit(2)
 		}
 
@@ -201,6 +202,7 @@ func createPolicy(args []string) {
 
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
+	r.ClientVersion = ClientVersion
 
 	if PolicyURL != "" {
 		r.URL = PolicyURL
@@ -250,7 +252,7 @@ func createPolicy(args []string) {
 	if response.Status.Code == msgs.Ok {
 		fmt.Println("created policy")
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 
@@ -274,7 +276,7 @@ func deletePolicy(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		url := APIServerURL + "/policiesdelete/" + arg
+		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + ClientVersion
 
 		log.Debug("delete policy called [" + url + "]")
 
@@ -307,7 +309,7 @@ func deletePolicy(args []string) {
 		if response.Status.Code == msgs.Ok {
 			fmt.Println("policy deleted")
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 		}
 
 	}

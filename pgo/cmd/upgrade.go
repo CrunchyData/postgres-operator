@@ -68,7 +68,7 @@ func showUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v
+		url := APIServerURL + "/upgrades/" + v + "?version=" + ClientVersion
 		log.Debug("showUpgrade called...[" + url + "]")
 
 		action := "GET"
@@ -97,6 +97,11 @@ func showUpgrade(args []string) {
 			log.Error(err)
 			log.Println(err)
 			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if len(response.UpgradeList.Items) == 0 {
@@ -138,7 +143,7 @@ func deleteUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgradesdelete/" + v
+		url := APIServerURL + "/upgradesdelete/" + v + "?version=" + ClientVersion
 		log.Debug("deleteUpgrade called...[" + url + "]")
 
 		action := "GET"
@@ -168,17 +173,16 @@ func deleteUpgrade(args []string) {
 			return
 		}
 
-		if len(response.Results) == 0 {
-			fmt.Println("no upgrades found")
-			return
-		}
-
 		if response.Status.Code == msgs.Ok {
+			if len(response.Results) == 0 {
+				fmt.Println("no upgrades found")
+				return
+			}
 			for k := range response.Results {
 				fmt.Println("deleted upgrade " + response.Results[k])
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 			os.Exit(2)
 		}
 
@@ -217,6 +221,7 @@ func createUpgrade(args []string) {
 	request.Selector = Selector
 	request.CCPImageTag = CCPImageTag
 	request.UpgradeType = UpgradeType
+	request.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -255,7 +260,7 @@ func createUpgrade(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 

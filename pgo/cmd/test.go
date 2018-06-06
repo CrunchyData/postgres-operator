@@ -22,6 +22,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/spf13/cobra"
 	"net/http"
+	"os"
 )
 
 var testCmd = &cobra.Command{
@@ -59,7 +60,7 @@ func showTest(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/clusters/test/" + arg + "?selector=" + Selector
+		url := APIServerURL + "/clusters/test/" + arg + "?selector=" + Selector + "&version=" + ClientVersion
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)
@@ -88,6 +89,11 @@ func showTest(args []string) {
 			log.Error(err)
 			log.Println(err)
 			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if OutputFormat == "json" {

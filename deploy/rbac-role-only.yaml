@@ -1,0 +1,49 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-role
+  namespace: $CO_NAMESPACE
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - "*"
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - "*"
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-role-binding
+  namespace: $CO_NAMESPACE
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: $CO_NAMESPACE
+roleRef:
+  kind: Role
+  name: pgo-role
+  apiGroup: rbac.authorization.k8s.io

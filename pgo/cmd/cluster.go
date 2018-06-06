@@ -38,7 +38,7 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups)
+		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + ClientVersion
 
 		log.Debug("delete cluster called [" + url + "]")
 
@@ -73,7 +73,7 @@ func deleteCluster(args []string) {
 				fmt.Println(result)
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			log.Error(RED(response.Status.Msg))
 		}
 
 	}
@@ -93,7 +93,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector
+		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + ClientVersion
 
 		log.Debug("show cluster called [" + url + "]")
 
@@ -136,6 +136,11 @@ func showCluster(args []string) {
 			return
 		}
 
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
+		}
+
 		if len(response.Results) == 0 {
 			fmt.Println("no clusters found")
 			return
@@ -154,8 +159,15 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
 
+	var primaryStr string
 	for _, pod := range detail.Pods {
-		fmt.Println(TreeBranch + "pod : " + pod.Name + " (" + string(pod.Phase) + " on " + pod.NodeName + ") (" + pod.ReadyStatus + ")")
+		if pod.Primary {
+			primaryStr = "(primary)"
+		} else {
+			primaryStr = ""
+		}
+		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, primaryStr)
+		fmt.Println(podStr)
 		for _, pvc := range pod.PVCName {
 			fmt.Println(TreeBranch + "pvc : " + pvc)
 		}
@@ -224,6 +236,7 @@ func createCluster(args []string) {
 	r.CCPImageTag = CCPImageTag
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
+	r.AutofailFlag = AutofailFlag
 	r.PgpoolFlag = PgpoolFlag
 	r.ArchiveFlag = ArchiveFlag
 	r.PgpoolSecret = PgpoolSecret
@@ -231,6 +244,7 @@ func createCluster(args []string) {
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
 	r.ContainerResources = ContainerResources
+	r.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"
@@ -269,7 +283,7 @@ func createCluster(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 
