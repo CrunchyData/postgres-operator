@@ -1,12 +1,13 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // StateMachine holds a state machine that is created when

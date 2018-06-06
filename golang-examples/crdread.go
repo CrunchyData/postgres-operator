@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	clientset "github.com/crunchydata/postgres-operator/client"
