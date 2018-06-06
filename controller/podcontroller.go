@@ -19,6 +19,7 @@ import (
 	"context"
 	log "github.com/Sirupsen/logrus"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -111,6 +112,19 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], newpod.ObjectMeta.Namespace)
+			}
+		}
+	}
+
+	//handle applying policies after a database is made Ready
+	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+		for _, v := range newpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				//see if there are pgtasks for adding a policy
+				if v.Ready {
+					log.Debug(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + " went to Ready, apply policies...")
+					taskoperator.ApplyPolicies(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
+				}
 			}
 		}
 	}

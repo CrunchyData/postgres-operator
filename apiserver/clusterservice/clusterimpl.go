@@ -540,7 +540,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap)
-		validateConfigPolicies(request.Policies)
+		validateConfigPolicies(clusterName, request.Policies)
 
 		t := time.Now()
 		newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
@@ -558,18 +558,19 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 
 }
 
-func validateConfigPolicies(PoliciesFlag string) error {
+func validateConfigPolicies(clusterName, PoliciesFlag string) error {
 	var err error
 	var configPolicies string
+
 	if PoliciesFlag == "" {
-		log.Println(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
+		log.Debug(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
 		configPolicies = apiserver.Pgo.Cluster.Policies
 	} else {
 		configPolicies = PoliciesFlag
 	}
+
 	if configPolicies == "" {
-		log.Debug("no policies are specified")
-		err = errors.New("no policies are specified")
+		log.Debug("no policies are specified in either pgo.yaml or from user")
 		return err
 	}
 
@@ -590,7 +591,30 @@ func validateConfigPolicies(PoliciesFlag string) error {
 			log.Error("error getting pgpolicy " + v + err.Error())
 			return err
 		}
+		//create a pgtask to add the policy after the db is ready
 	}
+
+	spec := crv1.PgtaskSpec{}
+	spec.StorageSpec = crv1.PgStorageSpec{}
+	spec.TaskType = crv1.PgtaskAddPolicies
+	spec.Status = "requested"
+	spec.Parameters = make(map[string]string)
+	for _, v := range policies {
+		spec.Parameters[v] = v
+	}
+	spec.Name = clusterName + "-policies"
+	labels := make(map[string]string)
+	labels[util.LABEL_PG_CLUSTER] = clusterName
+
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   spec.Name,
+			Labels: labels,
+		},
+		Spec: spec,
+	}
+
+	kubeapi.Createpgtask(apiserver.RESTClient, newInstance, apiserver.Namespace)
 
 	return err
 }

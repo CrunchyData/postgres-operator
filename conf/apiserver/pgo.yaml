@@ -10,9 +10,9 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ArchiveTimeout:  60
-PrimaryStorage: storage3
-BackupStorage: storage3
-ReplicaStorage: storage3
+PrimaryStorage: storage1
+BackupStorage: storage1
+ReplicaStorage: storage1
 Storage:
   storage1:
     AccessMode:  ReadWriteMany
