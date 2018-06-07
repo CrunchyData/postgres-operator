@@ -15,13 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
+import (
+	"fmt"
+)
 
 // RootSecretSuffix ...
 const RootSecretSuffix = "-postgres-secret"
-
-// UserSecretSuffix ...
-const UserSecretSuffix = "-testuser-secret"
 
 // PrimarySecretSuffix ...
 const PrimarySecretSuffix = "-primaryuser-secret"
@@ -55,4 +54,12 @@ type PgContainerResources struct {
 	RequestsCPU    string `json:"requestscpu"`
 	LimitsMemory   string `json:"limitsmemory"`
 	LimitsCPU      string `json:"limitscpu"`
+}
+
+// UserSecretSuffix ...
+func UserSecretSuffix(user string) string {
+	if user == "" {
+		user = "testuser"
+	}
+	return fmt.Sprintf("-%s-secret", user)
 }

@@ -128,16 +128,16 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	var err1, err2, err3 error
 	if cl.Spec.SecretFrom != "" {
 		_, cl.Spec.RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
-		_, cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
 		_, cl.Spec.PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
+		_, cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix(cl.Spec.User))
 		if err1 != nil || err2 != nil || err3 != nil {
 			log.Error("error getting secrets using SecretFrom " + cl.Spec.SecretFrom)
 			return
 		}
 	}
 
-	var testPassword string
-	_, _, testPassword, err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
+	var userPassword string
+	_, _, userPassword, err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error("error in create secrets " + err.Error())
 		return
@@ -158,11 +158,15 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	//add pgpool deployment if requested
 	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
-		//generate a secret for pgpool using the testuser credential
+		//generate a secret for pgpool using the user credential
 		secretName := cl.Spec.Name + "-pgpool-secret"
 		primaryName := cl.Spec.Name
 		replicaName := cl.Spec.Name + "-replica"
-		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
+		user := "testuser"
+		if cl.Spec.User != "" {
+			user = cl.Spec.User
+		}
+		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, user, userPassword, namespace)
 		if err != nil {
 			log.Error(err)
 			return
