@@ -396,19 +396,20 @@ See link:https://github.com/CrunchyData/crunchy-containers/blob/master/docs/exam
 === Manual Failover
 
 With manual failover some key features include:
+
  * when you perform a failover, a new replica is created to replace the
- replica that was promoted to even out the cluster to the original 
+ replica that was promoted to even out the cluster to the original
  number of replicas
  * when you perform a failover, the promoted replica is removed from the pgreplica CRD to represent the current *truth*
 
-The *pgo failover --query* command will return a list of replica
+The `pgo failover --query` command will return a list of replica
 targets which you can select from.  That list include the *Ready* status
 of the database as well as the Kube node name it is running on.
 
 === Auto Failover
 
 Starting with release 3.1, there is an *auto* failover mechanism
-that can be leveraged by *pgo* users if enabled.  
+that can be leveraged by *pgo* users if enabled.
 
 This feature will cause the operator to start a timer on a database
 primary that has received a *NotReady* status after the database
@@ -420,7 +421,7 @@ back to a *Ready* status within that timer period, a failover
 is triggered for this cluster.  The failover target is selected
 by the auto failover logic.
 
-The amount of time (in seconds) the auto failover timer will wait before 
+The amount of time (in seconds) the auto failover timer will wait before
 triggering a failover is determined by the following *pgo.yaml* setting:
 ....
 AutofailSleepSeconds:  9
@@ -430,18 +431,19 @@ If the above setting is not configured a default value of 30 seconds is
 chose.
 
 The logic of auto failover works like this:
- * the readiness probe on the primary database container is executed every few seonds to check the *readiness* of the database, this is what tells Kubernetes whether or not the container is *Ready* or *NotReady*.  
+
+ * the readiness probe on the primary database container is executed every few seonds to check the *readiness* of the database, this is what tells Kubernetes whether or not the container is *Ready* or *NotReady*.
  * if a *NotReady* state is detected then that event is caught by the operator which is watching for database containers created by the operator
  * upon a *NotReady* event, a timer is started for that database which acts as the final check as to if a failover is required for that database
  * if the timer expires and the state is still *Not Ready* then the manual
  failover logic is executed for this cluster which causes a promotion of
- a replica to primary, and also creates a replacement replica 
+ a replica to primary, and also creates a replacement replica
  * only replica targets with a status of *Ready* will be used to select
  the target to promote
 
 The readiness probe settings are defined in the following template:
 ....
-conf/postgres-operator/cluster/1/cluster-deployment-1.jsono
+conf/postgres-operator/cluster/1/cluster-deployment-1.json
 ....
 
 The readiness probe settings determine how often the database check
