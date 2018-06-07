@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40.3" />
+<meta name="generator" content="Hugo 0.40" />
 
 <title>Getting Started :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -249,7 +249,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-06-04</p>
+<p>v3.1, 2018-06-07</p>
 </div>
 <div class="sect1">
 <h2 id="_pgo_commands">pgo Commands</h2>
@@ -410,6 +410,22 @@ your cluster.</p>
 <p>This will cause a new PVC to be created to hold archive logs.  Space
 is consumed by these logs but archives enable you to perform Point-In-Time-Recovery.</p>
 </div>
+<div class="paragraph">
+<p>To enable <strong>auto failover</strong> on this cluster, use the following flag:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --autofail</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>auto failover</strong> when set on the cluster informs the operator to look
+or watch for <strong>NotReady</strong> events on this cluster, and when those occur
+to create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod.  See
+the How It Works documentation for more details on <strong>auto failover</strong>.</p>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_pgo_backup">pgo backup</h3>
@@ -474,6 +490,18 @@ to proceed because this action will delete any existing backup job
 for this cluster that might exist.  The backup files will still
 be left intact but the actual Kubernetes Job will be removed prior
 to creating a new Job with the same name.</p>
+</div>
+<div class="paragraph">
+<p>You can override the PVC used by the backup job with the following:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo backup mycluster --pvc-name=myremotepvc</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This might be useful for special backup cases, perhaps to create
+a backup on a disaster recovery PVC.</p>
 </div>
 </div>
 <div class="sect2">
@@ -894,15 +922,7 @@ policy name (e.g. policy1):</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo user --delete-user=sally --selector=name=mycluster</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To delete that user in all clusters:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo user --delete-user=sally</pre>
+<pre>pgo user delete user sally --selector=name=mycluster</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -949,14 +969,6 @@ of days in the <strong>mycluster</strong> cluster:</p>
 value and the <strong>valid until</strong> expiration date set to 10 days from now, this
 command will take effect across all clusters that match the selector.  If you
 specify <strong>valid-days=-1</strong> it will mean the password will not expire (e.g. infinity).</p>
-</div>
-<div class="paragraph">
-<p>To drop a user:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo user --delete-user=user3   --selector=project=xray</pre>
-</div>
 </div>
 <div class="paragraph">
 <p>To see which passwords are set to expire in a given number of days:</p>
@@ -1101,15 +1113,27 @@ can be used to promote a replica to a primary role in a PostgreSQL
 cluster.</p>
 </div>
 <div class="paragraph">
-<p>This process includes the following actions:
- * pick a target replica to become the new primary
- * delete the current primary deployment to avoid user requests from
-   going to multiple primary databases (split brain)
- * promote the targeted replica using <strong>pg_ctl promote</strong>, this will
-   cause PostgreSQL to go into read-write mode
- * re-label the targeted replica to use the primary labels, this
-   will match the primary service selector and cause new requests
-   to the primary to be routed to the new primary (targeted replica)</p>
+<p>This process includes the following actions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>pick a target replica to become the new primary</p>
+</li>
+<li>
+<p>delete the current primary deployment to avoid user requests from
+going to multiple primary databases (split brain)</p>
+</li>
+<li>
+<p>promote the targeted replica using <strong>pg_ctl promote</strong>, this will
+cause PostgreSQL to go into read-write mode</p>
+</li>
+<li>
+<p>re-label the targeted replica to use the primary labels, this
+will match the primary service selector and cause new requests
+to the primary to be routed to the new primary (targeted replica)</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The command works like this:</p>
