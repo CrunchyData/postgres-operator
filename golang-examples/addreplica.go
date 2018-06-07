@@ -1,18 +1,15 @@
 package main
 
-import "fmt"
-import "flag"
-import "encoding/json"
-import log "github.com/Sirupsen/logrus"
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
 
-//import "k8s.io/client-go/pkg/api/v1"
-
-//import "github.com/crunchydata/postgres-operator/operator/util"
-import "k8s.io/client-go/tools/clientcmd"
-import "k8s.io/client-go/kubernetes"
-
-//import v1beta1 "k8s.io/client-go/pkg/apis/extensions/v1beta1"
-import api "k8s.io/client-go/pkg/api"
+	log "github.com/Sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+)
 
 type ThingSpec struct {
 	Op    string `json:"op"`
@@ -51,7 +48,7 @@ func main() {
 	}
 	log.Debug(string(patchBytes))
 
-	_, err = clientset.Deployments("default").Patch(deploymentName, api.JSONPatchType, patchBytes)
+	_, err = clientset.AppsV1beta1().Deployments("default").Patch(deploymentName, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error("error creating master Deployment " + err.Error())
 		panic(err.Error())

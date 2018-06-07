@@ -1,27 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	jsonpatch "github.com/evanphx/json-patch"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api"
-	"k8s.io/apimachinery/pkg/types"
-	//"k8s.io/client-go/pkg/api/errors"
-	"encoding/json"
-	//"k8s.io/api/extensions/v1beta1"
+	"github.com/evanphx/json-patch"
 	"k8s.io/api/core/v1"
-
-	//"k8s.io/client-go/pkg/runtime"
-	//"k8s.io/client-go/pkg/runtime/serializer"
-
-	//"k8s.io/client-go/pkg/api/unversioned"
-	//"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/client-go/rest"
 	"k8s.io/apimachinery/pkg/api/meta"
-
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 

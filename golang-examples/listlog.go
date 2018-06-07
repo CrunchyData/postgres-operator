@@ -1,15 +1,18 @@
 package main
 
-import "fmt"
-import "os"
-import "flag"
-import "bytes"
-import "io"
-import "time"
-import "k8s.io/client-go/pkg/api/v1"
-import "github.com/crunchydata/postgres-operator/operator/util"
-import "k8s.io/client-go/tools/clientcmd"
-import "k8s.io/client-go/kubernetes"
+import (
+	"bytes"
+	"flag"
+	"fmt"
+	"io"
+	"time"
+
+	"github.com/crunchydata/postgres-operator/util"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+)
 
 func main() {
 
@@ -29,13 +32,13 @@ func main() {
 	}
 
 	timeout := time.Duration(2 * time.Second)
-	lo := v1.ListOptions{LabelSelector: "name=" + "lspvc"}
-	podPhase := v1.PodSucceeded
+	lo := metav1.ListOptions{LabelSelector: "name=" + "lspvc"}
+	podPhase := corev1.PodSucceeded
 	err = util.WaitUntilPod(clientset, lo, podPhase, timeout, "default")
 	if err != nil {
 		fmt.Println("error waiting on lspvc pod to complete" + err.Error())
 	}
-	logOptions := v1.PodLogOptions{}
+	logOptions := corev1.PodLogOptions{}
 	podName := "lspvc-donut"
 	req := clientset.Core().Pods("default").GetLogs(podName, &logOptions)
 	if req == nil {

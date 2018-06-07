@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type ContainerResource struct {

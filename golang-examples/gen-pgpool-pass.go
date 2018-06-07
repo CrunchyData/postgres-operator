@@ -20,9 +20,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func main() {

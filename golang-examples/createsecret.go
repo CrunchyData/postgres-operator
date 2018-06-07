@@ -20,16 +20,8 @@ import (
 	"flag"
 	"fmt"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api"
-	//"k8s.io/client-go/pkg/api/errors"
-
-	//"k8s.io/client-go/pkg/runtime"
-	//"k8s.io/client-go/pkg/runtime/serializer"
-
-	//"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
-	//"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -58,7 +50,7 @@ func main() {
 	secret.Data["username"] = []byte("testuser")
 	secret.Data["password"] = []byte("mypassword")
 
-	_, err = clientset.Secrets(namespace).Create(&secret)
+	_, err = clientset.CoreV1().Secrets(namespace).Create(&secret)
 	if err != nil {
 		fmt.Println(err.Error())
 	} else {
