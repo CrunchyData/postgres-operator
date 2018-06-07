@@ -142,7 +142,7 @@
 
         <section id="shortcuts">
                 <li class="" role=""><h3>More</h3><a href="https://github.com/CrunchyData/postgres-operator" target="_blank" rel="noopener"><i class='fa fa-github'></i> <label>Github repo</label></a></li>
-                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/3.0/postgres-operator.3.0.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
+                <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz" target="_blank" rel="noopener"><i class='fa fa-cloud-download'></i> <label>Download</label></a></li>
                 <li class="" role=""><a href="https://kubernetes.io/docs/" target="_blank" rel="noopener"><i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label></a></li>
                 <li class="" role=""><a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md" target="_blank" rel="noopener"><i class='fa fa-file'></i> <label>License</label></a></li>
         </section>
@@ -240,18 +240,32 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-05-14</p>
+<p>v3.0, 2018-06-07</p>
 </div>
 <div class="sect1">
 <h2 id="_project_structure">Project Structure</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called <strong>odev</strong> -</p>
+<p>First, define the following environment variables in <strong>.bashrc</strong>:</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>export GOPATH=$HOME/odev
-mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
+export GOBIN=$GOPATH/bin
+export CO_NAMESPACE=demo
+export CO_CMD=kubectl
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-3.0
+export CO_BASEOS=centos7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called <strong>odev</strong> -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 mkdir -p $GOPATH/src/github.com/crunchydata/</pre>
 </div>
 </div>
@@ -347,10 +361,7 @@ sudo chown 777 /data</pre>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>export CO_NAMESPACE=demo
-export CO_CMD=kubectl
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-go get github.com/blang/expenv
+<pre>go get github.com/blang/expenv
 $COROOT/pv/create-pv.sh</pre>
 </div>
 </div>
@@ -375,13 +386,11 @@ $COROOT/pv/create-pv.sh</pre>
 <div class="sect2">
 <h3 id="_packaged_images">Packaged Images</h3>
 <div class="paragraph">
-<p>To pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers, specify the image versions, and execute the following Makefile target -</p>
+<p>To pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers, execute the following Makefile target -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.0
-make pull</pre>
+<pre>make pull</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -491,30 +500,21 @@ Container Platform environments.</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>First, install the project library dependencies. The godep dependency manager is used for this purpose. -</p>
+<p>Before compiling the Operator, it&#8217;s necessary to install the <strong>Mercurial</strong> requirement.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>cd $COROOT
-make setup</pre>
+<pre>sudo yum -y install mercurial</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Then, compile the PostgreSQL Operator using the Makefile.</p>
+<p>Then, install the project library dependencies. The godep dependency manager is used for this purpose. Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>cd $COROOT
+make setup
 make all
-which pgo</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Finally, deploy the operator to your Kubernetes cluster.</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
 make deployoperator</pre>
 </div>
 </div>

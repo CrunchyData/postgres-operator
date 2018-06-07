@@ -130,3 +130,25 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	}
 
 }
+
+func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
+	//if the pod has a metadata label of  pg-cluster and
+	//eventually pg-failover == true then...
+	//loop thru status.containerStatuses, find the container with name='database'
+	//print out the 'ready' bool
+	log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
+	if newpod.ObjectMeta.Labels["pg-cluster"] != "" {
+		log.Infoln("we have a pg-cluster!")
+		for _, v := range newpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				log.Infof("%s is the containerstatus Name\n", v.Name)
+				if v.Ready {
+					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
+				} else {
+					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
+				}
+			}
+		}
+	}
+
+}
