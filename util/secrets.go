@@ -90,7 +90,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	if cl.Spec.User != "" {
 		username = cl.Spec.User
 	}
-	suffix = crv1.UserSecretSuffix
+	suffix = crv1.UserSecretSuffix(username)
 
 	secretName = cl.Spec.Name + suffix
 	if cl.Spec.UserSecretName != "" {

@@ -724,30 +724,35 @@ func validateSecretFrom(secretname string) error {
 		return err
 	}
 
-	log.Debug("secrets for " + secretname)
+	log.Debugf("secrets for %s", secretname)
 	pgprimaryFound := false
 	pgrootFound := false
 	pguserFound := false
 
+	primarySecretname := secretname + crv1.PrimarySecretSuffix
+	rootSecretname := secretname + crv1.RootSecretSuffix
+	userSecretname := secretname + crv1.UserSecretSuffix("")
+
 	for _, s := range secrets.Items {
-		//fmt.Println("")
-		//fmt.Println("secret : " + s.ObjectMeta.Name)
-		if s.ObjectMeta.Name == secretname+crv1.PrimarySecretSuffix {
+		if s.ObjectMeta.Name == primarySecretname {
 			pgprimaryFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.RootSecretSuffix {
+		} else if s.ObjectMeta.Name == rootSecretname {
 			pgrootFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.UserSecretSuffix {
+		} else if s.ObjectMeta.Name == userSecretname {
 			pguserFound = true
+		}
+		if pgprimaryFound && pgrootFound && pguserFound {
+			return nil
 		}
 	}
 	if !pgprimaryFound {
-		return errors.New(secretname + crv1.PrimarySecretSuffix + " not found")
+		return fmt.Errorf("%s not found", primarySecretname)
 	}
 	if !pgrootFound {
-		return errors.New(secretname + crv1.RootSecretSuffix + " not found")
+		return fmt.Errorf("%s not found", rootSecretname)
 	}
 	if !pguserFound {
-		return errors.New(secretname + crv1.UserSecretSuffix + " not found")
+		return fmt.Errorf("%s not found", userSecretname)
 	}
 
 	return err
