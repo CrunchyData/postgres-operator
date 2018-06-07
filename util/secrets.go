@@ -39,7 +39,7 @@ var seededRand = rand.New(
 func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) (string, string, string, error) {
 
 	//pgroot
-	username := "postgres"
+	pgUser := "postgres"
 	suffix := crv1.RootSecretSuffix
 
 	var secretName string
@@ -52,7 +52,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 		pgPassword = cl.Spec.RootPassword
 	}
 
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, pgPassword, namespace)
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, pgUser, pgPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret" + err.Error())
 	}
@@ -64,7 +64,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	}
 
 	///primary
-	username = "primaryuser"
+	primaryUser := "primaryuser"
 	suffix = crv1.PrimarySecretSuffix
 
 	secretName = cl.Spec.Name + suffix
@@ -74,7 +74,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 		primaryPassword = cl.Spec.PrimaryPassword
 	}
 
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, primaryPassword, namespace)
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, primaryUser, primaryPassword, namespace)
 	if err != nil {
 		log.Error("error creating secret2" + err.Error())
 	}
@@ -86,28 +86,38 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	}
 
 	///pguser
-	username = "testuser"
+	username := "testuser"
+	if cl.Spec.User != "" {
+		username = cl.Spec.User
+	}
 	suffix = crv1.UserSecretSuffix
 
 	secretName = cl.Spec.Name + suffix
-	testPassword := GeneratePassword(10)
+	if cl.Spec.UserSecretName != "" {
+		secretName = cl.Spec.UserSecretName
+		log.Debugf("using user specified user secret name: %v", secretName)
+	}
+
+	userPassword := GeneratePassword(10)
 	if cl.Spec.Password != "" {
-		log.Debug("using user specified password for secret " + secretName)
-		testPassword = cl.Spec.Password
+		log.Debugf("using user specified password for secret %v", secretName)
+		userPassword = cl.Spec.Password
 	}
 
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, testPassword, namespace)
+	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, userPassword, namespace)
 	if err != nil {
-		log.Error("error creating secret " + err.Error())
+		log.WithError(err).Errorf("error creating secret %v", secretName)
 	}
 
-	cl.Spec.UserSecretName = secretName
-	err = Patch(restclient, "/spec/usersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error patching cluster " + err.Error())
+	if secretName != cl.Spec.UserSecretName {
+		cl.Spec.UserSecretName = secretName
+		err = Patch(restclient, "/spec/usersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+		if err != nil {
+			log.WithError(err).Errorf("error patching cluster %s", cl.Spec.Name)
+		}
 	}
 
-	return pgPassword, primaryPassword, testPassword, err
+	return pgPassword, primaryPassword, userPassword, err
 }
 
 // CreateSecret create the secret, user, and primary secrets
