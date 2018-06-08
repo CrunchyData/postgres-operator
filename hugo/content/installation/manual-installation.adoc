@@ -10,9 +10,20 @@ v3.0, {docdate}
 
 == Project Structure
 
-To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
+First, define the following environment variables in *.bashrc*:
 ....
 export GOPATH=$HOME/odev
+export GOBIN=$GOPATH/bin
+export CO_NAMESPACE=demo
+export CO_CMD=kubectl
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-3.0
+export CO_BASEOS=centos7
+....
+
+To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
+....
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 mkdir -p $GOPATH/src/github.com/crunchydata/
 ....
@@ -67,9 +78,6 @@ sudo chown 777 /data
 
 Create some sample Persistent Volumes using the following script:
 ....
-export CO_NAMESPACE=demo
-export CO_CMD=kubectl
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 go get github.com/blang/expenv
 $COROOT/pv/create-pv.sh
 ....
@@ -80,10 +88,8 @@ $COROOT/pv/create-pv.sh
 
 === Packaged Images
 
-To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, specify the image versions, and execute the following Makefile target -
+To pull prebuilt versions from Dockerhub of the *postgres-operator* containers, execute the following Makefile target -
 ....
-export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.0
 make pull
 ....
 
@@ -136,22 +142,16 @@ This Operator is developed and tested on the following operating systems but is 
 * *CentOS 7*
 * *RHEL 7*
 
-First, install the project library dependencies. The godep dependency manager is used for this purpose. -
+Before compiling the Operator, it's necessary to install the *Mercurial* requirement.
+....
+sudo yum -y install mercurial
+....
+
+Then, install the project library dependencies. The godep dependency manager is used for this purpose. Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.
 ....
 cd $COROOT
 make setup
-....
-
-Then, compile the PostgreSQL Operator using the Makefile.
-....
-cd $COROOT
 make all
-which pgo
-....
-
-Finally, deploy the operator to your Kubernetes cluster.
-....
-cd $COROOT
 make deployoperator
 ....
 
@@ -160,7 +160,7 @@ make deployoperator
 == Makefile Targets
 
 The following table describes the Makefile targets -
-  
+
 .Makefile Targets
 [width="80%",frame="topbot",options="header"]
 |======================
