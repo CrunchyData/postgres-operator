@@ -473,12 +473,7 @@ pgo createa user sally --selector=name=mycluster
 
 To delete a Postgres user in the *mycluster* cluster, execute:
 ....
-pgo user --delete-user=sally --selector=name=mycluster
-....
-
-To delete that user in all clusters:
-....
-pgo user --delete-user=sally
+pgo user delete user sally --selector=name=mycluster
 ....
 
 To change the password for a user in the *mycluster* cluster:
@@ -510,11 +505,6 @@ In this example, a user named *user1* has its password changed to a generated
 value and the *valid until* expiration date set to 10 days from now, this
 command will take effect across all clusters that match the selector.  If you
 specify *valid-days=-1* it will mean the password will not expire (e.g. infinity).
-
-To drop a user:
-....
-pgo user --delete-user=user3   --selector=project=xray
-....
 
 To see which passwords are set to expire in a given number of days:
 ....
@@ -593,6 +583,7 @@ can be used to promote a replica to a primary role in a PostgreSQL
 cluster.
 
 This process includes the following actions:
+
  * pick a target replica to become the new primary
  * delete the current primary deployment to avoid user requests from
    going to multiple primary databases (split brain)
