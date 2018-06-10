@@ -18,6 +18,7 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  200M
     StorageType:  create
+    SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteOnce
     Size:  333M
