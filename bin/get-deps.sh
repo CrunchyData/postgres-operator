@@ -15,6 +15,8 @@
 
 echo "Getting project dependencies..."
 
+sudo yum -y install mercurial
+
 go get github.com/tools/godep
 go get github.com/blang/expenv
 
