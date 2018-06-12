@@ -348,13 +348,8 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
-<<<<<<< HEAD
-		if key == "NodeLabelKey" || key == "NodeLabelValue" {
-			//dont add these types
-=======
 		if key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
 			//dont add these since they can break label expression checks
->>>>>>> autofail
 		} else {
 			primaryLabels[key] = value
 		}
