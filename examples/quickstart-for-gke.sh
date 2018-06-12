@@ -15,7 +15,7 @@
 
 LOG="pgo-installer.log"
 
-export PGORELEASE=3.0
+export PGORELEASE=3.1
 
 echo "Testing for dependencies..." | tee -a $LOG
 
@@ -57,7 +57,7 @@ export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOPATH/bin
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.0
+export CO_IMAGE_TAG=centos7-3.1
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_APISERVER_URL=https://127.0.0.1:18443
 export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt

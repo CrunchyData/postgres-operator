@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
+	"os"
 )
 
 var statusCmd = &cobra.Command{
@@ -50,7 +51,7 @@ func showStatus(args []string) {
 
 	log.Debugf("showStatus called %v\n", args)
 
-	url := APIServerURL + "/status"
+	url := APIServerURL + "/status?version=" + ClientVersion
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -79,6 +80,11 @@ func showStatus(args []string) {
 		log.Error(err)
 		log.Println(err)
 		return
+	}
+
+	if response.Status.Code != msgs.Ok {
+		log.Error(RED(response.Status.Msg))
+		os.Exit(2)
 	}
 
 	if OutputFormat == "json" {

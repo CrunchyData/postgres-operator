@@ -58,6 +58,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
           volumeMounts:
+            - name: apiserver-conf
+              mountPath: /config
+              readOnly: true
             - name: operator-conf
               mountPath: /operator-conf
               readOnly: true

@@ -58,7 +58,12 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
-	resp = CreateCluster(&request)
+	if request.ClientVersion != apiserver.VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+	} else {
+		resp = CreateCluster(&request)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -80,6 +85,10 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -91,7 +100,15 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	log.Debug("clusterservice.ShowClusterHandler GET called")
-	resp := ShowCluster(clustername, selector)
+
+	var resp msgs.ShowClusterResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.ShowClusterResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]msgs.ShowClusterDetail, 0)
+	} else {
+		resp = ShowCluster(clustername, selector)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -111,6 +128,10 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
+	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
 	}
 
 	deleteData := false
@@ -136,7 +157,15 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	log.Debug("clusterservice.DeleteClusterHandler called")
-	resp := DeleteCluster(clustername, selector, deleteData, deleteBackups)
+
+	var resp msgs.DeleteClusterResponse
+	if clientVersion != apiserver.VERSION {
+		resp := msgs.DeleteClusterResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]string, 0)
+	} else {
+		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -152,6 +181,10 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -162,7 +195,13 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := TestCluster(clustername, selector)
+	var resp msgs.ClusterTestResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.ClusterTestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = TestCluster(clustername, selector)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }

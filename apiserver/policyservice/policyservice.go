@@ -43,6 +43,13 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
+	if request.ClientVersion != apiserver.VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	errs := validation.IsDNS1035Label(request.Name)
 	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
@@ -67,6 +74,10 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("policyservice.DeletePolicyHandler %v\n", vars)
 
 	policyname := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
@@ -79,7 +90,12 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
-	resp = DeletePolicy(apiserver.RESTClient, policyname)
+	if clientVersion != apiserver.VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+	} else {
+		resp = DeletePolicy(apiserver.RESTClient, policyname)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -93,6 +109,11 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	policyname := vars["name"]
 
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
@@ -104,7 +125,13 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.ShowPolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
-	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname)
+
+	if clientVersion != apiserver.VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+	} else {
+		resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 

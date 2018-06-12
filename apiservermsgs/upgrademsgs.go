@@ -33,11 +33,12 @@ type DeleteUpgradeResponse struct {
 
 // CreateUpgradeRequest ...
 type CreateUpgradeRequest struct {
-	Args        []string
-	Selector    string
-	Namespace   string
-	CCPImageTag string
-	UpgradeType string
+	Args          []string
+	Selector      string
+	Namespace     string
+	CCPImageTag   string
+	UpgradeType   string
+	ClientVersion string
 }
 
 // CreateUpgradeResponse ...

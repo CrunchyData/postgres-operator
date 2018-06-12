@@ -32,6 +32,11 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	backupname := vars["name"]
 
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
 	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
 		return
@@ -41,7 +46,14 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	log.Debug("backupservice.ShowBackupHandler GET called")
-	resp := ShowBackup(backupname)
+	var resp msgs.ShowBackupResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.ShowBackupResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+		resp = ShowBackup(backupname)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -53,6 +65,10 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("backupservice.DeleteBackupHandler %v\n", vars)
 
 	backupname := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
 	if err != nil {
@@ -62,7 +78,13 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 	log.Debug("backupservice.DeleteBackupHandler called")
-	resp := DeleteBackup(backupname)
+	var resp msgs.DeleteBackupResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.DeleteBackupResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = DeleteBackup(backupname)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }

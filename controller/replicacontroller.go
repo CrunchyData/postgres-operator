@@ -17,9 +17,7 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -40,11 +38,10 @@ type PgreplicaController struct {
 
 // Run starts an pgreplica resource controller
 func (c *PgreplicaController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgreplica objects\n")
 
 	_, err := c.watchPgreplicas(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgreplica resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgreplica resource: %v", err)
 		return err
 	}
 
@@ -86,7 +83,7 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) (cache.Contro
 // onAdd is called when a pgreplica is added
 func (c *PgreplicaController) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	fmt.Printf("[PgreplicaCONTROLLER] OnAdd %s\n", replica.ObjectMeta.SelfLink)
+	log.Debugf("[PgreplicaCONTROLLER] OnAdd %s", replica.ObjectMeta.SelfLink)
 	if replica.Status.State == crv1.PgreplicaStateProcessed {
 		log.Info("pgreplica " + replica.ObjectMeta.Name + " already processed")
 		return
@@ -112,10 +109,9 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
-	} else {
-		fmt.Printf("UPDATED status: %#v\n", replicaCopy)
+		log.Errorf("ERROR updating status: %v", err)
 	}
+	log.Debugf("UPDATED status: %#v", replicaCopy)
 
 	clusteroperator.ScaleBase(c.PgreplicaClientset, c.PgreplicaClient, replicaCopy, replicaCopy.ObjectMeta.Namespace)
 
@@ -132,6 +128,5 @@ func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgreplica is deleted
 func (c *PgreplicaController) onDelete(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	fmt.Printf("[PgreplicaCONTROLLER] OnDelete %s\n", replica.ObjectMeta.SelfLink)
-	//clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
+	log.Debugf("[PgreplicaCONTROLLER] OnDelete %s", replica.ObjectMeta.SelfLink)
 }

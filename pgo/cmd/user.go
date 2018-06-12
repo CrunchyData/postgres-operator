@@ -74,7 +74,7 @@ func init() {
 	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
 	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
 	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
-	userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
+	//userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
 	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
 	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
 
@@ -93,6 +93,7 @@ func userManager() {
 	request.Expired = Expired
 	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
+	request.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -131,7 +132,7 @@ func userManager() {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 
@@ -155,6 +156,7 @@ func createUser(args []string) {
 	r.ManagedUser = ManagedUser
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
+	r.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/users"
@@ -193,7 +195,7 @@ func createUser(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 
@@ -205,7 +207,7 @@ func deleteUser(username string) {
 
 	log.Debug("deleting user " + username + " selector " + Selector)
 
-	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector
+	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + ClientVersion
 
 	log.Debug("delete users called [" + url + "]")
 
@@ -239,7 +241,7 @@ func deleteUser(username string) {
 			fmt.Println(result)
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 	}
 
 }

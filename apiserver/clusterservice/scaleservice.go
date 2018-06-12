@@ -18,6 +18,8 @@ limitations under the License.
 import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -49,6 +51,10 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if nodeLabel != "" {
 		log.Debug("node-label param was [" + nodeLabel + "]")
 	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -58,6 +64,13 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel)
+	var resp msgs.ClusterScaleResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.ClusterScaleResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel)
+	}
+
 	json.NewEncoder(w).Encode(resp)
 }

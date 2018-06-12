@@ -46,7 +46,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	var pod *v1.Pod
 	var err error
-	target := task.ObjectMeta.Labels["target"]
+	target := task.ObjectMeta.Labels[util.LABEL_TARGET]
 
 	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
 
@@ -132,7 +132,7 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 
 	//delete the deployment with pg-cluster=clusterName,primary=true
 	//should only be 1 primary with this name!
-	deps, err := kubeapi.GetDeployments(clientset, "pg-cluster="+clusterName+",primary=true", namespace)
+	deps, err := kubeapi.GetDeployments(clientset, util.LABEL_PG_CLUSTER+"="+clusterName+",primary=true", namespace)
 	for _, d := range deps.Items {
 		log.Debugf("deleting deployment %s\n", d.Name)
 		kubeapi.DeleteDeployment(clientset, d.Name, namespace)
@@ -169,12 +169,11 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 		return err
 	}
 
-	//set replica=false on the deployment
+	//set primary=true on the deployment
 	//set name=clustername on the deployment
 	newLabels := make(map[string]string)
-	newLabels["name"] = clusterName
-	newLabels["replica"] = "false"
-	newLabels["primary"] = "true"
+	newLabels[util.LABEL_NAME] = clusterName
+	newLabels[util.LABEL_PRIMARY] = "true"
 
 	err = updateLabels(namespace, clientset, targetDeployment, target, newLabels)
 	if err != nil {
@@ -311,11 +310,11 @@ func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClien
 		return errors.New("could not determine which pod to failover to")
 	}
 
-	for _, v := range pods.Items {
-		pod = v
-	}
-	if len(pod.Spec.Containers) != 1 {
-		return errors.New("could not find a container in the pod")
+	pod = pods.Items[0]
+	found := validateDBContainer(&pod)
+	if !found {
+		log.Error("could not find a database container in the target pod, can not failover")
+		return errors.New("could not find database container in target pod")
 	}
 
 	command := make([]string, 1)
@@ -327,7 +326,7 @@ func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClien
 		Namespace(namespace).
 		SubResource("exec")
 	req.VersionedParams(&v1.PodExecOptions{
-		Container: pod.Spec.Containers[0].Name,
+		Container: "database",
 		Command:   command,
 		Stdout:    true,
 		Stderr:    true,
@@ -358,4 +357,16 @@ func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClien
 	log.Debug("promote output [" + execOut.String() + "]")
 
 	return err
+
+}
+func validateDBContainer(pod *v1.Pod) bool {
+	found := false
+
+	for _, c := range pod.Spec.Containers {
+		if c.Name == "database" {
+			return true
+		}
+	}
+	return found
+
 }

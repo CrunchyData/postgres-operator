@@ -39,7 +39,7 @@ var failoverCmd = &cobra.Command{
 			fmt.Println(`You must specify the cluster to failover.`)
 		} else {
 			if Query {
-				createFailover(args)
+				queryFailover(args)
 			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
 					fmt.Println(`--target is required for failover.`)
@@ -72,8 +72,8 @@ func createFailover(args []string) {
 
 	request := new(msgs.CreateFailoverRequest)
 	request.ClusterName = args[0]
-	request.Query = Query
 	request.Target = Target
+	request.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -111,21 +111,65 @@ func createFailover(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		if request.Query {
-			fmt.Println(response.Status.Msg)
-			if len(response.Targets) > 0 {
-				fmt.Println("Failover targets include:")
-				for i := 0; i < len(response.Targets); i++ {
-					fmt.Println("\t" + response.Targets[i])
-				}
+		for k := range response.Results {
+			fmt.Println(response.Results[k])
+		}
+	} else {
+		log.Error(RED(response.Status.Msg))
+		os.Exit(2)
+	}
+
+}
+
+// queryFailover ....
+func queryFailover(args []string) {
+	log.Debugf("queryFailover called %v\n", args)
+
+	url := APIServerURL + "/failover/" + args[0] + "?version=" + ClientVersion
+
+	log.Debug("query failover called [" + url + "]")
+
+	action := "GET"
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
+
+	defer resp.Body.Close()
+
+	var response msgs.QueryFailoverResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if response.Status.Code == msgs.Ok {
+		fmt.Println(response.Status.Msg)
+		if len(response.Targets) > 0 {
+			fmt.Println("Failover targets include:")
+			for i := 0; i < len(response.Targets); i++ {
+				fmt.Println("\t" + response.Targets[i].Name + " (" + response.Targets[i].ReadyStatus + ") (" + response.Targets[i].Node + ")")
 			}
 		}
 		for k := range response.Results {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		//fmt.Printf("%v\n", response)
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 

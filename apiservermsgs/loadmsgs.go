@@ -19,11 +19,12 @@ import ()
 
 // LoadRequest ...
 type LoadRequest struct {
-	Args       []string
-	Selector   string
-	Namespace  string
-	LoadConfig string
-	Policies   string
+	Args          []string
+	Selector      string
+	Namespace     string
+	LoadConfig    string
+	Policies      string
+	ClientVersion string
 }
 
 // LoadResponse ...

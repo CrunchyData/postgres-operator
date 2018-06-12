@@ -27,12 +27,15 @@ $CO_CMD $NS delete service postgres-operator
 $CO_CMD $NS delete deployment postgres-operator
 
 $CO_CMD $NS delete serviceaccount postgres-operator
-#$CO_CMD $NS delete clusterrolebinding postgres-operator-cluster-role-binding
 
-$CO_CMD $NS delete clusterrole pgopclusterrole
-$CO_CMD $NS delete clusterrolebinding pgopclusterbinding
-$CO_CMD $NS delete role nspostgresrole
-$CO_CMD $NS delete rolebinding nspgrolebind
+#$CO_CMD $NS delete clusterrole pgopclusterrole
+#$CO_CMD $NS delete clusterrolebinding pgopclusterbinding
+#$CO_CMD $NS delete role nspostgresrole
+#$CO_CMD $NS delete rolebinding nspgrolebind
+
+$CO_CMD $NS delete role pgo-role
+$CO_CMD $NS delete rolebinding pgo-role-binding
+
 
 sleep 5
 

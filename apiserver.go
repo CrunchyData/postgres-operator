@@ -108,6 +108,7 @@ func main() {
 	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
+	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

@@ -17,11 +17,14 @@ package operator
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
 	"os"
 	"text/template"
 )
 
+var CRUNCHY_DEBUG bool
+var NAMESPACE string
 var COImagePrefix string
 var COImageTag string
 var CCPImagePrefix string
@@ -51,6 +54,8 @@ var DeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1Shared *template.Template
 
+var Pgo config.PgoConfig
+
 func Initialize() {
 	CCPImagePrefix = os.Getenv("CCP_IMAGE_PREFIX")
 	if CCPImagePrefix == "" {
@@ -72,6 +77,22 @@ func Initialize() {
 		panic("CO_IMAGE_TAG env var not set")
 	}
 
+	tmp := os.Getenv("CRUNCHY_DEBUG")
+	if tmp == "true" {
+		CRUNCHY_DEBUG = true
+		log.Debug("CRUNCHY_DEBUG flag set to true")
+	} else {
+		CRUNCHY_DEBUG = false
+		log.Info("CRUNCHY_DEBUG flag set to false")
+	}
+
+	NAMESPACE = os.Getenv("NAMESPACE")
+	log.Debug("setting NAMESPACE to " + NAMESPACE)
+	if NAMESPACE == "" {
+		log.Error("NAMESPACE env var not set")
+		panic("NAMESPACE env var not set")
+	}
+
 	JobTemplate = util.LoadTemplate(jobPath)
 	PgpoolTemplate = util.LoadTemplate("/operator-conf/pgpool-template.json")
 	PgpoolConfTemplate = util.LoadTemplate("/operator-conf/pgpool.conf")
@@ -82,12 +103,13 @@ func Initialize() {
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)
-	//ReplicadeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1.json")
-	//ReplicadeploymentTemplate1Shared = util.LoadTemplate("/operator-conf/cluster-replica-deployment-1-shared.json")
 	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
 	CollectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
 	AffinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
 	ContainerResourcesTemplate1 = util.LoadTemplate("/operator-conf/container-resources.json")
 	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
 
+	Pgo.GetConf()
+	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
+	Pgo.Validate()
 }

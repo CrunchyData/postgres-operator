@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
+	"os"
 )
 
 const CAPMAX = 50
@@ -62,7 +63,7 @@ func showDf(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/df/" + arg + "?selector=" + Selector
+		url := APIServerURL + "/df/" + arg + "?selector=" + Selector + "&version=" + ClientVersion
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)
@@ -91,6 +92,11 @@ func showDf(args []string) {
 			log.Error(err)
 			log.Println(err)
 			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
 		}
 
 		if OutputFormat == "json" {

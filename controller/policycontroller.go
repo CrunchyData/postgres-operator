@@ -17,9 +17,7 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -39,12 +37,11 @@ type PgpolicyController struct {
 
 // Run starts an pgpolicy resource controller
 func (c *PgpolicyController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgpolicy objects\n")
 
 	// Watch Example objects
 	_, err := c.watchPgpolicys(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgpolicy resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgpolicy resource: %v", err)
 		return err
 	}
 
@@ -86,7 +83,7 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 // onAdd is called when a pgpolicy is added
 func (c *PgpolicyController) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	fmt.Printf("[PgpolicyCONTROLLER] OnAdd %s\n", policy.ObjectMeta.SelfLink)
+	log.Debugf("[PgpolicyCONTROLLER] OnAdd %s", policy.ObjectMeta.SelfLink)
 	if policy.Status.State == crv1.PgpolicyStateProcessed {
 		log.Info("pgpolicy " + policy.ObjectMeta.Name + " already processed")
 		return
@@ -112,10 +109,10 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
-	} else {
-		fmt.Printf("UPDATED status: %#v\n", policyCopy)
+		log.Errorf("ERROR updating status: %v", err)
 	}
+
+	log.Debugf("UPDATED status: %#v", policyCopy)
 }
 
 // onUpdate is called when a pgpolicy is updated
@@ -125,7 +122,7 @@ func (c *PgpolicyController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgpolicy is deleted
 func (c *PgpolicyController) onDelete(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	fmt.Printf("[PgpolicyCONTROLLER] OnDelete %s\n", policy.ObjectMeta.SelfLink)
+	log.Debugf("[PgpolicyCONTROLLER] OnDelete %s", policy.ObjectMeta.SelfLink)
 	err := c.PgpolicyClient.Delete().
 		Resource(crv1.PgpolicyResourcePlural).
 		Namespace(policy.ObjectMeta.Namespace).
@@ -134,8 +131,7 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR deleting pgpolicy: %v\n", err)
-	} else {
-		fmt.Println("DELETED pgpolicy " + policy.ObjectMeta.Name)
+		log.Errorf("ERROR deleting pgpolicy: %v", err)
 	}
+	log.Debug("DELETED pgpolicy " + policy.ObjectMeta.Name)
 }

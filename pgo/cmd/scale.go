@@ -59,7 +59,7 @@ func scaleCluster(args []string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel
+		url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + ClientVersion
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)
@@ -94,8 +94,7 @@ func scaleCluster(args []string) {
 				fmt.Println(v)
 			}
 		} else {
-			fmt.Println("Error")
-			fmt.Println(response.Status.Msg)
+			log.Error(RED(response.Status.Msg))
 		}
 
 	}

@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 const AffinityInOperator = "In"
@@ -125,8 +126,11 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		log.Error(err.Error())
 		return err
 	}
-	deploymentDocString := primaryDoc.String()
-	log.Debug(deploymentDocString)
+
+	//a form of debugging
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+	}
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
@@ -193,7 +197,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	var err error
 
 	deployments, err := kubeapi.GetDeployments(clientset,
-		"pg-cluster="+cl.Spec.Name, namespace)
+		util.LABEL_PG_CLUSTER+"="+cl.Spec.Name, namespace)
 	if err != nil {
 		return err
 	}
@@ -316,8 +320,10 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		log.Error(err.Error())
 		return err
 	}
-	replicaDeploymentDocString := replicaDoc.String()
-	log.Debug(replicaDeploymentDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
+	}
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
@@ -333,20 +339,22 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 // getPrimaryLabels ...
 func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
+	primaryLabels[util.LABEL_PRIMARY] = "true"
 	if replicaFlag {
-		primaryLabels["replica"] = "true"
-		primaryLabels["primary"] = "false"
-	} else {
-		primaryLabels["replica"] = "false"
-		primaryLabels["primary"] = "true"
+		primaryLabels[util.LABEL_PRIMARY] = "false"
 	}
 
 	primaryLabels["name"] = Name
-	primaryLabels["pg-cluster"] = ClusterName
+	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
+<<<<<<< HEAD
 		if key == "NodeLabelKey" || key == "NodeLabelValue" {
 			//dont add these types
+=======
+		if key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
+			//dont add these since they can break label expression checks
+>>>>>>> autofail
 		} else {
 			primaryLabels[key] = value
 		}
@@ -362,16 +370,16 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 	var operator, key, value string
 	log.Debug("GetReplicaAffinity ")
-	if replicaLabels["NodeLabelKey"] != "" {
+	if replicaLabels[util.LABEL_NODE_LABEL_KEY] != "" {
 		//use the replica labels
 		operator = "In"
-		key = replicaLabels["NodeLabelKey"]
-		value = replicaLabels["NodeLabelValue"]
+		key = replicaLabels[util.LABEL_NODE_LABEL_KEY]
+		value = replicaLabels[util.LABEL_NODE_LABEL_VALUE]
 	} else {
 		//use the cluster labels
 		operator = "NotIn"
-		key = clusterLabels["NodeLabelKey"]
-		value = clusterLabels["NodeLabelValue"]
+		key = clusterLabels[util.LABEL_NODE_LABEL_KEY]
+		value = clusterLabels[util.LABEL_NODE_LABEL_VALUE]
 	}
 	return GetAffinity(key, value, operator)
 }
@@ -396,15 +404,16 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 		return output
 	}
 
-	affinityDocString := affinityDoc.String()
-	log.Debug(affinityDocString)
+	if operator.CRUNCHY_DEBUG {
+		operator.AffinityTemplate1.Execute(os.Stdout, affinityTemplateFields)
+	}
 
-	return affinityDocString
+	return affinityDoc.String()
 }
 
 func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels["crunchy_collect"] == "true" {
+	if spec.UserLabels[util.LABEL_COLLECT] == "true" {
 		log.Debug("crunchy_collect was found as a label on cluster create")
 		_, PrimaryPassword, err3 := util.GetPasswordFromSecret(clientset, namespace, spec.PrimarySecretName)
 		if err3 != nil {
@@ -423,9 +432,11 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 			log.Error(err.Error())
 			return ""
 		}
-		collectString := collectDoc.String()
-		log.Debug(collectString)
-		return collectString
+
+		if operator.CRUNCHY_DEBUG {
+			operator.CollectTemplate1.Execute(os.Stdout, collectTemplateFields)
+		}
+		return collectDoc.String()
 	}
 	return ""
 }
@@ -478,10 +489,11 @@ func GetContainerResources(resources *crv1.PgContainerResources) string {
 		return ""
 	}
 
-	docString := doc.String()
-	log.Debug(docString)
+	if operator.CRUNCHY_DEBUG {
+		operator.ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
 
-	return docString
+	return doc.String()
 }
 
 // Scale ...
@@ -497,14 +509,14 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	replicaFlag := true
 
 	replicaLabels := getPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
-	replicaLabels["replica-name"] = replica.Spec.Name
+	replicaLabels[util.LABEL_REPLICA_NAME] = replica.Spec.Name
 
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
-	if cluster.Spec.UserLabels["archive"] == "true" {
+	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archiveTimeout = cluster.Spec.UserLabels["archive-timeout"]
+		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
@@ -551,8 +563,10 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		log.Error(err.Error())
 		return err
 	}
-	replicaDeploymentDocString := replicaDoc.String()
-	log.Debug(replicaDeploymentDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
+	}
 
 	replicaDeployment := v1beta1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)

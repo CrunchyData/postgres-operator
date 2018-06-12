@@ -220,7 +220,7 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace 
 func GetLabels(name, clustername string, replica bool) string {
 	var output string
 	if replica {
-		output += fmt.Sprintf("\"replica\": \"%s\",\n", "true")
+		output += fmt.Sprintf("\"primary\": \"%s\",\n", "false")
 	}
 	output += fmt.Sprintf("\"name\": \"%s\",\n", name)
 	output += fmt.Sprintf("\"pg-cluster\": \"%s\"\n", clustername)

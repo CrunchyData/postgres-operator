@@ -17,9 +17,7 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -40,11 +38,10 @@ type PgingestController struct {
 
 // Run starts an pgcluster resource controller
 func (c *PgingestController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgingestcluster objects\n")
 
 	_, err := c.watchPgingests(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgingest resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgingest resource: %v", err)
 		return err
 	}
 
@@ -57,7 +54,6 @@ func (c *PgingestController) watchPgingests(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgingestClient,
 		crv1.PgingestResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -86,7 +82,7 @@ func (c *PgingestController) watchPgingests(ctx context.Context) (cache.Controll
 // onAdd is called when a pgingest is added
 func (c *PgingestController) onAdd(obj interface{}) {
 	ingest := obj.(*crv1.Pgingest)
-	fmt.Printf("[PgingestCONTROLLER] OnAdd %s\n", ingest.ObjectMeta.SelfLink)
+	log.Infof("[PgingestCONTROLLER] OnAdd %s", ingest.ObjectMeta.SelfLink)
 	if ingest.Status.State == crv1.PgingestStateProcessed {
 		log.Info("pgingest " + ingest.ObjectMeta.Name + " already processed")
 		return
@@ -112,9 +108,7 @@ func (c *PgingestController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating ingest status: %v\n", err)
-	} else {
-		fmt.Printf("UPDATED ingest status: %#v\n", ingestCopy)
+		log.Errorf("ERROR updating ingest status: %v", err)
 	}
 
 	ingestoperator.CreateIngest(ingest.ObjectMeta.Namespace, c.PgingestClientset, c.PgingestClient, ingestCopy)
@@ -131,6 +125,6 @@ func (c *PgingestController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgingest is deleted
 func (c *PgingestController) onDelete(obj interface{}) {
 	ingest := obj.(*crv1.Pgingest)
-	fmt.Printf("[PgingestCONTROLLER] OnDelete %s\n", ingest.ObjectMeta.SelfLink)
+	log.Infof("[PgingestCONTROLLER] OnDelete %s", ingest.ObjectMeta.SelfLink)
 	ingestoperator.Delete(c.PgingestClientset, ingest.Spec.Name, ingest.ObjectMeta.Namespace)
 }

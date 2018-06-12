@@ -22,8 +22,10 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"os"
 	"time"
 )
 
@@ -80,15 +82,19 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, accessMod
 	if storageType == "dynamic" {
 		log.Debug("using dynamic PVC template")
 		err = operator.PVCStorageClassTemplate.Execute(&doc2, pvcFields)
+		if operator.CRUNCHY_DEBUG {
+			operator.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
+		}
 	} else {
 		err = operator.PVCTemplate.Execute(&doc2, pvcFields)
+		if operator.CRUNCHY_DEBUG {
+			operator.PVCTemplate.Execute(os.Stdout, pvcFields)
+		}
 	}
 	if err != nil {
 		log.Error("error in pvc create exec" + err.Error())
 		return err
 	}
-	pvcDocString := doc2.String()
-	log.Debug(pvcDocString)
 
 	//template name is lspvc-pod.json
 	//create lspvc pod
@@ -112,7 +118,6 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, accessMod
 
 // Delete a pvc
 func Delete(clientset *kubernetes.Clientset, name string, namespace string) error {
-	log.Debug("in pvc.Delete")
 	var err error
 	var found bool
 	var pvc *v1.PersistentVolumeClaim
@@ -120,15 +125,13 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 	//see if the PVC exists
 	pvc, found, err = kubeapi.GetPVC(clientset, name, namespace)
 	if err != nil || !found {
-		log.Info("\nPVC %s\n", name+" is not found, will not attempt delete")
+		log.Infof("\nPVC %s\n", name+" is not found, will not attempt delete")
 		return nil
 	}
 
-	log.Info("\nPVC %s\n", pvc.Name+" is found")
-	log.Info("%v\n", pvc)
-	//if pgremove = true remove it
-	if pvc.ObjectMeta.Labels["pgremove"] == "true" {
-		log.Info("pgremove is true on this pvc")
+	log.Debugf("\nPVC %s\n", pvc.Name+" is found")
+
+	if pvc.ObjectMeta.Labels[util.LABEL_PGREMOVE] == "true" {
 		log.Debug("delete PVC " + name + " in namespace " + namespace)
 		err = kubeapi.DeletePVC(clientset, name, namespace)
 		if err != nil {

@@ -1,4 +1,4 @@
-package apiserver
+package config
 
 /*
 Copyright 2017-2018 Crunchy Data Solutions, Inc.
@@ -56,12 +56,13 @@ type ContainerResourcesStruct struct {
 }
 
 type PgoStruct struct {
-	Audit         bool   `yaml:"Audit"`
-	Metrics       bool   `yaml:"Metrics"`
-	LSPVCTemplate string `yaml:"LSPVCTemplate"`
-	LoadTemplate  string `yaml:"LoadTemplate"`
-	COImagePrefix string `yaml:"COImagePrefix"`
-	COImageTag    string `yaml:"COImageTag"`
+	AutofailSleepSeconds string `yaml:"AutofailSleepSeconds"`
+	Audit                bool   `yaml:"Audit"`
+	Metrics              bool   `yaml:"Metrics"`
+	LSPVCTemplate        string `yaml:"LSPVCTemplate"`
+	LoadTemplate         string `yaml:"LoadTemplate"`
+	COImagePrefix        string `yaml:"COImagePrefix"`
+	COImageTag           string `yaml:"COImageTag"`
 }
 
 type PgoConfig struct {
@@ -76,7 +77,9 @@ type PgoConfig struct {
 	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
 }
 
-func (c *PgoConfig) validate() error {
+const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
+
+func (c *PgoConfig) Validate() error {
 	var err error
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
@@ -102,6 +105,14 @@ func (c *PgoConfig) validate() error {
 	}
 	if c.Pgo.COImageTag == "" {
 		return errors.New("Pgo.COImageTag is required")
+	}
+	if c.Pgo.AutofailSleepSeconds == "" {
+		log.Warn("Pgo.AutofailSleepSeconds not set, using default ")
+		c.Pgo.AutofailSleepSeconds = DEFAULT_AUTOFAIL_SLEEP_SECONDS
+	}
+	_, err = strconv.Atoi(c.Pgo.AutofailSleepSeconds)
+	if err != nil {
+		return errors.New("Pgo.AutofailSleepSeconds invalid int value found")
 	}
 
 	if c.DefaultContainerResources != "" {
@@ -139,7 +150,7 @@ func (c *PgoConfig) validate() error {
 	return err
 }
 
-func (c *PgoConfig) getConf() *PgoConfig {
+func (c *PgoConfig) GetConf() *PgoConfig {
 
 	yamlFile, err := ioutil.ReadFile("config/pgo.yaml")
 	if err != nil {

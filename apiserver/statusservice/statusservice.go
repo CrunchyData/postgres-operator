@@ -19,10 +19,9 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	//msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
-	//"strconv"
 )
 
 // StatusHandler ...
@@ -33,10 +32,10 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("statusservice.StatusHandler %v\n", vars)
 	//clustername := vars["name"]
 
-	//selector := r.URL.Query().Get("selector")
-	//if selector != "" {
-	//log.Debug("selector param was [" + selector + "]")
-	//}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
 	if err != nil {
@@ -47,8 +46,13 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	//resp := StatusCluster(clustername, selector)
-	resp := Status()
+	var resp msgs.StatusResponse
+	if clientVersion != apiserver.VERSION {
+		resp = msgs.StatusResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = Status()
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }

@@ -79,6 +79,7 @@ func labelClusters(clusters []string) {
 	r.DryRun = DryRun
 	r.LabelCmdLabel = LabelCmdLabel
 	r.DeleteLabel = DeleteLabel
+	r.ClientVersion = ClientVersion
 
 	jsonValue, _ := json.Marshal(r)
 
@@ -123,7 +124,7 @@ func labelClusters(clusters []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}
 

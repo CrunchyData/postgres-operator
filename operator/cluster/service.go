@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"os"
 )
 
 // CreateService ...
@@ -42,8 +43,9 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 			return err
 		}
 
-		replicaServiceDocString := replicaServiceDoc.String()
-		log.Debug(replicaServiceDocString)
+		if operator.CRUNCHY_DEBUG {
+			operator.ServiceTemplate1.Execute(os.Stdout, fields)
+		}
 
 		replicaService := v1.Service{}
 		err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)

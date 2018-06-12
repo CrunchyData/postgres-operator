@@ -32,7 +32,7 @@ import (
 // ProcessPolicies ...
 func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster,primary"}
+	lo := meta_v1.ListOptions{LabelSelector: util.LABEL_PG_CLUSTER + ",primary"}
 	fw, err := clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())
@@ -147,7 +147,7 @@ func getClusterName(pod *v1.Pod) string {
 	var clusterName string
 	labels := pod.ObjectMeta.Labels
 	for k, v := range labels {
-		if k == "pg-cluster" {
+		if k == util.LABEL_PG_CLUSTER {
 			clusterName = v
 		}
 	}

@@ -5,7 +5,7 @@ draft: false
 ---
 
 :toc:
-v3.0, {docdate}
+v3.1, {docdate}
 
 == pgo Commands
 
@@ -118,6 +118,18 @@ pgo create cluster testcluster --archive
 This will cause a new PVC to be created to hold archive logs.  Space
 is consumed by these logs but archives enable you to perform Point-In-Time-Recovery.
 
+To enable *auto failover* on this cluster, use the following flag:
+....
+pgo create cluster testcluster --autofail
+....
+
+*auto failover* when set on the cluster informs the operator to look
+or watch for *NotReady* events on this cluster, and when those occur
+to create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod.  See
+the How It Works documentation for more details on *auto failover*.
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -163,6 +175,14 @@ to proceed because this action will delete any existing backup job
 for this cluster that might exist.  The backup files will still
 be left intact but the actual Kubernetes Job will be removed prior
 to creating a new Job with the same name.
+
+You can override the PVC used by the backup job with the following:
+....
+pgo backup mycluster --pvc-name=myremotepvc
+....
+
+This might be useful for special backup cases, perhaps to create
+a backup on a disaster recovery PVC.
 
 === pgo delete backup
 
@@ -453,12 +473,7 @@ pgo create user sally --selector=name=mycluster
 
 To delete a Postgres user in the *mycluster* cluster, execute:
 ....
-pgo user --delete-user=sally --selector=name=mycluster
-....
-
-To delete that user in all clusters:
-....
-pgo user --delete-user=sally
+pgo user delete user sally --selector=name=mycluster
 ....
 
 To change the password for a user in the *mycluster* cluster:
@@ -490,11 +505,6 @@ In this example, a user named *user1* has its password changed to a generated
 value and the *valid until* expiration date set to 10 days from now, this
 command will take effect across all clusters that match the selector.  If you
 specify *valid-days=-1* it will mean the password will not expire (e.g. infinity).
-
-To drop a user:
-....
-pgo user --delete-user=user3   --selector=project=xray
-....
 
 To see which passwords are set to expire in a given number of days:
 ....
@@ -573,6 +583,7 @@ can be used to promote a replica to a primary role in a PostgreSQL
 cluster.
 
 This process includes the following actions:
+
  * pick a target replica to become the new primary
  * delete the current primary deployment to avoid user requests from
    going to multiple primary databases (split brain)
