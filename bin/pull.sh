@@ -13,16 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export P_IMAGE_PREFIX=registry-dev.crunchydata.com/crunchydata
-export CO_IMAGE_TAG=centos7-3.0
+P_IMAGE_PREFIX=registry-dev.crunchydata.com/crunchydata
+CO_IMAGE_PREFIX=crunchydata
+CO_IMAGE_TAG=centos7-3.1
 
-docker pull $P_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG
-docker tag $P_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG
-docker pull $P_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG   
-docker tag $P_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG   
-docker pull $P_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG   
-docker tag $P_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG   
-docker pull $P_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG  
-docker tag $P_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG  
-docker pull $P_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG  
-docker tag $P_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG  
+for CNAME in pgo-rmdata pgo-load pgo-lspvc postgres-operator pgo-apiserver 
+do
+	docker pull $P_IMAGE_PREFIX/$CNAME:$CO_IMAGE_TAG
+	docker tag $P_IMAGE_PREFIX/$CNAME:$CO_IMAGE_TAG $CO_IMAGE_PREFIX/$CNAME:$CO_IMAGE_TAG
+done
