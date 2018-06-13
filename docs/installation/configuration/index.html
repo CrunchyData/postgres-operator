@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40.3" />
+<meta name="generator" content="Hugo 0.40" />
 
 <title>Configuration :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -93,13 +93,6 @@
           </a>
         </div>
     </li>
-      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
-            Upgrading the Operator
-          </a>
-        </div>
-    </li>
       <li data-nav-id="/installation/deployment/" class="dd-item">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
@@ -111,6 +104,13 @@
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
             Configuration
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
+            Upgrading the Operator
           </a>
         </div>
     </li>
@@ -235,8 +235,8 @@
 <li><a href="#_basic_authentication">Basic Authentication</a></li>
 <li><a href="#_configure_tls">Configure TLS</a></li>
 <li><a href="#_pgo_rbac">pgo RBAC</a></li>
-<li><a href="#_apiserver_configuration"><strong>apiserver</strong> Configuration</a></li>
-<li><a href="#_postgres_operator_container_configuration"><strong>postgres-operator</strong> Container Configuration</a></li>
+<li><a href="#_strong_apiserver_strong_configuration"><strong>apiserver</strong> Configuration</a></li>
+<li><a href="#_strong_postgres_operator_strong_container_configuration"><strong>postgres-operator</strong> Container Configuration</a></li>
 </ul>
 </li>
 <li><a href="#_bash_completion">bash Completion</a></li>
@@ -245,7 +245,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-06-04</p>
+<p>v3.1, 2018-06-13</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -300,13 +300,11 @@ deployment.</p>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If you are not using the <strong>demo</strong> namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.</p>
-</div>
-<div class="paragraph">
-<p><code>$COROOT/deploy/service-account.yaml</code></p>
-</div>
-<div class="paragraph">
-<p><code>$COROOT/deploy/cluster-role-binding.yaml</code></p>
+<p>The CO_NAMESPACE environment variable determines the namespace
+that is used within the deployment of the operator.  If you
+are deploying to the <strong>demo</strong> namespace, the following
+should setting should be defined in your .bashrc:
+<code>export CO_NAMESPACE=demo</code></p>
 </div>
 </td>
 </tr>
@@ -571,7 +569,7 @@ get back this response -</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_apiserver_configuration"><strong>apiserver</strong> Configuration</h3>
+<h3 id="_strong_apiserver_strong_configuration"><strong>apiserver</strong> Configuration</h3>
 <div class="paragraph">
 <p>The postgres-operator pod includes the apiserver which is a REST API that pgo
 users are able to communicate with.</p>
@@ -599,7 +597,7 @@ setting in the <code>$COROOT/conf/apiserver/pgo.yaml</code> configuration file. 
 set to the latest release of the Crunchy Container Suite.</p>
 </div>
 <div class="sect3">
-<h4 id="_pgo_yaml"><strong>pgo.yaml</strong></h4>
+<h4 id="_strong_pgo_yaml_strong"><strong>pgo.yaml</strong></h4>
 <div class="paragraph">
 <p>The default pgo.yaml configuration file, included in <code>$COROOT/conf/apiserver/pgo.yaml</code>,
 looks like this -</p>
@@ -988,7 +986,7 @@ automatically to your disaster recovery site thanks to network storage.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_postgres_operator_container_configuration"><strong>postgres-operator</strong> Container Configuration</h3>
+<h3 id="_strong_postgres_operator_strong_container_configuration"><strong>postgres-operator</strong> Container Configuration</h3>
 <div class="paragraph">
 <p>To enable <strong>debug</strong> level messages from the operator pod, set the <code>CRUNCHY_DEBUG</code> environment
 variable to <strong>true</strong> within its deployment file <code>deployment.json</code>.</p>
@@ -1198,7 +1196,7 @@ the updated secret file.</p>
 
 <div id="navigation">
 <a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/deployment/" title="Deployment"> <i class="fa fa-chevron-left"></i><label>Deployment</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/contributing/" title="Contributing" style="margin-right: 0px;"><label>Contributing</label><i class="fa fa-chevron-right"></i></a></div>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/" title="Upgrading the Operator" style="margin-right: 0px;"><label>Upgrading the Operator</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>
 <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">

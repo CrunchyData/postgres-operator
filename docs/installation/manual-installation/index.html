@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40.3" />
+<meta name="generator" content="Hugo 0.40" />
 
 <title>Manual Installation :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -93,13 +93,6 @@
           </a>
         </div>
     </li>
-      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
-            Upgrading the Operator
-          </a>
-        </div>
-    </li>
       <li data-nav-id="/installation/deployment/" class="dd-item">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
@@ -111,6 +104,13 @@
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
             Configuration
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
+            Upgrading the Operator
           </a>
         </div>
     </li>
@@ -240,18 +240,41 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-06-04</p>
+<p>v3.1, 2018-06-13</p>
 </div>
 <div class="sect1">
 <h2 id="_project_structure">Project Structure</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called <strong>odev</strong> -</p>
+<p>First, define the following environment variables in <strong>.bashrc</strong>:</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>export GOPATH=$HOME/odev
-mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
+export GOBIN=$GOPATH/bin
+export CO_NAMESPACE=demo
+export CO_CMD=kubectl
+export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-3.1
+export CO_BASEOS=centos7</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When deploying on Openshift Container Platform, the CO_CMD environment
+variable should be:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_CMD=oc</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called <strong>odev</strong> -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
 mkdir -p $GOPATH/src/github.com/crunchydata/</pre>
 </div>
 </div>
@@ -263,7 +286,7 @@ mkdir -p $GOPATH/src/github.com/crunchydata/</pre>
 <pre>cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.0</pre>
+git checkout 3.1</pre>
 </div>
 </div>
 </div>
@@ -302,13 +325,8 @@ kubectl config view | grep namespace</pre>
 </td>
 <td class="content">
 <div class="paragraph">
-<p>If you are not using the <strong>demo</strong> namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.</p>
-</div>
-<div class="paragraph">
-<p><code>$COROOT/deploy/service-account.yaml</code></p>
-</div>
-<div class="paragraph">
-<p><code>$COROOT/deploy/cluster-role-binding.yaml</code></p>
+<p>The namespace used by the operator is determined by the
+CO_NAMESPACE environment variable setting.</p>
 </div>
 </td>
 </tr>
@@ -318,7 +336,7 @@ kubectl config view | grep namespace</pre>
 <p>Permissions are granted to the Operator by means of a Service Account called <strong>postgres-operator</strong>.  That service account is added to the Operator deployment.</p>
 </div>
 <div class="paragraph">
-<p>The postgres-operator service account is granted cluster-admin priviledges using a cluster role binding <strong>postgres-operator-cluster-role-binding</strong>.</p>
+<p>The postgres-operator service account is granted priviledges using a role binding <strong>pgo-role-binding</strong>.</p>
 </div>
 <div class="paragraph">
 <p>See <a href="https://kubernetes.io/docs/admin/authorization/rbac/">here</a> for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.</p>
@@ -347,10 +365,7 @@ sudo chown 777 /data</pre>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>export CO_NAMESPACE=demo
-export CO_CMD=kubectl
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-go get github.com/blang/expenv
+<pre>go get github.com/blang/expenv
 $COROOT/pv/create-pv.sh</pre>
 </div>
 </div>
@@ -375,13 +390,11 @@ $COROOT/pv/create-pv.sh</pre>
 <div class="sect2">
 <h3 id="_packaged_images">Packaged Images</h3>
 <div class="paragraph">
-<p>To pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers, specify the image versions, and execute the following Makefile target -</p>
+<p>To pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers, execute the following Makefile target -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.0
-make pull</pre>
+<pre>make pull</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -393,14 +406,14 @@ make pull</pre>
 <p><a href="https://github.com/CrunchyData/postgres-operator/releases">Github Releases</a></p>
 </li>
 <li>
-<p>extract (e.g. tar xvzf postgres-operator.3.0.tar.gz)</p>
+<p>extract (e.g. tar xvzf postgres-operator.3.1.tar.gz)</p>
 </li>
 </ul>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>cd $HOME
-tar xvzf ./postgres-operator.3.0.tar.gz</pre>
+tar xvzf ./postgres-operator.3.1.tar.gz</pre>
 </div>
 </div>
 <div class="ulist">
@@ -491,30 +504,21 @@ Container Platform environments.</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>First, install the project library dependencies. The godep dependency manager is used for this purpose. -</p>
+<p>Before compiling the Operator, it&#8217;s necessary to install the <strong>Mercurial</strong> requirement.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>cd $COROOT
-make setup</pre>
+<pre>sudo yum -y install mercurial</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Then, compile the PostgreSQL Operator using the Makefile.</p>
+<p>Then, install the project library dependencies. The godep dependency manager is used for this purpose. Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>cd $COROOT
+make setup
 make all
-which pgo</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Finally, deploy the operator to your Kubernetes cluster.</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
 make deployoperator</pre>
 </div>
 </div>
