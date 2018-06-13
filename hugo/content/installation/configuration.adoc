@@ -6,7 +6,7 @@ weight: 60
 ---
 
 :toc:
-v3.0, {docdate}
+v3.1, {docdate}
 
 == Overview
 
@@ -37,11 +37,11 @@ deployment.
 
 [WARNING]
 ====
-If you are not using the *demo* namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.
-
-`$COROOT/deploy/service-account.yaml`
-
-`$COROOT/deploy/cluster-role-binding.yaml`
+The CO_NAMESPACE environment variable determines the namespace
+that is used within the deployment of the operator.  If you
+are deploying to the *demo* namespace, the following
+should setting should be defined in your .bashrc:
+`export CO_NAMESPACE=demo`
 ====
 
 {{% notice tip %}}

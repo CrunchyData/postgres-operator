@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-v3.0, {docdate}
+v3.1, {docdate}
 
 == Project Structure
 
@@ -18,8 +18,14 @@ export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.0
+export CO_IMAGE_TAG=centos7-3.1
 export CO_BASEOS=centos7
+....
+
+When deploying on Openshift Container Platform, the CO_CMD environment
+variable should be:
+....
+export CO_CMD=oc
 ....
 
 To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
@@ -33,7 +39,7 @@ Next, get a tagged release of the source code -
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.0
+git checkout 3.1
 ....
 
 == Installation Prerequsites
@@ -51,16 +57,13 @@ kubectl config view | grep namespace
 
 [WARNING]
 ====
-If you are not using the *demo* namespace, it will be required to edit the following and change the namespace where the service account and cluster role bindings will be deployed.
-
-`$COROOT/deploy/service-account.yaml`
-
-`$COROOT/deploy/cluster-role-binding.yaml`
+The namespace used by the operator is determined by the
+CO_NAMESPACE environment variable setting.
 ====
 
 Permissions are granted to the Operator by means of a Service Account called *postgres-operator*.  That service account is added to the Operator deployment.
 
-The postgres-operator service account is granted cluster-admin priviledges using a cluster role binding *postgres-operator-cluster-role-binding*.
+The postgres-operator service account is granted priviledges using a role binding *pgo-role-binding*.
 
 See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.
 
@@ -96,10 +99,10 @@ make pull
 To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link -
 
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]
- * extract (e.g. tar xvzf postgres-operator.3.0.tar.gz)
+ * extract (e.g. tar xvzf postgres-operator.3.1.tar.gz)
 ....
 cd $HOME
-tar xvzf ./postgres-operator.3.0.tar.gz
+tar xvzf ./postgres-operator.3.1.tar.gz
 ....
  * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
 
