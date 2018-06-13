@@ -2,7 +2,7 @@
 title: "Upgrading the Operator"
 date: 2018-04-24T18:27:30-07:00
 draft: false
-weight: 40
+weight: 60
 ---
 
 v3.1, {docdate}
