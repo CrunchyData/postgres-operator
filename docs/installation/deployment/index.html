@@ -5,7 +5,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.40.3" />
+<meta name="generator" content="Hugo 0.40" />
 
 <title>Deployment :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/favicon.ico" type="image/x-icon" />
@@ -93,13 +93,6 @@
           </a>
         </div>
     </li>
-      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
-            Upgrading the Operator
-          </a>
-        </div>
-    </li>
       <li data-nav-id="/installation/deployment/" class="dd-item active">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
@@ -111,6 +104,13 @@
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
             Configuration
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/">
+            Upgrading the Operator
           </a>
         </div>
     </li>
@@ -228,14 +228,14 @@
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#_verify_operator_status">Verify Operator Status</a></li>
-<li><a href="#_configure_pgo_client">Configure <strong>pgo</strong> Client</a></li>
+<li><a href="#_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</a></li>
 <li><a href="#_verify_pgo_client">Verify pgo Client</a></li>
 <li><a href="#_storage_configuration">Storage Configuration</a></li>
 <li><a href="#_next_steps">Next Steps</a></li>
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.0, 2018-06-04</p>
+<p>v3.1, 2018-06-13</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -301,7 +301,7 @@ so far are -</p>
 <div class="literalblock">
 <div class="content">
 <pre>export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.0
+export CO_IMAGE_TAG=centos7-3.1
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
@@ -315,7 +315,7 @@ export CO_CMD=kubectl</pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_configure_pgo_client">Configure <strong>pgo</strong> Client</h2>
+<h2 id="_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The pgo command line client requires TLS for securing the connection to the operator&#8217;s REST API.  This configuration is performed as follows -</p>
@@ -435,8 +435,8 @@ pgo version</pre>
 <div class="literalblock">
 <div class="content">
 <pre>pgo version
-pgo client version 3.0
-apiserver version 3.0</pre>
+pgo client version 3.1
+apiserver version 3.1</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -621,7 +621,7 @@ deploy. This information can be found in the <a href="https://crunchydata.github
 </div>
 
 <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/" title="Upgrading the Operator"> <i class="fa fa-chevron-left"></i><label>Upgrading the Operator</label></a>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/helm-chart/" title="Helm Chart"> <i class="fa fa-chevron-left"></i><label>Helm Chart</label></a>
     <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration" style="margin-right: 0px;"><label>Configuration</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>
