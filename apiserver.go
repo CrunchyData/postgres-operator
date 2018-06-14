@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
+	"github.com/crunchydata/postgres-operator/apiserver/configservice"
 	"github.com/crunchydata/postgres-operator/apiserver/dfservice"
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
 	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
@@ -102,6 +103,7 @@ func main() {
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
+	r.HandleFunc("/config", configservice.ShowConfigHandler)
 
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
 	//here

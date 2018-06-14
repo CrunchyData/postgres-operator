@@ -27,6 +27,13 @@ running, use the following -
 pgo version
 ....
 
+=== pgo show config
+
+To see what configuration you are running against within the Operator, use the following -
+....
+pgo show config
+....
+
 === pgo create cluster
 
 To create a database, use the following -

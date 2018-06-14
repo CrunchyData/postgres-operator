@@ -39,6 +39,7 @@ For example:
 	pgo show pvc mycluster
 	pgo show backup mycluster
 	pgo show ingest myingest
+	pgo show config
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -48,6 +49,7 @@ Valid resource types include:
 	* pvc
 	* policy
 	* ingest
+	* config
 	* upgrade
 	* backup`)
 		} else {
@@ -56,6 +58,7 @@ Valid resource types include:
 			case "pvc":
 			case "policy":
 			case "ingest":
+			case "config":
 			case "upgrade":
 			case "backup":
 				break
@@ -66,6 +69,7 @@ Valid resource types include:
 	* pvc
 	* policy
 	* ingest
+	* config
 	* upgrade
 	* backup`)
 			}
@@ -81,6 +85,7 @@ func init() {
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowIngestCmd)
+	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 
 	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "x", false, "Show secrets ")
@@ -89,6 +94,17 @@ func init() {
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
 
+}
+
+var ShowConfigCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Show config information",
+	Long: `Show config information. For example:
+
+				pgo show config`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showConfig(args)
+	},
 }
 
 var ShowPolicyCmd = &cobra.Command{
