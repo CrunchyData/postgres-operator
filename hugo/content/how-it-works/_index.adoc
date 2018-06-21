@@ -426,7 +426,7 @@ chose.
 
 The logic of auto failover works like this:
 
- * the readiness probe on the primary database container is executed every few seonds to check the *readiness* of the database, this is what tells Kubernetes whether or not the container is *Ready* or *NotReady*.
+ * the readiness probe on the primary database container is executed every few seconds to check the *readiness* of the database, this is what tells Kubernetes whether or not the container is *Ready* or *NotReady*.
  * if a *NotReady* state is detected then that event is caught by the operator which is watching for database containers created by the operator
  * upon a *NotReady* event, a timer is started for that database which acts as the final check as to if a failover is required for that database
  * if the timer expires and the state is still *Not Ready* then the manual
