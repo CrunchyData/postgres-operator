@@ -235,7 +235,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.1, 2018-06-13</p>
+<p>v3.1, 2018-06-22</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -334,6 +334,39 @@ export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
 <div class="content">
 <pre>echo "username:password" &gt; $HOME/.pgouser</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Roles are defined in a file called <strong>pgorole</strong>. This file defines each role and the
+permissions for that role. By default, two roles are defined as samples -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgoadmin
+pgoreader</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local
+security requirements.</p>
+</div>
+<div class="paragraph">
+<p>The format of this file is as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>rolename: permissionA, permissionB</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These are defined in the following file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgorole</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The complete set of permissions is documented in the <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">Configuration</a> document.</p>
 </div>
 <div class="paragraph">
 <p>The <strong>pgo</strong> client needs the URL to connect to the operator.</p>

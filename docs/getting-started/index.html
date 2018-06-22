@@ -225,6 +225,7 @@
 <li><a href="#_pgo_commands">pgo Commands</a>
 <ul class="sectlevel2">
 <li><a href="#_pgo_version">pgo version</a></li>
+<li><a href="#_pgo_show_config">pgo show config</a></li>
 <li><a href="#_pgo_create_cluster">pgo create cluster</a></li>
 <li><a href="#_pgo_backup">pgo backup</a></li>
 <li><a href="#_pgo_delete_backup">pgo delete backup</a></li>
@@ -244,12 +245,13 @@
 <li><a href="#_pgo_failover">pgo failover</a></li>
 <li><a href="#_pgo_df">pgo df</a></li>
 <li><a href="#_pgo_status">pgo status</a></li>
+<li><a href="#_pgo_show_config_2">pgo show config</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.1, 2018-06-13</p>
+<p>v3.1, 2018-06-22</p>
 </div>
 <div class="sect1">
 <h2 id="_pgo_commands">pgo Commands</h2>
@@ -276,6 +278,17 @@ running, use the following -</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo version</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pgo_show_config">pgo show config</h3>
+<div class="paragraph">
+<p>To see what configuration you are running against within the Operator, use the following -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show config</pre>
 </div>
 </div>
 </div>
@@ -926,6 +939,18 @@ policy name (e.g. policy1):</p>
 </div>
 </div>
 <div class="paragraph">
+<p>To create a new Postgres user to the <strong>mycluster</strong> cluster that has credentials created with Kubernetes Secrets, use the <strong>--managed</strong> flag:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create user sally --managed --selector=name=mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A <strong>managed</strong> account is one that the Operator can manipulate as well; this means that when you run <code>pgo show cluster mycluster --show-secrets</code>
+their credentials are visible, when you run <code>pgo test mycluster</code> the account is tested with the other default accounts, etc.</p>
+</div>
+<div class="paragraph">
 <p>To change the password for a user in the <strong>mycluster</strong> cluster:</p>
 </div>
 <div class="literalblock">
@@ -950,7 +975,7 @@ of days in the <strong>mycluster</strong> cluster:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo create user user1 --valid-days=30 --managed --db=userdb --selector=name=xraydb1</pre>
+<pre>pgo create user user1 --valid-days=30 --db=userdb --selector=name=xraydb1</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1215,6 +1240,20 @@ Database Images:
                          4	crunchydata/crunchy-postgres:centos7-10.4-1.8.3
 
 Databases Not Ready:</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pgo_show_config_2">pgo show config</h3>
+<div class="paragraph">
+<p>The <code>pgo show config</code> command displays the running operator configuration
+parameters that dictate the setup and user defined configuration of the
+operator.  This command can be useful for sharing your configuration or
+verifying the setup is as expected.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show config</pre>
 </div>
 </div>
 </div>
