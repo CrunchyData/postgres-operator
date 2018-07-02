@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
 )
 
@@ -42,7 +42,7 @@ func showPVC(args []string) {
 
 func printPVC(pvcName, pvcRoot string) {
 
-	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + ClientVersion
+	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION
 	log.Debug("showPolicy called...[" + url + "]")
 
 	action := "GET"
@@ -62,7 +62,7 @@ func printPVC(pvcName, pvcRoot string) {
 	StatusCheck(resp)
 
 	defer resp.Body.Close()
-	var response apiservermsgs.ShowPVCResponse
+	var response msgs.ShowPVCResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
 		log.Error(err)
@@ -70,7 +70,7 @@ func printPVC(pvcName, pvcRoot string) {
 		return
 	}
 
-	if response.Status.Code == apiservermsgs.Error {
+	if response.Status.Code == msgs.Error {
 		log.Error(RED(response.Status.Msg))
 		return
 	}

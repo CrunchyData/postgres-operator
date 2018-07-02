@@ -20,9 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	//"github.com/spf13/cobra"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -101,7 +99,7 @@ func deleteIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingestdelete/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/ingestdelete/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("deleteIngest called...[" + url + "]")
 
 		action := "GET"
@@ -152,7 +150,7 @@ func showIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingest/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/ingest/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("showIngest called...[" + url + "]")
 
 		action := "GET"

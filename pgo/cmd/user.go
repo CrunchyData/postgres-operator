@@ -93,7 +93,7 @@ func userManager() {
 	request.Expired = Expired
 	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -156,7 +156,7 @@ func createUser(args []string) {
 	r.ManagedUser = ManagedUser
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/users"
@@ -207,7 +207,7 @@ func deleteUser(username string) {
 
 	log.Debug("deleting user " + username + " selector " + Selector)
 
-	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + ClientVersion
+	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 
 	log.Debug("delete users called [" + url + "]")
 

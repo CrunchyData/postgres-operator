@@ -82,7 +82,7 @@ func createLoad(args []string) {
 	request.Selector = Selector
 	request.Policies = PoliciesFlag
 	request.Args = args
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	//make the request
 

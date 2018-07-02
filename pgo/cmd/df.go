@@ -63,7 +63,7 @@ func showDf(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/df/" + arg + "?selector=" + Selector + "&version=" + ClientVersion
+		url := APIServerURL + "/df/" + arg + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)

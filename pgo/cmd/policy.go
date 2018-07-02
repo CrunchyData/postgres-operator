@@ -76,7 +76,7 @@ func applyPolicy(args []string) {
 	r.Name = args[0]
 	r.Selector = Selector
 	r.DryRun = DryRun
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 
@@ -134,7 +134,7 @@ func applyPolicy(args []string) {
 func showPolicy(args []string) {
 
 	for _, v := range args {
-		url := APIServerURL + "/policies/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/policies/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("showPolicy called...[" + url + "]")
 
 		action := "GET"
@@ -202,7 +202,7 @@ func createPolicy(args []string) {
 
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	if PolicyURL != "" {
 		r.URL = PolicyURL
@@ -276,7 +276,7 @@ func deletePolicy(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + ClientVersion
+		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
 		log.Debug("delete policy called [" + url + "]")
 

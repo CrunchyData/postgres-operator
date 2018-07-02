@@ -28,7 +28,7 @@ func showConfig(args []string) {
 
 	log.Debugf("showConfig called %v\n", args)
 
-	url := APIServerURL + "/config?version=" + ClientVersion
+	url := APIServerURL + "/config?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)

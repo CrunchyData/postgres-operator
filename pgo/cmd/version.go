@@ -26,8 +26,6 @@ import (
 	"os"
 )
 
-const ClientVersion = "3.1"
-
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "print version information for the postgres-operator",
@@ -92,7 +90,7 @@ func showVersion() {
 		return
 	}
 
-	fmt.Println("pgo client version " + ClientVersion)
+	fmt.Println("pgo client version " + msgs.PGO_VERSION)
 
 	if response.Status.Code == msgs.Ok {
 		fmt.Println("apiserver version " + response.Version)

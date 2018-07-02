@@ -65,7 +65,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.ClusterScaleResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ClusterScaleResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {

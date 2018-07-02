@@ -42,7 +42,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.UserResponse
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp = msgs.UserResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
@@ -69,7 +69,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateUserResponse{}
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 	} else {
@@ -110,7 +110,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("userservice.DeleteUserHandler DELETE called")
 	var resp msgs.DeleteUserResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.DeleteUserResponse{}
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR

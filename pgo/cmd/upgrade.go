@@ -68,7 +68,7 @@ func showUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/upgrades/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("showUpgrade called...[" + url + "]")
 
 		action := "GET"
@@ -143,7 +143,7 @@ func deleteUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgradesdelete/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("deleteUpgrade called...[" + url + "]")
 
 		action := "GET"
@@ -221,7 +221,7 @@ func createUpgrade(args []string) {
 	request.Selector = Selector
 	request.CCPImageTag = CCPImageTag
 	request.UpgradeType = UpgradeType
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(request)
 

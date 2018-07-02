@@ -73,7 +73,7 @@ func createFailover(args []string) {
 	request := new(msgs.CreateFailoverRequest)
 	request.ClusterName = args[0]
 	request.Target = Target
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -125,7 +125,7 @@ func createFailover(args []string) {
 func queryFailover(args []string) {
 	log.Debugf("queryFailover called %v\n", args)
 
-	url := APIServerURL + "/failover/" + args[0] + "?version=" + ClientVersion
+	url := APIServerURL + "/failover/" + args[0] + "?version=" + msgs.PGO_VERSION
 
 	log.Debug("query failover called [" + url + "]")
 

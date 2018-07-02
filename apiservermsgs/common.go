@@ -17,6 +17,8 @@ limitations under the License.
 
 import ()
 
+const PGO_VERSION = "3.2"
+
 // Ok status
 const Ok = "ok"
 const Error = "error"

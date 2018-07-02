@@ -79,7 +79,7 @@ func labelClusters(clusters []string) {
 	r.DryRun = DryRun
 	r.LabelCmdLabel = LabelCmdLabel
 	r.DeleteLabel = DeleteLabel
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 

@@ -60,7 +60,7 @@ func showTest(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/clusters/test/" + arg + "?selector=" + Selector + "&version=" + ClientVersion
+		url := APIServerURL + "/clusters/test/" + arg + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)

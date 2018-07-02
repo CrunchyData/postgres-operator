@@ -60,7 +60,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := msgs.ShowPVCResponse{}
 
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 	} else {

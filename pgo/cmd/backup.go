@@ -67,7 +67,7 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/backups/" + v + "?version=" + msgs.PGO_VERSION
 
 		log.Debug("show backup called [" + url + "]")
 
@@ -142,7 +142,7 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		url := APIServerURL + "/backupsdelete/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/backupsdelete/" + v + "?version=" + msgs.PGO_VERSION
 
 		log.Debug("delete backup called [" + url + "]")
 

@@ -38,7 +38,7 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + ClientVersion
+		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + msgs.PGO_VERSION
 
 		log.Debug("delete cluster called [" + url + "]")
 
@@ -93,7 +93,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + ClientVersion
+		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 
 		log.Debug("show cluster called [" + url + "]")
 
@@ -244,7 +244,7 @@ func createCluster(args []string) {
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
 	r.ContainerResources = ContainerResources
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"

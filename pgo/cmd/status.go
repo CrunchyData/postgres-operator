@@ -51,7 +51,7 @@ func showStatus(args []string) {
 
 	log.Debugf("showStatus called %v\n", args)
 
-	url := APIServerURL + "/status?version=" + ClientVersion
+	url := APIServerURL + "/status?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
