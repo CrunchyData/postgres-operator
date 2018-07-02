@@ -45,6 +45,11 @@ gendeps:
 	github.com/crunchydata/postgres-operator/apiserver/versionservice 
 setup:
 	./bin/get-deps.sh
+setupnamespace:
+	kubectl create -f ./examples/demo-namespace.json
+	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
+	kubectl config use-context demo
+
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars
