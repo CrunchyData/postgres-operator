@@ -27,6 +27,7 @@ resources:
     memory: 128Mi
 
 serviceAccount:
+  name: "postgres-operator"
   create: "true"
 
 rbac:

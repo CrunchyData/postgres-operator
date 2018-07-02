@@ -250,7 +250,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.1, 2018-06-13</p>
+<p>v3.1, 2018-06-22</p>
 </div>
 <div class="sect1">
 <h2 id="_reference_architecture">Reference Architecture</h2>
@@ -810,14 +810,7 @@ Postgres cluster.</p>
 as defined within the <strong>crunchy-containers</strong> project.</p>
 </div>
 <div class="paragraph">
-<p>The <strong>prometheus push gateway</strong> that is deployed as part of the
-<strong>crunchy-metrics</strong> example is a current requirement for the
-metrics solution.  This will change in an upcoming
-release of the <strong>crunchy-containers</strong> project and there will
-no longer be a requirement for the push gateway to be deployed.</p>
-</div>
-<div class="paragraph">
-<p>See <a href="https://github.com/CrunchyData/crunchy-containers/blob/master/docs/examples.adoc#metrics-collection">the crunchy-containers Metrics example</a> for more details on setting up the <strong>crunchy-metrics</strong> solution.</p>
+<p>See <a href="https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_and_performance">the crunchy-containers Metrics example</a> for more details on setting up the <strong>crunchy-metrics</strong> solution.</p>
 </div>
 </div>
 <div class="sect2">
@@ -880,7 +873,7 @@ chose.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>the readiness probe on the primary database container is executed every few seonds to check the <strong>readiness</strong> of the database, this is what tells Kubernetes whether or not the container is <strong>Ready</strong> or <strong>NotReady</strong>.</p>
+<p>the readiness probe on the primary database container is executed every few seconds to check the <strong>readiness</strong> of the database, this is what tells Kubernetes whether or not the container is <strong>Ready</strong> or <strong>NotReady</strong>.</p>
 </li>
 <li>
 <p>if a <strong>NotReady</strong> state is detected then that event is caught by the operator which is watching for database containers created by the operator</p>

@@ -15,6 +15,7 @@ spec:
         app: {{ template "postgres-operator.name" . }}
         release: {{ .Release.Name }}
     spec:
+      serviceAccountName: postgres-operator
       containers:
         - name: {{ .Chart.Name }}-apiserver
           image: "{{ .Values.env.co_image_prefix }}/pgo-apiserver:{{ .Values.env.co_image_tag }}"

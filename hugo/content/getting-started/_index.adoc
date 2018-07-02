@@ -483,6 +483,14 @@ To delete a Postgres user in the *mycluster* cluster, execute:
 pgo user delete user sally --selector=name=mycluster
 ....
 
+To create a new Postgres user to the *mycluster* cluster that has credentials created with Kubernetes Secrets, use the *--managed* flag:
+....
+pgo create user sally --managed --selector=name=mycluster
+....
+
+A *managed* account is one that the Operator can manipulate as well; this means that when you run `pgo show cluster mycluster --show-secrets`
+their credentials are visible, when you run `pgo test mycluster` the account is tested with the other default accounts, etc.
+
 To change the password for a user in the *mycluster* cluster:
 ....
 pgo user --change-password=sally --selector=name=mycluster
@@ -498,7 +506,7 @@ pgo user --expired=7 --selector=name=mycluster
 
 To assign users to a cluster:
 ....
-pgo create user user1 --valid-days=30 --managed --db=userdb --selector=name=xraydb1
+pgo create user user1 --valid-days=30 --db=userdb --selector=name=xraydb1
 ....
 
 In this example, a user named *user1* is created with a *valid until* password date set to expire in 30 days.  That user will be granted access to the *userdb* database.  This user account also will have an associated *secret* created to hold the password that was generated for this user.  Any clusters that match the selector value will have this user created on it.
@@ -660,4 +668,15 @@ Database Images:
                          4	crunchydata/crunchy-postgres:centos7-10.4-1.8.3
 
 Databases Not Ready:
+....
+
+=== pgo show config
+
+The `pgo show config` command displays the running operator configuration
+parameters that dictate the setup and user defined configuration of the
+operator.  This command can be useful for sharing your configuration or
+verifying the setup is as expected.
+
+....
+pgo show config
 ....

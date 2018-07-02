@@ -385,13 +385,7 @@ Postgres cluster.
 That container requires you run the *crunchy-metrics* containers
 as defined within the *crunchy-containers* project.
 
-The *prometheus push gateway* that is deployed as part of the
-*crunchy-metrics* example is a current requirement for the
-metrics solution.  This will change in an upcoming
-release of the *crunchy-containers* project and there will
-no longer be a requirement for the push gateway to be deployed.
-
-See link:https://github.com/CrunchyData/crunchy-containers/blob/master/docs/examples.adoc#metrics-collection[the crunchy-containers Metrics example] for more details on setting up the *crunchy-metrics* solution.
+See link:https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_and_performance[the crunchy-containers Metrics example] for more details on setting up the *crunchy-metrics* solution.
 
 === Manual Failover
 
@@ -432,7 +426,7 @@ chose.
 
 The logic of auto failover works like this:
 
- * the readiness probe on the primary database container is executed every few seonds to check the *readiness* of the database, this is what tells Kubernetes whether or not the container is *Ready* or *NotReady*.
+ * the readiness probe on the primary database container is executed every few seconds to check the *readiness* of the database, this is what tells Kubernetes whether or not the container is *Ready* or *NotReady*.
  * if a *NotReady* state is detected then that event is caught by the operator which is watching for database containers created by the operator
  * upon a *NotReady* event, a timer is started for that database which acts as the final check as to if a failover is required for that database
  * if the timer expires and the state is still *Not Ready* then the manual
