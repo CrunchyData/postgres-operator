@@ -5,7 +5,7 @@ draft: false
 weight: 40
 ---
 
-v3.1, {docdate}
+v3.2, {docdate}
 
 == Installation
 
