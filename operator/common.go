@@ -25,9 +25,6 @@ import (
 
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
-var COImagePrefix string
-var COImageTag string
-var CCPImagePrefix string
 
 const jobPath = "/operator-conf/backup-job.json"
 const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
@@ -57,25 +54,6 @@ var ReplicadeploymentTemplate1Shared *template.Template
 var Pgo config.PgoConfig
 
 func Initialize() {
-	CCPImagePrefix = os.Getenv("CCP_IMAGE_PREFIX")
-	if CCPImagePrefix == "" {
-		log.Debug("CCP_IMAGE_PREFIX not set, using default")
-		CCPImagePrefix = "crunchydata"
-	} else {
-		log.Debug("CCP_IMAGE_PREFIX set, using " + CCPImagePrefix)
-	}
-	COImagePrefix = os.Getenv("CO_IMAGE_PREFIX")
-	if COImagePrefix == "" {
-		log.Debug("CO_IMAGE_PREFIX not set, using default")
-		COImagePrefix = "crunchydata"
-	} else {
-		log.Debug("CO_IMAGE_PREFIX set, using " + COImagePrefix)
-	}
-	COImageTag = os.Getenv("CO_IMAGE_TAG")
-	if COImageTag == "" {
-		log.Error("CO_IMAGE_TAG not set, required ")
-		panic("CO_IMAGE_TAG env var not set")
-	}
 
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	if tmp == "true" {
@@ -112,4 +90,21 @@ func Initialize() {
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
 	Pgo.Validate()
+
+	if Pgo.Cluster.CCPImagePrefix == "" {
+		log.Debug("pgo.yaml CCPImagePrefix not set, using default")
+		Pgo.Cluster.CCPImagePrefix = "crunchydata"
+	} else {
+		log.Debug("pgo.yaml CCPImagePrefix set, using " + Pgo.Cluster.CCPImagePrefix)
+	}
+	if Pgo.Pgo.COImagePrefix == "" {
+		log.Debug("pgo.yaml COImagePrefix not set, using default")
+		Pgo.Pgo.COImagePrefix = "crunchydata"
+	} else {
+		log.Debug("COImagePrefix set, using " + Pgo.Pgo.COImagePrefix)
+	}
+	if Pgo.Pgo.COImageTag == "" {
+		log.Error("pgo.yaml COImageTag not set, required ")
+		panic("pgo.yaml COImageTag env var not set")
+	}
 }

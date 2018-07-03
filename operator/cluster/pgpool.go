@@ -73,7 +73,7 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 	fields := PgpoolTemplateFields{
 		Name:           pgpoolName,
 		ClusterName:    clusterName,
-		CCPImagePrefix: operator.CCPImagePrefix,
+		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:    cl.Spec.CCPImageTag,
 		Port:           "5432",
 		SecretsName:    secretName,

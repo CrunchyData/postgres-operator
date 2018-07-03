@@ -74,7 +74,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	jobFields := jobTemplateFields{
 		Name:            job.Spec.Name,
 		PvcName:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
-		CCPImagePrefix:  operator.CCPImagePrefix,
+		CCPImagePrefix:  operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:     job.Spec.CCPImageTag,
 		SecurityContext: util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
 		BackupHost:      job.Spec.BackupHost,

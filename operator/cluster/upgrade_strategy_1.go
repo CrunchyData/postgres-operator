@@ -60,7 +60,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	//also patch the CRD
 	//kubectl patch pgcluster fango --type='json' -p='[{"op": "replace", "path": "/spec/ccpimagetag", "value":"centos7-10.4-1.8.4"}]'
 
-	err = kubeapi.PatchDeployment(clientset, cl.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.CCPImagePrefix+"/crunchy-postgres:"+upgrade.Spec.CCPImageTag)
+	err = kubeapi.PatchDeployment(clientset, cl.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.Pgo.Cluster.CCPImagePrefix+"/crunchy-postgres:"+upgrade.Spec.CCPImageTag)
 
 	err = util.Patch(restclient, "/spec/ccpimagetag", upgrade.Spec.CCPImageTag, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 
@@ -93,7 +93,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		Name:            upgrade.Spec.Name,
 		NewPVCName:      pvcName,
 		OldPVCName:      upgrade.Spec.OldPVCName,
-		CCPImagePrefix:  operator.CCPImagePrefix,
+		CCPImagePrefix:  operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:     upgrade.Spec.CCPImageTag,
 		OldDatabaseName: upgrade.Spec.OldDatabaseName,
 		NewDatabaseName: upgrade.Spec.NewDatabaseName,
@@ -152,7 +152,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		Name:              cl.Spec.Name,
 		ClusterName:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
+		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, upgrade.Spec.NewPVCName),
 		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),

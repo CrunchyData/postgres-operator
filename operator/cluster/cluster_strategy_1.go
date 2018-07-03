@@ -99,7 +99,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ClusterName:        cl.Spec.Name,
 		PrimaryHost:        cl.Spec.Name,
 		Port:               cl.Spec.Port,
-		CCPImagePrefix:     operator.CCPImagePrefix,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		PVCName:            util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
 		OperatorLabels:     util.GetLabelsFromMap(primaryLabels),
@@ -286,7 +286,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		ClusterName:        clusterName,
 		PgMode:             "replica",
 		Port:               cl.Spec.Port,
-		CCPImagePrefix:     operator.CCPImagePrefix,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		PVCName:            util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
 		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
@@ -419,7 +419,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.Name = spec.Name
 		collectTemplateFields.PrimaryPassword = PrimaryPassword
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
-		collectTemplateFields.CCPImagePrefix = operator.CCPImagePrefix
+		collectTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
 		err := operator.CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
@@ -521,7 +521,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		ClusterName:       replica.Spec.ClusterName,
 		PgMode:            "replica",
 		Port:              cluster.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
+		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:       cluster.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
 		BackupPVCName:     util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
