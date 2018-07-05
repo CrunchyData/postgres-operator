@@ -45,9 +45,13 @@ $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/pgo-ingest-watch-job.json \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
+
+$CO_CMD $NS create configmap pgo-ui-conf \
+	--from-file=$COROOT/conf/pgo-ui/config.json \
+        --from-file=$COROOT/conf/apiserver/server.crt \
+        --from-file=$COROOT/conf/apiserver/server.key 
 
 expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
 
