@@ -26,12 +26,24 @@ import (
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
+const PgpoolTemplatePath = "/operator-conf/pgpool-template.json"
+const PgpoolConfTemplatePath = "/operator-conf/pgpool.conf"
+const PgpoolPasswdTemplatePath = "/operator-conf/pool_passwd"
+const PgpoolHBATemplatePath = "/operator-conf/pool_hba.conf"
+const ServiceTemplate1Path = "/operator-conf/cluster-service-1.json"
+
 const jobPath = "/operator-conf/backup-job.json"
 const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
 const rmdatajobPath = "/operator-conf/rmdata-job.json"
 const PVCPath = "/operator-conf/pvc.json"
+const PVCMatchLabelsPath = "/operator-conf/pvc-matchlabels.json"
 const PVCSCPath = "/operator-conf/pvc-storageclass.json"
 const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
+
+const DeploymentTemplate1Path = "/operator-conf/cluster-deployment-1.json"
+const CollectTemplate1Path = "/operator-conf/collect.json"
+const AffinityTemplate1Path = "/operator-conf/affinity.json"
+const ContainerResourcesTemplate1Path = "/operator-conf/container-resources.json"
 
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
@@ -43,6 +55,7 @@ var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
 var PVCTemplate *template.Template
+var PVCMatchLabelsTemplate *template.Template
 var PVCStorageClassTemplate *template.Template
 var AffinityTemplate1 *template.Template
 var ContainerResourcesTemplate1 *template.Template
@@ -72,24 +85,27 @@ func Initialize() {
 	}
 
 	JobTemplate = util.LoadTemplate(jobPath)
-	PgpoolTemplate = util.LoadTemplate("/operator-conf/pgpool-template.json")
-	PgpoolConfTemplate = util.LoadTemplate("/operator-conf/pgpool.conf")
-	PgpoolPasswdTemplate = util.LoadTemplate("/operator-conf/pool_passwd")
-	PgpoolHBATemplate = util.LoadTemplate("/operator-conf/pool_hba.conf")
-	ServiceTemplate1 = util.LoadTemplate("/operator-conf/cluster-service-1.json")
+	PgpoolTemplate = util.LoadTemplate(PgpoolTemplatePath)
+	PgpoolConfTemplate = util.LoadTemplate(PgpoolConfTemplatePath)
+	PgpoolPasswdTemplate = util.LoadTemplate(PgpoolPasswdTemplatePath)
+	PgpoolHBATemplate = util.LoadTemplate(PgpoolHBATemplatePath)
+	ServiceTemplate1 = util.LoadTemplate(ServiceTemplate1Path)
+
 	IngestjobTemplate = util.LoadTemplate(ingestPath)
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
+	PVCMatchLabelsTemplate = util.LoadTemplate(PVCMatchLabelsPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)
-	DeploymentTemplate1 = util.LoadTemplate("/operator-conf/cluster-deployment-1.json")
-	CollectTemplate1 = util.LoadTemplate("/operator-conf/collect.json")
-	AffinityTemplate1 = util.LoadTemplate("/operator-conf/affinity.json")
-	ContainerResourcesTemplate1 = util.LoadTemplate("/operator-conf/container-resources.json")
+	DeploymentTemplate1 = util.LoadTemplate(DeploymentTemplate1Path)
+	CollectTemplate1 = util.LoadTemplate(CollectTemplate1Path)
+	AffinityTemplate1 = util.LoadTemplate(AffinityTemplate1Path)
+	ContainerResourcesTemplate1 = util.LoadTemplate(ContainerResourcesTemplate1Path)
 	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
 	Pgo.Validate()
+	log.Printf("PrimaryStorage=%v\n", Pgo.Storage["storage1"])
 
 	if Pgo.Cluster.CCPImagePrefix == "" {
 		log.Debug("pgo.yaml CCPImagePrefix not set, using default")

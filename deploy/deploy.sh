@@ -45,6 +45,7 @@ $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/pgo-ingest-watch-job.json \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
+	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 

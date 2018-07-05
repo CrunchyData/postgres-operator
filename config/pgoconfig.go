@@ -48,6 +48,7 @@ type StorageStruct struct {
 	StorageClass       string `yaml:"StorageClass"`
 	Fsgroup            string `yaml:"Fsgroup"`
 	SupplementalGroups string `yaml:"SupplementalGroups"`
+	MatchLabels        string `yaml:"MatchLabels"`
 }
 
 type ContainerResourcesStruct struct {
@@ -182,6 +183,7 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	storage.Size = s.Size
 	storage.StorageType = s.StorageType
 	storage.Fsgroup = s.Fsgroup
+	storage.MatchLabels = s.MatchLabels
 	storage.SupplementalGroups = s.SupplementalGroups
 
 	return storage, err

@@ -29,6 +29,10 @@ import (
 	"time"
 )
 
+type matchLabelsTemplateFields struct {
+	Name string
+}
+
 // TemplateFields ...
 type TemplateFields struct {
 	Name         string
@@ -36,6 +40,7 @@ type TemplateFields struct {
 	ClusterName  string
 	Size         string
 	StorageClass string
+	MatchLabels  string
 }
 
 // CreatePVC create a pvc
@@ -52,9 +57,8 @@ func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec,
 		pvcName = storageSpec.Name
 	case "create", "dynamic":
 		log.Debug("StorageType is create")
-		log.Debug("Name=%s Size=%s AccessMode=%s\n",
-			pvcName, storageSpec.AccessMode, storageSpec.Size)
-		err = Create(clientset, pvcName, clusterName, storageSpec.AccessMode, storageSpec.Size, storageSpec.StorageType, storageSpec.StorageClass, namespace)
+		log.Debugf("pvcname=%s storagespec=%v\n", pvcName, storageSpec)
+		err = Create(clientset, pvcName, clusterName, storageSpec, namespace)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
 			return pvcName, err
@@ -66,26 +70,33 @@ func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec,
 }
 
 // Create a pvc
-func Create(clientset *kubernetes.Clientset, name, clusterName string, accessMode string, pvcSize string, storageType string, storageClass string, namespace string) error {
+func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSpec *crv1.PgStorageSpec, namespace string) error {
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
 
 	pvcFields := TemplateFields{
 		Name:         name,
-		AccessMode:   accessMode,
-		StorageClass: storageClass,
+		AccessMode:   storageSpec.AccessMode,
+		StorageClass: storageSpec.StorageClass,
 		ClusterName:  clusterName,
-		Size:         pvcSize,
+		Size:         storageSpec.Size,
+		MatchLabels:  "",
 	}
 
-	if storageType == "dynamic" {
+	if storageSpec.StorageType == "dynamic" {
 		log.Debug("using dynamic PVC template")
 		err = operator.PVCStorageClassTemplate.Execute(&doc2, pvcFields)
 		if operator.CRUNCHY_DEBUG {
 			operator.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
 		}
 	} else {
+		log.Debug("matchlabels from spec is [" + storageSpec.MatchLabels + "]")
+		if storageSpec.MatchLabels != "" {
+			pvcFields.MatchLabels = getMatchLabels(clusterName)
+			log.Debug("matchlabels constructed is " + pvcFields.MatchLabels)
+		}
+
 		err = operator.PVCTemplate.Execute(&doc2, pvcFields)
 		if operator.CRUNCHY_DEBUG {
 			operator.PVCTemplate.Execute(os.Stdout, pvcFields)
@@ -148,4 +159,20 @@ func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool
 	_, found, _ := kubeapi.GetPVC(clientset, name, namespace)
 
 	return found
+}
+
+func getMatchLabels(name string) string {
+
+	matchLabelsTemplateFields := matchLabelsTemplateFields{}
+	matchLabelsTemplateFields.Name = name
+
+	var doc bytes.Buffer
+	err := operator.PVCMatchLabelsTemplate.Execute(&doc, matchLabelsTemplateFields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	return doc.String()
+
 }
