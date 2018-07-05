@@ -5,7 +5,22 @@ draft: false
 weight: 60
 ---
 
-v3.1, {docdate}
+v3.2, {docdate}
+
+
+{{%expand "Upgrading to v3.2  %}}
+
+The following changes are mandatory when upgrading to 3.2 from
+previous operator versions:
+ * the MatchLabels attribute was added to the pgo.yaml file as an optional
+   storage configuration setting, you do not have to specify this setting,
+   however, the operator-conf ConfigMap now has to include the *pvc-matchlabels.json* template file as required by this new feature, so, if you upgrade to
+   3.2, you will need to rebuild your *operator-conf* ConfigMap to include
+   *pvc-matchlabels.json" and redeploy the Operator using this new ConfigMap
+ * removal of CCP_IMAGE_PREFIX and CO_IMAGE_PREFIX and CO_IMAGE_TAG environment variables from the deployment.yaml file and Helm chart equvalent, instead these values will be pulled from the pgo.yaml configuraiton file mounted by both the apiserver and operator containers, to clean up your existing deployment just
+ be sure to remove these environment variable definitions from your *deployment.yaml* file or Helm chart equivalent
+
+
 
 {{%expand "Upgrading from v2.4 to v2.5" %}}
 
@@ -52,7 +67,7 @@ $COROOT/bin/upgrade-secret.sh
 
 For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.1[here].
+page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.2[here].
 
 == Required Updates
 

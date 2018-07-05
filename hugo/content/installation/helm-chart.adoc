@@ -5,7 +5,7 @@ draft: false
 weight: 30
 ---
 
-v3.1, {docdate}
+v3.2, {docdate}
 
 == Helm Chart
 
@@ -13,7 +13,7 @@ First, pull prebuilt versions from Dockerhub of the *postgres-operator* containe
 specify the image versions, and execute the following Makefile target -
 ....
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.1
+export CO_IMAGE_TAG=centos7-3.2
 make pull
 ....
 
