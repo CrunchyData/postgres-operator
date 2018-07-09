@@ -55,6 +55,10 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != "" {
 		log.Debug("version param was [" + clientVersion + "]")
 	}
+	ccpImageTag := r.URL.Query().Get("ccp-image-tag")
+	if ccpImageTag != "" {
+		log.Debug("ccp-image-tag param was [" + ccpImageTag + "]")
+	}
 
 	switch r.Method {
 	case "GET":
@@ -69,7 +73,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 		resp = msgs.ClusterScaleResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
-		resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel)
+		resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag)
 	}
 
 	json.NewEncoder(w).Encode(resp)

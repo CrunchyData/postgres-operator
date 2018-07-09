@@ -28,7 +28,7 @@ import (
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel string) msgs.ClusterScaleResponse {
+func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag string) msgs.ClusterScaleResponse {
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -74,7 +74,12 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
 	}
 
-	spec.UserLabels = make(map[string]string)
+	//spec.UserLabels = make(map[string]string)
+	spec.UserLabels = cluster.Spec.UserLabels
+
+	if ccpImageTag != "" {
+		spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY] = ccpImageTag
+	}
 
 	var parts []string
 	//validate nodeLabel
@@ -137,7 +142,6 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel 
 		//spec.RootSecretName = cluster.Spec.RootSecretName
 		//spec.PrimarySecretName = cluster.Spec.PrimarySecretName
 		//spec.UserSecretName = cluster.Spec.UserSecretName
-		spec.UserLabels = cluster.Spec.UserLabels
 
 		newInstance := &crv1.Pgreplica{
 			ObjectMeta: meta_v1.ObjectMeta{

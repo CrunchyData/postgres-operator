@@ -294,6 +294,15 @@ will be used for a replica by passing in extra command flags:
 pgo scale mycluster --storage-config=storage1 --resources-config=small
 ....
 
+You can also dictate what image will be used for the scaled
+replicas:
+....
+pgo scale mycluster --ccp-image-tag=centos7-someotherversion
+....
+
+That command will cause the scaled replicas to use a container image
+with that specific tag name.
+
 === pgo upgrade
 
 You can perform a minor Postgres version upgrade

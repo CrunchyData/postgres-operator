@@ -515,6 +515,12 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
+	//check for --ccp-image-tag at the command line
+	imageTag := cluster.Spec.CCPImageTag
+	if replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY] != "" {
+		imageTag = replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY]
+	}
+
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:              replica.Spec.Name,
@@ -522,7 +528,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		PgMode:            "replica",
 		Port:              cluster.Spec.Port,
 		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:       cluster.Spec.CCPImageTag,
+		CCPImageTag:       imageTag,
 		PVCName:           util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
 		BackupPVCName:     util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
 		PrimaryHost:       cluster.Spec.PrimaryHost,
