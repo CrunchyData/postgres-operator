@@ -16,7 +16,7 @@
                 "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "ui",
-                    "image": "$CO_IMAGE_PREFIX/pgo-ui:centos7-0.0.1",
+                    "image": "$CO_IMAGE_PREFIX/pgo-ui:centos7-0.3",
                     "imagePullPolicy": "IfNotPresent",
                     "ports": [{
                         "containerPort": 8000
