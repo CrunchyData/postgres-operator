@@ -23,6 +23,7 @@ import (
 	"strings"
 )
 
+const RELOAD_PERM = "Reload"
 const SHOW_CONFIG_PERM = "ShowConfig"
 const DF_CLUSTER_PERM = "DfCluster"
 const SHOW_CLUSTER_PERM = "ShowCluster"
@@ -61,6 +62,7 @@ func InitializePerms() {
 	PermMap = make(map[string]string)
 	RoleMap = make(map[string]map[string]string)
 
+	PermMap[RELOAD_PERM] = "yes"
 	PermMap[SHOW_CONFIG_PERM] = "yes"
 	PermMap[STATUS_PERM] = "yes"
 	PermMap[DF_CLUSTER_PERM] = "yes"

@@ -45,6 +45,7 @@ var RESTClient *rest.RESTClient
 
 // Clientset ...
 var Clientset *kubernetes.Clientset
+var RESTConfig *rest.Config
 
 // MetricsFlag if set to true will cause crunchy-collect to be added into new clusters
 var MetricsFlag bool
@@ -120,18 +121,19 @@ func ConnectToKube() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
-	config, err := buildConfig(*kubeconfig)
+	var err error
+	RESTConfig, err = buildConfig(*kubeconfig)
 	if err != nil {
 		panic(err)
 	}
 
-	Clientset, err = kubernetes.NewForConfig(config)
+	Clientset, err = kubernetes.NewForConfig(RESTConfig)
 	if err != nil {
 		panic(err)
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	RESTClient, _, err = crdclient.NewClient(config)
+	RESTClient, _, err = crdclient.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
 	}

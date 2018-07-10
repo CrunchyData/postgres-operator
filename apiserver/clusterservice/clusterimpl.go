@@ -128,7 +128,7 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
-		detail.Pods, err = getPods(&c)
+		detail.Pods, err = GetPods(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -185,7 +185,7 @@ func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, erro
 
 	return output, err
 }
-func getPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
+func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
 
@@ -796,7 +796,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		Spec: spec,
 	}
 	cluster.Spec.Name = clusterName
-	pods, err = getPods(cluster)
+	pods, err = GetPods(cluster)
 	if err != nil {
 		log.Error(err)
 		return

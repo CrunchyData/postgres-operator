@@ -708,6 +708,31 @@ _pgo_load()
     noun_aliases=()
 }
 
+_pgo_reload()
+{
+    last_command="pgo_reload"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_scale()
 {
     last_command="pgo_scale"
@@ -1036,9 +1061,6 @@ _pgo_version()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--help")
-    flags+=("-h")
-    local_nonpersistent_flags+=("--help")
     flags+=("--apiserver-url=")
     flags+=("--debug")
 
@@ -1059,6 +1081,7 @@ _pgo()
     commands+=("failover")
     commands+=("label")
     commands+=("load")
+    commands+=("reload")
     commands+=("scale")
     commands+=("show")
     commands+=("status")
