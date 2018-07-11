@@ -1,9 +1,18 @@
 FROM registry.access.redhat.com/rhel7
 
+MAINTAINER jeff.mccormick@crunchydata.com
 
-LABEL Release="3.2" Vendor="Crunchy Data Solutions" 
+LABEL name="pgo-apiserver-" \
+	vendor="crunchydata.com" \
+       	version="3.2" \
+	release="3" \
+	run='docker run -d -p 8080:80 --name=web-app web-app' \
+	summary="crunchy data's postgres operator api" \
+	description="crunchy data postgres operator api"
 
 ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+
+COPY licenses /licenses
 
 # Crunchy Postgres repo
 ADD conf/CRUNCHY-GPG-KEY.public  /
