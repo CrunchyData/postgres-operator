@@ -1,19 +1,18 @@
 FROM registry.access.redhat.com/rhel7
 
-LABEL name="crunchydata/pgo-load" \
-        vendor="crunchy data" \
-      	PostgresVersion="9.6" \
-      	PostgresFullVersion="9.6.9" \
-        version="7.3" \
-        release="3.2" \
-        build-date="2018-05-14" \
-        url="https://crunchydata.com" \
-        summary="loads a CSV or json file into a database" \
-        description="executed by the operator, loads a CSV or json file." \
-        io.k8s.description="cvsload container" \
-        io.k8s.display-name="Crunchy pgo-load container" \
-        io.openshift.expose-services="" \
-        io.openshift.tags="crunchy,database"
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="crunchydata/pgo-load-" \
+        vendor="crunchydata.com" \
+        version="3.2" \
+        release="3" \
+        run='docker run -d -p 8080:80 --name=web-app web-app' \
+        summary="crunchy data's postgres operator load" \
+        description="crunchy data postgres operator load"
+
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+
+COPY licenses /licenses
 
 # Crunchy Postgres repo
 ADD conf/CRUNCHY-GPG-KEY.public  /

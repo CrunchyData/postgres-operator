@@ -1,6 +1,19 @@
 FROM registry.access.redhat.com/rhel7
 
-LABEL Release="3.2" Vendor="Crunchy Data Solutions" 
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="pgo-lspvc" \
+        vendor="crunchydata.com" \
+        version="3.2" \
+        release="3" \
+        run='docker run -d -p 8080:80 --name=web-app web-app' \
+        summary="crunchy data's postgres operator lspvc" \
+        description="crunchy data postgres operator lspvc"
+
+ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+
+COPY licenses /licenses
+
 
 RUN yum -y update && yum -y clean all
 
