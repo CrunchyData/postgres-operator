@@ -30,7 +30,7 @@ var ReplicaCount int
 var scaleCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a Cluster",
-	Long: `scale allows you to adjust a Cluster's replica configuration
+	Long: `Scale allows you to adjust a Cluster's replica configuration
 For example:
 
 pgo scale mycluster --replica-count=1

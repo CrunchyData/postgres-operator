@@ -30,7 +30,7 @@ const ClientVersion = "2.6"
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "print version information for the postgres-operator",
+	Short: "Print version information for the postgres-operator",
 	Long: `VERSION allows you to print version information for the postgres-operator
 				For example:
 
