@@ -52,9 +52,10 @@ type CreateClusterResponse struct {
 
 // ShowClusterService
 type ShowClusterService struct {
-	Name      string
-	Data      string
-	ClusterIP string
+	Name       string
+	Data       string
+	ClusterIP  string
+	ExternalIP string
 }
 
 // ShowClusterPod

@@ -180,12 +180,16 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		printPolicies(&detail.Deployments[0])
 	}
 
-	for i, service := range detail.Services {
-		if i == len(detail.Services)-1 {
-			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
+	for _, service := range detail.Services {
+		//if i == len(detail.Services)-1 {
+		//fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
+		//} else {
+		if service.ExternalIP == "" {
+			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ")")
 		} else {
-			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ") ExternalIP (" + service.ExternalIP + ")")
 		}
+		//}
 	}
 
 	for _, replica := range detail.Replicas {

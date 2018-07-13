@@ -228,6 +228,9 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
 		d.ClusterIP = p.Spec.ClusterIP
+		if len(p.Spec.ExternalIPs) > 0 {
+			d.ExternalIP = p.Spec.ExternalIPs[0]
+		}
 		output = append(output, d)
 
 	}
