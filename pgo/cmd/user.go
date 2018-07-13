@@ -52,7 +52,7 @@ var ManagedUser bool
 
 var userCmd = &cobra.Command{
 	Use:   "user",
-	Short: "manage users",
+	Short: "Manage users",
 	Long: `USER allows you to manage users and passwords across a set of clusters
 For example:
 

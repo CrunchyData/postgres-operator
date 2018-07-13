@@ -29,7 +29,7 @@ import (
 
 var applyCmd = &cobra.Command{
 	Use:   "apply",
-	Short: "apply a Policy",
+	Short: "Apply a Policy",
 	Long: `APPLY allows you to apply a Policy to a set of clusters
 For example:
 

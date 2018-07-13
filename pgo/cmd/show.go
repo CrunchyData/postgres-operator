@@ -30,8 +30,8 @@ var PVCRoot string
 
 var ShowCmd = &cobra.Command{
 	Use:   "show",
-	Short: "show a description of a cluster",
-	Long: `show allows you to show the details of a policy, backup, pvc, or cluster.
+	Short: "Show a description of a cluster",
+	Long: `Show allows you to show the details of a policy, backup, pvc, or cluster.
 For example:
 
 	pgo show policy policy1
