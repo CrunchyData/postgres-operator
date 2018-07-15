@@ -231,6 +231,10 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 		if len(p.Spec.ExternalIPs) > 0 {
 			d.ExternalIP = p.Spec.ExternalIPs[0]
 		}
+		if len(p.Status.LoadBalancer.Ingress) > 0 {
+			d.ExternalIP = p.Status.LoadBalancer.Ingress[0].IP
+		}
+
 		output = append(output, d)
 
 	}
