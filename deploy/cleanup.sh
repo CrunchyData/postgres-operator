@@ -19,7 +19,10 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
+if [ "$CO_UI" = "true" ]; then
 $CO_CMD $NS delete configmap pgo-ui-conf 
+fi
+
 $CO_CMD $NS delete configmap operator-conf 
 $CO_CMD $NS delete secret apiserver-conf-secret
 
