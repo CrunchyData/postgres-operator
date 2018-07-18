@@ -115,9 +115,9 @@ read STORAGE_CLASS
 echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/service-account.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
+sed -i .bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
+sed -i .bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/service-account.yaml
+sed -i .bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
 echo "Setting up pgo client authentication..." | tee -a $LOG
