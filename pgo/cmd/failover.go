@@ -30,8 +30,8 @@ import (
 
 var failoverCmd = &cobra.Command{
 	Use:   "failover",
-	Short: "perform a failover",
-	Long: `performs a failover, for example:
+	Short: "Perform a failover",
+	Long: `Performs a failover, for example:
 		pgo failover mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("failover called")

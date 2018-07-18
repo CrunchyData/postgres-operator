@@ -38,7 +38,7 @@ var UpgradeType string
 
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "perform an upgrade",
+	Short: "Perform an upgrade",
 	Long: `UPGRADE performs an upgrade, for example:
 				                pgo upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {

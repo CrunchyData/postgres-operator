@@ -33,7 +33,7 @@ var PVCName string
 
 var backupCmd = &cobra.Command{
 	Use:   "backup",
-	Short: "perform a Backup",
+	Short: "Perform a Backup",
 	Long: `BACKUP performs a Backup, for example:
 				                        pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {

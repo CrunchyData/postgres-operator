@@ -27,7 +27,7 @@ import (
 
 var testCmd = &cobra.Command{
 	Use:   "test",
-	Short: "test a Cluster",
+	Short: "Test a Cluster",
 	Long: `TEST allows you to test a new Cluster
 				For example:
 

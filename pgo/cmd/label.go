@@ -32,7 +32,7 @@ var DeleteLabel bool
 
 var labelCmd = &cobra.Command{
 	Use:   "label",
-	Short: "label a set of clusters",
+	Short: "Label a set of clusters",
 	Long: `LABEL allows you to add or remove a label on a set of clusters
 For example:
 

@@ -33,7 +33,7 @@ var LoadConfig string
 
 var loadCmd = &cobra.Command{
 	Use:   "load",
-	Short: "perform a data load",
+	Short: "Perform a data load",
 	Long: `LOAD performs a load, for example:
 			pgo load --load-config=./load.json --selector=project=xray`,
 	Run: func(cmd *cobra.Command, args []string) {

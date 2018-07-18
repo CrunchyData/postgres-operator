@@ -26,7 +26,7 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a user, policy, cluster, backup, or upgrade",
-	Long: `delete allows you to delete a user, policy, cluster, backup, or upgrade
+	Long: `Delete allows you to delete a user, policy, cluster, backup, or upgrade
 For example:
 
 pgo delete user jeffmc --selector=name=mycluster
@@ -92,8 +92,8 @@ func init() {
 
 var deleteIngestCmd = &cobra.Command{
 	Use:   "ingest",
-	Short: "delete an ingest",
-	Long: `delete an ingest. For example:
+	Short: "Delete an ingest",
+	Long: `Delete an ingest. For example:
 	pgo delete ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -110,8 +110,8 @@ var deleteIngestCmd = &cobra.Command{
 
 var deleteUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "delete an upgrade",
-	Long: `delete an upgrade. For example:
+	Short: "Delete an upgrade",
+	Long: `Delete an upgrade. For example:
 	pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -128,8 +128,8 @@ var deleteUpgradeCmd = &cobra.Command{
 
 var deleteBackupCmd = &cobra.Command{
 	Use:   "backup",
-	Short: "delete a backup",
-	Long: `delete a backup. For example:
+	Short: "Delete a backup",
+	Long: `Delete a backup. For example:
 	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -147,8 +147,8 @@ var deleteBackupCmd = &cobra.Command{
 // deleteUserCmd ...
 var deleteUserCmd = &cobra.Command{
 	Use:   "user",
-	Short: "delete a user",
-	Long: `delete a user. For example:
+	Short: "Delete a user",
+	Long: `Delete a user. For example:
 	pgo delete user someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -170,8 +170,8 @@ var deleteUserCmd = &cobra.Command{
 // deleteClusterCmd ...
 var deleteClusterCmd = &cobra.Command{
 	Use:   "cluster",
-	Short: "delete a cluster",
-	Long: `delete a crunchy cluster. For example:
+	Short: "Delete a cluster",
+	Long: `Delete a crunchy cluster. For example:
 	pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 && Selector == "" {
@@ -189,8 +189,8 @@ var deleteClusterCmd = &cobra.Command{
 
 var deletePolicyCmd = &cobra.Command{
 	Use:   "policy",
-	Short: "delete a policy",
-	Long: `delete a policy. For example:
+	Short: "Delete a policy",
+	Long: `Delete a policy. For example:
 	pgo delete policy mypolicy`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
