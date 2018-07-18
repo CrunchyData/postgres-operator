@@ -15,19 +15,23 @@
 
 LOG="pgo-installer.log"
 
-export CO_VERSION=3.2
+export PGORELEASE=3.1
+PGO_RELEASE_REMOTE_URL="https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz"
+PGO_RELEASE_LOCAL_PATH="/tmp/postgres-operator.$PGORELEASE.tar.gz"
 
 echo "Testing for dependencies..." | tee -a $LOG
 
 which wget > /dev/null 2> /dev/null
 if [[ $? -ne 0 ]]; then
-	echo "The required dependency wget is missing on your system." | tee -a $LOG
-	exit 1
-fi
-which oc > /dev/null 2> /dev/null
-if [[ $? -ne 0 ]]; then
-	echo "The required dependency oc is missing on your system." | tee -a $LOG
-	exit 1
+	which curl > /dev/null 2> /dev/null
+	if [[ $? -ne 0 ]]; then
+		echo "The required dependency wget and/or curl is missing on your system." | tee -a $LOG
+		exit 1
+	else
+		PGO_HTTP_CMD="curl -L -s -o ${PGO_RELEASE_LOCAL_PATH} ${PGO_RELEASE_REMOTE_URL}"
+	fi
+else
+	PGO_HTTP_CMD="wget --quiet ${PGO_RELEASE_REMOTE_URL} -O ${PGO_RELEASE_LOCAL_PATH}"
 fi
 
 echo ""
@@ -87,8 +91,11 @@ mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
 echo ""
 echo "Installing pgo server configuration..." | tee -a $LOG
-wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$CO_VERSION/postgres-operator.$CO_VERSION.tar.gz -O /tmp/postgres-operator.$CO_VERSION.tar.gz
-
+`${PGO_HTTP_CMD}`
+#if [[ $? -ne 0 ]]; then
+#	echo "problem getting pgo server config"
+#	exit 1
+#fi
 cd $COROOT
 tar xzf /tmp/postgres-operator.$CO_VERSION.tar.gz
 if [[ $? -ne 0 ]]; then
