@@ -122,15 +122,14 @@ read STORAGE_CLASS
 echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/service-account.yaml
-sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/cluster-rbac.yaml
-sed --in-place=.bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/rbac.yaml
+sed -i .bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
+sed -i .bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/service-account.yaml
+sed -i .bak 's/demo/'"$PROJECT"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
 echo -n "Storage classes can require a fsgroup setting to be specified in the security context of your pods. Typically, this value is 26, but on some storage providers this value is blank. Enter your fsgroup setting if required or leave blank if not required: "
 read FSGROUP
-sed --in-place=.bak 's/26/'"$FSGROUP"'/' $COROOT/conf/apiserver/pgo.yaml
+sed -i .bak 's/26/'"$FSGROUP"'/' $COROOT/conf/apiserver/pgo.yaml
 
 echo ""
 echo "Setting up pgo client authentication..." | tee -a $LOG
