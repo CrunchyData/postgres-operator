@@ -10,6 +10,7 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ArchiveTimeout:  60
+  ServiceType:  ClusterIP
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1

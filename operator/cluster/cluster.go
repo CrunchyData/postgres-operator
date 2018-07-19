@@ -22,6 +22,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,6 +50,7 @@ type ServiceTemplateFields struct {
 	Name        string
 	ClusterName string
 	Port        string
+	ServiceType string
 }
 
 // DeploymentTemplateFields ...
@@ -325,6 +327,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		Name:        serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
+		ServiceType: operator.Pgo.Cluster.ServiceType,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)

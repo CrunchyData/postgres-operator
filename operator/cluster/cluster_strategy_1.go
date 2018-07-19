@@ -67,11 +67,17 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	log.Info("creating Pgcluster object using Strategy 1" + " in namespace " + namespace)
 	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
+	st := operator.Pgo.Cluster.ServiceType
+	if cl.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+		st = cl.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	}
+
 	//create the primary service
 	serviceFields := ServiceTemplateFields{
 		Name:        cl.Spec.Name,
 		ClusterName: cl.Spec.Name,
 		Port:        cl.Spec.Port,
+		ServiceType: st,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)

@@ -20,6 +20,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,7 @@ import (
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag string) msgs.ClusterScaleResponse {
+func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType string) msgs.ClusterScaleResponse {
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -79,6 +80,15 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 
 	if ccpImageTag != "" {
 		spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY] = ccpImageTag
+	}
+	if serviceType != "" {
+		if serviceType != config.DEFAULT_SERVICE_TYPE &&
+			serviceType != config.LOAD_BALANCER_SERVICE_TYPE {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "error --service-type should be either ClusterIP or LoadBalancer "
+			return response
+		}
+		spec.UserLabels[util.LABEL_SERVICE_TYPE] = serviceType
 	}
 
 	var parts []string

@@ -137,6 +137,15 @@ If the timer expires, then a failover is triggered on the cluster turning
 one of the cluster replica pods into the replacement primary pod.  See
 the How It Works documentation for more details on *auto failover*.
 
+To specify a particular type of Service to be created for a PG
+cluster, use the *--service-type* command flag:
+....
+pgo create cluster testcluster --service-type=LoadBalancer
+....
+
+If not set, the ServiceType from *pgo.yaml* will be used, currently
+the default is ClusterIP.
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -302,6 +311,15 @@ pgo scale mycluster --ccp-image-tag=centos7-someotherversion
 
 That command will cause the scaled replicas to use a container image
 with that specific tag name.
+
+You can also dictate what service type will be used for the 
+Replica service using the *--service-type* flag:
+....
+pgo scale mycluster --service-type=LoadBalancer
+....
+
+The ServiceType from pgo.yaml will be used if not specified, the default
+ServiceType is ClusterIP.
 
 === pgo upgrade
 

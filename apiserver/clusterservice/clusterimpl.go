@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
@@ -450,6 +451,16 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 		if request.AutofailFlag {
 			userLabelsMap[util.LABEL_AUTOFAIL] = "true"
+		}
+		if request.ServiceType != "" {
+			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE {
+
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "error ServiceType should be either ClusterIP or LoadBalancer "
+
+				return resp
+			}
+			userLabelsMap[util.LABEL_SERVICE_TYPE] = request.ServiceType
 		}
 
 		if request.ArchiveFlag {

@@ -33,6 +33,7 @@ var PoliciesFlag, PolicyFile, PolicyURL string
 var NodeLabel string
 var UserLabels string
 var IngestConfig string
+var ServiceType string
 
 //var UserLabelsMap map[string]string
 var Series int
@@ -173,6 +174,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database, if not set any node is used")
+	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The service type to use in the Service for the PG cluster, if not set the pgo.yaml default will be used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from")

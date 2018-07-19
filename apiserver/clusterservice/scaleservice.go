@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/gorilla/mux"
 	"net/http"
 )
@@ -32,30 +33,34 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	log.Debugf("clusterservice.ScaleClusterHandler %v\n", vars)
 
-	clusterName := vars["name"]
+	clusterName := vars[util.LABEL_NAME]
 	log.Debugf(" clusterName arg is %v\n", clusterName)
 
-	replicaCount := r.URL.Query().Get("replica-count")
+	replicaCount := r.URL.Query().Get(util.LABEL_REPLICA_COUNT)
 	if replicaCount != "" {
 		log.Debug("replica-count param was [" + replicaCount + "]")
 	}
-	resourcesConfig := r.URL.Query().Get("resources-config")
+	resourcesConfig := r.URL.Query().Get(util.LABEL_RESOURCES_CONFIG)
 	if resourcesConfig != "" {
 		log.Debug("resources-config param was [" + resourcesConfig + "]")
 	}
-	storageConfig := r.URL.Query().Get("storage-config")
+	storageConfig := r.URL.Query().Get(util.LABEL_STORAGE_CONFIG)
 	if storageConfig != "" {
 		log.Debug("storage-config param was [" + storageConfig + "]")
 	}
-	nodeLabel := r.URL.Query().Get("node-label")
+	nodeLabel := r.URL.Query().Get(util.LABEL_NODE_LABEL)
 	if nodeLabel != "" {
 		log.Debug("node-label param was [" + nodeLabel + "]")
 	}
-	clientVersion := r.URL.Query().Get("version")
+	serviceType := r.URL.Query().Get(util.LABEL_SERVICE_TYPE)
+	if serviceType != "" {
+		log.Debug("service-type param was [" + serviceType + "]")
+	}
+	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
 	if clientVersion != "" {
 		log.Debug("version param was [" + clientVersion + "]")
 	}
-	ccpImageTag := r.URL.Query().Get("ccp-image-tag")
+	ccpImageTag := r.URL.Query().Get(util.LABEL_CCP_IMAGE_TAG_KEY)
 	if ccpImageTag != "" {
 		log.Debug("ccp-image-tag param was [" + ccpImageTag + "]")
 	}
@@ -73,7 +78,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 		resp = msgs.ClusterScaleResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
-		resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag)
+		resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType)
 	}
 
 	json.NewEncoder(w).Encode(resp)

@@ -39,6 +39,7 @@ type ClusterStruct struct {
 	PasswordLength  string `yaml:"PasswordLength"`
 	Strategy        string `yaml:"Strategy"`
 	Replicas        string `yaml:"Replicas"`
+	ServiceType     string `yaml:"ServiceType"`
 }
 
 type StorageStruct struct {
@@ -81,6 +82,8 @@ type PgoConfig struct {
 }
 
 const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
+const DEFAULT_SERVICE_TYPE = "ClusterIP"
+const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 
 func (c *PgoConfig) Validate() error {
 	var err error
@@ -140,6 +143,16 @@ func (c *PgoConfig) Validate() error {
 		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
 		if err != nil {
 			return errors.New("Cluster.ArchiveTimeout invalid int value found")
+		}
+	}
+
+	if c.Cluster.ServiceType == "" {
+		log.Warn("Cluster.ServiceType not set, using default, ClusterIP ")
+		c.Cluster.ServiceType = DEFAULT_SERVICE_TYPE
+	} else {
+		if c.Cluster.ServiceType != DEFAULT_SERVICE_TYPE &&
+			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE {
+			return errors.New("Cluster.ServiceType is required to be either ClusterIP or LoadBalancer")
 		}
 	}
 

@@ -34,7 +34,7 @@
         "selector": {
             "name": "{{.Name}}"
         },
-        "type": "ClusterIP",
+        "type": "{{.ServiceType}}",
         "sessionAffinity": "None"
     }
 }
