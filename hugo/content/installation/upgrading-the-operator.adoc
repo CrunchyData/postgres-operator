@@ -23,6 +23,16 @@ previous operator versions:
    struct, this field is now passed back to apiserver clients in the
    REST API when viewing cluster details.  For custom clients you might
    have written, you will see this new field in the REST message.
+ * in versions prior to 3.1, clusters that are created will need the following
+ labels applied:
+	for primary Deployments apply this label: primary=true
+	....
+	kubectl label deploy mycluster primary=true
+	....
+	or for replica Deployments:
+	....
+	kubectl label deploy mycluster-xxxx primary=false 
+	....
 
 
 {{%expand "Upgrading from v2.6 to v3.1" %}}
