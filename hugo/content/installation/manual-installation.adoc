@@ -145,12 +145,7 @@ This Operator is developed and tested on the following operating systems but is 
 * *CentOS 7*
 * *RHEL 7*
 
-Before compiling the Operator, it's necessary to install the *Mercurial* requirement.
-....
-sudo yum -y install mercurial
-....
-
-Then, install the project library dependencies. The godep dependency manager is used for this purpose. Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.
+Then, install the project library and host dependencies (e.g. mercurial, golang, godep). Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.
 ....
 cd $COROOT
 make setup
