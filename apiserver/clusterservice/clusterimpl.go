@@ -141,12 +141,6 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
-		detail.Secrets, err = getSecrets(&c)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
 		detail.Replicas, err = getReplicas(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
@@ -243,29 +237,6 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 	return output, err
 }
 
-func getSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowClusterSecret, error) {
-
-	output := make([]msgs.ShowClusterSecret, 0)
-	selector := "pgpool!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
-
-	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, apiserver.Namespace)
-	if err != nil {
-		return output, err
-	}
-
-	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
-	for _, s := range secrets.Items {
-		d := msgs.ShowClusterSecret{}
-		d.Name = s.Name
-		d.Username = string(s.Data["username"][:])
-		d.Password = string(s.Data["password"][:])
-		output = append(output, d)
-
-	}
-
-	return output, err
-}
-
 func TestCluster(name, selector string) msgs.ClusterTestResponse {
 	var err error
 
@@ -312,7 +283,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 		}
 
 		//get the secrets for this cluster
-		detail.Secrets, err = getSecrets(&c)
+		secrets, err := apiserver.GetSecrets(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -323,7 +294,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 
 		//for each service run a test and add results to output
 		for _, service := range detail.Services {
-			for _, s := range detail.Secrets {
+			for _, s := range secrets {
 				item := msgs.ClusterTestDetail{}
 				username := s.Username
 				password := s.Password

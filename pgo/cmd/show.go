@@ -26,7 +26,6 @@ const TreeTrunk = "\t"
 
 var PostgresVersion string
 var ShowPVC bool
-var ShowSecrets bool
 var PVCRoot string
 
 var ShowCmd = &cobra.Command{
@@ -40,6 +39,7 @@ For example:
 	pgo show backup mycluster
 	pgo show ingest myingest
 	pgo show config
+	pgo show user mycluster
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -48,6 +48,7 @@ Valid resource types include:
 	* cluster
 	* pvc
 	* policy
+	* user
 	* ingest
 	* config
 	* upgrade
@@ -58,6 +59,7 @@ Valid resource types include:
 			case "pvc":
 			case "policy":
 			case "ingest":
+			case "user":
 			case "config":
 			case "upgrade":
 			case "backup":
@@ -69,6 +71,7 @@ Valid resource types include:
 	* pvc
 	* policy
 	* ingest
+	* user
 	* config
 	* upgrade
 	* backup`)
@@ -87,10 +90,11 @@ func init() {
 	ShowCmd.AddCommand(ShowIngestCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
+	ShowCmd.AddCommand(ShowUserCmd)
 
-	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "x", false, "Show secrets ")
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
 
@@ -199,6 +203,22 @@ var ShowIngestCmd = &cobra.Command{
 			log.Error("ingest name(s) required for this command")
 		} else {
 			showIngest(args)
+		}
+	},
+}
+
+// ShowUserCmd represents the show user command
+var ShowUserCmd = &cobra.Command{
+	Use:   "user",
+	Short: "Show user information",
+	Long: `Show users on a cluster. For example:
+
+				pgo show user mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Selector == "" && len(args) == 0 {
+			log.Error("cluster name(s) required for this command")
+		} else {
+			showUser(args)
 		}
 	},
 }

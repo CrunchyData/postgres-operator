@@ -70,12 +70,6 @@ database using the service IP address -
 psql -h 10.105.121.12 -U postgres postgres
 ....
 
-{{% notice tip %}}
-User credentials are generated through Kubernetes Secrets automatically for the
-*testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed
-by running the `pgo show cluster` command with the `--show-secrets` flag. More details
-are available on user management below.
-{{% /notice %}}
 
 You can view *all* databases using the special keyword *all* -
 ....
@@ -497,6 +491,16 @@ policy name (e.g. policy1):
 pgo show cluster --selector=policy1=pgpolicy
 ....
 
+
+=== pgo show user
+pgo managed sser credentials are generated through Kubernetes Secrets automatically for the *testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed as following:
+....
+pgo show user all 
+pgo show user --selector=name=mycluster 
+....
+
+For this command to work, you will need the SHOW_SECRETS_PERM permission
+defined for your user role.
 
 === pgo user
 

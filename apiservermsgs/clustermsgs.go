@@ -75,13 +75,6 @@ type ShowClusterDeployment struct {
 	PolicyLabels []string
 }
 
-// ShowClusterSecret
-type ShowClusterSecret struct {
-	Name     string
-	Username string
-	Password string
-}
-
 // ShowClusterReplica
 type ShowClusterReplica struct {
 	Name string
@@ -93,7 +86,6 @@ type ShowClusterDetail struct {
 	Deployments []ShowClusterDeployment
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
-	Secrets     []ShowClusterSecret
 	Replicas    []ShowClusterReplica
 }
 

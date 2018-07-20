@@ -245,3 +245,88 @@ func deleteUser(username string) {
 	}
 
 }
+
+// showUsers ...
+func showUser(args []string) {
+
+	log.Debugf("showUser called %v\n", args)
+
+	log.Debug("selector is " + Selector)
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
+	for _, v := range args {
+
+		url := APIServerURL + "/users/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
+
+		log.Debug("show users called [" + url + "]")
+
+		action := "GET"
+		req, err := http.NewRequest(action, url, nil)
+
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
+		}
+
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+		resp, err := httpclient.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
+		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
+
+		defer resp.Body.Close()
+
+		var response msgs.ShowUserResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if OutputFormat == "json" {
+			b, err := json.MarshalIndent(response, "", "  ")
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			fmt.Println(string(b))
+			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
+		}
+		if len(response.Results) == 0 {
+			fmt.Println("no clusters found")
+			return
+		}
+
+		for _, clusterDetail := range response.Results {
+			printUsers(&clusterDetail)
+		}
+
+	}
+
+}
+
+// printUsers
+func printUsers(detail *msgs.ShowUserDetail) {
+	fmt.Println("")
+	fmt.Println("cluster : " + detail.Cluster.Spec.Name)
+
+	for _, s := range detail.Secrets {
+		fmt.Println("")
+		fmt.Println("secret : " + s.Name)
+		fmt.Println(TreeBranch + "username: " + s.Username)
+		fmt.Println(TreeTrunk + "password: " + s.Password)
+	}
+
+}

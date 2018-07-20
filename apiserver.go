@@ -90,6 +90,7 @@ func main() {
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
+	r.HandleFunc("/users/{name}", userservice.ShowUserHandler).Methods("GET")
 	//here
 	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")

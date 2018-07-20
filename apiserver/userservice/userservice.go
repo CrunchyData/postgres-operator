@@ -120,3 +120,45 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 
 }
+
+// ShowUserHandler ...
+// pgo show user
+// parameters selector
+// returns a ShowUserResponse
+func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("userservice.ShowUserHandler %v\n", vars)
+
+	clustername := vars["name"]
+
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	err := apiserver.Authn(apiserver.SHOW_SECRETS_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	log.Debug("userservice.ShowUserHandler GET called")
+
+	var resp msgs.ShowUserResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ShowUserResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]msgs.ShowUserDetail, 0)
+	} else {
+		resp = ShowUser(clustername, selector)
+	}
+	json.NewEncoder(w).Encode(resp)
+
+}
