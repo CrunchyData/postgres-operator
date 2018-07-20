@@ -67,6 +67,7 @@ type DeploymentTemplateFields struct {
 	ArchiveMode        string
 	ArchivePVCName     string
 	ArchiveTimeout     string
+	BackRestPVCName    string
 	PVCName            string
 	BackupPVCName      string
 	BackupPath         string
@@ -119,6 +120,14 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	if cl.Spec.UserLabels["archive"] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-xlog", cl.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" ||
+		operator.Pgo.Cluster.BackRest {
+		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-backrestrepo", cl.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return
@@ -189,7 +198,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 }
 
-// DeleteClusterBase ...
+// eleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
 	log.Debug("deleteCluster called with strategy " + cl.Spec.Strategy)
@@ -293,6 +302,14 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 
 	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" ||
+		operator.Pgo.Cluster.BackRest {
+		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return

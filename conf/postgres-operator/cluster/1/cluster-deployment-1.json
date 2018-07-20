@@ -143,7 +143,7 @@
             {{.ArchivePVCName}}
                     }, {
                         "name": "backrestrepo-volume",
-            "emptyDir": { "medium": "Memory" }
+            {{.BackRestPVCName}}
                     }, {
                         "name": "recover-volume",
             "emptyDir": { "medium": "Memory" }

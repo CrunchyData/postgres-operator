@@ -40,6 +40,7 @@ type ClusterStruct struct {
 	Strategy        string `yaml:"Strategy"`
 	Replicas        string `yaml:"Replicas"`
 	ServiceType     string `yaml:"ServiceType"`
+	BackRest        bool   `yaml:"BackRest"`
 }
 
 type StorageStruct struct {
@@ -87,6 +88,7 @@ const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 
 func (c *PgoConfig) Validate() error {
 	var err error
+	log.Info("pgo.yaml Cluster.BackRest is %v", c.Cluster.BackRest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
 		return errors.New("invalid PrimaryStorage setting")

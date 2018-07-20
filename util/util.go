@@ -341,3 +341,23 @@ func RandStringBytesRmndr(n int) string {
 	}
 	return string(b)
 }
+
+// CreateBackRestPVCSnippet
+func CreateBackRestPVCSnippet(backRestPVCName string) string {
+
+	var sc bytes.Buffer
+
+	if backRestPVCName != "" {
+		sc.WriteString("\"persistentVolumeClaim\": {\n")
+		sc.WriteString("\t \"claimName\": \"" + backRestPVCName + "\"")
+		sc.WriteString("\n")
+	} else {
+		sc.WriteString("\"emptyDir\": {")
+		sc.WriteString("\"medium\": \"Memory\"")
+		sc.WriteString("\n")
+	}
+
+	sc.WriteString("}")
+
+	return sc.String()
+}
