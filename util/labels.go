@@ -52,3 +52,6 @@ const LABEL_NODE_LABEL = "node-label"
 const LABEL_VERSION = "version"
 
 const LABEL_BACKREST = "backrest"
+const LABEL_CONTAINER_NAME = "containername"
+const LABEL_POD_NAME = "podname"
+const LABEL_ACTION = "action"

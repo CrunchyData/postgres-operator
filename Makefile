@@ -60,6 +60,12 @@ runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
 apiserver:	check-go-vars
 	go install apiserver.go
+pgo-backrest:	check-go-vars
+	go install pgo-backrest/pgo-backrest.go
+	mv $(GOBIN)/pgo-backrest ./bin/pgo-backrest/
+pgo-backrest-image:	check-go-vars
+	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
+	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars

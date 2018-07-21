@@ -16,12 +16,14 @@ limitations under the License.
 */
 
 import (
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -104,7 +106,18 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			removeBackupJob(taskName)
 		}
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName), apiserver.Namespace)
+		//get pod name from cluster
+		var podname string
+		podname, err = getPrimaryPodName(&cluster)
+
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackupAction, podname, "database"), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -117,14 +130,17 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	return resp
 }
 
-func getBackupParams(clusterName, taskName string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
-	spec.TaskType = crv1.PgtaskBackrestBackup
+	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters[util.LABEL_POD_NAME] = podName
+	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
+	spec.Parameters[util.LABEL_ACTION] = action
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -145,4 +161,47 @@ func removeBackupJob(name string) {
 	log.Debugf("found backrest backup job %s will remove\n", name)
 
 	kubeapi.DeleteJob(apiserver.Clientset, name, apiserver.Namespace)
+}
+
+func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
+	var podname string
+
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+	if err != nil {
+		return podname, err
+	}
+
+	for _, p := range pods.Items {
+		if isPrimary(&p) && isReady(&p) {
+			return p.Name, err
+		}
+	}
+
+	return podname, errors.New("primary pod is not in Ready state")
+}
+
+func isPrimary(pod *v1.Pod) bool {
+	if pod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+		return true
+	}
+	return false
+
+}
+
+func isReady(pod *v1.Pod) bool {
+	readyCount := 0
+	containerCount := 0
+	for _, stat := range pod.Status.ContainerStatuses {
+		containerCount++
+		if stat.Ready {
+			readyCount++
+		}
+	}
+	if readyCount != containerCount {
+		return false
+	}
+	return true
+
 }
