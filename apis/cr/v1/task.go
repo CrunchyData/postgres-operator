@@ -27,6 +27,7 @@ const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"
 const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
+const PgtaskBackrestBackup = "backrestbackup"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {
