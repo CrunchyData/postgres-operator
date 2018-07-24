@@ -178,6 +178,7 @@ permissions -
 |DeleteUpgrade | allow *pgo delete upgrade*
 |CreateUser    | allow *pgo create user*
 |CreateFailover| allow *pgo failover*
+|ShowConfig    | allow *pgo show config*
 |User          | allow *pgo user*
 |Version       | allow *pgo version*
 |======================
