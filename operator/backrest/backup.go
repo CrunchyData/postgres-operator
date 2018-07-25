@@ -43,9 +43,9 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	//create the Job to run the backrest command
 
 	jobFields := backrestJobTemplateFields{
-		ClusterName:   task.Spec.Name,
+		ClusterName:   task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		PodName:       task.Spec.Parameters[util.LABEL_POD_NAME],
-		Command:       task.Spec.TaskType,
+		Command:       task.Spec.Parameters[util.LABEL_BACKREST_COMMAND],
 		COImagePrefix: operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:    operator.Pgo.Pgo.COImageTag,
 	}

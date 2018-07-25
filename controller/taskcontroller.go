@@ -132,8 +132,8 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskDeleteBackups:
 		log.Info("delete backups task added")
 		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
-	case crv1.PgtaskBackrestBackup:
-		log.Info("backrest  backup task added")
+	case crv1.PgtaskBackrest:
+		log.Info("backrest task added")
 		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")

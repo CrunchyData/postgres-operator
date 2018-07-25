@@ -15,21 +15,26 @@
                 }
             },
             "spec": {
-                "volumes": [
-                ],
+                "volumes": [],
 
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.COImagePrefix}}/pgo-backrest:{{.COImageTag}}",
-                    "volumeMounts": [
-                    ],
-                    "env": [ {
+                    "volumeMounts": [],
+                    "env": [{
                         "name": "COMMAND",
                         "value": "{{.Command}}"
                     }, {
                         "name": "POD_NAME",
                         "value": "{{.PodName}}"
-                    } ]
+                    }, {
+                        "name": "NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    }]
                 }],
                 "restartPolicy": "Never"
             }

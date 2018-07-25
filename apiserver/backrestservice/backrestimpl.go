@@ -145,7 +145,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName strin
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
-	spec.Parameters[util.LABEL_ACTION] = action
+	spec.Parameters[util.LABEL_BACKREST_COMMAND] = action
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
