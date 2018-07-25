@@ -31,3 +31,14 @@ type CreateBackrestBackupRequest struct {
 	Args      []string
 	Selector  string
 }
+
+type ShowBackrestDetail struct {
+	Name string
+	Info string
+}
+
+// ShowBackrestResponse ...
+type ShowBackrestResponse struct {
+	Items []ShowBackrestDetail
+	Status
+}

@@ -98,7 +98,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	}
 
 	backrestPVCName := ""
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" || operator.Pgo.Cluster.BackRest {
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		backrestPVCName = cl.Spec.Name + "-backrestrepo"
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
@@ -124,7 +124,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		Database:           cl.Spec.Database,
 		ArchiveMode:        archiveMode,
 		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
-		BackRestPVCName:    util.CreateBackRestPVCSnippet(backrestPVCName),
+		BackrestPVCName:    util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:     archiveTimeout,
 		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
@@ -532,7 +532,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	}
 
 	backrestPVCName := ""
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" || operator.Pgo.Cluster.BackRest {
+	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		backrestPVCName = replica.Spec.Name + "-backrestrepo"
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
@@ -562,7 +562,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		DataPathOverride:  replica.Spec.Name,
 		ArchiveMode:       archiveMode,
 		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
-		BackRestPVCName:   util.CreateBackRestPVCSnippet(backrestPVCName),
+		BackrestPVCName:   util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:    archiveTimeout,
 		Replicas:          "1",
 		ConfVolume:        GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),

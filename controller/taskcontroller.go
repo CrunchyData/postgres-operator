@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
@@ -131,6 +132,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskDeleteBackups:
 		log.Info("delete backups task added")
 		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrestBackup:
+		log.Info("backrest  backup task added")
+		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}

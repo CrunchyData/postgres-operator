@@ -116,6 +116,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
 		}
 
+	} else if job.Status.Succeeded > 0 && labels[util.LABEL_BACKREST] != "" {
+		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for backrest %s\n ", labels[util.LABEL_PG_DATABASE])
+		err := util.Patch(c.JobClient, "/spec/backreststatus", crv1.UpgradeCompletedStatus, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+		if err != nil {
+			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+		}
+
 	}
 }
 

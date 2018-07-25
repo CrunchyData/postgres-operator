@@ -36,6 +36,7 @@ type CreateClusterRequest struct {
 	MetricsFlag          bool
 	AutofailFlag         bool
 	ArchiveFlag          bool
+	BackrestFlag         bool
 	PgpoolFlag           bool
 	PgpoolSecret         string
 	CustomConfig         string

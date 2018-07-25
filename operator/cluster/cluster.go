@@ -67,7 +67,7 @@ type DeploymentTemplateFields struct {
 	ArchiveMode        string
 	ArchivePVCName     string
 	ArchiveTimeout     string
-	BackRestPVCName    string
+	BackrestPVCName    string
 	PVCName            string
 	BackupPVCName      string
 	BackupPath         string
@@ -125,8 +125,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			return
 		}
 	}
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" ||
-		operator.Pgo.Cluster.BackRest {
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-backrestrepo", cl.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
@@ -307,8 +306,8 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 			return
 		}
 	}
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" ||
-		operator.Pgo.Cluster.BackRest {
+
+	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)

@@ -115,3 +115,67 @@ func createBackrestBackup(args []string) {
 	}
 
 }
+
+// showBackrest ....
+func showBackrest(args []string) {
+	log.Debugf("showBackrest called %v\n", args)
+
+	for _, v := range args {
+		url := APIServerURL + "/backrest/" + v + "?version=" + msgs.PGO_VERSION + "&selector=" + Selector
+
+		log.Debug("show backrest called [" + url + "]")
+
+		action := "GET"
+		req, err := http.NewRequest(action, url, nil)
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
+		}
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+		resp, err := httpclient.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
+		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
+
+		defer resp.Body.Close()
+
+		var response msgs.ShowBackrestResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
+		}
+
+		if len(response.Items) == 0 {
+			fmt.Println("no backrest found")
+			return
+		}
+
+		log.Debugf("response = %v\n", response)
+		log.Debugf("len of items = %d\n", len(response.Items))
+
+		for _, backup := range response.Items {
+			printBackrest(&backup)
+		}
+
+	}
+
+}
+
+// printBackrest
+func printBackrest(result *msgs.ShowBackrestDetail) {
+	fmt.Printf("%s%s\n", "", "")
+	fmt.Printf("%s%s\n", "", "backrest : "+result.Name)
+
+}

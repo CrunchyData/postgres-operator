@@ -140,6 +140,17 @@ pgo create cluster testcluster --service-type=LoadBalancer
 If not set, the ServiceType from *pgo.yaml* will be used, currently
 the default is ClusterIP.
 
+To specify that you want a pgbackrest volume to be created for
+a given cluster, use the *--backrest* command flag:
+
+....
+pgo create cluster withbkrest --backrest
+....
+
+If the *pgo.yaml* Cluster.Backrest setting is enabled, that value
+will be used as the default value for all created clusters.
+
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -233,6 +244,28 @@ When you specify a destructive delete like above, you will be prompted
 to make sure this is what you want to do.  If you don't want to
 be prompted you can enter the *--no-prompt* command line flag.
 
+
+=== pgo backrest
+
+pgbackrest is a more advanced backup and restore capability
+exposed by the Operator.  Read the following link for a full
+description of pgbackrest.
+
+The pgbackrest support is enabled by a user specifying
+the *--backrest* command flag or specifying a default Backrest
+setting within the *pgo.yaml* configuration.  Setting this
+value will cause the Operator to create a PVC specifically
+dedicated for holding pgbackrest backups.
+
+You can create a pgbackrest backup using the following command:
+....
+pgo backrest mycluster
+....
+
+You can obtain pgbackrest information using the following command:
+....
+pgo backrest mycluster --info
+....
 
 === pgo scale
 

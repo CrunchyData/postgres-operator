@@ -24,7 +24,7 @@ import (
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
-var ArchiveFlag, AutofailFlag, PgpoolFlag, MetricsFlag bool
+var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, MetricsFlag bool
 var PgpoolSecret string
 var CCPImageTag string
 var Password string
@@ -166,6 +166,7 @@ func init() {
 
 	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "i", "", "The path of an ingest configuration file")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "If set, will cause the crunchy-pgpool container to be added to the database cluster")
+	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "backrest", "", false, "If set, will cause a backrest volume to be enabled for the database cluster")
 	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "If set, will cause archive logging to be enabled for the database cluster")
 	createClusterCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "m", false, "If set, will cause the crunchy-collect container to be added to the database pod")

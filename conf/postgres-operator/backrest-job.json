@@ -1,0 +1,38 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "backrest-{{.PodName}}"
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "backrest-{{.PodName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgo-backrest": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+                "volumes": [
+                ],
+
+                "containers": [{
+                    "name": "backrest",
+                    "image": "{{.COImagePrefix}}/pgo-backrest:{{.COImageTag}}",
+                    "volumeMounts": [
+                    ],
+                    "env": [ {
+                        "name": "COMMAND",
+                        "value": "{{.Command}}"
+                    }, {
+                        "name": "POD_NAME",
+                        "value": "{{.PodName}}"
+                    } ]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

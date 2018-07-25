@@ -27,6 +27,11 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const backrestCommand = "pgbackrest"
+const backrestStanza = "--stanza=db"
+const backrestInfoCommand = "info"
+const containername = "database"
+
 //  CreateBackup ...
 // pgo backrest mycluster
 // pgo backrest --selector=name=mycluster
@@ -117,7 +122,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			return resp
 		}
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackupAction, podname, "database"), apiserver.Namespace)
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database"), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -203,5 +208,78 @@ func isReady(pod *v1.Pod) bool {
 		return false
 	}
 	return true
+
+}
+
+// ShowBackrest ...
+func ShowBackrest(name, selector string) msgs.ShowBackrestResponse {
+	var err error
+
+	response := msgs.ShowBackrestResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Items = make([]msgs.ShowBackrestDetail, 0)
+
+	if selector == "" && name == "all" {
+	} else {
+		if selector == "" {
+			selector = "name=" + name
+		}
+	}
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, selector, apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+
+	for _, c := range clusterList.Items {
+		detail := msgs.ShowBackrestDetail{}
+		detail.Name = c.Name
+
+		//here is where we would exec to get the backrest info
+		info, err := getInfo(c.Name)
+		if err != nil {
+			detail.Info = err.Error()
+		} else {
+			detail.Info = info
+		}
+
+		response.Items = append(response.Items, detail)
+	}
+
+	return response
+
+}
+
+func getInfo(clusterName string) (string, error) {
+
+	var err error
+	var PODNAME string
+
+	//lookup podname
+	PODNAME = "foo"
+
+	cmd := make([]string, 0)
+
+	log.Info("backrest info command requested")
+	//pgbackrest --stanza=db info
+	cmd = append(cmd, backrestCommand)
+	cmd = append(cmd, backrestStanza)
+	cmd = append(cmd, backrestInfoCommand)
+
+	err = util.Exec(apiserver.RESTConfig, apiserver.Namespace, PODNAME, containername, cmd)
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	log.Debug("backrest info ends")
+	return "something", err
 
 }

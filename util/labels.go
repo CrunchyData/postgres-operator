@@ -19,6 +19,7 @@ import ()
 
 // resource labels used by the operator
 const LABEL_NAME = "name"
+const LABEL_SELECTOR = "selector"
 const LABEL_OPERATOR = "postgres-operator"
 const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_PG_DATABASE = "pg-database"
@@ -51,7 +52,7 @@ const LABEL_STORAGE_CONFIG = "storage-config"
 const LABEL_NODE_LABEL = "node-label"
 const LABEL_VERSION = "version"
 
-const LABEL_BACKREST = "backrest"
+const LABEL_BACKREST = "pgo-backrest"
 const LABEL_CONTAINER_NAME = "containername"
 const LABEL_POD_NAME = "podname"
 const LABEL_ACTION = "action"

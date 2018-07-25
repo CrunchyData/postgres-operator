@@ -342,8 +342,8 @@ func RandStringBytesRmndr(n int) string {
 	return string(b)
 }
 
-// CreateBackRestPVCSnippet
-func CreateBackRestPVCSnippet(backRestPVCName string) string {
+// CreateBackrestPVCSnippet
+func CreateBackrestPVCSnippet(backRestPVCName string) string {
 
 	var sc bytes.Buffer
 

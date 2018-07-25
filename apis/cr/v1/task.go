@@ -29,7 +29,8 @@ const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
 
 const PgtaskBackrest = "backrest"
-const PgtaskBackrestBackupAction = "backup"
+const PgtaskBackrestBackup = "backup"
+const PgtaskBackrestInfo = "info"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {

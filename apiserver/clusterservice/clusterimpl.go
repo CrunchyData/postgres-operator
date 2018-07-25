@@ -441,6 +441,19 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			log.Debug("using ArchiveMode from pgo.yaml")
 			userLabelsMap[util.LABEL_ARCHIVE] = apiserver.Pgo.Cluster.ArchiveMode
 		}
+		if request.BackrestFlag {
+			userLabelsMap[util.LABEL_BACKREST] = "true"
+			log.Debug("backrest set to true in user labels")
+		} else {
+			log.Debug("using Backrest from pgo.yaml")
+			userLabelsMap[util.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
+		}
+
+		//add archive if backrest is requested
+		if userLabelsMap[util.LABEL_BACKREST] == "true" {
+			userLabelsMap[util.LABEL_ARCHIVE] = "true"
+		}
+
 		userLabelsMap[util.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
 
 		if request.PgpoolFlag {

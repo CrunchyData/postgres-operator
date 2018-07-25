@@ -35,6 +35,7 @@ const ServiceTemplate1Path = "/operator-conf/cluster-service-1.json"
 const jobPath = "/operator-conf/backup-job.json"
 const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
 const rmdatajobPath = "/operator-conf/rmdata-job.json"
+const backrestjobPath = "/operator-conf/backrest-job.json"
 const PVCPath = "/operator-conf/pvc.json"
 const PVCMatchLabelsPath = "/operator-conf/pvc-matchlabels.json"
 const PVCSCPath = "/operator-conf/pvc-storageclass.json"
@@ -54,6 +55,7 @@ var PgpoolHBATemplate *template.Template
 var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
+var BackrestjobTemplate *template.Template
 var PVCTemplate *template.Template
 var PVCMatchLabelsTemplate *template.Template
 var PVCStorageClassTemplate *template.Template
@@ -93,6 +95,7 @@ func Initialize() {
 
 	IngestjobTemplate = util.LoadTemplate(ingestPath)
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
+	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
 	PVCMatchLabelsTemplate = util.LoadTemplate(PVCMatchLabelsPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)

@@ -234,6 +234,7 @@ func createCluster(args []string) {
 	r.AutofailFlag = AutofailFlag
 	r.PgpoolFlag = PgpoolFlag
 	r.ArchiveFlag = ArchiveFlag
+	r.BackrestFlag = BackrestFlag
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

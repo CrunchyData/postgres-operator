@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -11,7 +12,15 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
-var Namespace string
+var COMMAND, PODNAME, Namespace string
+
+const backrestCommand = "pgbackrest"
+
+//pgbackrest --stanza=db backup
+const backrestStanza = "--stanza=db"
+const backrestBackupCommand = "backup"
+const backrestInfoCommand = "info"
+const containername = "database"
 
 func main() {
 	log.Info("pgo-backrest starts")
@@ -33,6 +42,19 @@ func main() {
 		os.Exit(2)
 	}
 
+	COMMAND = os.Getenv("COMMAND")
+	log.Debug("setting COMMAND to " + COMMAND)
+	if COMMAND == "" {
+		log.Error("COMMAND env var not set")
+		os.Exit(2)
+	}
+	PODNAME = os.Getenv("PODNAME")
+	log.Debug("setting PODNAME to " + PODNAME)
+	if PODNAME == "" {
+		log.Error("PODNAME env var not set")
+		os.Exit(2)
+	}
+
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
 		panic(err)
@@ -44,13 +66,31 @@ func main() {
 		panic(err.Error())
 	}
 
-	cmd := make([]string, 2)
-	cmd[0] = "ls"
-	cmd[1] = "/pgdata"
-	podname := "jank-54b59bfbdd-9hmgn"
-	containername := "database"
+	cmd := make([]string, 0)
 
-	err = util.Exec(config, Namespace, podname, containername, cmd)
+	switch COMMAND {
+	case crv1.PgtaskBackrestInfo:
+		log.Info("backrest info command requested")
+		cmd = append(cmd, "ls")
+		cmd = append(cmd, "/pgdata")
+		//pgbackrest --stanza=db info
+		//cmd = append(cmd, backrestCommand)
+		//cmd = append(cmd, backrestStanza)
+		//cmd = append(cmd, backrestBackupCommand)
+	case crv1.PgtaskBackrestBackup:
+		log.Info("backrest backup command requested")
+		cmd = append(cmd, "ls")
+		cmd = append(cmd, "/pgdata")
+	//pgbackrest --stanza=db backup
+	//cmd = append(cmd, backrestCommand)
+	//cmd = append(cmd, backrestStanza)
+	//cmd = append(cmd, backrestBackupCommand)
+	default:
+		log.Error("unsupported backup command specified " + COMMAND)
+		os.Exit(2)
+	}
+
+	err = util.Exec(config, Namespace, PODNAME, containername, cmd)
 	if err != nil {
 		log.Error(err)
 	}

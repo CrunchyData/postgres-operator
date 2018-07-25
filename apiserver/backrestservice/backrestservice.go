@@ -20,7 +20,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	//"github.com/gorilla/mux"
+	"github.com/crunchydata/postgres-operator/util"
+	"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -51,4 +52,42 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+// ShowBackrestHandler ...
+// returns a ShowBackrestResponse
+func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("backrestservice.ShowBackrestHandler %v\n", vars)
+
+	backupname := vars[util.LABEL_NAME]
+
+	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+
+	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Debug("backrestservice.ShowBackrestHandler GET called")
+	var resp msgs.ShowBackrestResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ShowBackrestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+		resp = ShowBackrest(backupname, selector)
+	}
+	json.NewEncoder(w).Encode(resp)
+
 }

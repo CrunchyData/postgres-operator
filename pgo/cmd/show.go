@@ -37,6 +37,7 @@ For example:
 	pgo show policy policy1
 	pgo show pvc mycluster
 	pgo show backup mycluster
+	pgo show backrest mycluster
 	pgo show ingest myingest
 	pgo show config
 	pgo show user mycluster
@@ -48,6 +49,7 @@ Valid resource types include:
 	* cluster
 	* pvc
 	* policy
+	* backrest
 	* user
 	* ingest
 	* config
@@ -57,6 +59,7 @@ Valid resource types include:
 			switch args[0] {
 			case "cluster":
 			case "pvc":
+			case "backrest":
 			case "policy":
 			case "ingest":
 			case "user":
@@ -69,6 +72,7 @@ Valid resource types include:
 Valid resource types include:
 	* cluster
 	* pvc
+	* backrest
 	* policy
 	* ingest
 	* user
@@ -85,6 +89,7 @@ func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
+	ShowCmd.AddCommand(ShowBackrestCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowIngestCmd)
@@ -94,6 +99,7 @@ func init() {
 
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	ShowBackrestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
@@ -171,6 +177,22 @@ var ShowBackupCmd = &cobra.Command{
 			log.Error("cluster name(s) required for this command")
 		} else {
 			showBackup(args)
+		}
+	},
+}
+
+// showBackrestCmd represents the show backrest command
+var ShowBackrestCmd = &cobra.Command{
+	Use:   "backrest",
+	Short: "Show backrest information",
+	Long: `Show backrest information. For example:
+
+				pgo show backrest mycluser`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Error("cluster name(s) required for this command")
+		} else {
+			showBackrest(args)
 		}
 	},
 }
