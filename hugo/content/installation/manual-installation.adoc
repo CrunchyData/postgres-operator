@@ -165,6 +165,7 @@ The following table describes the Makefile targets -
 |Target | Description
 |all        | compile all binaries and build all images
 |setup        | fetch the dependent packages required to build with
+|bounce        | delete the Operator pod only, this is a way to upgrade the operator without a full redeploy, as the operator runs in a Deployment, a new pod will be created to replace the old one, a simple way to bounce the pod
 |deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
 |main        | compile the postgres-operator
 |runmain        | locally execute the postgres-operator

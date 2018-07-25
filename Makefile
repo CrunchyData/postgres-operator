@@ -49,7 +49,8 @@ setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json
 	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
 	kubectl config use-context demo
-
+bounce:
+	kubectl get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs kubectl delete pod
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars
