@@ -16,7 +16,7 @@
             },
             "spec": {
                 "volumes": [],
-
+                "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.COImagePrefix}}/pgo-backrest:{{.COImageTag}}",
@@ -25,7 +25,7 @@
                         "name": "COMMAND",
                         "value": "{{.Command}}"
                     }, {
-                        "name": "POD_NAME",
+                        "name": "PODNAME",
                         "value": "{{.PodName}}"
                     }, {
                         "name": "NAMESPACE",

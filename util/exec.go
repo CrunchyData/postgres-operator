@@ -160,5 +160,7 @@ func WebsocketCallback(ws *websocket.Conn, resp *http.Response, err error) error
 			return err
 		}
 		txt = txt + string(body)
+		log.Info("exec output=" + txt)
 	}
+
 }

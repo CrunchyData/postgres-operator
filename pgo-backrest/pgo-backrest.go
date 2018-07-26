@@ -4,7 +4,8 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/util"
+	//"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -90,10 +91,17 @@ func main() {
 		os.Exit(2)
 	}
 
+	log.Infof("command is %v ", cmd)
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, cmd, containername, PODNAME, Namespace, nil)
+	/**
 	err = util.Exec(config, Namespace, PODNAME, containername, cmd)
 	if err != nil {
 		log.Error(err)
 	}
+	*/
+	log.Info("output=[" + output + "]")
+	log.Info("stderr=[" + stderr + "]")
+
 	log.Info("pgo-backrest ends")
 
 }

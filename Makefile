@@ -64,7 +64,7 @@ apiserver:	check-go-vars
 pgo-backrest:	check-go-vars
 	go install pgo-backrest/pgo-backrest.go
 	mv $(GOBIN)/pgo-backrest ./bin/pgo-backrest/
-pgo-backrest-image:	check-go-vars
+pgo-backrest-image:	check-go-vars pgo-backrest
 	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
 	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
 pgo:	check-go-vars
