@@ -72,20 +72,20 @@ func main() {
 	switch COMMAND {
 	case crv1.PgtaskBackrestInfo:
 		log.Info("backrest info command requested")
-		cmd = append(cmd, "ls")
-		cmd = append(cmd, "/pgdata")
+		//cmd = append(cmd, "ls")
+		//cmd = append(cmd, "/pgdata")
 		//pgbackrest --stanza=db info
-		//cmd = append(cmd, backrestCommand)
-		//cmd = append(cmd, backrestStanza)
-		//cmd = append(cmd, backrestBackupCommand)
+		cmd = append(cmd, backrestCommand)
+		cmd = append(cmd, backrestStanza)
+		cmd = append(cmd, backrestBackupCommand)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
-		cmd = append(cmd, "ls")
-		cmd = append(cmd, "/pgdata")
-	//pgbackrest --stanza=db backup
-	//cmd = append(cmd, backrestCommand)
-	//cmd = append(cmd, backrestStanza)
-	//cmd = append(cmd, backrestBackupCommand)
+		//cmd = append(cmd, "ls")
+		//cmd = append(cmd, "/pgdata")
+		//pgbackrest --stanza=db backup
+		cmd = append(cmd, backrestCommand)
+		cmd = append(cmd, backrestStanza)
+		cmd = append(cmd, backrestBackupCommand)
 	default:
 		log.Error("unsupported backup command specified " + COMMAND)
 		os.Exit(2)
