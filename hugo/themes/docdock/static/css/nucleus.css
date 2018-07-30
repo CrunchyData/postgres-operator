@@ -233,10 +233,6 @@ th {
       -ms-flex: 0 100%;
       flex: 0 100%; } }
 
-.content {
-  margin: 0 0.625rem;
-  padding: 0 0.938rem; }
-
 @media only all and (max-width: 47.938em) {
   body [class*="size-"] {
     -webkit-box-flex: 0;
@@ -529,6 +525,9 @@ h6 {
 
 p {
   margin: 1.7rem 0; }
+
+p.tableblock {
+  margin: 0; }
 
 ul, ol {
   margin: 1rem 0; }

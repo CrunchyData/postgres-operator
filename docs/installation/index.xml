@@ -17,7 +17,7 @@
       <pubDate>Thu, 26 Apr 2018 15:22:14 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/quick-installation/</guid>
-      <description>Table of Contents Overview Quickstart GKE/PKS Openshift Container Platform   Next Steps   v3.1, 2018-06-22
+      <description>Table of Contents Overview Quickstart GKE/PKS Openshift Container Platform   Next Steps   Latest Release: v3.1, 2018-07-30
  Overview There are currently quickstart scripts that seek to automate the deployment to popular Kubernetes environments -
    quickstart-for-gke.sh
   quickstart-for-ocp.sh
@@ -31,10 +31,9 @@
       <pubDate>Thu, 26 Apr 2018 15:22:21 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/manual-installation/</guid>
-      <description>Table of Contents Project Structure Installation Prerequsites Basic Installation Create HostPath Directory   Build Images &amp;amp; Deploy Makefile Targets Next Steps   v3.1, 2018-06-22
+      <description>Table of Contents Project Structure Installation Prerequsites Basic Installation Create HostPath Directory   Build Images &amp;amp; Deploy Makefile Targets Next Steps   Latest Release: v3.1, 2018-07-30
  Project Structure First, define the following environment variables in .bashrc:
- export GOPATH=$HOME/odev export GOBIN=$GOPATH/bin export CO_NAMESPACE=demo export CO_CMD=kubectl export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator export CO_IMAGE_PREFIX=crunchydata export CO_IMAGE_TAG=centos7-3.1 export CO_BASEOS=centos7   When deploying on Openshift Container Platform, the CO_CMD environment variable should be:
- export CO_CMD=oc   To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called odev -</description>
+ export GOPATH=$HOME/odev export GOBIN=$GOPATH/bin export CO_NAMESPACE=demo export CO_CMD=kubectl export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator export CO_IMAGE_PREFIX=crunchydata export CO_IMAGE_TAG=centos7-3.1 export CO_BASEOS=centos7   When deploying on Openshift Container Platform, the CO_CMD environment variable should be:</description>
     </item>
     
     <item>
@@ -43,7 +42,7 @@
       <pubDate>Thu, 26 Apr 2018 15:24:16 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/helm-chart/</guid>
-      <description>v3.1, 2018-06-22
+      <description>Latest Release: v3.1, 2018-07-30
  Helm Chart First, pull prebuilt versions from Dockerhub of the postgres-operator containers, specify the image versions, and execute the following Makefile target -
  export CO_IMAGE_PREFIX=crunchydata export CO_IMAGE_TAG=centos7-3.1 make pull   Then, build and deploy the operator using the provided Helm chart -
  cd $COROOT/chart helm install ./postgres-operator helm ls     Next Steps Next, visit the Deployment page to deploy the Operator, verify the installation, and view various storage configurations.</description>
@@ -55,7 +54,7 @@
       <pubDate>Thu, 26 Apr 2018 15:26:40 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/deployment/</guid>
-      <description>Table of Contents Verify Operator Status Configure pgo Client Verify pgo Client Storage Configuration Next Steps   v3.1, 2018-06-22
+      <description>Table of Contents Verify Operator Status Configure pgo Client Verify pgo Client Storage Configuration Next Steps   Latest Release: v3.1, 2018-07-30
  This document details verifying the installation of the PostgreSQL Operator is successful, in addition to detailing some different storage configurations that can be made.
  Verify Operator Status To verify that the operator is deployed and running, run the following:
  kubectl get pod --selector=name=postgres-operator   You should see output similar to this:</description>
@@ -67,7 +66,7 @@
       <pubDate>Tue, 24 Apr 2018 18:26:56 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/configuration/</guid>
-      <description>Table of Contents Overview Openshift Container Platform Security Configuration Kube RBAC Basic Authentication Configure TLS pgo RBAC apiserver Configuration postgres-operator Container Configuration   bash Completion REST API Deploying pgpool   v3.1, 2018-06-22
+      <description>Table of Contents Overview Openshift Container Platform Security Configuration Kube RBAC Basic Authentication Configure TLS pgo RBAC apiserver Configuration postgres-operator Container Configuration   bash Completion REST API Deploying pgpool   Latest Release: v3.1, 2018-07-30
  Overview This document describes how to configure the operator beyond the default configurations in addition to detailing what the configuration settings mean.
    Openshift Container Platform To run the Operator on Openshift Container Platform note the following requirements -</description>
     </item>
@@ -78,7 +77,7 @@
       <pubDate>Tue, 24 Apr 2018 18:27:30 -0700</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/</guid>
-      <description>v3.1, 2018-06-22
+      <description>Latest Release: v3.1, 2018-07-30
    Upgrading from v2.4 to v2.5   For a full list of additions and revisions that occurred in the PostgreSQL Operator v2.5 release, please view the related release page here.
  Required Updates This section notes some required steps that will need to be taken in the process of upgrading from v2.4 to v2.5.
  Configuration File It will be necessary to update your existing pgo.</description>
