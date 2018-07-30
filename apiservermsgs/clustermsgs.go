@@ -60,6 +60,11 @@ type ShowClusterService struct {
 	ExternalIP string
 }
 
+const PodTypePrimary = "primary"
+const PodTypeReplica = "replica"
+const PodTypeBackup = "backup"
+const PodTypeUnknown = "unknown"
+
 // ShowClusterPod
 type ShowClusterPod struct {
 	Name        string
@@ -68,6 +73,7 @@ type ShowClusterPod struct {
 	PVCName     map[string]string
 	ReadyStatus string
 	Primary     bool
+	Type        string
 }
 
 // ShowClusterDeployment

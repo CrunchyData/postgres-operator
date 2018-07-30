@@ -159,14 +159,10 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
 
-	var primaryStr string
 	for _, pod := range detail.Pods {
-		if pod.Primary {
-			primaryStr = "(primary)"
-		} else {
-			primaryStr = ""
-		}
-		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, primaryStr)
+		podType := "(" + pod.Type + ")"
+
+		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, podType)
 		fmt.Println(podStr)
 		for _, pvc := range pod.PVCName {
 			fmt.Println(TreeBranch + "pvc : " + pvc)

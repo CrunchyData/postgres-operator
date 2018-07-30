@@ -199,7 +199,11 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d.PVCName = getPVCName(&p)
 		log.Infof("after getPVCName call")
 
-		d.Primary = isPrimary(&p)
+		d.Primary = false
+		d.Type = getType(&p)
+		if d.Type == msgs.PodTypePrimary {
+			d.Primary = true
+		}
 		output = append(output, d)
 
 	}
@@ -886,15 +890,21 @@ func getPVCName(pod *v1.Pod) map[string]string {
 
 }
 
-func isPrimary(pod *v1.Pod) bool {
+func getType(pod *v1.Pod) string {
 
 	log.Infof("%v\n", pod.ObjectMeta.Labels)
 	//map[string]string
-	if pod.ObjectMeta.Labels["primary"] == "true" {
+	if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
+		log.Infoln("this is a backup pod")
+		return msgs.PodTypeBackup
+	} else if pod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
 		log.Infoln("this is a primary pod")
-		return true
+		return msgs.PodTypePrimary
+	} else {
+		log.Infoln("this is a replica pod")
+		return msgs.PodTypeReplica
 	}
-	return false
+	return msgs.PodTypeUnknown
 
 }
 
