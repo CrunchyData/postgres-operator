@@ -2,10 +2,10 @@
 title: "Installation"
 date: 2018-04-24T18:27:02-07:00
 draft: false
-weight: 40
+weight: 10
 ---
 
-v3.1, {docdate}
+Latest Release: v3.1, {docdate}
 
 == Installation
 
