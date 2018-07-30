@@ -243,8 +243,17 @@ func ShowBackrest(name, selector string) msgs.ShowBackrestResponse {
 		detail := msgs.ShowBackrestDetail{}
 		detail.Name = c.Name
 
+		podname, err := getPrimaryPodName(&c)
+
+		if err != nil {
+			log.Error(err)
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 		//here is where we would exec to get the backrest info
-		info, err := getInfo(c.Name)
+		info, err := getInfo(c.Name, podname)
 		if err != nil {
 			detail.Info = err.Error()
 		} else {
@@ -258,13 +267,10 @@ func ShowBackrest(name, selector string) msgs.ShowBackrestResponse {
 
 }
 
-func getInfo(clusterName string) (string, error) {
+func getInfo(clusterName, podname string) (string, error) {
 
 	var err error
-	var PODNAME string
 
-	//lookup podname
-	PODNAME = "foo"
 
 	cmd := make([]string, 0)
 
@@ -274,12 +280,16 @@ func getInfo(clusterName string) (string, error) {
 	cmd = append(cmd, backrestStanza)
 	cmd = append(cmd, backrestInfoCommand)
 
-	err = util.Exec(apiserver.RESTConfig, apiserver.Namespace, PODNAME, containername, cmd)
+	log.Infof("command is %v ", cmd)
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, apiserver.Namespace, nil)
+	log.Info("output=[" + output + "]")
+	log.Info("stderr=[" + stderr + "]")
+
 	if err != nil {
 		log.Error(err)
 		return "", err
 	}
 	log.Debug("backrest info ends")
-	return "something", err
+	return output, err
 
 }

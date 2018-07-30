@@ -177,5 +177,6 @@ func showBackrest(args []string) {
 func printBackrest(result *msgs.ShowBackrestDetail) {
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "backrest : "+result.Name)
+	fmt.Printf("%s%s\n", "", result.Info)
 
 }
