@@ -84,7 +84,7 @@ pgoadmin
 pgoreader
 ....
 
-This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local 
+This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local
 security requirements.
 
 The format of this file is as follows -

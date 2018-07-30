@@ -1,6 +1,5 @@
-#baseURL = "https://crunchydata.github.io/postgres-operator/"
+baseURL = "https://crunchydata.github.io/postgres-operator/"
 #baseURL= "/"
-baseURL= "https://xenophenes.github.io/postgres-operator"
 
 languageCode = "en-us"
 DefaultContentLanguage = "en"

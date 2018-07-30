@@ -2,6 +2,7 @@
 title: "Getting Started"
 date: 2018-04-24T18:26:43-07:00
 draft: false
+weight: 20
 ---
 
 :toc:
@@ -88,7 +89,7 @@ The selector to use for cluster filtering.
 The `pgo df` command can either be run against a single cluster or against all
 clusters matching a selector:
 ....
-pgo df testcluster
+pgo df mycluster
 pgo df --selector=project=xrayapp
 ....
 
@@ -115,31 +116,31 @@ Enables archive logging for the database cluster.
 |`--autofail` |N/A |N/A |
 If set, will cause autofailover to be enabled on this cluster.
 
-|`--backup-pvc` |-p |String |
+|`--backup-pvc=VALUE` |-p |String |
 The backup archive PVC to restore from.
 
-|`--ccp-image-tag` |-c |String |
+|`--ccp-image-tag=VALUE` |-c |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
 
-|`--custom-config` |-g |String |
+|`--custom-config=VALUE` |-g |String |
 The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
 
-|`--labels` |-l |String |
+|`--labels=VALUE` |-l |String |
 The labels to apply to this cluster.
 
 |`--metrics` |-m |N/A |
 Adds the crunchy-collect container to the database pod.
 
-|`--node-label` |N/A |String |
-The node label (key) to use in placing the primary database. If not set, any node is used.
+|`--node-label=VALUE` |N/A |String |
+The node label (key=value) to use in placing the primary database. If not set, any node is used.
 
-|`--password` |-w |String |
+|`--password=VALUE` |-w |String |
 The password to use for initial database users.
 
 |`--pgpool` |N/A |N/A |
 Adds the crunchy-pgpool container to the database pod.
 
-|`--pgpool-secret` |N/A |String |
+|`--pgpool-secret=VALUE` |N/A |String |
 The name of a pgpool secret to use for the pgpool configuration.
 
 |`--policies` |-z |String |
@@ -163,12 +164,90 @@ The name of a Storage config in pgo.yaml to use for the cluster storage.
 
 ==== Examples
 
-*Simple Creation*
+*Complex Creation*
 
-Create a single cluster:
+Create a series of clusters, specifying it as the xray project, with the xrayapp and
+rlspolicy policies added:
 ....
-pgo create cluster testcluster
+pgo create cluster xraydb --series=3 --labels=project=xray --policies=xrayapp,rlspolicy
 ....
+
+*Metrics*
+
+Add the crunchy-collect container to the database cluster pod and enable metrics collection
+on the database:
+....
+pgo create cluster testcluster --metrics
+....
+
+You can connect these containers to a metrics pipeline using link:https://grafana.com[Grafana]
+and link:https://prometheus.io[Prometheus] by following the example found in the
+link:https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_collection[Crunchy Container Suite documentation].
+
+*Image Version*
+
+New clusters typically pick up the container image version to use
+based on the pgo configuration file's `CcpImageTag` setting.  You
+can override this value using the ``--ccp-image-tag` command line
+flag:
+....
+pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
+....
+
+*pgPool II*
+
+By appending the `--pgpool` command line flag, you can add
+link:http://www.pgpool.net/mediawiki/index.php/Main_Page[pgPool II] to the database cluster.
+....
+pgo create cluster testcluster --pgpool
+....
+
+*Auto Failover*
+
+To enable *auto failover* on this cluster, use the following flag:
+....
+pgo create cluster testcluster --autofail
+....
+
+This flag, when set on the cluster, informs the operator to look
+or watch for NotReady events on this cluster. When those occur, it will
+ create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod. See the
+link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works]
+documentation for more details on auto failover.
+
+=== Delete Cluster
+
+You can remove a cluster by running:
+....
+pgo delete cluster restoredb
+....
+
+Note, that this command will not remove the PVC associated with
+this cluster.
+
+Selectors also apply to the delete command as follows:
+....
+pgo delete cluster  --selector=project=xray
+....
+
+This command will cause any cluster matching the selector
+to be removed.
+
+You can remove a cluster and it's data files by running:
+....
+pgo delete cluster restoredb --delete-data
+....
+
+You can remove a cluster, it's data files, and all backups by running:
+....
+pgo delete cluster restoredb --delete-data --delete-backups
+....
+
+When you specify a destructive delete like above, you will be prompted
+to make sure this is what you want to do.  If you don't want to
+be prompted you can enter the *--no-prompt* command line flag.
 
 *Complex Creation*
 

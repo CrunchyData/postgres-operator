@@ -33,10 +33,10 @@ priviledges, creates the following resources:
 The `rbac.yaml` file is also executed a single time when installing
 the Operator.  This file creates Role scoped privledges which are
 granted to the postgres-operator service account.  The postgres-operator
-service account is used by the *apiserver* and *postgres-operator* containers 
+service account is used by the *apiserver* and *postgres-operator* containers
 to access Kubernetes resources.
 
-Both of these RBAC files are executed by the `deploy/install-rbac.sh` 
+Both of these RBAC files are executed by the `deploy/install-rbac.sh`
 script.
 
 [WARNING]
@@ -366,7 +366,7 @@ for users to use as a starting configuration -
  * `pgo.yaml.dynamic` - this configuration specifies *dynamic* storage to be used, namely a *storageclass* that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.
 
 Note, when Storage Type is *create*, you can specify a storage
-configuration setting of *MatchLabels*, when set, this will cause a 
+configuration setting of *MatchLabels*, when set, this will cause a
 *selector* of *name=clustername* to be added into the PVC, this will
 let you target specific PV(s) to be matched for this cluster. Note, if a
 PV does not match the claim request, then the cluster will not start.  Users

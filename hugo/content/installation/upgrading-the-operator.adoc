@@ -8,7 +8,7 @@ weight: 60
 Latest Release: 3.2.0 {docdate}
 
 
-{{%expand "Upgrading to v3.2  %}}
+{{%expand "Upgrading to v3.2" %}}
 
 The following changes are mandatory when upgrading to 3.2 from
 previous operator versions:
@@ -29,18 +29,21 @@ previous operator versions:
 	....
 	kubectl label deploy mycluster primary=true
 	....
-	or for replica Deployments:
+	Or for replica Deployments:
 	....
-	kubectl label deploy mycluster-xxxx primary=false 
+	kubectl label deploy mycluster-xxxx primary=false
 	....
 
+{{% /expand%}}
 
 {{%expand "Upgrading from v2.6 to v3.1" %}}
 
- * you will need to add a label to your primary cluster Deployments
-   of the format "primary=true".  Starting in 3.1, this label
-   is used in the failover logic to find which primary Deployment to
-   delete (e.g. deleting the old primary).
+You will need to add a label to your primary cluster Deployments
+of the format "primary=true".  Starting in 3.1, this label
+is used in the failover logic to find which primary Deployment to
+delete (e.g. deleting the old primary).
+
+{{% /expand%}}
 
 {{%expand "Upgrading from v2.4 to v2.5" %}}
 
