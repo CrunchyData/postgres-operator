@@ -118,4 +118,14 @@ func printSummary(status *msgs.StatusDetail) {
 	for i := 0; i < len(status.NotReady); i++ {
 		fmt.Printf("\t%s\n", util.Rpad(status.NotReady[i], " ", 30))
 	}
+
+	fmt.Printf("\n%s\n", "Nodes:")
+	for i := 0; i < len(status.Nodes); i++ {
+		fmt.Printf("\t%s\n", util.Rpad(status.Nodes[i].Name, " ", 30))
+		fmt.Printf("\t\tStatus:%s\n", util.Rpad(status.Nodes[i].Status, " ", 30))
+		fmt.Println("\t\tLabels:")
+		for k, v := range status.Nodes[i].Labels {
+			fmt.Printf("\t\t\t%s=%s\n", k, v)
+		}
+	}
 }

@@ -51,6 +51,7 @@ func getStatus(results *msgs.StatusDetail) error {
 	results.VolumeCap = getVolumeCap()
 	results.DbTags = getDBTags()
 	results.NotReady = getNotReady()
+	results.Nodes = getNodes()
 	return err
 }
 
@@ -167,4 +168,28 @@ func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeC
 
 	return diskSizeInt64
 
+}
+
+func getNodes() []msgs.NodeInfo {
+	result := make([]msgs.NodeInfo, 0)
+
+	nodes, err := kubeapi.GetNodes(apiserver.Clientset)
+	if err != nil {
+		log.Error(err)
+		return result
+	}
+
+	for _, node := range nodes.Items {
+		r := msgs.NodeInfo{}
+		r.Labels = node.ObjectMeta.Labels
+		r.Name = node.ObjectMeta.Name
+		clen := len(node.Status.Conditions)
+		if clen > 0 {
+			r.Status = string(node.Status.Conditions[clen-1].Type)
+		}
+		result = append(result, r)
+
+	}
+
+	return result
 }
