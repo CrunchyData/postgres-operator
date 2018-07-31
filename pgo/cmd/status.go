@@ -128,4 +128,10 @@ func printSummary(status *msgs.StatusDetail) {
 			fmt.Printf("\t\t\t%s=%s\n", k, v)
 		}
 	}
+	fmt.Printf("\n%s\n", "Labels (count > 1): [count] [label]")
+	for i := 0; i < len(status.Labels); i++ {
+		if status.Labels[i].Value > 1 {
+			fmt.Printf("\t[%d]\t[%s]\n", status.Labels[i].Value, status.Labels[i].Key)
+		}
+	}
 }

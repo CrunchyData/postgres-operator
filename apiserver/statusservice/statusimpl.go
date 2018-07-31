@@ -24,6 +24,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
+	"sort"
 )
 
 func Status() msgs.StatusResponse {
@@ -52,6 +53,7 @@ func getStatus(results *msgs.StatusDetail) error {
 	results.DbTags = getDBTags()
 	results.NotReady = getNotReady()
 	results.Nodes = getNodes()
+	results.Labels = getLabels()
 	return err
 }
 
@@ -192,4 +194,45 @@ func getNodes() []msgs.NodeInfo {
 	}
 
 	return result
+}
+
+func getLabels() []msgs.KeyValue {
+	var ss []msgs.KeyValue
+	results := make(map[string]int)
+	// GetDeployments gets a list of deployments using a label selector
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "", apiserver.Namespace)
+	if err != nil {
+		log.Error(err)
+		return ss
+	}
+
+	for _, dep := range deps.Items {
+
+		for k, v := range dep.ObjectMeta.Labels {
+			lv := k + "=" + v
+			//log.Infof("%s", lv)
+			if results[lv] == 0 {
+				results[lv] = 1
+			} else {
+				results[lv] = results[lv] + 1
+			}
+		}
+
+	}
+
+	for k, v := range results {
+		ss = append(ss, msgs.KeyValue{k, v})
+	}
+
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].Value > ss[j].Value
+	})
+
+	/**
+	for _, kv := range ss {
+		log.Infof("%s, %d\n", kv.Key, kv.Value)
+	}
+	*/
+	return ss
+
 }
