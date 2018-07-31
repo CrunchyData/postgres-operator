@@ -104,6 +104,7 @@ func main() {
 	r.HandleFunc("/clustersdelete/{name}", clusterservice.DeleteClusterHandler).Methods("GET")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
+	r.HandleFunc("/scale/{name}", clusterservice.ScaleQueryHandler).Methods("GET")
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)

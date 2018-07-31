@@ -54,9 +54,6 @@ var failoverCmd = &cobra.Command{
 	},
 }
 
-var Query bool
-var Target string
-
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 

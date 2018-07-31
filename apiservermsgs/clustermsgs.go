@@ -127,6 +127,19 @@ type ClusterTestResponse struct {
 	Status
 }
 
+type ScaleQueryTargetSpec struct {
+	Name        string
+	ReadyStatus string
+	Node        string
+	RepStatus   string
+}
+
+type ScaleQueryResponse struct {
+	Results []string
+	Targets []ScaleQueryTargetSpec
+	Status
+}
+
 // ClusterScaleResponse ...
 type ClusterScaleResponse struct {
 	Results []string

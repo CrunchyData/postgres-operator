@@ -83,3 +83,36 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(resp)
 }
+
+// ScaleQueryHandler ...
+// pgo scale mycluster --query
+// returns a ScaleQueryResponse
+func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("clusterservice.ScaleQueryHandler %v\n", vars)
+
+	clusterName := vars[util.LABEL_NAME]
+	log.Debugf(" clusterName arg is %v\n", clusterName)
+	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	switch r.Method {
+	case "GET":
+		log.Debug("clusterservice.ScaleQueryHandler GET called")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	var resp msgs.ScaleQueryResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ScaleQueryResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = ScaleQuery(clusterName)
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}

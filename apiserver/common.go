@@ -45,3 +45,27 @@ func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
 
 	return output, err
 }
+
+func GetPodStatus(deployName string) (string, string) {
+
+	//get pods with replica-name=deployName
+	pods, err := kubeapi.GetPods(Clientset, util.LABEL_REPLICA_NAME+"="+deployName, Namespace)
+	if err != nil {
+		return "error", "error"
+	}
+
+	p := pods.Items[0]
+	nodeName := p.Spec.NodeName
+	for _, c := range p.Status.ContainerStatuses {
+		if c.Name == "database" {
+			if c.Ready {
+				return "Ready", nodeName
+			} else {
+				return "Not Ready", nodeName
+			}
+		}
+	}
+
+	return "error2", nodeName
+
+}

@@ -23,19 +23,6 @@ import (
 	"os"
 )
 
-// RED ...
-var RED func(a ...interface{}) string
-
-// GREEN ...
-var GREEN func(a ...interface{}) string
-
-var OutputFormat string
-var APIServerURL string
-var Labelselector string
-var DebugFlag bool
-var Selector string
-var DryRun bool
-
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "pgo",

@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -190,6 +191,84 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		return response
 	}
 	*/
+
+	return response
+}
+
+/**
+type ScaleQueryTargetSpec struct {
+	Name        string
+	ReadyStatus string
+	Node        string
+	RepStatus   string
+}
+
+type ScaleQueryResponse struct {
+	Results []string
+	Targets []ScaleQueryTargetSpec
+	Status
+}
+*/
+
+// ScaleQuery ...
+func ScaleQuery(name string) msgs.ScaleQueryResponse {
+	var err error
+
+	response := msgs.ScaleQueryResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
+	cluster := crv1.Pgcluster{}
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(apiserver.Namespace).
+		Name(name).
+		Do().Into(&cluster)
+
+	if kerrors.IsNotFound(err) {
+		log.Error("no clusters found")
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	if err != nil {
+		log.Error("error getting cluster" + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	//get replicas for this cluster
+	//deployments with --selector=primary=false,pg-cluster=ClusterName
+
+	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
+
+	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	if kerrors.IsNotFound(err) {
+		log.Debug("no replicas found ")
+		response.Status.Msg = "no replicas found for " + name
+		return response
+	} else if err != nil {
+		log.Error("error getting deployments " + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	response.Results = make([]string, 0)
+	response.Targets = make([]msgs.ScaleQueryTargetSpec, 0)
+
+	log.Debugf("deps len %d\n", len(deployments.Items))
+
+	for _, dep := range deployments.Items {
+		log.Debug("found " + dep.Name)
+		target := msgs.ScaleQueryTargetSpec{}
+		target.Name = dep.Name
+		//get the pod status
+		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
+		//get the rep status
+		response.Targets = append(response.Targets, target)
+	}
 
 	return response
 }
