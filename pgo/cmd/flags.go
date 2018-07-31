@@ -18,9 +18,9 @@ package cmd
 import ()
 
 //flags used by more than 1 command
+var DeleteData bool
 var Query bool
 var Target string
-
 
 var OutputFormat string
 var APIServerURL string
@@ -31,4 +31,3 @@ var DryRun bool
 
 var RED func(a ...interface{}) string
 var GREEN func(a ...interface{}) string
-

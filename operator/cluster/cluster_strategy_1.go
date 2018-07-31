@@ -606,3 +606,15 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 
 	return err
 }
+
+// DeleteReplica ...
+func (r Strategy1) DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespace string) error {
+
+	var err error
+	log.Info("deleting Pgreplica object" + " in namespace " + namespace)
+	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
+	err = kubeapi.DeleteDeployment(clientset, cl.Spec.Name, namespace)
+
+	return err
+
+}

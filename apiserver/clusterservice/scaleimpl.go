@@ -23,6 +23,8 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
@@ -271,4 +273,117 @@ func ScaleQuery(name string) msgs.ScaleQueryResponse {
 	}
 
 	return response
+}
+
+// ScaleDown ...
+func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownResponse {
+	var err error
+
+	response := msgs.ScaleDownResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 0)
+
+	cluster := crv1.Pgcluster{}
+	err = apiserver.RESTClient.Get().
+		Resource(crv1.PgclusterResourcePlural).
+		Namespace(apiserver.Namespace).
+		Name(clusterName).
+		Do().Into(&cluster)
+
+	if kerrors.IsNotFound(err) {
+		log.Error("no clusters found")
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	if err != nil {
+		log.Error("error getting cluster" + err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	//if this was the last replica then remove the replica service
+	var replicaList *v1beta1.DeploymentList
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PRIMARY + "=false"
+	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+	if len(replicaList.Items) == 1 {
+		log.Debug("removing replica service when scaling down to 0 replicas")
+		err = kubeapi.DeleteService(apiserver.Clientset, clusterName+"-replica", apiserver.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	}
+
+	//delete the pgreplica
+	replica := crv1.Pgreplica{}
+	found, err := kubeapi.Getpgreplica(apiserver.RESTClient, &replica, replicaName, apiserver.Namespace)
+	if !found || err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	err = kubeapi.Deletepgreplica(apiserver.RESTClient, replicaName, apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	if deleteData {
+		log.Debug("delete-data is true on replica scale down, createing rmdata task")
+		selector := util.LABEL_REPLICA_NAME + "=" + replicaName
+		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+		if err != nil {
+			log.Error(err)
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		} else {
+			if len(pods.Items) == 0 {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = "pod not found for scale down replica and delete-data"
+				return response
+			}
+			createDeleteTask(&pods.Items[0], replicaName, replica.Spec.ReplicaStorage)
+		}
+	}
+	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
+	return response
+}
+
+func createDeleteTask(pod *v1.Pod, replicaName string, storageSpec crv1.PgStorageSpec) {
+	//create pgtask CRD
+	spec := crv1.PgtaskSpec{}
+	spec.Name = replicaName
+	spec.TaskType = crv1.PgtaskDeleteData
+	spec.StorageSpec = storageSpec
+	spec.Parameters = apiserver.GetPVCName(pod)
+
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: replicaName,
+		},
+		Spec: spec,
+	}
+
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = replicaName
+	newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
+
+	err := kubeapi.Createpgtask(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
+	if err != nil {
+		return
+	}
+
 }

@@ -69,7 +69,7 @@ pgo delete upgrade mycluster`,
 	},
 }
 
-var DeleteData, DeleteBackups bool
+var DeleteBackups bool
 var NoPrompt bool
 
 func init() {

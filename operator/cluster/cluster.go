@@ -38,6 +38,7 @@ type Strategy interface {
 	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
 	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
+	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
@@ -360,5 +361,35 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
+
+}
+
+// ScaleDownBase ...
+func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
+	var err error
+
+	//get the pgcluster CRD for this replica
+	cluster := crv1.Pgcluster{}
+	_, err = kubeapi.Getpgcluster(client, &cluster,
+		replica.Spec.ClusterName, namespace)
+	if err != nil {
+		return
+	}
+
+	log.Debug("creating Pgreplica object strategy is [" + cluster.Spec.Strategy + "]")
+
+	if cluster.Spec.Strategy == "" {
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[cluster.Spec.Strategy]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
+		return
+	}
+
+	strategy.DeleteReplica(clientset, replica, namespace)
 
 }

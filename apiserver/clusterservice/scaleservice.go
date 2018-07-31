@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/gorilla/mux"
 	"net/http"
+	"strconv"
 )
 
 // ScaleClusterHandler ...
@@ -112,6 +113,51 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
 		resp = ScaleQuery(clusterName)
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+// ScaleDownHandler ...
+// pgo scale mycluster --scale-down-target=somereplicaname
+// returns a ScaleDownResponse
+func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("clusterservice.ScaleDownHandler %v\n", vars)
+
+	clusterName := vars[util.LABEL_NAME]
+	log.Debugf(" clusterName arg is %v\n", clusterName)
+	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+	replicaName := r.URL.Query().Get(util.LABEL_REPLICA_NAME)
+	if replicaName != "" {
+		log.Debug("replicaName param was [" + replicaName + "]")
+	}
+	tmp := r.URL.Query().Get(util.LABEL_DELETE_DATA)
+	if tmp != "" {
+		log.Debug("delete-data param was [" + tmp + "]")
+	}
+
+	switch r.Method {
+	case "GET":
+		log.Debug("clusterservice.ScaleDownHandler GET called")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	var resp msgs.ScaleDownResponse
+	deleteData, err := strconv.ParseBool(tmp)
+	if err != nil {
+		resp = msgs.ScaleDownResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+	} else if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ScaleDownResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = ScaleDown(deleteData, clusterName, replicaName)
 	}
 
 	json.NewEncoder(w).Encode(resp)

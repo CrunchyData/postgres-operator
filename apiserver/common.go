@@ -21,6 +21,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/core/v1"
 )
 
 func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
@@ -67,5 +68,21 @@ func GetPodStatus(deployName string) (string, string) {
 	}
 
 	return "error2", nodeName
+
+}
+
+func GetPVCName(pod *v1.Pod) map[string]string {
+	pvcList := make(map[string]string)
+
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == "backrestrepo-volume" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
+			if v.VolumeSource.PersistentVolumeClaim != nil {
+				//log.Debugf("pvc.Name %v volume %v", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
+				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
+			}
+		}
+	}
+
+	return pvcList
 
 }

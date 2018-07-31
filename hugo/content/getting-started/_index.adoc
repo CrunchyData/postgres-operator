@@ -348,6 +348,26 @@ pgo scale mycluster --service-type=LoadBalancer
 The ServiceType from pgo.yaml will be used if not specified, the default
 ServiceType is ClusterIP.
 
+You can also scale down replicas as of Operator version 3.2, to list
+the replicas for a given cluster, you enter the following:
+
+....
+pgo scale mycluster --query
+....
+
+Then, using a replica name from the query, you can remove that
+replica using this command:
+....
+pgo scale mycluster --scale-down-target=mycluster-replica-xxxx
+....
+
+You can also delete the PVC and its data for the scaled down replica
+by using the *--delete-data* command flag:
+....
+pgo scale mycluster --scale-down-target=mycluster-replica-xxxx --delete-data
+....
+
+
 === pgo upgrade
 
 You can perform a minor Postgres version upgrade

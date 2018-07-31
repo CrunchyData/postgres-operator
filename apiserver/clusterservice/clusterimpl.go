@@ -196,7 +196,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus, d.Ready = getReadyStatus(&p)
-		d.PVCName = getPVCName(&p)
+		d.PVCName = apiserver.GetPVCName(&p)
 		log.Infof("after getPVCName call")
 
 		d.Primary = false
@@ -911,6 +911,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 }
 
+/**
 func getPVCName(pod *v1.Pod) map[string]string {
 	pvcList := make(map[string]string)
 
@@ -926,6 +927,7 @@ func getPVCName(pod *v1.Pod) map[string]string {
 	return pvcList
 
 }
+*/
 
 func getType(pod *v1.Pod) string {
 

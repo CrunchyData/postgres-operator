@@ -129,4 +129,5 @@ func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
 func (c *PgreplicaController) onDelete(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
 	log.Debugf("[PgreplicaCONTROLLER] OnDelete %s", replica.ObjectMeta.SelfLink)
+	clusteroperator.ScaleDownBase(c.PgreplicaClientset, c.PgreplicaClient, replica, replica.ObjectMeta.Namespace)
 }

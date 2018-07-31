@@ -140,6 +140,11 @@ type ScaleQueryResponse struct {
 	Status
 }
 
+type ScaleDownResponse struct {
+	Results []string
+	Status
+}
+
 // ClusterScaleResponse ...
 type ClusterScaleResponse struct {
 	Results []string
