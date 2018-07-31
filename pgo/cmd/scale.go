@@ -20,9 +20,11 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"strconv"
+	"os"
 )
 
 var ReplicaCount int
@@ -46,12 +48,18 @@ pgo scale mycluster --replica-count=-1 --target=mycluster-replica-xxxx
 .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("scale called")
+
 		if len(args) == 0 {
 			fmt.Println(`You must specify the clusters to scale.`)
 		} else {
 			if Query {
 				queryCluster(args)
 			} else {
+ 		if util.AskForConfirmation(NoPrompt, "") {
+                } else {
+                        fmt.Println("Aborting...")
+                        os.Exit(2)
+                }
 			scaleCluster(args)
 			}
 		}
