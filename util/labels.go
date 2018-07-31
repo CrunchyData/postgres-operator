@@ -51,6 +51,7 @@ const LABEL_RESOURCES_CONFIG = "resources-config"
 const LABEL_STORAGE_CONFIG = "storage-config"
 const LABEL_NODE_LABEL = "node-label"
 const LABEL_VERSION = "version"
+const LABEL_PGO_VERSION = "pgo-version"
 
 const LABEL_BACKREST = "pgo-backrest"
 const LABEL_CONTAINER_NAME = "containername"

@@ -682,6 +682,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.Replicas = "0"
 	spec.Strategy = "1"
 	spec.UserLabels = userLabelsMap
+	spec.UserLabels[util.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 
 	//override any values from config file
 	str := apiserver.Pgo.Cluster.Port
