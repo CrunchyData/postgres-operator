@@ -195,7 +195,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		d.Name = p.Name
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
-		d.ReadyStatus = getReadyStatus(&p)
+		d.ReadyStatus, d.Ready = getReadyStatus(&p)
 		d.PVCName = getPVCName(&p)
 		log.Infof("after getPVCName call")
 
@@ -278,6 +278,33 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 		detail := msgs.ShowClusterDetail{}
 		detail.Cluster = c
 
+		pods, err := GetPods(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		//loop thru the pods, make sure they are all ready
+		primaryReady := true
+		replicaReady := true
+		for _, pod := range pods {
+			if pod.Type == msgs.PodTypePrimary {
+				if !pod.Ready {
+					primaryReady = false
+				}
+			} else if pod.Type == msgs.PodTypeReplica {
+				if !pod.Ready {
+					replicaReady = false
+				}
+			}
+
+		}
+		if !primaryReady {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "cluster not ready yet, try later"
+			return response
+		}
+
 		//get the services for this cluster
 		detail.Services, err = getServices(&c)
 		if err != nil {
@@ -298,6 +325,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 
 		//for each service run a test and add results to output
 		for _, service := range detail.Services {
+
 			for _, s := range secrets {
 				item := msgs.ClusterTestDetail{}
 				username := s.Username
@@ -308,10 +336,14 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 				}
 				item.PsqlString = "psql -p " + c.Spec.Port + " -h " + service.ClusterIP + " -U " + username + " " + database
 				log.Debug(item.PsqlString)
-				status := query(username, service.ClusterIP, c.Spec.Port, database, password)
-				item.Working = false
-				if status {
-					item.Working = true
+				if service.Name != c.ObjectMeta.Name && replicaReady == false {
+					item.Working = false
+				} else {
+					status := query(username, service.ClusterIP, c.Spec.Port, database, password)
+					item.Working = false
+					if status {
+						item.Working = true
+					}
 				}
 				result.Items = append(result.Items, item)
 			}
@@ -774,7 +806,8 @@ func validateSecretFrom(secretname string) error {
 	return err
 }
 
-func getReadyStatus(pod *v1.Pod) string {
+func getReadyStatus(pod *v1.Pod) (string, bool) {
+	equal := false
 	readyCount := 0
 	containerCount := 0
 	for _, stat := range pod.Status.ContainerStatuses {
@@ -783,7 +816,10 @@ func getReadyStatus(pod *v1.Pod) string {
 			readyCount++
 		}
 	}
-	return fmt.Sprintf("%d/%d", readyCount, containerCount)
+	if readyCount == containerCount {
+		equal = true
+	}
+	return fmt.Sprintf("%d/%d", readyCount, containerCount), equal
 
 }
 

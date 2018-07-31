@@ -72,6 +72,7 @@ type ShowClusterPod struct {
 	NodeName    string
 	PVCName     map[string]string
 	ReadyStatus string
+	Ready       bool
 	Primary     bool
 	Type        string
 }
