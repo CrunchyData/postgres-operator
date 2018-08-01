@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"errors"
 	"flag"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/config"
@@ -104,12 +105,16 @@ func Initialize() {
 	log.Infoln("apiserver starts")
 
 	getCredentials()
-
 	initConfig()
 
 	initTemplates()
 
 	InitializePerms()
+
+	err := validateCredentials()
+	if err != nil {
+		os.Exit(2)
+	}
 
 	ConnectToKube()
 
@@ -226,7 +231,25 @@ func getCredentials() {
 		creds := parseUserMap(v)
 		Credentials[creds.Username] = creds
 	}
+	log.Infof("pgouser has %v", Credentials)
 
+}
+
+// validateCredentials ...
+func validateCredentials() error {
+
+	var err error
+
+	for _, v := range Credentials {
+		log.Infof("validating user %s and role %s ", v.Username, v.Role)
+		if RoleMap[v.Role] == nil {
+			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
+			log.Error(errMsg)
+			return errors.New(errMsg)
+		}
+	}
+
+	return err
 }
 
 func BasicAuthCheck(username, password string) bool {
