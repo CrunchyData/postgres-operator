@@ -402,6 +402,12 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 	resp.Results = make([]string, 0)
 	clusterName := request.Name
 
+	if clusterName == "all" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "invalid cluster name 'all' is not allowed as a cluster name"
+		return resp
+	}
+
 	errs := validation.IsDNS1035Label(clusterName)
 	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
