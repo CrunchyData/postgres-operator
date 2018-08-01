@@ -286,6 +286,8 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
 |Cluster.ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
 |Cluster.ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
+|Cluster.Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
+|Cluster.Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |BackupStorage    |required, the value of the storage configuration to use for backups
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments

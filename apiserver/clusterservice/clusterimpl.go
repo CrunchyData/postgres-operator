@@ -462,7 +462,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		if request.MetricsFlag {
 			userLabelsMap[util.LABEL_COLLECT] = "true"
 		}
-		if request.AutofailFlag {
+		if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
 			userLabelsMap[util.LABEL_AUTOFAIL] = "true"
 		}
 		if request.ServiceType != "" {

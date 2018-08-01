@@ -12,6 +12,7 @@ Cluster:
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
   Backrest:  false
+  Autofail:  false
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1
