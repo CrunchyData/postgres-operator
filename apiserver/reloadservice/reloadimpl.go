@@ -21,7 +21,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -118,18 +117,18 @@ func reload(
 	pod *v1.Pod,
 	clientset *kubernetes.Clientset,
 	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
-	var err error
-
 	//get the target pod that matches the replica-name=target
 
 	command := make([]string, 1)
 	command[0] = "/opt/cpm/bin/reload.sh"
 
 	log.Debug("running Exec with namespace=[" + namespace + "] podname=[" + pod.Name + "] container name=[" + pod.Spec.Containers[0].Name + "]")
-	err = util.Exec(restconfig, namespace, pod.Name, pod.Spec.Containers[0].Name, command)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, apiserver.Namespace, nil)
+	//err = util.Exec(restconfig, namespace, pod.Name, pod.Spec.Containers[0].Name, command)
 	if err != nil {
 		log.Error(err)
 	}
+	log.Debugf("stdout=[%s] stderr=[%s]", stdout, stderr)
 
 	return err
 }

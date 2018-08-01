@@ -22,6 +22,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -338,6 +339,9 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 		response.Status.Msg = err.Error()
 		return response
 	}
+
+	//delete the replica deployment
+	clusteroperator.ScaleDownBase(apiserver.Clientset, apiserver.RESTClient, &replica, apiserver.Namespace)
 
 	if deleteData {
 		log.Debug("delete-data is true on replica scale down, createing rmdata task")
