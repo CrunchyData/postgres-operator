@@ -38,6 +38,10 @@ var testCmd = &cobra.Command{
 		if Selector == "" && len(args) == 0 {
 			fmt.Println(`You must specify the name of the clusters to test.`)
 		} else {
+			if OutputFormat != "" && OutputFormat != "json" {
+				log.Error(RED("only json is supported for output flag value"))
+				os.Exit(2)
+			}
 			showTest(args)
 		}
 	},
