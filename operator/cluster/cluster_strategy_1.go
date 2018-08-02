@@ -55,6 +55,10 @@ type collectTemplateFields struct {
 	CCPImageTag     string
 	CCPImagePrefix  string
 }
+type badgerTemplateFields struct {
+	CCPImageTag    string
+	CCPImagePrefix string
+}
 
 // Strategy1  ...
 type Strategy1 struct{}
@@ -625,18 +629,20 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 	if spec.UserLabels[util.LABEL_BADGER] == "true" {
 		log.Debug("crunchy_badger was found as a label on cluster create")
 		badgerTemplateFields := badgerTemplateFields{}
+		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
+		badgerTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
 
-		var collectDoc bytes.Buffer
-		err := operator.CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
+		var badgerDoc bytes.Buffer
+		err := operator.BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if operator.CRUNCHY_DEBUG {
-			operator.CollectTemplate1.Execute(os.Stdout, collectTemplateFields)
+			operator.BadgerTemplate1.Execute(os.Stdout, badgerTemplateFields)
 		}
-		return collectDoc.String()
+		return badgerDoc.String()
 	}
 	return ""
 }
