@@ -1,0 +1,29 @@
+            ,{
+                "name": "pgbadger",
+                "image": "$CCP_IMAGE_PREFIX/crunchy-pgbadger:$CCP_IMAGE_TAG",
+                "ports": [ {
+                        "containerPort": 10000,
+                        "protocol": "TCP"
+                    }
+                ],
+                "readinessProbe": {
+                    "tcpSocket": {
+                        "port": 10000
+                    },
+                    "initialDelaySeconds": 20,
+                    "periodSeconds": 10
+                },
+                "env": [],
+                "volumeMounts": [
+                    {
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": true
+                    },
+                    {
+                        "mountPath": "/report",
+                        "name": "report",
+                        "readOnly": false
+                    }
+                ]
+            }
