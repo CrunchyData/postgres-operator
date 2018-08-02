@@ -1084,7 +1084,7 @@ a.github-link {
   margin-right: 1rem !important; }
 
 #sidebar {
-  background-image: url(/images/home_bg.jpg);
+  background-image: url("../images/home_bg.jpg");
   background-size: cover;
   position: fixed;
   top: 0;
