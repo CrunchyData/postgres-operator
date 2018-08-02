@@ -134,6 +134,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
+		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cl.Spec),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -617,4 +618,25 @@ func (r Strategy1) DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgrep
 
 	return err
 
+}
+
+func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
+
+	if spec.UserLabels[util.LABEL_BADGER] == "true" {
+		log.Debug("crunchy_badger was found as a label on cluster create")
+		badgerTemplateFields := badgerTemplateFields{}
+
+		var collectDoc bytes.Buffer
+		err := operator.CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+
+		if operator.CRUNCHY_DEBUG {
+			operator.CollectTemplate1.Execute(os.Stdout, collectTemplateFields)
+		}
+		return collectDoc.String()
+	}
+	return ""
 }

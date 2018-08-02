@@ -80,6 +80,7 @@ type DeploymentTemplateFields struct {
 	NodeSelector       string
 	ConfVolume         string
 	CollectAddon       string
+	BadgerAddon        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string

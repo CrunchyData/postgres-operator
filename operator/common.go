@@ -43,6 +43,7 @@ const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
 
 const DeploymentTemplate1Path = "/operator-conf/cluster-deployment-1.json"
 const CollectTemplate1Path = "/operator-conf/collect.json"
+const BadgerTemplate1Path = "/operator-conf/pgbadger.json"
 const AffinityTemplate1Path = "/operator-conf/affinity.json"
 const ContainerResourcesTemplate1Path = "/operator-conf/container-resources.json"
 
@@ -62,6 +63,7 @@ var PVCStorageClassTemplate *template.Template
 var AffinityTemplate1 *template.Template
 var ContainerResourcesTemplate1 *template.Template
 var CollectTemplate1 *template.Template
+var BadgerTemplate1 *template.Template
 var DeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1Shared *template.Template
@@ -101,6 +103,7 @@ func Initialize() {
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)
 	DeploymentTemplate1 = util.LoadTemplate(DeploymentTemplate1Path)
 	CollectTemplate1 = util.LoadTemplate(CollectTemplate1Path)
+	BadgerTemplate1 = util.LoadTemplate(BadgerTemplate1Path)
 	AffinityTemplate1 = util.LoadTemplate(AffinityTemplate1Path)
 	ContainerResourcesTemplate1 = util.LoadTemplate(ContainerResourcesTemplate1Path)
 	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
