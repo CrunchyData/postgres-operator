@@ -235,7 +235,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: v3.1, 2018-07-30</p>
+<p>Latest Release: v3.1, 2018-08-01</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -509,10 +509,14 @@ apiserver version 3.1</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Edit the <strong>pgo.yaml</strong> file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is <strong>nfsnobody</strong> as the GID (65534).  Update the value to meet your NFS security settings.</p>
+<p>Next, set the environment variable CO_NFS_IP to your NFS server&#8217;s IP address, then run the script <code>$COROOT/pv/create-pv-nfs.sh</code> -</p>
 </div>
-<div class="paragraph">
-<p>There is currently no script available to create your NFS Persistent Volumes but you can typically modify the <code>$COROOT/pv/create-pv.sh</code> script to work with NFS.</p>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_NFS_IP=&lt;your NFS server's IP&gt;
+cd $COROOT/pv
+./create-pv-nfs.sh</pre>
+</div>
 </div>
 </div>
 
