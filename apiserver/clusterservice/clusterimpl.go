@@ -457,10 +457,18 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		if err != nil {
 			log.Error(err)
 		}
+		//set the badger flag with the global setting first
+		userLabelsMap[util.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
+		if err != nil {
+			log.Error(err)
+		}
 
 		//if metrics is chosen on the pgo command, stick it into the user labels
 		if request.MetricsFlag {
 			userLabelsMap[util.LABEL_COLLECT] = "true"
+		}
+		if request.BadgerFlag {
+			userLabelsMap[util.LABEL_BADGER] = "true"
 		}
 		if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
 			userLabelsMap[util.LABEL_AUTOFAIL] = "true"

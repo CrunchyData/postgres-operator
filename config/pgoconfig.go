@@ -30,6 +30,8 @@ type ClusterStruct struct {
 	CCPImagePrefix  string `yaml:"CCPImagePrefix"`
 	CCPImageTag     string `yaml:"CCPImageTag"`
 	Policies        string `yaml:"Policies"`
+	Metrics         bool   `yaml:"Metrics"`
+	Badger          bool   `yaml:"Badger"`
 	Port            string `yaml:"Port"`
 	ArchiveTimeout  string `yaml:"ArchiveTimeout"`
 	ArchiveMode     string `yaml:"ArchiveMode"`
@@ -64,7 +66,6 @@ type ContainerResourcesStruct struct {
 type PgoStruct struct {
 	AutofailSleepSeconds string `yaml:"AutofailSleepSeconds"`
 	Audit                bool   `yaml:"Audit"`
-	Metrics              bool   `yaml:"Metrics"`
 	LSPVCTemplate        string `yaml:"LSPVCTemplate"`
 	LoadTemplate         string `yaml:"LoadTemplate"`
 	COImagePrefix        string `yaml:"COImagePrefix"`
