@@ -28,8 +28,8 @@ if [ "$CO_CMD" = "kubectl" ]; then
 fi
 
 expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
-expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
-#expenv -f $DIR/rbac-role-only.yaml | $CO_CMD create -f -
+#expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
+expenv -f $DIR/rbac-role-only.yaml | $CO_CMD create -f -
 
 $CO_CMD $NS create secret generic apiserver-conf-secret \
         --from-file=server.crt=$COROOT/conf/apiserver/server.crt \

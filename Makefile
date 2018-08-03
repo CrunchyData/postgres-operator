@@ -105,6 +105,7 @@ all:
 	make pgo
 	make rmdataimage
 	make pgo-backrest
+	make pgo-backrest-image
 push:
 	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
