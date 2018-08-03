@@ -221,6 +221,8 @@ looks like this -
 BasicAuth:  true
 Cluster:
   CCPImageTag:  centos7-10.4-1.8.3
+  Metrics:  false
+  Badger:  false
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -261,7 +263,6 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   Audit:  false
-  Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
@@ -280,6 +281,8 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.User        | the PostgreSQL normal user name
 |Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |Cluster.Replicas        | the number of cluster replicas to create for newly created clusters
+|Cluster.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
+|Cluster.Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger
 |Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
 |Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
@@ -312,7 +315,6 @@ Values in the pgo configuration file have the following meaning:
 |Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
 |Pgo.COImageTag        | image tag to use for the Operator containers
 |Pgo.Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
-|Pgo.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
 |======================
 
 ==== Storage Configurations
