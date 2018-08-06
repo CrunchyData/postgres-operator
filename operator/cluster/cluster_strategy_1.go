@@ -58,6 +58,7 @@ type collectTemplateFields struct {
 type badgerTemplateFields struct {
 	CCPImageTag    string
 	CCPImagePrefix string
+	BadgerTarget   string
 }
 
 // Strategy1  ...
@@ -578,6 +579,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		UserSecretName:    cluster.Spec.UserSecretName,
 		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:      GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:       GetBadgerAddon(clientset, namespace, &cluster.Spec),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -630,6 +632,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		log.Debug("crunchy_badger was found as a label on cluster create")
 		badgerTemplateFields := badgerTemplateFields{}
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
+		badgerTemplateFields.BadgerTarget = spec.Name
 		badgerTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
 
 		var badgerDoc bytes.Buffer

@@ -1,6 +1,6 @@
             ,{
                 "name": "pgbadger",
-		"image": "{{.CCPImagePrefix}}/crunchy-pgbadter:{{.CCPImageTag}}",
+		"image": "{{.CCPImagePrefix}}/crunchy-pgbadger:{{.CCPImageTag}}",
                 "ports": [ {
                         "containerPort": 10000,
                         "protocol": "TCP"
@@ -13,7 +13,10 @@
                     "initialDelaySeconds": 20,
                     "periodSeconds": 10
                 },
-                "env": [],
+                "env": [ {
+		"name": "BADGER_TARGET",
+		"value": "{{.BadgerTarget}}"
+		} ],
                 "volumeMounts": [
                     {
                         "mountPath": "/pgdata",

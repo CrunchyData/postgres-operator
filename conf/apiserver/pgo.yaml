@@ -1,5 +1,7 @@
 Cluster:
   CCPImagePrefix:  crunchydata
+  Metrics:  false
+  Badger:  false
   CCPImageTag:  centos7-10.4-2.0.0
   Port:  5432
   User:  testuser
@@ -48,7 +50,6 @@ ContainerResources:
 Pgo:
   AutofailSleepSeconds:  9
   Audit:  false
-  Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata

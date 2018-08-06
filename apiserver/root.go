@@ -49,7 +49,7 @@ var Clientset *kubernetes.Clientset
 var RESTConfig *rest.Config
 
 // MetricsFlag if set to true will cause crunchy-collect to be added into new clusters
-var MetricsFlag bool
+var MetricsFlag, BadgerFlag bool
 
 // AuditFlag if set to true will cause auditing to occur in the logs
 var AuditFlag bool
@@ -100,6 +100,7 @@ func Initialize() {
 	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
+	BadgerFlag = false
 	AuditFlag = false
 
 	log.Infoln("apiserver starts")
@@ -160,9 +161,13 @@ func initConfig() {
 		log.Info("audit flag is set to true")
 	}
 
-	MetricsFlag = Pgo.Pgo.Metrics
+	MetricsFlag = Pgo.Cluster.Metrics
 	if MetricsFlag {
 		log.Info("metrics flag is set to true")
+	}
+	BadgerFlag = Pgo.Cluster.Badger
+	if BadgerFlag {
+		log.Info("badger flag is set to true")
 	}
 
 	tmp := Pgo.BasicAuth

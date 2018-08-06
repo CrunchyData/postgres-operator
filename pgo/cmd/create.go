@@ -24,7 +24,7 @@ import (
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
-var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, MetricsFlag bool
+var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, MetricsFlag, BadgerFlag bool
 var PgpoolSecret string
 var CCPImageTag string
 var Password string
@@ -170,6 +170,7 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "If set, will cause archive logging to be enabled for the database cluster")
 	createClusterCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "m", false, "If set, will cause the crunchy-collect container to be added to the database pod")
+	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "If set, will cause the crunchy-pgbadger container to be added to the database pod")
 	createClusterCmd.Flags().BoolVarP(&AutofailFlag, "autofail", "", false, "If set, will cause the autofailover to be enabled on this cluster")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "g", "", "The name of a configMap that holds custom PG config files used to override the defaults")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")

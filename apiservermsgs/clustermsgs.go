@@ -34,6 +34,7 @@ type CreateClusterRequest struct {
 	Series               int
 	ServiceType          string
 	MetricsFlag          bool
+	BadgerFlag           bool
 	AutofailFlag         bool
 	ArchiveFlag          bool
 	BackrestFlag         bool
