@@ -925,24 +925,6 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 }
 
-/**
-func getPVCName(pod *v1.Pod) map[string]string {
-	pvcList := make(map[string]string)
-
-	for _, v := range pod.Spec.Volumes {
-		if v.Name == "backrestrepo-volume" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
-			if v.VolumeSource.PersistentVolumeClaim != nil {
-				//log.Debugf("pvc.Name %v volume %v", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName)
-				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
-			}
-		}
-	}
-
-	return pvcList
-
-}
-*/
-
 func getType(pod *v1.Pod) string {
 
 	log.Infof("%v\n", pod.ObjectMeta.Labels)

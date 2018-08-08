@@ -101,7 +101,6 @@ func showCluster(args []string) {
 		req, err := http.NewRequest(action, url, nil)
 
 		if err != nil {
-			//log.Info("here after new req")
 			log.Fatal("NewRequest: ", err)
 			return
 		}
@@ -177,15 +176,11 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	}
 
 	for _, service := range detail.Services {
-		//if i == len(detail.Services)-1 {
-		//fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
-		//} else {
 		if service.ExternalIP == "" {
 			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ")")
 		} else {
 			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ") ExternalIP (" + service.ExternalIP + ")")
 		}
-		//}
 	}
 
 	for _, replica := range detail.Replicas {

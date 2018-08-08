@@ -78,9 +78,6 @@ type CredentialDetail struct {
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
 
-//var StorageMap map[string]interface{}
-//var ContainerResourcesMap map[string]interface{}
-
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
@@ -326,7 +323,6 @@ func validContainerResourcesSettings() bool {
 	log.Infof("ContainerResources has %d definitions \n", len(Pgo.ContainerResources))
 
 	//validate any Container Resources in pgo.yaml for correct formats
-	//log.Infof("%v is the ContainerResourcesMap\n", ContainerResourcesMap)
 	if !IsValidContainerResourceValues() {
 		return false
 	}

@@ -4,9 +4,7 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	"sort"
-	//client "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	//"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -35,12 +33,6 @@ func main() {
 	if kubeClient != nil {
 		log.Println("got kube client")
 	}
-
-	//restclient, _, err := client.NewClient(config)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//log.Println("got rest client")
 
 	events := GetEvents(kubeClient, "demo")
 	log.Info("the results")
@@ -76,7 +68,6 @@ func GetEvents(clientset *kubernetes.Clientset, namespace string) map[string]int
 
 		for k, v := range dep.ObjectMeta.Labels {
 			lv := k + "=" + v
-			//log.Infof("%s", lv)
 			if results[lv] == 0 {
 				results[lv] = 1
 			} else {
@@ -86,6 +77,5 @@ func GetEvents(clientset *kubernetes.Clientset, namespace string) map[string]int
 
 	}
 
-	//log.Infof("%d deployments", len(deps.Items))
 	return results
 }

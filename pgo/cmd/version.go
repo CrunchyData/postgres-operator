@@ -16,7 +16,6 @@ package cmd
 */
 
 import (
-	//"crypto/tls"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -57,18 +56,6 @@ func showVersion() {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	/**
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs:            caCertPool,
-				InsecureSkipVerify: true,
-				Certificates:       []tls.Certificate{cert},
-			},
-		},
-	}
-	*/
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

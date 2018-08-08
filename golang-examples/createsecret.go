@@ -45,7 +45,6 @@ func main() {
 
 	secret := v1.Secret{}
 	secret.Name = "pgroot-secret"
-	//secret.ObjectMeta.Name = "pgroot-secret"
 	secret.Data = make(map[string][]byte)
 	secret.Data["username"] = []byte("testuser")
 	secret.Data["password"] = []byte("mypassword")

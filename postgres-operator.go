@@ -25,8 +25,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	//apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	//apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -69,12 +67,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	//TODO is this needed any longer?
-	//apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
-	//if err != nil {
-	//panic(err)
-	//}
 
 	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
@@ -158,7 +150,6 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	//go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)

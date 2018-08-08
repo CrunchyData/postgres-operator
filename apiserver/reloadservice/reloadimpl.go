@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"strings"
-	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //  Reload ...
@@ -81,7 +80,6 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 			return resp
 		}
 
-		//name=mycluster,primary=true
 		var podList *v1.PodList
 		selector := "name=" + cluster.Spec.Name + ",primary=true"
 		podList, err = kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
@@ -124,7 +122,6 @@ func reload(
 
 	log.Debug("running Exec with namespace=[" + namespace + "] podname=[" + pod.Name + "] container name=[" + pod.Spec.Containers[0].Name + "]")
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, apiserver.Namespace, nil)
-	//err = util.Exec(restconfig, namespace, pod.Name, pod.Spec.Containers[0].Name, command)
 	if err != nil {
 		log.Error(err)
 	}

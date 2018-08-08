@@ -80,12 +80,6 @@ func main() {
 	thisconfig.PgoDef.COImagePrefix = "crunchydata"
 	thisconfig.PgoDef.COImageTag = "centos7-3.0"
 
-	//json.Unmarshal(buf, &c)
-
-	//log.Info("Pgo.LSPVCTemplate is [" + c.PgoDef.LSPVCTemplate + "]")
-
-	//log.Infof("%v\n", c.ContainerResources)
-
 	b, err := json.MarshalIndent(thisconfig, "", " ")
 	if err != nil {
 		log.Error(err)

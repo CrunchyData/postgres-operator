@@ -147,16 +147,6 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		labels[util.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
 		spec.Name = labels[util.LABEL_NAME]
 
-		//copy cluster info over to replica to avoid a CRD read later
-		//spec.Strategy = cluster.Spec.Strategy
-		//		spec.Port = cluster.Spec.Port
-		//spec.CCPImageTag = cluster.Spec.CCPImageTag
-		//spec.PrimaryHost = cluster.Spec.PrimaryHost
-		//spec.Database = cluster.Spec.Database
-		//spec.RootSecretName = cluster.Spec.RootSecretName
-		//spec.PrimarySecretName = cluster.Spec.PrimarySecretName
-		//spec.UserSecretName = cluster.Spec.UserSecretName
-
 		newInstance := &crv1.Pgreplica{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name:   labels[util.LABEL_NAME],
@@ -183,35 +173,8 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		response.Results = append(response.Results, "created Pgreplica "+labels[util.LABEL_NAME])
 	}
 
-	/**
-	futureReplicas := currentReplicas + replicaCount
-	log.Debug("scaling %s to %d from %d\n", name, futureReplicas, currentReplicas)
-	err = util.Patch(apiserver.RESTClient, "/spec/replicas", futureReplicas, crv1.PgclusterResourcePlural, name, apiserver.Namespace)
-	if err != nil {
-		log.Error(err.Error())
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
-	*/
-
 	return response
 }
-
-/**
-type ScaleQueryTargetSpec struct {
-	Name        string
-	ReadyStatus string
-	Node        string
-	RepStatus   string
-}
-
-type ScaleQueryResponse struct {
-	Results []string
-	Targets []ScaleQueryTargetSpec
-	Status
-}
-*/
 
 // ScaleQuery ...
 func ScaleQuery(name string) msgs.ScaleQueryResponse {

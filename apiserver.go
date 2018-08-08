@@ -152,5 +152,4 @@ func main() {
 	}
 
 	log.Fatal(srv.ListenAndServeTLS(serverCert, serverKey))
-	//log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -54,7 +54,6 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgreplicaClient,
 		crv1.PgreplicaResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -119,7 +118,6 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgreplica is updated
 func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgreplica)
 	newExample := newObj.(*crv1.Pgreplica)
 	log.Info("pgreplica " + newExample.ObjectMeta.Name + " updated")
 

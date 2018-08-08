@@ -4,7 +4,6 @@ import (
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"github.com/crunchydata/postgres-operator/util"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -17,7 +16,6 @@ var COMMAND, PODNAME, Namespace string
 
 const backrestCommand = "pgbackrest"
 
-//pgbackrest --stanza=db backup
 const backrestStanza = "--stanza=db"
 const backrestBackupCommand = "backup"
 const backrestInfoCommand = "info"
@@ -72,17 +70,11 @@ func main() {
 	switch COMMAND {
 	case crv1.PgtaskBackrestInfo:
 		log.Info("backrest info command requested")
-		//cmd = append(cmd, "ls")
-		//cmd = append(cmd, "/pgdata")
-		//pgbackrest --stanza=db info
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
-		//cmd = append(cmd, "ls")
-		//cmd = append(cmd, "/pgdata")
-		//pgbackrest --stanza=db backup
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
@@ -93,12 +85,6 @@ func main() {
 
 	log.Infof("command is %v ", cmd)
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, cmd, containername, PODNAME, Namespace, nil)
-	/**
-	err = util.Exec(config, Namespace, PODNAME, containername, cmd)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
 	log.Info("output=[" + output + "]")
 	log.Info("stderr=[" + stderr + "]")
 

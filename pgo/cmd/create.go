@@ -76,16 +76,6 @@ pgo create cluster mycluster`,
 			}
 		}
 
-		if UserLabels != "" {
-			/**
-			err = validateUserLabels()
-			if err != nil {
-				log.Error("invalid user labels, check --labels value")
-				return
-			}
-			*/
-		}
-
 		if len(args) == 0 {
 			log.Error("a cluster name is required for this command")
 		} else {
@@ -192,7 +182,4 @@ func init() {
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
-
-	//UserLabelsMap = make(map[string]string)
-
 }

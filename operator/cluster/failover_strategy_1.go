@@ -42,12 +42,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
 
-	//if target == "" {
-	//	log.Debug("failover target not set, will use best estimate")
-	//	pod, target, err = util.GetBestTarget(clientset, clusterName, namespace)
-	//} else {
 	pod, err = util.GetPod(clientset, target, namespace)
-	//}
 	if err != nil {
 		log.Error(err)
 		return err
@@ -64,10 +59,6 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	//trigger the failover on the replica
 	err = promote(pod, clientset, client, namespace, restconfig)
-	//if err != nil {
-	//log.Error(err)
-	//return err
-	//}
 	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
 	//drain the deployment, this will shutdown the database pod
@@ -79,10 +70,6 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	//relabel the deployment with primary labels
 	err = relabel(pod, clientset, namespace, clusterName, target)
-	//if err != nil {
-	//log.Error(err)
-	////return err
-	//}
 	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling deployment...pod "+pod.Name+"was the failover target...failover completed")
 
 	//enable the deployment by making replicas equal to 1
@@ -146,7 +133,6 @@ func promote(
 	log.Debug("running Exec with namespace=[" + namespace + "] podname=[" + pod.Name + "] container name=[" + pod.Spec.Containers[0].Name + "]")
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command, pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
 	log.Debug("stdout=[" + stdout + "] stderr=[" + stderr + "]")
-	//err = util.Exec(restconfig, namespace, pod.Name, pod.Spec.Containers[0].Name, command)
 	if err != nil {
 		log.Error(err)
 	}
@@ -177,12 +163,6 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 	if err != nil {
 		log.Error(err)
 	}
-	/**
-	err = updatePodLabels(namespace, clientset, pod, target, newLabels)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
 
 	return err
 }

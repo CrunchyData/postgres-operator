@@ -74,7 +74,6 @@ func showBackup(args []string) {
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			//log.Info("here after new req")
 			log.Fatal("NewRequest: ", err)
 			return
 		}
@@ -149,7 +148,6 @@ func deleteBackup(args []string) {
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			//log.Info("here after new req")
 			log.Fatal("NewRequest: ", err)
 			return
 		}
@@ -211,7 +209,6 @@ func createBackup(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		//log.Info("here after new req")
 		log.Fatal("NewRequest: ", err)
 		return
 	}

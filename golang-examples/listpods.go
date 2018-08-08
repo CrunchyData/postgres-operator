@@ -67,7 +67,6 @@ func main() {
 		}
 		fmt.Printf("Ready %d/%d\n", readyCount, containerCount)
 		fmt.Printf("NodeName is %s\n", pod.Spec.NodeName)
-		//fmt.Printf("%v\n", pod.Spec.Volumes)
 		for k, v := range pod.Spec.Volumes {
 
 			if v.Name == "pgdata" || v.Name == "pgwal-volume" {

@@ -181,30 +181,6 @@ func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		}
 	}
 
-	/**
-	cluster := crv1.Pgcluster{}
-	_, err = kubeapi.Getpgcluster(client, &cluster,
-		clusterName, namespace)
-	if err != nil {
-		return
-	}
-
-	if cluster.Spec.Strategy == "" {
-		cluster.Spec.Strategy = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster failover " + cluster.Spec.Strategy)
-		return
-	}
-
-	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
-	*/
-
 }
 
 func (*AutoFailoverTask) Exists(restclient *rest.RESTClient, clusterName, namespace string) bool {

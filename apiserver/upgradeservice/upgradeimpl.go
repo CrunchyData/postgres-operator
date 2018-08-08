@@ -326,9 +326,6 @@ func parseMajorVersion(st string) (float64, string, error) {
 	var err error
 	var strRep string
 	parts := strings.Split(st, separator)
-	//OS = parts[0]
-	//PGVERSION = parts[1]
-	//CVERSION = parts[2]
 	//PG10 makes this a bit harder given its versioning scheme
 	// is different than PG9  e.g. 10.0 is sort of like 9.6.0
 

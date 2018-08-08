@@ -66,8 +66,6 @@ func getOperatorStart() string {
 
 	for _, p := range pods.Items {
 		if string(p.Status.Phase) == "Running" {
-			//log.Info("found a postgres-operator pod running phase")
-			//log.Info("start time is " + p.Status.StartTime.String())
 			return p.Status.StartTime.String()
 		}
 	}
@@ -119,7 +117,6 @@ func getVolumeCap() string {
 	for _, p := range pvcs.Items {
 		capTotal = capTotal + getClaimCapacity(apiserver.Clientset, &p)
 	}
-	//log.Infof("capTotal is %d\n", capTotal)
 	q := resource.NewQuantity(capTotal, resource.BinarySI)
 	log.Infof("capTotal string is %s\n", q.String())
 	return q.String()
@@ -164,7 +161,6 @@ func getNotReady() []string {
 
 func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeClaim) int64 {
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
-	//log.Debugf("storage cap string value %s\n", qty.String())
 	diskSize := resource.MustParse(qty.String())
 	diskSizeInt64, _ := diskSize.AsInt64()
 
@@ -210,7 +206,6 @@ func getLabels() []msgs.KeyValue {
 
 		for k, v := range dep.ObjectMeta.Labels {
 			lv := k + "=" + v
-			//log.Infof("%s", lv)
 			if results[lv] == 0 {
 				results[lv] = 1
 			} else {
@@ -228,11 +223,6 @@ func getLabels() []msgs.KeyValue {
 		return ss[i].Value > ss[j].Value
 	})
 
-	/**
-	for _, kv := range ss {
-		log.Infof("%s, %d\n", kv.Key, kv.Value)
-	}
-	*/
 	return ss
 
 }

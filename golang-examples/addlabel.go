@@ -67,7 +67,6 @@ func main() {
 	fmt.Printf("updated labels are %v\n", objLabels)
 
 	accessor.SetLabels(objLabels)
-	//accessor.SetResourceVersion("718408")
 
 	newData, err4 := json.Marshal(deployment)
 	if err != nil {

@@ -30,7 +30,6 @@ const LABEL_PRIMARY = "primary"
 const LABEL_TARGET = "target"
 const LABEL_RMDATA = "pgrmdata"
 
-//const LABEL_REPLICA = "replica"
 const LABEL_INGEST = "ingest"
 const LABEL_PGREMOVE = "pgremove"
 const LABEL_PVCNAME = "pvcname"

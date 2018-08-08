@@ -51,7 +51,6 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 	//lastly, run the psql script
 	log.Debugf("running psql password=%s ip=%s sql=[%s]\n", password, service.Spec.ClusterIP, sqlString)
 	RunPsql(password, service.Spec.ClusterIP, sqlString)
-	//labels[v] = "pgpolicy"
 
 	return nil
 

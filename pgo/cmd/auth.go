@@ -123,7 +123,6 @@ func GetCredentials() {
 		log.Error("PGO_CA_CERT not specified")
 		os.Exit(2)
 	}
-	//caCert, err := ioutil.ReadFile("/tmp/server.crt")
 	caCert, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
 		log.Error(err)
@@ -158,7 +157,6 @@ func GetCredentials() {
 		log.Debug(clientKeyPath + " not found")
 		os.Exit(2)
 	}
-	//cert, err = tls.LoadX509KeyPair("/tmp/example.com.crt", "/tmp/example.com.key")
 	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
 		log.Fatal(err)
