@@ -1,6 +1,9 @@
 FROM centos:7
 
-LABEL Release="3.2" Vendor="Crunchy Data Solutions" 
+LABEL Vendor="Crunchy Data Solutions" \
+	Release="3.2.0" \
+	summary="crunchy data's postgres operator backrest" \
+	description="crunchy data postgres operator backrest"
 
 RUN yum -y update && yum -y clean all
 

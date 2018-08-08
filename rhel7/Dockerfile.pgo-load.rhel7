@@ -3,14 +3,16 @@ FROM registry.access.redhat.com/rhel7
 MAINTAINER jeff.mccormick@crunchydata.com
 
 LABEL name="crunchydata/pgo-load-" \
-        vendor="crunchydata.com" \
-        version="3.2" \
-        release="3" \
-        run='docker run -d -p 8080:80 --name=web-app web-app' \
-        summary="crunchy data's postgres operator load" \
-        description="crunchy data postgres operator load"
+    vendor="crunchydata.com" \
+	PostgresVersion="10" \
+	PostgresFullVersion="10.4" \
+	Version="7.5" \
+	Release="3.2.0" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
+    summary="crunchy data's postgres operator load" \
+    description="crunchy data postgres operator load"
 
-ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+ENV PGVERSION="10"
 
 COPY licenses /licenses
 
@@ -28,7 +30,7 @@ RUN yum -y update &&  yum -y install epel-release \
  	nss_wrapper \
 	openssh-clients \
 	procps-ng \
- && yum -y install postgresql96 \
+ && yum -y install postgresql${PGVERSION} \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf 
