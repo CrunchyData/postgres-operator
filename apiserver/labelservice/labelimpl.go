@@ -53,7 +53,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	labelsMap, err = validateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "lables not formatted correctly"
+		resp.Status.Msg = "labels not formatted correctly"
 		return resp
 	}
 
