@@ -224,7 +224,6 @@ func createPolicy(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		//log.Info("here after new req")
 		log.Fatal("NewRequest: ", err)
 		return
 	}

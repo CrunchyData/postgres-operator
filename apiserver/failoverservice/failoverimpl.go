@@ -50,7 +50,6 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	}
 
 	//get the clusters list
-	//var cluster *crv1.Pgcluster
 	_, err = validateClusterName(request.ClusterName)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -108,7 +107,6 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 	//var deployment *v1beta1.Deployment
 
 	//get the clusters list
-	//var cluster *crv1.Pgcluster
 	_, err = validateClusterName(name)
 	if err != nil {
 		resp.Status.Code = msgs.Error

@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -56,7 +55,6 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgbackupClient,
 		crv1.PgbackupResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -94,7 +92,6 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use backupScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	//copyObj, err := c.PgbackupScheme.Copy(backup)
 	copyObj := backup.DeepCopyObject()
 
 	backupCopy := copyObj.(*crv1.Pgbackup)
@@ -122,8 +119,6 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgbackup is updated
 func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgbackup)
-	//newExample := newObj.(*crv1.Pgbackup)
 }
 
 // onDelete is called when a pgbackup is deleted

@@ -330,11 +330,9 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
@@ -585,11 +583,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 

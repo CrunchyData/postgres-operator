@@ -30,7 +30,6 @@ import (
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	log.Debug("statusservice.StatusHandler %v\n", vars)
-	//clustername := vars["name"]
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {

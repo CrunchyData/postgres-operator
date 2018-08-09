@@ -126,7 +126,7 @@ func readRoles() {
 
 	for _, line := range lines {
 		if len(line) == 0 {
-			//log.Infoln("blank line found")
+
 		} else {
 			fields := strings.Split(strings.TrimSpace(line), ":")
 			if len(fields) != 2 {

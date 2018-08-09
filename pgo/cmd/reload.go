@@ -55,7 +55,6 @@ func init() {
 	RootCmd.AddCommand(reloadCmd)
 
 	reloadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	//reloadCmd.Flags().StringVarP(&ConfigMapName, "config-map", "", "", "The config map name to use for selecting clusters to reload ")
 	reloadCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a reload command")
 
 }
@@ -67,7 +66,6 @@ func reload(args []string) {
 	request := new(msgs.ReloadRequest)
 	request.Args = args
 	request.Selector = Selector
-	//request.ConfigMapName = ConfigMapName
 
 	jsonValue, _ := json.Marshal(request)
 
