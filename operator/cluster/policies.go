@@ -43,6 +43,8 @@ func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 		log.Infof("got a processpolicies watch event %v\n", event.Type)
 
 		switch event.Type {
+		case watch.Added:
+		case watch.Deleted:
 		case watch.Error:
 			log.Infof("deployment processpolicy error event")
 		case watch.Modified:
