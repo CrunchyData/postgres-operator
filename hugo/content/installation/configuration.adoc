@@ -23,17 +23,21 @@ To run the Operator on Openshift Container Platform note the following requireme
 
 === Kube RBAC
 
-The *apiserver* and *postgres-operator* containers access
-Kubernetes resources and therefore require privileges for successful
-Kubernetes interactions. The `rbac.yaml` file includes a set of roles
-and bindings that allow the operator to work. These are fine grained
-controls that you can adjust to your local Kubernetes cluster depending
-on specific security requirements. The `rbac.yaml` file is executed when
-the operator is first deployed to the Kubernetes cluster.
+The `cluster-rbac.yaml` file is executed a single time when installing
+the Operator.  This file, executed by a Kube user with cluster-admin
+priviledges, creates the following resources:
+ * Customer Resource Definitions
+ * grants `get` access to Kube Node resources to the postgres-operator
+   service account.
 
-Permissions are granted to the Operator by means of a Service Account called
-*postgres-operator*. That service account is added through the Operator
-deployment.
+The `rbac.yaml` file is also executed a single time when installing
+the Operator.  This file creates Role scoped privledges which are
+granted to the postgres-operator service account.  The postgres-operator
+service account is used by the *apiserver* and *postgres-operator* containers 
+to access Kubernetes resources.
+
+Both of these RBAC files are executed by the `deploy/install-rbac.sh` 
+script.
 
 [WARNING]
 ====
@@ -160,6 +164,7 @@ permissions -
 [width="60%",frame="topbot",options="header"]
 |======================
 |Permission | Description
+|ShowSecrets   | allow *pgo show user*
 |ShowCluster   | allow *pgo show cluster*
 |CreateCluster | allow *pgo create cluster*
 |TestCluster   | allow *pgo test mycluster*
@@ -220,7 +225,7 @@ looks like this -
 ....
 BasicAuth:  true
 Cluster:
-  CCPImageTag:  centos7-10.4-1.8.3
+  CCPImageTag:  centos7-10.4-2.1.0
   Metrics:  false
   Badger:  false
   Port:  5432
@@ -297,7 +302,7 @@ Values in the pgo configuration file have the following meaning:
 |Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |Storage.storage1.AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
 |Storage.storage1.Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
-|Storage.storage1.StorageType        |supported values are either *dynamic*, *existing*, *create*, or *emptydir*, if not supplied, *emptydir* is used
+|Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
 |Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |Storage.storage1.MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *name=clustername* is added to the PVC as a match criteria
@@ -319,7 +324,7 @@ Values in the pgo configuration file have the following meaning:
 
 ==== Storage Configurations
 
-You can now define n-number of Storage configurations within the *pgo.yaml* file. Those Storage configurations follow these conventions -
+You can define n-number of Storage configurations within the *pgo.yaml* file. Those Storage configurations follow these conventions -
 
  * they must have lowercase name (e.g. storage1)
  * they must be unique names (e.g. mydrstorage, faststorage, slowstorage)
@@ -341,9 +346,7 @@ non-valid configuration is found, the apiserver will abort.  These Storage value
 The following StorageType values are possible -
 
  * *dynamic* - this will allow for dynamic provisioning of storage using a StorageClass.
- * *existing* - This setting allows you to use a PVC that already exists.  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters can write to that NFS volume mount via a common PVC. When set, the Name setting is used for the PVC.
  * *create* - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of *clustername*.  When set, the *Size*, *AccessMode* settings are used in constructing the new PVC.
- * *emptydir* - If a StorageType value is not defined, *emptydir* is used by default.  This is a volume type that’s created when a pod is assigned to a node and exists as long as that pod remains running on that node; it is deleted as soon as the pod is manually deleted or removed from the node.
 
 The operator will create new PVCs using this naming convention:
 *dbname* where *dbname* is the database name you have specified.  For
@@ -358,7 +361,6 @@ the case of a backup job, the pvc is named *example1-backup*
 There are currently 3 sample pgo configuration files provided
 for users to use as a starting configuration -
 
- * `pgo.yaml.emptydir` - this configuration specifies *emptydir* storage to be used for databases
  * `pgo.yaml.nfs` - this configuration specifies *create* storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database
  * `pgo.yaml.dynamic` - this configuration specifies *dynamic* storage to be used, namely a *storageclass* that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.
 

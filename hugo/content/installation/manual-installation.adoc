@@ -37,8 +37,7 @@ export CO_CMD=oc
 
 To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
 ....
-mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
-mkdir -p $GOPATH/src/github.com/crunchydata/
+mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/
 ....
 
 Next, get a tagged release of the source code -
@@ -62,17 +61,17 @@ kubectl config set-context $(kubectl config current-context) --namespace=demo
 kubectl config view | grep namespace
 ....
 
+Run the makefile `setup` target to install depedencies and also
+create the operator CRD resources and RBAC rules:
+....
+make setup
+....
+
 [WARNING]
 ====
 The namespace used by the operator is determined by the
 CO_NAMESPACE environment variable setting.
 ====
-
-Permissions are granted to the Operator by means of a Service Account called *postgres-operator*.  That service account is added to the Operator deployment.
-
-The postgres-operator service account is granted priviledges using a role binding *pgo-role-binding*.
-
-See link:https://kubernetes.io/docs/admin/authorization/rbac/[here] for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.
 
 == Basic Installation
 
@@ -88,7 +87,6 @@ sudo chown 777 /data
 
 Create some sample Persistent Volumes using the following script:
 ....
-go get github.com/blang/expenv
 $COROOT/pv/create-pv.sh
 ....
 
@@ -119,6 +117,13 @@ cd $COROOT
 make deployoperator
 ....
 
+[WARNING]
+====
+If you make configuration file changes you will need to re-run the
+`deployoperator` makefile target to re-deploy the Operator with the
+new configuration files.
+====
+
 {{% /expand%}}
 
 {{%expand "Build from Source" %}}
@@ -146,13 +151,14 @@ The Operator project builds and operates with the following containers -
 * link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-backrest/[pgbackrest interface Container]
 
 This Operator is developed and tested on the following operating systems but is known to run on other operating systems -
 
 * *CentOS 7*
 * *RHEL 7*
 
-Then, install the project library and host dependencies (e.g. mercurial, golang, godep). Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.
+The following makefile targets will pull down source dependec
 ....
 cd $COROOT
 make setup
@@ -171,7 +177,7 @@ The following table describes the Makefile targets -
 |======================
 |Target | Description
 |all        | compile all binaries and build all images
-|setup        | fetch the dependent packages required to build with
+|setup        | fetch the dependent packages required to build with, and create Kube RBAC resources
 |bounce        | delete the Operator pod only, this is a way to upgrade the operator without a full redeploy, as the operator runs in a Deployment, a new pod will be created to replace the old one, a simple way to bounce the pod
 |deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
 |main        | compile the postgres-operator
@@ -185,6 +191,7 @@ The following table describes the Makefile targets -
 |lsimage        | build the lspvc Docker image
 |loadimage        | build the file load Docker image
 |rmdataimage        | build the data deletion Docker image
+|pgo-backrest-image        | build the pgbackrest interface Docker image
 |release        | build the postgres-operator release
 |======================
 

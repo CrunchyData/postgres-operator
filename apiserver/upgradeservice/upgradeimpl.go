@@ -174,13 +174,6 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			return response
 		}
 
-		if cl.Spec.PrimaryStorage.StorageType == "emptydir" {
-			msg := "cluster " + arg + " uses emptydir storage and can not be upgraded"
-			log.Debug(msg)
-			response.Results = append(response.Results, msg)
-			break
-		}
-
 		// Create an instance of our CRD
 		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, request)
 		if err == nil {

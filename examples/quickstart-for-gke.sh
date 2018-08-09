@@ -15,7 +15,7 @@
 
 LOG="pgo-installer.log"
 
-export PGORELEASE=3.1
+export CO_VERSION=3.2
 
 echo "Testing for dependencies..." | tee -a $LOG
 
@@ -57,7 +57,8 @@ export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOPATH/bin
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.1
+export CO_VERSION=3.2
+export CO_IMAGE_TAG=centos7-$CO_VERSION
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_APISERVER_URL=https://127.0.0.1:18443
 export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
@@ -83,16 +84,16 @@ mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
 echo ""
 echo "Installing pgo server configuration..." | tee -a $LOG
-wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz -O /tmp/postgres-operator.$PGORELEASE.tar.gz
+wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$CO_VERSION/postgres-operator.$CO_VERSION.tar.gz -O /tmp/postgres-operator.$CO_VERSION.tar.gz
 if [[ $? -ne 0 ]]; then
 	echo "ERROR: Problem getting the pgo server configuration."
 	exit 1
 fi
 
 cd $COROOT
-tar xzf /tmp/postgres-operator.$PGORELEASE.tar.gz
+tar xzf /tmp/postgres-operator.$CO_VERSION.tar.gz
 if [[ $? -ne 0 ]]; then
-	echo "ERROR: Problem unpackaging the $PGORELEASE release."
+	echo "ERROR: Problem unpackaging the $CO_VERSION release."
 	exit 1
 fi
 
@@ -117,6 +118,7 @@ echo "Setting up pgo storage configuration for the selected storageclass..." | t
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/service-account.yaml
+sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
 sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
@@ -130,6 +132,8 @@ cp $COROOT/examples/pgo-bash-completion $HOME/.bash_completion
 echo -n "Do you want to deploy the operator? [yes no] "
 read REPLY
 if [[ "$REPLY" == "yes" ]]; then
+	echo "Installing the CRDs and Kube RBAC for the operator to the Kubernetes cluster, NOTE:  this step requires cluster-admin privs..." | tee -a $LOG
+	$COROOT/deploy/install-rbac.sh | tee -a $LOG
 	echo "Deploying the operator to the Kubernetes cluster..." | tee -a $LOG
 	$COROOT/deploy/deploy.sh | tee -a $LOG
 fi
