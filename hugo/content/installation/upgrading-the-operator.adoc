@@ -5,7 +5,7 @@ draft: false
 weight: 60
 ---
 
-v3.2, {docdate}
+Latest Release: 3.2.0 {docdate}
 
 
 {{%expand "Upgrading to v3.2  %}}

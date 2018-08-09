@@ -4,13 +4,15 @@ MAINTAINER jeff.mccormick@crunchydata.com
 
 LABEL name="pgo-apiserver-" \
 	vendor="crunchydata.com" \
-       	version="3.2" \
-	release="3" \
+	PostgresVersion="10" \
+	PostgresFullVersion="10.4" \
+	Version="7.5" \
+	Release="3.2.0" \
 	run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="crunchy data's postgres operator api" \
 	description="crunchy data postgres operator api"
 
-ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+ENV PGVERSION="10" 
 
 COPY licenses /licenses
 
@@ -20,7 +22,7 @@ ADD conf/crunchypg96.repo /etc/yum.repos.d/
 RUN rpm --import CRUNCHY-GPG-KEY.public
 
 
-RUN yum -y update && yum -y install postgresql96 hostname && yum -y clean all
+RUN yum -y update && yum -y install postgresql${PGVERSION} hostname && yum -y clean all
 
 ADD bin/apiserver /usr/local/bin
 ADD bin/postgres-operator/runpsql.sh /usr/local/bin

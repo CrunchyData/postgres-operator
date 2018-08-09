@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-v3.2, {docdate}
+Latest Release: 3.2.0 {docdate}
 
 == Project Structure
 
@@ -45,7 +45,7 @@ Next, get a tagged release of the source code -
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.2
+git checkout 3.2.0
 ....
 
 == Installation Prerequsites

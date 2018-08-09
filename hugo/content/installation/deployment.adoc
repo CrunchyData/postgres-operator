@@ -6,7 +6,7 @@ weight: 40
 ---
 
 :toc:
-v3.2, {docdate}
+Latest Release: 3.2.0 {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
