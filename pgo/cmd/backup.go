@@ -39,7 +39,7 @@ var backupCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
+			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				createBackup(args)

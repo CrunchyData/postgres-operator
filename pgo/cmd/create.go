@@ -35,7 +35,6 @@ var UserLabels string
 var IngestConfig string
 var ServiceType string
 
-//var UserLabelsMap map[string]string
 var Series int
 
 var CreateCmd = &cobra.Command{
@@ -51,7 +50,7 @@ pgo create user
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
 		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") && args[0] != "user" {
-			fmt.Println(`You must specify the type of resource to create.  Valid resource types include:
+			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
 	* cluster
 	* user
 	* policy`)
@@ -71,13 +70,15 @@ pgo create cluster mycluster`,
 		log.Debug("create cluster called")
 		if SecretFrom != "" || BackupPath != "" || BackupPVC != "" {
 			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
-				log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
+				fmt.Println(`Error: secret-from, backup-path, backup-pvc are all required to perform a restore`)
+				//log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
 				return
 			}
 		}
 
 		if len(args) == 0 {
-			log.Error("a cluster name is required for this command")
+			fmt.Println(`Error: a cluster name is required for this command`)
+			//log.Error("a cluster name is required for this command")
 		} else {
 			createCluster(args)
 		}
@@ -93,12 +94,14 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create policy called ")
 		if PolicyFile == "" && PolicyURL == "" {
-			log.Error("--in-file or --url is required to create a policy")
+			//log.Error("--in-file or --url is required to create a policy")
+			fmt.Println(`Error: --in-file or --url is required to create a policy`)
 			return
 		}
 
 		if len(args) == 0 {
-			log.Error("a policy name is required for this command")
+			//log.Error("a policy name is required for this command")
+			fmt.Println(`Error: a policy name is required for this command`)
 		} else {
 			createPolicy(args)
 		}
@@ -115,10 +118,11 @@ pgo create ingest myingest --ingest-config=./ingest.json`,
 		log.Debug("create ingest called ")
 
 		if len(args) == 0 {
-			log.Error("an ingest name is required for this command")
+			//log.Error("an ingest name is required for this command")
+			fmt.Println(`Error: an ingest name is required for this command`)
 		} else {
 			if IngestConfig == "" {
-				fmt.Println("You must specify the ingest-config flag")
+				fmt.Println("Error: You must specify the ingest-config flag")
 				return
 			}
 			createIngest(args)
@@ -135,12 +139,14 @@ pgo create user user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create user called ")
 		if Selector == "" {
-			log.Error("--selector is required to create a user")
+			//log.Error("--selector is required to create a user")
+			fmt.Println(`Error: --selector is required to create a user`)
 			return
 		}
 
 		if len(args) == 0 {
-			log.Error("a user name is required for this command")
+			//log.Error("a user name is required for this command")
+			fmt.Println(`Error: a user name is required for this command`)
 		} else {
 			createUser(args)
 		}

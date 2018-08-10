@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	//log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +44,7 @@ For example:
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			fmt.Println(`You must specify the type of resource to show.  
+			fmt.Println(`Error: You must specify the type of resource to show.  
 Valid resource types include:
 	* cluster
 	* pvc
@@ -68,7 +68,7 @@ Valid resource types include:
 			case "backup":
 				break
 			default:
-				fmt.Println(`You must specify the type of resource to show.  
+				fmt.Println(`Error: You must specify the type of resource to show.  
 Valid resource types include:
 	* cluster
 	* pvc
@@ -125,7 +125,7 @@ var ShowPolicyCmd = &cobra.Command{
 				pgo show policy policy1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("policy name(s) required for this command")
+			fmt.Println("Error: policy name(s) required for this command")
 		} else {
 			showPolicy(args)
 		}
@@ -143,7 +143,7 @@ var ShowPVCCmd = &cobra.Command{
 				pgo show pvc mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("PVC name(s) required for this command")
+			fmt.Println("Error: PVC name(s) required for this command")
 		} else {
 			showPVC(args)
 		}
@@ -158,7 +158,7 @@ var ShowUpgradeCmd = &cobra.Command{
 				pgo show upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command")
 		} else {
 			showUpgrade(args)
 		}
@@ -174,7 +174,7 @@ var ShowBackupCmd = &cobra.Command{
 				pgo show backup mycluser`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command")
 		} else {
 			showBackup(args)
 		}
@@ -190,7 +190,7 @@ var ShowBackrestCmd = &cobra.Command{
 				pgo show backrest mycluser`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command")
 		} else {
 			showBackrest(args)
 		}
@@ -206,7 +206,7 @@ var ShowClusterCmd = &cobra.Command{
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command")
 		} else {
 			showCluster(args)
 		}
@@ -222,7 +222,7 @@ var ShowIngestCmd = &cobra.Command{
 				pgo show ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("ingest name(s) required for this command")
+			fmt.Println("Error: ingest name(s) required for this command")
 		} else {
 			showIngest(args)
 		}
@@ -238,7 +238,7 @@ var ShowUserCmd = &cobra.Command{
 				pgo show user mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command")
 		} else {
 			showUser(args)
 		}
