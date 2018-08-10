@@ -225,10 +225,73 @@
     
     
     <div class="paragraph">
-<p>Latest Release: v3.1, 2018-08-01</p>
+<p>Latest Release: 3.2.0 2018-08-10</p>
 </div>
 <div class="paragraph">
 <div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Upgrading to v3.2
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="paragraph">
+<p>The following changes are mandatory when upgrading to 3.2 from
+previous operator versions:
+ * the MatchLabels attribute was added to the pgo.yaml file as an optional
+   storage configuration setting, you do not have to specify this setting,
+   however, the operator-conf ConfigMap now has to include the <strong>pvc-matchlabels.json</strong> template file as required by this new feature, so, if you upgrade to
+   3.2, you will need to rebuild your <strong>operator-conf</strong> ConfigMap to include
+   <strong>pvc-matchlabels.json" and redeploy the Operator using this new ConfigMap
+ * removal of CCP_IMAGE_PREFIX and CO_IMAGE_PREFIX and CO_IMAGE_TAG environment variables from the deployment.yaml file and Helm chart equvalent, instead these values will be pulled from the pgo.yaml configuraiton file mounted by both the apiserver and operator containers, to clean up your existing deployment just
+ be sure to remove these environment variable definitions from your *deployment.yaml</strong> file or Helm chart equivalent
+ * the ExternalIP field was added to the apiservermsgs.ShowClusterService
+   struct, this field is now passed back to apiserver clients in the
+   REST API when viewing cluster details.  For custom clients you might
+   have written, you will see this new field in the REST message.
+ * in versions prior to 3.1, clusters that are created will need the following
+ labels applied:
+	for primary Deployments apply this label: primary=true
+	&#8230;&#8203;.
+	kubectl label deploy mycluster primary=true
+	&#8230;&#8203;.
+	Or for replica Deployments:
+	&#8230;&#8203;.
+	kubectl label deploy mycluster-xxxx primary=false
+	&#8230;&#8203;.</p>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<p><div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Upgrading from v2.6 to v3.1
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="paragraph">
+<p>You will need to add a label to your primary cluster Deployments
+of the format "primary=true".  Starting in 3.1, this label
+is used in the failover logic to find which primary Deployment to
+delete (e.g. deleting the old primary).</p>
+</div>
+
+    </div>
+</div></p>
+</div>
+<div class="paragraph">
+<p><div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
         <span>
@@ -291,7 +354,7 @@ an existing cluster as a parameter.</p>
 </div>
 
     </div>
-</div>
+</div></p>
 </div>
 <div class="paragraph">
 <p><div class="expand">
@@ -308,7 +371,7 @@ an existing cluster as a parameter.</p>
 <div class="paragraph">
 <p>For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.1">here</a>.</p>
+page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.2">here</a>.</p>
 </div>
 <div class="sect1">
 <h2 id="_required_updates">Required Updates</h2>
