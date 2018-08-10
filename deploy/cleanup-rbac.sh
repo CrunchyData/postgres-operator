@@ -21,8 +21,8 @@ fi
 
 $CO_CMD $NS delete serviceaccount postgres-operator
 
-$CO_CMD $NS delete clusterrole pgopclusterrole
-$CO_CMD $NS delete clusterrolebinding pgopclusterbinding
+$CO_CMD $NS delete clusterrole pgopclusterrole pgopclusterrolecrd
+$CO_CMD $NS delete clusterrolebinding pgopclusterbinding pgopclusterbindingcrd
 
 $CO_CMD $NS delete role pgo-role
 $CO_CMD $NS delete rolebinding pgo-role-binding
