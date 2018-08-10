@@ -27,7 +27,7 @@ RUN yum -y update &&  yum -y install epel-release \
  	nss_wrapper \
 	openssh-clients \
 	procps-ng \
- && yum -y install postgresql96 \
+ && yum -y install postgresql10 \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf 
