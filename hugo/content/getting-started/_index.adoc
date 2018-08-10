@@ -119,6 +119,9 @@ If set, will cause autofailover to be enabled on this cluster.
 |`--backup-pvc=VALUE` |-p |String |
 The backup archive PVC to restore from.
 
+|`--backup-path=VALUE` |-x |String |
+The backup archive path to restore from.
+
 |`--ccp-image-tag=VALUE` |-c |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
 
@@ -133,6 +136,9 @@ Adds the crunchy-collect container to the database pod.
 
 |`--node-label=VALUE` |N/A |String |
 The node label (key=value) to use in placing the primary database. If not set, any node is used.
+
+|`--service-type=VALUE` |N/A |String |
+The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
 
 |`--password=VALUE` |-w |String |
 The password to use for initial database users.
@@ -156,7 +162,7 @@ The name of a container resource configuration in pgo.yaml that holds CPU and me
 The cluster name to use when restoring secrets.
 
 |`--series` |-e |Int |
-The number of clusters to create in a series, defaults to 1 (default 1).
+The number of clusters to create in a series (default 1).
 
 |`--storage-config` |N/A |String |
 The name of a Storage config in pgo.yaml to use for the cluster storage.
@@ -216,38 +222,6 @@ If the timer expires, then a failover is triggered on the cluster turning
 one of the cluster replica pods into the replacement primary pod. See the
 link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works]
 documentation for more details on auto failover.
-
-=== Delete Cluster
-
-You can remove a cluster by running:
-....
-pgo delete cluster restoredb
-....
-
-Note, that this command will not remove the PVC associated with
-this cluster.
-
-Selectors also apply to the delete command as follows:
-....
-pgo delete cluster  --selector=project=xray
-....
-
-This command will cause any cluster matching the selector
-to be removed.
-
-You can remove a cluster and it's data files by running:
-....
-pgo delete cluster restoredb --delete-data
-....
-
-You can remove a cluster, it's data files, and all backups by running:
-....
-pgo delete cluster restoredb --delete-data --delete-backups
-....
-
-When you specify a destructive delete like above, you will be prompted
-to make sure this is what you want to do.  If you don't want to
-be prompted you can enter the *--no-prompt* command line flag.
 
 *Complex Creation*
 
@@ -393,9 +367,6 @@ The output format. Currently, JSON is supported.
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 
-|`--show-secrets` |-x |N/A |
-Show the Kubernetes secrets associated with the cluster.
-
 |`--version` |-v |String |
 Filter the results based on the PostgreSQL version of the cluster.
 |=========================================================
@@ -414,17 +385,6 @@ pgo show cluster testcluster
 Show all clusters available:
 ....
 pgo show cluster all
-....
-
-*Show Secrets*
-
-User credentials are generated through Kubernetes Secrets automatically for the
-*testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed
-by running the `pgo show cluster` command with the `--show-secrets` flag. More details
-are available on user management below.
-
-....
-pgo show cluster testcluster --show-secrets
 ....
 
 *PostgreSQL Version*
@@ -597,11 +557,32 @@ $ pgo scale NAME [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
+|`--scale-down-target` |N/A |String |
+The name of a replica to delete.
+
+|`--service-type` |N/A |String |
+The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.
+
+|`--ccp-image-tag` |-c |String |
+The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.
+
+|`--query` |N/A |N/A |
+Prints the list of targetable replica candidates.
+
+|`--delete-data` |N/A |N/A |
+Causes the data for the scaled down replica to be removed permanently.
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--target` |N/A |String |
+The replica target which the scaling will occur on. Only applies when --replica-count=-1.
+
 |`--node-label` |N/A |String |
 The node label (key) to use in placing the primary database. If not set, any node is used.
 
 |`--replica-count` |-r |String |
-The replica count to apply to the clusters. Defaults to 1.
+The replica count to apply to the clusters (default 1).
 
 |`--resources-config` |-r |String |
 The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
@@ -1053,8 +1034,8 @@ To create a new Postgres user to the *testcluster* cluster that has credentials 
 pgo create user sally --managed --selector=name=testcluster
 ....
 
-A *managed* account is one that the Operator can manipulate as well; this means that when you run `pgo show cluster testcluster --show-secrets`
-their credentials are visible, when you run `pgo test testcluster` the account is tested with the other default accounts, etc.
+A *managed* account is one that the Operator can manipulate as well; when you run `pgo test testcluster` the account is tested with
+the other default accounts, etc.
 
 *Complex User Creation*
 

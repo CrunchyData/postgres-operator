@@ -14,6 +14,7 @@ First, define the following environment variables in *.bashrc*:
 ....
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator

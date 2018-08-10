@@ -53,13 +53,11 @@ var ManagedUser bool
 var userCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Manage users",
-	Long: `USER allows you to manage users and passwords across a set of clusters
-For example:
+	Long: `USER allows you to manage users and passwords across a cluster or set of clusters. For example:
 
-pgo user --selector=name=mycluster --update-passwords
-pgo user --expired=7 --selector=name=mycluster
-pgo user --change-password=bob --selector=name=mycluster
-.`,
+	pgo user --selector=name=mycluster --update-passwords
+	pgo user --expired=7 --selector=name=mycluster
+	pgo user --change-password=bob --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager()
@@ -69,14 +67,13 @@ pgo user --change-password=bob --selector=name=mycluster
 func init() {
 	RootCmd.AddCommand(userCmd)
 
-	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
-	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
-	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
-	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
-	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
-	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
-
+	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "Shows passwords that will expire in X days.")
+	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "Sets passwords for new users to X days.")
+	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "Updates the password for a user on selective clusters.")
+	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "Grants the user access to a database.")
+	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "Performs password updating on expired passwords.")
+	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "Creates a user with secrets that can be managed by the Operator.")
 }
 
 // userManager ...
@@ -140,12 +137,12 @@ func userManager() {
 func createUser(args []string) {
 
 	if Selector == "" {
-		log.Error("selector flag is required")
+		log.Error("The --selector flag is required.")
 		return
 	}
 
 	if len(args) == 0 {
-		log.Error("user name argument is required")
+		log.Error("The user name argument is required.")
 		return
 	}
 
@@ -204,11 +201,11 @@ func createUser(args []string) {
 func deleteUser(username string) {
 	log.Debugf("deleteUser called %v\n", username)
 
-	log.Debug("deleting user " + username + " selector " + Selector)
+	log.Debug("Deleting user " + username + " selector " + Selector)
 
 	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 
-	log.Debug("delete users called [" + url + "]")
+	log.Debug("Delete users called [" + url + "]")
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
