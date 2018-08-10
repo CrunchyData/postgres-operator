@@ -77,6 +77,28 @@ The pgo client uses Basic Authentication to authenticate to the operator REST AP
 echo "username:password" > $HOME/.pgouser
 ....
 
+Roles are defined in a file called *pgorole*. This file defines each role and the
+permissions for that role. By default, two roles are defined as samples -
+....
+pgoadmin
+pgoreader
+....
+
+This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local
+security requirements.
+
+The format of this file is as follows -
+....
+rolename: permissionA, permissionB
+....
+
+These are defined in the following file -
+....
+$COROOT/conf/apiserver/pgorole
+....
+
+The complete set of permissions is documented in the link:/installation/configuration/[Configuration] document.
+
 The *pgo* client needs the URL to connect to the operator.
 
 Depending on your Kubernetes environment this can be done the following ways.
@@ -151,9 +173,12 @@ To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file i
 cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
 ....
 
-Edit the *pgo.yaml* file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is *nfsnobody* as the GID (65534).  Update the value to meet your NFS security settings.
-
-There is currently no script available to create your NFS Persistent Volumes but you can typically modify the `$COROOT/pv/create-pv.sh` script to work with NFS.
+Next, set the environment variable CO_NFS_IP to your NFS server's IP address, then run the script `$COROOT/pv/create-pv-nfs.sh` -
+....
+export CO_NFS_IP=<your NFS server's IP>
+cd $COROOT/pv
+./create-pv-nfs.sh
+....
 
 {{% /expand%}}
 

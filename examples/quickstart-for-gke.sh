@@ -15,14 +15,23 @@
 
 LOG="pgo-installer.log"
 
-export CO_VERSION=3.2
+export PGORELEASE=3.1
+PGO_RELEASE_REMOTE_URL="https://github.com/CrunchyData/postgres-operator/releases/download/$PGORELEASE/postgres-operator.$PGORELEASE.tar.gz"
+PGO_RELEASE_LOCAL_PATH="/tmp/postgres-operator.$PGORELEASE.tar.gz"
 
 echo "Testing for dependencies..." | tee -a $LOG
 
 which wget > /dev/null 2> /dev/null
 if [[ $? -ne 0 ]]; then
-	echo "The required dependency wget is missing on your system." | tee -a $LOG
-	exit 1
+	which curl > /dev/null 2> /dev/null
+	if [[ $? -ne 0 ]]; then
+		echo "The required dependency wget and/or curl is missing on your system." | tee -a $LOG
+		exit 1
+	else
+		PGO_HTTP_CMD="curl -L -s -o ${PGO_RELEASE_LOCAL_PATH} ${PGO_RELEASE_REMOTE_URL}"
+	fi
+else
+	PGO_HTTP_CMD="wget --quiet ${PGO_RELEASE_REMOTE_URL} -O ${PGO_RELEASE_LOCAL_PATH}"
 fi
 which kubectl > /dev/null 2> /dev/null
 if [[ $? -ne 0 ]]; then
@@ -84,11 +93,7 @@ mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
 echo ""
 echo "Installing pgo server configuration..." | tee -a $LOG
-wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$CO_VERSION/postgres-operator.$CO_VERSION.tar.gz -O /tmp/postgres-operator.$CO_VERSION.tar.gz
-if [[ $? -ne 0 ]]; then
-	echo "ERROR: Problem getting the pgo server configuration."
-	exit 1
-fi
+`${PGO_HTTP_CMD}`
 
 cd $COROOT
 tar xzf /tmp/postgres-operator.$CO_VERSION.tar.gz
@@ -116,10 +121,9 @@ read STORAGE_CLASS
 echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/service-account.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
+sed -i .bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
+sed -i .bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/service-account.yaml
+sed -i .bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
 echo "Setting up pgo client authentication..." | tee -a $LOG

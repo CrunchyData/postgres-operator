@@ -14,6 +14,7 @@ First, define the following environment variables in *.bashrc*:
 ....
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
@@ -82,7 +83,7 @@ The basic installation uses the default operator configuration settings, these s
 The default Persistent Volume script assumes a default HostPath directory be created called */data*:
 ....
 sudo mkdir /data
-sudo chown 777 /data
+sudo chmod 777 /data
 ....
 
 Create some sample Persistent Volumes using the following script:

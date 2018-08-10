@@ -26,9 +26,8 @@ import (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "pgo",
-	Short: "The pgo command line interface.",
-	Long: `The pgo command line interface lets you
-create and manage PostgreSQL clusters.`,
+	Short: "The pgo command line interface",
+	Long: `The pgo command line interface lets you create and manage PostgreSQL clusters.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -53,21 +52,21 @@ func init() {
 	GREEN = color.New(color.FgGreen).SprintFunc()
 	RED = color.New(color.FgRed).SprintFunc()
 
-	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "postgres operator apiserver URL")
-	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "enable debug with true")
+	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "The postgres operator apiserver URL.")
+	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "Enable debugging with true.")
 
 }
 
 func initConfig() {
 	if DebugFlag {
 		log.SetLevel(log.DebugLevel)
-		log.Debug("debug flag is set to true")
+		log.Debug("Debug flag is set to true")
 	}
 
 	if APIServerURL == "" {
 		APIServerURL = os.Getenv("CO_APISERVER_URL")
 		if APIServerURL == "" {
-			log.Error("CO_APISERVER_URL env var or --apiserver-url flag needs to be supplied")
+			log.Error("The CO_APISERVER_URL environment variable or the --apiserver-url flag needs to be supplied.")
 			os.Exit(-1)
 		}
 	}

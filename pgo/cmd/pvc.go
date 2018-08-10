@@ -75,7 +75,7 @@ func printPVC(pvcName, pvcRoot string) {
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no PVC Results")
+		fmt.Println("No PVC Results.")
 		return
 	}
 	log.Debugf("response = %v\n", response)

@@ -29,18 +29,16 @@ import (
 
 var applyCmd = &cobra.Command{
 	Use:   "apply",
-	Short: "apply a Policy",
-	Long: `APPLY allows you to apply a Policy to a set of clusters
-For example:
+	Short: "Apply a Policy",
+	Long: `APPLY allows you to apply a Policy to a cluster or set of clusters. For example:
 
-pgo apply mypolicy1 --selector=name=mycluster
-pgo apply mypolicy1 --selector=someotherpolicy
-pgo apply mypolicy1 --selector=someotherpolicy --dry-run
-.`,
+	pgo apply mypolicy1 --selector=name=mycluster
+	pgo apply mypolicy1 --selector=someotherpolicy
+	pgo apply mypolicy1 --selector=someotherpolicy --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("apply called")
 		if Selector == "" {
-			log.Error("selector is required to apply a policy")
+			log.Error("A selector is required to apply a policy.")
 			return
 		}
 		if len(args) == 0 {
@@ -54,8 +52,8 @@ pgo apply mypolicy1 --selector=someotherpolicy --dry-run
 func init() {
 	RootCmd.AddCommand(applyCmd)
 
-	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters that policy would be applied to but does not actually apply them")
+	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "Shows the clusters that the policy would be applied to, without labelling them.")
 
 }
 
@@ -63,12 +61,12 @@ func applyPolicy(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		log.Error("The policy name argument is required.")
 		return
 	}
 
 	if Selector == "" {
-		log.Error("--selector flag is required")
+		log.Error("The --selector flag is required.")
 		return
 	}
 
@@ -114,15 +112,15 @@ func applyPolicy(args []string) {
 	}
 
 	if DryRun {
-		fmt.Println("would have applied policy on " + "something")
+		fmt.Println("The policy would have been applied on the following:")
 	}
 
 	if response.Status.Code == msgs.Ok {
 		if len(response.Name) == 0 {
-			fmt.Println("no clusters found")
+			fmt.Println("No clusters found.")
 		} else {
 			for _, v := range response.Name {
-				fmt.Println("applied policy on " + v)
+				fmt.Println("Applied policy on " + v)
 			}
 		}
 	} else {
@@ -172,7 +170,7 @@ func showPolicy(args []string) {
 		}
 
 		if len(response.PolicyList.Items) == 0 {
-			fmt.Println("no policies found")
+			fmt.Println("No policies found.")
 			return
 		}
 
@@ -192,7 +190,7 @@ func showPolicy(args []string) {
 func createPolicy(args []string) {
 
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		log.Error("The policy name argument is required.")
 		return
 	}
 	var err error
@@ -249,7 +247,7 @@ func createPolicy(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("created policy")
+		fmt.Println("Created policy.")
 	} else {
 		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
@@ -273,7 +271,7 @@ func deletePolicy(args []string) {
 	log.Debugf("deletePolicy called %v\n", args)
 
 	for _, arg := range args {
-		log.Debug("deleting policy " + arg)
+		log.Debug("Deleting policy " + arg)
 
 		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
@@ -306,7 +304,7 @@ func deletePolicy(args []string) {
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println("policy deleted")
+			fmt.Println("Policy deleted.")
 		} else {
 			log.Error(RED(response.Status.Msg))
 		}

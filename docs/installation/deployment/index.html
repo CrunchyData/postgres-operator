@@ -116,10 +116,10 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/contributing/" class="dd-item
+    <li data-nav-id="/getting-started/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
+      <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a>
 
       </div>
     </li>
@@ -130,10 +130,10 @@
 
       </div>
     </li>
-    <li data-nav-id="/getting-started/" class="dd-item
+    <li data-nav-id="/contributing/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a>
+      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
 
       </div>
     </li>
@@ -235,7 +235,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>v3.1, 2018-06-13</p>
+<p>Latest Release: 3.2.0 2018-08-10</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -301,7 +301,7 @@ so far are -</p>
 <div class="literalblock">
 <div class="content">
 <pre>export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.1
+export CO_IMAGE_TAG=centos7-3.2
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
@@ -334,6 +334,39 @@ export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
 <div class="content">
 <pre>echo "username:password" &gt; $HOME/.pgouser</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>Roles are defined in a file called <strong>pgorole</strong>. This file defines each role and the
+permissions for that role. By default, two roles are defined as samples -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgoadmin
+pgoreader</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local
+security requirements.</p>
+</div>
+<div class="paragraph">
+<p>The format of this file is as follows -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>rolename: permissionA, permissionB</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>These are defined in the following file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/conf/apiserver/pgorole</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The complete set of permissions is documented in the <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">Configuration</a> document.</p>
 </div>
 <div class="paragraph">
 <p>The <strong>pgo</strong> client needs the URL to connect to the operator.</p>
@@ -435,8 +468,8 @@ pgo version</pre>
 <div class="literalblock">
 <div class="content">
 <pre>pgo version
-pgo client version 3.1
-apiserver version 3.1</pre>
+pgo client version 3.2
+apiserver version 3.2</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -476,10 +509,14 @@ apiserver version 3.1</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Edit the <strong>pgo.yaml</strong> file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is <strong>nfsnobody</strong> as the GID (65534).  Update the value to meet your NFS security settings.</p>
+<p>Next, set the environment variable CO_NFS_IP to your NFS server&#8217;s IP address, then run the script <code>$COROOT/pv/create-pv-nfs.sh</code> -</p>
 </div>
-<div class="paragraph">
-<p>There is currently no script available to create your NFS Persistent Volumes but you can typically modify the <code>$COROOT/pv/create-pv.sh</code> script to work with NFS.</p>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_NFS_IP=&lt;your NFS server's IP&gt;
+cd $COROOT/pv
+./create-pv-nfs.sh</pre>
+</div>
 </div>
 </div>
 

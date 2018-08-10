@@ -141,7 +141,7 @@ func showCluster(args []string) {
 		}
 
 		if len(response.Results) == 0 {
-			fmt.Println("no clusters found")
+			fmt.Println("No clusters found.")
 			return
 		}
 
@@ -205,7 +205,7 @@ func createCluster(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		log.Error("cluster name argument is required")
+		log.Error("Cluster name argument is required.")
 		return
 	}
 

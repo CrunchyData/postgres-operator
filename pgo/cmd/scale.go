@@ -34,17 +34,15 @@ var ScaleDownTarget string
 var scaleCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a Cluster",
-	Long: `scale allows you to adjust a Cluster's replica configuration
-For example:
+	Long: `Scale allows you to adjust a Cluster's replica configuration. For example:
 
-pgo scale mycluster --replica-count=1
+	pgo scale mycluster --replica-count=1
 
-to list replicas:
-pgo scale mycluster --query
+	To list all replicas that can be targeted:
+	pgo scale mycluster --query
 
-to scale down a specific replica:
-pgo scale mycluster --scale-down-target=mycluster-replica-xxxx
-.`,
+	To scale down a specific replica:
+	pgo scale mycluster --scale-down-target=mycluster-replica-xxxx`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("scale called")
 
@@ -75,18 +73,17 @@ pgo scale mycluster --scale-down-target=mycluster-replica-xxxx
 func init() {
 	RootCmd.AddCommand(scaleCmd)
 
-	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", 1, "The replica count to apply to the clusters, defaults to 1")
-	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits")
-	scaleCmd.Flags().StringVarP(&ScaleDownTarget, "scale-down-target", "", "", "The name of a replica to delete")
+	scaleCmd.Flags().StringVarP(&ScaleDownTarget, "scale-down-target", "", "", "The name of a replica to delete.")
+	scaleCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.")
+	scaleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.")
+	scaleCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of targetable replica candidates.")
+	scaleCmd.Flags().BoolVarP(&DeleteData, "delete-data", "", false, "Causes the data for the scaled down replica to be removed permanently.")
+	scaleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	scaleCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the scaling will occur on. Only applies when --replica-count=-1.")
+	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", 1, "The replica count to apply to the clusters.")
+	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "he name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	scaleCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the replica storage.")
-	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the replica pod, if not set any node is used")
-	scaleCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The service type to use in the replica Service, if not set the default in pgo.yaml will be used")
-	scaleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation, if specified overrides the .pgo.yaml setting")
-	scaleCmd.Flags().BoolVarP(&Query, "query", "", false, "--query prints the list of replica candidates")
-	scaleCmd.Flags().BoolVarP(&DeleteData, "delete-data", "", false, "--delete-data deletes the data of the scaled down replica ")
-	scaleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a scale command")
-	scaleCmd.Flags().StringVarP(&Target, "target", "", "", "--target is the replica target which the scale will occur on. Only applies when --replica-cound=-1")
-
+	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key) to use in placing the primary database. If not set, any node is used.")
 }
 
 func scaleCluster(args []string) {

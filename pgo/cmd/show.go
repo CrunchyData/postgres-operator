@@ -30,9 +30,8 @@ var PVCRoot string
 
 var ShowCmd = &cobra.Command{
 	Use:   "show",
-	Short: "show a description of a cluster",
-	Long: `show allows you to show the details of a policy, backup, pvc, or cluster.
-For example:
+	Short: "Show a description of a cluster",
+	Long: `Show allows you to show the details of a policy, backup, pvc, or cluster. For example:
 
 	pgo show policy policy1
 	pgo show pvc mycluster
@@ -44,7 +43,7 @@ For example:
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			fmt.Println(`You must specify the type of resource to show.  
+			fmt.Println(`You must specify the type of resource to show.
 Valid resource types include:
 	* cluster
 	* pvc
@@ -68,7 +67,7 @@ Valid resource types include:
 			case "backup":
 				break
 			default:
-				fmt.Println(`You must specify the type of resource to show.  
+				fmt.Println(`You must specify the type of resource to show.
 Valid resource types include:
 	* cluster
 	* pvc
@@ -97,12 +96,12 @@ func init() {
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
-	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
-	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	ShowBackrestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
-	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
+	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "Filter the results based on the PostgreSQL version of the cluster.")
+	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowBackrestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list.")
+	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
 
 }
 
@@ -125,7 +124,7 @@ var ShowPolicyCmd = &cobra.Command{
 				pgo show policy policy1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("policy name(s) required for this command")
+			log.Error("Policy name(s) are required for this command.")
 		} else {
 			showPolicy(args)
 		}
@@ -143,7 +142,7 @@ var ShowPVCCmd = &cobra.Command{
 				pgo show pvc mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("PVC name(s) required for this command")
+			log.Error("PVC name(s) required for this command.")
 		} else {
 			showPVC(args)
 		}
@@ -158,7 +157,7 @@ var ShowUpgradeCmd = &cobra.Command{
 				pgo show upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			log.Error("Cluster name(s) required for this command.")
 		} else {
 			showUpgrade(args)
 		}
@@ -174,7 +173,7 @@ var ShowBackupCmd = &cobra.Command{
 				pgo show backup mycluser`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			log.Error("Cluster name(s) required for this command.")
 		} else {
 			showBackup(args)
 		}
@@ -201,12 +200,12 @@ var ShowBackrestCmd = &cobra.Command{
 var ShowClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Show cluster information",
-	Long: `Show a crunchy cluster. For example:
+	Long: `Show a PostgreSQL cluster. For example:
 
 				pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			log.Error("Cluster name(s) required for this command.")
 		} else {
 			showCluster(args)
 		}
@@ -217,12 +216,12 @@ var ShowClusterCmd = &cobra.Command{
 var ShowIngestCmd = &cobra.Command{
 	Use:   "ingest",
 	Short: "Show ingest information",
-	Long: `Show a crunchy ingest. For example:
+	Long: `Show an ingest. For example:
 
 				pgo show ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("ingest name(s) required for this command")
+			log.Error("Ingest name(s) required for this command.")
 		} else {
 			showIngest(args)
 		}
