@@ -119,6 +119,9 @@ If set, will cause autofailover to be enabled on this cluster.
 |`--backup-pvc=VALUE` |-p |String |
 The backup archive PVC to restore from.
 
+|`--backup-path=VALUE` |-x |String |
+The backup archive path to restore from.
+
 |`--ccp-image-tag=VALUE` |-c |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
 
@@ -156,7 +159,7 @@ The name of a container resource configuration in pgo.yaml that holds CPU and me
 The cluster name to use when restoring secrets.
 
 |`--series` |-e |Int |
-The number of clusters to create in a series, defaults to 1 (default 1).
+The number of clusters to create in a series (default 1).
 
 |`--storage-config` |N/A |String |
 The name of a Storage config in pgo.yaml to use for the cluster storage.
@@ -217,43 +220,7 @@ one of the cluster replica pods into the replacement primary pod. See the
 link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works]
 documentation for more details on auto failover.
 
-=== Delete Cluster
-
-You can remove a cluster by running:
-....
-pgo delete cluster restoredb
-....
-
-Note, that this command will not remove the PVC associated with
-this cluster.
-
-Selectors also apply to the delete command as follows:
-....
-pgo delete cluster  --selector=project=xray
-....
-
-This command will cause any cluster matching the selector
-to be removed.
-
-You can remove a cluster and it's data files by running:
-....
-pgo delete cluster restoredb --delete-data
-....
-
-You can remove a cluster, it's data files, and all backups by running:
-....
-pgo delete cluster restoredb --delete-data --delete-backups
-....
-
-When you specify a destructive delete like above, you will be prompted
-to make sure this is what you want to do.  If you don't want to
-be prompted you can enter the *--no-prompt* command line flag.
-
-<<<<<<< HEAD
-=== Show Cluster
-=======
 *Complex Creation*
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 
 Create a series of clusters, specifying it as the xray project, with the xrayapp and
 rlspolicy policies added:
@@ -303,63 +270,6 @@ To enable *auto failover* on this cluster, use the following flag:
 pgo create cluster testcluster --autofail
 ....
 
-<<<<<<< HEAD
-You can view the files on a PVC as follows:
-....
-pgo show pvc mycluster
-....
-
-In this example, the PVC is *mycluster*.  This command is useful
-in some cases to examine what files are on a given PVC.
-
-In the case where you want to list a specific path on a PVC
-you can specify the path option as follows:
-....
-pgo show pvc mycluster --pvc-root=mycluster-backups
-....
-
-You can also list all PVCs that are created by the operator
-using:
-....
-pgo show pvc all
-....
-
-You can view the passwords used by the cluster as follows:
-....
-pgo show cluster mycluster --show-secrets=true
-....
-
-Passwords are generated if not specified in your *pgo* configuration.
-
-=== Test Connection
-
-You can test the database connections to a cluster:
-....
-pgo test mycluster
-....
-
-This command will test each service defined for the cluster using
-the postgres, primary, and normal user accounts defined for the
-cluster.  The cluster credentials are accessed and used to test
-the database connections.  The equivalent *psql* command is printed
-out as connections are tried, along with the connection status.
-
-Like other commands, you can use the selector to test a series
-of clusters:
-....
-pgo test --selector=env=research
-pgo test all
-....
-
-You can get output using the *--output* flag:
-....
-pgo test all -o json
-....
-
-== Administration
-
-=== Backups
-=======
 This flag, when set on the cluster, informs the operator to look
 or watch for NotReady events on this cluster. When those occur, it will
  create a failover state machine which acts as a timer for the cluster.
@@ -558,9 +468,6 @@ to creating a new Job with the same name.
 
 $ pgo backup NAME [FLAGS]
 
-<<<<<<< HEAD
-To delete a backup enter the following:
-=======
 ==== Flags
 
 [width="100%",cols="5,^1,^1, 13",options="header"]
@@ -590,8 +497,6 @@ You can start a backup job for a cluster as follows:
 pgo backup testcluster
 ....
 
-<<<<<<< HEAD
-=======
 *Show Backup*
 
 View the backup and backup status:
@@ -638,7 +543,6 @@ To delete a backup enter the following:
 pgo delete backup testcluster
 ....
 
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 === Scaling Replicas
 
 When you create a Cluster, you will see in the output a variety of Kubernetes
@@ -705,13 +609,9 @@ to the replica databases as follows:
 psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'
 ....
 
-<<<<<<< HEAD
-The scale command will let you specify a *--node-label* flag which
-=======
 *Specifying Nodes*
 
 The scale command will let you specify a `--node-label` flag which
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 can be used to influence what Kube node the replica will be scheduled
 upon.
 
@@ -732,51 +632,6 @@ pgo scale testcluster --storage-config=storage1 --resources-config=small
 ....
 
 === Manual Failover
-<<<<<<< HEAD
-
-Starting with Release 2.6, there is a manual failover command which
-can be used to promote a replica to a primary role in a PostgreSQL
-cluster.
-
-This process includes the following actions:
-
- * pick a target replica to become the new primary
- * delete the current primary deployment to avoid user requests from
-   going to multiple primary databases (split brain)
- * promote the targeted replica using *pg_ctl promote*, this will
-   cause PostgreSQL to go into read-write mode
- * re-label the targeted replica to use the primary labels, this
-   will match the primary service selector and cause new requests
-   to the primary to be routed to the new primary (targeted replica)
-
-The command works like this:
-....
-pgo failover mycluster --query
-....
-
-That command will show you a list of replica targets you can choose
-to failover to.  You will select one of those for the following
-command:
-....
-pgo failover mycluster --target=mycluster-abxq
-....
-
-There is a CRD called *pgtask* that will hold the failover request
-and also the status of that request.  You can view the status
-by viewing it:
-....
-kubectl get pgtasks mycluster-failover -o yaml
-....
-
-Once completed, you will see a new replica has been started to replace
-the promoted replica, this happens automatically due to the re-lable, the
-Deployment will recreate its pod because of this.   The failover typically
-takes only a few seconds, however, the creation of the replacement
-replica can take longer depending on how much data is being replicated.
-
-=== Upgrading PostgreSQL
-=======
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 
 Starting with Release 2.6, there is a manual failover command which
 can be used to promote a replica to a primary role in a PostgreSQL
@@ -813,79 +668,15 @@ Prints the list of failover candidates.
 The replica target which the failover will occur on.
 |=========================================================
 
-<<<<<<< HEAD
-To remove an upgrade CRD, issue the following:
-=======
 ==== Examples
 
 *Manual Failover*
 
 The command works like this:
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 ....
 pgo failover testcluster --query
 ....
 
-<<<<<<< HEAD
-=== Applying Labels
-
-You can apply a user defined label to a cluster as follows:
-....
-pgo label --label=env=research  --selector=project=xray
-....
-
-In this example, we apply a label of *env=research* to any
-clusters that have an existing label of *project=xray* applied.
-
-=== Loading Data
-
-A CSV file loading capability is supported currently.  You can
-test that by creating a SQL Policy which will create a database
-table that will be loaded with the CSV data.  For example:
-
-....
-pgo create policy xrayapp --in-file=$COROOT/examples/policy/xrayapp.sql
-....
-
-Then you can load a sample CSV file into a database as follows:
-
-....
-pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name=mycluster
-....
-
-The loading is based on a load definition found in the *sample-load-config.json* file.  In that file, the data to be loaded is specified. When the *pgo load* command is executed, Jobs will be created to perform the loading for each cluster that matches the selector filter.
-
-If you include the *--policies* flag, any specified policies will be applied prior to the data being loaded.  For
-example:
-....
-pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster
-....
-
-Likewise you can load a sample json file into a database as follows:
-....
-pgo load --policies=jsonload --load-config=$COROOT/examples/sample-json-load-config.json  --selector=name=mycluster
-....
-
-The load configuration file has the following YAML attributes:
-
-.Load Configuration File Definitions
-[width="90%",cols="m,2",frame="topbot",options="header"]
-|======================
-|Attribute | Description
-|COImagePrefix|  the pgo-load image prefix to use for the load job
-|COImageTag|  the pgo-load image tag to use for the load job
-|DbDatabase|  the database schema to use for loading the data
-|DbUser|  the database user to use for loading the data
-|DbPort|  the database port of the database to load
-|TableToLoad|  the PostgreSQL table to load
-|FilePath|  the name of the file to be loaded
-|FileType|  either csv or json, determines the type of data to be loaded
-|PVCName|  the name of the PVC that holds the data file to be loaded
-|SecurityContext| either fsGroup or SupplementalGroup values
-|======================
-
-=== SQL Policies
-=======
 That command will show you a list of replica targets you can choose
 to failover to.  You will select one of those for the following
 command:
@@ -941,7 +732,6 @@ $ pgo upgrade NAME [FLAGS]
 
 |`--ccp-image-tag` |-c |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 
 |`--upgrade-type` |-t |String |
 The upgrade type. Accepted values are either "minor" or "major", with the default being "minor".
@@ -963,26 +753,17 @@ Perform a major PostgreSQL version upgrade:
 pgo upgrade testcluster --upgrade-type=major
 ....
 
-<<<<<<< HEAD
-To delete a policy use the following form:
-=======
 *Overriding Version*
 
 Override the `CcpImageTag` variable defined in the pgo.yaml configuration file:
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 ....
 pgo upgrade testcluster --ccp-image-tag=centos7-9.6.9-1.8.3
 pgo upgrade testcluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3
 ....
 
-<<<<<<< HEAD
-To apply an existing policy to a set of clusters, issue
-a command like this:
-=======
 *Delete Upgrade*
 
 To remove an upgrade CRD, issue the following:
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 ....
 pgo delete upgrade
 ....
@@ -994,29 +775,16 @@ input being valid.
 
 ==== Syntax
 
-<<<<<<< HEAD
-== Authentication
-
-=== User Management
-=======
 $ pgo label [NAME] [FLAGS]
 
 ==== Flags
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 
 [width="100%",cols="5,^1,^1, 13",options="header"]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-<<<<<<< HEAD
-To delete a Postgres user in the *mycluster* cluster, execute:
-....
-pgo delete user sally --selector=name=mycluster
-....
-=======
 |`--delete-label` |-x |String |
 Deletes a label from specified clusters.
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 
 |`--dry-run` |-d |N/A |
 Shows the clusters that the label would be applied to, without labelling them.
@@ -1024,18 +792,9 @@ Shows the clusters that the label would be applied to, without labelling them.
 |`--label` |-l |String |
 The new label to apply for any selected or specified clusters.
 
-<<<<<<< HEAD
-=== Password Management
-
-To change the password for a user in the *mycluster* cluster:
-....
-pgo user --change-password=sally --selector=name=mycluster
-....
-=======
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 |=========================================================
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7
 
 ==== Examples
 
@@ -1103,8 +862,6 @@ examine as follows:
 ....
 kubectl get pgpolicies policy1 -o json
 ....
-<<<<<<< HEAD
-=======
 
 *Apply Policies*
 
@@ -1321,4 +1078,3 @@ To update expired passwords in a cluster:
 ....
 pgo user --update-passwords --selector=name=testcluster
 ....
->>>>>>> 30742471ff7ddcadf87f0dab75de973b979133f7

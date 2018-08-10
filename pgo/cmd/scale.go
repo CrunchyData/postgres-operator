@@ -30,11 +30,9 @@ var ReplicaCount int
 var scaleCmd = &cobra.Command{
 	Use:   "scale",
 	Short: "Scale a Cluster",
-	Long: `Scale allows you to adjust a Cluster's replica configuration
-For example:
+	Long: `Scale allows you to adjust a Cluster's replica configuration. For example:
 
-pgo scale mycluster --replica-count=1
-.`,
+	pgo scale mycluster --replica-count=1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("scale called")
 		if len(args) == 0 {
@@ -48,10 +46,10 @@ pgo scale mycluster --replica-count=1
 func init() {
 	RootCmd.AddCommand(scaleCmd)
 
-	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", 1, "The replica count to apply to the clusters, defaults to 1")
-	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits")
+	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "r", 1, "The replica count to apply to the clusters. Defaults to 1.")
+	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "he name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	scaleCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the replica storage.")
-	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the replica pod, if not set any node is used")
+	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key) to use in placing the primary database. If not set, any node is used.")
 
 }
 

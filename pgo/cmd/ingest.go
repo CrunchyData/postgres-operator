@@ -44,13 +44,13 @@ type IngestConfigFile struct {
 func createIngest(args []string) {
 
 	if len(args) == 0 {
-		log.Error("ingest name argument is required")
+		log.Error("Ingest name argument is required.")
 		return
 	}
 
 	r, err := parseRequest(IngestConfig, args[0])
 	if err != nil {
-		log.Error("problem parsing ingest config file")
+		log.Error("Problem parsing ingest configuration file.")
 		log.Error(err)
 		return
 	}
@@ -88,7 +88,7 @@ func createIngest(args []string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("created ingest")
+		fmt.Println("Created ingest.")
 	} else {
 		fmt.Println(RED(response.Status.Msg))
 		os.Exit(2)
@@ -132,11 +132,11 @@ func deleteIngest(args []string) {
 
 		if response.Status.Code == msgs.Ok {
 			if len(response.Results) == 0 {
-				fmt.Println("no ingests found")
+				fmt.Println("No ingests found.")
 				return
 			}
 			for k := range response.Results {
-				fmt.Println("deleted ingest " + response.Results[k])
+				fmt.Println("Deleted ingest " + response.Results[k])
 			}
 		} else {
 			log.Error(RED(response.Status.Msg))
@@ -188,7 +188,7 @@ func showIngest(args []string) {
 		}
 
 		if len(response.Details) == 0 {
-			fmt.Println("no ingests found")
+			fmt.Println("No ingests found.")
 			return
 		}
 
