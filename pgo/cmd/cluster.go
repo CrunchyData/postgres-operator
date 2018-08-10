@@ -205,7 +205,8 @@ func createCluster(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		log.Error("cluster name argument is required")
+		//log.Error("cluster name argument is required")
+		fmt.Println("Error: cluster name argument is required")
 		return
 	}
 

@@ -49,7 +49,7 @@ pgo scale mycluster --scale-down-target=mycluster-replica-xxxx
 		log.Debug("scale called")
 
 		if len(args) == 0 {
-			fmt.Println(`You must specify the clusters to scale.`)
+			fmt.Println(`Error: You must specify the clusters to scale.`)
 		} else {
 			if Query {
 				queryCluster(args)
@@ -129,7 +129,8 @@ func scaleCluster(args []string) {
 				fmt.Println(v)
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			//log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 		}
 
 	}

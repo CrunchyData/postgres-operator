@@ -441,7 +441,6 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			labels := strings.Split(request.UserLabels, ",")
 
 			for _, v := range labels {
-				//fmt.Printf("%s\n", v)
 				p := strings.Split(v, "=")
 				if len(p) < 2 {
 					resp.Status.Code = msgs.Error

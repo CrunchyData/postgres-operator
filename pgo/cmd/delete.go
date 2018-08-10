@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	//log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +39,7 @@ pgo delete upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
-			fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
+			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* policy
 	* user
 	* cluster
@@ -56,7 +56,7 @@ pgo delete upgrade mycluster`,
 			case "upgrade":
 				break
 			default:
-				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
+				fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include: 
 	* policy
 	* user
 	* cluster
@@ -97,7 +97,8 @@ var deleteIngestCmd = &cobra.Command{
 	pgo delete ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a ingest name is required for this command")
+			//fmt.Println("Error: a ingest name is required for this command")
+			fmt.Println("Error: a ingest name is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteIngest(args)
@@ -115,7 +116,8 @@ var deleteUpgradeCmd = &cobra.Command{
 	pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
+			//fmt.Println("Error: a database or cluster name is required for this command")
+			fmt.Println("Error: a database or cluster name is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUpgrade(args)
@@ -133,7 +135,7 @@ var deleteBackupCmd = &cobra.Command{
 	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
+			fmt.Println("Error: a database or cluster name is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteBackup(args)
@@ -153,9 +155,9 @@ var deleteUserCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
-			log.Error("a user name is required for this command")
+			fmt.Println("Error: a user name is required for this command")
 		} else if Selector == "" {
-			log.Error("a selector is required for this command")
+			fmt.Println("Error: a selector is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUser(args[0])
@@ -175,7 +177,7 @@ var deleteClusterCmd = &cobra.Command{
 	pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 && Selector == "" {
-			log.Error("a cluster name or selector is required for this command")
+			fmt.Println("Error: a cluster name or selector is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteCluster(args)
@@ -194,7 +196,7 @@ var deletePolicyCmd = &cobra.Command{
 	pgo delete policy mypolicy`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a policy name is required for this command")
+			fmt.Println("Error: a policy name is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args)
