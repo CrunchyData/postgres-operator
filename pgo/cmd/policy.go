@@ -40,11 +40,11 @@ pgo apply mypolicy1 --selector=someotherpolicy --dry-run
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("apply called")
 		if Selector == "" {
-			log.Error("selector is required to apply a policy")
+			fmt.Println("Error: selector is required to apply a policy")
 			return
 		}
 		if len(args) == 0 {
-			log.Error(`You must specify the name of a policy to apply.`)
+			fmt.Println("Error: You must specify the name of a policy to apply.")
 		} else {
 			applyPolicy(args)
 		}
@@ -63,12 +63,12 @@ func applyPolicy(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		fmt.Println("Error: policy name argument is required")
 		return
 	}
 
 	if Selector == "" {
-		log.Error("--selector flag is required")
+		fmt.Println("Error: --selector flag is required")
 		return
 	}
 
@@ -108,7 +108,7 @@ func applyPolicy(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -126,7 +126,7 @@ func applyPolicy(args []string) {
 			}
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -161,13 +161,13 @@ func showPolicy(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -192,7 +192,7 @@ func showPolicy(args []string) {
 func createPolicy(args []string) {
 
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		fmt.Println("Error: poliicy name argument is required")
 		return
 	}
 	var err error
@@ -211,7 +211,7 @@ func createPolicy(args []string) {
 		r.SQL, err = getPolicyString(PolicyFile)
 
 		if err != nil {
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			return
 		}
 	}
@@ -243,7 +243,7 @@ func createPolicy(args []string) {
 	var response msgs.CreatePolicyResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -251,7 +251,7 @@ func createPolicy(args []string) {
 	if response.Status.Code == msgs.Ok {
 		fmt.Println("created policy")
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -300,7 +300,7 @@ func deletePolicy(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -308,7 +308,7 @@ func deletePolicy(args []string) {
 		if response.Status.Code == msgs.Ok {
 			fmt.Println("policy deleted")
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 		}
 
 	}

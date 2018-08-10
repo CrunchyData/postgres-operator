@@ -39,10 +39,10 @@ var loadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("load called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to load or a selector flag.`)
+			fmt.Println(`Error: You must specify the cluster to load or a selector flag.`)
 		} else {
 			if LoadConfig == "" {
-				fmt.Println("You must specify the load-config ")
+				fmt.Println("Error: You must specify the load-config ")
 				return
 			}
 
@@ -71,7 +71,7 @@ func createLoad(args []string) {
 
 		_, err := labels.Parse(Selector)
 		if err != nil {
-			log.Error("could not parse selector flag")
+			fmt.Println("Error: could not parse selector flag")
 			return
 		}
 	}
@@ -113,15 +113,15 @@ func createLoad(args []string) {
 	var response msgs.LoadResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	//get the response
 	if response.Status.Code == msgs.Error {
-		log.Error(RED("error in loading..."))
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: error in loading...")
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

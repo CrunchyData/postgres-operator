@@ -78,7 +78,6 @@ pgo create cluster mycluster`,
 
 		if len(args) == 0 {
 			fmt.Println(`Error: a cluster name is required for this command`)
-			//log.Error("a cluster name is required for this command")
 		} else {
 			createCluster(args)
 		}
@@ -100,7 +99,6 @@ pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 		}
 
 		if len(args) == 0 {
-			//log.Error("a policy name is required for this command")
 			fmt.Println(`Error: a policy name is required for this command`)
 		} else {
 			createPolicy(args)
@@ -118,7 +116,6 @@ pgo create ingest myingest --ingest-config=./ingest.json`,
 		log.Debug("create ingest called ")
 
 		if len(args) == 0 {
-			//log.Error("an ingest name is required for this command")
 			fmt.Println(`Error: an ingest name is required for this command`)
 		} else {
 			if IngestConfig == "" {
@@ -139,13 +136,11 @@ pgo create user user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create user called ")
 		if Selector == "" {
-			//log.Error("--selector is required to create a user")
 			fmt.Println(`Error: --selector is required to create a user`)
 			return
 		}
 
 		if len(args) == 0 {
-			//log.Error("a user name is required for this command")
 			fmt.Println(`Error: a user name is required for this command`)
 		} else {
 			createUser(args)

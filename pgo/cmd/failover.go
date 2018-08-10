@@ -36,13 +36,13 @@ var failoverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("failover called")
 		if len(args) == 0 {
-			fmt.Println(`You must specify the cluster to failover.`)
+			fmt.Println(`Error: You must specify the cluster to failover.`)
 		} else {
 			if Query {
 				queryFailover(args)
 			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
-					fmt.Println(`--target is required for failover.`)
+					fmt.Println(`Error: --target is required for failover.`)
 					return
 				}
 				createFailover(args)
@@ -101,7 +101,7 @@ func createFailover(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -111,7 +111,7 @@ func createFailover(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -148,8 +148,7 @@ func queryFailover(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
+		fmt.Println("Error: ", err)
 		return
 	}
 
@@ -165,7 +164,7 @@ func queryFailover(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

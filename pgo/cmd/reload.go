@@ -39,7 +39,7 @@ var reloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("reload called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to reload or a selector flag.`)
+			fmt.Println(`Error: You must specify the cluster to reload or a selector flag.`)
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				reload(args)
@@ -96,7 +96,7 @@ func reload(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -106,7 +106,7 @@ func reload(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

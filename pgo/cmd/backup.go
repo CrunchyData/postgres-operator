@@ -93,13 +93,13 @@ func showBackup(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -168,7 +168,7 @@ func deleteBackup(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -182,7 +182,7 @@ func deleteBackup(args []string) {
 				fmt.Println("deleted backup " + response.Results[k])
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -229,7 +229,7 @@ func createBackup(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -239,7 +239,7 @@ func createBackup(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

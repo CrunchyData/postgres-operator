@@ -40,7 +40,7 @@ var dfCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("df called")
 		if Selector == "" && len(args) == 0 {
-			fmt.Println(`You must specify the name of the clusters to test.`)
+			fmt.Println(`Error: You must specify the name of the clusters to test.`)
 		} else {
 			showDf(args)
 		}
@@ -89,20 +89,21 @@ func showDf(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Print("Error: ")
+			fmt.Println(err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
 			if err != nil {
-				fmt.Println("error:", err)
+				fmt.Println("Error:", err)
 			}
 			fmt.Println(string(b))
 			return

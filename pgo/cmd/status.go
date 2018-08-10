@@ -77,20 +77,20 @@ func showStatus(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	if response.Status.Code != msgs.Ok {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
 	if OutputFormat == "json" {
 		b, err := json.MarshalIndent(response, "", "  ")
 		if err != nil {
-			fmt.Println("error:", err)
+			fmt.Println("Error: ", err)
 		}
 		fmt.Println(string(b))
 		return

@@ -63,7 +63,7 @@ func deleteCluster(args []string) {
 		var response msgs.DeleteClusterResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -73,7 +73,7 @@ func deleteCluster(args []string) {
 				fmt.Println(result)
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 		}
 
 	}
@@ -121,7 +121,7 @@ func showCluster(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -129,14 +129,14 @@ func showCluster(args []string) {
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
 			if err != nil {
-				fmt.Println("error:", err)
+				fmt.Println("Error: ", err)
 			}
 			fmt.Println(string(b))
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -205,7 +205,6 @@ func createCluster(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		//log.Error("cluster name argument is required")
 		fmt.Println("Error: cluster name argument is required")
 		return
 	}
@@ -262,7 +261,7 @@ func createCluster(args []string) {
 	var response msgs.CreateClusterResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -272,7 +271,7 @@ func createCluster(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

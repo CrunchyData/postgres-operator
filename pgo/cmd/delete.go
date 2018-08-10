@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"fmt"
-	//log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 )
@@ -97,7 +96,6 @@ var deleteIngestCmd = &cobra.Command{
 	pgo delete ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			//fmt.Println("Error: a ingest name is required for this command")
 			fmt.Println("Error: a ingest name is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
@@ -116,7 +114,6 @@ var deleteUpgradeCmd = &cobra.Command{
 	pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			//fmt.Println("Error: a database or cluster name is required for this command")
 			fmt.Println("Error: a database or cluster name is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {

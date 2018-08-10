@@ -42,14 +42,14 @@ type IngestConfigFile struct {
 func createIngest(args []string) {
 
 	if len(args) == 0 {
-		log.Error("ingest name argument is required")
+		fmt.Println("Error: ingest name argument is required")
 		return
 	}
 
 	r, err := parseRequest(IngestConfig, args[0])
 	if err != nil {
-		log.Error("problem parsing ingest config file")
-		log.Error(err)
+		fmt.Println("Error: problem parsing ingest config file")
+		fmt.Println("Error: ", err)
 		return
 	}
 
@@ -80,7 +80,7 @@ func createIngest(args []string) {
 	var response msgs.CreateIngestResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -88,7 +88,7 @@ func createIngest(args []string) {
 	if response.Status.Code == msgs.Ok {
 		fmt.Println("created ingest")
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: ", response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -123,7 +123,7 @@ func deleteIngest(args []string) {
 		var response msgs.DeleteIngestResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -137,7 +137,7 @@ func deleteIngest(args []string) {
 				fmt.Println("deleted ingest " + response.Results[k])
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: ", response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -175,13 +175,13 @@ func showIngest(args []string) {
 		var response msgs.ShowIngestResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code == msgs.Error {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -226,7 +226,7 @@ func parseRequest(configFilePath, name string) (msgs.CreateIngestRequest, error)
 
 	raw, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		return r, err
 	}
 

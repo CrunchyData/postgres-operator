@@ -44,11 +44,11 @@ pgo label --label=environment=prod --selector=status=final --dry-run
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("label called")
 		if len(args) == 0 && Selector == "" {
-			log.Error("selector or list of clusters is required to label a policy")
+			fmt.Println("Error: selector or list of clusters is required to label a policy")
 			return
 		}
 		if LabelCmdLabel == "" {
-			log.Error(`You must specify the label to apply.`)
+			fmt.Println("Error: You must specify the label to apply.")
 		} else {
 			labelClusters(args)
 		}
@@ -114,7 +114,7 @@ func labelClusters(clusters []string) {
 	var response msgs.LabelResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -124,7 +124,7 @@ func labelClusters(clusters []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
