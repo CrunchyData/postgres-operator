@@ -72,7 +72,7 @@ func GetCredentials() {
 
 	dir := UserHomeDir()
 	fullPath := dir + "/" + ".pgouser"
-	log.Debug("looking in " + fullPath + " for credentials")
+	log.Debug("Looking in " + fullPath + " for credentials...")
 	dat, err := ioutil.ReadFile(fullPath)
 	found := false
 	if err != nil {
@@ -101,12 +101,12 @@ func GetCredentials() {
 	if !found {
 		pgoUser := os.Getenv(pgouserenvvar)
 		if pgoUser == "" {
-			log.Error(pgouserenvvar + " env var not set")
+			log.Error(pgouserenvvar + " environment variable not set")
 			os.Exit(2)
 		}
 
 		fullPath = pgoUser
-		log.Debug(pgouserenvvar + " env var is being used at " + fullPath)
+		log.Debug(pgouserenvvar + " environment variable is being used at " + fullPath)
 		dat, err = ioutil.ReadFile(fullPath)
 		if err != nil {
 			log.Error(fullPath + " file not found")
@@ -120,14 +120,14 @@ func GetCredentials() {
 	caCertPath = os.Getenv("PGO_CA_CERT")
 
 	if caCertPath == "" {
-		log.Error("PGO_CA_CERT not specified")
+		log.Error("PGO_CA_CERT not specified.")
 		os.Exit(2)
 	}
 	//caCert, err := ioutil.ReadFile("/tmp/server.crt")
 	caCert, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
 		log.Error(err)
-		log.Error("could not read ca certificate")
+		log.Error("Could not read CA certificate.")
 		os.Exit(2)
 	}
 	caCertPool = x509.NewCertPool()
@@ -136,7 +136,7 @@ func GetCredentials() {
 	clientCertPath = os.Getenv("PGO_CLIENT_CERT")
 
 	if clientCertPath == "" {
-		log.Error("PGO_CLIENT_CERT not specified")
+		log.Error("PGO_CLIENT_CERT not specified.")
 		os.Exit(2)
 	}
 
@@ -149,7 +149,7 @@ func GetCredentials() {
 	clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
 
 	if clientKeyPath == "" {
-		log.Error("PGO_CLIENT_KEY not specified")
+		log.Error("PGO_CLIENT_KEY not specified.")
 		os.Exit(2)
 	}
 
@@ -162,11 +162,11 @@ func GetCredentials() {
 	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
 		log.Fatal(err)
-		log.Error("could not load example.com.crt and example.com.key")
+		log.Error("Could not load example.com.crt and example.com.key.")
 		os.Exit(2)
 	}
 
-	log.Debug("setting up httpclient with TLS")
+	log.Debug("Setting up httpclient with TLS...")
 	httpclient = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
