@@ -30,9 +30,5 @@ $CO_CMD $NS delete service postgres-operator
 
 $CO_CMD $NS delete deployment postgres-operator
 
-$CO_CMD $NS delete serviceaccount postgres-operator
-
-
-
 sleep 5
 

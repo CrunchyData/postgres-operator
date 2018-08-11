@@ -42,3 +42,16 @@ type ShowBackrestResponse struct {
 	Items []ShowBackrestDetail
 	Status
 }
+
+// RestoreResponse ...
+type RestoreResponse struct {
+	Results []string
+	Status
+}
+
+// RestoreRequest ...
+type RestoreRequest struct {
+	FromCluster string
+	ToCluster   string
+	RestoreType string
+}

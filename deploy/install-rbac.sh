@@ -27,12 +27,9 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
-# create the postgres-operator service account
-expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
-
 # create the cluster role and add to the service account
 expenv -f $DIR/cluster-rbac.yaml | $CO_CMD create -f -
 
-# create the role and add to the service account
+# create the service account, role, role-binding and add to the service account
 expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
 

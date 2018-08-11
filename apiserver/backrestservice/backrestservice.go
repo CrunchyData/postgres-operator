@@ -91,3 +91,30 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 
 }
+
+// RestoreHandler ...
+// pgo restore mycluster --to-cluster=restored
+func RestoreHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	log.Debug("backrestservice.RestoreHandler called")
+
+	var request msgs.RestoreRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err = apiserver.Authn(apiserver.RESTORE_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	resp := Restore(&request)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}

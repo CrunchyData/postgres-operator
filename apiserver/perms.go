@@ -23,6 +23,7 @@ import (
 	"strings"
 )
 
+const RESTORE_PERM = "Restore"
 const SHOW_SECRETS_PERM = "ShowSecrets"
 const RELOAD_PERM = "Reload"
 const SHOW_CONFIG_PERM = "ShowConfig"
@@ -93,6 +94,7 @@ func InitializePerms() {
 	PermMap[SHOW_INGEST_PERM] = "yes"
 	PermMap[DELETE_INGEST_PERM] = "yes"
 	PermMap[CREATE_FAILOVER_PERM] = "yes"
+	PermMap[RESTORE_PERM] = "yes"
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
 	readRoles()

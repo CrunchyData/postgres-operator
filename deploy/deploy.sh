@@ -18,17 +18,17 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $DIR/cleanup.sh
 
 # see if CRDs need to be created
-$CO_CMD get crd pgclusters.cr.client-go.k8s.io
-if [ $? -eq 1 ]; then
-	$CO_CMD create -f $DIR/crd.yaml
-fi
+#$CO_CMD get crd pgclusters.cr.client-go.k8s.io
+#if [ $? -eq 1 ]; then
+#	$CO_CMD create -f $DIR/crd.yaml
+#fi
 
 if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
-expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
-expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
+#expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
+#expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
 #expenv -f $DIR/rbac-role-only.yaml | $CO_CMD create -f -
 
 $CO_CMD $NS create secret generic apiserver-conf-secret \

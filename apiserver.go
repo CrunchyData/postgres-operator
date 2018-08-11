@@ -116,6 +116,7 @@ func main() {
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrestbackup", backrestservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrest/{name}", backrestservice.ShowBackrestHandler).Methods("GET")
+	r.HandleFunc("/restore", backrestservice.RestoreHandler).Methods("POST")
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")

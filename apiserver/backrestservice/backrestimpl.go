@@ -271,7 +271,6 @@ func getInfo(clusterName, podname string) (string, error) {
 
 	var err error
 
-
 	cmd := make([]string, 0)
 
 	log.Info("backrest info command requested")
@@ -292,4 +291,31 @@ func getInfo(clusterName, podname string) (string, error) {
 	log.Debug("backrest info ends")
 	return output, err
 
+}
+
+//  Restore ...
+// pgo restore mycluster --to-cluster=restored
+func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
+	resp := msgs.RestoreResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	log.Debug("Restore %v\n", request)
+
+	cluster := crv1.Pgcluster{}
+	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, apiserver.Namespace)
+	if !found {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
+		return resp
+	} else if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToCluster+" type="+request.RestoreType)
+
+	return resp
 }
