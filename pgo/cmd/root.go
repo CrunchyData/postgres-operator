@@ -67,7 +67,7 @@ func initConfig() {
 	if APIServerURL == "" {
 		APIServerURL = os.Getenv("CO_APISERVER_URL")
 		if APIServerURL == "" {
-			log.Error("CO_APISERVER_URL env var or --apiserver-url flag needs to be supplied")
+			fmt.Println("Error: CO_APISERVER_URL env var or --apiserver-url flag needs to be supplied")
 			os.Exit(-1)
 		}
 	}
@@ -78,7 +78,7 @@ func initConfig() {
 func generateBashCompletion() {
 	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
 	if err2 != nil {
-		log.Error(err2.Error())
+		fmt.Println("Error: ", err2.Error())
 	}
 	defer file.Close()
 	RootCmd.GenBashCompletion(file)

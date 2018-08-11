@@ -36,7 +36,7 @@ var backRestCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to perform an action on or a cluster selector flag.`)
+			fmt.Println(`Error: You must specify the cluster to perform an action on or a cluster selector flag.`)
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				createBackrestBackup(args)
@@ -93,7 +93,7 @@ func createBackrestBackup(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -103,7 +103,7 @@ func createBackrestBackup(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -145,13 +145,13 @@ func showBackrest(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 

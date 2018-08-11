@@ -119,7 +119,7 @@ func scaleCluster(args []string) {
 		var response msgs.ClusterScaleResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -129,7 +129,6 @@ func scaleCluster(args []string) {
 				fmt.Println(v)
 			}
 		} else {
-			//log.Error(RED(response.Status.Msg))
 			fmt.Println("Error: " + response.Status.Msg)
 		}
 
@@ -165,7 +164,7 @@ func queryCluster(args []string) {
 		var response msgs.ScaleQueryResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -182,7 +181,7 @@ func queryCluster(args []string) {
 				fmt.Println(v)
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 		}
 
 	}
@@ -216,7 +215,7 @@ func scaleDownCluster(clusterName string) {
 	var response msgs.ScaleDownResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -226,7 +225,7 @@ func scaleDownCluster(clusterName string) {
 			fmt.Println(v)
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 	}
 
 }

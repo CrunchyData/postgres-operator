@@ -72,7 +72,7 @@ func showVersion() {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -82,7 +82,7 @@ func showVersion() {
 	if response.Status.Code == msgs.Ok {
 		fmt.Println("apiserver version " + response.Version)
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

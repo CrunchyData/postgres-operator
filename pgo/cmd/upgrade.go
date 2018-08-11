@@ -44,11 +44,11 @@ var upgradeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("upgrade called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to upgrade or a selector value.`)
+			fmt.Println(`Error: You must specify the cluster to upgrade or a selector value.`)
 		} else {
 			err := validateCreateUpdate(args)
 			if err != nil {
-				log.Error(err.Error())
+				fmt.Println("Error: ", err.Error())
 			} else {
 				createUpgrade(args)
 			}
@@ -94,13 +94,13 @@ func showUpgrade(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -168,7 +168,7 @@ func deleteUpgrade(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -182,7 +182,7 @@ func deleteUpgrade(args []string) {
 				fmt.Println("deleted upgrade " + response.Results[k])
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -212,7 +212,7 @@ func createUpgrade(args []string) {
 	log.Debugf("createUpgrade called %v\n", args)
 
 	if len(args) == 0 && Selector == "" {
-		log.Error("cluster names or a selector flag is required")
+		fmt.Println("Error: cluster names or a selector flag is required")
 		os.Exit(2)
 	}
 
@@ -250,7 +250,7 @@ func createUpgrade(args []string) {
 	var response msgs.CreateUpgradeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -260,7 +260,7 @@ func createUpgrade(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

@@ -64,13 +64,13 @@ func printPVC(pvcName, pvcRoot string) {
 	var response msgs.ShowPVCResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	if response.Status.Code == msgs.Error {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		return
 	}
 

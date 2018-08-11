@@ -121,7 +121,7 @@ func userManager() {
 	var response msgs.UserResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -131,7 +131,7 @@ func userManager() {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -140,12 +140,12 @@ func userManager() {
 func createUser(args []string) {
 
 	if Selector == "" {
-		log.Error("selector flag is required")
+		fmt.Println("Error: selector flag is required")
 		return
 	}
 
 	if len(args) == 0 {
-		log.Error("user name argument is required")
+		fmt.Println("Error: user name argument is required")
 		return
 	}
 
@@ -184,7 +184,7 @@ func createUser(args []string) {
 	var response msgs.CreateUserResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -194,7 +194,7 @@ func createUser(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -230,7 +230,7 @@ func deleteUser(username string) {
 	var response msgs.DeleteUserResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -240,7 +240,7 @@ func deleteUser(username string) {
 			fmt.Println(result)
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 	}
 
 }
@@ -285,7 +285,7 @@ func showUser(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -293,14 +293,14 @@ func showUser(args []string) {
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
 			if err != nil {
-				fmt.Println("error:", err)
+				fmt.Println("Error: ", err)
 			}
 			fmt.Println(string(b))
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 		if len(response.Results) == 0 {
