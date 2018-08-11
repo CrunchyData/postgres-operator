@@ -37,6 +37,23 @@ type backrestJobTemplateFields struct {
 	COImageTag    string
 }
 
+type backrestRestoreConfigMapTemplateFields struct {
+	ToClusterName        string
+	FromClusterName      string
+	RestoreConfigMapName string
+}
+
+type backrestRestoreJobTemplateFields struct {
+	RestoreName          string
+	SecurityContext      string
+	ToClusterName        string
+	RestoreConfigMapName string
+	FromClusterPVCName   string
+	ToClusterPVCName     string
+	CCPImagePrefix       string
+	CCPImageTag          string
+}
+
 // Backrest ...
 func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
