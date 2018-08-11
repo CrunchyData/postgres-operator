@@ -301,7 +301,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debug("Restore %v\n", request)
+	log.Debugf("Restore %v\n", request)
 
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, apiserver.Namespace)

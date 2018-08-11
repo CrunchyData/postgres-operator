@@ -63,15 +63,20 @@ kubectl config view | grep namespace
 
 Run the makefile `setup` target to install depedencies and also
 create the operator CRD resources and RBAC rules:
-....
-make setup
-....
 
 [WARNING]
 ====
+The 'make setup' target is required to be run as a Kube user that has
+'cluster-admin' priviledges.  This is required to create cluster roles and
+clusterrole bindings, along with the CRDs used by the Operator.
+
 The namespace used by the operator is determined by the
 CO_NAMESPACE environment variable setting.
 ====
+
+....
+make setup
+....
 
 == Basic Installation
 

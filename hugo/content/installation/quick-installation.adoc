@@ -61,6 +61,7 @@ kubectl config use-context demo
 
 For Mac and Windows users, pre-built *pgo* binaries are included in
 the operator release tar ball:
+
  * pgo-mac is the Mac binary
  * pgo.exe is the Windows binary
  * pgo is the Linux binary
