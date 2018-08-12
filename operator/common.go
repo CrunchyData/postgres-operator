@@ -36,6 +36,8 @@ const jobPath = "/operator-conf/backup-job.json"
 const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
 const rmdatajobPath = "/operator-conf/rmdata-job.json"
 const backrestjobPath = "/operator-conf/backrest-job.json"
+const backrestRestorejobPath = "/operator-conf/backrest-restore-job.json"
+const backrestRestoreConfigMapPath = "/operator-conf/backrest-restore-configmap.json"
 const PVCPath = "/operator-conf/pvc.json"
 const PVCMatchLabelsPath = "/operator-conf/pvc-matchlabels.json"
 const PVCSCPath = "/operator-conf/pvc-storageclass.json"
@@ -57,6 +59,8 @@ var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
 var BackrestjobTemplate *template.Template
+var BackrestRestorejobTemplate *template.Template
+var BackrestRestoreConfigMapTemplate *template.Template
 var PVCTemplate *template.Template
 var PVCMatchLabelsTemplate *template.Template
 var PVCStorageClassTemplate *template.Template
@@ -98,6 +102,8 @@ func Initialize() {
 	IngestjobTemplate = util.LoadTemplate(ingestPath)
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
+	BackrestRestorejobTemplate = util.LoadTemplate(backrestRestorejobPath)
+	BackrestRestoreConfigMapTemplate = util.LoadTemplate(backrestRestoreConfigMapPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
 	PVCMatchLabelsTemplate = util.LoadTemplate(PVCMatchLabelsPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)

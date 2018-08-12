@@ -16,7 +16,7 @@ image::btn.png[Official Documentation]
 
 To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:https://crunchydata.github.io/postgres-operator/installation/[Installation] page.
 
-If you're seeking to upgrade your existing Operator installation, please visit the link:https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/[Upgrading the Operator] page.
+If you're seeking to upgrade your existing Operator installation, please visit the link:https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/[Upgrading the Operator] page.  Also read the Release Notes as to details on recent changes to the Operator.
 
 More design information is found on the link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works] page.
 

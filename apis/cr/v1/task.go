@@ -31,6 +31,7 @@ const PgtaskAddPolicies = "addpolicies"
 const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"
 const PgtaskBackrestInfo = "info"
+const PgtaskBackrestRestore = "restore"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {

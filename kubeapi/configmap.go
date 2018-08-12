@@ -23,6 +23,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// CreateConfigMap creates a ConfigMap
+func CreateConfigMap(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, namespace string) error {
+
+	result, err := clientset.CoreV1().ConfigMaps(namespace).Create(configMap)
+	if err != nil {
+		log.Error("error creating configMap " + err.Error() + " in namespace " + namespace)
+		return err
+	}
+
+	log.Debug("created ConfigMap " + result.Name)
+
+	return err
+
+}
+
 // GetConfigMap gets a ConfigMap by name
 func GetConfigMap(clientset *kubernetes.Clientset, name, namespace string) (*v1.ConfigMap, bool) {
 	cfg, err := clientset.CoreV1().ConfigMaps(namespace).Get(name, meta_v1.GetOptions{})

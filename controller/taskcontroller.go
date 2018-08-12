@@ -134,6 +134,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskBackrest:
 		log.Info("backrest task added")
 		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrestRestore:
+		log.Info("backrest restore task added")
+		backrestoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}

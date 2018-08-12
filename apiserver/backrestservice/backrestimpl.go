@@ -315,7 +315,44 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
+	//verify that the cluster we are restoring from has backrest enabled
+	if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"
+		return resp
+	}
+
+	//create a pgtask for the restore workflow
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		getRestoreParams(request),
+		apiserver.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToCluster+" type="+request.RestoreType)
 
 	return resp
+}
+
+func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
+	var newInstance *crv1.Pgtask
+
+	spec := crv1.PgtaskSpec{}
+	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToCluster
+	spec.TaskType = crv1.PgtaskBackrestRestore
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER] = request.ToCluster
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE] = request.RestoreType
+
+	newInstance = &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+		},
+		Spec: spec,
+	}
+	return newInstance
 }

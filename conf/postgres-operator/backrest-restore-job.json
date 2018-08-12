@@ -2,12 +2,12 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backrest-restore-{{.RestoreName}}"
+        "name": "{{.RestoreName}}"
     },
     "spec": {
         "template": {
             "metadata": {
-                "name": "backrest-restore-{{.RestoreName}}",
+                "name": "{{.RestoreName}}",
                 "labels": {
                     "pgo-backrest-restore": "true"
                 }
