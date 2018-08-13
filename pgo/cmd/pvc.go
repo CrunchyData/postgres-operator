@@ -48,13 +48,13 @@ func printPVC(pvcName, pvcRoot string) {
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)

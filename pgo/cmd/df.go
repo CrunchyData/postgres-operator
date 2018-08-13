@@ -68,8 +68,7 @@ func showDf(args []string) {
 
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
-			return
+			fmt.Println("Error: NewRequest: ", err)
 		}
 
 		req.Header.Set("Content-Type", "application/json")
@@ -77,7 +76,7 @@ func showDf(args []string) {
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)

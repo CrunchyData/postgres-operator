@@ -94,7 +94,7 @@ func createLoad(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -102,7 +102,7 @@ func createLoad(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)

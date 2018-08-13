@@ -86,7 +86,7 @@ func applyPolicy(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -94,7 +94,7 @@ func applyPolicy(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
@@ -140,7 +140,7 @@ func showPolicy(args []string) {
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 
@@ -149,7 +149,7 @@ func showPolicy(args []string) {
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -224,7 +224,7 @@ func createPolicy(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -232,7 +232,7 @@ func createPolicy(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
@@ -282,14 +282,14 @@ func deletePolicy(args []string) {
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
