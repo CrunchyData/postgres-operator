@@ -90,7 +90,7 @@ func labelClusters(clusters []string) {
 
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -98,7 +98,7 @@ func labelClusters(clusters []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)

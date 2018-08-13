@@ -42,10 +42,10 @@ var caCertPath, clientCertPath, clientKeyPath string
 func StatusCheck(resp *http.Response) {
 	log.Debugf("http status code is %d\n", resp.StatusCode)
 	if resp.StatusCode == 401 {
-		log.Fatalf("Authentication Failed: %d\n", resp.StatusCode)
+		fmt.Println("Error: Authentication Failed: %d\n", resp.StatusCode)
 		os.Exit(2)
 	} else if resp.StatusCode != 200 {
-		log.Fatalf("Invalid Status Code: %d\n", resp.StatusCode)
+		fmt.Println("Error: Invalid Status Code: %d\n", resp.StatusCode)
 		os.Exit(2)
 	}
 }
@@ -160,7 +160,6 @@ func GetCredentials() {
 	}
 	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
-		log.Fatal(err)
 		fmt.Println("Error: could not load example.com.crt and example.com.key")
 		os.Exit(2)
 	}

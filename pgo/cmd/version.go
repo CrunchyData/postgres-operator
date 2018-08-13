@@ -50,7 +50,7 @@ func showVersion() {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 
@@ -59,7 +59,7 @@ func showVersion() {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
