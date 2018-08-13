@@ -322,9 +322,29 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
+	pgtask := getRestoreParams(request)
+	existingTask := crv1.Pgtask{}
+
+	//delete any existing pgtask with the same name
+	found, err = kubeapi.Getpgtask(apiserver.RESTClient,
+		&existingTask,
+		pgtask.Name,
+		apiserver.Namespace)
+	if found {
+		log.Debug("deleting prior pgtask " + pgtask.Name)
+		err = kubeapi.Deletepgtask(apiserver.RESTClient,
+			pgtask.Name,
+			apiserver.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
 	//create a pgtask for the restore workflow
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		getRestoreParams(request),
+		pgtask,
 		apiserver.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error

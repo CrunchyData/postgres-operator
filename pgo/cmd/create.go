@@ -68,10 +68,9 @@ primary and a number of replica backends. For example:
 pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create cluster called")
-		if SecretFrom != "" || BackupPath != "" || BackupPVC != "" {
+		if BackupPath != "" || BackupPVC != "" {
 			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
 				fmt.Println(`Error: secret-from, backup-path, backup-pvc are all required to perform a restore`)
-				//log.Error("secret-from, backup-path, backup-pvc are all required to perform a restore")
 				return
 			}
 		}

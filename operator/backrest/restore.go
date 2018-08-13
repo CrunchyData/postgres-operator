@@ -65,11 +65,18 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	pgstoragespec.MatchLabels = storage.MatchLabels
 	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER]
 
+	//delete the pvc if it already exists
+	kubeapi.DeletePVC(clientset, pvcName, namespace)
+
+	//create the pvc
 	err := pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
+
+	//delete the configmap if it exists from a prior run
+	kubeapi.DeleteConfigMap(clientset, task.Spec.Name, namespace)
 
 	//create the backrest-restore configmap
 
@@ -78,6 +85,9 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		log.Error(err.Error())
 		return
 	}
+
+	//delete the job if it exists from a prior run
+	kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
 
 	//create the Job to run the backrest restore container
 
