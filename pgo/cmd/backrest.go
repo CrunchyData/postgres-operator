@@ -81,7 +81,7 @@ func createBackrestBackup(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		fmt.Println("Error: DO: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
