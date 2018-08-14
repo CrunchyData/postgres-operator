@@ -29,5 +29,7 @@ var DebugFlag bool
 var Selector string
 var DryRun bool
 
+var BackupType string
+
 var RED func(a ...interface{}) string
 var GREEN func(a ...interface{}) string

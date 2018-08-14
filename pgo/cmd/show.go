@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +37,7 @@ For example:
 	pgo show policy policy1
 	pgo show pvc mycluster
 	pgo show backup mycluster
-	pgo show backrest mycluster
+	pgo show backup mycluster --backup-type=pgbackrest
 	pgo show ingest myingest
 	pgo show config
 	pgo show user mycluster
@@ -48,7 +49,6 @@ Valid resource types include:
 	* cluster
 	* pvc
 	* policy
-	* backrest
 	* user
 	* ingest
 	* config
@@ -58,7 +58,6 @@ Valid resource types include:
 			switch args[0] {
 			case "cluster":
 			case "pvc":
-			case "backrest":
 			case "policy":
 			case "ingest":
 			case "user":
@@ -71,7 +70,6 @@ Valid resource types include:
 Valid resource types include:
 	* cluster
 	* pvc
-	* backrest
 	* policy
 	* ingest
 	* user
@@ -88,7 +86,6 @@ func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
-	ShowCmd.AddCommand(ShowBackrestCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowIngestCmd)
@@ -98,9 +95,9 @@ func init() {
 
 	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	ShowBackrestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
+	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type output to list, valid choices are pgbasebackup or pgbackrest")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
 
 }
@@ -175,7 +172,14 @@ var ShowBackupCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: cluster name(s) required for this command")
 		} else {
-			showBackup(args)
+			if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
+
+				showBackrest(args)
+			} else if BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
+				showBackup(args)
+			} else {
+				fmt.Println("Error: valid backup-type values are pgbasebackup and pgbackrest, pgbasebackup is the default if not supplied")
+			}
 		}
 	},
 }

@@ -6,7 +6,7 @@
 	"labels": {
         	"vendor": "crunchydata",
                	"pgrmdata": "true",
-		"pg-cluster": "{{.ClusterName}}",
+		"pg-cluster": "{{.ClusterName}}"
 	}
     },
     "spec": {

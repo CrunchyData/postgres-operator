@@ -870,6 +870,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		spec.TaskType = crv1.PgtaskDeleteData
 		spec.StorageSpec = storageSpec
 		//spec.Status = crv1.PgtaskStateCreated
+
 		spec.Parameters = element.PVCName
 
 		newInstance := &crv1.Pgtask{

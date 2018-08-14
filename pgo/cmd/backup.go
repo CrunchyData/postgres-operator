@@ -24,6 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/util"
+	labelutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -42,7 +43,13 @@ var backupCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				createBackup(args)
+				if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
+					createBackrestBackup(args)
+				} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
+					createBackup(args)
+				} else {
+					fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type")
+				}
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -56,6 +63,7 @@ func init() {
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default backup PVC ")
+	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform, default is pgbasebackup, pgbasebackup and pgbackrest are valid backup types")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
 	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
 
