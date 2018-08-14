@@ -54,4 +54,5 @@ type RestoreRequest struct {
 	FromCluster string
 	ToCluster   string
 	RestoreType string
+	PITRTarget  string
 }

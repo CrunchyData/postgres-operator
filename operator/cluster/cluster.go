@@ -121,17 +121,29 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	if cl.Spec.UserLabels["archive"] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-xlog", cl.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
+		pvcName := cl.Spec.Name + "-xlog"
+		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
+		if found {
+			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", pvcName)
+		} else {
+			_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, pvcName, cl.Spec.Name, namespace)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 		}
 	}
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-backrestrepo", cl.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
+		pvcName := cl.Spec.Name + "-backrestrepo"
+		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
+		if found {
+			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", pvcName)
+		} else {
+			_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, pvcName, cl.Spec.Name, namespace)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 		}
 	}
 

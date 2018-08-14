@@ -22,7 +22,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	labelutil "github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
 	"net/http"
 	"os"
@@ -30,12 +30,16 @@ import (
 
 var ToCluster string
 var RestoreType string
+var PITRTarget string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: "perform a restore",
 	Long: `RELOAD performs a pgbackrest restore to a new PG cluster, for example:
-		pgo restore mycluster --to-cluster=restoredcluster`,
+		pgo restore mycluster --to-cluster=restoredcluster
+		pgo restore mycluster --restore-type=delta --to-cluster=restoredcluster
+		pgo restore mycluster --restore-type=full --to-cluster=restoredcluster
+		pgo restore mycluster --restore-type=pitr --pitr-target="xxx" --to-cluster=restoredcluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("restore called")
 		if len(args) == 0 {
@@ -43,6 +47,18 @@ var restoreCmd = &cobra.Command{
 		} else {
 			if ToCluster == "" {
 				fmt.Println("Error: You must specify the --to-cluster flag.")
+				os.Exit(2)
+			}
+			if RestoreType != util.LABEL_BACKREST_RESTORE_FULL && RestoreType != util.LABEL_BACKREST_RESTORE_PITR && RestoreType != util.LABEL_BACKREST_RESTORE_DELTA {
+				fmt.Println("Error: You must specify --restore-type value of  " + util.LABEL_BACKREST_RESTORE_FULL + " or " + util.LABEL_BACKREST_RESTORE_PITR + " or " + util.LABEL_BACKREST_RESTORE_DELTA)
+				os.Exit(2)
+			}
+			if RestoreType == util.LABEL_BACKREST_RESTORE_PITR && PITRTarget == "" {
+				fmt.Println("Error: With --restore-type=pitr you mush specify a --pitr-target value which is a PG timestamp string")
+				os.Exit(2)
+			}
+			if RestoreType != util.LABEL_BACKREST_RESTORE_PITR && PITRTarget != "" {
+				fmt.Println("Error: --pitr-target is only valid when --restore-type=pitr")
 				os.Exit(2)
 			}
 			restore(args)
@@ -55,7 +71,8 @@ func init() {
 	RootCmd.AddCommand(restoreCmd)
 
 	restoreCmd.Flags().StringVarP(&ToCluster, "to-cluster", "", "", "The name of the new cluster to restore to ")
-	restoreCmd.Flags().StringVarP(&RestoreType, "restore-type", "", labelutil.LABEL_BACKREST_RESTORE_FULL, "default is full")
+	restoreCmd.Flags().StringVarP(&RestoreType, "restore-type", "", "full", "default is full, other values are delta and pitr")
+	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "the PITR target which is a PG timestamp such as '2018-08-13 11:25:42.582117-04'")
 
 }
 

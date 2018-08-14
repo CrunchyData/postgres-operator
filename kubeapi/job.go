@@ -90,7 +90,7 @@ func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) err
 	//delete the job
 	delOptions := meta_v1.DeleteOptions{}
 	var delProp meta_v1.DeletionPropagation
-	delProp = meta_v1.DeletePropagationBackground
+	delProp = meta_v1.DeletePropagationForeground
 	delOptions.PropagationPolicy = &delProp
 
 	lo := meta_v1.ListOptions{LabelSelector: selector}

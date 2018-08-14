@@ -94,11 +94,6 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			break
 		} else {
 			log.Debug("pgtask " + taskName + " was found so we recreate it")
-			if result.Spec.Status == "" {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = "pgtask " + taskName + " was not marked completed so we can not do another backup request."
-				return resp
-			}
 			//remove the existing pgtask
 			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, apiserver.Namespace)
 			if err != nil {
@@ -367,6 +362,7 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER] = request.ToCluster
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE] = request.RestoreType
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_PITR_TARGET] = request.PITRTarget
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

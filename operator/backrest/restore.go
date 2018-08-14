@@ -28,6 +28,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"os"
+	"time"
 )
 
 type backrestRestoreConfigMapTemplateFields struct {
@@ -43,6 +44,8 @@ type backrestRestoreJobTemplateFields struct {
 	RestoreConfigMapName string
 	FromClusterPVCName   string
 	ToClusterPVCName     string
+	DeltaEnvVar          string
+	PITRTargetEnvVar     string
 	CCPImagePrefix       string
 	CCPImageTag          string
 }
@@ -65,14 +68,20 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	pgstoragespec.MatchLabels = storage.MatchLabels
 	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER]
 
-	//delete the pvc if it already exists
-	kubeapi.DeletePVC(clientset, pvcName, namespace)
+	_, found, err := kubeapi.GetPVC(clientset, pvcName, namespace)
+	if !found {
+		log.Debug("pvc " + pvcName + " not found, will create as part of restore")
+		//delete the pvc if it already exists
+		//kubeapi.DeletePVC(clientset, pvcName, namespace)
 
-	//create the pvc
-	err := pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
-	if err != nil {
-		log.Error(err.Error())
-		return
+		//create the pvc
+		err := pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
+		if err != nil {
+			log.Error(err.Error())
+			return
+		}
+	} else {
+		log.Debug("pvc " + pvcName + " found, will NOT recreate as part of restore")
 	}
 
 	//delete the configmap if it exists from a prior run
@@ -88,6 +97,8 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	//delete the job if it exists from a prior run
 	kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
+	//add a small sleep, this is due to race condition in delete propagation
+	time.Sleep(time.Second * 3)
 
 	//create the Job to run the backrest restore container
 
@@ -98,6 +109,8 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		RestoreConfigMapName: task.Spec.Name,
 		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
+		DeltaEnvVar:          getDeltaEnvVar(task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE]),
+		PITRTargetEnvVar:     getPITREnvVar(task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_PITR_TARGET]),
 
 		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:    operator.Pgo.Cluster.CCPImageTag,
@@ -155,4 +168,20 @@ func createRestoreJobConfigMap(clientset *kubernetes.Clientset, toName, fromName
 	}
 	return err
 
+}
+func getDeltaEnvVar(restoretype string) string {
+	if restoretype == util.LABEL_BACKREST_RESTORE_DELTA {
+		return "{ \"name\": \"DELTA\"" + "},"
+	}
+	return ""
+}
+func getPITREnvVar(restoretype, pitrtarget string) string {
+	if restoretype == util.LABEL_BACKREST_RESTORE_PITR {
+		tmp := "{"
+		tmp = tmp + "\"name\":" + " \"PITR_TARGET\","
+		tmp = tmp + "\"value\":" + " \"" + pitrtarget + "\""
+		tmp = tmp + "},"
+		return tmp
+	}
+	return ""
 }

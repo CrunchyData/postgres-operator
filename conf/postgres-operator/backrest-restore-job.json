@@ -2,14 +2,19 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "{{.RestoreName}}"
+        "name": "{{.RestoreName}}",
+        "labels": {
+        	"pgo-backrest-restore": "true",
+        	"vendor": "crunchydata"
+        }
     },
     "spec": {
         "template": {
             "metadata": {
                 "name": "{{.RestoreName}}",
                 "labels": {
-                    "pgo-backrest-restore": "true"
+                    "pgo-backrest-restore": "true",
+        	"vendor": "crunchydata"
                 }
             },
             "spec": {
@@ -25,6 +30,7 @@
                                 "name": "STANZA",
                                 "value": "db"
                             },
+                    {{.DeltaEnvVar}}
                             {
                                 "name": "PG_HOSTNAME",
 				"value": "{{.ToClusterName}}"
