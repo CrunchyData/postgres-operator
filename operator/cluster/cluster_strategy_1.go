@@ -51,6 +51,7 @@ type containerResourcesTemplateFields struct {
 
 type collectTemplateFields struct {
 	Name            string
+	JobName         string
 	PrimaryPassword string
 	CCPImageTag     string
 	CCPImagePrefix  string
@@ -437,6 +438,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 
 		collectTemplateFields := collectTemplateFields{}
 		collectTemplateFields.Name = spec.Name
+		collectTemplateFields.JobName = spec.Name
 		collectTemplateFields.PrimaryPassword = PrimaryPassword
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
 		collectTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix

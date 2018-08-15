@@ -18,9 +18,9 @@
                 }
             },
             "spec": {
-                "securityContext": {
+            
                     {{.SecurityContext}}
-                },
+           
                 "containers": [
                     {
                         "name": "backrest-restore",

@@ -274,6 +274,8 @@ pgo restore withbr --to-cluster=restored --restore-type=backrest-restore-full
 pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest
 ....
 
+The pgbackrest *backrestrepo* PVCs are created using the *pgo.yaml* BackupStorage setting.  Typically this will be a RWX file system which will allow you to restore from this PVC without having to shutdown the currently attached PG cluster.
+
 
 === pgo scale
 

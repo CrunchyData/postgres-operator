@@ -93,17 +93,16 @@ func (c *PgoConfig) Validate() error {
 	log.Info("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
-		return errors.New("invalid PrimaryStorage setting")
+		return errors.New("PrimaryStorage setting required")
 	}
 	_, ok = c.Storage[c.BackupStorage]
 	if !ok {
-		return errors.New("invalid BackupStorage setting")
+		return errors.New("BackupStorage setting required")
 	}
 	_, ok = c.Storage[c.ReplicaStorage]
 	if !ok {
-		return errors.New("invalid ReplicaStorage setting")
+		return errors.New("ReplicaStorage setting required")
 	}
-
 	if c.Pgo.LSPVCTemplate == "" {
 		return errors.New("Pgo.LSPVCTemplate is required")
 	}

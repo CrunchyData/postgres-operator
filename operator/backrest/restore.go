@@ -104,7 +104,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	jobFields := backrestRestoreJobTemplateFields{
 		RestoreName:          task.Spec.Name,
-		SecurityContext:      "",
+		SecurityContext:      util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
 		RestoreConfigMapName: task.Spec.Name,
 		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],

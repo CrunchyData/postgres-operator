@@ -33,7 +33,15 @@ previous operator versions:
 	....
 	kubectl label deploy mycluster-xxxx primary=false 
 	....
-
+ * the collect.json template now specifies a pgmonitor credential that
+   also must match the PGMONITOR_PASSWORD environment variable which was
+   added into the cluster-deployment-1.json template.  These changes
+   were required to support crunchy-collect (2.1.0) changes that were
+   introduced.  Users should upgrade to crunchy-collect:centos7-10.5-2.1.0
+   to use this feature.  If you do not want to upgrade to this new
+   metrics collector, you will need to retain and reuse the prior version
+   of collect.json used by the Operator and make sure you deploy that 
+   version.
 
 {{%expand "Upgrading from v2.6 to v3.1" %}}
 
