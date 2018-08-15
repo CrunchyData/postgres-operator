@@ -225,7 +225,7 @@ looks like this -
 ....
 BasicAuth:  true
 Cluster:
-  CCPImageTag:  centos7-10.4-2.1.0
+  CCPImageTag:  centos7-10.5-2.1.0
   Metrics:  false
   Badger:  false
   Port:  5432
