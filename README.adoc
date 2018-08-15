@@ -1,4 +1,9 @@
-image::crunchy_logo.png[Crunchy Data Logo]
+++++
+<h1 align="center">Crunchy Data PostgreSQL Operator</h1>
+<p align="center">
+  <img width="150" src="crunchy_logo.png?raw=true"/>
+</p>
+++++
 
 Latest Release: v3.1, {docdate}
 
