@@ -2,7 +2,7 @@ FROM centos:7
 
 LABEL  Vendor="Crunchy Data Solutions" \
 	PostgresVersion="10" \
-	PostgresFullVersion="10.4" \
+	PostgresFullVersion="10.5" \
 	Version="7.5" \
 	Release="3.2.0" \
 	summary="crunchy data's postgres operator" \
