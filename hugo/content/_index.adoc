@@ -4,7 +4,7 @@ date: 2018-04-23T14:52:09-07:00
 draft: false
 ---
 
-image::crunchy_logo.png[Crunchy Data Logo,width="25%",height="25%", align="center"]
+image::crunchy_logo.png[Crunchy Data Logo,width="12%",height="12%", align="center"]
 
 Latest Release: v3.1, {docdate}
 
