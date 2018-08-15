@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//"time"
 )
 
 const backrestCommand = "pgbackrest"
@@ -90,9 +91,11 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 		if !found {
 			log.Debug("backrest backup pgtask " + taskName + " not found so we create it")
 		} else if err != nil {
+
 			resp.Results = append(resp.Results, "error getting pgtask for "+taskName)
 			break
 		} else {
+
 			log.Debug("pgtask " + taskName + " was found so we recreate it")
 			//remove the existing pgtask
 			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, apiserver.Namespace)
@@ -103,7 +106,9 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			}
 
 			//remove any previous backup job
-			removeBackupJob(taskName)
+
+			kubeapi.DeleteJobs(apiserver.Clientset, util.LABEL_PG_CLUSTER+"="+clusterName+","+util.LABEL_BACKREST+"=true", apiserver.Namespace)
+			//time.Sleep(time.Seconds * 2)
 		}
 
 		//get pod name from cluster
@@ -151,16 +156,8 @@ func getBackupParams(clusterName, taskName, action, podName, containerName strin
 	return newInstance
 }
 
-func removeBackupJob(name string) {
+func removeBackupJob(clusterName string) {
 
-	_, found := kubeapi.GetJob(apiserver.Clientset, name, apiserver.Namespace)
-	if !found {
-		return
-	}
-
-	log.Debugf("found backrest backup job %s will remove\n", name)
-
-	kubeapi.DeleteJob(apiserver.Clientset, name, apiserver.Namespace)
 }
 
 func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
