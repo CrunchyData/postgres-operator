@@ -140,17 +140,6 @@ pgo create cluster testcluster --service-type=LoadBalancer
 If not set, the ServiceType from *pgo.yaml* will be used, currently
 the default is ClusterIP.
 
-To specify that you want a pgbackrest volume to be created for
-a given cluster, use the *--backrest* command flag:
-
-....
-pgo create cluster withbkrest --backrest
-....
-
-If the *pgo.yaml* Cluster.Backrest setting is enabled, that value
-will be used as the default value for all created clusters.
-
-
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -245,27 +234,46 @@ to make sure this is what you want to do.  If you don't want to
 be prompted you can enter the *--no-prompt* command line flag.
 
 
-=== pgo backrest
+=== pgbackrest
+
+The pgbackrest support started in Operator release 3.2, this is
+alpha support at this point and is intended to give users a preview
+of this feature support.  The *backrestrepo* PVC, used by pgbackrest,  has to be created on a RWX file system type in this release.
 
 pgbackrest is a more advanced backup and restore capability
 exposed by the Operator.  Read the following link for a full
-description of pgbackrest.
+description of pgbackrest. https://pgbackrest.org/
 
-The pgbackrest support is enabled by a user specifying
-the *--backrest* command flag or specifying a default Backrest
-setting within the *pgo.yaml* configuration.  Setting this
-value will cause the Operator to create a PVC specifically
+The pgbackrest support is enabled in a PG cluster by a user specifying
+the *--pgbackrest* command flag.  To enable this feature for all
+PG clusters when created, you can specify a *pgbackrest* setting
+within the *pgo.yaml* configuration.  
+
+To create a PG cluster that enables pgbackrest specifically for that cluster, you would enter:
+....
+pgo create cluster mycluster --pgbackrest
+....
+
+Setting this value will cause the Operator to create a PVC specifically
 dedicated for holding pgbackrest backups.
 
 You can create a pgbackrest backup using the following command:
 ....
-pgo backrest mycluster
+pgo backup mycluster --backup-type=pgbackrest
 ....
 
 You can obtain pgbackrest information using the following command:
 ....
-pgo backrest mycluster --info
+pgo show backup mycluster --backup-type=pgbackrest
 ....
+
+You can restore from an existing cluster into a newly created PVC
+using the following command:
+....
+pgo restore withbr --to-cluster=restored --restore-type=backrest-restore-full
+pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest
+....
+
 
 === pgo scale
 

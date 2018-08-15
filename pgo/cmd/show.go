@@ -184,22 +184,6 @@ var ShowBackupCmd = &cobra.Command{
 	},
 }
 
-// showBackrestCmd represents the show backrest command
-var ShowBackrestCmd = &cobra.Command{
-	Use:   "backrest",
-	Short: "Show backrest information",
-	Long: `Show backrest information. For example:
-
-				pgo show backrest mycluser`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: cluster name(s) required for this command")
-		} else {
-			showBackrest(args)
-		}
-	},
-}
-
 // ShowClusterCmd represents the show cluster command
 var ShowClusterCmd = &cobra.Command{
 	Use:   "cluster",
