@@ -36,7 +36,8 @@ var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "perform a Backup",
 	Long: `BACKUP performs a Backup, for example:
-				                        pgo backup mycluster`,
+
+  pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
@@ -48,7 +49,7 @@ var backupCmd = &cobra.Command{
 				} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
 					createBackup(args)
 				} else {
-					fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type")
+					fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
 				}
 			} else {
 				fmt.Println("Aborting...")
@@ -61,11 +62,11 @@ var backupCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
-	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default backup PVC ")
-	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform, default is pgbasebackup, pgbasebackup and pgbackrest are valid backup types")
-	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
-	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
+	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
+	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
+	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
 
 }
 
@@ -112,7 +113,7 @@ func showBackup(args []string) {
 		}
 
 		if len(response.BackupList.Items) == 0 {
-			fmt.Println("no backups found")
+			fmt.Println("No backups found.")
 			return
 		}
 
@@ -183,11 +184,11 @@ func deleteBackup(args []string) {
 
 		if response.Status.Code == msgs.Ok {
 			if len(response.Results) == 0 {
-				fmt.Println("no backups found")
+				fmt.Println("No backups found.")
 				return
 			}
 			for k := range response.Results {
-				fmt.Println("deleted backup " + response.Results[k])
+				fmt.Println("Deleted backup " + response.Results[k])
 			}
 		} else {
 			fmt.Println("Error: " + response.Status.Msg)
@@ -252,7 +253,7 @@ func createBackup(args []string) {
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no clusters found")
+		fmt.Println("No clusters found.")
 		return
 	}
 

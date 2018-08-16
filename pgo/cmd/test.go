@@ -27,19 +27,17 @@ import (
 
 var testCmd = &cobra.Command{
 	Use:   "test",
-	Short: "test a Cluster",
-	Long: `TEST allows you to test a new Cluster
-				For example:
+	Short: "Test cluster connectivity",
+	Long: `TEST allows you to test the connectivity for a cluster. For example:
 
-				pgo test mycluster
-				.`,
+	pgo test mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("test called")
 		if Selector == "" && len(args) == 0 {
 			fmt.Println(`Error: You must specify the name of the clusters to test.`)
 		} else {
 			if OutputFormat != "" && OutputFormat != "json" {
-				fmt.Println("Error: only json is supported for output flag value")
+				fmt.Println("Error: Only JSON is currently supported for the --output flag value.")
 				os.Exit(2)
 			}
 			showTest(args)
@@ -49,8 +47,8 @@ var testCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(testCmd)
-	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
+	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
 }
 
 func showTest(args []string) {
@@ -110,7 +108,7 @@ func showTest(args []string) {
 		}
 
 		if len(response.Results) == 0 {
-			fmt.Println("nothing found")
+			fmt.Println("Nothing found.")
 			return
 		}
 
@@ -120,7 +118,7 @@ func showTest(args []string) {
 			for _, v := range result.Items {
 				fmt.Printf("%s%s is ", TreeBranch, v.PsqlString)
 				if v.Working {
-					fmt.Printf("%s\n", GREEN("working"))
+					fmt.Printf("%s\n", GREEN("Working"))
 				} else {
 					fmt.Printf("%s\n", RED("NOT working"))
 				}

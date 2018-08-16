@@ -292,7 +292,7 @@ without having to shutdown the currently attached PostgreSQL cluster.
 
 === Delete Cluster
 
-The *delete cluster* command will by default delete all associated components of
+The `delete cluster` command will by default delete all associated components of
 the selected cluster, but will not delete the data or the backups unless specified.
 
 ==== Syntax
@@ -523,6 +523,9 @@ The selector to use for cluster filtering.
 
 |`--pvc-name` |N/A |String |
 The PVC name to use for the backup instead of the default.
+
+|`--backup-type` |N/A |String |
+The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.
 
 |`--storage-config` |N/A |String |
 The name of a Storage config in pgo.yaml to use for the cluster storage.

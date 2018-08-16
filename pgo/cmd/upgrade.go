@@ -38,9 +38,10 @@ var UpgradeType string
 
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "perform an upgrade",
-	Long: `UPGRADE performs an upgrade, for example:
-				                pgo upgrade mycluster`,
+	Short: "Perform an upgrade",
+	Long: `UPGRADE performs an upgrade on a PostgreSQL cluster. For example:
+
+  pgo upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("upgrade called")
 		if len(args) == 0 && Selector == "" {
@@ -59,8 +60,10 @@ var upgradeCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(upgradeCmd)
-	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
-	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
+
+	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type. Accepted values are either 'minor' or 'major'.")
+	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+
 }
 
 func showUpgrade(args []string) {
@@ -105,7 +108,7 @@ func showUpgrade(args []string) {
 		}
 
 		if len(response.UpgradeList.Items) == 0 {
-			fmt.Println("no upgrades found")
+			fmt.Println("no upgrades found.")
 			return
 		}
 
@@ -175,7 +178,7 @@ func deleteUpgrade(args []string) {
 
 		if response.Status.Code == msgs.Ok {
 			if len(response.Results) == 0 {
-				fmt.Println("no upgrades found")
+				fmt.Println("no upgrades found.")
 				return
 			}
 			for k := range response.Results {
@@ -203,7 +206,7 @@ func validateCreateUpdate(args []string) error {
 	}
 	if UpgradeType == MajorUpgrade || UpgradeType == MinorUpgrade {
 	} else {
-		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
+		return errors.New("The --upgrade-type flag requires either a value of major or minor. If not specified, minor is the default value.")
 	}
 	return err
 }
@@ -212,7 +215,7 @@ func createUpgrade(args []string) {
 	log.Debugf("createUpgrade called %v\n", args)
 
 	if len(args) == 0 && Selector == "" {
-		fmt.Println("Error: cluster names or a selector flag is required")
+		fmt.Println("Error: Cluster name(s) or a selector flag is required.")
 		os.Exit(2)
 	}
 

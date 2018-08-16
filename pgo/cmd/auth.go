@@ -107,7 +107,7 @@ func GetCredentials() {
 		}
 
 		fullPath = pgoUser
-		log.Debug(pgouserenvvar + " env var is being used at " + fullPath)
+		log.Debug(pgouserenvvar + " environment variable is being used at " + fullPath)
 		dat, err = ioutil.ReadFile(fullPath)
 		if err != nil {
 			fmt.Println("Error: " + fullPath + " file not found")

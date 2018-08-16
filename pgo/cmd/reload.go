@@ -33,13 +33,14 @@ var ConfigMapName string
 
 var reloadCmd = &cobra.Command{
 	Use:   "reload",
-	Short: "perform a reload",
-	Long: `RELOAD performs a PG reload on a set of clusters, for example:
-		pgo reload mycluster`,
+	Short: "Perform a cluster reload",
+	Long: `RELOAD performs a PostgreSQL reload on a cluster or set of clusters. For example:
+
+	pgo reload mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("reload called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`Error: You must specify the cluster to reload or a selector flag.`)
+			fmt.Println(`Error: You must specify the cluster to reload or specify a selector flag.`)
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				reload(args)
@@ -54,8 +55,8 @@ var reloadCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(reloadCmd)
 
-	reloadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	reloadCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a reload command")
+	reloadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	reloadCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 
 }
 
@@ -111,7 +112,7 @@ func reload(args []string) {
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no clusters found")
+		fmt.Println("No clusters found.")
 		return
 	}
 

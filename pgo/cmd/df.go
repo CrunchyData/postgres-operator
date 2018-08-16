@@ -30,13 +30,11 @@ const CAPMAX = 50
 
 var dfCmd = &cobra.Command{
 	Use:   "df",
-	Short: "df on Clusters",
-	Long: `df displays disk status of Clusters
-				For example:
+	Short: "Display disk space for clusters",
+	Long: `Displays the disk status for PostgreSQL clusters. For example:
 
-				pgo df mycluster
-				pgo df --selector=env=research
-				.`,
+	pgo df mycluster
+	pgo df --selector=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("df called")
 		if Selector == "" && len(args) == 0 {
@@ -49,7 +47,9 @@ var dfCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(dfCmd)
-	dfCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	
+	dfCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+
 }
 
 func showDf(args []string) {
@@ -109,7 +109,7 @@ func showDf(args []string) {
 		}
 
 		if len(response.Results) == 0 {
-			fmt.Println("nothing found")
+			fmt.Println("Nothing found.")
 			return
 		}
 

@@ -30,9 +30,10 @@ import (
 
 var backRestCmd = &cobra.Command{
 	Use:   "backrest",
-	Short: "perform a pgbackrest action",
-	Long: `BACKREST performs a pgbackrest action, for example:
-		pgo backrest mycluster`,
+	Short: "Perform a pgBackRest action",
+	Long: `BACKREST performs a pgBackRest action. For example:
+
+	pgo backrest mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
@@ -51,8 +52,8 @@ var backRestCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(backRestCmd)
 
-	backRestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	backRestCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a pgbackrest command")
+	backRestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	backRestCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 
 }
 
@@ -108,7 +109,7 @@ func createBackrestBackup(args []string) {
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no clusters found")
+		fmt.Println("No clusters found.")
 		return
 	}
 
@@ -156,7 +157,7 @@ func showBackrest(args []string) {
 		}
 
 		if len(response.Items) == 0 {
-			fmt.Println("no backrest found")
+			fmt.Println("No pgBackRest found.")
 			return
 		}
 

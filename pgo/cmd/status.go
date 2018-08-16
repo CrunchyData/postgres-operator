@@ -28,12 +28,10 @@ import (
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "status Clusters",
-	Long: `status displays namespace wide info on Clusters
-				For example:
+	Short: "Display PostgreSQL cluster status",
+	Long: `Display namespace wide information for PostgreSQL clusters.	For example:
 
-				pgo status 
-				.`,
+	pgo status`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("status called")
 		showStatus(args)
@@ -44,7 +42,9 @@ var Summary bool
 
 func init() {
 	RootCmd.AddCommand(statusCmd)
-	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
+	
+	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
+
 }
 
 func showStatus(args []string) {
