@@ -140,6 +140,14 @@ pgo create cluster testcluster --service-type=LoadBalancer
 If not set, the ServiceType from *pgo.yaml* will be used, currently
 the default is ClusterIP.
 
+You can add a *pgbadger* sidecar into the Postgres pod using:
+....
+pgo create cluster withbadger --pgbadger
+....
+
+This command flag adds the crunchy-pgbadger container into the database
+pod, you can then access pgbadger reports at port :10000/api/badgergenerate
+
 === pgo backup
 
 You can start a backup job for a cluster as follows:
@@ -270,7 +278,7 @@ pgo show backup mycluster --backup-type=pgbackrest
 You can restore from an existing cluster into a newly created PVC
 using the following command:
 ....
-pgo restore withbr --to-cluster=restored --restore-type=backrest-restore-full
+pgo restore withbr --to-cluster=restored 
 pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest
 ....
 
