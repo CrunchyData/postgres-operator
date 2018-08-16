@@ -2,6 +2,7 @@
 title: "Contributing"
 date: 2018-04-29T13:22:59-07:00
 draft: false
+weight: 40
 ---
 
 Latest Release: 3.2.0 {docdate}
