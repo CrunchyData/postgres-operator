@@ -24,6 +24,12 @@
     "targetPort": 9100,
     "nodePort": 0
     }, {
+    "name": "pgbadger",
+    "protocol": "TCP",
+    "port": 10000,
+    "targetPort": 10000,
+    "nodePort": 0
+    }, {
     "name": "postgres-exporter",
     "protocol": "TCP",
     "port": 9187,
@@ -34,7 +40,7 @@
         "selector": {
             "name": "{{.Name}}"
         },
-        "type": "ClusterIP",
+        "type": "{{.ServiceType}}",
         "sessionAffinity": "None"
     }
 }

@@ -34,15 +34,16 @@ var LoadConfig string
 var loadCmd = &cobra.Command{
 	Use:   "load",
 	Short: "Perform a data load",
-	Long: `LOAD performs a load, for example:
-			pgo load --load-config=./load.json --selector=project=xray`,
+	Long: `LOAD performs data loading for a cluster. For example:
+
+	pgo load --load-config=./load.json --selector=project=xray`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("load called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`You must specify the cluster to load or a selector flag.`)
 		} else {
 			if LoadConfig == "" {
-				fmt.Println("You must specify the load-config ")
+				fmt.Println("You must specify the load-config.")
 				return
 			}
 
@@ -55,23 +56,23 @@ var loadCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(loadCmd)
 
-	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
-	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated")
+	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job.")
+	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated.")
 }
 
 func createLoad(args []string) {
 	if PoliciesFlag != "" {
 		log.Debug("policies=" + PoliciesFlag)
 	} else {
-		log.Debug("policies is blank")
+		log.Debug("The policies argument is blank.")
 	}
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
 
 		_, err := labels.Parse(Selector)
 		if err != nil {
-			log.Error("could not parse selector flag")
+			log.Error("Could not parse selector flag.")
 			return
 		}
 	}
@@ -82,7 +83,7 @@ func createLoad(args []string) {
 	request.Selector = Selector
 	request.Policies = PoliciesFlag
 	request.Args = args
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	//make the request
 
@@ -120,7 +121,7 @@ func createLoad(args []string) {
 
 	//get the response
 	if response.Status.Code == msgs.Error {
-		log.Error(RED("error in loading..."))
+		log.Error(RED("Error in loading..."))
 		log.Error(RED(response.Status.Msg))
 		os.Exit(2)
 	}

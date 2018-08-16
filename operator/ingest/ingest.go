@@ -63,8 +63,8 @@ func CreateIngest(namespace string, clientset *kubernetes.Clientset, client *res
 		DBTable:         i.Spec.DBTable,
 		DBColumn:        i.Spec.DBColumn,
 		MaxJobs:         i.Spec.MaxJobs,
-		COImageTag:      operator.COImageTag,
-		COImagePrefix:   operator.COImagePrefix,
+		COImageTag:      operator.Pgo.Pgo.COImageTag,
+		COImagePrefix:   operator.Pgo.Pgo.COImagePrefix,
 	}
 
 	var doc2 bytes.Buffer

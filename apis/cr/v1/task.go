@@ -28,6 +28,10 @@ const PgtaskFailover = "failover"
 const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
 
+const PgtaskBackrest = "backrest"
+const PgtaskBackrestBackup = "backup"
+const PgtaskBackrestInfo = "info"
+
 // PgtaskSpec ...
 type PgtaskSpec struct {
 	Name        string        `json:"name"`

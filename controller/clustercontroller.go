@@ -56,7 +56,6 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgclusterClient,
 		crv1.PgclusterResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -121,7 +120,6 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgcluster)
 	newExample := newObj.(*crv1.Pgcluster)
 	log.Debug("pgcluster " + newExample.ObjectMeta.Name + " updated ")
 

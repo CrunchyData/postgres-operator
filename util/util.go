@@ -234,7 +234,6 @@ func GetLabelsFromMap(labels map[string]string) string {
 	mapLen := len(labels)
 	i := 1
 	for key, value := range labels {
-		//fmt.Println("Key:", key, "Value:", value)
 		if i < mapLen {
 			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
 		} else {
@@ -340,4 +339,24 @@ func RandStringBytesRmndr(n int) string {
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)
+}
+
+// CreateBackrestPVCSnippet
+func CreateBackrestPVCSnippet(backRestPVCName string) string {
+
+	var sc bytes.Buffer
+
+	if backRestPVCName != "" {
+		sc.WriteString("\"persistentVolumeClaim\": {\n")
+		sc.WriteString("\t \"claimName\": \"" + backRestPVCName + "\"")
+		sc.WriteString("\n")
+	} else {
+		sc.WriteString("\"emptyDir\": {")
+		sc.WriteString("\"medium\": \"Memory\"")
+		sc.WriteString("\n")
+	}
+
+	sc.WriteString("}")
+
+	return sc.String()
 }

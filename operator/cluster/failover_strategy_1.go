@@ -19,26 +19,18 @@ package cluster
 */
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	jsonpatch "github.com/evanphx/json-patch"
-	//remotecommandconsts "k8s.io/apimachinery/pkg/util/remotecommand"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
-	//kerrors "k8s.io/apimachinery/pkg/api/errors"
+	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//"text/template"
 )
 
 // AddCluster ...
@@ -50,12 +42,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
 
-	//if target == "" {
-	//	log.Debug("failover target not set, will use best estimate")
-	//	pod, target, err = util.GetBestTarget(clientset, clusterName, namespace)
-	//} else {
 	pod, err = util.GetPod(clientset, target, namespace)
-	//}
 	if err != nil {
 		log.Error(err)
 		return err
@@ -72,10 +59,6 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	//trigger the failover on the replica
 	err = promote(pod, clientset, client, namespace, restconfig)
-	//if err != nil {
-	//log.Error(err)
-	//return err
-	//}
 	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
 	//drain the deployment, this will shutdown the database pod
@@ -87,10 +70,6 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	//relabel the deployment with primary labels
 	err = relabel(pod, clientset, namespace, clusterName, target)
-	//if err != nil {
-	//log.Error(err)
-	////return err
-	//}
 	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling deployment...pod "+pod.Name+"was the failover target...failover completed")
 
 	//enable the deployment by making replicas equal to 1
@@ -145,7 +124,6 @@ func promote(
 	pod *v1.Pod,
 	clientset *kubernetes.Clientset,
 	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
-	var err error
 
 	//get the target pod that matches the replica-name=target
 
@@ -153,7 +131,8 @@ func promote(
 	command[0] = "/opt/cpm/bin/promote.sh"
 
 	log.Debug("running Exec with namespace=[" + namespace + "] podname=[" + pod.Name + "] container name=[" + pod.Spec.Containers[0].Name + "]")
-	err = util.Exec(restconfig, namespace, pod.Name, pod.Spec.Containers[0].Name, command)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command, pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
+	log.Debug("stdout=[" + stdout + "] stderr=[" + stderr + "]")
 	if err != nil {
 		log.Error(err)
 	}
@@ -184,12 +163,6 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 	if err != nil {
 		log.Error(err)
 	}
-	/**
-	err = updatePodLabels(namespace, clientset, pod, target, newLabels)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
 
 	return err
 }
@@ -291,74 +264,6 @@ func updatePodLabels(namespace string, clientset *kubernetes.Clientset, pod *v1.
 
 }
 
-func promoteExperimental(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace, target string, restconfig *rest.Config) error {
-	var err error
-	var execOut bytes.Buffer
-	var execErr bytes.Buffer
-
-	//get the target pod that matches the replica-name=target
-
-	var pod v1.Pod
-	var pods *v1.PodList
-	lo := meta_v1.ListOptions{LabelSelector: "replica-name=" + target}
-	pods, err = clientset.CoreV1().Pods(namespace).List(lo)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	if len(pods.Items) != 1 {
-		return errors.New("could not determine which pod to failover to")
-	}
-
-	pod = pods.Items[0]
-	found := validateDBContainer(&pod)
-	if !found {
-		log.Error("could not find a database container in the target pod, can not failover")
-		return errors.New("could not find database container in target pod")
-	}
-
-	command := make([]string, 1)
-	command[0] = "/opt/cpm/bin/promote.sh"
-
-	req := client.Post().
-		Resource("pods").
-		Name(pod.Name).
-		Namespace(namespace).
-		SubResource("exec")
-	req.VersionedParams(&v1.PodExecOptions{
-		Container: "database",
-		Command:   command,
-		Stdout:    true,
-		Stderr:    true,
-	}, scheme.ParameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(restconfig, "POST", req.URL())
-	if err != nil {
-		log.Error("failed to init executor: %v", err)
-		return err
-	}
-
-	err = exec.Stream(remotecommand.StreamOptions{
-		//SupportedProtocols: remotecommandconsts.SupportedStreamingProtocols,
-		Stdout: &execOut,
-		Stderr: &execErr,
-	})
-
-	if err != nil {
-		log.Error("could not execute: %v", err)
-		return err
-	}
-
-	if execErr.Len() > 0 {
-		log.Error("promote error stderr: %v", execErr.String())
-		return errors.New("promote error stderr: " + execErr.String())
-	}
-
-	log.Debug("promote output [" + execOut.String() + "]")
-
-	return err
-
-}
 func validateDBContainer(pod *v1.Pod) bool {
 	found := false
 

@@ -43,7 +43,7 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.CreateFailoverResponse
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp = msgs.CreateFailoverResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
@@ -77,7 +77,7 @@ func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.QueryFailoverResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.QueryFailoverResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {

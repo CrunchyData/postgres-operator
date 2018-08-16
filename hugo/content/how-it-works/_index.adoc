@@ -6,7 +6,11 @@ weight: 30
 ---
 
 :toc:
+<<<<<<< HEAD
 Latest Release: v3.1, {docdate}
+=======
+Latest Release: 3.2.0 {docdate}
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 
 == Reference Architecture
 

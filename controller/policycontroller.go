@@ -54,7 +54,6 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgpolicyClient,
 		crv1.PgpolicyResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 

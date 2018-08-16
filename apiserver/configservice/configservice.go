@@ -43,7 +43,7 @@ func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	var resp msgs.ShowConfigResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ShowConfigResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {

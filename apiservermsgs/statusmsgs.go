@@ -17,6 +17,16 @@ limitations under the License.
 
 import ()
 
+type NodeInfo struct {
+	Name   string
+	Status string
+	Labels map[string]string
+}
+type KeyValue struct {
+	Key   string
+	Value int
+}
+
 // this aggregated status comes from the pgo-status container
 // by means of a volume mounted json blob it generates
 type StatusDetail struct {
@@ -27,6 +37,8 @@ type StatusDetail struct {
 	VolumeCap         string
 	DbTags            map[string]int
 	NotReady          []string
+	Nodes             []NodeInfo
+	Labels            []KeyValue
 }
 
 // ShowClusterResponse ...

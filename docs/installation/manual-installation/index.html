@@ -240,7 +240,11 @@
 </ul>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>Latest Release: v3.1, 2018-08-01</p>
+=======
+<p>Latest Release: 3.2.0 2018-08-10</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="sect1">
 <h2 id="_project_structure">Project Structure</h2>
@@ -252,12 +256,20 @@
 <div class="content">
 <pre>export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.1
-export CO_BASEOS=centos7</pre>
+export CO_BASEOS=centos7
+export CO_VERSION=3.2
+export CO_IMAGE_TAG=centos7-$CO_VERSION
+export CO_BASEOS=centos7
+export PATH=$PATH:$GOBIN
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -274,8 +286,7 @@ variable should be:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
-mkdir -p $GOPATH/src/github.com/crunchydata/</pre>
+<pre>mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -286,7 +297,7 @@ mkdir -p $GOPATH/src/github.com/crunchydata/</pre>
 <pre>cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.1</pre>
+git checkout 3.2.0</pre>
 </div>
 </div>
 </div>
@@ -317,6 +328,15 @@ kubectl config set-context $(kubectl config current-context) --namespace=demo
 kubectl config view | grep namespace</pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Run the makefile <code>setup</code> target to install depedencies and also
+create the operator CRD resources and RBAC rules:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>make setup</pre>
+</div>
+</div>
 <div class="admonitionblock warning">
 <table>
 <tr>
@@ -331,15 +351,6 @@ CO_NAMESPACE environment variable setting.</p>
 </td>
 </tr>
 </table>
-</div>
-<div class="paragraph">
-<p>Permissions are granted to the Operator by means of a Service Account called <strong>postgres-operator</strong>.  That service account is added to the Operator deployment.</p>
-</div>
-<div class="paragraph">
-<p>The postgres-operator service account is granted priviledges using a role binding <strong>pgo-role-binding</strong>.</p>
-</div>
-<div class="paragraph">
-<p>See <a href="https://kubernetes.io/docs/admin/authorization/rbac/">here</a> for more details on how to enable RBAC roles and modify the scope of the permissions to suit your needs.</p>
 </div>
 </div>
 </div>
@@ -365,8 +376,7 @@ sudo chmod 777 /data</pre>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>go get github.com/blang/expenv
-$COROOT/pv/create-pv.sh</pre>
+<pre>$COROOT/pv/create-pv.sh</pre>
 </div>
 </div>
 </div>
@@ -406,14 +416,14 @@ $COROOT/pv/create-pv.sh</pre>
 <p><a href="https://github.com/CrunchyData/postgres-operator/releases">Github Releases</a></p>
 </li>
 <li>
-<p>extract (e.g. tar xvzf postgres-operator.3.1.tar.gz)</p>
+<p>extract (e.g. tar xvzf postgres-operator.3.2.tar.gz)</p>
 </li>
 </ul>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>cd $HOME
-tar xvzf ./postgres-operator.3.1.tar.gz</pre>
+tar xvzf ./postgres-operator.3.2.tar.gz</pre>
 </div>
 </div>
 <div class="ulist">
@@ -431,6 +441,22 @@ tar xvzf ./postgres-operator.3.1.tar.gz</pre>
 <pre>cd $COROOT
 make deployoperator</pre>
 </div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>If you make configuration file changes you will need to re-run the
+<code>deployoperator</code> makefile target to re-deploy the Operator with the
+new configuration files.</p>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </div>
 
@@ -488,6 +514,9 @@ Container Platform environments.</p>
 <li>
 <p><a href="https://hub.docker.com/r/crunchydata/pgo-load/">file load Container</a></p>
 </li>
+<li>
+<p><a href="https://hub.docker.com/r/crunchydata/pgo-backrest/">pgbackrest interface Container</a></p>
+</li>
 </ul>
 </div>
 <div class="paragraph">
@@ -504,15 +533,7 @@ Container Platform environments.</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>Before compiling the Operator, it&#8217;s necessary to install the <strong>Mercurial</strong> requirement.</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>sudo yum -y install mercurial</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then, install the project library dependencies. The godep dependency manager is used for this purpose. Then, compile the PostgreSQL Operator using the Makefile and deploy the operator to your Kubernetes cluster.</p>
+<p>The following makefile targets will pull down source dependec</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -555,7 +576,11 @@ make deployoperator</pre>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with, and create Kube RBAC resources</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">bounce</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">delete the Operator pod only, this is a way to upgrade the operator without a full redeploy, as the operator runs in a Deployment, a new pod will be created to replace the old one, a simple way to bounce the pod</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">deployoperator</p></td>
@@ -604,6 +629,10 @@ make deployoperator</pre>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">rmdataimage</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">build the data deletion Docker image</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">pgo-backrest-image</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">build the pgbackrest interface Docker image</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">release</p></td>

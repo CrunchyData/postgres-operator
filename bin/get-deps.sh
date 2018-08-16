@@ -15,7 +15,7 @@
 
 echo "Getting project dependencies..."
 
-sudo yum -y install mercurial
+sudo yum -y install mercurial golang
 
 go get github.com/tools/godep
 go get github.com/blang/expenv

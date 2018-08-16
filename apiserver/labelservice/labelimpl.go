@@ -87,7 +87,6 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 				return resp
 			}
 
-			//log.Debug(result.Spec.Name)
 			items = append(items, result)
 		}
 		clusterList.Items = items
@@ -126,7 +125,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 
 		for _, d := range deployments.Items {
 			//update Deployment with the label
-			//log.Debug(TreeBranch + "deployment : " + d.ObjectMeta.Name)
 			if !DryRun {
 				err := updateLabels(&d, items[i].Spec.Name, newLabels)
 				if err != nil {

@@ -53,13 +53,11 @@ var ManagedUser bool
 var userCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Manage users",
-	Long: `USER allows you to manage users and passwords across a set of clusters
-For example:
+	Long: `USER allows you to manage users and passwords across a cluster or set of clusters. For example:
 
-pgo user --selector=name=mycluster --update-passwords
-pgo user --expired=7 --selector=name=mycluster
-pgo user --change-password=bob --selector=name=mycluster
-.`,
+	pgo user --selector=name=mycluster --update-passwords
+	pgo user --expired=7 --selector=name=mycluster
+	pgo user --change-password=bob --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager()
@@ -69,15 +67,13 @@ pgo user --change-password=bob --selector=name=mycluster
 func init() {
 	RootCmd.AddCommand(userCmd)
 
-	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
-	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
-	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
-	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
-	//userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
-	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
-	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
-
+	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "Shows passwords that will expire in X days.")
+	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "Sets passwords for new users to X days.")
+	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "Updates the password for a user on selective clusters.")
+	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "Grants the user access to a database.")
+	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "Performs password updating on expired passwords.")
+	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "Creates a user with secrets that can be managed by the Operator.")
 }
 
 // userManager ...
@@ -93,7 +89,7 @@ func userManager() {
 	request.Expired = Expired
 	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -141,12 +137,12 @@ func userManager() {
 func createUser(args []string) {
 
 	if Selector == "" {
-		log.Error("selector flag is required")
+		log.Error("The --selector flag is required.")
 		return
 	}
 
 	if len(args) == 0 {
-		log.Error("user name argument is required")
+		log.Error("The user name argument is required.")
 		return
 	}
 
@@ -156,7 +152,7 @@ func createUser(args []string) {
 	r.ManagedUser = ManagedUser
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/users"
@@ -205,11 +201,11 @@ func createUser(args []string) {
 func deleteUser(username string) {
 	log.Debugf("deleteUser called %v\n", username)
 
-	log.Debug("deleting user " + username + " selector " + Selector)
+	log.Debug("Deleting user " + username + " selector " + Selector)
 
-	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + ClientVersion
+	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 
-	log.Debug("delete users called [" + url + "]")
+	log.Debug("Delete users called [" + url + "]")
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -242,6 +238,91 @@ func deleteUser(username string) {
 		}
 	} else {
 		log.Error(RED(response.Status.Msg))
+	}
+
+}
+
+// showUsers ...
+func showUser(args []string) {
+
+	log.Debugf("showUser called %v\n", args)
+
+	log.Debug("selector is " + Selector)
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
+	for _, v := range args {
+
+		url := APIServerURL + "/users/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
+
+		log.Debug("show users called [" + url + "]")
+
+		action := "GET"
+		req, err := http.NewRequest(action, url, nil)
+
+		if err != nil {
+			log.Fatal("NewRequest: ", err)
+			return
+		}
+
+		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+		resp, err := httpclient.Do(req)
+		if err != nil {
+			log.Fatal("Do: ", err)
+			return
+		}
+		log.Debugf("%v\n", resp)
+		StatusCheck(resp)
+
+		defer resp.Body.Close()
+
+		var response msgs.ShowUserResponse
+
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			log.Printf("%v\n", resp.Body)
+			log.Error(err)
+			log.Println(err)
+			return
+		}
+
+		if OutputFormat == "json" {
+			b, err := json.MarshalIndent(response, "", "  ")
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+			fmt.Println(string(b))
+			return
+		}
+
+		if response.Status.Code != msgs.Ok {
+			log.Error(RED(response.Status.Msg))
+			os.Exit(2)
+		}
+		if len(response.Results) == 0 {
+			fmt.Println("no clusters found")
+			return
+		}
+
+		for _, clusterDetail := range response.Results {
+			printUsers(&clusterDetail)
+		}
+
+	}
+
+}
+
+// printUsers
+func printUsers(detail *msgs.ShowUserDetail) {
+	fmt.Println("")
+	fmt.Println("cluster : " + detail.Cluster.Spec.Name)
+
+	for _, s := range detail.Secrets {
+		fmt.Println("")
+		fmt.Println("secret : " + s.Name)
+		fmt.Println(TreeBranch + "username: " + s.Username)
+		fmt.Println(TreeTrunk + "password: " + s.Password)
 	}
 
 }

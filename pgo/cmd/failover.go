@@ -31,8 +31,9 @@ import (
 var failoverCmd = &cobra.Command{
 	Use:   "failover",
 	Short: "Perform a failover",
-	Long: `Performs a failover, for example:
-		pgo failover mycluster`,
+	Long: `Performs a manual failover on a PostgreSQL cluster. For example:
+
+	pgo failover mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("failover called")
 		if len(args) == 0 {
@@ -42,7 +43,7 @@ var failoverCmd = &cobra.Command{
 				queryFailover(args)
 			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
-					fmt.Println(`--target is required for failover.`)
+					fmt.Println(`The --target command flag is required for failover.`)
 					return
 				}
 				createFailover(args)
@@ -54,15 +55,12 @@ var failoverCmd = &cobra.Command{
 	},
 }
 
-var Query bool
-var Target string
-
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "--query prints the list of failover candidates")
-	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a failover command")
-	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "--target is the replica target which the failover will occur on.")
+	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
+	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
 
 }
 
@@ -73,7 +71,7 @@ func createFailover(args []string) {
 	request := new(msgs.CreateFailoverRequest)
 	request.ClusterName = args[0]
 	request.Target = Target
-	request.ClientVersion = ClientVersion
+	request.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -84,7 +82,6 @@ func createFailover(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		//log.Info("here after new req")
 		log.Fatal("NewRequest: ", err)
 		return
 	}
@@ -125,7 +122,7 @@ func createFailover(args []string) {
 func queryFailover(args []string) {
 	log.Debugf("queryFailover called %v\n", args)
 
-	url := APIServerURL + "/failover/" + args[0] + "?version=" + ClientVersion
+	url := APIServerURL + "/failover/" + args[0] + "?version=" + msgs.PGO_VERSION
 
 	log.Debug("query failover called [" + url + "]")
 

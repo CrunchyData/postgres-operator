@@ -245,7 +245,11 @@
 </ul>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>Latest Release: v3.1, 2018-08-01</p>
+=======
+<p>Latest Release: 3.2.0 2018-08-10</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -279,18 +283,23 @@
 <div class="sect2">
 <h3 id="_kube_rbac">Kube RBAC</h3>
 <div class="paragraph">
-<p>The <strong>apiserver</strong> and <strong>postgres-operator</strong> containers access
-Kubernetes resources and therefore require privileges for successful
-Kubernetes interactions. The <code>rbac.yaml</code> file includes a set of roles
-and bindings that allow the operator to work. These are fine grained
-controls that you can adjust to your local Kubernetes cluster depending
-on specific security requirements. The <code>rbac.yaml</code> file is executed when
-the operator is first deployed to the Kubernetes cluster.</p>
+<p>The <code>cluster-rbac.yaml</code> file is executed a single time when installing
+the Operator.  This file, executed by a Kube user with cluster-admin
+priviledges, creates the following resources:
+ * Customer Resource Definitions
+ * grants <code>get</code> access to Kube Node resources to the postgres-operator
+   service account.</p>
 </div>
 <div class="paragraph">
-<p>Permissions are granted to the Operator by means of a Service Account called
-<strong>postgres-operator</strong>. That service account is added through the Operator
-deployment.</p>
+<p>The <code>rbac.yaml</code> file is also executed a single time when installing
+the Operator.  This file creates Role scoped privledges which are
+granted to the postgres-operator service account.  The postgres-operator
+service account is used by the <strong>apiserver</strong> and <strong>postgres-operator</strong> containers
+to access Kubernetes resources.</p>
+</div>
+<div class="paragraph">
+<p>Both of these RBAC files are executed by the <code>deploy/install-rbac.sh</code>
+script.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -477,6 +486,10 @@ permissions -</p>
 </thead>
 <tbody>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowSecrets</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show user</strong></p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">ShowCluster</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show cluster</strong></p></td>
 </tr>
@@ -610,7 +623,9 @@ looks like this -</p>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">BasicAuth:  true
 Cluster:
-  CCPImageTag:  centos7-10.4-1.8.3
+  CCPImageTag:  centos7-10.4-2.1.0
+  Metrics:  false
+  Badger:  false
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -620,6 +635,7 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ArchiveTimeout:  60
+  ServiceType:  ClusterIP
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1
@@ -650,7 +666,6 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   Audit:  false
-  Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
@@ -698,6 +713,14 @@ Pgo:
 <td class="tableblock halign-left valign-top"><p class="tableblock">the number of cluster replicas to create for newly created clusters</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Metrics</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Badger</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Policies</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog</p></td>
 </tr>
@@ -716,6 +739,18 @@ Pgo:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.ArchiveTimeout</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.ServiceType</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Backrest</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Autofail</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>PrimaryStorage</code></p></td>
@@ -743,7 +778,7 @@ Pgo:
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.StorageType</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">supported values are either <strong>dynamic</strong>, <strong>existing</strong>, <strong>create</strong>, or <strong>emptydir</strong>, if not supplied, <strong>emptydir</strong> is used</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">supported values are either <strong>dynamic</strong>,  <strong>create</strong>,  if not supplied, <strong>create</strong> is used</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.Fsgroup</code></p></td>
@@ -752,6 +787,10 @@ Pgo:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.SupplementalGroups</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Storage.storage1.MatchLabels</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, if set, will cause the PVC to add a <strong>matchlabels</strong> selector in order to match a PV, only useful when the StorageType is <strong>create</strong>, when specified a label of <strong>name=clustername</strong> is added to the PVC as a match criteria</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultContainerResource</code></p></td>
@@ -809,17 +848,13 @@ Pgo:
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.Audit</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">boolean, if set to true will cause each apiserver call to be logged with an <strong>audit</strong> marking</p></td>
 </tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Pgo.Metrics</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics</p></td>
-</tr>
 </tbody>
 </table>
 </div>
 <div class="sect3">
 <h4 id="_storage_configurations">Storage Configurations</h4>
 <div class="paragraph">
-<p>You can now define n-number of Storage configurations within the <strong>pgo.yaml</strong> file. Those Storage configurations follow these conventions -</p>
+<p>You can define n-number of Storage configurations within the <strong>pgo.yaml</strong> file. Those Storage configurations follow these conventions -</p>
 </div>
 <div class="ulist">
 <ul>
@@ -866,13 +901,7 @@ non-valid configuration is found, the apiserver will abort.  These Storage value
 <p><strong>dynamic</strong> - this will allow for dynamic provisioning of storage using a StorageClass.</p>
 </li>
 <li>
-<p><strong>existing</strong> - This setting allows you to use a PVC that already exists.  For example, if you have a NFS volume mounted to a PVC, all PostgreSQL clusters can write to that NFS volume mount via a common PVC. When set, the Name setting is used for the PVC.</p>
-</li>
-<li>
 <p><strong>create</strong> - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of <strong>clustername</strong>.  When set, the <strong>Size</strong>, <strong>AccessMode</strong> settings are used in constructing the new PVC.</p>
-</li>
-<li>
-<p><strong>emptydir</strong> - If a StorageType value is not defined, <strong>emptydir</strong> is used by default.  This is a volume type that’s created when a pod is assigned to a node and exists as long as that pod remains running on that node; it is deleted as soon as the pod is manually deleted or removed from the node.</p>
 </li>
 </ul>
 </div>
@@ -897,15 +926,34 @@ for users to use as a starting configuration -</p>
 <div class="ulist">
 <ul>
 <li>
-<p><code>pgo.yaml.emptydir</code> - this configuration specifies <strong>emptydir</strong> storage to be used for databases</p>
-</li>
-<li>
 <p><code>pgo.yaml.nfs</code> - this configuration specifies <strong>create</strong> storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database</p>
 </li>
 <li>
 <p><code>pgo.yaml.dynamic</code> - this configuration specifies <strong>dynamic</strong> storage to be used, namely a <strong>storageclass</strong> that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>Note, when Storage Type is <strong>create</strong>, you can specify a storage
+configuration setting of <strong>MatchLabels</strong>, when set, this will cause a
+<strong>selector</strong> of <strong>name=clustername</strong> to be added into the PVC, this will
+let you target specific PV(s) to be matched for this cluster. Note, if a
+PV does not match the claim request, then the cluster will not start.  Users
+that want to use this feature have to place labels on their PV resources
+as part of PG cluster creation before creating the PG cluster.  For
+example, users would add a label like this to their PV before they
+create the PG cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl label pv somepv name=myclustername</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If you do not specify <strong>MatchLabels</strong> in the storage configuration, then
+no match filter is added and any available PV will be used to satisfy
+the PVC request.  This option does not apply to <strong>dynamic</strong> storage
+types.</p>
 </div>
 </div>
 <div class="sect3">

@@ -30,13 +30,11 @@ const CAPMAX = 50
 
 var dfCmd = &cobra.Command{
 	Use:   "df",
-	Short: "df on Clusters",
-	Long: `df displays disk status of Clusters
-				For example:
+	Short: "	Long: `Display disk status of Clusters",
+	Long: `Display the disk status of Clusters using the df command. For example:
 
-				pgo df mycluster
-				pgo df --selector=env=research
-				.`,
+	pgo df mycluster
+	pgo df --selector=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("df called")
 		if Selector == "" && len(args) == 0 {
@@ -49,21 +47,21 @@ var dfCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(dfCmd)
-	dfCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
+	dfCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 }
 
 func showDf(args []string) {
 
 	log.Debugf("showDf called %v\n", args)
 
-	log.Debug("selector is " + Selector)
+	log.Debug("The selector is " + Selector)
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
 		args[0] = "all"
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/df/" + arg + "?selector=" + Selector + "&version=" + ClientVersion
+		url := APIServerURL + "/df/" + arg + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 		log.Debug(url)
 
 		req, err := http.NewRequest("GET", url, nil)
@@ -109,7 +107,7 @@ func showDf(args []string) {
 		}
 
 		if len(response.Results) == 0 {
-			fmt.Println("nothing found")
+			fmt.Println("Nothing found.")
 			return
 		}
 

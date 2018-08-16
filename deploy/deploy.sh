@@ -46,9 +46,20 @@ $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
+	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
+	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
-expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
+if [ "$CO_UI" = "true" ]; then
+$CO_CMD $NS create configmap pgo-ui-conf \
+	--from-file=$COROOT/conf/pgo-ui/config.json \
+        --from-file=$COROOT/conf/apiserver/server.crt \
+        --from-file=$COROOT/conf/apiserver/server.key 
 
-$CO_CMD $NS create -f $DIR/service.json
+	expenv -f $DIR/deployment-with-ui.json | $CO_CMD $NS create -f -
+	$CO_CMD $NS create -f $DIR/service-with-ui.json
+else
+	expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
+	$CO_CMD $NS create -f $DIR/service.json
+fi
 

@@ -1,21 +1,21 @@
 FROM centos:7
 
 LABEL name="crunchydata/pgo-load" \
-        vendor="crunchy data" \
-      	PostgresVersion="9.6" \
-      	PostgresFullVersion="9.6.9" \
-        version="7.3" \
-        release="3.1" \
-        build-date="2018-06-14" \
-        url="https://crunchydata.com" \
-        summary="loads a CSV or json file into a database" \
-        description="executed by the operator, loads a CSV or json file." \
-        io.k8s.description="pgo-load container" \
-        io.k8s.display-name="Crunchy pgo-load container" \
-        io.openshift.expose-services="" \
-        io.openshift.tags="crunchy,database"
+    vendor="crunchy data" \
+	PostgresVersion="10" \
+	PostgresFullVersion="10.4" \
+	Version="7.5" \
+	Release="3.2.0" \
+	build-date="2018-08-02" \
+    url="https://crunchydata.com" \
+    summary="loads a CSV or json file into a database" \
+    description="executed by the operator, loads a CSV or json file." \
+    io.k8s.description="pgo-load container" \
+    io.k8s.display-name="Crunchy pgo-load container" \
+    io.openshift.expose-services="" \
+    io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
 
 # PGDG Postgres repo
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}

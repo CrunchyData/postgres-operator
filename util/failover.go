@@ -35,7 +35,6 @@ func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace strin
 
 	//get all the deployments that are replicas for this clustername
 
-	//selector=primary=false,pg-cluster=clusterName
 	var pods *v1.PodList
 
 	selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_PRIMARY + "=false"

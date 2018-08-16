@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"errors"
 	"flag"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/config"
@@ -38,7 +39,6 @@ import (
 // pgouserPath ...
 const pgouserPath = "/config/pgouser"
 
-const VERSION = "3.1"
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
 // RESTClient ...
@@ -46,9 +46,10 @@ var RESTClient *rest.RESTClient
 
 // Clientset ...
 var Clientset *kubernetes.Clientset
+var RESTConfig *rest.Config
 
 // MetricsFlag if set to true will cause crunchy-collect to be added into new clusters
-var MetricsFlag bool
+var MetricsFlag, BadgerFlag bool
 
 // AuditFlag if set to true will cause auditing to occur in the logs
 var AuditFlag bool
@@ -77,9 +78,6 @@ type CredentialDetail struct {
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
 
-//var StorageMap map[string]interface{}
-//var ContainerResourcesMap map[string]interface{}
-
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
@@ -99,17 +97,22 @@ func Initialize() {
 	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
+	BadgerFlag = false
 	AuditFlag = false
 
 	log.Infoln("apiserver starts")
 
 	getCredentials()
-
 	initConfig()
 
 	initTemplates()
 
 	InitializePerms()
+
+	err := validateCredentials()
+	if err != nil {
+		os.Exit(2)
+	}
 
 	ConnectToKube()
 
@@ -121,18 +124,19 @@ func ConnectToKube() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
-	config, err := buildConfig(*kubeconfig)
+	var err error
+	RESTConfig, err = buildConfig(*kubeconfig)
 	if err != nil {
 		panic(err)
 	}
 
-	Clientset, err = kubernetes.NewForConfig(config)
+	Clientset, err = kubernetes.NewForConfig(RESTConfig)
 	if err != nil {
 		panic(err)
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	RESTClient, _, err = crdclient.NewClient(config)
+	RESTClient, _, err = crdclient.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -154,9 +158,13 @@ func initConfig() {
 		log.Info("audit flag is set to true")
 	}
 
-	MetricsFlag = Pgo.Pgo.Metrics
+	MetricsFlag = Pgo.Cluster.Metrics
 	if MetricsFlag {
 		log.Info("metrics flag is set to true")
+	}
+	BadgerFlag = Pgo.Cluster.Badger
+	if BadgerFlag {
+		log.Info("badger flag is set to true")
 	}
 
 	tmp := Pgo.BasicAuth
@@ -225,7 +233,25 @@ func getCredentials() {
 		creds := parseUserMap(v)
 		Credentials[creds.Username] = creds
 	}
+	log.Infof("pgouser has %v", Credentials)
 
+}
+
+// validateCredentials ...
+func validateCredentials() error {
+
+	var err error
+
+	for _, v := range Credentials {
+		log.Infof("validating user %s and role %s ", v.Username, v.Role)
+		if RoleMap[v.Role] == nil {
+			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
+			log.Error(errMsg)
+			return errors.New(errMsg)
+		}
+	}
+
+	return err
 }
 
 func BasicAuthCheck(username, password string) bool {
@@ -297,7 +323,6 @@ func validContainerResourcesSettings() bool {
 	log.Infof("ContainerResources has %d definitions \n", len(Pgo.ContainerResources))
 
 	//validate any Container Resources in pgo.yaml for correct formats
-	//log.Infof("%v is the ContainerResourcesMap\n", ContainerResourcesMap)
 	if !IsValidContainerResourceValues() {
 		return false
 	}

@@ -44,17 +44,11 @@ func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 		switch event.Type {
 		case watch.Added:
-			//deployment := event.Object.(*v1beta1.Deployment)
-			//log.Infof("deployment processpolicy added=%s\n", dep.Name)
 		case watch.Deleted:
-			//deployment := event.Object.(*v1beta1.Deployment)
-			//log.Infof("deployment processpolicy deleted=%s\n", deployment.Name)
 		case watch.Error:
 			log.Infof("deployment processpolicy error event")
 		case watch.Modified:
 			pod := event.Object.(*v1.Pod)
-			//log.Infof("deployment processpolicy modified=%s\n", deployment.Name)
-			//log.Infof("status available replicas=%d\n", deployment.Status.AvailableReplicas)
 			ready, restarts := podReady(pod)
 			if restarts > 0 {
 				log.Info("restarts > 0, will not apply policies again to " + pod.Name)
@@ -78,7 +72,6 @@ func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 // applyPolicies ...
 func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName string) {
-	//dep *v1beta1.Deployment
 	//get the crv1 which holds the requested labels if any
 	cl := crv1.Pgcluster{}
 	_, err := kubeapi.Getpgcluster(restclient, &cl, clusterName, namespace)

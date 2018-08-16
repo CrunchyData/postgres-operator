@@ -16,7 +16,6 @@ package cmd
 */
 
 import (
-	//"crypto/tls"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -26,16 +25,12 @@ import (
 	"os"
 )
 
-const ClientVersion = "3.1"
-
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information for the postgres-operator",
-	Long: `VERSION allows you to print version information for the postgres-operator
-				For example:
+	Long: `VERSION allows you to print version information for the postgres-operator. For example:
 
-				pgo version
-				.`,
+	pgo version`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("version called")
 		showVersion()
@@ -60,18 +55,6 @@ func showVersion() {
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
-	/**
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs:            caCertPool,
-				InsecureSkipVerify: true,
-				Certificates:       []tls.Certificate{cert},
-			},
-		},
-	}
-	*/
-
 	resp, err := httpclient.Do(req)
 	if err != nil {
 		log.Fatal("Do: ", err)
@@ -92,7 +75,7 @@ func showVersion() {
 		return
 	}
 
-	fmt.Println("pgo client version " + ClientVersion)
+	fmt.Println("pgo client version " + msgs.PGO_VERSION)
 
 	if response.Status.Code == msgs.Ok {
 		fmt.Println("apiserver version " + response.Version)

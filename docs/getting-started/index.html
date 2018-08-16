@@ -235,7 +235,10 @@
 <ul class="sectlevel2">
 <li><a href="#_create_cluster">Create Cluster</a></li>
 <li><a href="#_delete_cluster">Delete Cluster</a></li>
+<<<<<<< HEAD
 <li><a href="#_delete_cluster_2">Delete Cluster</a></li>
+=======
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <li><a href="#_show_cluster">Show Cluster</a></li>
 <li><a href="#_test_connection">Test Connection</a></li>
 </ul>
@@ -243,9 +246,17 @@
 <li><a href="#_administration">Administration</a>
 <ul class="sectlevel2">
 <li><a href="#_backups">Backups</a></li>
+<<<<<<< HEAD
 <li><a href="#_upgrading_postgresql">Upgrading PostgreSQL</a></li>
 <li><a href="#_labels">Labels</a></li>
 <li><a href="#_user_management">User Management</a></li>
+=======
+<li><a href="#_scaling_replicas">Scaling Replicas</a></li>
+<li><a href="#_manual_failover">Manual Failover</a></li>
+<li><a href="#_upgrading_postgresql">Upgrading PostgreSQL</a></li>
+<li><a href="#_labels">Labels</a></li>
+<li><a href="#_creating_sql_policies">Creating SQL Policies</a></li>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <li><a href="#_loading_data">Loading Data</a></li>
 </ul>
 </li>
@@ -257,7 +268,11 @@
 </ul>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>Latest Release: v3.1, 2018-08-01</p>
+=======
+<p>Latest Release: 3.2.0 2018-08-10</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="sect1">
 <h2 id="_first_steps">First Steps</h2>
@@ -275,6 +290,8 @@ export CO_APISERVER_URL=https://10.104.47.110:8443
 pgo version</pre>
 </div>
 </div>
+<<<<<<< HEAD
+=======
 </div>
 </div>
 <div class="sect1">
@@ -291,9 +308,38 @@ postgres-operator you are running.</p>
 <div class="paragraph">
 <p>$ pgo version</p>
 </div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+<div class="sect1">
+<h2 id="_general">General</h2>
+<div class="sectionbody">
+<div class="sect2">
+<<<<<<< HEAD
+<h3 id="_operator_version">Operator Version</h3>
+<div class="paragraph">
+<p>This command makes it possible to see what version of the pgo client and
+postgres-operator you are running.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo version</p>
+</div>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_operator_status">Operator Status</h3>
+<div class="paragraph">
+<p>You can use the <strong>pgo status</strong> command to see overall pgo status. Selective
+metrics are displayed to provide some insights to the pgo user and administrator
+as to what is running currently in this namespace related to pgo.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_2">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo status [FLAGS]</p>
+=======
 <h3 id="_operator_status">Operator Status</h3>
 <div class="paragraph">
 <p>You can use the <strong>pgo status</strong> command to see overall pgo status. Selective
@@ -388,12 +434,56 @@ is less than 50%, then the output is printed in red in order to alert the user.<
 </tr>
 </tbody>
 </table>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="sect3">
 <h4 id="_examples">Examples</h4>
 <div class="paragraph">
 <p><strong>Cluster Selectors</strong></p>
 </div>
+<<<<<<< HEAD
+<div class="sect3">
+<h4 id="_flags">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--output</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-o</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The output format. Currently, JSON is supported.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_operator_configuration">Operator Configuration</h3>
+<div class="paragraph">
+<p>The <code>pgo show config</code> command displays the running operator configuration
+parameters that dictate the setup and user defined configuration of the
+operator.  This command can be useful for sharing your configuration or
+verifying the setup is as expected.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_3">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo show config</p>
+</div>
+=======
 <div class="paragraph">
 <p>The <code>pgo df</code> command can either be run against a single cluster or against all
 clusters matching a selector:</p>
@@ -422,6 +512,271 @@ Kubernetes or OpenShift using a Deployment.</p>
 <div class="paragraph">
 <p>$ pgo create cluster NAME [FLAGS]</p>
 </div>
+</div>
+<div class="sect3">
+<h4 id="_flags_3">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--archive</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Enables archive logging for the database cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--autofail</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If set, will cause autofailover to be enabled on this cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--backup-pvc=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-p</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The backup archive PVC to restore from.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--backup-path=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-x</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The backup archive path to restore from.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--ccp-image-tag=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-c</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--custom-config=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-g</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--labels=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-l</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The labels to apply to this cluster.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--metrics</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-m</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Adds the crunchy-collect container to the database pod.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--node-label=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The node label (key=value) to use in placing the primary database. If not set, any node is used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--service-type=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--password=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-w</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The password to use for initial database users.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pgpool</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Adds the crunchy-pgpool container to the database pod.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pgpool-secret=VALUE</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a pgpool secret to use for the pgpool configuration.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--policies</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-z</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The policies to apply when creating a cluster, comma separated.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--replica-storage-config</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a Storage config in pgo.yaml to use for the cluster replica storage.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--resources-config</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-r</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--secret-from</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The cluster name to use when restoring secrets.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--series</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-e</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The number of clusters to create in a series (default 1).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--storage-config</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a Storage config in pgo.yaml to use for the cluster storage.</p></td>
+</tr>
+</tbody>
+</table>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_examples_2">Examples</h4>
+<div class="paragraph">
+<p><strong>Complex Creation</strong></p>
+</div>
+<div class="sect2">
+<h3 id="_disk_capacity">Disk Capacity</h3>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>The <strong>pgo df</strong> command will let you see the disk capacity of a cluster&#8217;s PVC
+versus that of the PostgreSQL data that has been written to disk. If the capacity
+is less than 50%, then the output is printed in red in order to alert the user.</p>
+=======
+<p>Create a series of clusters, specifying it as the xray project, with the xrayapp and
+rlspolicy policies added:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster xraydb --series=3 --labels=project=xray --policies=xrayapp,rlspolicy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Metrics</strong></p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_syntax_4">Syntax</h4>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>$ pgo df NAME [FLAGS]</p>
+=======
+<p>Add the crunchy-collect container to the database cluster pod and enable metrics collection
+on the database:</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_2">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples">Examples</h4>
+<div class="paragraph">
+<<<<<<< HEAD
+<p><strong>Cluster Selectors</strong></p>
+</div>
+<div class="paragraph">
+<p>The <code>pgo df</code> command can either be run against a single cluster or against all
+clusters matching a selector:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo df mycluster
+pgo df --selector=project=xrayapp</pre>
+</div>
+</div>
+</div>
+=======
+<p>You can connect these containers to a metrics pipeline using <a href="https://grafana.com">Grafana</a>
+and <a href="https://prometheus.io">Prometheus</a> by following the example found in the
+<a href="https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_collection">Crunchy Container Suite documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Image Version</strong></p>
+</div>
+<div class="paragraph">
+<p>New clusters typically pick up the container image version to use
+based on the pgo configuration file&#8217;s <code>CcpImageTag</code> setting.  You
+can override this value using the <code>`--ccp-image-tag</code> command line
+flag:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_cluster_basics">Cluster Basics</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_create_cluster">Create Cluster</h3>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>The <strong>create cluster</strong> command will automatically provision a PostgreSQL cluster within
+Kubernetes or OpenShift using a Deployment.</p>
+=======
+<p><strong>pgPool II</strong></p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_syntax_5">Syntax</h4>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>$ pgo create cluster NAME [FLAGS]</p>
+</div>
+=======
+<p>By appending the <code>--pgpool</code> command line flag, you can add
+<a href="http://www.pgpool.net/mediawiki/index.php/Main_Page">pgPool II</a> to the database cluster.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --pgpool</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="sect3">
 <h4 id="_flags_3">Flags</h4>
@@ -549,7 +904,11 @@ Kubernetes or OpenShift using a Deployment.</p>
 <div class="sect3">
 <h4 id="_examples_2">Examples</h4>
 <div class="paragraph">
+<<<<<<< HEAD
 <p><strong>Complex Creation</strong></p>
+=======
+<p><strong>Auto Failover</strong></p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="paragraph">
 <p>Create a series of clusters, specifying it as the xray project, with the xrayapp and
@@ -557,10 +916,27 @@ rlspolicy policies added:</p>
 </div>
 <div class="literalblock">
 <div class="content">
+<<<<<<< HEAD
 <pre>pgo create cluster xraydb --series=3 --labels=project=xray --policies=xrayapp,rlspolicy</pre>
+=======
+<pre>pgo create cluster testcluster --autofail</pre>
 </div>
 </div>
 <div class="paragraph">
+<p>This flag, when set on the cluster, informs the operator to look
+or watch for NotReady events on this cluster. When those occur, it will
+ create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod. See the
+<a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a>
+documentation for more details on auto failover.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="paragraph">
+<p><strong>Complex Creation</strong></p>
+</div>
+<div class="paragraph">
+<<<<<<< HEAD
 <p><strong>Metrics</strong></p>
 </div>
 <div class="paragraph">
@@ -581,108 +957,7 @@ and <a href="https://prometheus.io">Prometheus</a> by following the example foun
 <p><strong>Image Version</strong></p>
 </div>
 <div class="paragraph">
-<p>New clusters typically pick up the container image version to use
-based on the pgo configuration file&#8217;s <code>CcpImageTag</code> setting.  You
-can override this value using the <code>`--ccp-image-tag</code> command line
-flag:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0</pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>pgPool II</strong></p>
-</div>
-<div class="paragraph">
-<p>By appending the <code>--pgpool</code> command line flag, you can add
-<a href="http://www.pgpool.net/mediawiki/index.php/Main_Page">pgPool II</a> to the database cluster.</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo create cluster testcluster --pgpool</pre>
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Auto Failover</strong></p>
-</div>
-<div class="paragraph">
-<p>To enable <strong>auto failover</strong> on this cluster, use the following flag:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo create cluster testcluster --autofail</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This flag, when set on the cluster, informs the operator to look
-or watch for NotReady events on this cluster. When those occur, it will
- create a failover state machine which acts as a timer for the cluster.
-If the timer expires, then a failover is triggered on the cluster turning
-one of the cluster replica pods into the replacement primary pod. See the
-<a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a>
-documentation for more details on auto failover.</p>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_delete_cluster">Delete Cluster</h3>
-<div class="paragraph">
-<p>You can remove a cluster by running:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo delete cluster restoredb</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Note, that this command will not remove the PVC associated with
-this cluster.</p>
-</div>
-<div class="paragraph">
-<p>Selectors also apply to the delete command as follows:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo delete cluster  --selector=project=xray</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>This command will cause any cluster matching the selector
-to be removed.</p>
-</div>
-<div class="paragraph">
-<p>You can remove a cluster and it&#8217;s data files by running:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo delete cluster restoredb --delete-data</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You can remove a cluster, it&#8217;s data files, and all backups by running:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo delete cluster restoredb --delete-data --delete-backups</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>When you specify a destructive delete like above, you will be prompted
-to make sure this is what you want to do.  If you don&#8217;t want to
-be prompted you can enter the <strong>--no-prompt</strong> command line flag.</p>
-</div>
-<div class="paragraph">
-<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
-=== Show Cluster</p>
-</div>
-<div class="exampleblock">
-<div class="content">
-<div class="paragraph">
-<p><strong>Complex Creation</strong>
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
-</div>
-<div class="paragraph">
+=======
 <p>Create a series of clusters, specifying it as the xray project, with the xrayapp and
 rlspolicy policies added:</p>
 </div>
@@ -714,6 +989,289 @@ and <a href="https://prometheus.io">Prometheus</a> by following the example foun
 <p><strong>Image Version</strong></p>
 </div>
 <div class="paragraph">
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+<p>New clusters typically pick up the container image version to use
+based on the pgo configuration file&#8217;s <code>CcpImageTag</code> setting.  You
+can override this value using the <code>`--ccp-image-tag</code> command line
+flag:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<<<<<<< HEAD
+<pre>pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0</pre>
+=======
+<pre>pgo create cluster testcluster --ccp-image-tag=centos7-9.6.5-1.6.0</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgPool II</strong></p>
+</div>
+<div class="paragraph">
+<p>By appending the <code>--pgpool</code> command line flag, you can add
+<<<<<<< HEAD
+<a href="http://www.pgpool.net/mediawiki/index.php/Main_Page">pgPool II</a> to the database cluster.</p>
+=======
+<a href="http://www.pgpool.net/mediawiki/index.php/Main_Page">pgPool II</a> to the database cluster.
+The container used for this functionality is the
+<a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgpool/">crunchy-pgpool</a>
+container image from the Crunchy Container Suite.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --pgpool</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Auto Failover</strong></p>
+</div>
+<div class="paragraph">
+<p>To enable <strong>auto failover</strong> on this cluster, use the following flag:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --autofail</pre>
+<<<<<<< HEAD
+</div>
+</div>
+<div class="paragraph">
+<p>This flag, when set on the cluster, informs the operator to look
+or watch for NotReady events on this cluster. When those occur, it will
+ create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod. See the
+<a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a>
+documentation for more details on auto failover.</p>
+=======
+</div>
+</div>
+<div class="paragraph">
+<p>This flag, when set on the cluster, informs the operator to look
+or watch for NotReady events on this cluster. When those occur, it will
+ create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod. See the
+<a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a>
+documentation for more details on auto failover.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_delete_cluster">Delete Cluster</h3>
+<div class="paragraph">
+<p>The <strong>delete cluster</strong> command will by default delete all associated components of
+the selected cluster, but will not delete the data or the backups unless specified.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_6">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo delete cluster NAME [FLAGS]</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_4">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-backups</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-b</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the backups for this cluster to be removed permanently.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-data</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-d</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the data for this cluster to be removed permanently.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--no-prompt</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-n</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No command line confirmation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_3">Examples</h4>
+<div class="paragraph">
+<p><strong>Simple Deletion</strong></p>
+</div>
+<<<<<<< HEAD
+<div class="sect2">
+<h3 id="_delete_cluster">Delete Cluster</h3>
+=======
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+<div class="paragraph">
+<p>Create a single cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete cluster testcluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that this command will not remove the PVC associated with
+this cluster.</p>
+</div>
+<div class="paragraph">
+<p><strong>Complex Deletion</strong></p>
+</div>
+<div class="paragraph">
+<p>Selectors also apply to the delete command as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete cluster  --selector=project=xray</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This command will cause any cluster matching the selector
+to be removed.</p>
+</div>
+<div class="paragraph">
+<p><strong>Delete Components, Data, &amp; Backups</strong></p>
+</div>
+<div class="paragraph">
+<p>You can remove a cluster, it&#8217;s data files, and all backups by running:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete cluster restoredb --delete-data --delete-backups</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you specify a destructive delete like above, you will be prompted
+to make sure this is what you want to do.  If you don&#8217;t want to
+be prompted you can enter the <code>--no-prompt</code> command line flag.</p>
+</div>
+</div>
+<div class="paragraph">
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+=== Show Cluster</p>
+</div>
+<<<<<<< HEAD
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p><strong>Complex Creation</strong>
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
+</div>
+<div class="paragraph">
+<p>Create a series of clusters, specifying it as the xray project, with the xrayapp and
+rlspolicy policies added:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --series=3 --labels=project=xray --policies=xrayapp,rlspolicy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Metrics</strong></p>
+=======
+<div class="sect2">
+<h3 id="_show_cluster">Show Cluster</h3>
+<div class="paragraph">
+<p>The <code>show cluster</code> command allows you to view all the associated created
+components of a specific cluster or selection of clusters.</p>
+</div>
+<div class="paragraph">
+<p>By default, you will be able to view the status of the created pod, the
+PVC, Deployment, Service, and Labels associated with the cluster, and
+any and all specified options (such as whether crunchy_collect is enabled).</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_syntax_7">Syntax</h4>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>Add the
+<a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-collect/">crunchy-collect</a>
+container from the Crunchy Container Suite to the database cluster pod and enable metrics collection
+on the database:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster testcluster --metrics</pre>
+=======
+<p>$ pgo show cluster NAME [FLAGS]</p>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_flags_5">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--output</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-o</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The output format. Currently, JSON is supported.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--version</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-v</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Filter the results based on the PostgreSQL version of the cluster.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_4">Examples</h4>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>You can connect these containers to a metrics pipeline using <a href="https://grafana.com">Grafana</a>
+and <a href="https://prometheus.io">Prometheus</a> by following the example found in the
+<a href="https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_collection">Crunchy Container Suite documentation</a>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Image Version</strong></p>
+</div>
+<div class="paragraph">
 <p>New clusters typically pick up the container image version to use
 based on the pgo configuration file&#8217;s <code>CcpImageTag</code> setting.  You
 can override this value using the <code>`--ccp-image-tag</code> command line
@@ -733,6 +1291,23 @@ flag:</p>
 The container used for this functionality is the
 <a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgpool/">crunchy-pgpool</a>
 container image from the Crunchy Container Suite.</p>
+=======
+<p><strong>Simple Display</strong></p>
+</div>
+<div class="paragraph">
+<p>Show a single cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show cluster testcluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Show All</strong></p>
+</div>
+<div class="paragraph">
+<p>Show all clusters available:</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="literalblock">
 <div class="content">
@@ -743,13 +1318,22 @@ container image from the Crunchy Container Suite.</p>
 <p><strong>Auto Failover</strong></p>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>To enable <strong>auto failover</strong> on this cluster, use the following flag:</p>
+=======
+<p><strong>PostgreSQL Version</strong></p>
+</div>
+<div class="paragraph">
+<p>Filter the results based on the PostgeSQL version of the cluster with the <code>--version</code>
+flag:</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>pgo create cluster testcluster --autofail</pre>
 </div>
 </div>
+<<<<<<< HEAD
 <div class="paragraph">
 <p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
 You can view the files on a PVC as follows:</p>
@@ -757,22 +1341,79 @@ You can view the files on a PVC as follows:</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo show pvc mycluster</pre>
+=======
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
+<div class="sect2">
+<h3 id="_test_connection">Test Connection</h3>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>In this example, the PVC is <strong>mycluster</strong>.  This command is useful
 in some cases to examine what files are on a given PVC.</p>
+=======
+<p>This command will test each service defined for the cluster using
+the postgres, primary, and normal user accounts defined for the
+cluster.  The cluster credentials are accessed and used to test
+the database connections.  The equivalent <strong>psql</strong> command is printed
+out as connections are tried, along with the connection status.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
+<div class="sect3">
+<h4 id="_syntax_8">Syntax</h4>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>In the case where you want to list a specific path on a PVC
 you can specify the path option as follows:</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>pgo show pvc mycluster --pvc-root=mycluster-backups</pre>
+=======
+<p>$ pgo test NAME [FLAGS]</p>
 </div>
+</div>
+<div class="sect3">
+<h4 id="_flags_6">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--output</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-o</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The output format. Currently, JSON is supported.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+</tbody>
+</table>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_examples_5">Examples</h4>
+<div class="paragraph">
+<p><strong>Simple Test</strong></p>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>You can also list all PVCs that are created by the operator
 using:</p>
 </div>
@@ -787,15 +1428,112 @@ using:</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo show cluster mycluster --show-secrets=true</pre>
+=======
+<p>Test the database connections to a cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo test testcluster</pre>
 </div>
 </div>
 <div class="paragraph">
+<p><strong>Complex Test</strong></p>
+</div>
+<div class="paragraph">
+<p>Like other commands, you can use the selector to test a series
+of clusters or to test all available clusters:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo test --selector=env=research
+pgo test all</pre>
+</div>
+</div>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_administration">Administration</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_backups">Backups</h3>
+<div class="paragraph">
+<p>The <code>backup</code> command will utilize the <a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-backup/">crunchy-backup</a>
+container to execute a full backup against another database container
+using the standard pg_basebackup utility that is included with PostgreSQL.</p>
+</div>
+<div class="paragraph">
+<<<<<<< HEAD
 <p>Passwords are generated if not specified in your <strong>pgo</strong> configuration.</p>
+=======
+<p>When you request a backup, <strong>pgo</strong> will prompt you if you want
+to proceed because this action will delete any existing backup job
+for this cluster that might exist. The backup files will still
+be left intact but the actual Kubernetes Job will be removed prior
+to creating a new Job with the same name.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
+<div class="sect3">
+<h4 id="_syntax_9">Syntax</h4>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>=== Test Connection</p>
+=======
+<p>$ pgo backup NAME [FLAGS]</p>
 </div>
+</div>
+<div class="sect3">
+<h4 id="_flags_7">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--no-prompt</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-n</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No command line confirmation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pvc-name</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The PVC name to use for the backup instead of the default.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--storage-config</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a Storage config in pgo.yaml to use for the cluster storage.</p></td>
+</tr>
+</tbody>
+</table>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_examples_6">Examples</h4>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>You can test the database connections to a cluster:</p>
 </div>
 <div class="literalblock">
@@ -818,9 +1556,34 @@ of clusters:</p>
 <div class="content">
 <pre>pgo test --selector=env=research
 pgo test all</pre>
+=======
+<p><strong>Simple Backup</strong></p>
+</div>
+<div class="paragraph">
+<p>You can start a backup job for a cluster as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo backup testcluster</pre>
 </div>
 </div>
 <div class="paragraph">
+<p><strong>Show Backup</strong></p>
+</div>
+<div class="paragraph">
+<p>View the backup and backup status:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show backup testcluster</pre>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="paragraph">
+<p><strong>Backup PVC Management</strong></p>
+</div>
+<div class="paragraph">
+<<<<<<< HEAD
 <p>You can get output using the <strong>--output</strong> flag:</p>
 </div>
 <div class="literalblock">
@@ -950,10 +1713,64 @@ to be removed.</p>
 <p>When you specify a destructive delete like above, you will be prompted
 to make sure this is what you want to do.  If you don&#8217;t want to
 be prompted you can enter the <code>--no-prompt</code> command line flag.</p>
+=======
+<p>View the PVC folder and the backups contained therein:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show pvc testcluster-backup
+pgo show pvc testcluster-backup --pvc-root=testcluster-backups</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The output from this command is important in that it can let you
+copy/paste a backup snapshot path and use it for restoring a database
+or essentially cloning a database with an existing backup archive.</p>
+</div>
+<div class="paragraph">
+<p>For example, to restore a database from a backup archive:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create cluster restoredb --backup-path=testcluster-backups/2017-03-27-13-56-49 --backup-pvc=testcluster-backup --secret-from=testcluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This will create a new database called <strong>restoredb</strong> based on the
+backup found in <strong>testcluster-backups/2017-03-27-13-56-49</strong> and the
+secrets of the <strong>testcluster</strong> cluster.</p>
+</div>
+<div class="paragraph">
+<p><strong>Override PVC</strong></p>
+</div>
+<div class="paragraph">
+<p>You can override the PVC used by the backup job with the following:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo backup testcluster --pvc-name=myremotepvc</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This might be useful for special backup cases such as creating
+a backup on a disaster recovery PVC.</p>
+</div>
+<div class="paragraph">
+<p><strong>Delete Backup</strong></p>
+</div>
+<div class="paragraph">
+<p>To delete a backup enter the following:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete backup testcluster</pre>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
 </div>
 <div class="sect2">
+<<<<<<< HEAD
 <h3 id="_show_cluster">Show Cluster</h3>
 <div class="paragraph">
 <p>The <code>show cluster</code> command allows you to view all the associated created
@@ -1037,9 +1854,160 @@ any and all specified options (such as whether crunchy_collect is enabled).</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo show cluster all</pre>
+=======
+<h3 id="_scaling_replicas">Scaling Replicas</h3>
+<div class="paragraph">
+<p>When you create a Cluster, you will see in the output a variety of Kubernetes
+objects were created including:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>a Deployment holding the primary PostgreSQL database</p>
+</li>
+<li>
+<p>a Deployment holding the replica PostgreSQL database</p>
+</li>
+<li>
+<p>a service for the primary database</p>
+</li>
+<li>
+<p>a service for the replica databases</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Since PostgreSQL is a single-primary database by design, the primary
+Deployment is set to a replica count of 1 and it can not scale beyond that.</p>
+</div>
+<div class="paragraph">
+<p>With PostgreSQL, you can create any n-number of replicas each of which
+connect to the primary. This forms a streaming replication PostgreSQL cluster.
+The PostgreSQL replicas are read-only whereas the primary is read-write.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_10">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo scale NAME [FLAGS]</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_8">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--scale-down-target</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a replica to delete.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--service-type</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--ccp-image-tag</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-c</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--query</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Prints the list of targetable replica candidates.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-data</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the data for the scaled down replica to be removed permanently.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--no-prompt</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-n</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No command line confirmation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--target</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The replica target which the scaling will occur on. Only applies when --replica-count=-1.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--node-label</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The node label (key) to use in placing the primary database. If not set, any node is used.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--replica-count</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-r</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The replica count to apply to the clusters (default 1).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--resources-config</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-r</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--storage-config</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The name of a Storage config in pgo.yaml to use for the cluster storage.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_7">Examples</h4>
+<div class="paragraph">
+<p><strong>Simple Scale</strong></p>
+</div>
+<div class="paragraph">
+<p>To create a Postgres replica enter a command such as:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo scale testcluster</pre>
 </div>
 </div>
 <div class="paragraph">
+<p>The pgo scale command is additive, in that each time you execute
+it, another replica is created which is added to the Postgres
+cluster.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="paragraph">
+<p><strong>Testing Replication</strong></p>
+</div>
+<div class="paragraph">
+<p>There are 2 service connections available to the PostgreSQL cluster. One is
+to the primary database which allows read-write SQL processing, and
+the other is to the set of read-only replica databases.  The replica
+service performs round-robin load balancing to the replica databases.</p>
+</div>
+<div class="paragraph">
+<<<<<<< HEAD
 <p><strong>Show Secrets</strong></p>
 </div>
 <div class="paragraph">
@@ -1064,6 +2032,14 @@ flag:</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo show cluster all --version=9.6.2</pre>
+=======
+<p>You can connect to the primary database and verify that it is replicating
+to the replica databases as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
 </div>
@@ -1071,11 +2047,7 @@ flag:</p>
 <div class="sect2">
 <h3 id="_test_connection">Test Connection</h3>
 <div class="paragraph">
-<p>This command will test each service defined for the cluster using
-the postgres, primary, and normal user accounts defined for the
-cluster.  The cluster credentials are accessed and used to test
-the database connections.  The equivalent <strong>psql</strong> command is printed
-out as connections are tried, along with the connection status.</p>
+<p><strong>Specifying Nodes</strong></p>
 </div>
 <div class="sect3">
 <h4 id="_syntax_8">Syntax</h4>
@@ -1133,14 +2105,24 @@ out as connections are tried, along with the connection status.</p>
 <p><strong>Complex Test</strong></p>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>Like other commands, you can use the selector to test a series
 of clusters or to test all available clusters:</p>
+=======
+<p>The scale command will let you specify a <code>--node-label</code> flag which
+can be used to influence what Kube node the replica will be scheduled
+upon.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo test --selector=env=research
-pgo test all</pre>
+<pre>pgo scale testcluster --node-label=speed=fast</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>If you don&#8217;t specify a <code>--node-label</code> flag, a node affinity
+rule of <strong>NotIn</strong> will be specified to <strong>prefer</strong> that the replica
+be schedule on a node that the primary is not running on.</p>
 </div>
 </div>
 </div>
@@ -1152,9 +2134,17 @@ pgo test all</pre>
 <div class="sect2">
 <h3 id="_backups">Backups</h3>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>The <code>backup</code> command will utilize the <a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-backup/">crunchy-backup</a>
 container to execute a full backup against another database container
 using the standard pg_basebackup utility that is included with PostgreSQL.</p>
+=======
+<p><strong>Overriding Storage Defaults</strong></p>
+</div>
+<div class="paragraph">
+<p>You can also dictate what container resource and storage configurations
+will be used for a replica by passing in extra command flags:</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="paragraph">
 <p>When you request a backup, <strong>pgo</strong> will prompt you if you want
@@ -1174,8 +2164,13 @@ To delete a backup enter the following:</p>
 </div>
 <div class="exampleblock">
 <div class="content">
+<<<<<<< HEAD
 <div class="paragraph">
 <p>==== Flags</p>
+=======
+<pre>pgo scale testcluster --storage-config=storage1 --resources-config=small</pre>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
@@ -1225,6 +2220,7 @@ To delete a backup enter the following:</p>
 <div class="paragraph">
 <p><strong>Simple Backup</strong></p>
 </div>
+<<<<<<< HEAD
 <div class="paragraph">
 <p>You can start a backup job for a cluster as follows:
 &gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
@@ -1274,6 +2270,213 @@ or essentially cloning a database with an existing backup archive.</p>
 <div class="content">
 <pre>pgo create cluster restoredb --backup-path=testcluster-backups/2017-03-27-13-56-49 --backup-pvc=testcluster-backup --secret-from=testcluster</pre>
 </div>
+=======
+<div class="sect2">
+<h3 id="_manual_failover">Manual Failover</h3>
+<div class="paragraph">
+<p>Starting with Release 2.6, there is a manual failover command which
+can be used to promote a replica to a primary role in a PostgreSQL
+cluster.</p>
+</div>
+<div class="paragraph">
+<p>This process includes the following actions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>pick a target replica to become the new primary</p>
+</li>
+<li>
+<p>delete the current primary deployment to avoid user requests from
+going to multiple primary databases (split brain)</p>
+</li>
+<li>
+<p>promote the targeted replica using <strong>pg_ctl promote</strong>, this will
+cause PostgreSQL to go into read-write mode</p>
+</li>
+<li>
+<p>re-label the targeted replica to use the primary labels, this
+will match the primary service selector and cause new requests
+to the primary to be routed to the new primary (targeted replica)</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_syntax_11">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo failover NAME [FLAGS]</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_9">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--no-prompt</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-n</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No command line confirmation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--query</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Prints the list of failover candidates.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--target</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The replica target which the failover will occur on.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_8">Examples</h4>
+<div class="paragraph">
+<p><strong>Manual Failover</strong></p>
+</div>
+<div class="paragraph">
+<p>The command works like this:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo failover testcluster --query</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>That command will show you a list of replica targets you can choose
+to failover to.  You will select one of those for the following
+command:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo failover testcluster --target=testcluster-abxq</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>There is a CRD called <strong>pgtask</strong> that will hold the failover request
+and also the status of that request.  You can view the status
+by viewing it:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get pgtasks testcluster-failover -o yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Once completed, you will see a new replica has been started to replace
+the promoted replica, which happens automatically due to the re-label. The
+Deployment will recreate its pod because of this.  The failover typically
+takes only a few seconds, however, the creation of the replacement
+replica can take longer depending on how much data is being replicated.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_upgrading_postgresql">Upgrading PostgreSQL</h3>
+<div class="paragraph">
+<p>The <strong>upgrade</strong> command will allow you to upgrade the PostgreSQL version of
+your cluster with the pg_upgrade utility. Minor or major upgrades are
+supported. The Crunchy Container Suite
+<a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-upgrade/">crunchy-upgrade</a>
+container is responsible for performing this task.</p>
+</div>
+<div class="paragraph">
+<p>By default, it will request confirmation for the command as the operator
+deletes the existing contaniers of the database or cluster and recreates
+them using the currently defined PostgreSQL contaner image specified in the
+pgo.yaml configuration file or with a defined <code>--ccp-image-tag</code> flag.
+The database data files remain untouched throughout the upgrade.</p>
+</div>
+<div class="paragraph">
+<p>Once the upgrade job is completed, the operator will create the original
+database or cluster container mounted with the new PVC which contains the
+upgraded database files.</p>
+</div>
+<div class="paragraph">
+<p>As the upgrade is processed, the status of the <strong>pgupgrade</strong> CRD is updated to
+give the user some insight into how the upgrade is proceeding. Upgrades like
+this can take a long time if your database is large. The operator creates a
+watch on the upgrade job to know when and how to proceed.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_12">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo upgrade NAME [FLAGS]</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_10">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--ccp-image-tag</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-c</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--upgrade-type</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-t</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The upgrade type. Accepted values are either "minor" or "major", with the default being "minor".</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_9">Examples</h4>
+<div class="paragraph">
+<p><strong>Minor Upgrade</strong></p>
+</div>
+<div class="paragraph">
+<p>Perform a minor PostgreSQL version upgrade:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo upgrade testcluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Major Upgrade</strong></p>
+</div>
+<div class="paragraph">
+<p>Perform a major PostgreSQL version upgrade:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo upgrade testcluster --upgrade-type=major</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="paragraph">
 <p>This will create a new database called <strong>restoredb</strong> based on the
@@ -1281,6 +2484,7 @@ backup found in <strong>testcluster-backups/2017-03-27-13-56-49</strong> and the
 secrets of the <strong>testcluster</strong> cluster.</p>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p><strong>Override PVC</strong></p>
 </div>
 <div class="paragraph">
@@ -1881,10 +3085,11 @@ To delete a policy use the following form:</p>
 <div class="content">
 <div class="paragraph">
 <p><strong>Overriding Version</strong></p>
+=======
+<p><strong>Overriding Version</strong></p>
 </div>
 <div class="paragraph">
-<p>Override the <code>CcpImageTag</code> variable defined in the pgo.yaml configuration file:
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
+<p>Override the <code>CcpImageTag</code> variable defined in the pgo.yaml configuration file:</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -1893,6 +3098,93 @@ pgo upgrade testcluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3
 </div>
 </div>
 <div class="paragraph">
+<p><strong>Delete Upgrade</strong></p>
+</div>
+<div class="paragraph">
+<p>To remove an upgrade CRD, issue the following:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete upgrade</pre>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_labels">Labels</h3>
+<div class="paragraph">
+<<<<<<< HEAD
+<p>Override the <code>CcpImageTag</code> variable defined in the pgo.yaml configuration file:
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo upgrade testcluster --ccp-image-tag=centos7-9.6.9-1.8.3
+pgo upgrade testcluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3</pre>
+=======
+<p>Labels can be applied to clusters and nested according to their type, with any string
+input being valid.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_13">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo label [NAME] [FLAGS]</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_11">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-label</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-x</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deletes a label from specified clusters.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--dry-run</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-d</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Shows the clusters that the label would be applied to, without labelling them.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--label</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-l</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The new label to apply for any selected or specified clusters.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+</tbody>
+</table>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_examples_10">Examples</h4>
+<div class="paragraph">
+<p><strong>Applying Labels</strong></p>
+</div>
+<div class="paragraph">
+<<<<<<< HEAD
 <p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
 To apply an existing policy to a set of clusters, issue
 a command like this:</p>
@@ -1910,12 +3202,28 @@ a command like this:</p>
 <div class="content">
 <pre>pgo delete upgrade</pre>
 </div>
+=======
+<p>You can apply a user defined label to a cluster as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo label testcluster --label=env=research</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or if you wanted to apply if to a selection of clusters:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo label --label=env=research  --selector=project=xray</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_labels">Labels</h3>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>Labels can be applied to clusters and nested according to their type, with any string
 input being valid.</p>
 </div>
@@ -1924,10 +3232,16 @@ input being valid.</p>
 <div class="paragraph">
 <p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
 == Authentication</p>
+=======
+<p>In the first example, a label of <strong>env=research</strong> is applied to the cluster
+<strong>testcluster</strong>. The second example will apply the label to any clusters that
+have an existing label of <strong>project=xray</strong> applied.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
 </div>
 <div class="sect2">
+<<<<<<< HEAD
 <h3 id="_user_management">User Management</h3>
 <div class="exampleblock">
 <div class="content">
@@ -1960,9 +3274,30 @@ pgo delete user sally --selector=name=mycluster
 </tr>
 </thead>
 </table>
-</div>
+=======
+<h3 id="_creating_sql_policies">Creating SQL Policies</h3>
+<div class="paragraph">
+<p>Policies are SQL files that can be applied to a single cluster, a selection
+of clusters, or to all newly created clusters by default.</p>
 </div>
 <div class="paragraph">
+<p>They are automatically applied to any cluster you create if
+you define in your <strong>pgo.yaml</strong> configuration a CLUSTER.POLICIES
+value.</p>
+</div>
+<div class="paragraph">
+<div class="notices warning" ><div class="paragraph">
+<p>Policies are executed as the superuser or <strong>postgres</strong> user in
+PostgreSQL. These should therefore be exercised with caution.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+</div>
+
+</div>
+<div class="sect3">
+<h4 id="_syntax_14">Syntax</h4>
+<div class="paragraph">
+<<<<<<< HEAD
 <p>|<code>--delete-label</code> |-x |String |
 Deletes a label from specified clusters.
 &gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
@@ -1974,8 +3309,48 @@ Shows the clusters that the label would be applied to, without labelling them.</
 <div class="paragraph">
 <p>|<code>--label</code> |-l |String |
 The new label to apply for any selected or specified clusters.</p>
+=======
+<p>$ pgo create policy [NAME] [FLAGS]</p>
 </div>
+</div>
+<div class="sect3">
+<h4 id="_flags_12">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--in-file</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-i</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The policy file path to use for adding a policy.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--url</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-u</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The url to use for adding a policy.</p></td>
+</tr>
+</tbody>
+</table>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect3">
+<h4 id="_examples_11">Examples</h4>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
 === Password Management</p>
 </div>
@@ -2023,6 +3398,28 @@ value.</p>
 <p>Policies are executed as the superuser or <strong>postgres</strong> user in
 PostgreSQL. These should therefore be exercised with caution.</p>
 </div>
+=======
+<p><strong>Creating Policies</strong></p>
+</div>
+<div class="paragraph">
+<p>To create a policy use the following syntax:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create policy policy1 --in-file=/tmp/policy1.sql
+pgo create policy policy1 --url=https://someurl/policy1.sql</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>When you execute this command, it will create a policy named <strong>policy1</strong>
+using the input file <strong>/tmp/policy1.sql</strong> as input.  It will create
+on the server a PgPolicy CRD with the name <strong>policy1</strong> that you can
+examine as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>kubectl get pgpolicies policy1 -o json</pre>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </p>
 <p class="tableblock">==== Syntax</p>
@@ -2036,6 +3433,7 @@ PostgreSQL. These should therefore be exercised with caution.</p>
 <p>|Name |Shorthand |Input |Usage</p>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>|<code>--in-file</code> |-i |String |
 The policy file path to use for adding a policy.</p>
 </div>
@@ -2098,9 +3496,54 @@ executing the SQL:</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo apply policy1 --dry-run --selector=name=testcluster</pre>
+=======
+<p><strong>Apply Policies</strong></p>
+</div>
+<div class="paragraph">
+<p>To apply an existing policy to a set of clusters, issue
+a command like this:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo apply policy1 --selector=name=testcluster</pre>
 </div>
 </div>
 <div class="paragraph">
+<p>When you execute this command, it will look up clusters that
+have a label value of <code>name=testcluster</code> and then it will apply
+the <strong>policy1</strong> label to that cluster and execute the policy
+SQL against that cluster using the <strong>postgres</strong> user account.</p>
+</div>
+<div class="paragraph">
+<p><strong>Testing Policy Application</strong></p>
+</div>
+<div class="paragraph">
+<p>You can apply policies with a <code>--dry-run</code> flag applied to test
+which clusters the policy would be applied to without actually
+executing the SQL:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo apply policy1 --dry-run --selector=name=testcluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Show Policies</strong></p>
+</div>
+<div class="paragraph">
+<p>To view all policies:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show policy all</pre>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="paragraph">
+<p><strong>Show Clusters with a Specified Policy Applied</strong></p>
+</div>
+<div class="paragraph">
+<<<<<<< HEAD
 <p><strong>Show Policies</strong></p>
 </div>
 <div class="paragraph">
@@ -2133,7 +3576,39 @@ policy name (e.g. policy1):</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo delete policy policy1</pre>
+=======
+<p>If you want to view the clusters than have a specific policy applied
+to them, you can use the <code>--selector</code> flag as follows to filter on a
+policy name (e.g. policy1):</p>
 </div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show cluster --selector=policy1=pgpolicy</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Delete Policies</strong></p>
+</div>
+<div class="paragraph">
+<p>To delete a policy use the following form:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete policy policy1</pre>
+</div>
+</div>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
+</div>
+<div class="sect2">
+<h3 id="_loading_data">Loading Data</h3>
+<div class="paragraph">
+<p>A CSV file loading capability is supported. This can be tested through
+creating a SQL Policy which will create a database table that will be
+loaded with the CSV data. The loading is based on a load definition found
+in the <code>sample-load-config.json</code> file. In that file, the data to be loaded
+is specified. When the <code>pgo load</code> command is executed, Jobs will be created
+to perform the loading for each cluster that matches the selector filter.</p>
 </div>
 </div>
 <div class="sect2">
@@ -2204,13 +3679,21 @@ to perform the loading for each cluster that matches the selector filter.</p>
 </tbody>
 </table>
 <div class="sect3">
+<<<<<<< HEAD
 <h4 id="_syntax_14">Syntax</h4>
+=======
+<h4 id="_syntax_15">Syntax</h4>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <div class="paragraph">
 <p>$ pgo load [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
+<<<<<<< HEAD
 <h4 id="_flags_10">Flags</h4>
+=======
+<h4 id="_flags_13">Flags</h4>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -2247,6 +3730,7 @@ to perform the loading for each cluster that matches the selector filter.</p>
 </tr>
 </tbody>
 </table>
+<<<<<<< HEAD
 </div>
 <div class="sect3">
 <h4 id="_examples_8">Examples</h4>
@@ -2272,6 +3756,33 @@ example:</p>
 <div class="content">
 <pre>pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=testcluster</pre>
 </div>
+=======
+</div>
+<div class="sect3">
+<h4 id="_examples_12">Examples</h4>
+<div class="paragraph">
+<p><strong>Loading CSV Files</strong></p>
+</div>
+<div class="paragraph">
+<p>Load a sample CSV file into a database as follows:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name=testcluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Including Policies</strong></p>
+</div>
+<div class="paragraph">
+<p>If you include the <strong>--policies</strong> flag, any specified policies will be applied prior to the data being loaded.  For
+example:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=testcluster</pre>
+</div>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
 </div>
@@ -2287,13 +3798,21 @@ example:</p>
 credentials for the PostgreSQL clusters.</p>
 </div>
 <div class="sect3">
+<<<<<<< HEAD
 <h4 id="_syntax_15">Syntax</h4>
+=======
+<h4 id="_syntax_16">Syntax</h4>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <div class="paragraph">
 <p>$ pgo user [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
+<<<<<<< HEAD
 <h4 id="_flags_11">Flags</h4>
+=======
+<h4 id="_flags_14">Flags</h4>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -2356,7 +3875,11 @@ credentials for the PostgreSQL clusters.</p>
 </table>
 </div>
 <div class="sect3">
+<<<<<<< HEAD
 <h4 id="_examples_9">Examples</h4>
+=======
+<h4 id="_examples_13">Examples</h4>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 <div class="paragraph">
 <p><strong>Basic User Creation</strong></p>
 </div>
@@ -2380,8 +3903,13 @@ credentials for the PostgreSQL clusters.</p>
 </div>
 </div>
 <div class="paragraph">
+<<<<<<< HEAD
 <p>A <strong>managed</strong> account is one that the Operator can manipulate as well; this means that when you run <code>pgo show cluster testcluster --show-secrets</code>
 their credentials are visible, when you run <code>pgo test testcluster</code> the account is tested with the other default accounts, etc.</p>
+=======
+<p>A <strong>managed</strong> account is one that the Operator can manipulate as well; when you run <code>pgo test testcluster</code> the account is tested with
+the other default accounts, etc.</p>
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 <div class="paragraph">
 <p><strong>Complex User Creation</strong></p>
@@ -2456,9 +3984,12 @@ of days in the <strong>testcluster</strong> cluster:</p>
 <div class="content">
 <pre>pgo user --update-passwords --selector=name=testcluster</pre>
 </div>
+<<<<<<< HEAD
 </div>
 <div class="paragraph">
 <p>&gt;&gt;&gt;&gt;&gt;&gt;&gt; 30742471ff7ddcadf87f0dab75de973b979133f7</p>
+=======
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 </div>
 </div>
 </div>

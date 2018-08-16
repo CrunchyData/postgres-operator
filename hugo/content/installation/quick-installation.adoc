@@ -6,7 +6,11 @@ weight: 10
 ---
 
 :toc:
+<<<<<<< HEAD
 Latest Release: v3.1, {docdate}
+=======
+Latest Release: 3.2.0 {docdate}
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 
 == Overview
 
@@ -50,7 +54,7 @@ The script performs the following -
  * sets your .bashrc to include the Operator environment variables
  * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
 
-A tip, if you want to set your Kube context to some particular namespace you 
+A tip, if you want to set your Kube context to some particular namespace you
 can run commands similar to this to set it to a *demo* namespace if
 that namespace has already been created on your GKE cluster:
 ....

@@ -19,6 +19,10 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
+if [ "$CO_UI" = "true" ]; then
+$CO_CMD $NS delete configmap pgo-ui-conf 
+fi
+
 $CO_CMD $NS delete configmap operator-conf 
 $CO_CMD $NS delete secret apiserver-conf-secret
 
@@ -28,10 +32,10 @@ $CO_CMD $NS delete deployment postgres-operator
 
 $CO_CMD $NS delete serviceaccount postgres-operator
 
-#$CO_CMD $NS delete clusterrole pgopclusterrole
-#$CO_CMD $NS delete clusterrolebinding pgopclusterbinding
-#$CO_CMD $NS delete role nspostgresrole
-#$CO_CMD $NS delete rolebinding nspgrolebind
+$CO_CMD $NS delete clusterrole pgopclusterrole
+$CO_CMD $NS delete clusterrolebinding pgopclusterbinding
+$CO_CMD $NS delete role nspostgresrole
+$CO_CMD $NS delete rolebinding nspgrolebind
 
 $CO_CMD $NS delete role pgo-role
 $CO_CMD $NS delete rolebinding pgo-role-binding

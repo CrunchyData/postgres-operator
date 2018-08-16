@@ -29,13 +29,11 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "status Clusters",
-	Long: `status displays namespace wide info on Clusters
-				For example:
+	Long: `Display namespace wide information on all Clusters. For example:
 
-				pgo status 
-				.`,
+	pgo status`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("status called")
+		log.Debug("Status called")
 		showStatus(args)
 	},
 }
@@ -44,14 +42,14 @@ var Summary bool
 
 func init() {
 	RootCmd.AddCommand(statusCmd)
-	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
+	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
 }
 
 func showStatus(args []string) {
 
 	log.Debugf("showStatus called %v\n", args)
 
-	url := APIServerURL + "/status?version=" + ClientVersion
+	url := APIServerURL + "/status?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -117,5 +115,21 @@ func printSummary(status *msgs.StatusDetail) {
 	fmt.Printf("\n%s\n", "Databases Not Ready:")
 	for i := 0; i < len(status.NotReady); i++ {
 		fmt.Printf("\t%s\n", util.Rpad(status.NotReady[i], " ", 30))
+	}
+
+	fmt.Printf("\n%s\n", "Nodes:")
+	for i := 0; i < len(status.Nodes); i++ {
+		fmt.Printf("\t%s\n", util.Rpad(status.Nodes[i].Name, " ", 30))
+		fmt.Printf("\t\tStatus:%s\n", util.Rpad(status.Nodes[i].Status, " ", 30))
+		fmt.Println("\t\tLabels:")
+		for k, v := range status.Nodes[i].Labels {
+			fmt.Printf("\t\t\t%s=%s\n", k, v)
+		}
+	}
+	fmt.Printf("\n%s\n", "Labels (count > 1): [count] [label]")
+	for i := 0; i < len(status.Labels); i++ {
+		if status.Labels[i].Value > 1 {
+			fmt.Printf("\t[%d]\t[%s]\n", status.Labels[i].Value, status.Labels[i].Key)
+		}
 	}
 }

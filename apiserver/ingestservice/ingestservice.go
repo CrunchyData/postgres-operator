@@ -68,7 +68,7 @@ func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 	var resp msgs.ShowIngestResponse
 
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ShowIngestResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 
@@ -101,7 +101,7 @@ func DeleteIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 	var resp msgs.DeleteIngestResponse
 
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.DeleteIngestResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 

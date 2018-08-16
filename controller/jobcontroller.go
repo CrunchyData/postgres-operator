@@ -54,7 +54,6 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 	source := cache.NewListWatchFromClient(
 		c.JobClientset.BatchV1().RESTClient(),
 		"jobs",
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -107,13 +106,20 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	} else if job.Status.Succeeded > 0 && labels[util.LABEL_PGBACKUP] != "" {
 		log.Debugf("got a pgbackup job status=%d", job.Status.Succeeded)
 		log.Debugf("update the status to completed here for pgbackup %s\n ", labels[util.LABEL_PG_DATABASE])
-		//		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, crv1.PgbackupResourcePlural, labels["pg-database"], c.Namespace)
 		dbname := job.ObjectMeta.Labels[util.LABEL_PG_DATABASE]
 
 		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, c.Namespace)
 
 		if err != nil {
 			log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
+		}
+
+	} else if job.Status.Succeeded > 0 && labels[util.LABEL_BACKREST] != "" {
+		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for backrest %s\n ", labels[util.LABEL_PG_DATABASE])
+		err := util.Patch(c.JobClient, "/spec/backreststatus", crv1.UpgradeCompletedStatus, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+		if err != nil {
+			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}
 
 	}

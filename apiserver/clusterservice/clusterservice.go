@@ -58,7 +58,7 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 	} else {
@@ -102,7 +102,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.ShowClusterHandler GET called")
 
 	var resp msgs.ShowClusterResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ShowClusterResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowClusterDetail, 0)
@@ -159,7 +159,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.DeleteClusterHandler called")
 
 	var resp msgs.DeleteClusterResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp := msgs.DeleteClusterResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]string, 0)
@@ -196,7 +196,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	var resp msgs.ClusterTestResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ClusterTestResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {

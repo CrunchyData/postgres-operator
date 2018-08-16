@@ -45,11 +45,13 @@ gendeps:
 	github.com/crunchydata/postgres-operator/apiserver/versionservice 
 setup:
 	./bin/get-deps.sh
+	cd deploy && ./install-rbac.sh
 setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json
 	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
 	kubectl config use-context demo
-
+bounce:
+	kubectl get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs kubectl delete pod
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars
@@ -60,6 +62,12 @@ runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
 apiserver:	check-go-vars
 	go install apiserver.go
+pgo-backrest:	check-go-vars
+	go install pgo-backrest/pgo-backrest.go
+	mv $(GOBIN)/pgo-backrest ./bin/pgo-backrest/
+pgo-backrest-image:	check-go-vars pgo-backrest
+	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
+	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars
@@ -97,12 +105,15 @@ all:
 	make loadimage
 	make pgo
 	make rmdataimage
+	make pgo-backrest
+	make pgo-backrest-image
 push:
 	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
 pull:
 	docker pull $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker pull $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)

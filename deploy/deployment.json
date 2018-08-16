@@ -52,15 +52,6 @@
                     "image": "$CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG",
                     "imagePullPolicy": "IfNotPresent",
                     "env": [{
-                        "name": "CCP_IMAGE_PREFIX",
-                        "value": "crunchydata"
-                    }, {
-                        "name": "CO_IMAGE_PREFIX",
-                        "value": "crunchydata"
-                    }, {
-                        "name": "CO_IMAGE_TAG",
-                        "value": "$CO_IMAGE_TAG"
-                    }, {
                         "name": "CRUNCHY_DEBUG",
                         "value": "true"
                     }, {

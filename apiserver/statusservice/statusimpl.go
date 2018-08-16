@@ -24,6 +24,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
+	"sort"
 )
 
 func Status() msgs.StatusResponse {
@@ -51,6 +52,8 @@ func getStatus(results *msgs.StatusDetail) error {
 	results.VolumeCap = getVolumeCap()
 	results.DbTags = getDBTags()
 	results.NotReady = getNotReady()
+	results.Nodes = getNodes()
+	results.Labels = getLabels()
 	return err
 }
 
@@ -63,8 +66,6 @@ func getOperatorStart() string {
 
 	for _, p := range pods.Items {
 		if string(p.Status.Phase) == "Running" {
-			//log.Info("found a postgres-operator pod running phase")
-			//log.Info("start time is " + p.Status.StartTime.String())
 			return p.Status.StartTime.String()
 		}
 	}
@@ -116,7 +117,6 @@ func getVolumeCap() string {
 	for _, p := range pvcs.Items {
 		capTotal = capTotal + getClaimCapacity(apiserver.Clientset, &p)
 	}
-	//log.Infof("capTotal is %d\n", capTotal)
 	q := resource.NewQuantity(capTotal, resource.BinarySI)
 	log.Infof("capTotal string is %s\n", q.String())
 	return q.String()
@@ -161,10 +161,68 @@ func getNotReady() []string {
 
 func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeClaim) int64 {
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
-	//log.Debugf("storage cap string value %s\n", qty.String())
 	diskSize := resource.MustParse(qty.String())
 	diskSizeInt64, _ := diskSize.AsInt64()
 
 	return diskSizeInt64
+
+}
+
+func getNodes() []msgs.NodeInfo {
+	result := make([]msgs.NodeInfo, 0)
+
+	nodes, err := kubeapi.GetNodes(apiserver.Clientset)
+	if err != nil {
+		log.Error(err)
+		return result
+	}
+
+	for _, node := range nodes.Items {
+		r := msgs.NodeInfo{}
+		r.Labels = node.ObjectMeta.Labels
+		r.Name = node.ObjectMeta.Name
+		clen := len(node.Status.Conditions)
+		if clen > 0 {
+			r.Status = string(node.Status.Conditions[clen-1].Type)
+		}
+		result = append(result, r)
+
+	}
+
+	return result
+}
+
+func getLabels() []msgs.KeyValue {
+	var ss []msgs.KeyValue
+	results := make(map[string]int)
+	// GetDeployments gets a list of deployments using a label selector
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "", apiserver.Namespace)
+	if err != nil {
+		log.Error(err)
+		return ss
+	}
+
+	for _, dep := range deps.Items {
+
+		for k, v := range dep.ObjectMeta.Labels {
+			lv := k + "=" + v
+			if results[lv] == 0 {
+				results[lv] = 1
+			} else {
+				results[lv] = results[lv] + 1
+			}
+		}
+
+	}
+
+	for k, v := range results {
+		ss = append(ss, msgs.KeyValue{k, v})
+	}
+
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].Value > ss[j].Value
+	})
+
+	return ss
 
 }

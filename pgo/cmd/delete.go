@@ -26,16 +26,15 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a user, policy, cluster, backup, or upgrade",
-	Long: `Delete allows you to delete a user, policy, cluster, backup, or upgrade
-For example:
+	Long: `Delete allows you to delete a user, policy, cluster, backup, or upgrade. For example:
 
-pgo delete user jeffmc --selector=name=mycluster
-pgo delete policy mypolicy
-pgo delete cluster mycluster
-pgo delete cluster mycluster --delete-data
-pgo delete cluster mycluster --delete-data --delete-backups
-pgo delete backup mycluster
-pgo delete upgrade mycluster`,
+	pgo delete user testuser --selector=name=mycluster
+	pgo delete policy mypolicy
+	pgo delete cluster mycluster
+	pgo delete cluster mycluster --delete-data
+	pgo delete cluster mycluster --delete-data --delete-backups
+	pgo delete backup mycluster
+	pgo delete upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
@@ -56,7 +55,7 @@ pgo delete upgrade mycluster`,
 			case "upgrade":
 				break
 			default:
-				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include: 
+				fmt.Println(`You must specify the type of resource to delete.  Valid resource types include:
 	* policy
 	* user
 	* cluster
@@ -69,7 +68,7 @@ pgo delete upgrade mycluster`,
 	},
 }
 
-var DeleteData, DeleteBackups bool
+var DeleteBackups bool
 var NoPrompt bool
 
 func init() {
@@ -78,12 +77,12 @@ func init() {
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteIngestCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
-	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
-	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a delete command")
-	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "--delete-data causes the data for this cluster to be removed permanently ")
-	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "--delete-backups causes the backups for this cluster to be removed permanently ")
+	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
+	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
 
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
@@ -97,7 +96,7 @@ var deleteIngestCmd = &cobra.Command{
 	pgo delete ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a ingest name is required for this command")
+			log.Error("An ingest name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteIngest(args)
@@ -115,7 +114,7 @@ var deleteUpgradeCmd = &cobra.Command{
 	pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
+			log.Error("A database or cluster name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUpgrade(args)
@@ -133,7 +132,7 @@ var deleteBackupCmd = &cobra.Command{
 	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a database or cluster name is required for this command")
+			log.Error("A database or cluster name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteBackup(args)
@@ -153,9 +152,9 @@ var deleteUserCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
-			log.Error("a user name is required for this command")
+			log.Error("A user name is required for this command.")
 		} else if Selector == "" {
-			log.Error("a selector is required for this command")
+			log.Error("A selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUser(args[0])
@@ -175,7 +174,7 @@ var deleteClusterCmd = &cobra.Command{
 	pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 && Selector == "" {
-			log.Error("a cluster name or selector is required for this command")
+			log.Error("A cluster name or selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteCluster(args)
@@ -194,7 +193,7 @@ var deletePolicyCmd = &cobra.Command{
 	pgo delete policy mypolicy`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("a policy name is required for this command")
+			log.Error("A policy name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args)

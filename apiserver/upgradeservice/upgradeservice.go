@@ -57,7 +57,7 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.CreateUpgradeResponse
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp = msgs.CreateUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
@@ -95,7 +95,7 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resp msgs.ShowUpgradeResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ShowUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 
@@ -130,7 +130,7 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resp msgs.DeleteUpgradeResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.DeleteUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 

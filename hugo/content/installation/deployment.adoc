@@ -6,7 +6,11 @@ weight: 40
 ---
 
 :toc:
+<<<<<<< HEAD
 Latest Release: v3.1, {docdate}
+=======
+Latest Release: 3.2.0 {docdate}
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -53,7 +57,7 @@ The complete set of environment variables used in the installation
 so far are -
 ....
 export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.1
+export CO_IMAGE_TAG=centos7-3.2
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
@@ -84,7 +88,11 @@ pgoadmin
 pgoreader
 ....
 
+<<<<<<< HEAD
 This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local 
+=======
+This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local
+>>>>>>> f0d579bd2835d5992c99a4ce918d98c3ba409d81
 security requirements.
 
 The format of this file is as follows -
@@ -152,8 +160,8 @@ pgo version
 At this point you should be able to connect to the operator as follows -
 ....
 pgo version
-pgo client version 3.1
-apiserver version 3.1
+pgo client version 3.2
+apiserver version 3.2
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.

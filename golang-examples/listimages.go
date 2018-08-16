@@ -23,18 +23,8 @@ func main() {
 		panic(err)
 	}
 
-	//for _, container := range containers {
-	//fmt.Printf("%s %s\n", container.ID[:10], container.Image)
-	//}
-
 	myfilters := filters.NewArgs()
 	myfilters.Add("label", "Vendor=Crunchy Data Solutions")
-	//myfilters.Add("label", "label=PostgresVersion=9.5")
-	//fmt.Printf("filters are %v\n", myfilters)
-	//mymap := make(map[string]string)
-	//mymap["Vendor"] = "Crunchy Data Solutions"
-	//mymap["PostgresVersion"] = "9.6"
-	//myfilters.MatchKVList("label", mymap)
 
 	pgmap := make(map[string]string)
 
@@ -49,8 +39,6 @@ func main() {
 	for _, image := range images {
 		for _, name := range image.RepoTags {
 			if strings.Contains(name, "crunchy-postgres") {
-				//fmt.Printf("%s \n", name)
-				//fmt.Printf("PostgresFullVersion %s PostgresVersion %s \n", image.Labels["PostgresFullVersion"], image.Labels["PostgresVersion"])
 				pgmap[name] = image.Labels["PostgresFullVersion"]
 			}
 		}

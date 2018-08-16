@@ -32,9 +32,12 @@ type CreateClusterRequest struct {
 	Policies             string
 	CCPImageTag          string
 	Series               int
+	ServiceType          string
 	MetricsFlag          bool
+	BadgerFlag           bool
 	AutofailFlag         bool
 	ArchiveFlag          bool
+	BackrestFlag         bool
 	PgpoolFlag           bool
 	PgpoolSecret         string
 	CustomConfig         string
@@ -52,10 +55,16 @@ type CreateClusterResponse struct {
 
 // ShowClusterService
 type ShowClusterService struct {
-	Name      string
-	Data      string
-	ClusterIP string
+	Name       string
+	Data       string
+	ClusterIP  string
+	ExternalIP string
 }
+
+const PodTypePrimary = "primary"
+const PodTypeReplica = "replica"
+const PodTypeBackup = "backup"
+const PodTypeUnknown = "unknown"
 
 // ShowClusterPod
 type ShowClusterPod struct {
@@ -64,20 +73,15 @@ type ShowClusterPod struct {
 	NodeName    string
 	PVCName     map[string]string
 	ReadyStatus string
+	Ready       bool
 	Primary     bool
+	Type        string
 }
 
 // ShowClusterDeployment
 type ShowClusterDeployment struct {
 	Name         string
 	PolicyLabels []string
-}
-
-// ShowClusterSecret
-type ShowClusterSecret struct {
-	Name     string
-	Username string
-	Password string
 }
 
 // ShowClusterReplica
@@ -91,7 +95,6 @@ type ShowClusterDetail struct {
 	Deployments []ShowClusterDeployment
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
-	Secrets     []ShowClusterSecret
 	Replicas    []ShowClusterReplica
 }
 
@@ -122,6 +125,24 @@ type ClusterTestResult struct {
 // ClusterTestResponse ...
 type ClusterTestResponse struct {
 	Results []ClusterTestResult
+	Status
+}
+
+type ScaleQueryTargetSpec struct {
+	Name        string
+	ReadyStatus string
+	Node        string
+	RepStatus   string
+}
+
+type ScaleQueryResponse struct {
+	Results []string
+	Targets []ScaleQueryTargetSpec
+	Status
+}
+
+type ScaleDownResponse struct {
+	Results []string
 	Status
 }
 

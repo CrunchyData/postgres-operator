@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 )
 
@@ -26,7 +25,7 @@ func Version() msgs.VersionResponse {
 	resp := msgs.VersionResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = "apiserver version"
-	resp.Version = apiserver.VERSION
+	resp.Version = msgs.PGO_VERSION
 
 	return resp
 }
