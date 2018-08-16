@@ -62,7 +62,7 @@ func init() {
 	RootCmd.AddCommand(restoreCmd)
 
 	restoreCmd.Flags().StringVarP(&ToCluster, "to-cluster", "", "", "The name of the new cluster to restore to ")
-	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "full", "default is full, other values are entered free form")
+	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "", "default is full, other values are entered free form")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "the PITR target which is a PG timestamp such as '2018-08-13 11:25:42.582117-04'")
 
 }
