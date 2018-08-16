@@ -1,9 +1,5 @@
-+++
-title= "{{ replace .TranslationBaseName "-" " " | title }}"
-date= {{ .Date }}
-description = ""
-draft= true
-+++
-
-Lorem Ipsum.
-Notice `draft` is set to true.
+---
+title: "{{ replace .Name "-" " " | title }}"
+date: {{ .Date }}
+draft: true
+---
