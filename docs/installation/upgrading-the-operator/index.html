@@ -116,10 +116,10 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/contributing/" class="dd-item
+    <li data-nav-id="/getting-started/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
+      <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a>
 
       </div>
     </li>
@@ -130,10 +130,10 @@
 
       </div>
     </li>
-    <li data-nav-id="/getting-started/" class="dd-item
+    <li data-nav-id="/contributing/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/getting-started/">Getting Started</a>
+      <a href="https://crunchydata.github.io/postgres-operator/contributing/">Contributing</a>
 
       </div>
     </li>
@@ -225,10 +225,86 @@
     
     
     <div class="paragraph">
-<p>v3.1, 2018-06-13</p>
+<p>Latest Release: 3.2.0 2018-08-16</p>
 </div>
 <div class="paragraph">
 <div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Upgrading to v3.2
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="paragraph">
+<p>The following changes are mandatory when upgrading to 3.2 from previous operator versions:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>The MatchLabels attribute was added to the pgo.yaml file as an optional
+storage configuration setting. You do not have to specify this setting,
+however, the operator-conf ConfigMap now has to include the <strong>pvc-matchlabels.json</strong>
+template file as required by this new feature. If you upgrade to
+3.2, you will need to rebuild your <strong>operator-conf</strong> ConfigMap to include
+<code>pvc-matchlabels.json</code> and redeploy the Operator using the new ConfigMap.</p>
+</li>
+<li>
+<p>The <code>CCP_IMAGE_PREFIX</code>, <code>CO_IMAGE_PREFIX</code>, and <code>CO_IMAGE_TAG</code> environment variables are now pulled from the <code>pgo.yaml</code> configuration file that is mounted by both the apiserver and operator containers. To clean up an existing deployment, remove these environment variable definitions from your <code>deployment.yaml</code> file or Helm chart equivalent.</p>
+</li>
+<li>
+<p>The <code>ExternalIP</code> field was added to the <code>apiservermsgs.ShowClusterService</code>
+struct. This field is now passed back to apiserver clients in the
+REST API when viewing cluster details. For custom clients you might
+have written, you will see this new field in the REST message.</p>
+</li>
+<li>
+<p>Clusters that were created prior to 3.1 will need a new label to be applied. For primary deployments, apply the label <code>primary=true</code>. For example, <code>kubectl label deploy mycluster primary=true</code>. For replica deployments, specify <code>primary=false</code>. For example,	<code>kubectl label deploy mycluster-xxxx primary=false</code>.</p>
+</li>
+<li>
+<p>The <code>collect.json</code> template now specifies a pgmonitor credential that
+must match the <code>PGMONITOR_PASSWORD</code> environment variable which was
+added into the <code>cluster-deployment-1.json</code> template.  These changes
+were required to support crunchy-collect (2.1.0) changes that were
+introduced.  Users should upgrade to <code>crunchy-collect:centos7-10.5-2.1.0</code>
+to use this feature.  If you do not want to upgrade to this new
+metrics collector, you will need to retain and reuse the prior version
+of <code>collect.json</code> used by the Operator and make sure you deploy that
+version.</p>
+</li>
+</ul>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<p><div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Upgrading from v2.6 to v3.1
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="paragraph">
+<p>Clusters that were created prior to 3.1 will need a new label to be applied.
+For primary deployments, apply the label <code>primary=true</code>. For example,
+<code>kubectl label deploy mycluster primary=true</code>. For replica deployments, specify
+<code>primary=false</code>. For example,	<code>kubectl label deploy mycluster-xxxx primary=false</code>.</p>
+</div>
+
+    </div>
+</div></p>
+</div>
+<div class="paragraph">
+<p><div class="expand">
     <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
         <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
         <span>
@@ -291,7 +367,7 @@ an existing cluster as a parameter.</p>
 </div>
 
     </div>
-</div>
+</div></p>
 </div>
 <div class="paragraph">
 <p><div class="expand">
@@ -308,7 +384,7 @@ an existing cluster as a parameter.</p>
 <div class="paragraph">
 <p>For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.1">here</a>.</p>
+page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.2">here</a>.</p>
 </div>
 <div class="sect1">
 <h2 id="_required_updates">Required Updates</h2>
@@ -351,12 +427,9 @@ ContainerResources:
 </div>
 </div>
 <div class="paragraph">
-<p>&lt;div class="notices warning" &gt;&lt;div class="paragraph"&gt;
-&lt;p&gt;If these settings are set incorrectly or if the Kubernetes cluster
+<p>If these settings are set incorrectly or if the Kubernetes cluster
 cannot meet the defined memory and CPU requirements, deployments will go into
-a &lt;strong&gt;pending&lt;/strong&gt; state.&lt;/p&gt;
-&lt;/div&gt;
-&lt;/div&gt;</p>
+a <strong>pending</strong> state.</p>
 </div>
 </div>
 <div class="sect2">
@@ -464,7 +537,7 @@ such as the resource and storage configurations requested at run time.</p>
 
 <div id="navigation">
 <a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration"> <i class="fa fa-chevron-left"></i><label>Configuration</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/contributing/" title="Contributing" style="margin-right: 0px;"><label>Contributing</label><i class="fa fa-chevron-right"></i></a></div>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/getting-started/" title="Getting Started" style="margin-right: 0px;"><label>Getting Started</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>
 <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">

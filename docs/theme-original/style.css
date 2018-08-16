@@ -279,7 +279,7 @@ h2 {
   line-height: 110% !important;
   margin: 1.5rem 0;
   text-transform: capitalize;
-  color: #323232 !important }
+  color: #5e5e5e !important }
 
 h3 {
   font-size: 1.4rem;
@@ -292,7 +292,8 @@ h4 {
   margin: 1.5rem 0 0.75rem 0; }
 
 h5 {
-  font-size: 0.5rem;
+  font-size: 1rem;
+  color: #515151 !important;
   line-height: 110% !important;
   margin: 1rem 0 0.2rem 0; }
 
@@ -350,7 +351,7 @@ body #chapter h1 {
   font-size: 3.5rem; }
 
 a {
-  color: #2053AB;
+  color: rgb(1, 103, 180);
   -webkit-transition: color 0.15s ease;
   -moz-transition: color 0.15s ease;
   -ms-transition: color 0.15s ease;
@@ -401,10 +402,9 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 169, 218, 0.7); }
 
 #header-wrapper {
-  background: #2053AB;
   color: #fff;
   text-align: center;
-  border-bottom: 1px solid #183f81;
+  font-weight: 600;
   padding: 1rem; }
 
 #header a {
@@ -421,7 +421,7 @@ textarea:focus, input[type="email"]:focus, input[type="number"]:focus, input[typ
   margin-top: 1rem;
   position: relative;
   border: 1px solid #6795e3;
-  background: #183f81;
+  background: #0167B4;
   border-radius: 4px; }
 
 .searchbox label {
@@ -582,7 +582,7 @@ body {
 h3, h4, h5, h6 {
   font-family: "Roboto", "Work Sans Bold", "Helvetica Bold", "Tahoma Bold", "Geneva Bold", "Arial Bold", sans-serif;
   text-rendering: optimizeLegibility;
-  color: #5e5e5e;
+  color: #0167B4;
   font-weight: 600; }
 
 h1 {
@@ -683,9 +683,11 @@ code {
     display:none;
 }
 
+/* #272a2c */
+
 pre {
   padding: 1rem;
-  border: 1px solid #272a2c;
+  border: 1px solid #e2e2e2;
   border-radius: 2px; }
 
 pre code {
@@ -1083,13 +1085,14 @@ a.github-link {
   margin-right: 1rem !important; }
 
 #sidebar {
-  background-color: #2053AB;
+  background-image: url("../images/home_bg.jpg");
+  background-size: cover;
   position: fixed;
   top: 0;
   width: 300px;
   bottom: 0;
   left: 0;
-  font-weight: normal;
+  font-weight: 600;
   font-size: 90%;
   line-height: 27px;
   -webkit-font-smoothing: antialiased; }
@@ -1108,7 +1111,7 @@ a.github-link {
   #sidebar a.subtitle {
     color: rgba(204, 204, 204, 0.6); }
   #sidebar hr {
-    border-bottom: 1px solid #2a232f; }
+    display: none; }
   #sidebar a.padding {
     padding: 0 1rem; }
   #sidebar h5 {
@@ -1188,7 +1191,7 @@ a.github-link {
       -ms-transition: color 0.15s ease;
       transition: color 0.15s ease; }
     #sidebar ul.topics > li.parent, #sidebar ul.topics > li.active {
-      background: #183f81;
+      background: #0167B4;
       margin-left: -1rem;
       margin-right: 0rem;
       padding-left: 1rem;
@@ -1247,8 +1250,7 @@ a.github-link {
     width: 100%; }
   #sidebar #shortcuts label {
     display: inline;
-    cursor: pointer;
-    font-weight: 400; }
+    cursor: pointer; }
   #sidebar #shortcuts h3 {
     font-family: 'Roboto', 'Helvetica', 'Tahoma', 'Geneva', 'Arial', sans-serif;
     color: #fff; }

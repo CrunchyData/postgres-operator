@@ -8,8 +8,18 @@
   </url>
   
   <url>
+    <loc>https://crunchydata.github.io/postgres-operator/installation/</loc>
+    <lastmod>2018-04-24T18:27:02-07:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://crunchydata.github.io/postgres-operator/installation/manual-installation/</loc>
     <lastmod>2018-04-26T15:22:21-07:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/getting-started/</loc>
+    <lastmod>2018-04-24T18:26:43-07:00</lastmod>
   </url>
   
   <url>
@@ -18,13 +28,18 @@
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/installation/deployment/</loc>
-    <lastmod>2018-04-26T15:26:40-07:00</lastmod>
+    <loc>https://crunchydata.github.io/postgres-operator/how-it-works/</loc>
+    <lastmod>2018-04-24T18:27:42-07:00</lastmod>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/installation/</loc>
-    <lastmod>2018-04-24T18:27:02-07:00</lastmod>
+    <loc>https://crunchydata.github.io/postgres-operator/contributing/</loc>
+    <lastmod>2018-04-29T13:22:59-07:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/installation/deployment/</loc>
+    <lastmod>2018-04-26T15:26:40-07:00</lastmod>
   </url>
   
   <url>
@@ -35,21 +50,6 @@
   <url>
     <loc>https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/</loc>
     <lastmod>2018-04-24T18:27:30-07:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://crunchydata.github.io/postgres-operator/contributing/</loc>
-    <lastmod>2018-04-29T13:22:59-07:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://crunchydata.github.io/postgres-operator/how-it-works/</loc>
-    <lastmod>2018-04-24T18:27:42-07:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://crunchydata.github.io/postgres-operator/getting-started/</loc>
-    <lastmod>2018-04-24T18:26:43-07:00</lastmod>
   </url>
   
   <url>

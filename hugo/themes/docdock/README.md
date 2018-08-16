@@ -1,129 +1,112 @@
-# Hugo docDock Theme
+# Crunchy Hugo Theme
 
-This repository contains a theme for [Hugo](https://gohugo.io/), based on 
+This repository contains a theme for [Hugo](https://gohugo.io/), based on the [DocDock](http://docdock.netlify.com/) Hugo theme.
 
-* [Matcornic Learn theme](https://github.com/matcornic/hugo-theme-learn/).
-* [facette.io](https://facette.io/)'s documentation style css (Facette is a great time series data visualization software)
-
-Visit the [theme documentation](http://docdock.netlify.com/) to see what is going on. It is actually built with this theme.
-
-# Main features
-
-- Search
-- **Unlimited menu levels**
-- RevealJS presentation from markdown (embededed or fullscreen page)
-- Attachments files
-- List child pages
-- Include segment of content from one page in another (Excerpt)
-- Automatic next/prev buttons to navigate through menu entries
-- Mermaid diagram
-- Icons, Buttons, Alerts, Panels, Tip/Note/Info/Warning boxes
-- Image resizing, shadow...
-- Customizable look and feel
-
-
-![Overview](https://github.com/vjeantet/hugo-theme-docdock/raw/master/images/tn.png)
-
-## Installation
+# Installation
 
 Check that your Hugo version is minimum `0.30` with `hugo version`. We assume that all changes to Hugo content and customizations are going to be tracked by git (GitHub, Bitbucket etc.). Develop locally, build on remote system.
 
-To start real work:
+## Step 1: Initialize Hugo
 
-1. Initialize Hugo
-2. Install DocDock theme
-3. Configure DocDock and Hugo
+You can set up a new Hugo installation using:
 
-### Prepare empty Hugo site
-
-Create empty directory, which will be root of your Hugo project. Navigate there and let Hugo to create minimal required directory structure:
-```
-$ hugo new site .
-```
-AFTER that, initialize this as git directory where to track further changes
-```
-$ git init
+```sh
+hugo new site projectname
 ```
 
-Next, there are at least three ways to install DocDock (first recommended):
+## Step 2: Install Crunchy Hugo Theme
 
-1. **As git submodule**
-2. As git clone
-3. As direct copy (from ZIP)
+There are a few ways to install the Crunchy Hugo Theme.
 
-Navigate to your themes folder in your Hugo site and use perform one of following scenarios.
+### Option 1: git clone
 
-### 1. Install DocDock as git submodule
-DocDock will be added like a dependency repo to original project. When using CI tools like Netlify, Jenkins etc., submodule method is required, or you will get `theme not found` issues. Same applies when building site on remote server trough SSH.
-
-If submodule is no-go, use 3rd option.
-
-On your root of Hugo execute:
-
-```
-$ git submodule add https://github.com/vjeantet/hugo-theme-docdock.git themes/docdock
-```
-Next initialize submodule for parent git repo:
-
-```
-$ git submodule init
-$ git submodule update
+```sh
+cd themes
+git clone https://github.com/CrunchyData/crunchy-hugo-theme.git
 ```
 
-Now you are ready to add content and customize looks. Do not change any file inside theme directory.
+### Option 2: Download
 
-If you want to freeze changes to DocDock theme itself and use still submodules, fork private copy of DocDock and use that as submodule. When you are ready to update theme, just pull changes from origin to your private fork.
+Download from https://github.com/CrunchyData/crunchy-hugo-theme and place the root folder in `themes`
 
-### 2. Install DocDock simply as git clone
-This method results that files are checked out locally, but won't be visible from parent git repo. Probably you will build site locally with `hugo` command and use result from `public/` on your own.
+### Option 3: git submodule
 
+If you are working in a git project you can add the theme as a submodule:
+
+## Step 3: Configuration
+
+Use this as the basis for your `config.toml` file:
+
+```toml
+baseURL = ""
+canonifyurls = true
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir= false
+enableMissingTranslationPlaceholders = false
+languageCode = "en-us"
+publishDir = "../docs"
+pygmentsCodeFences = true
+pygmentsStyle = "monokailight"
+relativeURLs = true
+theme = "crunchy-hugo-theme"
+title = "Your Project Name"
+
+[params]
+editURL = "https://github.com/CrunchyData/path/to/project"
+showVisitedLinks = false # default is false
+themeStyle = "original" # "original" or "flex" # default "flex"
+themeVariant = "" # choose theme variant "green", "gold" , "gray", "blue" (default)
+ordersectionsby = "weight" # ordersectionsby = "title"
+disableHomeIcon = false # default is false
+disableSearch = false # default is false
+disableNavChevron = false # set true to hide next/prev chevron, default is false
+highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
+menushortcutsnewtab = false # set true to open shortcuts links to a new tab/window
+enableGitInfo = true
+
+[outputs]
+home = [ "HTML", "RSS", "JSON"]
+
+# [[menu.shortcuts]]
+# pre = "<h3>More</h3>"
+# name = "<i class='fa fa-github'></i> <label>Github repo</label>"
+# identifier = "ds"
+# url = "https://github.com/CrunchyData/postgres-operator"
+# weight = 10
+#
+# [[menu.shortcuts]]
+# name = "<i class='fa fa-cloud-download'></i> <label>Download</label>"
+# url = "https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz"
+# weight = 11
+#
+# [[menu.shortcuts]]
+# name = "<i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label>"
+# identifier = "kubedoc"
+# url = "https://kubernetes.io/docs/"
+# weight = 20
+#
+# [[menu.shortcuts]]
+# name = "<i class='fa fa-file'></i> <label>License</label>"
+# url = "https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"
+# weight = 22
 ```
-$ git clone https://github.com/vjeantet/hugo-theme-docdock.git themes/docdock
+
+# Testing
+
+You can test your deployment by running the Hugo server module:
+
+```sh
+hugo server
 ```
 
+By deafult, this will make the documentation available at http://localhost:1313 but be sure to read the output to where it binds.
 
-### 3. Install DocDock from ZIP
+# Deployment
 
-All files from theme will be tracked inside parent repo, to update it, have to override files in theme. Download following zip and extract inside `themes/`.
+You can build all the static docs by running:
 
-```
-https://github.com/vjeantet/hugo-theme-docdock/archive/master.zip
-```
-Name of theme in next step will be `hugo-theme-docdock-master`, can rename as you wish.
-
-## Configure
-
-Import sample config from sample site to Hugo root.
-
-```
-$ cp themes/docdock/exampleSite/config.toml .
+```sh
+hugo
 ```
 
-Change following `config.toml` line as needed, depending on method above:
-```
-theme = "<hugo-theme-docdock-dir-name>"
-```
-Comment out following line, so default `themes/` will be used:
-
-```
-# themesdir = "../.."
-```
-
-#### (Bonus)
-Create empty file `.gitkeep` inside `public/` and add following to `.gitignore`.  This way it will keep repo smaller and won't bring build result files and errors to remote checkout places:
-```
-/public/*
-!/public/.gitkeep
-```
-
-### Preview site
-```
-$ hugo server
-```
-to browse site on http://localhost:1313
-
-## Usage
-
-- [Visit the documentation](http://docdock.netlify.com/)
-- [Hugo docs](https://gohugo.io/getting-started/configuration/)
-- [Git submodules](https://git-scm.com/docs/git-submodule)
+By default, this outputs to a documentation directory above the project directory name `docs/`. You can configure this to what makes sense for your project.
