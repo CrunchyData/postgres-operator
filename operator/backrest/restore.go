@@ -44,6 +44,7 @@ type backrestRestoreJobTemplateFields struct {
 	RestoreConfigMapName string
 	FromClusterPVCName   string
 	ToClusterPVCName     string
+	BackrestRestoreOpts  string
 	DeltaEnvVar          string
 	PITRTargetEnvVar     string
 	CCPImagePrefix       string
@@ -109,8 +110,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		RestoreConfigMapName: task.Spec.Name,
 		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
-		DeltaEnvVar:          getDeltaEnvVar(task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE]),
-		PITRTargetEnvVar:     getPITREnvVar(task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_PITR_TARGET]),
+		BackrestRestoreOpts:  task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
 
 		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:    operator.Pgo.Cluster.CCPImageTag,
@@ -169,6 +169,8 @@ func createRestoreJobConfigMap(clientset *kubernetes.Clientset, toName, fromName
 	return err
 
 }
+
+/**
 func getDeltaEnvVar(restoretype string) string {
 	if restoretype == util.LABEL_BACKREST_RESTORE_DELTA {
 		return "{ \"name\": \"DELTA\"" + "},"
@@ -185,3 +187,4 @@ func getPITREnvVar(restoretype, pitrtarget string) string {
 	}
 	return ""
 }
+*/

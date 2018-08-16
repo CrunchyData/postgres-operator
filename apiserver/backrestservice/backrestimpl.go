@@ -344,7 +344,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToCluster+" type="+request.RestoreType)
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToCluster+" opts="+request.RestoreOpts)
 
 	return resp
 }
@@ -358,8 +358,7 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER] = request.ToCluster
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_TYPE] = request.RestoreType
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_PITR_TARGET] = request.PITRTarget
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

@@ -30,7 +30,10 @@
                                 "name": "STANZA",
                                 "value": "db"
                             },
-                    {{.DeltaEnvVar}}
+                            {
+                                "name": "BACKREST_CUSTOM_OPTS",
+                                "value": "{{.BackrestRestoreOpts}}"
+                            },
                             {
                                 "name": "PG_HOSTNAME",
 				"value": "{{.ToClusterName}}"

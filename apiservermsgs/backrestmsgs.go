@@ -53,6 +53,6 @@ type RestoreResponse struct {
 type RestoreRequest struct {
 	FromCluster string
 	ToCluster   string
-	RestoreType string
+	RestoreOpts string
 	PITRTarget  string
 }
