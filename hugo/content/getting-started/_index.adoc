@@ -143,7 +143,7 @@ The password to use for initial database users.
 |`--service-type=VALUE` |N/A |String |
 The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
 
-|`--backrest` |N/A |N/A |
+|`--pgbackrest` |N/A |N/A |
 Enables a pgBackRest volume for the database pod.
 
 |`--pgbadger` |N/A |N/A |
@@ -264,8 +264,12 @@ within the pgo.yaml configuration.
 
 Create a PG cluster that enables pgBackRest specifically for that cluster:
 ....
-pgo create cluster mycluster --pgbackrest
+pgo create cluster mycluster --pgbackrest --custom-config=pgo-pgbackrest-config
 ....
+
+NOTE:  Currently a pgbackrest configuration file is required to be specified
+using the *--custom-config* flag, see examples/backrest-config for the
+example of creating this custom ConfigMap.
 
 Setting this value will cause the Operator to create a PVC specifically dedicated for holding
 pgBackRest backups.

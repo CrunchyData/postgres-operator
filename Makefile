@@ -46,6 +46,7 @@ gendeps:
 setup:
 	./bin/get-deps.sh
 	cd deploy && ./install-rbac.sh
+	cd examples/backrest-config && ./create.sh
 setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json
 	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
