@@ -451,6 +451,16 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			}
 		}
 
+		if request.CustomConfig != "" {
+			found := validateCustomConfig(request.CustomConfig)
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.CustomConfig + " configmap was not found "
+				return resp
+			}
+			//add a label for the custom config
+			userLabelsMap[util.LABEL_CUSTOM_CONFIG] = request.CustomConfig
+		}
 		//set the metrics flag with the global setting first
 		userLabelsMap[util.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
@@ -496,6 +506,13 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		} else {
 			log.Debug("using Backrest from pgo.yaml")
 			userLabelsMap[util.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
+		}
+
+		err = validateBackrestConfig(userLabelsMap)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 		}
 
 		//add archive if backrest is requested
@@ -567,17 +584,6 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 				resp.Status.Msg = request.ContainerResources + " ContainerResource config was not found "
 				return resp
 			}
-		}
-
-		if request.CustomConfig != "" {
-			found := validateCustomConfig(request.CustomConfig)
-			if !found {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.CustomConfig + " configmap was not found "
-				return resp
-			}
-			//add a label for the custom config
-			userLabelsMap["custom-config"] = request.CustomConfig
 		}
 
 		if request.SecretFrom != "" {
@@ -978,4 +984,25 @@ func getReplicas(cluster *crv1.Pgcluster) ([]msgs.ShowClusterReplica, error) {
 	}
 
 	return output, err
+}
+
+func validateBackrestConfig(labels map[string]string) error {
+	var err error
+
+	if labels[util.LABEL_BACKREST] == "true" {
+		if labels[util.LABEL_CUSTOM_CONFIG] != "" {
+			//TODO could check the contents of that config map here tomake sure it include a pgbackrest.conf key
+			return err
+		} else {
+			//check the global configmap here
+			_, found := kubeapi.GetConfigMap(apiserver.Clientset, util.GLOBAL_CUSTOM_CONFIGMAP, apiserver.Namespace)
+			if !found {
+				log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found")
+				return errors.New(util.GLOBAL_CUSTOM_CONFIGMAP + " global configmap or --custom-config flag not set, one of these is required for enabling pgbackrest")
+			}
+
+		}
+	}
+	return err
+
 }
