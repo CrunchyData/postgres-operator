@@ -86,10 +86,11 @@ func (c *JobController) onAdd(obj interface{}) {
 // onUpdate is called when a pgcluster is updated
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
-	log.Infof("[JobCONTROLLER] OnUpdate %s succeeded=%d", job.ObjectMeta.SelfLink, job.Status.Succeeded)
+	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
 	//label is "pgrmdata" and Status of Succeeded
 	labels := job.GetObjectMeta().GetLabels()
 	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] != "" {
+		log.Debugf("rmdata job labels=[%v]", labels)
 		log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 		//remove the pvc referenced by that job
 		log.Debugf("deleting pvc " + labels["claimName"])
