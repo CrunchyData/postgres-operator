@@ -34,11 +34,11 @@ var PITRTarget string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
-	Short: "perform a restore",
-	Long: `RELOAD performs a pgbackrest restore to a new PG cluster, for example:
-		pgo restore mycluster --to-cluster=restoredcluster
-		pgo restore mycluster --restore-opts="--delta" --to-cluster=restoredcluster
-		pgo restore mycluster --restore-opts="--delta --type=time --target='2018-08-16 10:34:19.247526-04'" --to-cluster=restoredcluster`,
+	Short: "Perform a pgBackRest restore",
+	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. For example:
+
+	pgo restore withbr --to-cluster=restored
+	pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("restore called")
 		if len(args) == 0 {
@@ -49,7 +49,7 @@ var restoreCmd = &cobra.Command{
 				os.Exit(2)
 			}
 			if RestoreOpts == "" {
-				fmt.Println("Error: You must specify --restore-opts flag")
+				fmt.Println("Error: You must specify the --restore-opts flag.")
 				os.Exit(2)
 			}
 			restore(args)
@@ -61,9 +61,9 @@ var restoreCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&ToCluster, "to-cluster", "", "", "The name of the new cluster to restore to ")
-	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "", "default is full, other values are entered free form")
-	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "the PITR target which is a PG timestamp such as '2018-08-13 11:25:42.582117-04'")
+	restoreCmd.Flags().StringVarP(&ToCluster, "to-cluster", "", "", "The name of the new cluster to restore to.")
+	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "full", "The options for the restore.")
+	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 
 }
 
@@ -120,7 +120,7 @@ func restore(args []string) {
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no clusters found")
+		fmt.Println("No clusters found.")
 		return
 	}
 

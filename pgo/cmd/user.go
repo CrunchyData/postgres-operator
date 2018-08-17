@@ -52,14 +52,12 @@ var ManagedUser bool
 
 var userCmd = &cobra.Command{
 	Use:   "user",
-	Short: "manage users",
-	Long: `USER allows you to manage users and passwords across a set of clusters
-For example:
+	Short: "Manage PostgreSQL users",
+	Long: `USER allows you to manage users and passwords across a set of clusters. For example:
 
-pgo user --selector=name=mycluster --update-passwords
-pgo user --expired=7 --selector=name=mycluster
-pgo user --change-password=bob --selector=name=mycluster
-.`,
+	pgo user --selector=name=mycluster --update-passwords
+	pgo user --expired=7 --selector=name=mycluster
+	pgo user --change-password=bob --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager()
@@ -69,13 +67,13 @@ pgo user --change-password=bob --selector=name=mycluster
 func init() {
 	RootCmd.AddCommand(userCmd)
 
-	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
-	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
-	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
-	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
-	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
-	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
+	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "Shows passwords that will expire in X days.")
+	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "Sets passwords for new users to X days.")
+	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "Updates the password for a user on selective clusters.")
+	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "Grants the user access to a database.")
+	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "Performs password updating on expired passwords.")
+	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "Creates a user with secrets that can be managed by the Operator.")
 
 }
 
@@ -140,12 +138,12 @@ func userManager() {
 func createUser(args []string) {
 
 	if Selector == "" {
-		fmt.Println("Error: selector flag is required")
+		fmt.Println("Error: The --selector flag is required.")
 		return
 	}
 
 	if len(args) == 0 {
-		fmt.Println("Error: user name argument is required")
+		fmt.Println("Error: A user name argument is required.")
 		return
 	}
 
@@ -304,7 +302,7 @@ func showUser(args []string) {
 			os.Exit(2)
 		}
 		if len(response.Results) == 0 {
-			fmt.Println("no clusters found")
+			fmt.Println("No clusters found.")
 			return
 		}
 

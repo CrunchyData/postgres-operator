@@ -30,9 +30,10 @@ import (
 
 var failoverCmd = &cobra.Command{
 	Use:   "failover",
-	Short: "perform a failover",
-	Long: `performs a failover, for example:
-		pgo failover mycluster`,
+	Short: "Performs a manual failover",
+	Long: `Performs a manual failover. For example:
+
+	pgo failover mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("failover called")
 		if len(args) == 0 {
@@ -42,7 +43,7 @@ var failoverCmd = &cobra.Command{
 				queryFailover(args)
 			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
-					fmt.Println(`Error: --target is required for failover.`)
+					fmt.Println(`Error: The --target flag is required for failover.`)
 					return
 				}
 				createFailover(args)
@@ -57,10 +58,10 @@ var failoverCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "--query prints the list of failover candidates")
-	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a failover command")
-	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "--target is the replica target which the failover will occur on.")
-
+	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
+	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
+	
 }
 
 // createFailover ....

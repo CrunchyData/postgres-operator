@@ -27,12 +27,10 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "print version information for the postgres-operator",
-	Long: `VERSION allows you to print version information for the postgres-operator
-				For example:
+	Short: "Print version information for the PostgreSQL Operator",
+	Long: `VERSION allows you to print version information for the postgres-operator. For example:
 
-				pgo version
-				.`,
+	pgo version`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("version called")
 		showVersion()

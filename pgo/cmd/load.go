@@ -33,16 +33,17 @@ var LoadConfig string
 
 var loadCmd = &cobra.Command{
 	Use:   "load",
-	Short: "perform a data load",
-	Long: `LOAD performs a load, for example:
-			pgo load --load-config=./load.json --selector=project=xray`,
+	Short: "Perform a data load",
+	Long: `LOAD performs a load. For example:
+
+	pgo load --load-config=./load.json --selector=project=xray`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("load called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to load or a selector flag.`)
 		} else {
 			if LoadConfig == "" {
-				fmt.Println("Error: You must specify the load-config ")
+				fmt.Println("Error: You must specify the load-config.")
 				return
 			}
 
@@ -55,23 +56,24 @@ var loadCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(loadCmd)
 
-	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job")
-	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated")
+	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job.")
+	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated.")
+	
 }
 
 func createLoad(args []string) {
 	if PoliciesFlag != "" {
 		log.Debug("policies=" + PoliciesFlag)
 	} else {
-		log.Debug("policies is blank")
+		log.Debug("The --policies flag requires a value.")
 	}
 	if Selector != "" {
 		//use the selector instead of an argument list to filter on
 
 		_, err := labels.Parse(Selector)
 		if err != nil {
-			fmt.Println("Error: could not parse selector flag")
+			fmt.Println("Error: Could not parse selector flag.")
 			return
 		}
 	}
@@ -120,7 +122,7 @@ func createLoad(args []string) {
 
 	//get the response
 	if response.Status.Code == msgs.Error {
-		fmt.Println("Error: error in loading...")
+		fmt.Println("Error: Error in loading...")
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
