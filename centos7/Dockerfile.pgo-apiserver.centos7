@@ -1,18 +1,18 @@
 FROM centos:7
 
 LABEL Vendor="Crunchy Data Solutions" \
-	PostgresVersion="10" \
-	PostgresFullVersion="10.5" \
-	Version="7.5" \
-	Release="3.2.0" \
-	summary="crunchy data's postgres operator api" \
-	description="crunchy data postgres operator api"
-
+		PostgresVersion="10" \
+		PostgresFullVersion="10.5" \
+		Version="7.5" \
+		Release="3.2.0" \
+		summary="Crunchy Data PostgreSQL Operator - Apiserver" \
+		description="Crunchy Data PostgreSQL Operator - Apiserver"
 
 ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
 
-RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+# PGDG PostgreSQL Repository
 
+RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
 RUN yum -y update && yum -y install postgresql96 hostname && yum -y clean all
 

@@ -3,20 +3,23 @@ FROM registry.access.redhat.com/rhel7
 MAINTAINER jeff.mccormick@crunchydata.com
 
 LABEL name="postgres-operator" \
-	vendor="crunchydata.com" \
-	PostgresVersion="10" \
-	PostgresFullVersion="10.5" \
-	Version="7.5" \
-	Release="3.2.0" \
-	run='docker run -d -p 8080:80 --name=web-app web-app' \
-	summary="crunchy data's postgres operator" \
-	description="postgres operator" 
+		vendor="crunchydata.com" \
+		PostgresVersion="10" \
+		PostgresFullVersion="10.5" \
+		Version="7.5" \
+		Release="3.2.0" \
+		run='docker run -d -p 8080:80 --name=web-app web-app' \
+		summary="Crunchy Data PostgreSQL Operator" \
+		description="Crunchy Data PostgreSQL Operator"
 
-COPY licenses /licenses
+ENV PGVERSION="10"
 
-ENV PGVERSION="10" 
+COPY redhat/atomic/postgres_operator/help.1 /help.1
+COPY redhat/atomic/postgres_operator/help.md /help.md
+COPY redhat/licenses /licenses
 
-# Crunchy Postgres repo
+# Crunchy PostgreSQL repository
+
 ADD conf/CRUNCHY-GPG-KEY.public  /
 ADD conf/crunchypg96.repo /etc/yum.repos.d/
 RUN rpm --import CRUNCHY-GPG-KEY.public
