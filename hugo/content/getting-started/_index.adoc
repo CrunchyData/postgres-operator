@@ -380,9 +380,6 @@ The output format. Currently, JSON is supported.
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 
-|`--show-secrets` |-x |N/A |
-Show the Kubernetes secrets associated with the cluster.
-
 |`--version` |-v |String |
 Filter the results based on the PostgreSQL version of the cluster.
 |=========================================================
@@ -407,11 +404,11 @@ pgo show cluster all
 
 User credentials are generated through Kubernetes Secrets automatically for the
 *testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed
-by running the `pgo show cluster` command with the `--show-secrets` flag. More details
+by running the `pgo show user` command. More details
 are available on user management below.
 
 ....
-pgo show cluster mycluster --show-secrets
+pgo show user mycluster
 ....
 
 ===== PostgreSQL Version
