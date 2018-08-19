@@ -2,7 +2,7 @@
 title: "Configuration"
 date: 2018-04-24T18:26:56-07:00
 draft: false
-weight: 50
+weight: 40
 ---
 
 :toc:
@@ -33,10 +33,10 @@ priviledges, creates the following resources:
 The `rbac.yaml` file is also executed a single time when installing
 the Operator.  This file creates Role scoped privledges which are
 granted to the postgres-operator service account.  The postgres-operator
-service account is used by the *apiserver* and *postgres-operator* containers 
+service account is used by the *apiserver* and *postgres-operator* containers
 to access Kubernetes resources.
 
-Both of these RBAC files are executed by the `deploy/install-rbac.sh` 
+Both of these RBAC files are executed by the `deploy/install-rbac.sh`
 script.
 
 [WARNING]
@@ -194,7 +194,7 @@ FATA[0000] Authentication Failed: 40
 ....
 
 
-=== *apiserver* Configuration
+=== REST API Configuration
 
 The postgres-operator pod includes the apiserver which is a REST API that pgo
 users are able to communicate with.
@@ -215,8 +215,6 @@ document.
 The version of PostgreSQL container the Operator will deploy is determined by the *CCPImageTag*
 setting in the `$COROOT/conf/apiserver/pgo.yaml` configuration file. By default, this value is
 set to the latest release of the Crunchy Container Suite.
-
-==== *pgo.yaml*
 
 The default pgo.yaml configuration file, included in `$COROOT/conf/apiserver/pgo.yaml`,
 looks like this -
@@ -365,7 +363,7 @@ for users to use as a starting configuration -
  * `pgo.yaml.dynamic` - this configuration specifies *dynamic* storage to be used, namely a *storageclass* that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.
 
 Note, when Storage Type is *create*, you can specify a storage
-configuration setting of *MatchLabels*, when set, this will cause a 
+configuration setting of *MatchLabels*, when set, this will cause a
 *selector* of *name=clustername* to be added into the PVC, this will
 let you target specific PV(s) to be matched for this cluster. Note, if a
 PV does not match the claim request, then the cluster will not start.  Users
@@ -441,7 +439,7 @@ automatically to your disaster recovery site thanks to network storage.
 
 image::/Operator-DR-Storage.png[Operator Storage]
 
-=== *postgres-operator* Container Configuration
+=== PostgreSQL Operator Container Configuration
 
 To enable *debug* level messages from the operator pod, set the `CRUNCHY_DEBUG` environment
 variable to *true* within its deployment file `deployment.json`.
@@ -454,7 +452,7 @@ templates that are added into the operator deployment by means of a mounted volu
 The templates are located in the `$COROOT/conf/postgres-operator` directory and are added into
 a config map which is mounted by the operator deployment.
 
-== bash Completion
+== Bash Completion
 
 There is a bash completion file that is included for users to try
 located in the repository at `examples/pgo-bash-completion`. To use it -
@@ -503,7 +501,7 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/backups/mycluster
 ....
 
-== Deploying pgpool
+== Deploying pgPool
 
 One option with pgo is enabling the creation of a pgpool deployment in addition to the PostgreSQL cluster.
 Running pgpool is a logical inclusion when the Kubernetes cluster includes both a primary database in addition
@@ -574,3 +572,80 @@ kubectl delete pod wed10-pgpool-6cc6f6598d-wcnmf
 
 The pgpool deployment will spin up another pgpool which will pick up
 the updated secret file.
+
+== Storage Configuration
+
+Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.
+
+The operator will work with HostPath, NFS, Dynamic, and GKE Storage.
+
+{{%expand "NFS" %}}
+
+=== NFS
+
+To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file is provided.  Overlay the default `pgo.yaml` file with that file -
+....
+cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
+....
+
+Edit the *pgo.yaml* file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is *nfsnobody* as the GID (65534).  Update the value to meet your NFS security settings.
+
+There is currently no script available to create your NFS Persistent Volumes but you can typically modify the `$COROOT/pv/create-pv.sh` script to work with NFS.
+
+{{% /expand%}}
+
+{{%expand "Dynamic" %}}
+
+=== Dynamic
+
+To configure the operator to use Dynamic Storage classes for storage, a sample *pgo.yaml.storageclass* file is provided.  Overlay the default *pgo.yaml* file with that file -
+....
+cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
+....
+
+Edit the *pgo.yaml* file to specify the storage class you will be using, the default value assumed is *standard* which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.
+
+Notice that the *FsGroup* setting is required for most block storage and is set to the value of *26* since the PostgreSQL container runs as UID *26*.
+
+{{% /expand%}}
+
+{{%expand "GKE" %}}
+
+=== GKE
+
+Some notes for setting up GKE for the Operator deployment.
+
+==== Install Kubectl
+
+On your host you will be working from, install the kubectl command -
+
+https://kubernetes.io/docs/tasks/tools/install-kubectl/
+
+==== GCP
+
+* Select your project
+* Create a Kube cluster in that project
+
+By default a storage class called *standard* is created.
+
+==== Install GCloud
+
+To access the Kubernetes cluster, install the gcloud utility -
+
+....
+https://cloud.google.com/sdk/downloads
+cd google-cloud-sdk
+./install.sh
+....
+
+==== Configure Kubectl for Cluster Access
+
+....
+gcloud auth login
+
+gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
+
+kubectl get storageclass
+....
+
+{{% /expand%}}

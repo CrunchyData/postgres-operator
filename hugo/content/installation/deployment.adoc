@@ -2,7 +2,7 @@
 title: "Deployment"
 date: 2018-04-26T15:26:40-07:00
 draft: false
-weight: 40
+weight: 50
 ---
 
 :toc:
@@ -135,83 +135,6 @@ apiserver version 3.2
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.
-
-== Storage Configuration
-
-Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.
-
-The operator will work with HostPath, NFS, Dynamic, and GKE Storage.
-
-{{%expand "NFS" %}}
-
-=== NFS
-
-To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file is provided.  Overlay the default `pgo.yaml` file with that file -
-....
-cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
-....
-
-Edit the *pgo.yaml* file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is *nfsnobody* as the GID (65534).  Update the value to meet your NFS security settings.
-
-There is currently no script available to create your NFS Persistent Volumes but you can typically modify the `$COROOT/pv/create-pv.sh` script to work with NFS.
-
-{{% /expand%}}
-
-{{%expand "Dynamic" %}}
-
-=== Dynamic
-
-To configure the operator to use Dynamic Storage classes for storage, a sample *pgo.yaml.storageclass* file is provided.  Overlay the default *pgo.yaml* file with that file -
-....
-cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-....
-
-Edit the *pgo.yaml* file to specify the storage class you will be using, the default value assumed is *standard* which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.
-
-Notice that the *FsGroup* setting is required for most block storage and is set to the value of *26* since the PostgreSQL container runs as UID *26*.
-
-{{% /expand%}}
-
-{{%expand "GKE" %}}
-
-=== GKE
-
-Some notes for setting up GKE for the Operator deployment.
-
-==== Install Kubectl
-
-On your host you will be working from, install the kubectl command -
-
-https://kubernetes.io/docs/tasks/tools/install-kubectl/
-
-==== GCP
-
-* Select your project
-* Create a Kube cluster in that project
-
-By default a storage class called *standard* is created.
-
-==== Install GCloud
-
-To access the Kubernetes cluster, install the gcloud utility -
-
-....
-https://cloud.google.com/sdk/downloads
-cd google-cloud-sdk
-./install.sh
-....
-
-==== Configure Kubectl for Cluster Access
-
-....
-gcloud auth login
-
-gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
-
-kubectl get storageclass
-....
-
-{{% /expand%}}
 
 == Next Steps
 
