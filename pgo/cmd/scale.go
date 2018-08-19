@@ -59,6 +59,10 @@ var scaleCmd = &cobra.Command{
 				}
 				scaleDownCluster(args[0])
 			} else {
+				if ReplicaCount < 1 {
+					fmt.Println("Error: --replica-count is required to be greater than 0, the default is 1 if not specified")
+					return
+				}
 				if util.AskForConfirmation(NoPrompt, "") {
 				} else {
 					fmt.Println("Aborting...")
@@ -90,6 +94,7 @@ func init() {
 func scaleCluster(args []string) {
 
 	var url string
+
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
 		url = APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType
