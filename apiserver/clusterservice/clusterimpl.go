@@ -426,6 +426,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &result, clusterName, apiserver.Namespace)
 		if err == nil {
 			log.Debug("pgcluster " + clusterName + " was found so we will not create it")
+			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "pgcluster " + clusterName + " was found so we will not create it"
 			return resp
 		} else if !found {
