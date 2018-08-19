@@ -43,9 +43,10 @@ gendeps:
 	github.com/crunchydata/postgres-operator/apiserver/userservice \
 	github.com/crunchydata/postgres-operator/apiserver/util \
 	github.com/crunchydata/postgres-operator/apiserver/versionservice 
+installrbac:
+	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
-	cd deploy && ./install-rbac.sh
 	cd examples/backrest-config && ./create.sh
 setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json

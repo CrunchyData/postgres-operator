@@ -21,7 +21,7 @@ COPY redhat/licenses /licenses
 # Crunchy PostgreSQL repository
 
 ADD conf/CRUNCHY-GPG-KEY.public  /
-ADD conf/crunchypg96.repo /etc/yum.repos.d/
+ADD conf/crunchypg10.repo /etc/yum.repos.d/
 RUN rpm --import CRUNCHY-GPG-KEY.public
 
 RUN yum -y update && yum -y install postgresql${PGVERSION} && yum -y clean all
