@@ -169,6 +169,13 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
+	//allows user to override with their own passwords
+	if cl.Spec.Password != "" {
+		cl.Spec.RootPassword = cl.Spec.Password
+		cl.Spec.Password = cl.Spec.Password
+		cl.Spec.PrimaryPassword = cl.Spec.Password
+	}
+
 	var testPassword string
 	_, _, testPassword, err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
@@ -220,7 +227,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 }
 
-// eleteClusterBase ...
+// DeleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
 	log.Debug("deleteCluster called with strategy " + cl.Spec.Strategy)

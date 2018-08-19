@@ -726,11 +726,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Policies = request.Policies
 	}
 
-	spec.PrimaryPassword = ""
+	spec.PrimaryPassword = request.Password
 	spec.User = "testuser"
-	spec.Password = ""
+	spec.Password = request.Password
 	spec.Database = "userdb"
-	spec.RootPassword = ""
+	spec.RootPassword = request.Password
 	spec.Replicas = "0"
 	spec.Strategy = "1"
 	spec.UserLabels = userLabelsMap
