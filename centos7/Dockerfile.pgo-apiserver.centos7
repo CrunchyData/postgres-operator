@@ -14,7 +14,7 @@ ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
-RUN yum -y update && yum -y install postgresql96 hostname && yum -y clean all
+RUN yum -y update && yum -y install postgresql10 hostname && yum -y clean all
 
 ADD bin/apiserver /usr/local/bin
 ADD bin/postgres-operator/runpsql.sh /usr/local/bin
