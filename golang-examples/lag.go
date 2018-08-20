@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"k8s.io/api/extensions/v1beta1"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -100,25 +101,43 @@ func main() {
 		fmt.Println("found postgres secret with password " + pgSecret.Password)
 	}
 
+	//get the deployments
+	var deployments *v1beta1.DeploymentList
 	selector = "primary=false,pg-cluster=" + clusterName
-	podList, err := kubeapi.GetPods(kubeClient, selector, namespace)
+	deployments, err = kubeapi.GetDeployments(kubeClient, selector, namespace)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(2)
 	}
-
-	var selectedReplica v1.Pod
-	if len(podList.Items) > 0 {
-		selectedReplica = podList.Items[0]
-	} else {
-		fmt.Println("no replicas found")
+	if len(deployments.Items) > 1 {
+		fmt.Println("no replica deployments found for " + clusterName)
 		os.Exit(2)
 	}
 
-	var value uint64 = 0
+	var selectedReplica v1.Pod
+	var selectedDeployment v1beta1.Deployment
+
 	databaseName := "postgres"
 	port := "5432"
-	for _, pod := range podList.Items {
+	var value uint64 = 0
+
+	for _, dep := range deployments.Items {
+		//get the pods for each deployment
+		selector = "primary=false,replica-name=" + dep.Name
+		podList, err := kubeapi.GetPods(kubeClient, selector, namespace)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(2)
+		}
+		if len(podList.Items) > 0 {
+			selectedReplica = podList.Items[0]
+		} else {
+			fmt.Println("no replicas found")
+			os.Exit(2)
+		}
+
+		pod := podList.Items[0]
+
 		fmt.Println(pod.Name)
 
 		target := getSQLTarget(&pod, pgSecret.Username, pgSecret.Password, port, databaseName)
@@ -130,10 +149,11 @@ func main() {
 			if replInfo.ReceiveLocation > value {
 				value = replInfo.ReceiveLocation
 				selectedReplica = pod
+				selectedDeployment = dep
 			}
 		}
 	}
-	fmt.Println("selected replica pod name is " + selectedReplica.Name)
+	fmt.Println("selected deployment is " + selectedDeployment.Name + " replica pod name is " + selectedReplica.Name)
 }
 
 func GetReplicationInfo(target string) (*ReplicationInfo, error) {
