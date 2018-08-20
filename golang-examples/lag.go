@@ -109,7 +109,7 @@ func main() {
 		fmt.Println(err.Error())
 		os.Exit(2)
 	}
-	if len(deployments.Items) > 1 {
+	if len(deployments.Items) < 1 {
 		fmt.Println("no replica deployments found for " + clusterName)
 		os.Exit(2)
 	}
@@ -123,19 +123,20 @@ func main() {
 
 	for _, dep := range deployments.Items {
 		//get the pods for each deployment
+		fmt.Println("got deployment " + dep.Name)
 		selector = "primary=false,replica-name=" + dep.Name
 		podList, err := kubeapi.GetPods(kubeClient, selector, namespace)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(2)
 		}
-		if len(podList.Items) > 0 {
-			selectedReplica = podList.Items[0]
+
+		//assume each deployment only has a single pod
+		if len(podList.Items) == 1 {
 		} else {
 			fmt.Println("no replicas found")
 			os.Exit(2)
 		}
-
 		pod := podList.Items[0]
 
 		fmt.Println(pod.Name)
