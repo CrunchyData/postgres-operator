@@ -191,6 +191,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	for k, v := range detail.Cluster.ObjectMeta.Labels {
 		fmt.Printf("%s=%s ", k, v)
 	}
+	fmt.Println("")
 
 }
 

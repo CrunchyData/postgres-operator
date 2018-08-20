@@ -184,7 +184,8 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	//get pods, but exclude pgpool and backup pods
+	selector := util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -336,7 +337,10 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 				}
 				item.PsqlString = "psql -p " + c.Spec.Port + " -h " + service.ClusterIP + " -U " + username + " " + database
 				log.Debug(item.PsqlString)
-				if service.Name != c.ObjectMeta.Name && replicaReady == false {
+				log.Debug("jeff service.Name=" + service.Name)
+				log.Debug("jeff c.ObjectMeta.Name=" + c.ObjectMeta.Name)
+				log.Debugf("jeff replicaReady=%t", replicaReady)
+				if (service.Name != c.ObjectMeta.Name) && replicaReady == false {
 					item.Working = false
 				} else {
 					status := query(username, service.ClusterIP, c.Spec.Port, database, password)
@@ -358,7 +362,10 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 	var conn *sql.DB
 	var err error
 
-	conn, err = sql.Open("postgres", "sslmode=disable user="+dbUser+" host="+dbHost+" port="+dbPort+" dbname="+database+" password="+dbPassword)
+	connString := "sslmode=disable user=" + dbUser + " host=" + dbHost + " port=" + dbPort + " dbname=" + database + " password=" + dbPassword
+	log.Debug("connString=" + connString)
+
+	conn, err = sql.Open("postgres", connString)
 	if err != nil {
 		log.Debug(err.Error())
 		return false
