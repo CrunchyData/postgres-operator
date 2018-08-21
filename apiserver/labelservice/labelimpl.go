@@ -53,7 +53,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	labelsMap, err = validateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "lables not formatted correctly"
+		resp.Status.Msg = "labels not formatted correctly"
 		return resp
 	}
 
@@ -140,7 +140,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 
 	var err error
 
-	log.Debugf("%v is the labels to apply\n", newLabels)
+	log.Debugf("%v are the labels to apply\n", newLabels)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)
