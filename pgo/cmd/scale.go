@@ -172,11 +172,12 @@ func queryCluster(args []string) {
 			return
 		}
 
+		fmt.Println("jeff here we are")
 		if response.Status.Code == msgs.Ok {
 			if len(response.Targets) > 0 {
 				fmt.Println("Replica targets include:")
 				for i := 0; i < len(response.Targets); i++ {
-					fmt.Println("\t" + response.Targets[i].Name + " (" + response.Targets[i].ReadyStatus + ") (" + response.Targets[i].Node + ")")
+					printScaleTarget(response.Targets[i])
 				}
 			}
 
@@ -231,4 +232,8 @@ func scaleDownCluster(clusterName string) {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
 
+}
+
+func printScaleTarget(target msgs.ScaleQueryTargetSpec) {
+	fmt.Printf("\t%s (%s) (%s)\n", target.Name, target.ReadyStatus, target.Node)
 }
