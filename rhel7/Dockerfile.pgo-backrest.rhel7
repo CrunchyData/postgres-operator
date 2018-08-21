@@ -4,10 +4,10 @@ MAINTAINER jeff.mccormick@crunchydata.com
 
 LABEL name="crunchydata/pgo-backrest-" \
     vendor="crunchydata.com" \
-    PostgresVersion="10" \
-    PostgresFullVersion="10.5" \
-    Version="7.5" \
-    Release="3.2.0" \
+	PostgresVersion="10" \
+	PostgresFullVersion="10.5" \
+	Version="7.5" \
+	Release="3.2.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
