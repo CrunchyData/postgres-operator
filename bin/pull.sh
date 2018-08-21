@@ -15,7 +15,7 @@
 
 P_IMAGE_PREFIX=registry-dev.crunchydata.com/crunchydata
 CO_IMAGE_PREFIX=crunchydata
-CO_IMAGE_TAG=centos7-3.1
+CO_IMAGE_TAG=centos7-3.2.0
 
 for CNAME in pgo-rmdata pgo-load pgo-lspvc postgres-operator pgo-apiserver 
 do
