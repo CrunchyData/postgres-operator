@@ -15,8 +15,9 @@ spec:
         app: {{ template "postgres-operator.name" . }}
         release: {{ .Release.Name }}
     spec:
+      serviceAccountName: postgres-operator
       containers:
-        - name: {{ .Chart.Name }}-apiserver
+        - name: apiserver
           image: "{{ .Values.env.co_image_prefix }}/pgo-apiserver:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}
@@ -36,7 +37,7 @@ spec:
             - name: operator-conf
               mountPath: /operator-conf
               readOnly: true
-        - name: {{ .Chart.Name }}-operator
+        - name: operator
           image: "{{ .Values.env.co_image_prefix }}/postgres-operator:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext: {}

@@ -121,7 +121,6 @@ tar xvzf ./postgres-operator.3.2.tar.gz
 Next, deploy the operator to your Kubernetes cluster -
 ....
 cd $COROOT
-go get github.com/blang/expenv
 make installrbac
 make deployoperator
 ....

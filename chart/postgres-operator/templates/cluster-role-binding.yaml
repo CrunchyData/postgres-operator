@@ -2,18 +2,29 @@
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ template "postgres-operator.fullname" . }}
-  labels:
-    app: {{ template "postgres-operator.name" . }}
-    chart: {{ template "postgres-operator.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  name: pgopclusterbinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ template "postgres-operator.fullname" . }}
+  name: pgopclusterrole
 subjects:
-- kind: ServiceAccount
-  name: {{ template "postgres-operator.serviceAccountName" . }}
-  namespace: "{{ .Release.Namespace }}"
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: postgres-operator
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: pgopclusterbindingcrd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pgopclusterrolecrd
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: postgres-operator
+
 {{ end }}

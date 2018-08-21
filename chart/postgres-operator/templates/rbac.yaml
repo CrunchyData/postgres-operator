@@ -1,0 +1,66 @@
+{{ if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgres-operator
+  labels:
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  namespace: "{{ .Release.Namespace }}"
+
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-role
+  namespace: "{{ .Release.Namespace }}"
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - "*"
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - "*"
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-role-binding
+  namespace: "{{ .Release.Namespace }}"
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: "{{ .Release.Namespace }}"
+roleRef:
+  kind: Role
+  name: pgo-role
+  apiGroup: rbac.authorization.k8s.io
+
+
+{{ end }}
