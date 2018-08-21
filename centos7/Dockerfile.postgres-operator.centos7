@@ -1,12 +1,12 @@
 FROM centos:7
 
 LABEL  Vendor="Crunchy Data Solutions" \
-		PostgresVersion="10" \
-		PostgresFullVersion="10.5" \
-		Version="7.5" \
-		Release="3.2.0" \
-		summary="Crunchy Data PostgreSQL Operator" \
-		description="Crunchy Data PostgreSQL Operator"
+	PostgresVersion="10" \
+	PostgresFullVersion="10.5" \
+	Version="7.5" \
+	Release="3.2.0" \
+	summary="Crunchy Data PostgreSQL Operator" \
+	description="Crunchy Data PostgreSQL Operator"
 
 ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
 

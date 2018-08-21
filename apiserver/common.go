@@ -24,6 +24,7 @@ import (
 	"k8s.io/api/core/v1"
 )
 
+//TODO remove and replace with util.GetSecrets
 func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
