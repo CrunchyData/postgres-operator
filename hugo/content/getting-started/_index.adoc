@@ -1024,6 +1024,15 @@ The load configuration file has the following YAML attributes:
 |SecurityContext| either fsGroup or SupplementalGroup values
 |======================
 
+For running the *pgo load* examples, you can create the *csv-pvc* PVC
+by running:
+....
+kubectl create -f examples/csv-pvc.json
+....
+
+Then you can copy sample load files as referenced by the examples
+into that PVC location (e.g. /data or /nfsfileshare).  
+
 ==== Syntax
 
 $ pgo load [FLAGS]
