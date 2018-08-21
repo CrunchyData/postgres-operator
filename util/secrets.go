@@ -18,6 +18,7 @@ package util
 import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -257,4 +258,27 @@ func DeleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 
 	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
 	return err
+}
+
+func GetSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
+
+	output := make([]msgs.ShowUserSecret, 0)
+	selector := "pgpool!=true," + LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+
+	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
+	if err != nil {
+		return output, err
+	}
+
+	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
+	for _, s := range secrets.Items {
+		d := msgs.ShowUserSecret{}
+		d.Name = s.Name
+		d.Username = string(s.Data["username"][:])
+		d.Password = string(s.Data["password"][:])
+		output = append(output, d)
+
+	}
+
+	return output, err
 }

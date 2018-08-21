@@ -138,6 +138,8 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 		log.Debug("found " + dep.Name)
 		target := msgs.FailoverTargetSpec{}
 		target.Name = dep.Name
+
+		target.ReceiveLocation, target.ReplayLocation = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace)
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
 		//get the rep status

@@ -61,7 +61,7 @@ func init() {
 	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
 	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
-	
+
 }
 
 // createFailover ....
@@ -140,7 +140,6 @@ func queryFailover(args []string) {
 		fmt.Println("Error: Do: ", err)
 		return
 	}
-	log.Debugf("%v\n", resp)
 	StatusCheck(resp)
 
 	defer resp.Body.Close()
@@ -158,7 +157,7 @@ func queryFailover(args []string) {
 		if len(response.Targets) > 0 {
 			fmt.Println("Failover targets include:")
 			for i := 0; i < len(response.Targets); i++ {
-				fmt.Println("\t" + response.Targets[i].Name + " (" + response.Targets[i].ReadyStatus + ") (" + response.Targets[i].Node + ")")
+				printTarget(response.Targets[i])
 			}
 		}
 		for k := range response.Results {
@@ -169,4 +168,8 @@ func queryFailover(args []string) {
 		os.Exit(2)
 	}
 
+}
+
+func printTarget(target msgs.FailoverTargetSpec) {
+	fmt.Printf("\t%s (%s) (%s) ReceiveLoc (%d) ReplayLoc (%d)\n", target.Name, target.ReadyStatus, target.Node, target.ReceiveLocation, target.ReplayLocation)
 }

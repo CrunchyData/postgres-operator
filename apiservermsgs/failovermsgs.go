@@ -18,10 +18,12 @@ limitations under the License.
 import ()
 
 type FailoverTargetSpec struct {
-	Name        string
-	ReadyStatus string
-	Node        string
-	RepStatus   string
+	Name            string
+	ReadyStatus     string
+	Node            string
+	RepStatus       string
+	ReceiveLocation uint64
+	ReplayLocation  uint64
 }
 
 // QueryFailoverResponse ...
