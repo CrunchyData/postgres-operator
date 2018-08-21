@@ -24,43 +24,6 @@ if [[ "$REPLY" != "" ]]; then
 fi
 echo $CO_VERSION is the version entered | tee -a $LOG
 
-echo "Testing for dependencies..." | tee -a $LOG
-
-which wget > /dev/null 2> /dev/null
-if [[ $? -ne 0 ]]; then
-	echo "The required dependency wget is missing on your system." | tee -a $LOG
-	exit 1
-fi
-which kubectl > /dev/null 2> /dev/null
-if [[ $? -ne 0 ]]; then
-	echo "The required dependency kubectl is missing on your system." | tee -a $LOG
-	exit 1
-fi
-
-echo ""
-echo "Testing kubectl connection..." | tee -a $LOG
-echo ""
-kubectl get namespaces
-if [[ $? -ne 0 ]]; then
-	echo "kubectl is not connecting to your Kubernetes Cluster. A successful connection is required to proceed." | tee -a $LOG
-	exit 1
-fi
-
-echo "Connected to Kubernetes." | tee -a $LOG
-echo ""
-
-NAMESPACE=`kubectl config view | grep namespace:`
-echo "The postgres-operator will be installed into the current namespace which is ["$NAMESPACE"]."
-
-echo -n "Do you want to continue the installation? [Yn] "
-read REPLY
-case $REPLY in
-n)
-	echo "Aborting installation."
-	exit 1
-	;;
-esac
-
 echo -n "Is this a 'kube' install or an 'ocp' install?"
 read REPLY
 case $REPLY in
@@ -78,11 +41,84 @@ ocp)
 	;;
 esac
 
+echo -n "use centos or rhel based images?, NOTE:  rhel images available only to crunchy customers)"
+read REPLY
+case $REPLY in
+centos)
+	echo "user has selected centos images" | tee -a $LOG
+	export CO_BASEOS=centos7
+	;;
+rhel)
+	echo "user has selected rhel images" | tee -a $LOG
+	export CO_BASEOS=rhel7
+	;;
+*)
+	echo "user has entered an invalid image type"
+	exit 2
+	;;
+esac
+
+echo -n "enter operator image prefix [crunchydata]"
+read REPLY
+if [[ "$REPLY" != "" ]]; then
+	echo "setting CO_IMAGE_PREFIX="$REPLY
+	export CO_IMAGE_PREFIX=$REPLY
+else
+	echo "setting CO_IMAGE_PREFIX to crunchydata"
+	export CO_IMAGE_PREFIX=crunchydata
+fi
+echo "user has entered "$CO_IMAGE_PREFIX " for the operator image prefix"| tee -a $LOG
+
+echo "Testing for dependencies..." | tee -a $LOG
+
+which wget > /dev/null 2> /dev/null
+if [[ $? -ne 0 ]]; then
+	echo "The required dependency wget is missing on your system." | tee -a $LOG
+	exit 1
+fi
+which $CO_CMD > /dev/null 2> /dev/null
+if [[ $? -ne 0 ]]; then
+	echo "The required dependency "$CO_CMD " is missing on your system." | tee -a $LOG
+	exit 1
+fi
+
+echo ""
+echo "Testing "$CO_CMD" connection..." | tee -a $LOG
+echo ""
+case $CO_CMD in
+kubectl)
+$CO_CMD get namespaces
+$NAMESPACE=`$CO_CMD config view | grep namespace:`
+	;;
+oc)
+$CO_CMD project
+export NAMESPACE=`eval $CO_CMD project -q`
+	;;
+esac
+if [[ $? -ne 0 ]]; then
+	echo $CO_CMD  " is not connecting to your Cluster. A successful connection is required to proceed." | tee -a $LOG
+	exit 1
+fi
+
+echo "Connected to cluster" | tee -a $LOG
+echo ""
+
+echo "The postgres-operator will be installed into the current namespace which is ["$NAMESPACE"]."
+
+echo -n "Do you want to continue the installation? [Yn] "
+read REPLY
+case $REPLY in
+n)
+	echo "Aborting installation."
+	exit 1
+	;;
+esac
+
+
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOPATH/bin
-export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-$CO_VERSION
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_APISERVER_URL=https://127.0.0.1:18443
 export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
@@ -132,7 +168,7 @@ mv expenv-mac $GOBIN
 mv expenv $GOBIN
 
 echo "The available storage classes on your system:"
-kubectl get sc
+$CO_CMD get sc
 echo ""
 echo -n "Enter the name of the storage class to use: "
 read STORAGE_CLASS
@@ -141,6 +177,8 @@ echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/crunchydata/'"$CO_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
 sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
@@ -183,6 +221,7 @@ n)
 	;;
 esac
 echo "Deploying the operator to the Kubernetes cluster..." | tee -a $LOG
+echo "CO_IMAGE_PREFIX here is " $CO_IMAGE_PREFIX
 $COROOT/deploy/deploy.sh | tee -a $LOG
 
 echo "Installation complete." | tee -a $LOG
