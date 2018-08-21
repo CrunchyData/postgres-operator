@@ -172,7 +172,6 @@ func queryCluster(args []string) {
 			return
 		}
 
-		fmt.Println("jeff here we are")
 		if response.Status.Code == msgs.Ok {
 			if len(response.Targets) > 0 {
 				fmt.Println("Replica targets include:")
