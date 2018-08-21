@@ -49,20 +49,6 @@ pgupgrades.cr.client-go.k8s.io   2d
 
 At this point, the server side of the operator is deployed and ready.
 
-The complete set of environment variables used in the installation
-so far are -
-....
-export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.2
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-export CO_CMD=kubectl
-....
-
-You would normally add these into your *.bashrc* at this point to be used later on or if you want to redeploy the operator.
-
 == Configure *pgo* Client
 
 The pgo command line client requires TLS for securing the connection to the operator's REST API.  This configuration is performed as follows -
@@ -95,12 +81,12 @@ export CO_APISERVER_URL=https://10.109.184.8:8443
 pgo version
 ....
 
-It is also possible to define a bash alias such as -
+Alternatively, an alias was set up in the .bashrc file earlier on, as follows:
 ....
 alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
 ....
 
-This alias will set the `CO_APISERVER_URL` IP address for you.
+This alias (`setip`) will set the `CO_APISERVER_URL` IP address for you.
 
 {{% /expand%}}
 
