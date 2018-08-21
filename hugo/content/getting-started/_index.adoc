@@ -1003,7 +1003,7 @@ pgo delete policy policy1
 A CSV file loading capability is supported. This can be tested through
 creating a SQL Policy which will create a database table that will be
 loaded with the CSV data. The loading is based on a load definition found
-in the `sample-load-config.json` file. In that file, the data to be loaded
+in the `sample-load-config.yaml` file. In that file, the data to be loaded
 is specified. When the `pgo load` command is executed, Jobs will be created
 to perform the loading for each cluster that matches the selector filter.
 
@@ -1050,7 +1050,7 @@ The selector to use for cluster filtering.
 
 Load a sample CSV file into a database as follows:
 ....
-pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name=mycluster
+pgo load --load-config=$COROOT/examples/sample-load-config.yaml  --selector=name=mycluster
 ....
 
 ===== Including Policies
@@ -1058,7 +1058,7 @@ pgo load --load-config=$COROOT/examples/sample-load-config.json  --selector=name
 If you include the *--policies* flag, any specified policies will be applied prior to the data being loaded.  For
 example:
 ....
-pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.json --selector=name=mycluster
+pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.yaml --selector=name=mycluster
 ....
 
 == Authentication
