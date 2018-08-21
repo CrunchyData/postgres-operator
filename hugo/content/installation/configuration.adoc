@@ -24,20 +24,22 @@ To run the Operator on Openshift Container Platform note the following requireme
 === Kube RBAC
 
 The `cluster-rbac.yaml` file is executed a single time when installing
-the Operator.  This file, executed by a Kube user with cluster-admin
-priviledges, creates the following resources:
- * Customer Resource Definitions
- * grants `get` access to Kube Node resources to the postgres-operator
+the Operator.  This file, executed by a Kubernetes user with cluster-admin
+priviledges, does the following:
+
+ * Creates Customer Resource Definitions
+ * Grants `get` access to Kube Node resources to the postgres-operator
    service account.
 
 The `rbac.yaml` file is also executed a single time when installing
-the Operator.  This file creates Role scoped privledges which are
+the Operator.  This file creates Role scoped privileges which are
 granted to the postgres-operator service account.  The postgres-operator
 service account is used by the *apiserver* and *postgres-operator* containers
 to access Kubernetes resources.
 
 Both of these RBAC files are executed by the `deploy/install-rbac.sh`
-script.
+script. It can also be installed through running `make installrbac` in the
+$CCPROOT directory.
 
 [WARNING]
 ====
@@ -588,9 +590,14 @@ To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file i
 cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
 ....
 
-Edit the *pgo.yaml* file to specify the NFS GID that is set for the NFS volume mount you will be using, the default value assumed is *nfsnobody* as the GID (65534).  Update the value to meet your NFS security settings.
+Then, in your .bashrc file, set the variable `CO_NFS_IP` to the IP address of your NFS server:
+....
+export CO_NFS_IP=192.168.2.14
+....
 
-There is currently no script available to create your NFS Persistent Volumes but you can typically modify the `$COROOT/pv/create-pv.sh` script to work with NFS.
+Edit the *pgo.yaml* file to specify the NFS GID that is set for the NFS volume mount you will be using. The default value assumed is *nfsnobody* as the GID (65534).  Update the value to meet your NFS security settings.
+
+Finally, run the `$COROOT/pv/create-pv-nfs.sh` script to create persistent volumes based on your NFS settings.
 
 {{% /expand%}}
 

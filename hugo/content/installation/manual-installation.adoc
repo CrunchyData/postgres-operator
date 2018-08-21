@@ -14,6 +14,7 @@ First, define the following environment variables in *.bashrc*:
 ....
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
+export PATH=$PATH:$GOBIN
 export CO_NAMESPACE=demo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
@@ -21,8 +22,6 @@ export CO_IMAGE_PREFIX=crunchydata
 export CO_BASEOS=centos7
 export CO_VERSION=3.2
 export CO_IMAGE_TAG=centos7-$CO_VERSION
-export CO_BASEOS=centos7
-export PATH=$PATH:$GOBIN
 export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
@@ -61,12 +60,12 @@ kubectl config set-context $(kubectl config current-context) --namespace=demo
 kubectl config view | grep namespace
 ....
 
-Run the makefile `setup` target to install depedencies and also
-create the operator CRD resources and RBAC rules:
+Run the Makefile `setup` target to install depedencies and also
+create the operator CRD resources and RBAC rules.
 
 [WARNING]
 ====
-The 'make setup' target is required to be run as a Kube user that has
+The 'make setup' target is required to be run as a Kubernetes user that has
 'cluster-admin' priviledges.  This is required to create cluster roles and
 clusterrole bindings, along with the CRDs used by the Operator.
 
@@ -80,7 +79,10 @@ make setup
 
 == Basic Installation
 
-The basic installation uses the default operator configuration settings, these settings assume you want to use HostPath storage on your Kube cluster for database persistence.  Other persistent options are available but require the Advanced Installation below.
+The basic installation uses the default operator configuration settings. These
+settings assume you want to use HostPath storage on your Kubernetes cluster for
+database persistence. Other persistent options are available and documented
+link:/installation/configuration/#_storage_configuration[here].
 
 === Create HostPath Directory
 
@@ -119,6 +121,8 @@ tar xvzf ./postgres-operator.3.2.tar.gz
 Next, deploy the operator to your Kubernetes cluster -
 ....
 cd $COROOT
+go get github.com/blang/expenv
+make installrbac
 make deployoperator
 ....
 
@@ -163,11 +167,17 @@ This Operator is developed and tested on the following operating systems but is 
 * *CentOS 7*
 * *RHEL 7*
 
-The following makefile targets will pull down source dependec
+Before using the Makefile targets, install the `expenv` package:
+....
+go get github.com/blang/expenv
+....
+
+The following Makefile targets will pull down source dependencies:
 ....
 cd $COROOT
 make setup
 make all
+make installrbac
 make deployoperator
 ....
 
@@ -198,6 +208,7 @@ The following table describes the Makefile targets -
 |rmdataimage        | build the data deletion Docker image
 |pgo-backrest-image        | build the pgbackrest interface Docker image
 |release        | build the postgres-operator release
+|installrbac      | build the postgres-operator service account
 |======================
 
 == Next Steps
