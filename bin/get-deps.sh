@@ -15,10 +15,14 @@
 
 echo "Getting project dependencies..."
 
-sudo yum -y install mercurial
+sudo yum -y install mercurial golang
 
 go get github.com/tools/godep
 go get github.com/blang/expenv
 
 godep restore
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+echo "pre-pulling container suite images used by the operator..."
+$DIR/pre-pull-crunchy-containers.sh

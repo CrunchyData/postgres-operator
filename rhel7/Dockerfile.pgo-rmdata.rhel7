@@ -1,6 +1,18 @@
 FROM registry.access.redhat.com/rhel7
 
-LABEL Release="3.1" Vendor="Crunchy Data Solutions" 
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="pgo-rmdata" \
+    vendor="crunchydata.com" \
+	Version="7.5" \
+	Release="3.2.0" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
+    summary="Crunchy Data PostgreSQL Operator - Remove Data" \
+    description="Crunchy Data PostgreSQL Operator - Remove Data"
+
+COPY redhat/atomic/pgo_rmdata/help.1 /help.1
+COPY redhat/atomic/pgo_rmdata/help.md /help.md
+COPY redhat/licenses /licenses
 
 RUN yum -y update && yum -y clean all
 

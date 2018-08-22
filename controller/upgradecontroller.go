@@ -53,7 +53,6 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgupgradeClient,
 		crv1.PgupgradeResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 

@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -181,30 +182,6 @@ func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		}
 	}
 
-	/**
-	cluster := crv1.Pgcluster{}
-	_, err = kubeapi.Getpgcluster(client, &cluster,
-		clusterName, namespace)
-	if err != nil {
-		return
-	}
-
-	if cluster.Spec.Strategy == "" {
-		cluster.Spec.Strategy = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster failover " + cluster.Spec.Strategy)
-		return
-	}
-
-	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
-	*/
-
 }
 
 func (*AutoFailoverTask) Exists(restclient *rest.RESTClient, clusterName, namespace string) bool {
@@ -280,7 +257,7 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 	return "", make(map[string]string)
 }
 
-func getTargetDeployment(clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
+func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
 
 	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + clusterName
 
@@ -296,22 +273,44 @@ func getTargetDeployment(clientset *kubernetes.Clientset, clusterName, ns string
 	//return a deployment target that has a Ready database
 	log.Debugf("deps len %d\n", len(deployments.Items))
 	found := false
+	readyDeps := make([]v1beta1.Deployment, 0)
 	for _, dep := range deployments.Items {
 		ready := getPodStatus(clientset, dep.Name, ns)
 		if ready {
 			log.Debug("autofail: found ready deployment " + dep.Name)
 			found = true
-			return dep.Name, err
+			readyDeps = append(readyDeps, dep)
+			//return dep.Name, err
 		} else {
 			log.Debug("autofail: found not ready deployment " + dep.Name)
 		}
 	}
+
 	if !found {
 		log.Error("could not find a ready pod in autofailover for cluster " + clusterName)
 		return "", errors.New("could not find a ready pod to failover to")
 	}
 
-	return "", err
+	//at this point readyDeps should hold all the Ready deployments
+	//we look for the most up to date and return that name
+
+	var value uint64
+	value = 0
+	var selectedDeployment v1beta1.Deployment
+
+	for _, d := range readyDeps {
+		target := util.ReplicationInfo{}
+		target.ReceiveLocation, target.ReplayLocation = util.GetRepStatus(restclient, clientset, &d, ns)
+		log.Debug("autofail receive=%d replay=%d dep=%s\n", target.ReceiveLocation, target.ReplayLocation, d.Name)
+		if target.ReceiveLocation > value {
+			value = target.ReceiveLocation
+			selectedDeployment = d
+		}
+
+	}
+
+	log.Debugf("autofail logic selected deployment is %s receive=%d\n", selectedDeployment.Name, value)
+	return selectedDeployment.Name, err
 
 }
 
@@ -338,7 +337,7 @@ func getPodStatus(clientset *kubernetes.Clientset, depname, ns string) bool {
 }
 
 func (s *StateMachine) triggerFailover() {
-	targetDeploy, err := getTargetDeployment(s.Clientset, s.ClusterName, s.Namespace)
+	targetDeploy, err := getTargetDeployment(s.RESTClient, s.Clientset, s.ClusterName, s.Namespace)
 	if targetDeploy == "" || err != nil {
 		log.Errorf("could not autofailover with no replicas found for %s\n", s.ClusterName)
 		return

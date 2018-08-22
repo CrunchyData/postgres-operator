@@ -50,7 +50,6 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	}
 
 	//get the clusters list
-	//var cluster *crv1.Pgcluster
 	_, err = validateClusterName(request.ClusterName)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -108,7 +107,6 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 	//var deployment *v1beta1.Deployment
 
 	//get the clusters list
-	//var cluster *crv1.Pgcluster
 	_, err = validateClusterName(name)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -140,8 +138,10 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 		log.Debug("found " + dep.Name)
 		target := msgs.FailoverTargetSpec{}
 		target.Name = dep.Name
+
+		target.ReceiveLocation, target.ReplayLocation = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace)
 		//get the pod status
-		target.ReadyStatus, target.Node = getPodStatus(dep.Name)
+		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
 		//get the rep status
 		resp.Targets = append(resp.Targets, target)
 	}
@@ -168,29 +168,5 @@ func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
 	}
 
 	return deployment, err
-
-}
-
-func getPodStatus(deployName string) (string, string) {
-
-	//get pods with replica-name=deployName
-	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_REPLICA_NAME+"="+deployName, apiserver.Namespace)
-	if err != nil {
-		return "error", "error"
-	}
-
-	p := pods.Items[0]
-	nodeName := p.Spec.NodeName
-	for _, c := range p.Status.ContainerStatuses {
-		if c.Name == "database" {
-			if c.Ready {
-				return "Ready", nodeName
-			} else {
-				return "Not Ready", nodeName
-			}
-		}
-	}
-
-	return "error2", nodeName
 
 }

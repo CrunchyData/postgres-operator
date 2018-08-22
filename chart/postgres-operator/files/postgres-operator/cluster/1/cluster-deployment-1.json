@@ -116,6 +116,8 @@
 
                 {{.CollectAddon }}
 
+                {{.BadgerAddon }}
+
 		],
                 "volumes": [{
                         "name": "pgdata",
@@ -143,9 +145,12 @@
             {{.ArchivePVCName}}
                     }, {
                         "name": "backrestrepo-volume",
-            "emptyDir": { "medium": "Memory" }
+            {{.BackrestPVCName}}
                     }, {
                         "name": "recover-volume",
+            "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "report",
             "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "pgconf-volume",
@@ -169,4 +174,3 @@
         }
     }
 }
-

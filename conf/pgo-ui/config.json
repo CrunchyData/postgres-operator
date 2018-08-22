@@ -1,0 +1,10 @@
+{
+    "url": "https://localhost:8443",
+    "username": "username",
+    "password": "password",
+    "certificate": {
+        "caCert": "/config/server.crt",
+        "clientCert": "/config/server.crt",
+        "clientKey": "/config/server.key"
+    }
+}

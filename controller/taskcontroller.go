@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
@@ -131,6 +131,12 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskDeleteBackups:
 		log.Info("delete backups task added")
 		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrest:
+		log.Info("backrest task added")
+		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrestRestore:
+		log.Info("backrest restore task added")
+		backrestoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}

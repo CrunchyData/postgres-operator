@@ -62,6 +62,9 @@
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
                     }, {
+                        "name": "PGMONITOR_PASSWORD",
+                        "value": "password"
+                    }, {
                         "name": "ARCHIVE_MODE",
                         "value": "{{.ArchiveMode}}"
                     }, {
@@ -116,6 +119,8 @@
 
                 {{.CollectAddon }}
 
+                {{.BadgerAddon }}
+
 		],
                 "volumes": [{
                         "name": "pgdata",
@@ -143,9 +148,12 @@
             {{.ArchivePVCName}}
                     }, {
                         "name": "backrestrepo-volume",
-            "emptyDir": { "medium": "Memory" }
+            {{.BackrestPVCName}}
                     }, {
                         "name": "recover-volume",
+            "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "report",
             "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "pgconf-volume",

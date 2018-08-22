@@ -24,10 +24,14 @@ import (
 	"strconv"
 )
 
+const PGO_VERSION = "3.2"
+
 type ClusterStruct struct {
 	CCPImagePrefix  string `yaml:"CCPImagePrefix"`
 	CCPImageTag     string `yaml:"CCPImageTag"`
 	Policies        string `yaml:"Policies"`
+	Metrics         bool   `yaml:"Metrics"`
+	Badger          bool   `yaml:"Badger"`
 	Port            string `yaml:"Port"`
 	ArchiveTimeout  string `yaml:"ArchiveTimeout"`
 	ArchiveMode     string `yaml:"ArchiveMode"`
@@ -37,6 +41,9 @@ type ClusterStruct struct {
 	PasswordLength  string `yaml:"PasswordLength"`
 	Strategy        string `yaml:"Strategy"`
 	Replicas        string `yaml:"Replicas"`
+	ServiceType     string `yaml:"ServiceType"`
+	Backrest        bool   `yaml:"Backrest"`
+	Autofail        bool   `yaml:"Autofail"`
 }
 
 type StorageStruct struct {
@@ -46,6 +53,7 @@ type StorageStruct struct {
 	StorageClass       string `yaml:"StorageClass"`
 	Fsgroup            string `yaml:"Fsgroup"`
 	SupplementalGroups string `yaml:"SupplementalGroups"`
+	MatchLabels        string `yaml:"MatchLabels"`
 }
 
 type ContainerResourcesStruct struct {
@@ -58,7 +66,6 @@ type ContainerResourcesStruct struct {
 type PgoStruct struct {
 	AutofailSleepSeconds string `yaml:"AutofailSleepSeconds"`
 	Audit                bool   `yaml:"Audit"`
-	Metrics              bool   `yaml:"Metrics"`
 	LSPVCTemplate        string `yaml:"LSPVCTemplate"`
 	LoadTemplate         string `yaml:"LoadTemplate"`
 	COImagePrefix        string `yaml:"COImagePrefix"`
@@ -78,22 +85,24 @@ type PgoConfig struct {
 }
 
 const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
+const DEFAULT_SERVICE_TYPE = "ClusterIP"
+const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 
 func (c *PgoConfig) Validate() error {
 	var err error
+	log.Info("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
-		return errors.New("invalid PrimaryStorage setting")
+		return errors.New("PrimaryStorage setting required")
 	}
 	_, ok = c.Storage[c.BackupStorage]
 	if !ok {
-		return errors.New("invalid BackupStorage setting")
+		return errors.New("BackupStorage setting required")
 	}
 	_, ok = c.Storage[c.ReplicaStorage]
 	if !ok {
-		return errors.New("invalid ReplicaStorage setting")
+		return errors.New("ReplicaStorage setting required")
 	}
-
 	if c.Pgo.LSPVCTemplate == "" {
 		return errors.New("Pgo.LSPVCTemplate is required")
 	}
@@ -140,6 +149,16 @@ func (c *PgoConfig) Validate() error {
 		}
 	}
 
+	if c.Cluster.ServiceType == "" {
+		log.Warn("Cluster.ServiceType not set, using default, ClusterIP ")
+		c.Cluster.ServiceType = DEFAULT_SERVICE_TYPE
+	} else {
+		if c.Cluster.ServiceType != DEFAULT_SERVICE_TYPE &&
+			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE {
+			return errors.New("Cluster.ServiceType is required to be either ClusterIP or LoadBalancer")
+		}
+	}
+
 	if c.Cluster.CCPImagePrefix == "" {
 		return errors.New("Cluster.CCPImagePrefix is required")
 	}
@@ -180,6 +199,7 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	storage.Size = s.Size
 	storage.StorageType = s.StorageType
 	storage.Fsgroup = s.Fsgroup
+	storage.MatchLabels = s.MatchLabels
 	storage.SupplementalGroups = s.SupplementalGroups
 
 	return storage, err

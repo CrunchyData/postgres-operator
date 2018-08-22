@@ -1,23 +1,23 @@
 FROM centos:7
 
 LABEL name="crunchydata/pgo-load" \
-        vendor="crunchy data" \
-      	PostgresVersion="9.6" \
-      	PostgresFullVersion="9.6.9" \
-        version="7.3" \
-        release="3.1" \
-        build-date="2018-06-14" \
-        url="https://crunchydata.com" \
-        summary="loads a CSV or json file into a database" \
-        description="executed by the operator, loads a CSV or json file." \
-        io.k8s.description="pgo-load container" \
-        io.k8s.display-name="Crunchy pgo-load container" \
-        io.openshift.expose-services="" \
-        io.openshift.tags="crunchy,database"
+    vendor="crunchy data" \
+	PostgresVersion="10" \
+	PostgresFullVersion="10.5" \
+	Version="7.5" \
+	Release="3.2.0" \
+    url="https://crunchydata.com" \
+    summary="Crunchy Data PostgreSQL Operator - Load Data" \
+    description="Loads a CSV or JSON file into the database." \
+    io.k8s.description="pgo-load container" \
+    io.k8s.display-name="Crunchy pgo-load container" \
+    io.openshift.expose-services="" \
+    io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="9.6" PGDG_REPO="pgdg-centos96-9.6-3.noarch.rpm"
+ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
 
-# PGDG Postgres repo
+# PGDG PostgreSQL Repository
+
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
 RUN yum -y update &&  yum -y install epel-release \
@@ -27,13 +27,13 @@ RUN yum -y update &&  yum -y install epel-release \
  	nss_wrapper \
 	openssh-clients \
 	procps-ng \
- && yum -y install postgresql96 \
+ && yum -y install postgresql10 \
  && yum clean all -y
 
-RUN mkdir -p /opt/cpm/bin /opt/cpm/conf 
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
 ADD bin/pgo-load/ /opt/cpm/bin
 ADD conf/pgo-load/ /opt/cpm/conf
-RUN chown -R 26:26 /opt/cpm 
+RUN chown -R 26:26 /opt/cpm
 
 VOLUME /pgdata
 

@@ -6,7 +6,7 @@ weight: 10
 ---
 
 :toc:
-Latest Release: v3.1, {docdate}
+Latest Release: 3.2.0 {docdate}
 
 == Overview
 
@@ -61,6 +61,7 @@ kubectl config use-context demo
 
 For Mac and Windows users, pre-built *pgo* binaries are included in
 the operator release tar ball:
+
  * pgo-mac is the Mac binary
  * pgo.exe is the Windows binary
  * pgo is the Linux binary

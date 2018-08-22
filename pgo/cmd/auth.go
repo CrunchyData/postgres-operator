@@ -16,6 +16,7 @@ package cmd
 */
 
 import (
+	"fmt"
 	"crypto/tls"
 	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
@@ -41,10 +42,10 @@ var caCertPath, clientCertPath, clientKeyPath string
 func StatusCheck(resp *http.Response) {
 	log.Debugf("http status code is %d\n", resp.StatusCode)
 	if resp.StatusCode == 401 {
-		log.Fatalf("Authentication Failed: %d\n", resp.StatusCode)
+		fmt.Println("Error: Authentication Failed: %d\n", resp.StatusCode)
 		os.Exit(2)
 	} else if resp.StatusCode != 200 {
-		log.Fatalf("Invalid Status Code: %d\n", resp.StatusCode)
+		fmt.Println("Error: Invalid Status Code: %d\n", resp.StatusCode)
 		os.Exit(2)
 	}
 }
@@ -101,15 +102,15 @@ func GetCredentials() {
 	if !found {
 		pgoUser := os.Getenv(pgouserenvvar)
 		if pgoUser == "" {
-			log.Error(pgouserenvvar + " env var not set")
+			fmt.Println("Error: " + pgouserenvvar + " env var not set")
 			os.Exit(2)
 		}
 
 		fullPath = pgoUser
-		log.Debug(pgouserenvvar + " env var is being used at " + fullPath)
+		log.Debug(pgouserenvvar + " environment variable is being used at " + fullPath)
 		dat, err = ioutil.ReadFile(fullPath)
 		if err != nil {
-			log.Error(fullPath + " file not found")
+			fmt.Println("Error: " + fullPath + " file not found")
 			os.Exit(2)
 		}
 
@@ -120,14 +121,13 @@ func GetCredentials() {
 	caCertPath = os.Getenv("PGO_CA_CERT")
 
 	if caCertPath == "" {
-		log.Error("PGO_CA_CERT not specified")
+		fmt.Println("Error: PGO_CA_CERT not specified")
 		os.Exit(2)
 	}
-	//caCert, err := ioutil.ReadFile("/tmp/server.crt")
 	caCert, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
-		log.Error(err)
-		log.Error("could not read ca certificate")
+		fmt.Println("Error: ", err)
+		fmt.Println("could not read ca certificate")
 		os.Exit(2)
 	}
 	caCertPool = x509.NewCertPool()
@@ -136,7 +136,7 @@ func GetCredentials() {
 	clientCertPath = os.Getenv("PGO_CLIENT_CERT")
 
 	if clientCertPath == "" {
-		log.Error("PGO_CLIENT_CERT not specified")
+		fmt.Println("Error: PGO_CLIENT_CERT not specified")
 		os.Exit(2)
 	}
 
@@ -149,7 +149,7 @@ func GetCredentials() {
 	clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
 
 	if clientKeyPath == "" {
-		log.Error("PGO_CLIENT_KEY not specified")
+		fmt.Println("Error: PGO_CLIENT_KEY not specified")
 		os.Exit(2)
 	}
 
@@ -158,11 +158,9 @@ func GetCredentials() {
 		log.Debug(clientKeyPath + " not found")
 		os.Exit(2)
 	}
-	//cert, err = tls.LoadX509KeyPair("/tmp/example.com.crt", "/tmp/example.com.key")
 	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
-		log.Fatal(err)
-		log.Error("could not load example.com.crt and example.com.key")
+		fmt.Println("Error: could not load example.com.crt and example.com.key")
 		os.Exit(2)
 	}
 

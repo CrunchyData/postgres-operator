@@ -2,7 +2,14 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "rmdata-{{.Name}}"
+        "name": "rmdata-{{.Name}}",
+	"labels": {
+        	"vendor": "crunchydata",
+               	"pgrmdata": "true",
+		"pg-cluster": "{{.ClusterName}}",
+                "pg-database": "{{.Name}}",
+                "claimName": "{{.PvcName}}"
+	}
     },
     "spec": {
         "template": {

@@ -30,7 +30,6 @@ import (
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	log.Debug("statusservice.StatusHandler %v\n", vars)
-	//clustername := vars["name"]
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
@@ -47,7 +46,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
 	var resp msgs.StatusResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.StatusResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {

@@ -116,8 +116,6 @@ func (c *PgingestController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgingest is updated
 func (c *PgingestController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgingest)
-	//newExample := newObj.(*crv1.Pgingest)
 	log.Debug("onUpdate pgingest CRD called")
 
 }

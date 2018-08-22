@@ -53,11 +53,8 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 	source := cache.NewListWatchFromClient(
 		c.PodClientset.CoreV1().RESTClient(),
 		"pods",
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
-
-	//labelSelector := labels.Set(map[string]string{"pg-cluster": "ourdaomain1"}).AsSelector()
 
 	_, controller := cache.NewInformer(
 		source,
@@ -104,7 +101,6 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//eventually pg-failover == true then...
 	//loop thru status.containerStatuses, find the container with name='database'
 	//print out the 'ready' bool
-	//log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
 	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" &&
 		newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] != "" &&
 		newpod.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {

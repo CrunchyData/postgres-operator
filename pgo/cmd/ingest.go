@@ -20,9 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	//"github.com/spf13/cobra"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -44,14 +42,14 @@ type IngestConfigFile struct {
 func createIngest(args []string) {
 
 	if len(args) == 0 {
-		log.Error("ingest name argument is required")
+		fmt.Println("Error: An ingest name argument is required.")
 		return
 	}
 
 	r, err := parseRequest(IngestConfig, args[0])
 	if err != nil {
-		log.Error("problem parsing ingest config file")
-		log.Error(err)
+		fmt.Println("Error: Problem parsing ingest configuration file.")
+		fmt.Println("Error: ", err)
 		return
 	}
 
@@ -63,7 +61,7 @@ func createIngest(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -71,7 +69,7 @@ func createIngest(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
@@ -82,15 +80,15 @@ func createIngest(args []string) {
 	var response msgs.CreateIngestResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("created ingest")
+		fmt.Println("Created ingest.")
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: ", response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -101,20 +99,20 @@ func deleteIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingestdelete/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/ingestdelete/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("deleteIngest called...[" + url + "]")
 
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -125,21 +123,21 @@ func deleteIngest(args []string) {
 		var response msgs.DeleteIngestResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code == msgs.Ok {
 			if len(response.Results) == 0 {
-				fmt.Println("no ingests found")
+				fmt.Println("No ingests found.")
 				return
 			}
 			for k := range response.Results {
-				fmt.Println("deleted ingest " + response.Results[k])
+				fmt.Println("Deleted ingest " + response.Results[k])
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: ", response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -152,13 +150,13 @@ func showIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingest/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/ingest/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("showIngest called...[" + url + "]")
 
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 
@@ -166,7 +164,7 @@ func showIngest(args []string) {
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -177,13 +175,13 @@ func showIngest(args []string) {
 		var response msgs.ShowIngestResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code == msgs.Error {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -228,7 +226,7 @@ func parseRequest(configFilePath, name string) (msgs.CreateIngestRequest, error)
 
 	raw, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		return r, err
 	}
 

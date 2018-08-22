@@ -1,0 +1,15 @@
+,{
+    "name": "collect",
+    "image": "{{.CCPImagePrefix}}/crunchy-collect:{{.CCPImageTag}}",
+    "ports": [{
+        "containerPort": 9187,
+        "protocol": "TCP"
+    }, {
+        "containerPort": 9100,
+        "protocol": "TCP"
+    }],
+    "env": [{
+        "name": "DATA_SOURCE_NAME",
+        "value": "postgresql://primaryuser:{{.PrimaryPassword}}@127.0.0.1:5432/postgres?sslmode=disable"
+    }]
+}

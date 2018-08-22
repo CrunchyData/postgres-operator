@@ -54,11 +54,12 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 			Name:            task.Spec.Name + "-" + k,
 			ClusterName:     task.Spec.Name,
 			PvcName:         pvcName,
-			COImagePrefix:   operator.COImagePrefix,
-			COImageTag:      operator.COImageTag,
+			COImagePrefix:   operator.Pgo.Pgo.COImagePrefix,
+			COImageTag:      operator.Pgo.Pgo.COImageTag,
 			SecurityContext: util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
 			DataRoot:        task.Spec.Name,
 		}
+		log.Debugf("creating rmdata job for pvc [%s]", pvcName)
 
 		var doc2 bytes.Buffer
 		err := operator.RmdatajobTemplate.Execute(&doc2, jobFields)

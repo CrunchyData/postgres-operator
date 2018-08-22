@@ -23,6 +23,9 @@ import (
 	"strings"
 )
 
+const RESTORE_PERM = "Restore"
+const SHOW_SECRETS_PERM = "ShowSecrets"
+const RELOAD_PERM = "Reload"
 const SHOW_CONFIG_PERM = "ShowConfig"
 const DF_CLUSTER_PERM = "DfCluster"
 const SHOW_CLUSTER_PERM = "ShowCluster"
@@ -61,6 +64,8 @@ func InitializePerms() {
 	PermMap = make(map[string]string)
 	RoleMap = make(map[string]map[string]string)
 
+	PermMap[SHOW_SECRETS_PERM] = "yes"
+	PermMap[RELOAD_PERM] = "yes"
 	PermMap[SHOW_CONFIG_PERM] = "yes"
 	PermMap[STATUS_PERM] = "yes"
 	PermMap[DF_CLUSTER_PERM] = "yes"
@@ -89,6 +94,7 @@ func InitializePerms() {
 	PermMap[SHOW_INGEST_PERM] = "yes"
 	PermMap[DELETE_INGEST_PERM] = "yes"
 	PermMap[CREATE_FAILOVER_PERM] = "yes"
+	PermMap[RESTORE_PERM] = "yes"
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
 	readRoles()
@@ -122,7 +128,7 @@ func readRoles() {
 
 	for _, line := range lines {
 		if len(line) == 0 {
-			//log.Infoln("blank line found")
+
 		} else {
 			fields := strings.Split(strings.TrimSpace(line), ":")
 			if len(fields) != 2 {

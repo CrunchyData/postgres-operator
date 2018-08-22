@@ -29,22 +29,20 @@ import (
 
 var applyCmd = &cobra.Command{
 	Use:   "apply",
-	Short: "Apply a Policy",
-	Long: `APPLY allows you to apply a Policy to a set of clusters
-For example:
+	Short: "Apply a policy",
+	Long: `APPLY allows you to apply a Policy to a set of clusters. For example:
 
-pgo apply mypolicy1 --selector=name=mycluster
-pgo apply mypolicy1 --selector=someotherpolicy
-pgo apply mypolicy1 --selector=someotherpolicy --dry-run
-.`,
+	pgo apply mypolicy1 --selector=name=mycluster
+	pgo apply mypolicy1 --selector=someotherpolicy
+	pgo apply mypolicy1 --selector=someotherpolicy --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("apply called")
 		if Selector == "" {
-			log.Error("selector is required to apply a policy")
+			fmt.Println("Error: Selector is required to apply a policy.")
 			return
 		}
 		if len(args) == 0 {
-			log.Error(`You must specify the name of a policy to apply.`)
+			fmt.Println("Error: You must specify the name of a policy to apply.")
 		} else {
 			applyPolicy(args)
 		}
@@ -54,8 +52,8 @@ pgo apply mypolicy1 --selector=someotherpolicy --dry-run
 func init() {
 	RootCmd.AddCommand(applyCmd)
 
-	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters that policy would be applied to but does not actually apply them")
+	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "Shows the clusters that the label would be applied to, without labelling them.")
 
 }
 
@@ -63,12 +61,12 @@ func applyPolicy(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		fmt.Println("Error: A policy name argument is required.")
 		return
 	}
 
 	if Selector == "" {
-		log.Error("--selector flag is required")
+		fmt.Println("Error: The --selector flag is required.")
 		return
 	}
 
@@ -76,7 +74,7 @@ func applyPolicy(args []string) {
 	r.Name = args[0]
 	r.Selector = Selector
 	r.DryRun = DryRun
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 
@@ -86,7 +84,7 @@ func applyPolicy(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -94,7 +92,7 @@ func applyPolicy(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
@@ -108,25 +106,25 @@ func applyPolicy(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	if DryRun {
-		fmt.Println("would have applied policy on " + "something")
+		fmt.Println("The label would have been applied on the following:")
 	}
 
 	if response.Status.Code == msgs.Ok {
 		if len(response.Name) == 0 {
-			fmt.Println("no clusters found")
+			fmt.Println("No clusters found.")
 		} else {
 			for _, v := range response.Name {
-				fmt.Println("applied policy on " + v)
+				fmt.Println("Applied policy on " + v)
 			}
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -134,13 +132,13 @@ func applyPolicy(args []string) {
 func showPolicy(args []string) {
 
 	for _, v := range args {
-		url := APIServerURL + "/policies/" + v + "?version=" + ClientVersion
+		url := APIServerURL + "/policies/" + v + "?version=" + msgs.PGO_VERSION
 		log.Debug("showPolicy called...[" + url + "]")
 
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 
@@ -149,7 +147,7 @@ func showPolicy(args []string) {
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -161,18 +159,18 @@ func showPolicy(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
 		if len(response.PolicyList.Items) == 0 {
-			fmt.Println("no policies found")
+			fmt.Println("No policies found.")
 			return
 		}
 
@@ -192,7 +190,7 @@ func showPolicy(args []string) {
 func createPolicy(args []string) {
 
 	if len(args) == 0 {
-		log.Error("policy name argument is required")
+		fmt.Println("Error: A poliicy name argument is required.")
 		return
 	}
 	var err error
@@ -202,7 +200,7 @@ func createPolicy(args []string) {
 
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	if PolicyURL != "" {
 		r.URL = PolicyURL
@@ -211,7 +209,7 @@ func createPolicy(args []string) {
 		r.SQL, err = getPolicyString(PolicyFile)
 
 		if err != nil {
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			return
 		}
 	}
@@ -224,8 +222,7 @@ func createPolicy(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		//log.Info("here after new req")
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -233,7 +230,7 @@ func createPolicy(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
@@ -244,15 +241,15 @@ func createPolicy(args []string) {
 	var response msgs.CreatePolicyResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("created policy")
+		fmt.Println("Created policy.")
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -276,21 +273,21 @@ func deletePolicy(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + ClientVersion
+		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
 		log.Debug("delete policy called [" + url + "]")
 
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -301,15 +298,15 @@ func deletePolicy(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println("policy deleted")
+			fmt.Println("Policy deleted.")
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 		}
 
 	}

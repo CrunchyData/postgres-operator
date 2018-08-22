@@ -1,8 +1,22 @@
+{{ if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgres-operator
+  labels:
+    app: {{ template "postgres-operator.name" . }}
+    chart: {{ template "postgres-operator.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  namespace: "{{ .Release.Namespace }}"
+
+---
+
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-role
-  namespace: $CO_NAMESPACE
+  namespace: "{{ .Release.Namespace }}"
 rules:
 - apiGroups:
   - '*'
@@ -38,12 +52,15 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-role-binding
-  namespace: $CO_NAMESPACE
+  namespace: "{{ .Release.Namespace }}"
 subjects:
 - kind: ServiceAccount
   name: postgres-operator
-  namespace: $CO_NAMESPACE
+  namespace: "{{ .Release.Namespace }}"
 roleRef:
   kind: Role
   name: pgo-role
   apiGroup: rbac.authorization.k8s.io
+
+
+{{ end }}

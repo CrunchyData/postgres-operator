@@ -47,6 +47,7 @@ type PgStorageSpec struct {
 	StorageType        string `json:"storagetype"`
 	Fsgroup            string `json:"fsgroup"`
 	SupplementalGroups string `json:"supplementalgroups"`
+	MatchLabels        string `json:"matchLabels"`
 }
 
 // PgContainerResource ...

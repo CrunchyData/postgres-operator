@@ -1,75 +1,58 @@
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: pgopclusterrole
-rules:
-  - verbs:
-      - get
-      - list
-      - watch
-      - create
-      - patch
-      - update
-    apiGroups:
-      - '*'
-    resources:
-      - customresourcedefinitions
-      - customresourcedefinitions/status
-      - nodes
-      - jobs
-      - jobs/status
-      - pgbackups
-      - pgingests
-      - pgclusters
-      - pgpolicies
-      - pgpolicylogs
-      - pgupgrades
-      - pgtasks
 
----
-
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
+apiVersion: v1
+kind: ServiceAccount
 metadata:
-  name: pgopclusterbinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: pgopclusterrole
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:$CO_NAMESPACE:postgres-operator
+  name: postgres-operator
+  namespace: $CO_NAMESPACE
 
 ---
 
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: nspostgresrole
+  name: pgo-role
   namespace: $CO_NAMESPACE
 rules:
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
-    resources:
-      - '*'
+- apiGroups:
+  - '*'
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - "*"
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - "*"
 
 ---
 
-apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: nspgrolebind
+  name: pgo-role-binding
   namespace: $CO_NAMESPACE
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: nspostgresrole
 subjects:
 - kind: ServiceAccount
   name: postgres-operator
   namespace: $CO_NAMESPACE
-
----
+roleRef:
+  kind: Role
+  name: pgo-role
+  apiGroup: rbac.authorization.k8s.io

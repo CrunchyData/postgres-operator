@@ -1,6 +1,6 @@
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.4-1.8.3
+  CCPImageTag:  centos7-10.5-2.1.0
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -44,4 +44,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.0
+  COImageTag:  centos7-3.2.0

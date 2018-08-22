@@ -1,6 +1,10 @@
 FROM centos:7
 
-LABEL Release="3.1" Vendor="Crunchy Data Solutions" 
+LABEL Vendor="Crunchy Data Solutions" \
+	Version="7.5" \
+	Release="3.2.0" \
+	summary="Crunchy Data PostgreSQL Operator - Display PVC" \
+	description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
 
 RUN yum -y update && yum -y clean all
 

@@ -22,6 +22,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -37,6 +38,7 @@ type Strategy interface {
 	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
 	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
+	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
 	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
@@ -49,6 +51,7 @@ type ServiceTemplateFields struct {
 	Name        string
 	ClusterName string
 	Port        string
+	ServiceType string
 }
 
 // DeploymentTemplateFields ...
@@ -65,6 +68,7 @@ type DeploymentTemplateFields struct {
 	ArchiveMode        string
 	ArchivePVCName     string
 	ArchiveTimeout     string
+	BackrestPVCName    string
 	PVCName            string
 	BackupPVCName      string
 	BackupPath         string
@@ -76,6 +80,7 @@ type DeploymentTemplateFields struct {
 	NodeSelector       string
 	ConfVolume         string
 	CollectAddon       string
+	BadgerAddon        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
@@ -116,17 +121,53 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	if cl.Spec.UserLabels["archive"] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-xlog", cl.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
+		pvcName := cl.Spec.Name + "-xlog"
+		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
+		if found {
+			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", pvcName)
+		} else {
+			_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, pvcName, cl.Spec.Name, namespace)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		}
+	}
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		pvcName := cl.Spec.Name + "-backrestrepo"
+		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
+		if found {
+			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", pvcName)
+		} else {
+			storage := crv1.PgStorageSpec{}
+			pgoStorage := operator.Pgo.Storage[operator.Pgo.BackupStorage]
+			storage.StorageClass = pgoStorage.StorageClass
+			storage.AccessMode = pgoStorage.AccessMode
+			storage.Size = pgoStorage.Size
+			storage.StorageType = pgoStorage.StorageType
+			storage.SupplementalGroups = pgoStorage.SupplementalGroups
+			storage.Fsgroup = pgoStorage.Fsgroup
+
+			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 		}
 	}
 
 	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.Strategy + "]")
+	//allows user to override with their own passwords
+	if cl.Spec.Password != "" {
+		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
+		cl.Spec.RootPassword = cl.Spec.Password
+		cl.Spec.Password = cl.Spec.Password
+		cl.Spec.PrimaryPassword = cl.Spec.Password
+	}
 
 	var err1, err2, err3 error
 	if cl.Spec.SecretFrom != "" {
+		log.Debug("secret-from is specified! using " + cl.Spec.SecretFrom)
 		_, cl.Spec.RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
 		_, cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
 		_, cl.Spec.PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
@@ -297,6 +338,14 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		}
 	}
 
+	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 	log.Debug("created replica pvc [" + pvcName + "]")
 
 	//update the replica CRD pvcname
@@ -325,6 +374,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		Name:        serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
+		ServiceType: operator.Pgo.Cluster.ServiceType,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)
@@ -341,5 +391,35 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
+
+}
+
+// ScaleDownBase ...
+func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
+	var err error
+
+	//get the pgcluster CRD for this replica
+	cluster := crv1.Pgcluster{}
+	_, err = kubeapi.Getpgcluster(client, &cluster,
+		replica.Spec.ClusterName, namespace)
+	if err != nil {
+		return
+	}
+
+	log.Debug("creating Pgreplica object strategy is [" + cluster.Spec.Strategy + "]")
+
+	if cluster.Spec.Strategy == "" {
+		log.Info("using default strategy")
+	}
+
+	strategy, ok := strategyMap[cluster.Spec.Strategy]
+	if ok {
+		log.Info("strategy found")
+	} else {
+		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
+		return
+	}
+
+	strategy.DeleteReplica(clientset, replica, namespace)
 
 }

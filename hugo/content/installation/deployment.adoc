@@ -2,11 +2,11 @@
 title: "Deployment"
 date: 2018-04-26T15:26:40-07:00
 draft: false
-weight: 40
+weight: 50
 ---
 
 :toc:
-Latest Release: v3.1, {docdate}
+Latest Release: 3.2.0 {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -49,20 +49,6 @@ pgupgrades.cr.client-go.k8s.io   2d
 
 At this point, the server side of the operator is deployed and ready.
 
-The complete set of environment variables used in the installation
-so far are -
-....
-export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.1
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-export CO_CMD=kubectl
-....
-
-You would normally add these into your *.bashrc* at this point to be used later on or if you want to redeploy the operator.
-
 == Configure *pgo* Client
 
 The pgo command line client requires TLS for securing the connection to the operator's REST API.  This configuration is performed as follows -
@@ -72,7 +58,7 @@ export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
 export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
 ....
 
-The pgo client uses Basic Authentication to authenticate to the operator REST API, for authentication, add the following `.pgouser` file to your $HOME -
+The pgo client uses Basic Authentication to authenticate to the operator REST API. For authentication, add the following `.pgouser` file to your $HOME -
 ....
 echo "username:password" > $HOME/.pgouser
 ....
@@ -117,12 +103,12 @@ export CO_APISERVER_URL=https://10.109.184.8:8443
 pgo version
 ....
 
-It is also possible to define a bash alias such as -
+Alternatively, an alias was set up in the .bashrc file earlier on, as follows:
 ....
 alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
 ....
 
-This alias will set the `CO_APISERVER_URL` IP address for you.
+This alias (`setip`) will set the `CO_APISERVER_URL` IP address for you.
 
 {{% /expand%}}
 
@@ -152,91 +138,11 @@ pgo version
 At this point you should be able to connect to the operator as follows -
 ....
 pgo version
-pgo client version 3.1
-apiserver version 3.1
+pgo client version 3.2
+apiserver version 3.2
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.
-
-== Storage Configuration
-
-Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.
-
-The operator will work with HostPath, NFS, Dynamic, and GKE Storage.
-
-{{%expand "NFS" %}}
-
-=== NFS
-
-To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file is provided.  Overlay the default `pgo.yaml` file with that file -
-....
-cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
-....
-
-Next, set the environment variable CO_NFS_IP to your NFS server's IP address, then run the script `$COROOT/pv/create-pv-nfs.sh` -
-....
-export CO_NFS_IP=<your NFS server's IP>
-cd $COROOT/pv
-./create-pv-nfs.sh
-....
-
-{{% /expand%}}
-
-{{%expand "Dynamic" %}}
-
-=== Dynamic
-
-To configure the operator to use Dynamic Storage classes for storage, a sample *pgo.yaml.storageclass* file is provided.  Overlay the default *pgo.yaml* file with that file -
-....
-cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-....
-
-Edit the *pgo.yaml* file to specify the storage class you will be using, the default value assumed is *standard* which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.
-
-Notice that the *FsGroup* setting is required for most block storage and is set to the value of *26* since the PostgreSQL container runs as UID *26*.
-
-{{% /expand%}}
-
-{{%expand "GKE" %}}
-
-=== GKE
-
-Some notes for setting up GKE for the Operator deployment.
-
-==== Install Kubectl
-
-On your host you will be working from, install the kubectl command -
-
-https://kubernetes.io/docs/tasks/tools/install-kubectl/
-
-==== GCP
-
-* Select your project
-* Create a Kube cluster in that project
-
-By default a storage class called *standard* is created.
-
-==== Install GCloud
-
-To access the Kubernetes cluster, install the gcloud utility -
-
-....
-https://cloud.google.com/sdk/downloads
-cd google-cloud-sdk
-./install.sh
-....
-
-==== Configure Kubectl for Cluster Access
-
-....
-gcloud auth login
-
-gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
-
-kubectl get storageclass
-....
-
-{{% /expand%}}
 
 == Next Steps
 

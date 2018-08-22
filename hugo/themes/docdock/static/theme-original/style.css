@@ -292,7 +292,8 @@ h4 {
   margin: 1.5rem 0 0.75rem 0; }
 
 h5 {
-  font-size: 0.5rem;
+  font-size: 1rem;
+  color: #515151 !important;
   line-height: 110% !important;
   margin: 1rem 0 0.2rem 0; }
 

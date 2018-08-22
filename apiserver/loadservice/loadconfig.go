@@ -68,10 +68,6 @@ func (c *LoadConfig) validate() error {
 
 func (c *LoadConfig) getConf(yamlFile *bytes.Buffer) *LoadConfig {
 
-	//yamlFile, err := ioutil.ReadFile("config/pgo.yaml")
-	//if err != nil {
-	//log.Printf("yamlFile.Get err   #%v ", err)
-	//}
 	err := yaml.Unmarshal(yamlFile.Bytes(), c)
 	if err != nil {
 		log.Fatalf("Unmarshal: %v", err)

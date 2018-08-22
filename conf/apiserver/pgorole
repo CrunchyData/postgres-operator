@@ -1,3 +1,3 @@
-pgoadmin: ShowConfig, Status, DfCluster, DeleteCluster, ShowCluster, CreateCluster, TestCluster, ShowBackup, DeleteBackup, CreateBackup, Label, Load, CreatePolicy, DeletePolicy, ShowPolicy, ApplyPolicy, ShowPVC, CreateUpgrade, ShowUpgrade, DeleteUpgrade, CreateUser, DeleteUser, User, Version, CreateIngest, ShowIngest, DeleteIngest, CreateFailover
+pgoadmin: Restore, ShowSecrets, Reload, ShowConfig, Status, DfCluster, DeleteCluster, ShowCluster, CreateCluster, TestCluster, ShowBackup, DeleteBackup, CreateBackup, Label, Load, CreatePolicy, DeletePolicy, ShowPolicy, ApplyPolicy, ShowPVC, CreateUpgrade, ShowUpgrade, DeleteUpgrade, CreateUser, DeleteUser, User, Version, CreateIngest, ShowIngest, DeleteIngest, CreateFailover
 
 pgoreader: Status, ShowConfig, DfCluster, ShowCluster, TestCluster, ShowBackup, ShowPolicy, ShowPVC, ShowUpgrade, Version

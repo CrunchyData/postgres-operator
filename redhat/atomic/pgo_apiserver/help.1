@@ -1,0 +1,55 @@
+.TH "pgo-apiserver " "1" " Container Image Pages" "Jeff McCormick" "August 17, 2018"
+.nh
+.ad l
+
+
+.SH NAME
+.PP
+pgo-apiserver \- pgo-apiserver container image
+
+
+.SH DESCRIPTION
+.PP
+The Postgres Operator is a controller, written in Golang, that uses the Kubernetes API and CustomResourceDefinition concepts to offer users a CLI which enables them to create and manage PostgreSQL databases and clusters running on a Kubernetes cluster.
+
+The apiserver REST API allows users to interact freely with the Operator using a command line interface.
+
+.PP
+The container itself consists of:
+    \- RHEL7 base image
+    \- Bash script that performs the container startup
+    \- PostgreSQL binary packages
+
+.PP
+Files added to the container during Docker build include: /help.1.
+
+
+.SH USAGE
+.PP
+For more information on the PostgreSQL Operator, see the official Crunchy Postgres Operator repository on GitHub.
+
+
+.SH LABELS
+.PP
+The starter container includes the following LABEL settings:
+
+.PP
+That atomic command runs the Docker command set in this label:
+
+.PP
+\fB\fCName=\fR
+
+.PP
+The registry location and name of the image. For example, Name="crunchydata/pgo-apiserver".
+
+.PP
+\fB\fCVersion=\fR
+
+.PP
+The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.5"
+
+.PP
+\fB\fCRelease=\fR
+
+.PP
+The specific release number of the container. For example, Release="3.2.0"

@@ -1,0 +1,85 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.RestoreName}}",
+        "labels": {
+        	"pgo-backrest-restore": "true",
+        	"vendor": "crunchydata"
+        }
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.RestoreName}}",
+                "labels": {
+                    "pgo-backrest-restore": "true",
+        	"vendor": "crunchydata"
+                }
+            },
+            "spec": {
+            
+                    {{.SecurityContext}}
+           
+                "containers": [
+                    {
+                        "name": "backrest-restore",
+                        "image": "{{.CCPImagePrefix}}/crunchy-backrest-restore:{{.CCPImageTag}}",
+                        "env": [
+                            {
+                                "name": "STANZA",
+                                "value": "db"
+                            },
+                            {
+                                "name": "BACKREST_CUSTOM_OPTS",
+                                "value": "{{.BackrestRestoreOpts}}"
+                            },
+                            {
+                                "name": "PG_HOSTNAME",
+				"value": "{{.ToClusterName}}"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgdata",
+                                "name": "pgdata",
+                                "readOnly": false
+                            },
+                            {
+                                "mountPath": "/pgconf",
+                                "name": "pgconf",
+                                "readOnly": true
+                            },
+                            {
+                                "mountPath": "/backrestrepo",
+                                "name": "backrestrepo",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "pgconf",
+                        "configMap": {
+                            "name": "{{.RestoreConfigMapName}}"
+                        }
+                    },
+                    {
+                        "name": "backrestrepo",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.FromClusterPVCName}}"
+                        }
+                    },
+                    {
+                        "name": "pgdata",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.ToClusterPVCName}}"
+                        }
+                    }
+                ],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

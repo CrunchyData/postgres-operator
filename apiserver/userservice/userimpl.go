@@ -553,3 +553,47 @@ func isManaged(secretName string) (bool, error) {
 	return true, err
 
 }
+
+// ShowUser ...
+func ShowUser(name, selector string) msgs.ShowUserResponse {
+	var err error
+
+	response := msgs.ShowUserResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]msgs.ShowUserDetail, 0)
+
+	if selector == "" && name == "all" {
+	} else {
+		if selector == "" {
+			selector = "name=" + name
+		}
+	}
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, selector, apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+
+	for _, c := range clusterList.Items {
+		detail := msgs.ShowUserDetail{}
+		detail.Cluster = c
+		detail.Secrets, err = apiserver.GetSecrets(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results = append(response.Results, detail)
+	}
+
+	return response
+
+}

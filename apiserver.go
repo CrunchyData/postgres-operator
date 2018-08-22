@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/configservice"
@@ -30,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
+	"github.com/crunchydata/postgres-operator/apiserver/reloadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/statusservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
@@ -89,6 +91,7 @@ func main() {
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
+	r.HandleFunc("/users/{name}", userservice.ShowUserHandler).Methods("GET")
 	//here
 	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
@@ -101,6 +104,8 @@ func main() {
 	r.HandleFunc("/clustersdelete/{name}", clusterservice.DeleteClusterHandler).Methods("GET")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
+	r.HandleFunc("/scale/{name}", clusterservice.ScaleQueryHandler).Methods("GET")
+	r.HandleFunc("/scaledown/{name}", clusterservice.ScaleDownHandler).Methods("GET")
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
@@ -109,6 +114,10 @@ func main() {
 	//here
 	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
+	r.HandleFunc("/backrestbackup", backrestservice.CreateBackupHandler).Methods("POST")
+	r.HandleFunc("/backrest/{name}", backrestservice.ShowBackrestHandler).Methods("GET")
+	r.HandleFunc("/restore", backrestservice.RestoreHandler).Methods("POST")
+	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")
 
@@ -144,5 +153,4 @@ func main() {
 	}
 
 	log.Fatal(srv.ListenAndServeTLS(serverCert, serverKey))
-	//log.Fatal(http.ListenAndServe(":8080", r))
 }

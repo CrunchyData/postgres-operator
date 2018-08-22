@@ -1,0 +1,32 @@
+            ,{
+                "name": "pgbadger",
+		"image": "{{.CCPImagePrefix}}/crunchy-pgbadger:{{.CCPImageTag}}",
+                "ports": [ {
+                        "containerPort": 10000,
+                        "protocol": "TCP"
+                    }
+                ],
+                "readinessProbe": {
+                    "tcpSocket": {
+                        "port": 10000
+                    },
+                    "initialDelaySeconds": 20,
+                    "periodSeconds": 10
+                },
+                "env": [ {
+		"name": "BADGER_TARGET",
+		"value": "{{.BadgerTarget}}"
+		} ],
+                "volumeMounts": [
+                    {
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": true
+                    },
+                    {
+                        "mountPath": "/report",
+                        "name": "report",
+                        "readOnly": false
+                    }
+                ]
+            }

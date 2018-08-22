@@ -28,12 +28,12 @@ func showConfig(args []string) {
 
 	log.Debugf("showConfig called %v\n", args)
 
-	url := APIServerURL + "/config?version=" + ClientVersion
+	url := APIServerURL + "/config?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 
@@ -42,7 +42,7 @@ func showConfig(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 	log.Debugf("%v\n", resp)
@@ -54,20 +54,20 @@ func showConfig(args []string) {
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
 
 	if response.Status.Code != msgs.Ok {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
 	if OutputFormat == "json" {
 		b, err := json.MarshalIndent(response, "", "  ")
 		if err != nil {
-			fmt.Println("error:", err)
+			fmt.Println("Error: ", err)
 		}
 		fmt.Println(string(b))
 		return
@@ -79,6 +79,8 @@ func showConfig(args []string) {
 	fmt.Printf("%s\n", "Cluster:")
 	fmt.Printf("%s%s\n", "  CCPImagePrefix:  ", pgo.Cluster.CCPImagePrefix)
 	fmt.Printf("%s%s\n", "  CCPImageTag:  ", pgo.Cluster.CCPImageTag)
+	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Cluster.Metrics)
+	fmt.Printf("%s%t\n", "  Badger:  ", pgo.Cluster.Badger)
 	fmt.Printf("%s%s\n", "  Policies:  ", pgo.Cluster.Policies)
 	fmt.Printf("%s%s\n", "  Port:  ", pgo.Cluster.Port)
 	fmt.Printf("%s%s\n", "  ArchiveTimeout:  ", pgo.Cluster.ArchiveTimeout)
@@ -117,7 +119,6 @@ func showConfig(args []string) {
 	fmt.Printf("%s\n", "Pgo:")
 	fmt.Printf("%s%s\n", "  AutofailSleepSeconds:  ", pgo.Pgo.AutofailSleepSeconds)
 	fmt.Printf("%s%t\n", "  Audit:  ", pgo.Pgo.Audit)
-	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Pgo.Metrics)
 	fmt.Printf("%s%s\n", "  LSPVCTemplate:  ", pgo.Pgo.LSPVCTemplate)
 	fmt.Printf("%s%s\n", "  LoadTemplate:  ", pgo.Pgo.LoadTemplate)
 	fmt.Printf("%s%s\n", "  COImagePrefix:  ", pgo.Pgo.COImagePrefix)

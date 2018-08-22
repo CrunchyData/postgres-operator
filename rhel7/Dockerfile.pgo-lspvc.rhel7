@@ -1,9 +1,20 @@
 FROM registry.access.redhat.com/rhel7
 
-LABEL Release="3.1" Vendor="Crunchy Data Solutions" 
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="pgo-lspvc" \
+    vendor="crunchydata.com" \
+	Version="7.5" \
+	Release="3.2.0" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
+    summary="Crunchy Data PostgreSQL Operator - Display PVC" \
+    description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
+
+COPY redhat/atomic/pgo_lspvc/help.1 /help.1
+COPY redhat/atomic/pgo_lspvc/help.md /help.md
+COPY redhat/licenses /licenses
 
 RUN yum -y update && yum -y clean all
-
 
 VOLUME ["/pgdata"]
 

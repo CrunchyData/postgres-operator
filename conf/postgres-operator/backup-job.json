@@ -2,16 +2,21 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backup-{{.Name}}"
+        "name": "backup-{{.Name}}",
+       	"labels": {
+       		"vendor": "crunchydata",
+               	"pgbackup": "true",
+                "pg-cluster": "{{.Name}}"
+	}
     },
     "spec": {
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
-                    "vendor": "crunchydata",
-                    "pgbackup": "true",
-                    "pg-cluster": "{{.Name}}"
+       			"vendor": "crunchydata",
+               		"pgbackup": "true",
+                    	"pg-cluster": "{{.Name}}"
                 }
             },
             "spec": {

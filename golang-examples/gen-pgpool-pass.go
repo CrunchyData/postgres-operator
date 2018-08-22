@@ -27,9 +27,6 @@ import (
 )
 
 func main() {
-	//password := "NUWvZX9PBp"
-	//username := "testuser"
-
 	username, password := credentials()
 	fmt.Println("hash of password is [md5" + GetMD5Hash(password+username) + "]")
 

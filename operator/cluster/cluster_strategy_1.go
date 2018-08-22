@@ -51,9 +51,15 @@ type containerResourcesTemplateFields struct {
 
 type collectTemplateFields struct {
 	Name            string
+	JobName         string
 	PrimaryPassword string
 	CCPImageTag     string
 	CCPImagePrefix  string
+}
+type badgerTemplateFields struct {
+	CCPImageTag    string
+	CCPImagePrefix string
+	BadgerTarget   string
 }
 
 // Strategy1  ...
@@ -67,11 +73,17 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	log.Info("creating Pgcluster object using Strategy 1" + " in namespace " + namespace)
 	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
+	st := operator.Pgo.Cluster.ServiceType
+	if cl.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+		st = cl.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	}
+
 	//create the primary service
 	serviceFields := ServiceTemplateFields{
 		Name:        cl.Spec.Name,
 		ClusterName: cl.Spec.Name,
 		Port:        cl.Spec.Port,
+		ServiceType: st,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)
@@ -85,9 +97,18 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
-	if cl.Spec.UserLabels["archive"] == "true" {
+	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archiveTimeout = cl.Spec.UserLabels["archive-timeout"]
+		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+		archivePVCName = cl.Spec.Name + "-xlog"
+	}
+
+	backrestPVCName := ""
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		backrestPVCName = cl.Spec.Name + "-backrestrepo"
+		//backrest requires us to turn on archive mode
+		archiveMode = "on"
+		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
 	}
 
@@ -99,7 +120,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ClusterName:        cl.Spec.Name,
 		PrimaryHost:        cl.Spec.Name,
 		Port:               cl.Spec.Port,
-		CCPImagePrefix:     operator.CCPImagePrefix,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		PVCName:            util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
 		OperatorLabels:     util.GetLabelsFromMap(primaryLabels),
@@ -109,6 +130,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		Database:           cl.Spec.Database,
 		ArchiveMode:        archiveMode,
 		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
+		BackrestPVCName:    util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:     archiveTimeout,
 		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
@@ -118,6 +140,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
+		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cl.Spec),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -286,7 +309,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		ClusterName:        clusterName,
 		PgMode:             "replica",
 		Port:               cl.Spec.Port,
-		CCPImagePrefix:     operator.CCPImagePrefix,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		PVCName:            util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
 		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
@@ -308,11 +331,9 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	switch cl.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
@@ -417,9 +438,10 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 
 		collectTemplateFields := collectTemplateFields{}
 		collectTemplateFields.Name = spec.Name
+		collectTemplateFields.JobName = spec.Name
 		collectTemplateFields.PrimaryPassword = PrimaryPassword
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
-		collectTemplateFields.CCPImagePrefix = operator.CCPImagePrefix
+		collectTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
 		err := operator.CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
@@ -515,14 +537,29 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
+	backrestPVCName := ""
+	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		backrestPVCName = replica.Spec.Name + "-backrestrepo"
+		//backrest requires archive mode be set to on
+		archiveMode = "on"
+		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+		archivePVCName = cluster.Spec.Name + "-xlog"
+	}
+
+	//check for --ccp-image-tag at the command line
+	imageTag := cluster.Spec.CCPImageTag
+	if replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY] != "" {
+		imageTag = replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY]
+	}
+
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
 		Name:              replica.Spec.Name,
 		ClusterName:       replica.Spec.ClusterName,
 		PgMode:            "replica",
 		Port:              cluster.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
-		CCPImageTag:       cluster.Spec.CCPImageTag,
+		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:       imageTag,
 		PVCName:           util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
 		BackupPVCName:     util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
 		PrimaryHost:       cluster.Spec.PrimaryHost,
@@ -531,6 +568,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		DataPathOverride:  replica.Spec.Name,
 		ArchiveMode:       archiveMode,
 		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
+		BackrestPVCName:   util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:    archiveTimeout,
 		Replicas:          "1",
 		ConfVolume:        GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
@@ -541,16 +579,15 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		UserSecretName:    cluster.Spec.UserSecretName,
 		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:      GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:       GetBadgerAddon(clientset, namespace, &cluster.Spec),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		//err = operator.ReplicadeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		//err = operator.ReplicadeploymentTemplate1Shared.Execute(&replicaDoc, replicaDeploymentFields)
 		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
@@ -573,4 +610,40 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 
 	return err
+}
+
+// DeleteReplica ...
+func (r Strategy1) DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespace string) error {
+
+	var err error
+	log.Info("deleting Pgreplica object" + " in namespace " + namespace)
+	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
+	err = kubeapi.DeleteDeployment(clientset, cl.Spec.Name, namespace)
+
+	return err
+
+}
+
+func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
+
+	if spec.UserLabels[util.LABEL_BADGER] == "true" {
+		log.Debug("crunchy_badger was found as a label on cluster create")
+		badgerTemplateFields := badgerTemplateFields{}
+		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
+		badgerTemplateFields.BadgerTarget = spec.Name
+		badgerTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
+
+		var badgerDoc bytes.Buffer
+		err := operator.BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+
+		if operator.CRUNCHY_DEBUG {
+			operator.BadgerTemplate1.Execute(os.Stdout, badgerTemplateFields)
+		}
+		return badgerDoc.String()
+	}
+	return ""
 }

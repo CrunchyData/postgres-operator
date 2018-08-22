@@ -1,0 +1,31 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+	"name": "postgres-operator",
+        "labels": {
+            "name": "postgres-operator"
+        }
+    },
+    "spec": {
+        "ports": [
+	{
+            "name": "apiserver",
+            "protocol": "TCP",
+            "port": 8443,
+            "targetPort": 8443
+        },
+	{
+            "name": "ui",
+            "protocol": "TCP",
+            "port": 8000,
+            "targetPort": 8000
+        }
+	],
+        "selector": {
+            "name": "postgres-operator"
+        },
+        "type": "NodePort",
+        "sessionAffinity": "None"
+    }
+}

@@ -47,7 +47,7 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("backupservice.ShowBackupHandler GET called")
 	var resp msgs.ShowBackupResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ShowBackupResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 
@@ -79,7 +79,7 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	log.Debug("backupservice.DeleteBackupHandler called")
 	var resp msgs.DeleteBackupResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.DeleteBackupResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {

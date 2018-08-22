@@ -42,7 +42,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resp msgs.UserResponse
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp = msgs.UserResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 	} else {
@@ -69,7 +69,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateUserResponse{}
-	if request.ClientVersion != apiserver.VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 	} else {
@@ -110,12 +110,54 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("userservice.DeleteUserHandler DELETE called")
 	var resp msgs.DeleteUserResponse
-	if clientVersion != apiserver.VERSION {
+	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.DeleteUserResponse{}
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 	} else {
 		resp = DeleteUser(username, selector)
+	}
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+// ShowUserHandler ...
+// pgo show user
+// parameters selector
+// returns a ShowUserResponse
+func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("userservice.ShowUserHandler %v\n", vars)
+
+	clustername := vars["name"]
+
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	err := apiserver.Authn(apiserver.SHOW_SECRETS_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	log.Debug("userservice.ShowUserHandler GET called")
+
+	var resp msgs.ShowUserResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ShowUserResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]msgs.ShowUserDetail, 0)
+	} else {
+		resp = ShowUser(clustername, selector)
 	}
 	json.NewEncoder(w).Encode(resp)
 

@@ -38,14 +38,14 @@ func deleteCluster(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
 
-		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + ClientVersion
+		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + msgs.PGO_VERSION
 
 		log.Debug("delete cluster called [" + url + "]")
 
 		action := "GET"
 		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 
@@ -53,7 +53,7 @@ func deleteCluster(args []string) {
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -63,7 +63,7 @@ func deleteCluster(args []string) {
 		var response msgs.DeleteClusterResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -73,7 +73,7 @@ func deleteCluster(args []string) {
 				fmt.Println(result)
 			}
 		} else {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 		}
 
 	}
@@ -93,7 +93,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + ClientVersion
+		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
 
 		log.Debug("show cluster called [" + url + "]")
 
@@ -101,8 +101,7 @@ func showCluster(args []string) {
 		req, err := http.NewRequest(action, url, nil)
 
 		if err != nil {
-			//log.Info("here after new req")
-			log.Fatal("NewRequest: ", err)
+			fmt.Println("Error: NewRequest: ", err)
 			return
 		}
 
@@ -110,7 +109,7 @@ func showCluster(args []string) {
 
 		resp, err := httpclient.Do(req)
 		if err != nil {
-			log.Fatal("Do: ", err)
+			fmt.Println("Error: Do: ", err)
 			return
 		}
 		log.Debugf("%v\n", resp)
@@ -122,7 +121,7 @@ func showCluster(args []string) {
 
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			log.Printf("%v\n", resp.Body)
-			log.Error(err)
+			fmt.Println("Error: ", err)
 			log.Println(err)
 			return
 		}
@@ -130,19 +129,19 @@ func showCluster(args []string) {
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
 			if err != nil {
-				fmt.Println("error:", err)
+				fmt.Println("Error: ", err)
 			}
 			fmt.Println(string(b))
 			return
 		}
 
 		if response.Status.Code != msgs.Ok {
-			log.Error(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
 		if len(response.Results) == 0 {
-			fmt.Println("no clusters found")
+			fmt.Println("No clusters found.")
 			return
 		}
 
@@ -159,14 +158,10 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
 
-	var primaryStr string
 	for _, pod := range detail.Pods {
-		if pod.Primary {
-			primaryStr = "(primary)"
-		} else {
-			primaryStr = ""
-		}
-		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, primaryStr)
+		podType := "(" + pod.Type + ")"
+
+		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, podType)
 		fmt.Println(podStr)
 		for _, pvc := range pod.PVCName {
 			fmt.Println(TreeBranch + "pvc : " + pvc)
@@ -180,11 +175,11 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		printPolicies(&detail.Deployments[0])
 	}
 
-	for i, service := range detail.Services {
-		if i == len(detail.Services)-1 {
-			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
+	for _, service := range detail.Services {
+		if service.ExternalIP == "" {
+			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ")")
 		} else {
-			fmt.Println(TreeBranch + "service : " + service.Name + " (" + service.ClusterIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ") ExternalIP (" + service.ExternalIP + ")")
 		}
 	}
 
@@ -197,15 +192,6 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		fmt.Printf("%s=%s ", k, v)
 	}
 	fmt.Println("")
-
-	if ShowSecrets {
-		for _, s := range detail.Secrets {
-			fmt.Println("")
-			fmt.Println("secret : " + s.Name)
-			fmt.Println(TreeBranch + "username: " + s.Username)
-			fmt.Println(TreeTrunk + "password: " + s.Password)
-		}
-	}
 
 }
 
@@ -220,7 +206,7 @@ func createCluster(args []string) {
 	var err error
 
 	if len(args) == 0 {
-		log.Error("cluster name argument is required")
+		fmt.Println("Error: Cluster name argument is required.")
 		return
 	}
 
@@ -236,15 +222,18 @@ func createCluster(args []string) {
 	r.CCPImageTag = CCPImageTag
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
+	r.BadgerFlag = BadgerFlag
+	r.ServiceType = ServiceType
 	r.AutofailFlag = AutofailFlag
 	r.PgpoolFlag = PgpoolFlag
 	r.ArchiveFlag = ArchiveFlag
+	r.BackrestFlag = BackrestFlag
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
 	r.ContainerResources = ContainerResources
-	r.ClientVersion = ClientVersion
+	r.ClientVersion = msgs.PGO_VERSION
 
 	jsonValue, _ := json.Marshal(r)
 	url := APIServerURL + "/clusters"
@@ -253,7 +242,7 @@ func createCluster(args []string) {
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
+		fmt.Println("Error: NewRequest: ", err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -261,7 +250,7 @@ func createCluster(args []string) {
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
-		log.Fatal("Do: ", err)
+		fmt.Println("Error: Do: ", err)
 		return
 	}
 
@@ -273,7 +262,7 @@ func createCluster(args []string) {
 	var response msgs.CreateClusterResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		log.Error(err)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return
 	}
@@ -283,7 +272,7 @@ func createCluster(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		log.Error(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

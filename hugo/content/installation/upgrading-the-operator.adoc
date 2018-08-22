@@ -5,9 +5,46 @@ draft: false
 weight: 60
 ---
 
-Latest Release: v3.1, {docdate}
+Latest Release: 3.2.0 {docdate}
 
-{{%expand "Upgrading from v2.4 to v2.5" %}}
+{{% expand "Upgrading to v3.2" %}}
+
+The following changes are mandatory when upgrading to 3.2 from previous operator versions:
+
+ * The MatchLabels attribute was added to the pgo.yaml file as an optional
+   storage configuration setting. You do not have to specify this setting,
+   however, the operator-conf ConfigMap now has to include the `pvc-matchlabels.json`
+   template file as required by this new feature. If you upgrade to
+   3.2, you will need to rebuild your *operator-conf* ConfigMap to include
+   `pvc-matchlabels.json` and redeploy the Operator using the new ConfigMap.
+ * The `CCP_IMAGE_PREFIX`, `CO_IMAGE_PREFIX`, and `CO_IMAGE_TAG` environment variables are now pulled from the `pgo.yaml` configuration file that is mounted by both the apiserver and operator containers. To clean up an existing deployment, remove these environment variable definitions from your `deployment.yaml` file or Helm chart equivalent.
+ * The `ExternalIP` field was added to the `apiservermsgs.ShowClusterService`
+   struct. This field is now passed back to apiserver clients in the
+   REST API when viewing cluster details. For custom clients you might
+   have written, you will see this new field in the REST message.
+ * Clusters that were created prior to 3.1 will need a new label to be applied. For primary deployments, apply the label `primary=true`. For example, `kubectl label deploy mycluster primary=true`. For replica deployments, specify `primary=false`. For example,	`kubectl label deploy mycluster-xxxx primary=false`.
+ * The `collect.json` template now specifies a pgmonitor credential that
+   must match the `PGMONITOR_PASSWORD` environment variable which was
+   added into the `cluster-deployment-1.json` template.  These changes
+   were required to support crunchy-collect (2.1.0) changes that were
+   introduced.  Users should upgrade to `crunchy-collect:centos7-10.5-2.1.0`
+   to use this feature.  If you do not want to upgrade to this new
+   metrics collector, you will need to retain and reuse the prior version
+   of `collect.json` used by the Operator and make sure you deploy that
+   version.
+
+{{% /expand %}}
+
+{{% expand "Upgrading from v2.6 to v3.1" %}}
+
+Clusters that were created prior to 3.1 will need a new label to be applied.
+For primary deployments, apply the label `primary=true`. For example,
+`kubectl label deploy mycluster primary=true`. For replica deployments, specify
+`primary=false`. For example,	`kubectl label deploy mycluster-xxxx primary=false`.
+
+{{% /expand %}}
+
+{{% expand "Upgrading from v2.4 to v2.5" %}}
 
 For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
@@ -46,13 +83,13 @@ an existing cluster as a parameter.
 $COROOT/bin/upgrade-secret.sh
 ....
 
-{{% /expand%}}
+{{% /expand %}}
 
-{{%expand "Upgrading from v2.5 to v2.6" %}}
+{{% expand "Upgrading from v2.5 to v2.6" %}}
 
 For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.1[here].
+page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.2[here].
 
 == Required Updates
 
@@ -87,11 +124,9 @@ ContainerResources:
    LimitsCPU:  4.0
 ....
 
-{{% notice warning %}}
 If these settings are set incorrectly or if the Kubernetes cluster
 cannot meet the defined memory and CPU requirements, deployments will go into
 a *pending* state.
-{{% /notice %}}
 
 === Kube RBAC
 
@@ -156,4 +191,4 @@ of holding replica information, called *pgreplicas*. This CRD is populated
 with the pgo scale command and is used to hold per-replica specific information
 such as the resource and storage configurations requested at run time.
 
-{{% /expand%}}
+{{% /expand %}}
