@@ -363,7 +363,7 @@ There are currently 3 sample pgo configuration files provided
 for users to use as a starting configuration -
 
  * `pgo.yaml.nfs` - this configuration specifies *create* storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database
- * `pgo.yaml.dynamic` - this configuration specifies *dynamic* storage to be used, namely a *storageclass* that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.
+ * `pgo.yaml.storageclass` - this configuration specifies *dynamic* storage to be used, namely a *storageclass* that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.
 
 Note, when Storage Type is *create*, you can specify a storage
 configuration setting of *MatchLabels*, when set, this will cause a
