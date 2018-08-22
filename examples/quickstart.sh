@@ -14,8 +14,15 @@
 # limitations under the License.
 
 LOG="pgo-installer.log"
+if [[ "$CO_VERSION" != "" ]]; then
+	echo "CO_VERSION is set to " $CO_VERSION
+else
+	export CO_VERSION=3.2.0-rc5
+fi
+if [[ "$CO_NAMESPACE" != "" ]]; then
+	echo "CO_NAMESPACE is set to " $CO_NAMESPACE
+fi
 
-export CO_VERSION=3.2.0-rc3
 echo -n "Which Operator version do you want to install? ["$CO_VERSION"]"
 read REPLY
 if [[ "$REPLY" != "" ]]; then
@@ -24,7 +31,7 @@ if [[ "$REPLY" != "" ]]; then
 fi
 echo $CO_VERSION is the version entered | tee -a $LOG
 
-echo -n "Is this a 'kube' install or an 'ocp' install?"
+echo -n "Is this a 'kube' install or an 'ocp' install?[kube]"
 read REPLY
 case $REPLY in
 kube)
@@ -36,36 +43,35 @@ ocp)
 	export CO_CMD=oc
 	;;
 *)
-	echo "user has entered an invalid install type"
-	exit 2
+	echo "user has selected a kube install" | tee -a $LOG
+	export CO_CMD=kubectl
 	;;
 esac
 
-echo -n "use centos or rhel based images?, NOTE:  rhel images available only to crunchy customers)"
+echo -n "use centos7 or rhel7 based images?[centos7], NOTE:  rhel images available only to crunchy customers)"
 read REPLY
 case $REPLY in
-centos)
+centos7)
 	echo "user has selected centos images" | tee -a $LOG
 	export CO_BASEOS=centos7
 	;;
-rhel)
+rhel7)
 	echo "user has selected rhel images" | tee -a $LOG
 	export CO_BASEOS=rhel7
 	;;
 *)
-	echo "user has entered an invalid image type"
-	exit 2
+	echo "user has selected centos images" | tee -a $LOG
+	export CO_BASEOS=centos7
 	;;
 esac
 
-echo -n "enter operator image prefix [crunchydata]"
+echo -n "enter operator image prefix ["$CO_IMAGE_PREFIX"]"
 read REPLY
 if [[ "$REPLY" != "" ]]; then
 	echo "setting CO_IMAGE_PREFIX="$REPLY
 	export CO_IMAGE_PREFIX=$REPLY
 else
-	echo "setting CO_IMAGE_PREFIX to crunchydata"
-	export CO_IMAGE_PREFIX=crunchydata
+	echo "setting CO_IMAGE_PREFIX to " $CO_IMAGE_PREFIX
 fi
 echo "user has entered "$CO_IMAGE_PREFIX " for the operator image prefix"| tee -a $LOG
 
@@ -88,11 +94,11 @@ echo ""
 case $CO_CMD in
 kubectl)
 $CO_CMD get namespaces
-$NAMESPACE=`$CO_CMD config view | grep namespace:`
+export CO_NAMESPACE=`$CO_CMD config view | grep namespace:| cut -f2 -d':' | cut -f2 -d' '`
 	;;
 oc)
 $CO_CMD project
-export NAMESPACE=`eval $CO_CMD project -q`
+export CO_NAMESPACE=`eval $CO_CMD project -q`
 	;;
 esac
 if [[ $? -ne 0 ]]; then
@@ -103,7 +109,7 @@ fi
 echo "Connected to cluster" | tee -a $LOG
 echo ""
 
-echo "The postgres-operator will be installed into the current namespace which is ["$NAMESPACE"]."
+echo "The postgres-operator will be installed into the current namespace which is ["$CO_NAMESPACE"]."
 
 echo -n "Do you want to continue the installation? [Yn] "
 read REPLY
@@ -179,8 +185,8 @@ cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/crunchydata/'"$CO_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
-sed --in-place=.bak 's/demo/'"$NAMESPACE"'/' $COROOT/deploy/rbac.yaml
+sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
+sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
 echo "Setting up pgo client authentication..." | tee -a $LOG
@@ -207,7 +213,7 @@ echo "execute the following command..." | tee -a $LOG
 
 echo ""
 echo "export CO_CMD="$CO_CMD | tee -a $LOG
-echo "export CO_NAMESPACE="$NAMESPACE | tee -a $LOG
+echo "export CO_NAMESPACE="$CO_NAMESPACE | tee -a $LOG
 echo "export PATH=$PATH:$HOME/odev/bin" | tee -a $LOG
 echo "$COROOT/deploy/install-rbac.sh" | tee -a $LOG
 
