@@ -79,8 +79,9 @@ $COROOT/conf/apiserver/pgouser
 
 The sample configuration for `pgouser` is as follows -
 ....
-username:password
-testuser:testpass
+username:password:pgoadmin
+testuser:testpass:pgoadmin
+readonlyuser:testpass:pgoreader
 ....
 
 Modify these values to be unique to your environment.
