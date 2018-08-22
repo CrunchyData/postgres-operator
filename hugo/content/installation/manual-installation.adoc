@@ -89,7 +89,7 @@ link:/installation/configuration/#_storage_configuration[here].
 The default Persistent Volume script assumes a default HostPath directory be created called */data*:
 ....
 sudo mkdir /data
-sudo chown 777 /data
+sudo chmod 777 /data
 ....
 
 Create some sample Persistent Volumes using the following script:
