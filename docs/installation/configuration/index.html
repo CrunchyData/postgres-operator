@@ -569,6 +569,10 @@ permissions -</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo failover</strong></p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ShowConfig</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo show config</strong></p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">User</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">allow <strong>pgo user</strong></p></td>
 </tr>
@@ -1080,6 +1084,9 @@ su - $USER</pre>
 application code. To demonstrate this, the following <strong>curl</strong> commands show the API usage -</p>
 </div>
 <div class="paragraph">
+<p>Note: Some setups may require the user to add '?version=x.x' to the end of the commands.</p>
+</div>
+<div class="paragraph">
 <p><strong>pgo version</strong></p>
 </div>
 <div class="literalblock">
@@ -1088,51 +1095,131 @@ application code. To demonstrate this, the following <strong>curl</strong> comma
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show policy all</strong></p>
+<p><strong>pgo show policy &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/all</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show pvc danger</strong></p>
+<p><strong>pgo delete policy &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policiesdelete/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show cluster mycluster</strong></p>
+<p><strong>pgo show pvc &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/mycluster</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show upgrade mycluster</strong></p>
+<p><strong>pgo apply policy &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgrades/mycluster</pre>
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/apply/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo test mycluster</strong></p>
+<p><strong>pgo show ingest &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/test/mycluster</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/ingest/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show backup mycluster</strong></p>
+<p><strong>pgo label</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/backups/mycluster</pre>
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/label</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo load</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/load</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo user</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/user</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo users &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/users/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo delete user &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/usersdelete/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show upgrade &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgrades/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo delete upgrade &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgradesdelete/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show cluster &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo delete cluster</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clustersdelete/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo test &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/test/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo scale &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/scale/&lt;name&gt;</pre>
 </div>
 </div>
 </div>
