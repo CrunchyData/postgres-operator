@@ -93,17 +93,17 @@
           </a>
         </div>
     </li>
-      <li data-nav-id="/installation/deployment/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
-            Deployment
-          </a>
-        </div>
-    </li>
       <li data-nav-id="/installation/configuration/" class="dd-item active">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
             Configuration
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/deployment/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
+            Deployment
           </a>
         </div>
     </li>
@@ -235,17 +235,18 @@
 <li><a href="#_basic_authentication">Basic Authentication</a></li>
 <li><a href="#_configure_tls">Configure TLS</a></li>
 <li><a href="#_pgo_rbac">pgo RBAC</a></li>
-<li><a href="#_strong_apiserver_strong_configuration"><strong>apiserver</strong> Configuration</a></li>
-<li><a href="#_strong_postgres_operator_strong_container_configuration"><strong>postgres-operator</strong> Container Configuration</a></li>
+<li><a href="#_rest_api_configuration">REST API Configuration</a></li>
+<li><a href="#_postgresql_operator_container_configuration">PostgreSQL Operator Container Configuration</a></li>
 </ul>
 </li>
-<li><a href="#_bash_completion">bash Completion</a></li>
+<li><a href="#_bash_completion">Bash Completion</a></li>
 <li><a href="#_rest_api">REST API</a></li>
-<li><a href="#_deploying_pgpool">Deploying pgpool</a></li>
+<li><a href="#_deploying_pgpool">Deploying pgPool</a></li>
+<li><a href="#_storage_configuration">Storage Configuration</a></li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.2.0 2018-08-16</p>
+<p>Latest Release: 3.2.0 2018-08-22</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -280,22 +281,31 @@
 <h3 id="_kube_rbac">Kube RBAC</h3>
 <div class="paragraph">
 <p>The <code>cluster-rbac.yaml</code> file is executed a single time when installing
-the Operator.  This file, executed by a Kube user with cluster-admin
-priviledges, creates the following resources:
- * Customer Resource Definitions
- * grants <code>get</code> access to Kube Node resources to the postgres-operator
-   service account.</p>
+the Operator.  This file, executed by a Kubernetes user with cluster-admin
+priviledges, does the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Creates Customer Resource Definitions</p>
+</li>
+<li>
+<p>Grants <code>get</code> access to Kube Node resources to the postgres-operator
+service account.</p>
+</li>
+</ul>
 </div>
 <div class="paragraph">
 <p>The <code>rbac.yaml</code> file is also executed a single time when installing
-the Operator.  This file creates Role scoped privledges which are
+the Operator.  This file creates Role scoped privileges which are
 granted to the postgres-operator service account.  The postgres-operator
 service account is used by the <strong>apiserver</strong> and <strong>postgres-operator</strong> containers
 to access Kubernetes resources.</p>
 </div>
 <div class="paragraph">
 <p>Both of these RBAC files are executed by the <code>deploy/install-rbac.sh</code>
-script.</p>
+script. It can also be installed through running <code>make installrbac</code> in the
+$CCPROOT directory.</p>
 </div>
 <div class="admonitionblock warning">
 <table>
@@ -358,8 +368,9 @@ the following location -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>username:password
-testuser:testpass</pre>
+<pre>username:password:pgoadmin
+testuser:testpass:pgoadmin
+readonlyuser:testpass:pgoreader</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -582,7 +593,7 @@ get back this response -</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_strong_apiserver_strong_configuration"><strong>apiserver</strong> Configuration</h3>
+<h3 id="_rest_api_configuration">REST API Configuration</h3>
 <div class="paragraph">
 <p>The postgres-operator pod includes the apiserver which is a REST API that pgo
 users are able to communicate with.</p>
@@ -609,8 +620,6 @@ document.</p>
 setting in the <code>$COROOT/conf/apiserver/pgo.yaml</code> configuration file. By default, this value is
 set to the latest release of the Crunchy Container Suite.</p>
 </div>
-<div class="sect3">
-<h4 id="_strong_pgo_yaml_strong"><strong>pgo.yaml</strong></h4>
 <div class="paragraph">
 <p>The default pgo.yaml configuration file, included in <code>$COROOT/conf/apiserver/pgo.yaml</code>,
 looks like this -</p>
@@ -846,7 +855,6 @@ Pgo:
 </tr>
 </tbody>
 </table>
-</div>
 <div class="sect3">
 <h4 id="_storage_configurations">Storage Configurations</h4>
 <div class="paragraph">
@@ -925,7 +933,7 @@ for users to use as a starting configuration -</p>
 <p><code>pgo.yaml.nfs</code> - this configuration specifies <strong>create</strong> storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database</p>
 </li>
 <li>
-<p><code>pgo.yaml.dynamic</code> - this configuration specifies <strong>dynamic</strong> storage to be used, namely a <strong>storageclass</strong> that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.</p>
+<p><code>pgo.yaml.storageclass</code> - this configuration specifies <strong>dynamic</strong> storage to be used, namely a <strong>storageclass</strong> that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.</p>
 </li>
 </ul>
 </div>
@@ -1034,7 +1042,7 @@ automatically to your disaster recovery site thanks to network storage.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_strong_postgres_operator_strong_container_configuration"><strong>postgres-operator</strong> Container Configuration</h3>
+<h3 id="_postgresql_operator_container_configuration">PostgreSQL Operator Container Configuration</h3>
 <div class="paragraph">
 <p>To enable <strong>debug</strong> level messages from the operator pod, set the <code>CRUNCHY_DEBUG</code> environment
 variable to <strong>true</strong> within its deployment file <code>deployment.json</code>.</p>
@@ -1054,7 +1062,7 @@ a config map which is mounted by the operator deployment.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_bash_completion">bash Completion</h2>
+<h2 id="_bash_completion">Bash Completion</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>There is a bash completion file that is included for users to try
@@ -1076,6 +1084,9 @@ su - $USER</pre>
 application code. To demonstrate this, the following <strong>curl</strong> commands show the API usage -</p>
 </div>
 <div class="paragraph">
+<p>Note: Some setups may require the user to add '?version=x.x' to the end of the commands.</p>
+</div>
+<div class="paragraph">
 <p><strong>pgo version</strong></p>
 </div>
 <div class="literalblock">
@@ -1084,57 +1095,137 @@ application code. To demonstrate this, the following <strong>curl</strong> comma
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show policy all</strong></p>
+<p><strong>pgo show policy &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/all</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show pvc danger</strong></p>
+<p><strong>pgo delete policy &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/danger</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policiesdelete/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show cluster mycluster</strong></p>
+<p><strong>pgo show pvc &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/mycluster</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/pvc/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show upgrade mycluster</strong></p>
+<p><strong>pgo apply policy &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgrades/mycluster</pre>
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/apply/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo test mycluster</strong></p>
+<p><strong>pgo show ingest &lt;name&gt;</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/test/mycluster</pre>
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/ingest/&lt;name&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<p><strong>pgo show backup mycluster</strong></p>
+<p><strong>pgo label</strong></p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/backups/mycluster</pre>
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/label</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo load</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/load</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo user</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/user</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo users &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/users/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo delete user &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/usersdelete/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show upgrade &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgrades/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo delete upgrade &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/upgradesdelete/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo show cluster &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo delete cluster</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clustersdelete/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo test &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/test/&lt;name&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>pgo scale &lt;name&gt;</strong></p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/clusters/scale/&lt;name&gt;</pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_deploying_pgpool">Deploying pgpool</h2>
+<h2 id="_deploying_pgpool">Deploying pgPool</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>One option with pgo is enabling the creation of a pgpool deployment in addition to the PostgreSQL cluster.
@@ -1232,6 +1323,163 @@ the updated secret file.</p>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_storage_configuration">Storage Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.</p>
+</div>
+<div class="paragraph">
+<p>The operator will work with HostPath, NFS, Dynamic, and GKE Storage.</p>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        NFS
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_nfs">NFS</h3>
+<div class="paragraph">
+<p>To configure the operator to use NFS for storage, a sample <strong>pgo.yaml.nfs</strong> file is provided.  Overlay the default <code>pgo.yaml</code> file with that file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then, in your .bashrc file, set the variable <code>CO_NFS_IP</code> to the IP address of your NFS server:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>export CO_NFS_IP=192.168.2.14</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the <strong>pgo.yaml</strong> file to specify the NFS GID that is set for the NFS volume mount you will be using. The default value assumed is <strong>nfsnobody</strong> as the GID (65534).  Update the value to meet your NFS security settings.</p>
+</div>
+<div class="paragraph">
+<p>Finally, run the <code>$COROOT/pv/create-pv-nfs.sh</code> script to create persistent volumes based on your NFS settings.</p>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        Dynamic
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_dynamic">Dynamic</h3>
+<div class="paragraph">
+<p>To configure the operator to use Dynamic Storage classes for storage, a sample <strong>pgo.yaml.storageclass</strong> file is provided.  Overlay the default <strong>pgo.yaml</strong> file with that file -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Edit the <strong>pgo.yaml</strong> file to specify the storage class you will be using, the default value assumed is <strong>standard</strong> which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.</p>
+</div>
+<div class="paragraph">
+<p>Notice that the <strong>FsGroup</strong> setting is required for most block storage and is set to the value of <strong>26</strong> since the PostgreSQL container runs as UID <strong>26</strong>.</p>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+<div class="paragraph">
+<div class="expand">
+    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
+        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
+        <span>
+        
+        
+        GKE
+        
+        </span>
+    </div>
+    <div class="expand-content" style="display: none;">
+<div class="sect2">
+<h3 id="_gke">GKE</h3>
+<div class="paragraph">
+<p>Some notes for setting up GKE for the Operator deployment.</p>
+</div>
+<div class="sect3">
+<h4 id="_install_kubectl">Install Kubectl</h4>
+<div class="paragraph">
+<p>On your host you will be working from, install the kubectl command -</p>
+</div>
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/" class="bare">https://kubernetes.io/docs/tasks/tools/install-kubectl/</a></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_gcp">GCP</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Select your project</p>
+</li>
+<li>
+<p>Create a Kube cluster in that project</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>By default a storage class called <strong>standard</strong> is created.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_install_gcloud">Install GCloud</h4>
+<div class="paragraph">
+<p>To access the Kubernetes cluster, install the gcloud utility -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>https://cloud.google.com/sdk/downloads
+cd google-cloud-sdk
+./install.sh</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_configure_kubectl_for_cluster_access">Configure Kubectl for Cluster Access</h4>
+<div class="literalblock">
+<div class="content">
+<pre>gcloud auth login
+
+gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
+
+kubectl get storageclass</pre>
+</div>
+</div>
+</div>
+</div>
+
+    </div>
+</div>
+</div>
+</div>
+</div>
 
 
     
@@ -1243,8 +1491,8 @@ the updated secret file.</p>
 </div>
 
 <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/deployment/" title="Deployment"> <i class="fa fa-chevron-left"></i><label>Deployment</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/" title="Upgrading the Operator" style="margin-right: 0px;"><label>Upgrading the Operator</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/helm-chart/" title="Helm Chart"> <i class="fa fa-chevron-left"></i><label>Helm Chart</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/deployment/" title="Deployment" style="margin-right: 0px;"><label>Deployment</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>
 <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
