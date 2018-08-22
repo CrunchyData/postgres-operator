@@ -157,9 +157,17 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.Strategy + "]")
+	//allows user to override with their own passwords
+	if cl.Spec.Password != "" {
+		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
+		cl.Spec.RootPassword = cl.Spec.Password
+		cl.Spec.Password = cl.Spec.Password
+		cl.Spec.PrimaryPassword = cl.Spec.Password
+	}
 
 	var err1, err2, err3 error
 	if cl.Spec.SecretFrom != "" {
+		log.Debug("secret-from is specified! using " + cl.Spec.SecretFrom)
 		_, cl.Spec.RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
 		_, cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
 		_, cl.Spec.PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
@@ -167,13 +175,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			log.Error("error getting secrets using SecretFrom " + cl.Spec.SecretFrom)
 			return
 		}
-	}
-
-	//allows user to override with their own passwords
-	if cl.Spec.Password != "" {
-		cl.Spec.RootPassword = cl.Spec.Password
-		cl.Spec.Password = cl.Spec.Password
-		cl.Spec.PrimaryPassword = cl.Spec.Password
 	}
 
 	var testPassword string

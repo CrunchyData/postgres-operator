@@ -48,10 +48,12 @@ var restoreCmd = &cobra.Command{
 				fmt.Println("Error: You must specify the --to-cluster flag.")
 				os.Exit(2)
 			}
+			/**
 			if RestoreOpts == "" {
 				fmt.Println("Error: You must specify the --restore-opts flag.")
 				os.Exit(2)
 			}
+			*/
 			restore(args)
 		}
 
@@ -62,7 +64,7 @@ func init() {
 	RootCmd.AddCommand(restoreCmd)
 
 	restoreCmd.Flags().StringVarP(&ToCluster, "to-cluster", "", "", "The name of the new cluster to restore to.")
-	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "full", "The options for the restore.")
+	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "", "The options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 
 }
