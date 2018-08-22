@@ -93,17 +93,17 @@
           </a>
         </div>
     </li>
-      <li data-nav-id="/installation/deployment/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
-            Deployment
-          </a>
-        </div>
-    </li>
       <li data-nav-id="/installation/configuration/" class="dd-item">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
             Configuration
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/deployment/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
+            Deployment
           </a>
         </div>
     </li>
@@ -225,7 +225,7 @@
     
     
     <div class="paragraph">
-<p>Latest Release: 3.2.0 2018-08-16</p>
+<p>Latest Release: 3.2.0 2018-08-22</p>
 </div>
 <div class="paragraph">
 <div class="expand">
@@ -247,7 +247,7 @@
 <li>
 <p>The MatchLabels attribute was added to the pgo.yaml file as an optional
 storage configuration setting. You do not have to specify this setting,
-however, the operator-conf ConfigMap now has to include the <strong>pvc-matchlabels.json</strong>
+however, the operator-conf ConfigMap now has to include the <code>pvc-matchlabels.json</code>
 template file as required by this new feature. If you upgrade to
 3.2, you will need to rebuild your <strong>operator-conf</strong> ConfigMap to include
 <code>pvc-matchlabels.json</code> and redeploy the Operator using the new ConfigMap.</p>
@@ -536,7 +536,7 @@ such as the resource and storage configurations requested at run time.</p>
 </div>
 
 <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration"> <i class="fa fa-chevron-left"></i><label>Configuration</label></a>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/deployment/" title="Deployment"> <i class="fa fa-chevron-left"></i><label>Deployment</label></a>
     <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/getting-started/" title="Getting Started" style="margin-right: 0px;"><label>Getting Started</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>

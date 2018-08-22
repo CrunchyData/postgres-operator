@@ -93,17 +93,17 @@
           </a>
         </div>
     </li>
-      <li data-nav-id="/installation/deployment/" class="dd-item active">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
-            Deployment
-          </a>
-        </div>
-    </li>
       <li data-nav-id="/installation/configuration/" class="dd-item">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/installation/configuration/">
             Configuration
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/installation/deployment/" class="dd-item active">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/installation/deployment/">
+            Deployment
           </a>
         </div>
     </li>
@@ -230,12 +230,11 @@
 <li><a href="#_verify_operator_status">Verify Operator Status</a></li>
 <li><a href="#_configure_strong_pgo_strong_client">Configure <strong>pgo</strong> Client</a></li>
 <li><a href="#_verify_pgo_client">Verify pgo Client</a></li>
-<li><a href="#_storage_configuration">Storage Configuration</a></li>
 <li><a href="#_next_steps">Next Steps</a></li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.2.0 2018-08-16</p>
+<p>Latest Release: 3.2.0 2018-08-22</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -294,24 +293,6 @@ pgupgrades.cr.client-go.k8s.io   2d</pre>
 <div class="paragraph">
 <p>At this point, the server side of the operator is deployed and ready.</p>
 </div>
-<div class="paragraph">
-<p>The complete set of environment variables used in the installation
-so far are -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.2
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-export CO_CMD=kubectl</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>You would normally add these into your <strong>.bashrc</strong> at this point to be used later on or if you want to redeploy the operator.</p>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -328,7 +309,7 @@ export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>The pgo client uses Basic Authentication to authenticate to the operator REST API, for authentication, add the following <code>.pgouser</code> file to your $HOME -</p>
+<p>The pgo client uses Basic Authentication to authenticate to the operator REST API. For authentication, add the following <code>.pgouser</code> file to your $HOME -</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -402,7 +383,7 @@ pgo version</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>It is also possible to define a bash alias such as -</p>
+<p>Alternatively, an alias was set up in the .bashrc file earlier on, as follows:</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -410,7 +391,7 @@ pgo version</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>This alias will set the <code>CO_APISERVER_URL</code> IP address for you.</p>
+<p>This alias (<code>setip</code>) will set the <code>CO_APISERVER_URL</code> IP address for you.</p>
 </div>
 </div>
 
@@ -478,159 +459,6 @@ apiserver version 3.2</pre>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_storage_configuration">Storage Configuration</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Most users after they try out the operator will want to create a more customized installation and deployment of the operator using specific storage types.</p>
-</div>
-<div class="paragraph">
-<p>The operator will work with HostPath, NFS, Dynamic, and GKE Storage.</p>
-</div>
-<div class="paragraph">
-<div class="expand">
-    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
-        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
-        <span>
-        
-        
-        NFS
-        
-        </span>
-    </div>
-    <div class="expand-content" style="display: none;">
-<div class="sect2">
-<h3 id="_nfs">NFS</h3>
-<div class="paragraph">
-<p>To configure the operator to use NFS for storage, a sample <strong>pgo.yaml.nfs</strong> file is provided.  Overlay the default <code>pgo.yaml</code> file with that file -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Next, set the environment variable CO_NFS_IP to your NFS server&#8217;s IP address, then run the script <code>$COROOT/pv/create-pv-nfs.sh</code> -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export CO_NFS_IP=&lt;your NFS server's IP&gt;
-cd $COROOT/pv
-./create-pv-nfs.sh</pre>
-</div>
-</div>
-</div>
-
-    </div>
-</div>
-</div>
-<div class="paragraph">
-<div class="expand">
-    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
-        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
-        <span>
-        
-        
-        Dynamic
-        
-        </span>
-    </div>
-    <div class="expand-content" style="display: none;">
-<div class="sect2">
-<h3 id="_dynamic">Dynamic</h3>
-<div class="paragraph">
-<p>To configure the operator to use Dynamic Storage classes for storage, a sample <strong>pgo.yaml.storageclass</strong> file is provided.  Overlay the default <strong>pgo.yaml</strong> file with that file -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Edit the <strong>pgo.yaml</strong> file to specify the storage class you will be using, the default value assumed is <strong>standard</strong> which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.</p>
-</div>
-<div class="paragraph">
-<p>Notice that the <strong>FsGroup</strong> setting is required for most block storage and is set to the value of <strong>26</strong> since the PostgreSQL container runs as UID <strong>26</strong>.</p>
-</div>
-</div>
-
-    </div>
-</div>
-</div>
-<div class="paragraph">
-<div class="expand">
-    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
-        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
-        <span>
-        
-        
-        GKE
-        
-        </span>
-    </div>
-    <div class="expand-content" style="display: none;">
-<div class="sect2">
-<h3 id="_gke">GKE</h3>
-<div class="paragraph">
-<p>Some notes for setting up GKE for the Operator deployment.</p>
-</div>
-<div class="sect3">
-<h4 id="_install_kubectl">Install Kubectl</h4>
-<div class="paragraph">
-<p>On your host you will be working from, install the kubectl command -</p>
-</div>
-<div class="paragraph">
-<p><a href="https://kubernetes.io/docs/tasks/tools/install-kubectl/" class="bare">https://kubernetes.io/docs/tasks/tools/install-kubectl/</a></p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_gcp">GCP</h4>
-<div class="ulist">
-<ul>
-<li>
-<p>Select your project</p>
-</li>
-<li>
-<p>Create a Kube cluster in that project</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>By default a storage class called <strong>standard</strong> is created.</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_install_gcloud">Install GCloud</h4>
-<div class="paragraph">
-<p>To access the Kubernetes cluster, install the gcloud utility -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>https://cloud.google.com/sdk/downloads
-cd google-cloud-sdk
-./install.sh</pre>
-</div>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_configure_kubectl_for_cluster_access">Configure Kubectl for Cluster Access</h4>
-<div class="literalblock">
-<div class="content">
-<pre>gcloud auth login
-
-gcloud container clusters get-credentials jeff-quickstart --zone us-central1-a --project crunchy-dev-test
-
-kubectl get storageclass</pre>
-</div>
-</div>
-</div>
-</div>
-
-    </div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
 <h2 id="_next_steps">Next Steps</h2>
 <div class="sectionbody">
 <div class="paragraph">
@@ -658,8 +486,8 @@ deploy. This information can be found in the <a href="https://crunchydata.github
 </div>
 
 <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/helm-chart/" title="Helm Chart"> <i class="fa fa-chevron-left"></i><label>Helm Chart</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration" style="margin-right: 0px;"><label>Configuration</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/installation/configuration/" title="Configuration"> <i class="fa fa-chevron-left"></i><label>Configuration</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/" title="Upgrading the Operator" style="margin-right: 0px;"><label>Upgrading the Operator</label><i class="fa fa-chevron-right"></i></a></div>
 
 </section>
 <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
