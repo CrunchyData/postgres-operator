@@ -9,16 +9,18 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"strings"
 )
 
 var Clientset *kubernetes.Clientset
 var COMMAND, PODNAME, Namespace string
 
+const sourceCommand = `source /.bashrc && `
 const backrestCommand = "pgbackrest"
 
 const backrestStanza = "--stanza=db"
-const backrestBackupCommand = "backup"
-const backrestInfoCommand = "info"
+const backrestBackupCommand = `backup`
+const backrestInfoCommand = `info`
 const containername = "database"
 
 func main() {
@@ -65,16 +67,20 @@ func main() {
 		panic(err.Error())
 	}
 
+	bashcmd := make([]string, 1)
+	bashcmd[0] = "bash"
 	cmd := make([]string, 0)
 
 	switch COMMAND {
 	case crv1.PgtaskBackrestInfo:
 		log.Info("backrest info command requested")
+		cmd = append(cmd, sourceCommand)
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
+		cmd = append(cmd, sourceCommand)
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
@@ -83,8 +89,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	log.Infof("command is %v ", cmd)
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, cmd, containername, PODNAME, Namespace, nil)
+	log.Infof("command is %s ", strings.Join(cmd, " "))
+	reader := strings.NewReader(strings.Join(cmd, " "))
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
 	log.Info("output=[" + output + "]")
 	log.Info("stderr=[" + stderr + "]")
 
