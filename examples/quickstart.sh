@@ -17,7 +17,7 @@ LOG="pgo-installer.log"
 if [[ "$CO_VERSION" != "" ]]; then
 	echo "CO_VERSION is set to " $CO_VERSION
 else
-	export CO_VERSION=3.2.0-rc5
+	export CO_VERSION=3.2.0
 fi
 if [[ "$CO_NAMESPACE" != "" ]]; then
 	echo "CO_NAMESPACE is set to " $CO_NAMESPACE
