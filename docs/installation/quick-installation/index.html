@@ -250,20 +250,13 @@ the deployment to popular Kubernetes environments -</p>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-gke.sh">quickstart-for-gke.sh</a></p>
-</li>
-<li>
-<p><a href="https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-ocp.sh">quickstart-for-ocp.sh</a></p>
+<p><a href="https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh">quickstart.sh</a></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The <strong>quickstart-for-gke</strong> script will deploy the operator to
-a GKE Kube cluster.</p>
-</div>
-<div class="paragraph">
-<p>The <strong>quickstart-for-ocp</strong> script will deploy the operator to
-an Openshift Container Platform cluster.</p>
+<p>The <strong>quickstart</strong> script will deploy the operator to
+a GKE Kube cluster or to an Openshift Container Platform cluster.</p>
 </div>
 <div class="paragraph">
 <p>Both scripts assume you have a StorageClass defined for persistence.</p>
@@ -279,7 +272,7 @@ an Openshift Container Platform cluster.</p>
 <div class="sect2">
 <h3 id="_gke_pks">GKE/PKS</h3>
 <div class="paragraph">
-<p>The <strong>quickstart-for-gke.sh</strong> script will allow users to set up the Postgres Operator quickly on GKE including PKS.
+<p>The <strong>quickstart.sh</strong> script will allow users to set up the Postgres Operator quickly on GKE including PKS.
 This script is tested on GKE but can be modified for use with other Kubernetes environments as well.</p>
 </div>
 <div class="paragraph">
@@ -369,7 +362,7 @@ and provide Windows and Mac installation scripts.</p>
 <div class="sect2">
 <h3 id="_openshift_container_platform">Openshift Container Platform</h3>
 <div class="paragraph">
-<p>A similar script for installing the operator on OCP is
+<p>The script is also used for installing the operator on OCP is
 offered with similar features as the GKE script.  This script is
 tested on OCP 3.7 with a StorageClass defined.</p>
 </div>

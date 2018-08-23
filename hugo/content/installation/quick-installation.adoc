@@ -10,26 +10,21 @@ Latest Release: 3.2.0 {docdate}
 
 == Overview
 
-There are currently *quickstart* scripts that seek to automate
+There are currently *quickstart* script that seek to automate
 the deployment to popular Kubernetes environments -
 
- * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-gke.sh[quickstart-for-gke.sh]
- * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-ocp.sh[quickstart-for-ocp.sh]
+ * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh[quickstart.sh]
 
-The *quickstart-for-gke* script will deploy the operator to
-a GKE Kube cluster.
+The *quickstart* script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.
 
-The *quickstart-for-ocp* script will deploy the operator to
-an Openshift Container Platform cluster.
-
-Both scripts assume you have a StorageClass defined for persistence.
+The script assumes you have a StorageClass defined for persistence.
 
 Pre-compiled versions of the Operator *pgo* client are provided for the x86_64, Mac OSX, and Windows hosts.
 
 == Quickstart
 
 === GKE/PKS
-The *quickstart-for-gke.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
+The *quickstart.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
 This script is tested on GKE but can be modified for use with other Kubernetes environments as well.
 
 The script requires a few things in order to work -
@@ -40,7 +35,8 @@ The script requires a few things in order to work -
 
 Executing the script will give you a default Operator deployment
 that assumes *dynamic* storage and a storage class named *standard*,
-things that GKE provides.
+things that GKE provides, user provided values are also allowed by
+the script.
 
 The script performs the following -
 
@@ -74,9 +70,7 @@ and provide Windows and Mac installation scripts.
 
 === Openshift Container Platform
 
-A similar script for installing the operator on OCP is
-offered with similar features as the GKE script.  This script is
-tested on OCP 3.7 with a StorageClass defined.
+The script also is used for installing the operator on OCP.
 
 == Next Steps
 
