@@ -641,7 +641,7 @@ The node label (key) to use in placing the primary database. If not set, any nod
 |`--replica-count` |-r |String |
 The replica count to apply to the clusters (default 1).
 
-|`--resources-config` |-r |String |
+|`--resources-config` |N/A |String |
 The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
 
 |`--storage-config` |N/A |String |
