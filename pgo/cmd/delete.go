@@ -91,10 +91,6 @@ var deleteIngestCmd = &cobra.Command{
 	Use:   "ingest",
 	Short: "Delete an ingest",
 	Long: `Delete an ingest. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -113,10 +109,6 @@ var deleteUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Delete an upgrade",
 	Long: `Delete an upgrade. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -135,10 +127,6 @@ var deleteBackupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Delete a backup",
 	Long: `Delete a backup. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -158,10 +146,6 @@ var deleteUserCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Delete a user",
 	Long: `Delete a user. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete user someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
