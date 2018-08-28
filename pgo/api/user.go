@@ -22,72 +22,102 @@ import (
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
-	"strconv"
 )
 
-func ShowCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowClusterResponse, error) {
+func ShowUser(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowUserResponse, error) {
 
-	var response msgs.ShowClusterResponse
+	var response msgs.ShowUserResponse
 
-	url := APIServerURL + "/clusters/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 
-	log.Debug("show cluster called [" + url + "]")
+	log.Debug("show users called [" + url + "]")
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
-
 	if err != nil {
 		return response, err
 	}
 
 	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
 	resp, err := httpclient.Do(req)
-	if err != nil {
-		return response, err
-	}
 	defer resp.Body.Close()
-
-	log.Debugf("%v\n", resp)
-	err = StatusCheck(resp)
-	if err != nil {
-		return response, err
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return response, err
-	}
-
-	return response, err
-
-}
-
-func DeleteCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string, deleteData, deleteBackups bool) (msgs.DeleteClusterResponse, error) {
-
-	var response msgs.DeleteClusterResponse
-
-	log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(deleteData))
-
-	url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + selector + "&delete-data=" + strconv.FormatBool(deleteData) + "&delete-backups=" + strconv.FormatBool(deleteBackups) + "&version=" + msgs.PGO_VERSION
-
-	log.Debug("delete cluster called [" + url + "]")
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
-	if err != nil {
-		return response, err
-	}
-
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
 	if err != nil {
 		fmt.Println("Error: Do: ", err)
 		return response, err
 	}
+	log.Debugf("%v\n", resp)
+	err = StatusCheck(resp)
+	if err != nil {
+		return response, err
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Println(err)
+		return response, err
+	}
+
+	return response, err
+
+}
+func CreateUser(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateUserRequest) (msgs.CreateUserResponse, error) {
+
+	var response msgs.CreateUserResponse
+
+	jsonValue, _ := json.Marshal(request)
+	url := APIServerURL + "/users"
+	log.Debug("createUsers called...[" + url + "]")
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		return response, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+	resp, err := httpclient.Do(req)
+	defer resp.Body.Close()
+	if err != nil {
+		return response, err
+	}
+
+	log.Debugf("%v\n", resp)
+	err = StatusCheck(resp)
+	if err != nil {
+		return response, err
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Println(err)
+		return response, err
+	}
+
+	return response, err
+}
+
+func DeleteUser(httpclient *http.Client, APIServerURL, username, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.DeleteClusterResponse, error) {
+
+	var response msgs.DeleteClusterResponse
+
+	url := APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+
+	log.Debug("delete users called [" + url + "]")
+
+	action := "GET"
+
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		return response, err
+	}
+
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		return response, err
+	}
 	defer resp.Body.Close()
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)
@@ -106,13 +136,13 @@ func DeleteCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAu
 
 }
 
-func CreateCluster(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateClusterRequest) (msgs.CreateClusterResponse, error) {
+func UserManager(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.UserRequest) (msgs.UserResponse, error) {
 
-	var response msgs.CreateClusterResponse
+	var response msgs.UserResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/clusters"
-	log.Debug("createCluster called...[" + url + "]")
+	url := APIServerURL + "/user"
+	log.Debug("User Manager called...[" + url + "]")
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))

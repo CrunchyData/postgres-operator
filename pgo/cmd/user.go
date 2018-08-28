@@ -16,13 +16,12 @@ package cmd
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -92,36 +91,11 @@ func userManager() {
 	request.ManagedUser = ManagedUser
 	request.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.UserManager(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, &request)
 
-	url := APIServerURL + "/user"
-	log.Debug("User called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -155,36 +129,10 @@ func createUser(args []string) {
 	r.PasswordAgeDays = PasswordAgeDays
 	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
-	url := APIServerURL + "/users"
-	log.Debug("createUser called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.CreateUser(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateUserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -203,33 +151,10 @@ func deleteUser(username string) {
 	log.Debugf("deleteUser called %v\n", username)
 
 	log.Debug("deleting user " + username + " selector " + Selector)
+	response, err := api.DeleteUser(httpclient, APIServerURL, username, Selector, BasicAuthUsername, BasicAuthPassword)
 
-	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-
-	log.Debug("delete users called [" + url + "]")
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-	defer resp.Body.Close()
-	var response msgs.DeleteUserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
+		fmt.Println("Error: ", err.Error())
 		return
 	}
 
@@ -256,35 +181,18 @@ func showUser(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/users/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-
-		log.Debug("show users called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
-
+		response, err := api.ShowUser(httpclient, APIServerURL, v, Selector, BasicAuthUsername, BasicAuthPassword)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
+			fmt.Println("Error: ", err.Error())
+			os.Exit(2)
 		}
 
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
+		if response.Status.Code != msgs.Ok {
+			fmt.Println("Error: " + response.Status.Msg)
+			os.Exit(2)
 		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowUserResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
+		if len(response.Results) == 0 {
+			fmt.Println("No clusters found.")
 			return
 		}
 
@@ -294,15 +202,6 @@ func showUser(args []string) {
 				fmt.Println("Error: ", err)
 			}
 			fmt.Println(string(b))
-			return
-		}
-
-		if response.Status.Code != msgs.Ok {
-			fmt.Println("Error: " + response.Status.Msg)
-			os.Exit(2)
-		}
-		if len(response.Results) == 0 {
-			fmt.Println("No clusters found.")
 			return
 		}
 
