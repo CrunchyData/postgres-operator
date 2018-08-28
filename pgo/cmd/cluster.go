@@ -16,14 +16,12 @@ package cmd
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"net/http"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"os"
-	"strconv"
 )
 
 // deleteCluster ...
@@ -36,36 +34,12 @@ func deleteCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(DeleteData))
+		response, err := api.DeleteCluster(httpclient, APIServerURL, arg, Selector, BasicAuthUsername, BasicAuthPassword, DeleteData, DeleteBackups)
+		//var response msgs.DeleteClusterResponse
 
-		url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + Selector + "&delete-data=" + strconv.FormatBool(DeleteData) + "&delete-backups=" + strconv.FormatBool(DeleteBackups) + "&version=" + msgs.PGO_VERSION
-
-		log.Debug("delete cluster called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-		var response msgs.DeleteClusterResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
@@ -93,38 +67,13 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/clusters/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-
-		log.Debug("show cluster called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
-
+		response, err := api.ShowCluster(httpclient, APIServerURL, v, Selector, BasicAuthUsername, BasicAuthPassword)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
+			fmt.Println("Error: ", err.Error())
+			os.Exit(2)
 		}
 
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowClusterResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
-		}
+		//var response msgs.ShowClusterResponse
 
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
@@ -235,36 +184,10 @@ func createCluster(args []string) {
 	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
-	url := APIServerURL + "/clusters"
-	log.Debug("createCluster called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.CreateCluster(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateClusterResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
 		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {

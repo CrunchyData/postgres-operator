@@ -20,9 +20,9 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -47,7 +47,7 @@ var dfCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(dfCmd)
-	
+
 	dfCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 }
@@ -63,36 +63,12 @@ func showDf(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/df/" + arg + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-		log.Debug(url)
-
-		req, err := http.NewRequest("GET", url, nil)
+		response, err := api.ShowDf(httpclient, APIServerURL, arg, Selector, BasicAuthUsername, BasicAuthPassword)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.DfResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Print("Error: ")
-			fmt.Println(err)
-			log.Println(err)
-			return
-		}
+		//var response msgs.DfResponse
 
 		if response.Status.Code != msgs.Ok {
 			fmt.Println("Error: " + response.Status.Msg)
