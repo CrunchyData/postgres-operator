@@ -17,16 +17,14 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -71,35 +69,11 @@ func showUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v + "?version=" + msgs.PGO_VERSION
-		log.Debug("showUpgrade called...[" + url + "]")
+		response, err := api.ShowUpgrade(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
 
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowUpgradeResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code != msgs.Ok {
@@ -146,34 +120,11 @@ func deleteUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION
-		log.Debug("deleteUpgrade called...[" + url + "]")
+		response, err := api.DeleteUpgrade(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
 
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.DeleteUpgradeResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
@@ -226,36 +177,11 @@ func createUpgrade(args []string) {
 	request.UpgradeType = UpgradeType
 	request.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.CreateUpgrade(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, &request)
 
-	url := APIServerURL + "/upgrades"
-	log.Debug("createUpgrade called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateUpgradeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {

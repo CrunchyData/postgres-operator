@@ -16,13 +16,11 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -79,42 +77,14 @@ func labelClusters(clusters []string) {
 	r.DeleteLabel = DeleteLabel
 	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
-
-	url := APIServerURL + "/label"
-	log.Debug("label called...[" + url + "]")
-
-	action := "POST"
-
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.LabelClusters(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	log.Debugf("response is %v\n", resp)
 
 	if DryRun {
 		fmt.Println("The label would have been applied on the following:")
-	}
-	var response msgs.LabelResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
 	}
 
 	if response.Status.Code == msgs.Ok {

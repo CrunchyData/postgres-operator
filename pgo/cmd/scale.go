@@ -16,16 +16,13 @@ package cmd
 */
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
-	commonutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
-	"strconv"
 )
 
 var ReplicaCount int
@@ -93,38 +90,13 @@ func init() {
 
 func scaleCluster(args []string) {
 
-	var url string
-
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		url = APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType
-		log.Debug(url)
+		response, err := api.ScaleCluster(httpclient, APIServerURL, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, BasicAuthUsername, BasicAuthPassword)
 
-		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ClusterScaleResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
@@ -140,36 +112,12 @@ func scaleCluster(args []string) {
 
 func queryCluster(args []string) {
 
-	var url string
 	for _, arg := range args {
-		url = APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION
-		log.Debug(url)
+		response, err := api.ScaleQuery(httpclient, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword)
 
-		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ScaleQueryResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
@@ -192,34 +140,10 @@ func queryCluster(args []string) {
 
 func scaleDownCluster(clusterName string) {
 
-	var url string
-	url = APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + commonutil.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + commonutil.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData)
-	log.Debug(url)
+	response, err := api.ScaleDownCluster(httpclient, APIServerURL, clusterName, ScaleDownTarget, DeleteData, BasicAuthUsername, BasicAuthPassword)
 
-	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.ScaleDownResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
+		fmt.Println("Error: ", err.Error())
 		return
 	}
 

@@ -43,9 +43,10 @@ func init() {
 func showVersion() {
 
 	response, err := api.ShowVersion(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword)
+
 	if err != nil {
-		fmt.Println("Error: ", err.Error())
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	fmt.Println("pgo client version " + msgs.PGO_VERSION)

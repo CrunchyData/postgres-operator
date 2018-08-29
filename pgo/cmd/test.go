@@ -20,8 +20,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -62,35 +62,10 @@ func showTest(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/clusters/test/" + arg + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-		log.Debug(url)
-
-		req, err := http.NewRequest("GET", url, nil)
+		response, err := api.ShowTest(httpclient, APIServerURL, arg, Selector, BasicAuthUsername, BasicAuthPassword)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ClusterTestResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code != msgs.Ok {
