@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowPVC(httpclient *http.Client, APIServerURL, pvcName, pvcRoot, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowPVCResponse, error) {
+func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowPVCResponse, error) {
 
 	var response msgs.ShowPVCResponse
 
-	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION
 	log.Debug("ShowPVC called...[" + url + "]")
 
 	action := "GET"
@@ -36,7 +36,7 @@ func ShowPVC(httpclient *http.Client, APIServerURL, pvcName, pvcRoot, BasicAuthU
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {

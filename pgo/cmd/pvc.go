@@ -42,7 +42,7 @@ func showPVC(args []string) {
 
 func printPVC(pvcName, pvcRoot string) {
 
-	response, err := api.ShowPVC(httpclient, APIServerURL, pvcName, pvcRoot, BasicAuthUsername, BasicAuthPassword)
+	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

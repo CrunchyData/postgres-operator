@@ -24,10 +24,10 @@ import (
 	"net/http"
 )
 
-func ShowBackrest(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowBackrestResponse, error) {
+func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackrestResponse, error) {
 
 	var response msgs.ShowBackrestResponse
-	url := APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector
+	url := SessionCredentials.APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector
 
 	log.Debug("show backrest called [" + url + "]")
 
@@ -37,7 +37,7 @@ func ShowBackrest(httpclient *http.Client, APIServerURL, arg, selector, BasicAut
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -60,13 +60,13 @@ func ShowBackrest(httpclient *http.Client, APIServerURL, arg, selector, BasicAut
 
 }
 
-func CreateBackrestBackup(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateBackrestBackupRequest) (msgs.CreateBackrestBackupResponse, error) {
+func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateBackrestBackupRequest) (msgs.CreateBackrestBackupResponse, error) {
 
 	var response msgs.CreateBackrestBackupResponse
 
 	jsonValue, _ := json.Marshal(request)
 
-	url := APIServerURL + "/backrestbackup"
+	url := SessionCredentials.APIServerURL + "/backrestbackup"
 
 	log.Debug("create backrest backup called [" + url + "]")
 
@@ -76,7 +76,7 @@ func CreateBackrestBackup(httpclient *http.Client, APIServerURL, BasicAuthUserna
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

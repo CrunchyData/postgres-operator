@@ -69,7 +69,7 @@ func showUpgrade(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowUpgrade(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowUpgrade(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -120,7 +120,7 @@ func deleteUpgrade(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.DeleteUpgrade(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.DeleteUpgrade(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -177,7 +177,7 @@ func createUpgrade(args []string) {
 	request.UpgradeType = UpgradeType
 	request.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.CreateUpgrade(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, &request)
+	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

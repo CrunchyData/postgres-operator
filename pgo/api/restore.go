@@ -23,12 +23,12 @@ import (
 	"net/http"
 )
 
-func Restore(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.RestoreRequest) (msgs.RestoreResponse, error) {
+func Restore(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.RestoreRequest) (msgs.RestoreResponse, error) {
 
 	var response msgs.RestoreResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/restore"
+	url := SessionCredentials.APIServerURL + "/restore"
 
 	log.Debug("restore called [" + url + "]")
 
@@ -38,7 +38,7 @@ func Restore(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuth
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

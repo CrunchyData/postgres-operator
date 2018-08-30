@@ -52,7 +52,7 @@ func createIngest(args []string) {
 		return
 	}
 
-	response, err := api.CreateIngest(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, &r)
+	response, err := api.CreateIngest(httpclient, &SessionCredentials, &r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -72,7 +72,7 @@ func deleteIngest(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.DeleteIngest(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.DeleteIngest(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: ", response.Status.Msg)
@@ -101,7 +101,7 @@ func showIngest(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowIngest(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowIngest(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())

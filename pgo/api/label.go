@@ -23,10 +23,10 @@ import (
 	"net/http"
 )
 
-func LabelClusters(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.LabelRequest) (msgs.LabelResponse, error) {
+func LabelClusters(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.LabelRequest) (msgs.LabelResponse, error) {
 
 	var response msgs.LabelResponse
-	url := APIServerURL + "/label"
+	url := SessionCredentials.APIServerURL + "/label"
 	log.Debug("label called...[" + url + "]")
 
 	jsonValue, _ := json.Marshal(request)
@@ -37,7 +37,7 @@ func LabelClusters(httpclient *http.Client, APIServerURL, BasicAuthUsername, Bas
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

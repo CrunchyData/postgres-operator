@@ -25,11 +25,11 @@ import (
 	"strconv"
 )
 
-func ShowCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowClusterResponse, error) {
+func ShowCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowClusterResponse, error) {
 
 	var response msgs.ShowClusterResponse
 
-	url := APIServerURL + "/clusters/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/clusters/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 
 	log.Debug("show cluster called [" + url + "]")
 
@@ -40,7 +40,7 @@ func ShowCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAuth
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -65,13 +65,13 @@ func ShowCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAuth
 
 }
 
-func DeleteCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string, deleteData, deleteBackups bool) (msgs.DeleteClusterResponse, error) {
+func DeleteCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, deleteData, deleteBackups bool) (msgs.DeleteClusterResponse, error) {
 
 	var response msgs.DeleteClusterResponse
 
 	log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(deleteData))
 
-	url := APIServerURL + "/clustersdelete/" + arg + "?selector=" + selector + "&delete-data=" + strconv.FormatBool(deleteData) + "&delete-backups=" + strconv.FormatBool(deleteBackups) + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/clustersdelete/" + arg + "?selector=" + selector + "&delete-data=" + strconv.FormatBool(deleteData) + "&delete-backups=" + strconv.FormatBool(deleteBackups) + "&version=" + msgs.PGO_VERSION
 
 	log.Debug("delete cluster called [" + url + "]")
 
@@ -81,7 +81,7 @@ func DeleteCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAu
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -106,12 +106,12 @@ func DeleteCluster(httpclient *http.Client, APIServerURL, arg, selector, BasicAu
 
 }
 
-func CreateCluster(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateClusterRequest) (msgs.CreateClusterResponse, error) {
+func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateClusterRequest) (msgs.CreateClusterResponse, error) {
 
 	var response msgs.CreateClusterResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/clusters"
+	url := SessionCredentials.APIServerURL + "/clusters"
 	log.Debug("createCluster called...[" + url + "]")
 
 	action := "POST"
@@ -120,7 +120,7 @@ func CreateCluster(httpclient *http.Client, APIServerURL, BasicAuthUsername, Bas
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

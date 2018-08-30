@@ -92,7 +92,7 @@ func scaleCluster(args []string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
-		response, err := api.ScaleCluster(httpclient, APIServerURL, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ScaleCluster(httpclient, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -113,7 +113,7 @@ func scaleCluster(args []string) {
 func queryCluster(args []string) {
 
 	for _, arg := range args {
-		response, err := api.ScaleQuery(httpclient, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ScaleQuery(httpclient, arg, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -140,7 +140,7 @@ func queryCluster(args []string) {
 
 func scaleDownCluster(clusterName string) {
 
-	response, err := api.ScaleDownCluster(httpclient, APIServerURL, clusterName, ScaleDownTarget, DeleteData, BasicAuthUsername, BasicAuthPassword)
+	response, err := api.ScaleDownCluster(httpclient, clusterName, ScaleDownTarget, DeleteData, &SessionCredentials)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())

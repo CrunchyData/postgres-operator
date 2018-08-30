@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowUpgrade(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowUpgradeResponse, error) {
+func ShowUpgrade(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowUpgradeResponse, error) {
 
 	var response msgs.ShowUpgradeResponse
 
-	url := APIServerURL + "/upgrades/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/upgrades/" + arg + "?version=" + msgs.PGO_VERSION
 	log.Debug("showUpgrade called...[" + url + "]")
 
 	action := "GET"
@@ -37,7 +37,7 @@ func ShowUpgrade(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, 
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -60,12 +60,12 @@ func ShowUpgrade(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, 
 
 }
 
-func CreateUpgrade(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateUpgradeRequest) (msgs.CreateUpgradeResponse, error) {
+func CreateUpgrade(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateUpgradeRequest) (msgs.CreateUpgradeResponse, error) {
 
 	var response msgs.CreateUpgradeResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/upgrades"
+	url := SessionCredentials.APIServerURL + "/upgrades"
 	log.Debug("CreateUpgrade called...[" + url + "]")
 
 	action := "POST"
@@ -74,7 +74,7 @@ func CreateUpgrade(httpclient *http.Client, APIServerURL, BasicAuthUsername, Bas
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
@@ -97,11 +97,11 @@ func CreateUpgrade(httpclient *http.Client, APIServerURL, BasicAuthUsername, Bas
 	return response, err
 }
 
-func DeleteUpgrade(httpclient *http.Client, APIServerURL, v, BasicAuthUsername, BasicAuthPassword string) (msgs.DeleteUpgradeResponse, error) {
+func DeleteUpgrade(httpclient *http.Client, v string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteUpgradeResponse, error) {
 
 	var response msgs.DeleteUpgradeResponse
 
-	url := APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION
 	log.Debug("deleteUpgrade called...[" + url + "]")
 
 	action := "GET"
@@ -111,7 +111,7 @@ func DeleteUpgrade(httpclient *http.Client, APIServerURL, v, BasicAuthUsername, 
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

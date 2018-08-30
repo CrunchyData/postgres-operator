@@ -75,7 +75,7 @@ func restore(args []string) {
 	request.ToCluster = ToCluster
 	request.RestoreOpts = RestoreOpts
 
-	response, err := api.Restore(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, request)
+	response, err := api.Restore(httpclient, &SessionCredentials, request)
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)

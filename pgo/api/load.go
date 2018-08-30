@@ -23,10 +23,10 @@ import (
 	"net/http"
 )
 
-func CreateLoad(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.LoadRequest) (msgs.LoadResponse, error) {
+func CreateLoad(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.LoadRequest) (msgs.LoadResponse, error) {
 
 	var response msgs.LoadResponse
-	url := APIServerURL + "/load"
+	url := SessionCredentials.APIServerURL + "/load"
 	log.Debug("LoadPolicy called...[" + url + "]")
 
 	jsonValue, _ := json.Marshal(request)
@@ -37,7 +37,7 @@ func CreateLoad(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicA
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

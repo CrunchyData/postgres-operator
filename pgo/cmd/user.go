@@ -91,7 +91,7 @@ func userManager() {
 	request.ManagedUser = ManagedUser
 	request.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.UserManager(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, &request)
+	response, err := api.UserManager(httpclient, &SessionCredentials, &request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -129,7 +129,7 @@ func createUser(args []string) {
 	r.PasswordAgeDays = PasswordAgeDays
 	r.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.CreateUser(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
+	response, err := api.CreateUser(httpclient, &SessionCredentials, r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -151,7 +151,7 @@ func deleteUser(username string) {
 	log.Debugf("deleteUser called %v\n", username)
 
 	log.Debug("deleting user " + username + " selector " + Selector)
-	response, err := api.DeleteUser(httpclient, APIServerURL, username, Selector, BasicAuthUsername, BasicAuthPassword)
+	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
@@ -181,7 +181,7 @@ func showUser(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowUser(httpclient, APIServerURL, v, Selector, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowUser(httpclient, v, Selector, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)

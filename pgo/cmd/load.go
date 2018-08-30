@@ -86,7 +86,7 @@ func createLoad(args []string) {
 
 	//make the request
 
-	response, err := api.CreateLoad(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, &request)
+	response, err := api.CreateLoad(httpclient, &SessionCredentials, &request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

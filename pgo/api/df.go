@@ -23,13 +23,13 @@ import (
 	"net/http"
 )
 
-func ShowDf(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.DfResponse, error) {
+func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DfResponse, error) {
 
 	var response msgs.DfResponse
 
 	log.Debugf("ShowDf called %s with selector=%s\n", arg, selector)
 
-	url := APIServerURL + "/df/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/df/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -38,7 +38,7 @@ func ShowDf(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsern
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

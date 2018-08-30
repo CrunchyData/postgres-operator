@@ -24,12 +24,12 @@ import (
 	"net/http"
 )
 
-func CreateFailover(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateFailoverRequest) (msgs.CreateFailoverResponse, error) {
+func CreateFailover(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateFailoverRequest) (msgs.CreateFailoverResponse, error) {
 
 	var response msgs.CreateFailoverResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/failover"
+	url := SessionCredentials.APIServerURL + "/failover"
 
 	log.Debug("create failover called [" + url + "]")
 
@@ -39,7 +39,7 @@ func CreateFailover(httpclient *http.Client, APIServerURL, BasicAuthUsername, Ba
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
@@ -62,11 +62,11 @@ func CreateFailover(httpclient *http.Client, APIServerURL, BasicAuthUsername, Ba
 	return response, err
 }
 
-func QueryFailover(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.QueryFailoverResponse, error) {
+func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.QueryFailoverResponse, error) {
 
 	var response msgs.QueryFailoverResponse
 
-	url := APIServerURL + "/failover/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/failover/" + arg + "?version=" + msgs.PGO_VERSION
 	log.Debug("query failover called [" + url + "]")
 
 	action := "GET"
@@ -76,7 +76,7 @@ func QueryFailover(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

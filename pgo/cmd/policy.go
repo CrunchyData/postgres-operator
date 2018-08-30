@@ -74,7 +74,7 @@ func applyPolicy(args []string) {
 	r.DryRun = DryRun
 	r.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.ApplyPolicy(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
+	response, err := api.ApplyPolicy(httpclient, &SessionCredentials, r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -102,7 +102,7 @@ func applyPolicy(args []string) {
 func showPolicy(args []string) {
 
 	for _, v := range args {
-		response, err := api.ShowPolicy(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowPolicy(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -159,7 +159,7 @@ func createPolicy(args []string) {
 		}
 	}
 
-	response, err := api.CreatePolicy(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
+	response, err := api.CreatePolicy(httpclient, &SessionCredentials, r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -193,7 +193,7 @@ func deletePolicy(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		response, err := api.DeletePolicy(httpclient, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 		}

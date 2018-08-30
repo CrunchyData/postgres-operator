@@ -77,7 +77,7 @@ func labelClusters(clusters []string) {
 	r.DeleteLabel = DeleteLabel
 	r.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.LabelClusters(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
+	response, err := api.LabelClusters(httpclient, &SessionCredentials, r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

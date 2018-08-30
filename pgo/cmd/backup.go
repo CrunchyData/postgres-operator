@@ -74,7 +74,7 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, v := range args {
-		response, err := api.ShowBackup(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowBackup(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -124,7 +124,7 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		response, err := api.DeleteBackup(httpclient, APIServerURL, v, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -158,7 +158,7 @@ func createBackup(args []string) {
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
 
-	response, err := api.CreateBackup(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, request)
+	response, err := api.CreateBackup(httpclient, &SessionCredentials, request)
 
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)

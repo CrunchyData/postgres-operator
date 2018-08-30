@@ -28,3 +28,9 @@ type Status struct {
 	Code string
 	Msg  string
 }
+
+type BasicAuthCredentials struct {
+	Username     string
+	Password     string
+	APIServerURL string
+}

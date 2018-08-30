@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowBackup(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowBackupResponse, error) {
+func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackupResponse, error) {
 
 	var response msgs.ShowBackupResponse
 
-	url := APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION
 
 	log.Debug("show backup called [" + url + "]")
 
@@ -38,7 +38,7 @@ func ShowBackup(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -60,10 +60,10 @@ func ShowBackup(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 	return response, err
 
 }
-func DeleteBackup(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.DeleteBackupResponse, error) {
+func DeleteBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteBackupResponse, error) {
 
 	var response msgs.DeleteBackupResponse
-	url := APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
 	log.Debug("delete backup called [" + url + "]")
 
@@ -73,7 +73,7 @@ func DeleteBackup(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername,
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -96,12 +96,12 @@ func DeleteBackup(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername,
 
 }
 
-func CreateBackup(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateBackupRequest) (msgs.CreateBackupResponse, error) {
+func CreateBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateBackupRequest) (msgs.CreateBackupResponse, error) {
 
 	var response msgs.CreateBackupResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/backups"
+	url := SessionCredentials.APIServerURL + "/backups"
 
 	log.Debug("create backup called [" + url + "]")
 
@@ -111,7 +111,7 @@ func CreateBackup(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basi
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

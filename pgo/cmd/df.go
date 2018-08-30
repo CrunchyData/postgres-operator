@@ -63,7 +63,7 @@ func showDf(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.ShowDf(httpclient, APIServerURL, arg, Selector, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowDf(httpclient, arg, Selector, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

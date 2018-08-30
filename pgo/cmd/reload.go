@@ -65,7 +65,7 @@ func reload(args []string) {
 	request := new(msgs.ReloadRequest)
 	request.Args = args
 	request.Selector = Selector
-	response, err := api.Reload(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, request)
+	response, err := api.Reload(httpclient, &SessionCredentials, request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

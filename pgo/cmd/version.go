@@ -42,7 +42,7 @@ func init() {
 
 func showVersion() {
 
-	response, err := api.ShowVersion(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword)
+	response, err := api.ShowVersion(httpclient, &SessionCredentials)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

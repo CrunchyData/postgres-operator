@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowTest(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.ClusterTestResponse, error) {
+func ShowTest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ClusterTestResponse, error) {
 
 	var response msgs.ClusterTestResponse
 
-	url := APIServerURL + "/clusters/test/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/clusters/test/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	action := "GET"
@@ -36,7 +36,7 @@ func ShowTest(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUse
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {

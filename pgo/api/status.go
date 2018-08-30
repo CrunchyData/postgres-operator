@@ -23,10 +23,10 @@ import (
 	"net/http"
 )
 
-func ShowStatus(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string) (msgs.StatusResponse, error) {
+func ShowStatus(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials) (msgs.StatusResponse, error) {
 
 	var response msgs.StatusResponse
-	url := APIServerURL + "/status?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/status?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	action := "GET"
@@ -35,7 +35,7 @@ func ShowStatus(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicA
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {

@@ -25,10 +25,10 @@ import (
 	"strconv"
 )
 
-func ScaleDownCluster(httpclient *http.Client, APIServerURL, clusterName, ScaleDownTarget string, DeleteData bool, BasicAuthUsername, BasicAuthPassword string) (msgs.ScaleDownResponse, error) {
+func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string, DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ScaleDownResponse, error) {
 
 	var response msgs.ScaleDownResponse
-	url := APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + util.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData)
+	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + util.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData)
 	log.Debug(url)
 
 	action := "GET"
@@ -37,7 +37,7 @@ func ScaleDownCluster(httpclient *http.Client, APIServerURL, clusterName, ScaleD
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -60,11 +60,11 @@ func ScaleDownCluster(httpclient *http.Client, APIServerURL, clusterName, ScaleD
 
 }
 
-func ScaleQuery(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.ScaleQueryResponse, error) {
+func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ScaleQueryResponse, error) {
 
 	var response msgs.ScaleQueryResponse
 
-	url := APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	action := "GET"
@@ -74,7 +74,7 @@ func ScaleQuery(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -98,11 +98,11 @@ func ScaleQuery(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 
 }
 
-func ScaleCluster(httpclient *http.Client, APIServerURL, arg string, ReplicaCount int, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, BasicAuthUsername, BasicAuthPassword string) (msgs.ClusterScaleResponse, error) {
+func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ClusterScaleResponse, error) {
 
 	var response msgs.ClusterScaleResponse
 
-	url := APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType
+	url := SessionCredentials.APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType
 	log.Debug(url)
 
 	action := "GET"
@@ -112,7 +112,7 @@ func ScaleCluster(httpclient *http.Client, APIServerURL, arg string, ReplicaCoun
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

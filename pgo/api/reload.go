@@ -23,12 +23,12 @@ import (
 	"net/http"
 )
 
-func Reload(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.ReloadRequest) (msgs.ReloadResponse, error) {
+func Reload(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ReloadRequest) (msgs.ReloadResponse, error) {
 
 	var response msgs.ReloadResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/reload"
+	url := SessionCredentials.APIServerURL + "/reload"
 
 	log.Debug("reload called [" + url + "]")
 
@@ -38,7 +38,7 @@ func Reload(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthP
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

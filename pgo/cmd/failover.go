@@ -71,7 +71,7 @@ func createFailover(args []string) {
 	request.Target = Target
 	request.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.CreateFailover(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, request)
+	response, err := api.CreateFailover(httpclient, &SessionCredentials, request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -93,7 +93,7 @@ func createFailover(args []string) {
 func queryFailover(args []string) {
 	log.Debugf("queryFailover called %v\n", args)
 
-	response, err := api.QueryFailover(httpclient, APIServerURL, args[0], BasicAuthUsername, BasicAuthPassword)
+	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

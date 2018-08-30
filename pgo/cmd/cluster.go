@@ -34,7 +34,7 @@ func deleteCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.DeleteCluster(httpclient, APIServerURL, arg, Selector, BasicAuthUsername, BasicAuthPassword, DeleteData, DeleteBackups)
+		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups)
 		//var response msgs.DeleteClusterResponse
 
 		if err != nil {
@@ -67,7 +67,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowCluster(httpclient, APIServerURL, v, Selector, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowCluster(httpclient, v, Selector, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
@@ -184,7 +184,7 @@ func createCluster(args []string) {
 	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.CreateCluster(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, r)
+	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		os.Exit(2)

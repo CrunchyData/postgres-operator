@@ -28,7 +28,7 @@ func showConfig(args []string) {
 
 	log.Debugf("showConfig called %v\n", args)
 
-	response, err := api.ShowConfig(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword)
+	response, err := api.ShowConfig(httpclient, &SessionCredentials)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

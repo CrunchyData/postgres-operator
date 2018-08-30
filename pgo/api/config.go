@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowConfig(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowConfigResponse, error) {
+func ShowConfig(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowConfigResponse, error) {
 
 	var response msgs.ShowConfigResponse
 
-	url := APIServerURL + "/config?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/config?version=" + msgs.PGO_VERSION
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -36,7 +36,7 @@ func ShowConfig(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicA
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowIngest(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowIngestResponse, error) {
+func ShowIngest(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowIngestResponse, error) {
 
 	var response msgs.ShowIngestResponse
 
-	url := APIServerURL + "/ingest/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/ingest/" + arg + "?version=" + msgs.PGO_VERSION
 	log.Debug("showIngest called...[" + url + "]")
 
 	action := "GET"
@@ -37,7 +37,7 @@ func ShowIngest(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -59,10 +59,10 @@ func ShowIngest(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 	return response, err
 
 }
-func CreateIngest(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateIngestRequest) (msgs.CreateIngestResponse, error) {
+func CreateIngest(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateIngestRequest) (msgs.CreateIngestResponse, error) {
 
 	var response msgs.CreateIngestResponse
-	url := APIServerURL + "/ingest"
+	url := SessionCredentials.APIServerURL + "/ingest"
 	log.Debug("createIngest called...[" + url + "]")
 
 	jsonValue, _ := json.Marshal(request)
@@ -73,7 +73,7 @@ func CreateIngest(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basi
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
@@ -96,11 +96,11 @@ func CreateIngest(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basi
 	return response, err
 }
 
-func DeleteIngest(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.DeleteIngestResponse, error) {
+func DeleteIngest(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteIngestResponse, error) {
 
 	var response msgs.DeleteIngestResponse
 
-	url := APIServerURL + "/ingestdelete/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/ingestdelete/" + arg + "?version=" + msgs.PGO_VERSION
 	log.Debug("deleteIngest called...[" + url + "]")
 
 	action := "GET"
@@ -110,7 +110,7 @@ func DeleteIngest(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername,
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {

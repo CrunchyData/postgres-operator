@@ -63,7 +63,7 @@ func createBackrestBackup(args []string) {
 	request.Args = args
 	request.Selector = Selector
 
-	response, err := api.CreateBackrestBackup(httpclient, APIServerURL, BasicAuthUsername, BasicAuthPassword, request)
+	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
 		os.Exit(2)
@@ -90,7 +90,7 @@ func showBackrest(args []string) {
 	log.Debugf("showBackrest called %v\n", args)
 
 	for _, v := range args {
-		response, err := api.ShowBackrest(httpclient, APIServerURL, v, Selector, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowBackrest(httpclient, v, Selector, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowPolicy(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowPolicyResponse, error) {
+func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowPolicyResponse, error) {
 
 	var response msgs.ShowPolicyResponse
 
-	url := APIServerURL + "/policies/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/policies/" + arg + "?version=" + msgs.PGO_VERSION
 	log.Debug("showPolicy called...[" + url + "]")
 
 	action := "GET"
@@ -37,7 +37,7 @@ func ShowPolicy(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -59,12 +59,12 @@ func ShowPolicy(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, B
 	return response, err
 
 }
-func CreatePolicy(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreatePolicyRequest) (msgs.CreatePolicyResponse, error) {
+func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePolicyRequest) (msgs.CreatePolicyResponse, error) {
 
 	var response msgs.CreatePolicyResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/policies"
+	url := SessionCredentials.APIServerURL + "/policies"
 	log.Debug("createPolicy called...[" + url + "]")
 
 	action := "POST"
@@ -73,7 +73,7 @@ func CreatePolicy(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basi
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
@@ -96,11 +96,11 @@ func CreatePolicy(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basi
 	return response, err
 }
 
-func DeletePolicy(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername, BasicAuthPassword string) (msgs.DeletePolicyResponse, error) {
+func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeletePolicyResponse, error) {
 
 	var response msgs.DeletePolicyResponse
 
-	url := APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
 	log.Debug("delete policy called [" + url + "]")
 
@@ -111,7 +111,7 @@ func DeletePolicy(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername,
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -135,12 +135,12 @@ func DeletePolicy(httpclient *http.Client, APIServerURL, arg, BasicAuthUsername,
 
 }
 
-func ApplyPolicy(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.ApplyPolicyRequest) (msgs.ApplyPolicyResponse, error) {
+func ApplyPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ApplyPolicyRequest) (msgs.ApplyPolicyResponse, error) {
 
 	var response msgs.ApplyPolicyResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/policies/apply"
+	url := SessionCredentials.APIServerURL + "/policies/apply"
 	log.Debug("applyPolicy called...[" + url + "]")
 
 	action := "POST"
@@ -149,7 +149,7 @@ func ApplyPolicy(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basic
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

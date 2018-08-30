@@ -16,10 +16,11 @@ package cmd
 */
 
 import (
-	"fmt"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -31,7 +32,10 @@ const etcpath = "/etc/pgo/pgouser"
 const pgouserenvvar = "PGOUSER"
 
 // BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
-var BasicAuthUsername, BasicAuthPassword string
+
+var SessionCredentials msgs.BasicAuthCredentials
+
+//var BasicAuthUsername, BasicAuthPassword string
 
 var caCertPool *x509.CertPool
 var cert tls.Certificate
@@ -60,12 +64,18 @@ func UserHomeDir() string {
 	return os.Getenv(env)
 }
 
-func parseCredentials(dat string) (string, string) {
+func parseCredentials(dat string) msgs.BasicAuthCredentials {
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
 	log.Debugf("%v\n", fields)
 	log.Debugf("username=[%s] password=[%s]\n", fields[0], fields[1])
-	return fields[0], fields[1]
+	//return fields[0], fields[1]
+	creds := msgs.BasicAuthCredentials{
+		Username:     fields[0],
+		Password:     fields[1],
+		APIServerURL: APIServerURL,
+	}
+	return creds
 }
 
 func GetCredentials() {
@@ -81,7 +91,7 @@ func GetCredentials() {
 	} else {
 		log.Debug(fullPath + " found")
 		log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
-		BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
+		SessionCredentials = parseCredentials(string(dat))
 		found = true
 
 	}
@@ -94,7 +104,7 @@ func GetCredentials() {
 		} else {
 			log.Debug(fullPath + " found")
 			log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
-			BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
+			SessionCredentials = parseCredentials(string(dat))
 			found = true
 		}
 	}
@@ -115,7 +125,7 @@ func GetCredentials() {
 		}
 
 		log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
-		BasicAuthUsername, BasicAuthPassword = parseCredentials(string(dat))
+		SessionCredentials = parseCredentials(string(dat))
 	}
 
 	caCertPath = os.Getenv("PGO_CA_CERT")

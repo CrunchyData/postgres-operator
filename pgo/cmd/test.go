@@ -62,7 +62,7 @@ func showTest(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.ShowTest(httpclient, APIServerURL, arg, Selector, BasicAuthUsername, BasicAuthPassword)
+		response, err := api.ShowTest(httpclient, arg, Selector, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

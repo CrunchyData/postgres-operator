@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowUser(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.ShowUserResponse, error) {
+func ShowUser(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowUserResponse, error) {
 
 	var response msgs.ShowUserResponse
 
-	url := APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 
 	log.Debug("show users called [" + url + "]")
 
@@ -38,7 +38,7 @@ func ShowUser(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUse
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
@@ -60,12 +60,12 @@ func ShowUser(httpclient *http.Client, APIServerURL, arg, selector, BasicAuthUse
 	return response, err
 
 }
-func CreateUser(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.CreateUserRequest) (msgs.CreateUserResponse, error) {
+func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateUserRequest) (msgs.CreateUserResponse, error) {
 
 	var response msgs.CreateUserResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/users"
+	url := SessionCredentials.APIServerURL + "/users"
 	log.Debug("createUsers called...[" + url + "]")
 
 	action := "POST"
@@ -74,7 +74,7 @@ func CreateUser(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicA
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()
@@ -97,11 +97,11 @@ func CreateUser(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicA
 	return response, err
 }
 
-func DeleteUser(httpclient *http.Client, APIServerURL, username, selector, BasicAuthUsername, BasicAuthPassword string) (msgs.DeleteClusterResponse, error) {
+func DeleteUser(httpclient *http.Client, username, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteClusterResponse, error) {
 
 	var response msgs.DeleteClusterResponse
 
-	url := APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 
 	log.Debug("delete users called [" + url + "]")
 
@@ -112,7 +112,7 @@ func DeleteUser(httpclient *http.Client, APIServerURL, username, selector, Basic
 		return response, err
 	}
 
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -136,12 +136,12 @@ func DeleteUser(httpclient *http.Client, APIServerURL, username, selector, Basic
 
 }
 
-func UserManager(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string, request *msgs.UserRequest) (msgs.UserResponse, error) {
+func UserManager(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.UserRequest) (msgs.UserResponse, error) {
 
 	var response msgs.UserResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := APIServerURL + "/user"
+	url := SessionCredentials.APIServerURL + "/user"
 	log.Debug("User Manager called...[" + url + "]")
 
 	action := "POST"
@@ -150,7 +150,7 @@ func UserManager(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basic
 		return response, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	defer resp.Body.Close()

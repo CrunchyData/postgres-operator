@@ -23,13 +23,13 @@ import (
 	"net/http"
 )
 
-func ShowVersion(httpclient *http.Client, APIServerURL, BasicAuthUsername, BasicAuthPassword string) (msgs.VersionResponse, error) {
+func ShowVersion(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials) (msgs.VersionResponse, error) {
 
 	var response msgs.VersionResponse
 
 	log.Debug("ShowVersion called ")
 
-	url := APIServerURL + "/version"
+	url := SessionCredentials.APIServerURL + "/version"
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -38,7 +38,7 @@ func ShowVersion(httpclient *http.Client, APIServerURL, BasicAuthUsername, Basic
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
