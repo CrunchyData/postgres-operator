@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
+	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"time"
 )
@@ -414,7 +415,9 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 	}()
 
 	if managed {
-		err = util.DeleteUserSecret(apiserver.Clientset, clusterName, user, namespace)
+		//delete current secret
+		secretName := clusterName + "-" + user + "-secret"
+		err := kubeapi.DeleteSecret(apiserver.Clientset, secretName, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -596,4 +599,12 @@ func ShowUser(name, selector string) msgs.ShowUserResponse {
 
 	return response
 
+}
+
+func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, namespace string) error {
+	//delete current secret
+	secretName := clustername + "-" + username + "-secret"
+
+	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
+	return err
 }

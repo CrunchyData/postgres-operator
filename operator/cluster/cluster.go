@@ -178,7 +178,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	var testPassword string
-	_, _, testPassword, err = util.CreateDatabaseSecrets(clientset, client, cl, namespace)
+	_, _, testPassword, err = createDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error("error in create secrets " + err.Error())
 		return
@@ -198,9 +198,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	//add pgpool deployment if requested
-	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
+	if cl.Spec.UserLabels[util.LABEL_PGPOOL_SECRET] == "true" {
 		//generate a secret for pgpool using the testuser credential
-		secretName := cl.Spec.Name + "-pgpool-secret"
+		secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
 		primaryName := cl.Spec.Name
 		replicaName := cl.Spec.Name + "-replica"
 		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
@@ -247,8 +247,6 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
 	}
-
-	util.DeleteDatabaseSecrets(clientset, cl.Spec.Name, namespace)
 
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 
@@ -422,4 +420,94 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 
 	strategy.DeleteReplica(clientset, replica, namespace)
 
+}
+
+/**
+import (
+	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	//"k8s.io/client-go/rest"
+	"math/rand"
+	"strings"
+	"time"
+)
+
+*/
+// createDatabaseSecrets create pgroot, pgprimary, and pguser secrets
+func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) (string, string, string, error) {
+
+	//pgroot
+	username := "postgres"
+	suffix := crv1.RootSecretSuffix
+
+	var secretName string
+	var err error
+
+	secretName = cl.Spec.Name + suffix
+	pgPassword := util.GeneratePassword(10)
+	if cl.Spec.RootPassword != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		pgPassword = cl.Spec.RootPassword
+	}
+
+	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, pgPassword, namespace)
+	if err != nil {
+		log.Error("error creating secret" + err.Error())
+	}
+
+	cl.Spec.RootSecretName = secretName
+	err = util.Patch(restclient, "/spec/rootsecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error patching cluster" + err.Error())
+	}
+
+	///primary
+	username = "primaryuser"
+	suffix = crv1.PrimarySecretSuffix
+
+	secretName = cl.Spec.Name + suffix
+	primaryPassword := util.GeneratePassword(10)
+	if cl.Spec.PrimaryPassword != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		primaryPassword = cl.Spec.PrimaryPassword
+	}
+
+	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, primaryPassword, namespace)
+	if err != nil {
+		log.Error("error creating secret2" + err.Error())
+	}
+
+	cl.Spec.PrimarySecretName = secretName
+	err = util.Patch(restclient, "/spec/primarysecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error patching cluster " + err.Error())
+	}
+
+	///pguser
+	username = "testuser"
+	suffix = crv1.UserSecretSuffix
+
+	secretName = cl.Spec.Name + suffix
+	testPassword := util.GeneratePassword(10)
+	if cl.Spec.Password != "" {
+		log.Debug("using user specified password for secret " + secretName)
+		testPassword = cl.Spec.Password
+	}
+
+	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, testPassword, namespace)
+	if err != nil {
+		log.Error("error creating secret " + err.Error())
+	}
+
+	cl.Spec.UserSecretName = secretName
+	err = util.Patch(restclient, "/spec/usersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error patching cluster " + err.Error())
+	}
+
+	return pgPassword, primaryPassword, testPassword, err
 }

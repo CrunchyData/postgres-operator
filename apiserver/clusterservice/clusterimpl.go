@@ -73,6 +73,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
+			deleteDatabaseSecrets(cluster.Spec.Name)
 			createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 		}
 
@@ -1013,4 +1014,18 @@ func validateBackrestConfig(labels map[string]string) error {
 	}
 	return err
 
+}
+
+// deleteDatabaseSecrets delete secrets that match pg-database=somecluster
+func deleteDatabaseSecrets(db string) {
+	//get all that match pg-database=db
+	selector := util.LABEL_PG_DATABASE + "=" + db
+	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, apiserver.Namespace)
+	if err != nil {
+		return
+	}
+
+	for _, s := range secrets.Items {
+		kubeapi.DeleteSecret(apiserver.Clientset, s.ObjectMeta.Name, apiserver.Namespace)
+	}
 }

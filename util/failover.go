@@ -154,7 +154,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	//get the postgres secret for this dep
 	var secretInfo []msgs.ShowUserSecret
-	secretInfo, err = GetSecrets(clientset, &cluster, namespace)
+	secretInfo, err = getSecrets(clientset, &cluster, namespace)
 	var pgSecret msgs.ShowUserSecret
 	var found bool
 	for _, si := range secretInfo {
@@ -259,4 +259,27 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 	}
 
 	return &ReplicationInfo{recvLocation, replayLocation}, nil
+}
+
+func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
+
+	output := make([]msgs.ShowUserSecret, 0)
+	selector := "pgpool!=true," + LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+
+	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
+	if err != nil {
+		return output, err
+	}
+
+	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
+	for _, s := range secrets.Items {
+		d := msgs.ShowUserSecret{}
+		d.Name = s.Name
+		d.Username = string(s.Data["username"][:])
+		d.Password = string(s.Data["password"][:])
+		output = append(output, d)
+
+	}
+
+	return output, err
 }
