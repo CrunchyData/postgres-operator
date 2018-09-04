@@ -1,0 +1,35 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgocrdreader
+rules:
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - '*'
+    resources:
+      - pgclusters
+      - pgbackups
+      - pgingests
+      - pgpolicies
+      - pgreplicas
+      - pgtasks
+      - pgupgrades
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: pgocrdreaderbinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pgocrdreader
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: demo
+
+
