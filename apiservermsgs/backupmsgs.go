@@ -30,6 +30,7 @@ type CreateBackupRequest struct {
 	Namespace     string
 	Args          []string
 	Selector      string
+	PVCName       string
 	StorageConfig string
 }
 

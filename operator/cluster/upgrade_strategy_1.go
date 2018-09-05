@@ -31,6 +31,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 // JobTemplateFields ...
@@ -50,62 +51,21 @@ type JobTemplateFields struct {
 // MinorUpgrade ..
 func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
 	var err error
-	var primaryDoc bytes.Buffer
+	//var primaryDoc bytes.Buffer
 
 	log.Info("minor cluster upgrade using Strategy 1 in namespace " + namespace)
 
-	err = shutdownCluster(clientset, restclient, cl, namespace)
-	if err != nil {
-		log.Error("error in shutdownCluster " + err.Error())
-	}
+	//do this instead of deleting the deployment and creating a new one
+	//kubectl patch deploy mango --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"crunchydata/crunchy-postgres:centos7-10.4-1.8.4"}]'
+	//also patch the CRD
+	//kubectl patch pgcluster fango --type='json' -p='[{"op": "replace", "path": "/spec/ccpimagetag", "value":"centos7-10.4-1.8.4"}]'
 
-	//create the primary deployment
+	err = kubeapi.PatchDeployment(clientset, cl.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.Pgo.Cluster.CCPImagePrefix+"/crunchy-postgres:"+upgrade.Spec.CCPImageTag)
 
-	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
-
-	deploymentFields := DeploymentTemplateFields{
-		Name:              cl.Spec.Name,
-		ClusterName:       cl.Spec.Name,
-		Port:              cl.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
-		CCPImageTag:       upgrade.Spec.CCPImageTag,
-		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, cl.Spec.PrimaryStorage.Name),
-		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
-		BackupPVCName:     util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
-		BackupPath:        cl.Spec.BackupPath,
-		DataPathOverride:  cl.Spec.Name,
-		Database:          cl.Spec.Database,
-		SecurityContext:   util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
-		RootSecretName:    cl.Spec.RootSecretName,
-		PrimarySecretName: cl.Spec.PrimarySecretName,
-		UserSecretName:    cl.Spec.UserSecretName,
-		NodeSelector:      GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		CollectAddon:      GetCollectAddon(&cl.Spec),
-	}
-
-	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
-	if err != nil {
-		log.Error("error in DeploymentTemplate Execute" + err.Error())
-		return err
-	}
-	deploymentDocString := primaryDoc.String()
-	log.Debug(deploymentDocString)
-
-	deployment := v1beta1.Deployment{}
-	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
-	if err != nil {
-		log.Error("error unmarshalling primary json into Deployment " + err.Error())
-		return err
-	}
-
-	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
-	if err != nil {
-		return err
-	}
+	err = util.Patch(restclient, "/spec/ccpimagetag", upgrade.Spec.CCPImageTag, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 
 	//update the upgrade CRD status to completed
-	err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
+	err = kubeapi.Patchpgupgrade(restclient, upgrade.Spec.Name, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, namespace)
 	if err != nil {
 		log.Error("error in upgradestatus patch " + err.Error())
 	}
@@ -125,7 +85,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	}
 
 	//create the PVC if necessary
-	pvcName, err := pvc.CreatePVC(clientset, cl.Spec.Name+"-upgrade", &cl.Spec.PrimaryStorage, namespace)
+	pvcName, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name+"-upgrade", cl.Spec.Name, namespace)
 	log.Debug("created pvc for upgrade as [" + pvcName + "]")
 
 	//upgrade the primary data
@@ -133,7 +93,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		Name:            upgrade.Spec.Name,
 		NewPVCName:      pvcName,
 		OldPVCName:      upgrade.Spec.OldPVCName,
-		CCPImagePrefix:  operator.CCPImagePrefix,
+		CCPImagePrefix:  operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:     upgrade.Spec.CCPImageTag,
 		OldDatabaseName: upgrade.Spec.OldDatabaseName,
 		NewDatabaseName: upgrade.Spec.NewDatabaseName,
@@ -148,8 +108,10 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		log.Error("error in job template execute " + err.Error())
 		return err
 	}
-	jobDocString := doc.String()
-	log.Debug(jobDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.UpgradeJobTemplate1.Execute(os.Stdout, jobFields)
+	}
 
 	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc.Bytes(), &newjob)
@@ -190,7 +152,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		Name:              cl.Spec.Name,
 		ClusterName:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
-		CCPImagePrefix:    operator.CCPImagePrefix,
+		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, upgrade.Spec.NewPVCName),
 		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
@@ -203,7 +165,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      cl.Spec.NodeName,
 		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		CollectAddon:      GetCollectAddon(&cl.Spec),
+		CollectAddon:      GetCollectAddon(clientset, namespace, &cl.Spec),
 	}
 
 	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
@@ -211,8 +173,10 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		log.Error("error in dep template execute " + err.Error())
 		return err
 	}
-	deploymentDocString := primaryDoc.String()
-	log.Info(deploymentDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+	}
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)

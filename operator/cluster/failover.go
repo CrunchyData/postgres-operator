@@ -22,6 +22,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -31,7 +34,12 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	var err error
 
 	//look up the pgcluster for this task
-	clusterName := task.Spec.Parameters
+	//in the case, the clustername is passed as a key in the
+	//parameters map
+	var clusterName string
+	for k, _ := range task.Spec.Parameters {
+		clusterName = k
+	}
 
 	cluster := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(client, &cluster,
@@ -54,5 +62,50 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
+	//remove the pgreplica CRD for the promoted replica
+	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
+
+	//scale up the replicas to replace the failover target
+	replaceReplica(client, &cluster)
+
+}
+
+func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster) {
+
+	//generate new replica name
+	uniqueName := cluster.Spec.Name + "-" + util.RandStringBytesRmndr(4)
+
+	spec := crv1.PgreplicaSpec{}
+	spec.Name = uniqueName
+	spec.ClusterName = cluster.Spec.Name
+	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
+	spec.ContainerResources = cluster.Spec.ContainerResources
+	spec.UserLabels = make(map[string]string)
+
+	for k, v := range cluster.Spec.UserLabels {
+		spec.UserLabels[k] = v
+	}
+	spec.UserLabels[util.LABEL_PRIMARY] = "false"
+	spec.UserLabels[util.LABEL_PG_CLUSTER] = cluster.Spec.Name
+
+	newInstance := &crv1.Pgreplica{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: uniqueName,
+		},
+		Spec: spec,
+		Status: crv1.PgreplicaStatus{
+			State:   crv1.PgreplicaStateCreated,
+			Message: "Created, not processed yet",
+		},
+	}
+
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	for x, y := range cluster.ObjectMeta.Labels {
+		newInstance.ObjectMeta.Labels[x] = y
+	}
+	newInstance.ObjectMeta.Labels[util.LABEL_PRIMARY] = "false"
+	newInstance.ObjectMeta.Labels[util.LABEL_NAME] = uniqueName
+
+	kubeapi.Createpgreplica(client, newInstance, operator.NAMESPACE)
 
 }

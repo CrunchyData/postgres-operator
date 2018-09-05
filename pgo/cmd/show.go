@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
 )
 
@@ -26,28 +26,31 @@ const TreeTrunk = "\t"
 
 var PostgresVersion string
 var ShowPVC bool
-var ShowSecrets bool
 var PVCRoot string
 
 var ShowCmd = &cobra.Command{
 	Use:   "show",
-	Short: "show a description of a cluster",
-	Long: `show allows you to show the details of a policy, backup, pvc, or cluster.
-For example:
+	Short: "Show the description of a cluster",
+	Long: `Show allows you to show the details of a policy, backup, pvc, or cluster. For example:
 
 	pgo show policy policy1
-	pgo show pvc mypvc
+	pgo show pvc mycluster
 	pgo show backup mycluster
+	pgo show backup mycluster --backup-type=pgbackrest
 	pgo show ingest myingest
+	pgo show config
+	pgo show user mycluster
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			fmt.Println(`You must specify the type of resource to show.  
+			fmt.Println(`Error: You must specify the type of resource to show.
 Valid resource types include:
 	* cluster
 	* pvc
 	* policy
+	* user
 	* ingest
+	* config
 	* upgrade
 	* backup`)
 		} else {
@@ -56,16 +59,20 @@ Valid resource types include:
 			case "pvc":
 			case "policy":
 			case "ingest":
+			case "user":
+			case "config":
 			case "upgrade":
 			case "backup":
 				break
 			default:
-				fmt.Println(`You must specify the type of resource to show.  
+				fmt.Println(`Error: You must specify the type of resource to show.
 Valid resource types include:
 	* cluster
 	* pvc
 	* policy
 	* ingest
+	* user
+	* config
 	* upgrade
 	* backup`)
 			}
@@ -81,14 +88,28 @@ func init() {
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowIngestCmd)
+	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
+	ShowCmd.AddCommand(ShowUserCmd)
 
-	ShowClusterCmd.Flags().BoolVarP(&ShowSecrets, "show-secrets", "x", false, "Show secrets ")
-	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "The postgres version to filter on")
-	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list")
-	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
+	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", util.LABEL_BACKUP_TYPE_BASEBACKUP, "The backup type output to list. Valid choices are pgbasebackup (default) or pgbackrest.")
+	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "v", "", "Filter the results based on the PostgreSQL version of the cluster.")
+	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "r", "", "The PVC directory to list.")
+	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
 
+}
+
+var ShowConfigCmd = &cobra.Command{
+	Use:   "config",
+	Short: "Show configuration information",
+	Long: `Show configuration information for the Operator. For example:
+
+	pgo show config`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showConfig(args)
+	},
 }
 
 var ShowPolicyCmd = &cobra.Command{
@@ -96,10 +117,10 @@ var ShowPolicyCmd = &cobra.Command{
 	Short: "Show policy information",
 	Long: `Show policy information. For example:
 
-				pgo show policy policy1`,
+	pgo show policy policy1`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("policy name(s) required for this command")
+			fmt.Println("Error: Policy name(s) required for this command.")
 		} else {
 			showPolicy(args)
 		}
@@ -108,14 +129,16 @@ var ShowPolicyCmd = &cobra.Command{
 
 var ShowPVCCmd = &cobra.Command{
 	Use:   "pvc",
-	Short: "Show pvc information",
-	Long: `Show pvc information. For example:
+	Short: "Show PVC information",
+	Long: `Show PVC information. For example:
 
-				pgo show pvc all
-				pgo show pvc mycluster-pvc`,
+	pgo show pvc all
+	pgo show pvc mycluster-backup
+	pgo show pvc mycluster-xlog
+	pgo show pvc mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("PVC name(s) required for this command")
+			fmt.Println("Error: PVC name(s) required for this command.")
 		} else {
 			showPVC(args)
 		}
@@ -127,10 +150,10 @@ var ShowUpgradeCmd = &cobra.Command{
 	Short: "Show upgrade information",
 	Long: `Show upgrade information. For example:
 
-				pgo show upgrade mycluster`,
+	pgo show upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
 			showUpgrade(args)
 		}
@@ -143,12 +166,19 @@ var ShowBackupCmd = &cobra.Command{
 	Short: "Show backup information",
 	Long: `Show backup information. For example:
 
-				pgo show backup mycluser`,
+	pgo show backup mycluser`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
-			showBackup(args)
+			if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
+
+				showBackrest(args)
+			} else if BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
+				showBackup(args)
+			} else {
+				fmt.Println("Error: Valid backup-type values are pgbasebackup and pgbackrest. The default if not supplied is pgbasebackup.")
+			}
 		}
 	},
 }
@@ -157,12 +187,12 @@ var ShowBackupCmd = &cobra.Command{
 var ShowClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Show cluster information",
-	Long: `Show a crunchy cluster. For example:
+	Long: `Show a PostgreSQL cluster. For example:
 
-				pgo show cluster mycluster`,
+	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("cluster name(s) required for this command")
+			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
 			showCluster(args)
 		}
@@ -173,14 +203,30 @@ var ShowClusterCmd = &cobra.Command{
 var ShowIngestCmd = &cobra.Command{
 	Use:   "ingest",
 	Short: "Show ingest information",
-	Long: `Show a crunchy ingest. For example:
+	Long: `Show an ingest. For example:
 
-				pgo show ingest myingest`,
+	pgo show ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {
-			log.Error("ingest name(s) required for this command")
+			fmt.Println("Error: Ingest name(s) required for this command.")
 		} else {
 			showIngest(args)
+		}
+	},
+}
+
+// ShowUserCmd represents the show user command
+var ShowUserCmd = &cobra.Command{
+	Use:   "user",
+	Short: "Show user information",
+	Long: `Show users on a cluster. For example:
+
+	pgo show user mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Selector == "" && len(args) == 0 {
+			fmt.Println("Error: Cluster name(s) required for this command.")
+		} else {
+			showUser(args)
 		}
 	},
 }

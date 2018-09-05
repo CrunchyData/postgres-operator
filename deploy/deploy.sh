@@ -21,11 +21,7 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
-expenv -f $DIR/service-account.yaml | $CO_CMD create -f -
-#$CO_CMD create -f $DIR/cluster-role-binding.yaml
-expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
-
-$CO_CMD create secret generic apiserver-conf-secret \
+$CO_CMD $NS create secret generic apiserver-conf-secret \
         --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
         --from-file=server.key=$COROOT/conf/apiserver/server.key \
         --from-file=pgouser=$COROOT/conf/apiserver/pgouser \
@@ -40,9 +36,22 @@ $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
+	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
+	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
+	--from-file=$COROOT/conf/postgres-operator/backrest-restore-configmap.json \
+	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
-expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
+if [ "$CO_UI" = "true" ]; then
+$CO_CMD $NS create configmap pgo-ui-conf \
+	--from-file=$COROOT/conf/pgo-ui/config.json \
+        --from-file=$COROOT/conf/apiserver/server.crt \
+        --from-file=$COROOT/conf/apiserver/server.key 
 
-$CO_CMD $NS create -f $DIR/service.json
+	expenv -f $DIR/deployment-with-ui.json | $CO_CMD $NS create -f -
+	$CO_CMD $NS create -f $DIR/service-with-ui.json
+else
+	expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
+	$CO_CMD $NS create -f $DIR/service.json
+fi
 

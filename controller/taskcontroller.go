@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
@@ -46,7 +46,7 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 	// Watch Example objects
 	_, err := c.watchPgtasks(ctx)
 	if err != nil {
-		log.Errorf("Failed to register watch for Pgtask resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
 		return err
 	}
 
@@ -59,7 +59,6 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 	source := cache.NewListWatchFromClient(
 		c.PgtaskClient,
 		crv1.PgtaskResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -88,7 +87,7 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 // onAdd is called when a pgtask is added
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	log.Errorf("[PgtaskCONTROLLER] OnAdd %s\n", task.ObjectMeta.SelfLink)
+	log.Debugf("[PgtaskCONTROLLER] OnAdd %s", task.ObjectMeta.SelfLink)
 	if task.Status.State == crv1.PgtaskStateProcessed {
 		log.Info("pgtask " + task.ObjectMeta.Name + " already processed")
 		return
@@ -97,20 +96,16 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use taskScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgtaskScheme.Copy(task)
-	if err != nil {
-		log.Errorf("ERROR creating a deep copy of task object: %v\n", err)
-		return
-	}
+	copyObj := task.DeepCopyObject()
+	taskCopy := copyObj.(*crv1.Pgtask)
 
 	//update the status of the task as processed to prevent reprocessing
-	taskCopy := copyObj.(*crv1.Pgtask)
 	taskCopy.Status = crv1.PgtaskStatus{
 		State:   crv1.PgtaskStateProcessed,
 		Message: "Successfully processed Pgtask by controller",
 	}
 
-	err = c.PgtaskClient.Put().
+	err := c.PgtaskClient.Put().
 		Name(task.ObjectMeta.Name).
 		Namespace(task.ObjectMeta.Namespace).
 		Resource(crv1.PgtaskResourcePlural).
@@ -119,43 +114,32 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v\n", err)
+		log.Errorf("ERROR updating status: %v", err)
 	} else {
-		log.Errorf("UPDATED status: %#v\n", taskCopy)
+		log.Debugf("UPDATED status: %#v", taskCopy)
 	}
 
 	//process the incoming task
 	switch task.Spec.TaskType {
 	case crv1.PgtaskFailover:
 		log.Info("failover task added")
-		log.Info("cluster name is " + task.Spec.Parameters)
-		log.Info("dbname is " + task.Spec.Name)
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
 
 	case crv1.PgtaskDeleteData:
 		log.Info("delete data task added")
-		log.Info("pvc is " + task.Spec.Parameters)
-		log.Info("dbname is " + task.Spec.Name)
 		taskoperator.RemoveData(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskDeleteBackups:
+		log.Info("delete backups task added")
+		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrest:
+		log.Info("backrest task added")
+		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrestRestore:
+		log.Info("backrest restore task added")
+		backrestoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}
-
-	/**
-	err = c.PgtaskClient.Delete().
-		Name(task.ObjectMeta.Name).
-		Namespace(task.ObjectMeta.Namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Body(taskCopy).
-		Do().
-		Error()
-
-	if err != nil {
-		log.Errorf("ERROR deleting pgtask status: %s %v\n", task.ObjectMeta.Name, err)
-	} else {
-		log.Errorf("deleted pgtask %s\n", task.ObjectMeta.Name)
-	}
-	*/
 
 }
 

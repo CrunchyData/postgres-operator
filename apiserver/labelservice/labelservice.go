@@ -39,7 +39,13 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := Label(&request)
+	var resp msgs.LabelResponse
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp = msgs.LabelResponse{}
+		resp.Status = msgs.Status{Msg: apiserver.VERSION_MISMATCH_ERROR, Code: msgs.Error}
+	} else {
+		resp = Label(&request)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }

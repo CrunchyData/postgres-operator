@@ -56,7 +56,13 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := CreateUpgrade(&request)
+	var resp msgs.CreateUpgradeResponse
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp = msgs.CreateUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = CreateUpgrade(&request)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -73,31 +79,65 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("upgradeservice.ShowUpgradeHandler %v\n", vars)
 
 	upgradename := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	switch r.Method {
-	case "GET":
-		log.Debug("upgradeservice.ShowUpgradeHandler GET called")
+	log.Debug("upgradeservice.ShowUpgradeHandler GET called")
 
-		err := apiserver.Authn(apiserver.SHOW_UPGRADE_PERM, w, r)
-		if err != nil {
-			return
-		}
-
-		resp := ShowUpgrade(upgradename)
-		json.NewEncoder(w).Encode(resp)
-	case "DELETE":
-		log.Debug("upgradeservice.ShowUpgradeHandler DELETE called")
-
-		err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
-		if err != nil {
-			return
-		}
-
-		resp := DeleteUpgrade(upgradename)
-		json.NewEncoder(w).Encode(resp)
+	err := apiserver.Authn(apiserver.SHOW_UPGRADE_PERM, w, r)
+	if err != nil {
+		return
 	}
+
+	var resp msgs.ShowUpgradeResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ShowUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+		resp = ShowUpgrade(upgradename)
+	}
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+// DeleteUpgradeHandler ...
+// pgo delete upgrade
+// returns a ShowUpgradeResponse
+func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("upgradeservice.DeleteUpgradeHandler %v\n", vars)
+
+	upgradename := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Debug("upgradeservice.DeleteUpgradeHandler DELETE called")
+
+	err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	var resp msgs.DeleteUpgradeResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.DeleteUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+
+		resp = DeleteUpgrade(upgradename)
+	}
+	json.NewEncoder(w).Encode(resp)
 
 }

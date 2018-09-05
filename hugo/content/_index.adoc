@@ -1,0 +1,74 @@
+---
+title: "Crunchy Data PostgreSQL Operator"
+date: 2018-04-23T14:52:09-07:00
+draft: false
+---
+
+image::crunchy-logo.jpg[Crunchy Data Logo,width="12%",height="12%", align="center"]
+
+Latest Release: 3.2.0 {docdate}
+
+== Documentation
+
+Please view the official Crunchy Data PostgreSQL Operator documentation link:https://crunchydata.github.io/postgres-operator/[here]. If you are
+interested in contributing or making an update to the documentation, please view the link:https://crunchydata.github.io/postgres-operator/contributing/[Contributing Guidelines].
+
+== What is the Operator?
+
+The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
+
+Use the postgres-operator to -
+
+ * deploy PostgreSQL containers including streaming replication clusters
+ * scale up PostgreSQL clusters with extra replicas
+ * add pgpool and metrics sidecars to PostgreSQL clusters
+ * apply SQL policies to PostgreSQL clusters
+ * assign metadata tags to PostgreSQL clusters
+ * maintain PostgreSQL users and passwords
+ * perform minor and major upgrades to PostgreSQL clusters
+ * load simple CSV and JSON files into PostgreSQL clusters
+ * perform database backups
+
+== Design
+
+The *postgres-operator* design incorporates the following concepts -
+
+ * adds Custom Resource Definitions for PostgreSQL to Kubernetes
+ * adds controller logic that watches events on PostgreSQL resources
+ * provides a command line client (*pgo*) and REST API for interfacing with the postgres-operator
+ * provides for very customized deployments including container resources, storage configurations, and PostgreSQL custom configurations
+
+More design information is found on the link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works] page.
+
+== Requirements
+
+The postgres-operator runs on any Kubernetes and Openshift platform that supports
+Custom Resource Definitions.
+
+The Operator project builds and operates with the following containers -
+
+* link:https://hub.docker.com/r/crunchydata/pgo-lspvc/[PVC Listing Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-rmdata/[Remove Data Container]
+* link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-backrest/[backrest interface Container]
+
+This Operator is developed and tested on the following operating systems but is known to run on other operating systems -
+
+* *CentOS 7*
+* *RHEL 7*
+
+== Installation
+
+To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:https://crunchydata.github.io/postgres-operator/installation/[Installation] page.
+
+If you're seeking to upgrade your existing Operator installation, please visit the link:https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/[Upgrading the Operator] page.
+
+== Configuration
+
+The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:https://crunchydata.github.io/postgres-operator/installation/configuration/[Configuration] page.
+
+== Getting Started
+
+*postgres-operator* commands are documented on the link:https://crunchydata.github.io/postgres-operator/getting-started/[Getting Started] page.

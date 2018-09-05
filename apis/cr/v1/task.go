@@ -22,8 +22,16 @@ import (
 // PgtaskResourcePlural ...
 const PgtaskResourcePlural = "pgtasks"
 
+const PgtaskDeleteBackups = "delete-backups"
 const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"
+const PgtaskAutoFailover = "autofailover"
+const PgtaskAddPolicies = "addpolicies"
+
+const PgtaskBackrest = "backrest"
+const PgtaskBackrestBackup = "backup"
+const PgtaskBackrestInfo = "info"
+const PgtaskBackrestRestore = "restore"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {
@@ -31,7 +39,8 @@ type PgtaskSpec struct {
 	StorageSpec PgStorageSpec `json:"storagespec"`
 	TaskType    string        `json:"tasktype"`
 	Status      string        `json:"status"`
-	Parameters  string        `json:"parameters"`
+	//Parameters  string            `json:"parameters"`
+	Parameters map[string]string `json:"parameters"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

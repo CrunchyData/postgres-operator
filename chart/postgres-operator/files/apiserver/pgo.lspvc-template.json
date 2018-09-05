@@ -4,7 +4,9 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            "vendor": "crunchydata",
             "name": "lspvc",
+            "pg-cluster": "{{.ClusterName}}",
             "pvcname": "{{.PVCName}}"
         }
     },

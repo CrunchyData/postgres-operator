@@ -31,7 +31,7 @@ func AskForConfirmation(NoPrompt bool, msg string) bool {
 		return true
 	}
 	if msg == "" {
-		fmt.Print("WARNING - This is destructive: Are you sure? (yes/no): ")
+		fmt.Print("WARNING: Are you sure? (yes/no): ")
 	} else {
 		fmt.Print("WARNING - " + msg + " (yes/no): ")
 	}

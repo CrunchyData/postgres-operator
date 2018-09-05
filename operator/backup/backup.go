@@ -24,11 +24,10 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	//"io/ioutil"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//	"text/template"
+	"os"
 )
 
 type jobTemplateFields struct {
@@ -57,11 +56,15 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 
 	//create the PVC if necessary
 	var pvcName string
-	pvcName, err = pvc.CreatePVC(clientset, job.Spec.Name+"-backup", &job.Spec.StorageSpec, namespace)
-	if err != nil {
-		log.Error(err.Error())
+	if job.Spec.BackupPVC != "" {
+		pvcName = job.Spec.BackupPVC
 	} else {
-		log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
+		pvcName, err = pvc.CreatePVC(clientset, &job.Spec.StorageSpec, job.Spec.Name+"-backup", job.Spec.BackupHost, namespace)
+		if err != nil {
+			log.Error(err.Error())
+		} else {
+			log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
+		}
 	}
 
 	//update the pvc name in the CRD
@@ -71,7 +74,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	jobFields := jobTemplateFields{
 		Name:            job.Spec.Name,
 		PvcName:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
-		CCPImagePrefix:  operator.CCPImagePrefix,
+		CCPImagePrefix:  operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:     job.Spec.CCPImageTag,
 		SecurityContext: util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
 		BackupHost:      job.Spec.BackupHost,
@@ -86,8 +89,10 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 		log.Error(err.Error())
 		return
 	}
-	jobDocString := doc2.String()
-	log.Debug(jobDocString)
+
+	if operator.CRUNCHY_DEBUG {
+		operator.JobTemplate.Execute(os.Stdout, jobFields)
+	}
 
 	newjob := v1batch.Job{}
 	err = json.Unmarshal(doc2.Bytes(), &newjob)

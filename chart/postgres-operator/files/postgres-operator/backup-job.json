@@ -9,17 +9,18 @@
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
+                    "vendor": "crunchydata",
                     "pgbackup": "true",
                     "pg-database": "{{.Name}}"
                 }
             },
             "spec": {
                 "volumes": [{
-                    	"name": "pgdata",
-			{{.PvcName}}
+                    "name": "pgdata",
+                    {{.PvcName}}
                 }],
 
-		{{.SecurityContext}}
+        {{.SecurityContext}}
 
                 "containers": [{
                     "name": "backup",

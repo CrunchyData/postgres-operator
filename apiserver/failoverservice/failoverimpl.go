@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,7 +50,6 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	}
 
 	//get the clusters list
-	//var cluster *crv1.Pgcluster
 	_, err = validateClusterName(request.ClusterName)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -61,11 +61,17 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
-	spec.Name = request.ClusterName + "-failover"
+	spec.Name = request.ClusterName + "-" + util.LABEL_FAILOVER
+
+	// previous failovers will leave a pgtask so remove it first
+	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, apiserver.Namespace)
+
 	spec.TaskType = crv1.PgtaskFailover
-	spec.Parameters = request.ClusterName
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[request.ClusterName] = request.ClusterName
 	labels := make(map[string]string)
 	labels["target"] = request.Target
+	labels[util.LABEL_PG_CLUSTER] = request.ClusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -90,36 +96,35 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 
 //  QueryFailover ...
 // pgo failover mycluster --query
-func QueryFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResponse {
+func QueryFailover(name string) msgs.QueryFailoverResponse {
 	var err error
-	resp := msgs.CreateFailoverResponse{}
+	resp := msgs.QueryFailoverResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
-	resp.Targets = make([]string, 0)
+	resp.Targets = make([]msgs.FailoverTargetSpec, 0)
 
 	//var deployment *v1beta1.Deployment
 
 	//get the clusters list
-	//var cluster *crv1.Pgcluster
-	_, err = validateClusterName(request.ClusterName)
+	_, err = validateClusterName(name)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	log.Debug("query failover called for " + request.ClusterName)
+	log.Debug("query failover called for " + name)
 
 	//get failover targets for this cluster
-	//deployments with --selector=replica=true,pg-cluster=ClusterName
+	//deployments with --selector=primary=false,pg-cluster=ClusterName
 
-	selector := "replica=true,pg-cluster=" + request.ClusterName
+	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found ")
-		resp.Status.Msg = "no replicas found for " + request.ClusterName
+		resp.Status.Msg = "no replicas found for " + name
 		return resp
 	} else if err != nil {
 		log.Error("error getting deployments " + err.Error())
@@ -131,10 +136,15 @@ func QueryFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverRespo
 	log.Debugf("deps len %d\n", len(deployments.Items))
 	for _, dep := range deployments.Items {
 		log.Debug("found " + dep.Name)
-		resp.Targets = append(resp.Targets, dep.Name)
-	}
+		target := msgs.FailoverTargetSpec{}
+		target.Name = dep.Name
 
-	//resp.Results = append(resp.Results, "")
+		target.ReceiveLocation, target.ReplayLocation = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace)
+		//get the pod status
+		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
+		//get the rep status
+		resp.Targets = append(resp.Targets, target)
+	}
 
 	return resp
 }

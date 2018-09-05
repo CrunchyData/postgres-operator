@@ -22,7 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/spf13/viper"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strconv"
@@ -175,13 +174,6 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			return response
 		}
 
-		if cl.Spec.PrimaryStorage.StorageType == "emptydir" {
-			msg := "cluster " + arg + " uses emptydir storage and can not be upgraded"
-			log.Debug(msg)
-			response.Results = append(response.Results, msg)
-			break
-		}
-
 		// Create an instance of our CRD
 		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, request)
 		if err == nil {
@@ -219,14 +211,14 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		Name:            name,
 		ResourceType:    "cluster",
 		UpgradeType:     request.UpgradeType,
-		CCPImageTag:     viper.GetString("Cluster.CCPImageTag"),
+		CCPImageTag:     apiserver.Pgo.Cluster.CCPImageTag,
 		StorageSpec:     crv1.PgStorageSpec{},
 		OldDatabaseName: "??",
 		NewDatabaseName: "??",
 		OldVersion:      "??",
 		NewVersion:      "??",
-		OldPVCName:      viper.GetString("PrimaryStorage.Name"),
-		NewPVCName:      viper.GetString("PrimaryStorage.Name"),
+		OldPVCName:      "",
+		NewPVCName:      "",
 	}
 
 	_, strRep, err = parseMajorVersion(currentImageTag)
@@ -237,8 +229,9 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 	}
 	spec.OldVersion = strRep
 
-	spec.StorageSpec.AccessMode = viper.GetString("PrimaryStorage.AccessMode")
-	spec.StorageSpec.Size = viper.GetString("PrimaryStorage.Size")
+	storage, _ := apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
+	spec.StorageSpec.AccessMode = storage.AccessMode
+	spec.StorageSpec.Size = storage.Size
 
 	if request.CCPImageTag != "" {
 		log.Debug("using CCPImageTag from command line " + request.CCPImageTag)
@@ -282,13 +275,13 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		if err != nil {
 			log.Error(err)
 		}
-	} else if viper.GetString("Cluster.CCPImageTag") == existingImage {
+	} else if apiserver.Pgo.Cluster.CCPImageTag == existingImage {
 		log.Error("Cluster.CCPImageTag is the same as the cluster")
 		log.Error("can't upgrade to the same image version")
 
 		return nil, errors.New("invalid image tag")
 	} else {
-		requestedMajorVersion, strRep, err = parseMajorVersion(viper.GetString("Cluster.CCPImageTag"))
+		requestedMajorVersion, strRep, err = parseMajorVersion(apiserver.Pgo.Cluster.CCPImageTag)
 		if err != nil {
 			log.Error(err)
 		}
@@ -326,9 +319,6 @@ func parseMajorVersion(st string) (float64, string, error) {
 	var err error
 	var strRep string
 	parts := strings.Split(st, separator)
-	//OS = parts[0]
-	//PGVERSION = parts[1]
-	//CVERSION = parts[2]
 	//PG10 makes this a bit harder given its versioning scheme
 	// is different than PG9  e.g. 10.0 is sort of like 9.6.0
 

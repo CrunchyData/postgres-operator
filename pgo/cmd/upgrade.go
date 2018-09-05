@@ -17,16 +17,14 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -38,17 +36,18 @@ var UpgradeType string
 
 var upgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "perform an upgrade",
-	Long: `UPGRADE performs an upgrade, for example:
-				                pgo upgrade mycluster`,
+	Short: "Perform an upgrade",
+	Long: `UPGRADE performs an upgrade on a PostgreSQL cluster. For example:
+
+  pgo upgrade mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("upgrade called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to upgrade or a selector value.`)
+			fmt.Println(`Error: You must specify the cluster to upgrade or a selector value.`)
 		} else {
 			err := validateCreateUpdate(args)
 			if err != nil {
-				log.Error(err.Error())
+				fmt.Println("Error: ", err.Error())
 			} else {
 				createUpgrade(args)
 			}
@@ -59,8 +58,10 @@ var upgradeCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(upgradeCmd)
-	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type to perform either minor or major, default is minor ")
-	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCP_IMAGE_TAG to use for the upgrade target")
+
+	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type. Accepted values are either 'minor' or 'major'.")
+	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+
 }
 
 func showUpgrade(args []string) {
@@ -68,39 +69,20 @@ func showUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v
-		log.Debug("showUpgrade called...[" + url + "]")
+		response, err := api.ShowUpgrade(httpclient, v, &SessionCredentials)
 
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			log.Fatal("Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowUpgradeResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			log.Error(err)
-			log.Println(err)
-			return
+		if response.Status.Code != msgs.Ok {
+			fmt.Println("Error: " + response.Status.Msg)
+			os.Exit(2)
 		}
 
 		if len(response.UpgradeList.Items) == 0 {
-			fmt.Println("no upgrades found")
+			fmt.Println("no upgrades found.")
 			return
 		}
 
@@ -138,47 +120,23 @@ func deleteUpgrade(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/upgrades/" + v
-		log.Debug("deleteUpgrade called...[" + url + "]")
+		response, err := api.DeleteUpgrade(httpclient, v, &SessionCredentials)
 
-		action := "DELETE"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
-			return
-		}
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			log.Fatal("Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.DeleteUpgradeResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			log.Error(err)
-			log.Println(err)
-			return
-		}
-
-		if len(response.Results) == 0 {
-			fmt.Println("no upgrades found")
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
+			if len(response.Results) == 0 {
+				fmt.Println("no upgrades found.")
+				return
+			}
 			for k := range response.Results {
 				fmt.Println("deleted upgrade " + response.Results[k])
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -199,7 +157,7 @@ func validateCreateUpdate(args []string) error {
 	}
 	if UpgradeType == MajorUpgrade || UpgradeType == MinorUpgrade {
 	} else {
-		return errors.New("upgrade-type requires either a value of major or minor, if not specified, minor is the default value")
+		return errors.New("The --upgrade-type flag requires either a value of major or minor. If not specified, minor is the default value.")
 	}
 	return err
 }
@@ -208,7 +166,7 @@ func createUpgrade(args []string) {
 	log.Debugf("createUpgrade called %v\n", args)
 
 	if len(args) == 0 && Selector == "" {
-		log.Error("cluster names or a selector flag is required")
+		fmt.Println("Error: Cluster name(s) or a selector flag is required.")
 		os.Exit(2)
 	}
 
@@ -217,37 +175,13 @@ func createUpgrade(args []string) {
 	request.Selector = Selector
 	request.CCPImageTag = CCPImageTag
 	request.UpgradeType = UpgradeType
+	request.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
 
-	url := APIServerURL + "/upgrades"
-	log.Debug("createUpgrade called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateUpgradeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -255,7 +189,7 @@ func createUpgrade(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

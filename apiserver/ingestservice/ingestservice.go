@@ -51,30 +51,64 @@ func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 	ingestName := vars["name"]
 
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	switch r.Method {
-	case "GET":
-		log.Debug("ingestservice.ShowIngestHandler GET called")
+	log.Debug("ingestservice.ShowIngestHandler GET called")
 
-		err := apiserver.Authn(apiserver.SHOW_INGEST_PERM, w, r)
-		if err != nil {
-			return
-		}
-
-		resp := ShowIngest(ingestName)
-		json.NewEncoder(w).Encode(resp)
-	case "DELETE":
-		log.Debug("ingestservice.ShowIngestHandler DELETE called")
-
-		err := apiserver.Authn(apiserver.DELETE_INGEST_PERM, w, r)
-		if err != nil {
-			return
-		}
-
-		resp := DeleteIngest(ingestName)
-		json.NewEncoder(w).Encode(resp)
+	err := apiserver.Authn(apiserver.SHOW_INGEST_PERM, w, r)
+	if err != nil {
+		return
 	}
+
+	var resp msgs.ShowIngestResponse
+
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ShowIngestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+		resp = ShowIngest(ingestName)
+	}
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+func DeleteIngestHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("ingestservice.DeleteIngestHandler %v\n", vars)
+
+	ingestName := vars["name"]
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	log.Debug("ingestservice.DeleteIngestHandler called")
+
+	err := apiserver.Authn(apiserver.DELETE_INGEST_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	var resp msgs.DeleteIngestResponse
+
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.DeleteIngestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+
+	} else {
+
+		resp = DeleteIngest(ingestName)
+	}
+	json.NewEncoder(w).Encode(resp)
 
 }

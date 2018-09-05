@@ -58,7 +58,12 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
-	resp = CreateCluster(&request)
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+	} else {
+		resp = CreateCluster(&request)
+	}
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -80,6 +85,54 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
+	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	log.Debug("clusterservice.ShowClusterHandler GET called")
+
+	var resp msgs.ShowClusterResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ShowClusterResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]msgs.ShowClusterDetail, 0)
+	} else {
+		resp = ShowCluster(clustername, selector)
+	}
+	json.NewEncoder(w).Encode(resp)
+
+}
+
+// DeleteClusterHandler ...
+// pgo delete mycluster
+// parameters showsecrets
+// parameters selector
+// parameters postgresversion
+// returns a ShowClusterResponse
+func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	log.Debugf("clusterservice.DeleteClusterHandler %v\n", vars)
+
+	clustername := vars["name"]
+
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	deleteData := false
 	deleteDataStr := r.URL.Query().Get("delete-data")
@@ -94,7 +147,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
-	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
+	err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -103,16 +156,17 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	switch r.Method {
-	case "GET":
-		log.Debug("clusterservice.ShowClusterHandler GET called")
-		resp := ShowCluster(clustername, selector)
-		json.NewEncoder(w).Encode(resp)
-	case "DELETE":
-		log.Debug("clusterservice.DeleteClusterHandler DELETE called")
-		resp := DeleteCluster(clustername, selector, deleteData, deleteBackups)
-		json.NewEncoder(w).Encode(resp)
+	log.Debug("clusterservice.DeleteClusterHandler called")
+
+	var resp msgs.DeleteClusterResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp := msgs.DeleteClusterResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]string, 0)
+	} else {
+		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups)
 	}
+	json.NewEncoder(w).Encode(resp)
 
 }
 
@@ -127,6 +181,10 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
 
 	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -137,7 +195,13 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := TestCluster(clustername, selector)
+	var resp msgs.ClusterTestResponse
+	if clientVersion != msgs.PGO_VERSION {
+		resp = msgs.ClusterTestResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	} else {
+		resp = TestCluster(clustername, selector)
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }

@@ -1,0 +1,156 @@
+---
+title: "Deployment"
+date: 2018-04-26T15:26:40-07:00
+draft: false
+weight: 50
+---
+
+:toc:
+Latest Release: 3.2.0 {docdate}
+
+This document details verifying the installation of the PostgreSQL Operator
+is successful, in addition to detailing some different storage configurations
+that can be made.
+
+== Verify Operator Status
+
+To verify that the operator is deployed and running, run the following:
+....
+kubectl get pod --selector=name=postgres-operator
+....
+
+You should see output similar to this:
+....
+NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-56598999cd-tbg4w   2/2       Running   0          1m
+....
+
+There are 2 containers in the operator pod, both should be *ready* as above.
+
+When you first run the operator, it will create the required
+CustomResourceDefinitions. You can view these as follows -
+....
+kubectl get crd
+....
+
+The operator creates the following Custom Resource Definitions over time as the
+associated commands are triggered.
+....
+kubectl get crd
+NAME                             AGE
+pgbackups.cr.client-go.k8s.io    2d
+pgclusters.cr.client-go.k8s.io   2d
+pgingests.cr.client-go.k8s.io    2d
+pgpolicies.cr.client-go.k8s.io   2d
+pgreplicas.cr.client-go.k8s.io   2d
+pgtasks.cr.client-go.k8s.io      2d
+pgupgrades.cr.client-go.k8s.io   2d
+....
+
+At this point, the server side of the operator is deployed and ready.
+
+== Configure *pgo* Client
+
+The pgo command line client requires TLS for securing the connection to the operator's REST API.  This configuration is performed as follows -
+....
+export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+....
+
+The pgo client uses Basic Authentication to authenticate to the operator REST API. For authentication, add the following `.pgouser` file to your $HOME -
+....
+echo "username:password" > $HOME/.pgouser
+....
+
+Roles are defined in a file called *pgorole*. This file defines each role and the
+permissions for that role. By default, two roles are defined as samples -
+....
+pgoadmin
+pgoreader
+....
+
+This file, moved to your $HOME folder, is optional. These default settings can be adjusted to meet local 
+security requirements.
+
+The format of this file is as follows -
+....
+rolename: permissionA, permissionB
+....
+
+These are defined in the following file -
+....
+$COROOT/conf/apiserver/pgorole
+....
+
+The complete set of permissions is documented in the link:/installation/configuration/[Configuration] document.
+
+The *pgo* client needs the URL to connect to the operator.
+
+Depending on your Kubernetes environment this can be done the following ways.
+
+{{%expand "Running Kubernetes Locally" %}}
+
+=== Running Kubernetes Locally
+
+If your local host is not set up to resolve Kubernetes Service DNS names, you can specify the operator IP address as follows -
+....
+kubectl get service postgres-operator
+NAME                TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+postgres-operator   NodePort   10.109.184.8   <none>        8443:30894/TCP   5m
+
+export CO_APISERVER_URL=https://10.109.184.8:8443
+pgo version
+....
+
+Alternatively, an alias was set up in the .bashrc file earlier on, as follows:
+....
+alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
+....
+
+This alias (`setip`) will set the `CO_APISERVER_URL` IP address for you.
+
+{{% /expand%}}
+
+{{%expand "Running Kubernetes Remotely" %}}
+
+==== Running Kubernetes Remotely
+
+Set up a port-forward tunnel from your host to the Kube remote host, specifying the operator pod -
+....
+kubectl get pod --selector=name=postgres-operator
+NAME                                 READY     STATUS    RESTARTS   AGE
+postgres-operator-56598999cd-tbg4w   2/2       Running   0          8m
+
+kubectl port-forward postgres-operator-56598999cd-tbg4w 8443:8443
+....
+
+In another terminal -
+....
+export CO_APISERVER_URL=https://127.0.0.1:8443
+pgo version
+....
+
+{{% /expand%}}
+
+== Verify pgo Client
+
+At this point you should be able to connect to the operator as follows -
+....
+pgo version
+pgo client version 3.2
+apiserver version 3.2
+....
+
+Operator commands are documented on the link:/getting-started/[Getting Started] page.
+
+== Next Steps
+
+There are many ways to configure the operator further. Some sample configurations are
+documented on the link:/installation/configuration/[Configuration] page.
+
+You may also want to find out more information on how the operator is designed to work and
+deploy. This information can be found in the link:/how-it-works/[How It Works] page.
+
+Information can be found on the full scope of commands on the
+link:/getting-started/[Getting Started] page.

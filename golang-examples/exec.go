@@ -4,20 +4,17 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"io"
-	//"io/ioutil"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
 	"net/http"
 	"net/url"
-	//"k8s.io/client-go/pkg/api/errors"
 
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/runtime/serializer"
-
-	"k8s.io/client-go/pkg/api/unversioned"
-	//"k8s.io/client-go/pkg/api/v1"
+	"github.com/gorilla/websocket"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -103,26 +100,25 @@ func getCommandString(cmd string) string {
 }
 
 func configureClient(config *rest.Config) {
-	groupversion := unversioned.GroupVersion{
+	groupversion := schema.GroupVersion{
 		Group:   "k8s.io",
 		Version: "v1",
 	}
 
 	config.GroupVersion = &groupversion
-	//config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
 
 	schemeBuilder := runtime.NewSchemeBuilder(
 		func(scheme *runtime.Scheme) error {
 			scheme.AddKnownTypes(
 				groupversion,
-				&api.ListOptions{},
-				&api.DeleteOptions{},
+				&v1.ListOptions{},
+				&v1.DeleteOptions{},
 			)
 			return nil
 		})
-	schemeBuilder.AddToScheme(api.Scheme)
+	schemeBuilder.AddToScheme(scheme.Scheme)
 }
 
 type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error

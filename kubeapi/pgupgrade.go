@@ -16,10 +16,12 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
@@ -121,6 +123,37 @@ func Deletepgupgrade(client *rest.RESTClient, name, namespace string) error {
 	}
 
 	log.Debug("deleted pgupgrade " + name)
+	return err
+}
+
+// Patchpgupgrade patches pgupgrade by name
+func Patchpgupgrade(client *rest.RESTClient, name, path, value, namespace string) error {
+
+	things := make([]ThingSpec, 1)
+	things[0].Op = "replace"
+	things[0].Path = path
+	things[0].Value = value
+
+	patchBytes, err4 := json.Marshal(things)
+	if err4 != nil {
+		log.Error("error in converting patch " + err4.Error())
+	}
+
+	log.Debug(string(patchBytes))
+
+	err := client.Patch(types.JSONPatchType).
+		Resource(crv1.PgupgradeResourcePlural).
+		Namespace(namespace).
+		Name(name).
+		Body(patchBytes).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error patching pgupgrade " + err.Error())
+		return err
+	}
+
+	log.Debug("patched pgupgrade " + name)
 	return err
 }
 

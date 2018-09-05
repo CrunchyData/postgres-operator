@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -52,7 +53,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	labelsMap, err = validateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "lables not formatted correctly"
+		resp.Status.Msg = "labels not formatted correctly"
 		return resp
 	}
 
@@ -86,7 +87,6 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 				return resp
 			}
 
-			//fmt.Println(result.Spec.Name)
 			items = append(items, result)
 		}
 		clusterList.Items = items
@@ -117,7 +117,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
-		selector := "pg-cluster=" + items[i].Spec.Name
+		selector := util.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			return
@@ -125,7 +125,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 
 		for _, d := range deployments.Items {
 			//update Deployment with the label
-			//fmt.Println(TreeBranch + "deployment : " + d.ObjectMeta.Name)
 			if !DryRun {
 				err := updateLabels(&d, items[i].Spec.Name, newLabels)
 				if err != nil {
@@ -141,7 +140,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 
 	var err error
 
-	log.Debugf("%v is the labels to apply\n", newLabels)
+	log.Debugf("%v are the labels to apply\n", newLabels)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)

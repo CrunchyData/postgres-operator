@@ -23,9 +23,15 @@ import (
 	"strings"
 )
 
+const RESTORE_PERM = "Restore"
+const SHOW_SECRETS_PERM = "ShowSecrets"
+const RELOAD_PERM = "Reload"
+const SHOW_CONFIG_PERM = "ShowConfig"
+const DF_CLUSTER_PERM = "DfCluster"
 const SHOW_CLUSTER_PERM = "ShowCluster"
 const CREATE_CLUSTER_PERM = "CreateCluster"
 const TEST_CLUSTER_PERM = "TestCluster"
+const DELETE_CLUSTER_PERM = "DeleteCluster"
 const SHOW_BACKUP_PERM = "ShowBackup"
 const CREATE_BACKUP_PERM = "CreateBackup"
 const DELETE_BACKUP_PERM = "DeleteBackup"
@@ -47,6 +53,7 @@ const CREATE_INGEST_PERM = "CreateIngest"
 const SHOW_INGEST_PERM = "ShowIngest"
 const DELETE_INGEST_PERM = "DeleteIngest"
 const CREATE_FAILOVER_PERM = "CreateFailover"
+const STATUS_PERM = "Status"
 
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
@@ -57,8 +64,14 @@ func InitializePerms() {
 	PermMap = make(map[string]string)
 	RoleMap = make(map[string]map[string]string)
 
+	PermMap[SHOW_SECRETS_PERM] = "yes"
+	PermMap[RELOAD_PERM] = "yes"
+	PermMap[SHOW_CONFIG_PERM] = "yes"
+	PermMap[STATUS_PERM] = "yes"
+	PermMap[DF_CLUSTER_PERM] = "yes"
 	PermMap[SHOW_CLUSTER_PERM] = "yes"
 	PermMap[CREATE_CLUSTER_PERM] = "yes"
+	PermMap[DELETE_CLUSTER_PERM] = "yes"
 	PermMap[TEST_CLUSTER_PERM] = "yes"
 	PermMap[SHOW_BACKUP_PERM] = "yes"
 	PermMap[CREATE_BACKUP_PERM] = "yes"
@@ -81,6 +94,7 @@ func InitializePerms() {
 	PermMap[SHOW_INGEST_PERM] = "yes"
 	PermMap[DELETE_INGEST_PERM] = "yes"
 	PermMap[CREATE_FAILOVER_PERM] = "yes"
+	PermMap[RESTORE_PERM] = "yes"
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
 	readRoles()
@@ -114,7 +128,7 @@ func readRoles() {
 
 	for _, line := range lines {
 		if len(line) == 0 {
-			//log.Infoln("blank line found")
+
 		} else {
 			fields := strings.Split(strings.TrimSpace(line), ":")
 			if len(fields) != 2 {

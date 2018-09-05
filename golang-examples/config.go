@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"os"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type ContainerResource struct {
@@ -77,13 +78,7 @@ func main() {
 	thisconfig.PgoDef.LSPVCTemplate = "this lspvc template"
 	thisconfig.PgoDef.LoadTemplate = "loadtempaltepath"
 	thisconfig.PgoDef.COImagePrefix = "crunchydata"
-	thisconfig.PgoDef.COImageTag = "centos7-2.6"
-
-	//json.Unmarshal(buf, &c)
-
-	//log.Info("Pgo.LSPVCTemplate is [" + c.PgoDef.LSPVCTemplate + "]")
-
-	//log.Infof("%v\n", c.ContainerResources)
+	thisconfig.PgoDef.COImageTag = "centos7-3.0"
 
 	b, err := json.MarshalIndent(thisconfig, "", " ")
 	if err != nil {

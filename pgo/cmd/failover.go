@@ -17,32 +17,31 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
 var failoverCmd = &cobra.Command{
 	Use:   "failover",
-	Short: "perform a failover",
-	Long: `performs a failover, for example:
-		pgo failover mycluster`,
+	Short: "Performs a manual failover",
+	Long: `Performs a manual failover. For example:
+
+	pgo failover mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("failover called")
 		if len(args) == 0 {
-			fmt.Println(`You must specify the cluster to failover.`)
+			fmt.Println(`Error: You must specify the cluster to failover.`)
 		} else {
 			if Query {
-				createFailover(args)
+				queryFailover(args)
 			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
-					fmt.Println(`--target is required for failover.`)
+					fmt.Println(`Error: The --target flag is required for failover.`)
 					return
 				}
 				createFailover(args)
@@ -54,15 +53,12 @@ var failoverCmd = &cobra.Command{
 	},
 }
 
-var Query bool
-var Target string
-
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "--query prints the list of failover candidates")
-	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a failover command")
-	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "--target is the replica target which the failover will occur on.")
+	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
+	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
 
 }
 
@@ -72,60 +68,55 @@ func createFailover(args []string) {
 
 	request := new(msgs.CreateFailoverRequest)
 	request.ClusterName = args[0]
-	request.Query = Query
 	request.Target = Target
+	request.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.CreateFailover(httpclient, &SessionCredentials, request)
 
-	url := APIServerURL + "/failover"
-
-	log.Debug("create failover called [" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		//log.Info("here after new req")
-		log.Fatal("NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateFailoverResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
-		if request.Query {
-			fmt.Println(response.Status.Msg)
-			if len(response.Targets) > 0 {
-				fmt.Println("Failover targets include:")
-				for i := 0; i < len(response.Targets); i++ {
-					fmt.Println("\t" + response.Targets[i])
-				}
+		for k := range response.Results {
+			fmt.Println(response.Results[k])
+		}
+	} else {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(2)
+	}
+
+}
+
+// queryFailover ....
+func queryFailover(args []string) {
+	log.Debugf("queryFailover called %v\n", args)
+
+	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
+	}
+
+	if response.Status.Code == msgs.Ok {
+		fmt.Println(response.Status.Msg)
+		if len(response.Targets) > 0 {
+			fmt.Println("Failover targets include:")
+			for i := 0; i < len(response.Targets); i++ {
+				printTarget(response.Targets[i])
 			}
 		}
 		for k := range response.Results {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
+}
+
+func printTarget(target msgs.FailoverTargetSpec) {
+	fmt.Printf("\t%s (%s) (%s) ReceiveLoc (%d) ReplayLoc (%d)\n", target.Name, target.ReadyStatus, target.Node, target.ReceiveLocation, target.ReplayLocation)
 }

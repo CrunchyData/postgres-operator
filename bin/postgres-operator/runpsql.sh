@@ -21,7 +21,7 @@ FAILURES=0
 MAX_FAILURES=7
 while true; do
         sleep $SLEEP_TIME
-        /usr/pgsql-9.6/bin/pg_isready  --dbname=postgres --host=$2 --port=5432  --username=postgres
+        /usr/pgsql-10/bin/pg_isready  --dbname=postgres --host=$2 --port=5432  --username=postgres
         if [ $? -eq 0 ]
         then
                 echo "Successfully reached master @ " `date`

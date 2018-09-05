@@ -28,6 +28,7 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 type PgpoolPasswdFields struct {
@@ -72,7 +73,7 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 	fields := PgpoolTemplateFields{
 		Name:           pgpoolName,
 		ClusterName:    clusterName,
-		CCPImagePrefix: operator.CCPImagePrefix,
+		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:    cl.Spec.CCPImageTag,
 		Port:           "5432",
 		SecretsName:    secretName,
@@ -83,7 +84,10 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 		log.Error(err)
 		return
 	}
-	log.Debug(doc.String())
+
+	if operator.CRUNCHY_DEBUG {
+		operator.PgpoolTemplate.Execute(os.Stdout, fields)
+	}
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(doc.Bytes(), &deployment)

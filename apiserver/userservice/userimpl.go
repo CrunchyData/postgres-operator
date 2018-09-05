@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
+	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"time"
 )
@@ -69,7 +69,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		sel = request.Selector + ",pg-cluster,!replica"
+		sel = request.Selector + "," + util.LABEL_PG_CLUSTER + "," + util.LABEL_PRIMARY + "=true"
 	} else {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector is required"
@@ -96,7 +96,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		selector := "pg-cluster=" + cluster.Spec.Name + ",!replica"
+		selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -268,13 +268,13 @@ func GeneratePasswordExpireDate(daysFromNow int) string {
 
 // getDefaults ....
 func getDefaults() {
-	str := viper.GetString("Cluster.PasswordAgeDays")
+	str := apiserver.Pgo.Cluster.PasswordAgeDays
 	if str != "" {
 		defaultPasswordAgeDays, _ = strconv.Atoi(str)
 		log.Debugf("PasswordAgeDays set to %d\n", defaultPasswordAgeDays)
 
 	}
-	str = viper.GetString("Cluster.PasswordLength")
+	str = apiserver.Pgo.Cluster.PasswordLength
 	if str != "" {
 		defaultPasswordLength, _ = strconv.Atoi(str)
 		log.Debugf("PasswordLength set to %d\n", defaultPasswordLength)
@@ -293,7 +293,7 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 	}
 
 	//get the secrets for this cluster
-	selector := "pg-database=" + clusterName
+	selector := util.LABEL_PG_DATABASE + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
 		return info
@@ -415,7 +415,9 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 	}()
 
 	if managed {
-		err = util.DeleteUserSecret(apiserver.Clientset, clusterName, user, namespace)
+		//delete current secret
+		secretName := clusterName + "-" + user + "-secret"
+		err := kubeapi.DeleteSecret(apiserver.Clientset, secretName, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -553,4 +555,56 @@ func isManaged(secretName string) (bool, error) {
 
 	return true, err
 
+}
+
+// ShowUser ...
+func ShowUser(name, selector string) msgs.ShowUserResponse {
+	var err error
+
+	response := msgs.ShowUserResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]msgs.ShowUserDetail, 0)
+
+	if selector == "" && name == "all" {
+	} else {
+		if selector == "" {
+			selector = "name=" + name
+		}
+	}
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, selector, apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+
+	for _, c := range clusterList.Items {
+		detail := msgs.ShowUserDetail{}
+		detail.Cluster = c
+		detail.Secrets, err = apiserver.GetSecrets(&c)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		response.Results = append(response.Results, detail)
+	}
+
+	return response
+
+}
+
+func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, namespace string) error {
+	//delete current secret
+	secretName := clustername + "-" + username + "-secret"
+
+	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
+	return err
 }

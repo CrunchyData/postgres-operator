@@ -7,6 +7,8 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1
@@ -20,4 +22,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.6
+  COImageTag:  centos7-3.2.0

@@ -16,13 +16,11 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -32,23 +30,21 @@ var DeleteLabel bool
 
 var labelCmd = &cobra.Command{
 	Use:   "label",
-	Short: "label a set of clusters",
-	Long: `LABEL allows you to add or remove a label on a set of clusters
-For example:
+	Short: "Label a set of clusters",
+	Long: `LABEL allows you to add or remove a label on a set of clusters. For example:
 
-pgo label mycluster yourcluster --label=environment=prod 
-pgo label mycluster yourcluster --label=environment=prod  --delete-label
-pgo label --label=environment=prod --selector=name=mycluster
-pgo label --label=environment=prod --selector=status=final --dry-run
-.`,
+	pgo label mycluster yourcluster --label=environment=prod
+	pgo label mycluster yourcluster --label=environment=prod  --delete-label
+	pgo label --label=environment=prod --selector=name=mycluster
+	pgo label --label=environment=prod --selector=status=final --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("label called")
 		if len(args) == 0 && Selector == "" {
-			log.Error("selector or list of clusters is required to label a policy")
+			fmt.Println("Error: A selector or list of clusters is required to label a policy.")
 			return
 		}
 		if LabelCmdLabel == "" {
-			log.Error(`You must specify the label to apply.`)
+			fmt.Println("Error: You must specify the label to apply.")
 		} else {
 			labelClusters(args)
 		}
@@ -58,10 +54,10 @@ pgo label --label=environment=prod --selector=status=final --dry-run
 func init() {
 	RootCmd.AddCommand(labelCmd)
 
-	labelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "l", "", "The new label to apply for any selected or specified clusters")
-	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "--dry-run shows clusters that label would be applied to but does not actually label them")
-	labelCmd.Flags().BoolVarP(&DeleteLabel, "delete-label", "x", false, "--delete-label deletes a label from matching clusters")
+	labelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "l", "", "The new label to apply for any selected or specified clusters.")
+	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "Shows the clusters that the label would be applied to, without labelling them.")
+	labelCmd.Flags().BoolVarP(&DeleteLabel, "delete-label", "x", false, "Deletes a label from specified clusters.")
 
 }
 
@@ -69,7 +65,7 @@ func labelClusters(clusters []string) {
 	var err error
 
 	if len(clusters) == 0 && Selector == "" {
-		fmt.Println("no clusters specified")
+		fmt.Println("No clusters specified.")
 		return
 	}
 
@@ -79,43 +75,16 @@ func labelClusters(clusters []string) {
 	r.DryRun = DryRun
 	r.LabelCmdLabel = LabelCmdLabel
 	r.DeleteLabel = DeleteLabel
+	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
-
-	url := APIServerURL + "/label"
-	log.Debug("label called...[" + url + "]")
-
-	action := "POST"
-
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.LabelClusters(httpclient, &SessionCredentials, r)
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	log.Debugf("response is %v\n", resp)
 
 	if DryRun {
-		fmt.Println("DRY RUN....would have applied label on ...")
-	}
-	var response msgs.LabelResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
-		return
+		fmt.Println("The label would have been applied on the following:")
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -123,7 +92,7 @@ func labelClusters(clusters []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 

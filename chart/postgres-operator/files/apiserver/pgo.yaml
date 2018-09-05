@@ -1,6 +1,6 @@
 Cluster:
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.3-1.8.2
+  CCPImageTag:  centos7-10.5-2.1.0
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -8,6 +8,8 @@ Cluster:
   PasswordLength:  8
   Strategy:  1
   Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1
@@ -16,7 +18,6 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  200M
     StorageType:  create
-    SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteMany
     Size:  333M
@@ -25,7 +26,7 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  440M
     StorageType:  create
-DefaultContainerResource: small
+DefaultContainerResource: 
 ContainerResources:
   small:
     RequestsMemory:  512Mi
@@ -43,4 +44,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.6
+  COImageTag:  centos7-3.2.0

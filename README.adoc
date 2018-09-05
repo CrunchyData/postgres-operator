@@ -1,0 +1,34 @@
+++++
+<h1 align="center">Crunchy Data PostgreSQL Operator</h1>
+<p align="center">
+  <img width="150" src="crunchy_logo.png?raw=true"/>
+</p>
+++++
+
+Latest Release: 3.2.0 {docdate}
+
+== General
+
+The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
+
+Please view the official Crunchy Data PostgreSQL Operator documentation link:https://crunchydata.github.io/postgres-operator/[here]. If you are
+interested in contributing or making an update to the documentation, please view the link:https://crunchydata.github.io/postgres-operator/contributing/[Contributing Guidelines].
+
+[link=https://crunchydata.github.io/postgres-operator/]
+image::btn.png[Official Documentation]
+
+== Installation
+
+To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:https://crunchydata.github.io/postgres-operator/installation/[Installation] page.
+
+If you're seeking to upgrade your existing Operator installation, please visit the link:https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/[Upgrading the Operator] page.  Also read the Release Notes as to details on recent changes to the Operator.
+
+More design information is found on the link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works] page.
+
+== Configuration
+
+The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:https://crunchydata.github.io/postgres-operator/installation/configuration/[Configuration] page.
+
+== Getting Started
+
+*postgres-operator* commands are documented on the link:https://crunchydata.github.io/postgres-operator/getting-started/[Getting Started] page.

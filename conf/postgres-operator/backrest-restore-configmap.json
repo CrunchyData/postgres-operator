@@ -1,0 +1,10 @@
+{
+    "apiVersion": "v1",
+    "data": {
+        "pgbackrest.conf": "[db]\ndb-path=/pgdata/{{.ToClusterName}}\n\n[global]\nrepo-path=/backrestrepo/{{.FromClusterName}}-backups\nlog-path=/tmp\n"
+    },
+    "kind": "ConfigMap",
+    "metadata": {
+        "name": "{{.RestoreConfigMapName}}"
+    }
+}

@@ -43,8 +43,17 @@ gendeps:
 	github.com/crunchydata/postgres-operator/apiserver/userservice \
 	github.com/crunchydata/postgres-operator/apiserver/util \
 	github.com/crunchydata/postgres-operator/apiserver/versionservice 
+installrbac:
+	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
+	cd examples/backrest-config && ./create.sh
+setupnamespace:
+	kubectl create -f ./examples/demo-namespace.json
+	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
+	kubectl config use-context demo
+bounce:
+	kubectl get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs kubectl delete pod
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars
@@ -55,6 +64,12 @@ runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
 apiserver:	check-go-vars
 	go install apiserver.go
+pgo-backrest:	check-go-vars
+	go install pgo-backrest/pgo-backrest.go
+	mv $(GOBIN)/pgo-backrest ./bin/pgo-backrest/
+pgo-backrest-image:	check-go-vars pgo-backrest
+	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
+	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars
@@ -63,7 +78,7 @@ apiserverimage:	check-go-vars
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
-	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 #	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 operator:	check-go-vars
 	go install postgres-operator.go
@@ -71,20 +86,20 @@ operatorimage:	check-go-vars
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
 	docker build -t postgres-operator -f $(CO_BASEOS)/Dockerfile.postgres-operator.$(CO_BASEOS) .
-	docker tag postgres-operator $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag postgres-operator $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 #	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 deepsix:
 	cd $(COROOT)/apis/cr/v1
 	deepcopy-gen --go-header-file=$(COROOT)/apis/cr/v1/header.go.txt --input-dirs=.
 lsimage:
 	docker build -t pgo-lspvc -f $(CO_BASEOS)/Dockerfile.pgo-lspvc.$(CO_BASEOS) .
-	docker tag pgo-lspvc $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-lspvc $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 loadimage:
 	docker build -t pgo-load -f $(CO_BASEOS)/Dockerfile.pgo-load.$(CO_BASEOS) .
-	docker tag pgo-load $(CO_IMAGE_PREFIX)/pgo-load:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-load $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
 rmdataimage:
 	docker build -t pgo-rmdata -f $(CO_BASEOS)/Dockerfile.pgo-rmdata.$(CO_BASEOS) .
-	docker tag pgo-rmdata $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_BASEOS)-$(CO_VERSION)
+	docker tag pgo-rmdata $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
 all:
 	make operatorimage
 	make apiserverimage
@@ -92,12 +107,14 @@ all:
 	make loadimage
 	make pgo
 	make rmdataimage
+	make pgo-backrest-image
 push:
 	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
 pull:
 	docker pull $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker pull $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)

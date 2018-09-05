@@ -19,6 +19,7 @@ import (
 	"context"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/batch/v1"
@@ -37,7 +38,6 @@ type JobController struct {
 
 // Run starts an pod resource controller
 func (c *JobController) Run(ctx context.Context) error {
-	log.Info("Watch job objects")
 
 	_, err := c.watchJobs(ctx)
 	if err != nil {
@@ -54,7 +54,6 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 	source := cache.NewListWatchFromClient(
 		c.JobClientset.BatchV1().RESTClient(),
 		"jobs",
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -87,27 +86,41 @@ func (c *JobController) onAdd(obj interface{}) {
 // onUpdate is called when a pgcluster is updated
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
-	log.Infof("[JobCONTROLLER] OnUpdate %s succeeded=%d\n", job.ObjectMeta.SelfLink, job.Status.Succeeded)
+	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
 	//label is "pgrmdata" and Status of Succeeded
 	labels := job.GetObjectMeta().GetLabels()
-	if job.Status.Succeeded > 0 && labels["pgrmdata"] != "" {
-		log.Infof("got a pgrmdata job status=%d", job.Status.Succeeded)
+	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] != "" {
+		log.Debugf("rmdata job labels=[%v]", labels)
+		log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 		//remove the pvc referenced by that job
-		log.Infoln("deleting pvc " + labels["claimName"])
+		log.Debugf("deleting pvc " + labels["claimName"])
 		err := pvc.Delete(c.JobClientset, labels["claimName"], c.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
-	} else if job.Status.Succeeded > 0 && labels["pgbackup"] != "" {
-		log.Infof("got a pgbackup job status=%d", job.Status.Succeeded)
-		log.Infof("update the status to completed here for pgbackup %s\n ", labels["pg-database"])
-		//		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, crv1.PgbackupResourcePlural, labels["pg-database"], c.Namespace)
-		dbname := job.ObjectMeta.Labels["pg-database"]
+
+		//delete the pgtask to cleanup
+		log.Debugf("deleting pgtask for rmdata job name is %s\n", job.ObjectMeta.Name)
+		kubeapi.Deletepgtasks(c.JobClient, util.LABEL_RMDATA+"=true", c.Namespace)
+		kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
+
+	} else if job.Status.Succeeded > 0 && labels[util.LABEL_PGBACKUP] != "" {
+		log.Debugf("got a pgbackup job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for pgbackup %s\n ", labels[util.LABEL_PG_DATABASE])
+		dbname := job.ObjectMeta.Labels[util.LABEL_PG_DATABASE]
 
 		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, c.Namespace)
 
 		if err != nil {
 			log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
+		}
+
+	} else if job.Status.Succeeded > 0 && labels[util.LABEL_BACKREST] != "" {
+		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for backrest %s\n ", labels[util.LABEL_PG_DATABASE])
+		err := util.Patch(c.JobClient, "/spec/backreststatus", crv1.UpgradeCompletedStatus, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+		if err != nil {
+			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}
 
 	}
@@ -116,5 +129,5 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *JobController) onDelete(obj interface{}) {
 	job := obj.(*apiv1.Job)
-	log.Infof("[JobCONTROLLER] OnDelete %s\n", job.ObjectMeta.SelfLink)
+	log.Debugf("[JobCONTROLLER] OnDelete %s", job.ObjectMeta.SelfLink)
 }

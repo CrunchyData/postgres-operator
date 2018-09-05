@@ -1,0 +1,52 @@
+.TH "pgo-rmdata " "1" " Container Image Pages" "Jeff McCormick" "August 17, 2018"
+.nh
+.ad l
+
+
+.SH NAME
+.PP
+pgo-rmdata \- Removes the contents of the PostgreSQL data directory.
+
+
+.SH DESCRIPTION
+.PP
+The pgo-rmdata image works in conjunction with Crunchy Data's PostgreSQL Operator to remove the contents of the PostgreSQL data directory.
+
+.PP
+The container itself consists of:
+    \- RHEL7 base image
+    \- Command that executes the forced recursive removal of data in the PGDATA directory
+
+.PP
+Files added to the container during Docker build include: /help.1.
+
+
+.SH USAGE
+.PP
+For more information on the PostgreSQL Operator, see the official Crunchy Postgres Operator repository on GitHub.
+
+
+.SH LABELS
+.PP
+The starter container includes the following LABEL settings:
+
+.PP
+That atomic command runs the Docker command set in this label:
+
+.PP
+\fB\fCName=\fR
+
+.PP
+The registry location and name of the image. For example, Name="crunchydata/pgo-rmdata".
+
+.PP
+\fB\fCVersion=\fR
+
+.PP
+The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.5"
+
+.PP
+\fB\fCRelease=\fR
+
+.PP
+The specific release number of the container. For example, Release="3.2.0"

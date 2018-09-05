@@ -20,13 +20,11 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/api/core/v1"
 	"time"
 )
 
 // WaitUntilPod ...
-//lo := v1.ListOptions{LabelSelector: "pg-database=" + "testpod"}
 //podPhase is v1.PodRunning
 //timeout := time.Minute
 func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPhase v1.PodPhase, timeout time.Duration, namespace string) error {
@@ -48,7 +46,6 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPh
 			if gotpod2.Status.Phase == podPhase {
 				return true, nil
 			}
-			//return event.Type == watch.Modified, nil
 			return false, nil
 		},
 	}

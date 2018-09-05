@@ -2,24 +2,30 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backup-{{.Name}}"
+        "name": "backup-{{.Name}}",
+       	"labels": {
+       		"vendor": "crunchydata",
+               	"pgbackup": "true",
+                "pg-cluster": "{{.Name}}"
+	}
     },
     "spec": {
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
-                    "pgbackup": "true",
-                    "pg-database": "{{.Name}}"
+       			"vendor": "crunchydata",
+               		"pgbackup": "true",
+                    	"pg-cluster": "{{.Name}}"
                 }
             },
             "spec": {
                 "volumes": [{
-                    	"name": "pgdata",
-			{{.PvcName}}
+                    "name": "pgdata",
+                    {{.PvcName}}
                 }],
 
-		{{.SecurityContext}}
+        {{.SecurityContext}}
 
                 "containers": [{
                     "name": "backup",

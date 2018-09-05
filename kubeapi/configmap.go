@@ -23,6 +23,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// CreateConfigMap creates a ConfigMap
+func CreateConfigMap(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, namespace string) error {
+
+	result, err := clientset.CoreV1().ConfigMaps(namespace).Create(configMap)
+	if err != nil {
+		log.Error("error creating configMap " + err.Error() + " in namespace " + namespace)
+		return err
+	}
+
+	log.Debug("created ConfigMap " + result.Name)
+
+	return err
+
+}
+
 // GetConfigMap gets a ConfigMap by name
 func GetConfigMap(clientset *kubernetes.Clientset, name, namespace string) (*v1.ConfigMap, bool) {
 	cfg, err := clientset.CoreV1().ConfigMaps(namespace).Get(name, meta_v1.GetOptions{})
@@ -37,4 +52,19 @@ func GetConfigMap(clientset *kubernetes.Clientset, name, namespace string) (*v1.
 	}
 
 	return cfg, true
+}
+
+// DeleteConfigMap deletes a ConfigMap by name
+func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) error {
+
+	err := clientset.CoreV1().ConfigMaps(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	if err != nil {
+		log.Error("error deleting ConfigMap " + err.Error())
+		return err
+	}
+
+	log.Info("deleted ConfigMap " + name)
+
+	return err
+
 }

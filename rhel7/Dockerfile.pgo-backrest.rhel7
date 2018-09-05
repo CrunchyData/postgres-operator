@@ -1,0 +1,27 @@
+FROM registry.access.redhat.com/rhel7
+
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="crunchydata/pgo-backrest-" \
+    vendor="crunchydata.com" \
+	PostgresVersion="10" \
+	PostgresFullVersion="10.5" \
+	Version="7.5" \
+	Release="3.2.0" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
+    summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
+    description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
+
+ENV PGVERSION="10"
+
+COPY redhat/atomic/pgo_backrest/help.1 /help.1
+COPY redhat/atomic/pgo_backrest/help.md /help.md
+COPY redhat/licenses /licenses
+
+RUN yum -y update && yum -y clean all
+
+RUN mkdir -p /opt/cpm/bin && chown -R 26:26 /opt/cpm
+ADD bin/pgo-backrest/ /opt/cpm/bin
+
+USER 26
+CMD ["/opt/cpm/bin/pgo-backrest"]

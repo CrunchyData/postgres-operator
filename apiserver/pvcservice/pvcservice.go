@@ -37,6 +37,12 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	if pvcroot != "" {
 		log.Debug("pvcroot param was [" + pvcroot + "]")
 	}
+
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debug("version param was [" + clientVersion + "]")
+	}
+
 	switch r.Method {
 	case "GET":
 		log.Debug("pvcservice.ShowPVCHandler GET called")
@@ -53,10 +59,16 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp := msgs.ShowPVCResponse{}
-	resp.Results, err = ShowPVC(pvcname, pvcroot)
-	if err != nil {
-		resp.Status.Code = "error"
-		resp.Status.Msg = err.Error()
+
+	if clientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+	} else {
+		resp.Results, err = ShowPVC(pvcname, pvcroot)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+		}
 	}
 
 	json.NewEncoder(w).Encode(resp)

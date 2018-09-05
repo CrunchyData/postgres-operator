@@ -25,8 +25,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -41,6 +39,7 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
+var Namespace string
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
@@ -54,7 +53,7 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	Namespace := os.Getenv("NAMESPACE")
+	Namespace = os.Getenv("NAMESPACE")
 	log.Debug("setting NAMESPACE to " + Namespace)
 	if Namespace == "" {
 		log.Error("NAMESPACE env var not set")
@@ -69,71 +68,10 @@ func main() {
 		panic(err)
 	}
 
-	//TODO is this needed any longer?
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-
 	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Info("error creating Clientset")
 		panic(err.Error())
-	}
-
-	clustercrd, err := crdclient.PgclusterCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if clustercrd != nil {
-		fmt.Println(clustercrd.Name + " exists ")
-	}
-	replicacrd, err := crdclient.PgreplicaCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if replicacrd != nil {
-		fmt.Println(replicacrd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
-
-	backupcrd, err := crdclient.PgbackupCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if backupcrd != nil {
-		fmt.Println(backupcrd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
-	upgradecrd, err := crdclient.PgupgradeCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if upgradecrd != nil {
-		fmt.Println(upgradecrd.Name + " exists ")
-	}
-	//defer apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(clustercrd.Name, nil)
-	policycrd, err := crdclient.PgpolicyCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if policycrd != nil {
-		fmt.Println(policycrd.Name + " exists ")
-	}
-	taskcrd, err := crdclient.PgtaskCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if taskcrd != nil {
-		fmt.Println(taskcrd.Name + " exists ")
-	}
-
-	ingestcrd, err := crdclient.PgingestCreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
-	}
-	if ingestcrd != nil {
-		fmt.Println(ingestcrd.Name + " exists ")
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
@@ -212,8 +150,9 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	//go backup.ProcessJobs(Clientset, crdClient, Namespace)
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
+
+	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")
 

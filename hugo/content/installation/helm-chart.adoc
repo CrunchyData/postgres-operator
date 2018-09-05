@@ -1,0 +1,30 @@
+---
+title: "Helm Chart"
+date: 2018-04-26T15:24:16-07:00
+draft: false
+weight: 30
+---
+
+Latest Release: 3.2.0 {docdate}
+
+== Helm Chart
+
+First, pull prebuilt versions from Dockerhub of the *postgres-operator* containers,
+specify the image versions, and execute the following Makefile target -
+....
+export CO_IMAGE_PREFIX=crunchydata
+export CO_IMAGE_TAG=centos7-3.2.0
+make pull
+....
+
+Then, build and deploy the operator using the provided Helm chart -
+....
+cd $COROOT/chart
+helm install ./postgres-operator
+helm ls
+....
+
+== Next Steps
+
+Next, visit the link:/installation/deployment/[Deployment] page to deploy the
+Operator, verify the installation, and view various storage configurations.

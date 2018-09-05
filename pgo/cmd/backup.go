@@ -17,28 +17,41 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
+	labelutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
+var PVCName string
+
 var backupCmd = &cobra.Command{
 	Use:   "backup",
-	Short: "perform a Backup",
+	Short: "Perform a Backup",
 	Long: `BACKUP performs a Backup, for example:
-				                        pgo backup mycluster`,
+
+  pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`You must specify the cluster to backup or a selector flag.`)
+			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
-			createBackup(args)
+			if util.AskForConfirmation(NoPrompt, "") {
+				if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
+					createBackrestBackup(args)
+				} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
+					createBackup(args)
+				} else {
+					fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
+				}
+			} else {
+				fmt.Println("Aborting...")
+			}
 		}
 
 	},
@@ -47,9 +60,11 @@ var backupCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
-	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The storage config to use for the backup volume ")
-	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "--no-prompt causes there to be no command line confirmation when doing a backup command")
+	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
+	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
+	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
 
 }
 
@@ -59,40 +74,20 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v
+		response, err := api.ShowBackup(httpclient, v, &SessionCredentials)
 
-		log.Debug("show backup called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			//log.Info("here after new req")
-			log.Fatal("NewRequest: ", err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			log.Fatal("Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowBackupResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			log.Error(err)
-			log.Println(err)
-			return
+		if response.Status.Code != msgs.Ok {
+			fmt.Println("Error: " + response.Status.Msg)
+			os.Exit(2)
 		}
 
 		if len(response.BackupList.Items) == 0 {
-			fmt.Println("no backups found")
+			fmt.Println("No backups found.")
 			return
 		}
 
@@ -113,8 +108,9 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Creation:\t"+result.ObjectMeta.CreationTimestamp.String())
 	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
@@ -128,50 +124,23 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v
+		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
 
-		log.Debug("delete backup called [" + url + "]")
-
-		action := "DELETE"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			//log.Info("here after new req")
-			log.Fatal("NewRequest: ", err)
-			return
-		}
-
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			log.Fatal("Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.DeleteBackupResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			log.Error(err)
-			log.Println(err)
-			return
-		}
-
-		if len(response.Results) == 0 {
-			fmt.Println("no backups found")
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
+			if len(response.Results) == 0 {
+				fmt.Println("No backups found.")
+				return
+			}
 			for k := range response.Results {
-				fmt.Println("deleted backup " + response.Results[k])
+				fmt.Println("Deleted backup " + response.Results[k])
 			}
 		} else {
-			fmt.Println(RED(response.Status.Msg))
+			fmt.Println("Error: " + response.Status.Msg)
 			os.Exit(2)
 		}
 
@@ -186,41 +155,14 @@ func createBackup(args []string) {
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.CreateBackup(httpclient, &SessionCredentials, request)
 
-	url := APIServerURL + "/backups"
-
-	log.Debug("create backup called [" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		//log.Info("here after new req")
-		log.Fatal("NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateBackupResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -228,12 +170,12 @@ func createBackup(args []string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
 	if len(response.Results) == 0 {
-		fmt.Println("no clusters found")
+		fmt.Println("No clusters found.")
 		return
 	}
 

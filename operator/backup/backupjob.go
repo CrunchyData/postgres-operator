@@ -19,14 +19,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"os"
 
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	//v1batch "k8s.io/api/batch/v1"
-
 	"k8s.io/client-go/rest"
 )
 
@@ -58,12 +54,6 @@ func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, n
 			if gotjob.Status.Succeeded == 1 {
 				dbname := gotjob.ObjectMeta.Labels["pg-database"]
 				log.Infoln("pgbackup job " + gotjob.Name + " succeeded" + " marking " + dbname + " completed")
-				//update the backup CRD status to completed
-				//err = util.Patch(restclient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, namespace)
-				//if err != nil {
-				//	log.Error("error in backup ProcessJobs " + err.Error())
-				//}
-
 			}
 		default:
 			log.Infoln("backup job unknown watch event %v\n", event.Type)

@@ -64,8 +64,8 @@ __handle_reply()
                 local index flag
                 flag="${cur%%=*}"
                 __index_of_word "${flag}" "${flags_with_completion[@]}"
-                COMPREPLY=()
                 if [[ ${index} -ge 0 ]]; then
+                    COMPREPLY=()
                     PREFIX=""
                     cur="${cur#*=}"
                     ${flags_completion[${index}]}
@@ -201,7 +201,7 @@ __handle_command()
     fi
     c=$((c+1))
     __debug "${FUNCNAME[0]}: looking for ${next_command}"
-    declare -F "$next_command" >/dev/null && $next_command
+    declare -F $next_command >/dev/null && $next_command
 }
 
 __handle_word()
@@ -248,6 +248,31 @@ _pgo_apply()
     noun_aliases=()
 }
 
+_pgo_backrest()
+{
+    last_command="pgo_backrest"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_backup()
 {
     last_command="pgo_backup"
@@ -262,6 +287,8 @@ _pgo_backup()
     flags+=("--no-prompt")
     flags+=("-n")
     local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--pvc-name=")
+    local_nonpersistent_flags+=("--pvc-name=")
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
@@ -286,6 +313,12 @@ _pgo_create_cluster()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--archive")
+    local_nonpersistent_flags+=("--archive")
+    flags+=("--autofail")
+    local_nonpersistent_flags+=("--autofail")
+    flags+=("--backrest")
+    local_nonpersistent_flags+=("--backrest")
     flags+=("--backup-path=")
     two_word_flags+=("-x")
     local_nonpersistent_flags+=("--backup-path=")
@@ -327,6 +360,8 @@ _pgo_create_cluster()
     flags+=("--series=")
     two_word_flags+=("-e")
     local_nonpersistent_flags+=("--series=")
+    flags+=("--service-type=")
+    local_nonpersistent_flags+=("--service-type=")
     flags+=("--storage-config=")
     local_nonpersistent_flags+=("--storage-config=")
     flags+=("--apiserver-url=")
@@ -595,6 +630,28 @@ _pgo_delete()
     noun_aliases=()
 }
 
+_pgo_df()
+{
+    last_command="pgo_df"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_failover()
 {
     last_command="pgo_failover"
@@ -680,6 +737,31 @@ _pgo_load()
     noun_aliases=()
 }
 
+_pgo_reload()
+{
+    last_command="pgo_reload"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _pgo_scale()
 {
     last_command="pgo_scale"
@@ -691,15 +773,53 @@ _pgo_scale()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--ccp-image-tag=")
+    two_word_flags+=("-c")
+    local_nonpersistent_flags+=("--ccp-image-tag=")
+    flags+=("--delete-data")
+    local_nonpersistent_flags+=("--delete-data")
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
     flags+=("--node-label=")
     local_nonpersistent_flags+=("--node-label=")
+    flags+=("--query")
+    local_nonpersistent_flags+=("--query")
     flags+=("--replica-count=")
     two_word_flags+=("-r")
     local_nonpersistent_flags+=("--replica-count=")
     flags+=("--resources-config=")
     local_nonpersistent_flags+=("--resources-config=")
+    flags+=("--scale-down-target=")
+    local_nonpersistent_flags+=("--scale-down-target=")
+    flags+=("--service-type=")
+    local_nonpersistent_flags+=("--service-type=")
     flags+=("--storage-config=")
     local_nonpersistent_flags+=("--storage-config=")
+    flags+=("--target=")
+    local_nonpersistent_flags+=("--target=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_backrest()
+{
+    last_command="pgo_show_backrest"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
 
@@ -744,12 +864,28 @@ _pgo_show_cluster()
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
-    flags+=("--show-secrets")
-    flags+=("-x")
-    local_nonpersistent_flags+=("--show-secrets")
     flags+=("--version=")
     two_word_flags+=("-v")
     local_nonpersistent_flags+=("--version=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_config()
+{
+    last_command="pgo_show_config"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
     flags+=("--apiserver-url=")
     flags+=("--debug")
 
@@ -837,16 +973,10 @@ _pgo_show_upgrade()
     noun_aliases=()
 }
 
-_pgo_show()
+_pgo_show_user()
 {
-    last_command="pgo_show"
+    last_command="pgo_show_user"
     commands=()
-    commands+=("backup")
-    commands+=("cluster")
-    commands+=("ingest")
-    commands+=("policy")
-    commands+=("pvc")
-    commands+=("upgrade")
 
     flags=()
     two_word_flags=()
@@ -854,6 +984,59 @@ _pgo_show()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show()
+{
+    last_command="pgo_show"
+    commands=()
+    commands+=("backrest")
+    commands+=("backup")
+    commands+=("cluster")
+    commands+=("config")
+    commands+=("ingest")
+    commands+=("policy")
+    commands+=("pvc")
+    commands+=("upgrade")
+    commands+=("user")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_status()
+{
+    last_command="pgo_status"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--output=")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--output=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
 
@@ -929,9 +1112,6 @@ _pgo_user()
     flags+=("--db=")
     two_word_flags+=("-b")
     local_nonpersistent_flags+=("--db=")
-    flags+=("--delete-user=")
-    two_word_flags+=("-d")
-    local_nonpersistent_flags+=("--delete-user=")
     flags+=("--expired=")
     two_word_flags+=("-e")
     local_nonpersistent_flags+=("--expired=")
@@ -966,6 +1146,9 @@ _pgo_version()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--help")
+    flags+=("-h")
+    local_nonpersistent_flags+=("--help")
     flags+=("--apiserver-url=")
     flags+=("--debug")
 
@@ -979,14 +1162,18 @@ _pgo()
     last_command="pgo"
     commands=()
     commands+=("apply")
+    commands+=("backrest")
     commands+=("backup")
     commands+=("create")
     commands+=("delete")
+    commands+=("df")
     commands+=("failover")
     commands+=("label")
     commands+=("load")
+    commands+=("reload")
     commands+=("scale")
     commands+=("show")
+    commands+=("status")
     commands+=("test")
     commands+=("upgrade")
     commands+=("user")

@@ -23,6 +23,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// GetJobs gets a list of jobs using a label selector
+func GetJobs(clientset *kubernetes.Clientset, selector, namespace string) (*v1batch.JobList, error) {
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	jobs, err := clientset.Batch().Jobs(namespace).List(lo)
+	if err != nil {
+		log.Error(err)
+		log.Error("error getting Job list selector[" + selector + "]")
+	}
+	return jobs, err
+
+}
+
 // GetJob gets a Job by name
 func GetJob(clientset *kubernetes.Clientset, name, namespace string) (*v1batch.Job, bool) {
 	job, err := clientset.Batch().Jobs(namespace).Get(name, meta_v1.GetOptions{})
@@ -41,10 +54,14 @@ func GetJob(clientset *kubernetes.Clientset, name, namespace string) (*v1batch.J
 // DeleteJob deletes a job
 func DeleteJob(clientset *kubernetes.Clientset, jobName, namespace string) error {
 	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
+	delOptions := meta_v1.DeleteOptions{}
+	var delProp meta_v1.DeletionPropagation
+	delProp = meta_v1.DeletePropagationForeground
+	delOptions.PropagationPolicy = &delProp
 
 	//delete the job
 	err := clientset.Batch().Jobs(namespace).Delete(jobName,
-		&meta_v1.DeleteOptions{})
+		&delOptions)
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())
 		return err
@@ -63,5 +80,26 @@ func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace stri
 	}
 
 	log.Info("created Job " + result.Name)
+	return err
+}
+
+// DeleteJobs deletes all jobs that match a selector
+func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) error {
+	log.Debug("deleting Jobs with selector=" + selector + " in namespace " + namespace)
+
+	//delete the job
+	delOptions := meta_v1.DeleteOptions{}
+	var delProp meta_v1.DeletionPropagation
+	delProp = meta_v1.DeletePropagationForeground
+	delOptions.PropagationPolicy = &delProp
+
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	err := clientset.Batch().Jobs(namespace).DeleteCollection(&delOptions, lo)
+	if err != nil {
+		log.Error("error deleting Jobs " + selector + err.Error())
+		return err
+	}
+
 	return err
 }

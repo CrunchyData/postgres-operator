@@ -20,15 +20,13 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func main() {
-	//password := "NUWvZX9PBp"
-	//username := "testuser"
-
 	username, password := credentials()
 	fmt.Println("hash of password is [md5" + GetMD5Hash(password+username) + "]")
 

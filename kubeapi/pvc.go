@@ -74,8 +74,13 @@ func GetPVC(clientset *kubernetes.Clientset, name, namespace string) (*v1.Persis
 
 // DeletePVC deletes a PVC by name
 func DeletePVC(clientset *kubernetes.Clientset, name, namespace string) error {
+	delOptions := meta_v1.DeleteOptions{}
+	var delProp meta_v1.DeletionPropagation
+	delProp = meta_v1.DeletePropagationForeground
+	delOptions.PropagationPolicy = &delProp
 
-	err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	//err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &delOptions)
 	if err != nil {
 		log.Error("error deleting pvc " + err.Error())
 		return err

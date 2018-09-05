@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -40,11 +39,11 @@ type PgclusterController struct {
 
 // Run starts an pgcluster resource controller
 func (c *PgclusterController) Run(ctx context.Context) error {
-	fmt.Print("Watch Pgcluster objects\n")
+	log.Info("Watch Pgcluster objects")
 
 	_, err := c.watchPgclusters(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Pgcluster resource: %v\n", err)
+		log.Errorf("Failed to register watch for Pgcluster resource: %v", err)
 		return err
 	}
 
@@ -57,7 +56,6 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgclusterClient,
 		crv1.PgclusterResourcePlural,
-		//apiv1.NamespaceAll,
 		c.Namespace,
 		fields.Everything())
 
@@ -86,7 +84,7 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 // onAdd is called when a pgcluster is added
 func (c *PgclusterController) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	fmt.Printf("[PgclusterCONTROLLER] OnAdd %s\n", cluster.ObjectMeta.SelfLink)
+	log.Infof("[PgclusterCONTROLLER] OnAdd %s", cluster.ObjectMeta.SelfLink)
 	if cluster.Status.State == crv1.PgclusterStateProcessed {
 		log.Info("pgcluster " + cluster.ObjectMeta.Name + " already processed")
 		return
@@ -95,19 +93,15 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use clusterScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := c.PgclusterScheme.Copy(cluster)
-	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of cluster object: %v\n", err)
-		return
-	}
-
+	copyObj := cluster.DeepCopyObject()
 	clusterCopy := copyObj.(*crv1.Pgcluster)
+
 	clusterCopy.Status = crv1.PgclusterStatus{
 		State:   crv1.PgclusterStateProcessed,
 		Message: "Successfully processed Pgcluster by controller",
 	}
 
-	err = c.PgclusterClient.Put().
+	err := c.PgclusterClient.Put().
 		Name(cluster.ObjectMeta.Name).
 		Namespace(cluster.ObjectMeta.Namespace).
 		Resource(crv1.PgclusterResourcePlural).
@@ -116,17 +110,16 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
-	} else {
-		fmt.Printf("UPDATED status: %#v\n", clusterCopy)
+		log.Errorf("ERROR updating status: %v", err)
 	}
+
+	log.Debugf("UPDATED status: %#v", clusterCopy)
 
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
-	//oldExample := oldObj.(*crv1.Pgcluster)
 	newExample := newObj.(*crv1.Pgcluster)
 	log.Debug("pgcluster " + newExample.ObjectMeta.Name + " updated ")
 
@@ -135,6 +128,6 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	fmt.Printf("[PgclusterCONTROLLER] OnDelete %s\n", cluster.ObjectMeta.SelfLink)
+	log.Infof("[PgclusterCONTROLLER] OnDelete %s", cluster.ObjectMeta.SelfLink)
 	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }

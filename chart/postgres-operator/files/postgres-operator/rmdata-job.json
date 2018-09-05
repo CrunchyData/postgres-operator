@@ -9,20 +9,21 @@
             "metadata": {
                 "name": "rmdata-{{.Name}}",
                 "labels": {
+                    "vendor": "crunchydata",
                     "pgrmdata": "true",
                     "pg-database": "{{.Name}}",
-		    "claimName": "{{.PvcName}}"
+                    "claimName": "{{.PvcName}}"
                 }
             },
             "spec": {
                 "volumes": [{
-                    	"name": "pgdata",
-			"persistentVolumeClaim" : {
-				"claimName": "{{.PvcName}}"
-			}
+                    "name": "pgdata",
+                    "persistentVolumeClaim" : {
+                        "claimName": "{{.PvcName}}"
+                    }
                 }],
 
-		{{.SecurityContext}}
+        {{.SecurityContext}}
 
                 "containers": [{
                     "name": "rmdata",

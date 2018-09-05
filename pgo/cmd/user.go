@@ -16,13 +16,12 @@ package cmd
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -52,14 +51,12 @@ var ManagedUser bool
 
 var userCmd = &cobra.Command{
 	Use:   "user",
-	Short: "manage users",
-	Long: `USER allows you to manage users and passwords across a set of clusters
-For example:
+	Short: "Manage PostgreSQL users",
+	Long: `USER allows you to manage users and passwords across a set of clusters. For example:
 
-pgo user --selector=name=mycluster --update-passwords
-pgo user --expired=7 --selector=name=mycluster
-pgo user --change-password=bob --selector=name=mycluster
-.`,
+	pgo user --selector=name=mycluster --update-passwords
+	pgo user --expired=7 --selector=name=mycluster
+	pgo user --change-password=bob --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager()
@@ -69,14 +66,13 @@ pgo user --change-password=bob --selector=name=mycluster
 func init() {
 	RootCmd.AddCommand(userCmd)
 
-	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
-	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "--expired=7 shows passwords that will expired in 7 days")
-	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "--valid-days=7 sets passwords for new users to 7 days")
-	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "--change-password=bob updates the password for a user on selective clusters")
-	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "--db=userdb grants the user access to a database")
-	userCmd.Flags().StringVarP(&DeleteUser, "delete-user", "d", "", "--delete-user=bob deletes a user on selective clusters")
-	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "--update-passwords performs password updating on expired passwords")
-	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "--managed creates a user with secrets")
+	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "Shows passwords that will expire in X days.")
+	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "Sets passwords for new users to X days.")
+	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "Updates the password for a user on selective clusters.")
+	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "Grants the user access to a database.")
+	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "Performs password updating on expired passwords.")
+	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "Creates a user with secrets that can be managed by the Operator.")
 
 }
 
@@ -93,37 +89,13 @@ func userManager() {
 	request.Expired = Expired
 	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
+	request.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.UserManager(httpclient, &SessionCredentials, &request)
 
-	url := APIServerURL + "/user"
-	log.Debug("User called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -131,7 +103,7 @@ func userManager() {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -140,12 +112,12 @@ func userManager() {
 func createUser(args []string) {
 
 	if Selector == "" {
-		log.Error("selector flag is required")
+		fmt.Println("Error: The --selector flag is required.")
 		return
 	}
 
 	if len(args) == 0 {
-		log.Error("user name argument is required")
+		fmt.Println("Error: A user name argument is required.")
 		return
 	}
 
@@ -155,37 +127,12 @@ func createUser(args []string) {
 	r.ManagedUser = ManagedUser
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
+	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
-	url := APIServerURL + "/users"
-	log.Debug("createUser called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.CreateUser(httpclient, &SessionCredentials, r)
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateUserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -193,7 +140,7 @@ func createUser(args []string) {
 			fmt.Println(v)
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
@@ -204,33 +151,10 @@ func deleteUser(username string) {
 	log.Debugf("deleteUser called %v\n", username)
 
 	log.Debug("deleting user " + username + " selector " + Selector)
+	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials)
 
-	url := APIServerURL + "/users/" + username + "?selector=" + Selector
-
-	log.Debug("delete users called [" + url + "]")
-
-	action := "DELETE"
-	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
-		log.Fatal("NewRequest: ", err)
-		return
-	}
-
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-	defer resp.Body.Close()
-	var response msgs.DeleteUserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
+		fmt.Println("Error: ", err.Error())
 		return
 	}
 
@@ -239,7 +163,66 @@ func deleteUser(username string) {
 			fmt.Println(result)
 		}
 	} else {
-		fmt.Println(RED(response.Status.Msg))
+		fmt.Println("Error: " + response.Status.Msg)
+	}
+
+}
+
+// showUsers ...
+func showUser(args []string) {
+
+	log.Debugf("showUser called %v\n", args)
+
+	log.Debug("selector is " + Selector)
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
+	for _, v := range args {
+
+		response, err := api.ShowUser(httpclient, v, Selector, &SessionCredentials)
+		if err != nil {
+			fmt.Println("Error: ", err.Error())
+			os.Exit(2)
+		}
+
+		if response.Status.Code != msgs.Ok {
+			fmt.Println("Error: " + response.Status.Msg)
+			os.Exit(2)
+		}
+		if len(response.Results) == 0 {
+			fmt.Println("No clusters found.")
+			return
+		}
+
+		if OutputFormat == "json" {
+			b, err := json.MarshalIndent(response, "", "  ")
+			if err != nil {
+				fmt.Println("Error: ", err)
+			}
+			fmt.Println(string(b))
+			return
+		}
+
+		for _, clusterDetail := range response.Results {
+			printUsers(&clusterDetail)
+		}
+
+	}
+
+}
+
+// printUsers
+func printUsers(detail *msgs.ShowUserDetail) {
+	fmt.Println("")
+	fmt.Println("cluster : " + detail.Cluster.Spec.Name)
+
+	for _, s := range detail.Secrets {
+		fmt.Println("")
+		fmt.Println("secret : " + s.Name)
+		fmt.Println(TreeBranch + "username: " + s.Username)
+		fmt.Println(TreeTrunk + "password: " + s.Password)
 	}
 
 }

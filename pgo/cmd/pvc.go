@@ -16,11 +16,11 @@ package cmd
 */
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/crunchydata/postgres-operator/apiservermsgs"
-	"net/http"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
+	"os"
 )
 
 func showPVC(args []string) {
@@ -42,43 +42,23 @@ func showPVC(args []string) {
 
 func printPVC(pvcName, pvcRoot string) {
 
-	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot
-	log.Debug("showPolicy called...[" + url + "]")
+	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
-		//log.Info("here after new req")
-		log.Fatal("NewRequest: ", err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		log.Fatal("Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
 
-	defer resp.Body.Close()
-	var response apiservermsgs.ShowPVCResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Error(err)
-		log.Println(err)
+	if response.Status.Code == msgs.Error {
+		fmt.Println("Error: " + response.Status.Msg)
 		return
 	}
+
 	if len(response.Results) == 0 {
-		fmt.Println("no PVC Results")
+		fmt.Println("No PVC Results")
 		return
 	}
 	log.Debugf("response = %v\n", response)
-
-	if response.Status.Code == apiservermsgs.Error {
-		log.Error(response.Status.Msg)
-		return
-	}
 
 	if pvcName == "all" {
 		fmt.Println("All Operator Labeled PVCs")

@@ -15,7 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
+import (
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+)
 
 // UserRequest ...
 type UserRequest struct {
@@ -31,6 +33,7 @@ type UserRequest struct {
 	Expired               string
 	UpdatePasswords       bool
 	ManagedUser           bool
+	ClientVersion         string
 }
 
 // DeleteUserResponse ...
@@ -52,10 +55,30 @@ type CreateUserRequest struct {
 	ManagedUser     bool
 	UserDBAccess    string
 	PasswordAgeDays int
+	ClientVersion   string
 }
 
 // CreateUserResponse ...
 type CreateUserResponse struct {
 	Results []string
+	Status
+}
+
+// ShowUserSecret
+type ShowUserSecret struct {
+	Name     string
+	Username string
+	Password string
+}
+
+// ShowUsersDetail ...
+type ShowUserDetail struct {
+	Cluster crv1.Pgcluster
+	Secrets []ShowUserSecret
+}
+
+// ShowUsersResponse ...
+type ShowUserResponse struct {
+	Results []ShowUserDetail
 	Status
 }
