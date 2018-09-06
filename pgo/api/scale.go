@@ -20,83 +20,9 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
 	"net/http"
 	"strconv"
 )
-
-func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string, DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ScaleDownResponse, error) {
-
-	var response msgs.ScaleDownResponse
-	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + util.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData)
-	log.Debug(url)
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
-	if err != nil {
-		return response, err
-	}
-
-	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
-	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return response, err
-	}
-	log.Debugf("%v\n", resp)
-	err = StatusCheck(resp)
-	if err != nil {
-		return response, err
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Println(err)
-		return response, err
-	}
-
-	return response, err
-
-}
-
-func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ScaleQueryResponse, error) {
-
-	var response msgs.ScaleQueryResponse
-
-	url := SessionCredentials.APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION
-	log.Debug(url)
-
-	action := "GET"
-
-	req, err := http.NewRequest(action, url, nil)
-	if err != nil {
-		return response, err
-	}
-
-	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		return response, err
-	}
-	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
-	err = StatusCheck(resp)
-	if err != nil {
-		return response, err
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return response, err
-	}
-
-	return response, err
-
-}
 
 func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ClusterScaleResponse, error) {
 

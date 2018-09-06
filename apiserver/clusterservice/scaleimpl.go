@@ -277,6 +277,12 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 		response.Status.Msg = err.Error()
 		return response
 	}
+	if len(replicaList.Items) == 0 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no replicas found for this cluster"
+		return response
+	}
+
 	if len(replicaList.Items) == 1 {
 		log.Debug("removing replica service when scaling down to 0 replicas")
 		err = kubeapi.DeleteService(apiserver.Clientset, clusterName+"-replica", apiserver.Namespace)
@@ -287,7 +293,6 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 		}
 	}
 
-	//delete the pgreplica
 	replica := crv1.Pgreplica{}
 	found, err := kubeapi.Getpgreplica(apiserver.RESTClient, &replica, replicaName, apiserver.Namespace)
 	if !found || err != nil {
