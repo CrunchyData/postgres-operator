@@ -22,7 +22,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
+	//"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -74,8 +74,9 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 
 		if deleteData {
 			deleteDatabaseSecrets(cluster.Spec.Name)
-			createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 		}
+
+		createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 
 		err := kubeapi.Deletepgcluster(apiserver.RESTClient,
 			cluster.Spec.Name, apiserver.Namespace)
@@ -338,9 +339,6 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 				}
 				item.PsqlString = "psql -p " + c.Spec.Port + " -h " + service.ClusterIP + " -U " + username + " " + database
 				log.Debug(item.PsqlString)
-				log.Debug("jeff service.Name=" + service.Name)
-				log.Debug("jeff c.ObjectMeta.Name=" + c.ObjectMeta.Name)
-				log.Debugf("jeff replicaReady=%t", replicaReady)
 				if (service.Name != c.ObjectMeta.Name) && replicaReady == false {
 					item.Working = false
 				} else {
@@ -851,6 +849,7 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
+// removes data and or backup volumes for all pods in a cluster
 func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool) {
 
 	var err error
@@ -858,7 +857,6 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	log.Info("inside createDeleteDataTasks")
 
 	//get the pods for this cluster
-	var pods []msgs.ShowClusterPod
 	spec := crv1.PgclusterSpec{}
 	cluster := &crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -867,74 +865,106 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		Spec: spec,
 	}
 	cluster.Spec.Name = clusterName
-	pods, err = GetPods(cluster)
+
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
+	log.Debug("selector for delete is " + selector)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	log.Debug("got the cluster...")
+	log.Debugf("got %d cluster pods for %s\n", len(pods.Items), clusterName)
 
-	for _, element := range pods {
+	for _, pod := range pods.Items {
+		deploymentName := pod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+		if pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME] != "" {
+			deploymentName = pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME]
+		}
+
+		//get the volumes for this pod
+		for _, v := range pod.Spec.Volumes {
+
+			log.Debug("volume name in delete logic is " + v.Name)
+			dataRoots := make([]string, 0)
+			if v.Name == "pgdata" {
+				dataRoots = append(dataRoots, deploymentName)
+			} else if v.Name == "backrestrepo-volume" {
+				dataRoots = append(dataRoots, deploymentName+"{-backups,-spool}")
+			} else if v.Name == "backup" {
+				dataRoots = append(dataRoots, deploymentName+"-backups")
+			} else if v.Name == "pgwal-volume" {
+				dataRoots = append(dataRoots, deploymentName+"-wal")
+			}
+
+			if v.VolumeSource.PersistentVolumeClaim != nil {
+				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				createTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+			}
+		}
+	}
+
+	if deleteBackups {
+		log.Debug("check for backup PVC to delete")
+		//get the deployment names for this cluster
+		//by convention if basebackups are run, a pvc named
+		//deploymentName-backup will be created to hold backups
+		deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		for _, dep := range deps.Items {
+			pvcName := dep.Name + "-backup"
+			log.Debug("checking dep %s for backup pvc %s\n", dep.Name, pvcName)
+			_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, apiserver.Namespace)
+			if !found {
+				log.Debug("%s pvc was not found when looking for backups to delete\n", pvcName)
+			} else {
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				//by convention, the root directory name
+				//created by the backup job is depName-backups
+				dataRoots := []string{dep.Name + "-backups"}
+				createTask(storageSpec, clusterName, pvcName, dataRoots)
+			}
+
+		}
+	}
+}
+
+func createTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string) {
+	//create a pgtask for each root at this volume/pvc
+	for i := 0; i < len(dataRoots); i++ {
+
 		//create pgtask CRD
 		spec := crv1.PgtaskSpec{}
-		if element.Primary {
-			spec.Name = clusterName
-		} else {
-			spec.Name = element.Name
-		}
+		spec.Name = pvcName
 		spec.TaskType = crv1.PgtaskDeleteData
 		spec.StorageSpec = storageSpec
-		//spec.Status = crv1.PgtaskStateCreated
 
-		spec.Parameters = element.PVCName
+		spec.Parameters = make(map[string]string)
+		spec.Parameters[util.LABEL_PVC_NAME] = pvcName
+		spec.Parameters[util.LABEL_DATA_ROOT] = dataRoots[i]
+		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name: element.Name,
+				Name: pvcName,
 			},
 			Spec: spec,
 		}
 		newInstance.ObjectMeta.Labels = make(map[string]string)
 		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+		//newInstance.ObjectMeta.Labels[util.LABEL_DATA_ROOT] = dataRoots[i]
 		newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient,
+		err := kubeapi.Createpgtask(apiserver.RESTClient,
 			newInstance, apiserver.Namespace)
 		if err != nil {
-			return
-		}
-	}
-	if deleteBackups {
-
-		backupPVCName := clusterName + "-backup"
-		//verify backup pvc exists
-		_, err = pvcservice.ShowPVC(backupPVCName, "")
-		if err != nil {
-			log.Debug("not running rmdata for backups, " + backupPVCName + " not found")
-			return
-		}
-
-		//proceed with backups removal
-		spec := crv1.PgtaskSpec{}
-		spec.Name = clusterName + "-backups"
-		spec.TaskType = crv1.PgtaskDeleteBackups
-		spec.StorageSpec = storageSpec
-
-		spec.Parameters = make(map[string]string)
-		spec.Parameters[backupPVCName] = backupPVCName
-		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
-
-		newInstance := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: spec.Name,
-			},
-			Spec: spec,
-		}
-		log.Debug("deleting backups at " + backupPVCName)
-		err = kubeapi.Createpgtask(apiserver.RESTClient,
-			newInstance, apiserver.Namespace)
-		if err != nil {
-			return
+			log.Error(err)
 		}
 	}
 

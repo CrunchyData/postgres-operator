@@ -63,3 +63,7 @@ const LABEL_BACKREST_RESTORE_OPTS = "backrest-restore-opts"
 const LABEL_BADGER = "crunchy-pgbadger"
 const LABEL_BACKUP_TYPE_BASEBACKUP = "pgbasebackup"
 const LABEL_BACKUP_TYPE_BACKREST = "pgbackrest"
+
+const LABEL_DATA_ROOT = "data-root"
+const LABEL_PVC_NAME = "pvc-name"
+const LABEL_VOLUME_NAME = "volume-name"

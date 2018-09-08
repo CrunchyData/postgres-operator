@@ -8,8 +8,13 @@ LABEL Vendor="Crunchy Data Solutions" \
 
 RUN yum -y update && yum -y clean all
 
-VOLUME ["/pgdata"]
 
+
+RUN mkdir -p /opt/cpm/bin 
+ADD bin/pgo-rmdata/ /opt/cpm/bin
+RUN chown -R 26:26 /opt/cpm
+
+VOLUME ["/pgdata"]
 USER 26
 
-CMD ["sh", "-xc", "rm -rf /pgdata/${DATA_ROOT}"]
+CMD ["/opt/cpm/bin/start.sh"]

@@ -543,7 +543,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = cluster.Spec.Name + "-xlog"
+		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
 	//check for --ccp-image-tag at the command line
