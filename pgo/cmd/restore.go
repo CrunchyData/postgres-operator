@@ -25,7 +25,7 @@ import (
 	"os"
 )
 
-var ToCluster string
+var ToPVC string
 var RestoreOpts string
 var PITRTarget string
 
@@ -34,15 +34,15 @@ var restoreCmd = &cobra.Command{
 	Short: "Perform a pgBackRest restore",
 	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. For example:
 
-	pgo restore withbr --to-cluster=restored
+	pgo restore withbr --to-pvc=restored
 	pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("restore called")
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
-			if ToCluster == "" {
-				fmt.Println("Error: You must specify the --to-cluster flag.")
+			if ToPVC == "" {
+				fmt.Println("Error: You must specify the --to-pvc flag.")
 				os.Exit(2)
 			}
 			/**
@@ -60,7 +60,7 @@ var restoreCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&ToCluster, "to-cluster", "", "", "The name of the new cluster to restore to.")
+	restoreCmd.Flags().StringVarP(&ToPVC, "to-pvc", "", "", "The name of the new PVC to restore to.")
 	restoreCmd.Flags().StringVarP(&RestoreOpts, "restore-opts", "", "", "The options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 
@@ -72,7 +72,7 @@ func restore(args []string) {
 
 	request := new(msgs.RestoreRequest)
 	request.FromCluster = args[0]
-	request.ToCluster = ToCluster
+	request.ToPVC = ToPVC
 	request.RestoreOpts = RestoreOpts
 
 	response, err := api.Restore(httpclient, &SessionCredentials, request)

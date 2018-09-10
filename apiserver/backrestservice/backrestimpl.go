@@ -344,7 +344,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToCluster+" opts="+request.RestoreOpts)
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts)
 
 	return resp
 }
@@ -353,11 +353,11 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
-	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToCluster
+	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToPVC
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER] = request.ToCluster
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
 
 	newInstance = &crv1.Pgtask{

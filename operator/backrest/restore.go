@@ -58,7 +58,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
 
 	//create the "to-cluster" PVC to hold the new data
-	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER]
+	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
 	pgstoragespec := crv1.PgStorageSpec{}
 	pgstoragespec.AccessMode = storage.AccessMode
 	pgstoragespec.Size = storage.Size
@@ -67,7 +67,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	pgstoragespec.Fsgroup = storage.Fsgroup
 	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
 	pgstoragespec.MatchLabels = storage.MatchLabels
-	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER]
+	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
 
 	_, found, err := kubeapi.GetPVC(clientset, pvcName, namespace)
 	if !found {
@@ -90,7 +90,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	//create the backrest-restore configmap
 
-	err = createRestoreJobConfigMap(clientset, task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER], task.Spec.Name, namespace)
+	err = createRestoreJobConfigMap(clientset, task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER], task.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -106,10 +106,10 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	jobFields := backrestRestoreJobTemplateFields{
 		RestoreName:          task.Spec.Name,
 		SecurityContext:      util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
+		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
 		RestoreConfigMapName: task.Spec.Name,
 		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
-		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
+		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
 		BackrestRestoreOpts:  task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
 
 		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
