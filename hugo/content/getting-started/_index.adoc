@@ -286,7 +286,7 @@ pgo show backup mycluster --backup-type=pgbackrest
 
 Restore from an existing cluster into a newly created PVC:
 ....
-pgo restore withbr --to-cluster=restored
+pgo restore withbr --to-pvc=restored
 pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest
 ....
 
