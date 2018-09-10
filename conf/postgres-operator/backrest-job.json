@@ -32,6 +32,9 @@
                         "name": "COMMAND",
                         "value": "{{.Command}}"
                     }, {
+                        "name": "COMMAND_OPTS",
+                        "value": "{{.CommandOpts}}"
+                    }, {
                         "name": "PODNAME",
                         "value": "{{.PodName}}"
                     }, {

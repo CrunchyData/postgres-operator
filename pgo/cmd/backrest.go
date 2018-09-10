@@ -21,47 +21,19 @@ import (
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"github.com/crunchydata/postgres-operator/pgo/util"
-	"github.com/spf13/cobra"
 	"os"
 )
 
-var backRestCmd = &cobra.Command{
-	Use:   "backrest",
-	Short: "Perform a pgBackRest action",
-	Long: `BACKREST performs a pgBackRest action. For example:
-
-	pgo backrest mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("backup called")
-		if len(args) == 0 && Selector == "" {
-			fmt.Println(`Error: You must specify the cluster to perform an action on or a cluster selector flag.`)
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				createBackrestBackup(args)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-
-	},
-}
-
-func init() {
-	RootCmd.AddCommand(backRestCmd)
-
-	backRestCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	backRestCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
-
-}
+var BackrestOpts string
 
 // createBackrestBackup ....
-func createBackrestBackup(args []string) {
-	log.Debugf("createBackrestBackup called %v\n", args)
+func createBackrestBackup(args []string, backupOpts string) {
+	log.Debugf("createBackrestBackup called %v %s\n", args, backupOpts)
 
 	request := new(msgs.CreateBackrestBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.BackupOpts = backupOpts
 
 	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
 	if err != nil {

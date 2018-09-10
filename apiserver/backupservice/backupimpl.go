@@ -173,7 +173,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			break
 		}
 		if request.PVCName != "" {
-			log.Debug("jeff----> backuppvc is " + request.PVCName)
+			log.Debug("backuppvc is " + request.PVCName)
 			newInstance.Spec.BackupPVC = request.PVCName
 		}
 

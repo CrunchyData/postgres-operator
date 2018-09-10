@@ -32,6 +32,7 @@ type backrestJobTemplateFields struct {
 	Name          string
 	ClusterName   string
 	Command       string
+	CommandOpts   string
 	PodName       string
 	COImagePrefix string
 	COImageTag    string
@@ -42,10 +43,13 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 
 	//create the Job to run the backrest command
 
+	cmd := task.Spec.Parameters[util.LABEL_BACKREST_COMMAND]
+
 	jobFields := backrestJobTemplateFields{
 		ClusterName:   task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		PodName:       task.Spec.Parameters[util.LABEL_POD_NAME],
-		Command:       task.Spec.Parameters[util.LABEL_BACKREST_COMMAND],
+		Command:       cmd,
+		CommandOpts:   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
 		COImagePrefix: operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:    operator.Pgo.Pgo.COImageTag,
 	}

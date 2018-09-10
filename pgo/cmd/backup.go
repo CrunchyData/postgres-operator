@@ -43,7 +43,7 @@ var backupCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
-					createBackrestBackup(args)
+					createBackrestBackup(args, BackrestOpts)
 				} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
 					createBackup(args)
 				} else {
@@ -65,6 +65,7 @@ func init() {
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
+	backupCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest backup options to pass.")
 
 }
 

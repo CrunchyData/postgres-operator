@@ -13,7 +13,6 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
-var COMMAND, PODNAME, Namespace string
 
 const sourceCommand = `source /.bashrc && `
 const backrestCommand = "pgbackrest"
@@ -36,20 +35,28 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	Namespace = os.Getenv("NAMESPACE")
+	Namespace := os.Getenv("NAMESPACE")
 	log.Debug("setting NAMESPACE to " + Namespace)
 	if Namespace == "" {
 		log.Error("NAMESPACE env var not set")
 		os.Exit(2)
 	}
 
-	COMMAND = os.Getenv("COMMAND")
+	COMMAND := os.Getenv("COMMAND")
 	log.Debug("setting COMMAND to " + COMMAND)
 	if COMMAND == "" {
 		log.Error("COMMAND env var not set")
 		os.Exit(2)
 	}
-	PODNAME = os.Getenv("PODNAME")
+
+	COMMAND_OPTS := os.Getenv("COMMAND_OPTS")
+	log.Debug("setting COMMAND_OPTS to " + COMMAND_OPTS)
+	if COMMAND_OPTS == "" {
+		log.Error("COMMAND_OPTS env var not set")
+		os.Exit(2)
+	}
+
+	PODNAME := os.Getenv("PODNAME")
 	log.Debug("setting PODNAME to " + PODNAME)
 	if PODNAME == "" {
 		log.Error("PODNAME env var not set")
@@ -78,12 +85,14 @@ func main() {
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
+		cmd = append(cmd, COMMAND_OPTS)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
 		cmd = append(cmd, sourceCommand)
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
+		cmd = append(cmd, COMMAND_OPTS)
 	default:
 		log.Error("unsupported backup command specified " + COMMAND)
 		os.Exit(2)

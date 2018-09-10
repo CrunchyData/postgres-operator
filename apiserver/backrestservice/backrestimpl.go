@@ -34,8 +34,8 @@ const backrestInfoCommand = "info"
 const containername = "database"
 
 //  CreateBackup ...
-// pgo backrest mycluster
-// pgo backrest --selector=name=mycluster
+// pgo backup mycluster
+// pgo backup --selector=name=mycluster
 func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrestBackupResponse {
 	resp := msgs.CreateBackrestBackupResponse{}
 	resp.Status.Code = msgs.Ok
@@ -122,7 +122,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			return resp
 		}
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database"), apiserver.Namespace)
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -135,7 +135,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -146,6 +146,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName strin
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
 	spec.Parameters[util.LABEL_BACKREST_COMMAND] = action
+	spec.Parameters[util.LABEL_BACKREST_OPTS] = backupOpts
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
