@@ -108,7 +108,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		SecurityContext:      util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
 		RestoreConfigMapName: task.Spec.Name,
-		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
 		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER],
 		BackrestRestoreOpts:  task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
 

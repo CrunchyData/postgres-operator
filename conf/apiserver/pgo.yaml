@@ -25,7 +25,7 @@ Storage:
     StorageType:  create
     SupplementalGroups:  65534
   storage2:
-    AccessMode:  ReadWriteOnce
+    AccessMode:  ReadWriteMany
     Size:  333M
     StorageType:  dynamic
     StorageClass:  gluster-heketi
