@@ -74,9 +74,8 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 
 		if deleteData {
 			deleteDatabaseSecrets(cluster.Spec.Name)
+			createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 		}
-
-		createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 
 		err := kubeapi.Deletepgcluster(apiserver.RESTClient,
 			cluster.Spec.Name, apiserver.Namespace)
