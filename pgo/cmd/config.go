@@ -53,6 +53,8 @@ func showConfig(args []string) {
 
 	fmt.Printf("%s%s\n", "BasicAuth:  ", pgo.BasicAuth)
 	fmt.Printf("%s\n", "Cluster:")
+	fmt.Printf("%s%s\n", "  PrimaryNodeLabel:  ", pgo.Cluster.PrimaryNodeLabel)
+	fmt.Printf("%s%s\n", "  ReplicaNodeLabel:  ", pgo.Cluster.ReplicaNodeLabel)
 	fmt.Printf("%s%s\n", "  CCPImagePrefix:  ", pgo.Cluster.CCPImagePrefix)
 	fmt.Printf("%s%s\n", "  CCPImageTag:  ", pgo.Cluster.CCPImageTag)
 	fmt.Printf("%s%s\n", "  ServiceType:  ", pgo.Cluster.ServiceType)

@@ -227,6 +227,8 @@ looks like this -
 ....
 BasicAuth:  true
 Cluster:
+  PrimaryNodeLabel:  
+  ReplicaNodeLabel:  
   CCPImageTag:  centos7-10.5-2.1.0
   Metrics:  false
   Badger:  false
@@ -273,7 +275,7 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-2.7
+  COImageTag:  centos7-3.3.0
 ....
 
 Values in the pgo configuration file have the following meaning:
@@ -283,6 +285,8 @@ Values in the pgo configuration file have the following meaning:
 |======================
 |Setting | Definition
 |BasicAuth        | if set to *true* will enable Basic Authentication
+|Cluster.PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
+|Cluster.ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the --ccp-image-tag command line flag
 |Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |Cluster.User        | the PostgreSQL normal user name

@@ -96,6 +96,15 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 	}
 
 	var parts []string
+
+	if apiserver.Pgo.Cluster.ReplicaNodeLabel != "" {
+		//should have been validated at apiserver startup
+		parts = strings.Split(apiserver.Pgo.Cluster.ReplicaNodeLabel, "=")
+		spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+		log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
+	}
+
 	//validate nodeLabel
 	if nodeLabel != "" {
 		parts = strings.Split(nodeLabel, "=")
@@ -124,6 +133,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		}
 		spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+		log.Debug("using user entered node label for replica creation")
 
 	}
 

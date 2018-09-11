@@ -547,6 +547,14 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			}
 		}
 
+		if apiserver.Pgo.Cluster.PrimaryNodeLabel != "" {
+			//already should be validate at apiserver startup
+			parts := strings.Split(apiserver.Pgo.Cluster.PrimaryNodeLabel, "=")
+			userLabelsMap[util.LABEL_NODE_LABEL_KEY] = parts[0]
+			userLabelsMap[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+			log.Debug("primary node labels used from pgo.yaml")
+		}
+
 		if request.NodeLabel != "" {
 			parts := strings.Split(request.NodeLabel, "=")
 			if len(parts) != 2 {
@@ -572,6 +580,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 				resp.Status.Msg = request.NodeLabel + " node label value was not valid .. check node labels for correct values to specify"
 				return resp
 			}
+			log.Debug("primary node labels used from user entered flag")
 			userLabelsMap[util.LABEL_NODE_LABEL_KEY] = parts[0]
 			userLabelsMap[util.LABEL_NODE_LABEL_VALUE] = parts[1]
 		}

@@ -87,6 +87,7 @@ func Initialize() {
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
+	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
 	Pgo.Validate()
 
 	Namespace = os.Getenv("NAMESPACE")
@@ -116,6 +117,7 @@ func Initialize() {
 
 	ConnectToKube()
 
+	validateWithKube()
 }
 
 // ConnectToKube ...
@@ -455,4 +457,39 @@ func initTemplates() {
 
 	JobTemplate = util.LoadTemplate(LoadTemplatePath)
 
+}
+
+func validateWithKube() {
+	log.Debug("validateWithKube called")
+
+	configNodeLabels := make([]string, 2)
+	configNodeLabels[0] = Pgo.Cluster.PrimaryNodeLabel
+	configNodeLabels[1] = Pgo.Cluster.ReplicaNodeLabel
+
+	for _, n := range configNodeLabels {
+
+		if n != "" {
+			parts := strings.Split(n, "=")
+			if len(parts) != 2 {
+				log.Error(n + " node label in pgo.yaml does not follow key=value format")
+				os.Exit(2)
+			}
+
+			keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
+			if err != nil {
+				log.Error(err)
+				os.Exit(2)
+			}
+
+			if !keyValid {
+				log.Error(n + " key not a valid node label key in pgo.yaml")
+				os.Exit(2)
+			}
+			if !valueValid {
+				log.Error(n + "value not a valid node label value in pgo.yaml ")
+				os.Exit(2)
+			}
+			log.Debug(n + " is a valid pgo.yaml node label default")
+		}
+	}
 }
