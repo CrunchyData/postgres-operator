@@ -22,7 +22,6 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"github.com/crunchydata/postgres-operator/pgo/util"
 	labelutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
 	"os"
@@ -41,16 +40,16 @@ var backupCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
-					createBackrestBackup(args, BackrestOpts)
-				} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
-					createBackup(args)
-				} else {
-					fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
+			if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
+				if StorageConfig != "" {
+					fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
+					return
 				}
+				createBackrestBackup(args, BackrestOpts)
+			} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
+				createBackup(args)
 			} else {
-				fmt.Println("Aborting...")
+				fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
 			}
 		}
 
@@ -62,7 +61,7 @@ func init() {
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
-	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
+	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
 	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
 	backupCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest backup options to pass.")

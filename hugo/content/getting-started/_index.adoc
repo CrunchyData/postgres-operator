@@ -284,6 +284,9 @@ You can also pass in pgbackrest backup command options:
 pgo backup mycluster --backup-type=pgbackrest --pgbackrest-opts="--type=incr"
 ....
 
+Note, you can not specify *--storage-config* flag when specifying
+a pgbackrest backup.
+
 Obtain pgBackRest information:
 ....
 pgo show backup mycluster --backup-type=pgbackrest
