@@ -51,7 +51,7 @@ func init() {
 	RootCmd.AddCommand(applyCmd)
 
 	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "Shows the clusters that the label would be applied to, without labelling them.")
+	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Shows the clusters that the label would be applied to, without labelling them.")
 
 }
 

@@ -60,7 +60,7 @@ func init() {
 
 	scaledownCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of targetable replica candidates.")
 	scaledownCmd.Flags().StringVarP(&Target, "target", "", "", "The replica to target for scaling down")
-	scaledownCmd.Flags().BoolVarP(&DeleteData, "delete-data", "", false, "Causes the data for the scaled down replica to be removed permanently.")
+	scaledownCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for the scaled down replica to be removed permanently.")
 	scaledownCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 
 }

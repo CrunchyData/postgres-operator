@@ -116,31 +116,31 @@ Enables archive logging for the database cluster.
 |`--autofail` |N/A |N/A |
 If set, will cause autofailover to be enabled on this cluster.
 
-|`--backup-pvc` |-p |String |
+|`--backup-pvc` |N/A |String |
 The backup archive PVC to restore from.
 
-|`--backup-path` |-p |String |
+|`--backup-path` |N/A |String |
 The backup archive path to restore from.
 
-|`--ccp-image-tag` |-c |String |
+|`--ccp-image-tag` |N/A |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
 
-|`--custom-config` |-g |String |
+|`--custom-config` |N/A |String |
 The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
 
-|`--labels` |-l |String |
+|`--labels` |N/A |String |
 The labels to apply to this cluster.
 
-|`--metrics` |-m |N/A |
+|`--metrics` |N/A |N/A |
 Adds the crunchy-collect container to the database pod.
 
 |`--node-label` |N/A |String |
 The node label (key) to use in placing the primary database. If not set, any node is used.
 
-|`--password` |-w |String |
+|`--password` |N/A |String |
 The password to use for initial database users.
 
-|`--service-type=VALUE` |N/A |String |
+|`--service-type` |N/A |String |
 The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
 
 |`--pgbackrest` |N/A |N/A |
@@ -155,19 +155,19 @@ Adds the crunchy-pgpool container to the database pod.
 |`--pgpool-secret` |N/A |String |
 The name of a pgpool secret to use for the pgpool configuration.
 
-|`--policies` |-z |String |
+|`--policies` |N/A |String |
 The policies to apply when creating a cluster, comma separated.
 
 |`--replica-storage-config` |N/A |String |
 The name of a Storage config in pgo.yaml to use for the cluster replica storage.
 
-|`--resources-config` |-r |String |
+|`--resources-config` |N/A |String |
 The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
 
-|`--secret-from` |-s |String |
+|`--secret-from` |N/A |String |
 The cluster name to use when restoring secrets.
 
-|`--series` |-e |Int |
+|`--series` |N/A |Int |
 The number of clusters to create in a series (default 1).
 
 |`--storage-config` |N/A |String |
@@ -388,7 +388,7 @@ The output format. Currently, JSON is supported.
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 
-|`--version` |-v |String |
+|`--version` |N/A |String |
 Filter the results based on the PostgreSQL version of the cluster.
 |=========================================================
 
@@ -625,9 +625,8 @@ $ pgo scale NAME [FLAGS]
 |`--service-type` |N/A |String |
 The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.
 
-|`--ccp-image-tag` |-c |String |
+|`--ccp-image-tag` |N/A |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.
-
 
 |`--no-prompt` |-n |N/A |
 No command line confirmation.
@@ -635,7 +634,7 @@ No command line confirmation.
 |`--node-label` |N/A |String |
 The node label (key) to use in placing the primary database. If not set, any node is used.
 
-|`--replica-count` |-r |String |
+|`--replica-count` |N/A |String |
 The replica count to apply to the clusters (default 1).
 
 |`--resources-config` |N/A |String |
@@ -682,7 +681,7 @@ $ pgo scaledown NAME [FLAGS]
 |`--query` |N/A |N/A |
 Prints the list of targetable replica candidates.
 
-|`--delete-data` |N/A |N/A |
+|`--delete-data` |-d |N/A |
 Causes the data for the scaled down replica to be removed permanently.
 
 |`--target` |N/A |String |
@@ -840,10 +839,10 @@ $ pgo upgrade NAME [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--ccp-image-tag` |-c |String |
+|`--ccp-image-tag` |N/A |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
 
-|`--upgrade-type` |-t |String |
+|`--upgrade-type` |N/A |String |
 The upgrade type. Accepted values are either "minor" or "major", with the default being "minor".
 |=========================================================
 
@@ -893,13 +892,13 @@ $ pgo label [NAME] [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--delete-label` |-x |String |
+|`--delete-label` |N/A |String |
 Deletes a label from specified clusters.
 
-|`--dry-run` |-d |N/A |
+|`--dry-run` |N/A |N/A |
 Shows the clusters that the label would be applied to, without labelling them.
 
-|`--label` |-l |String |
+|`--label` |N/A |String |
 The new label to apply for any selected or specified clusters.
 
 |`--selector` |-s |String |
@@ -948,10 +947,10 @@ $ pgo create policy [NAME] [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--in-file` |-i |String |
+|`--in-file` |N/A |String |
 The policy file path to use for adding a policy.
 
-|`--url` |-u |N/A |
+|`--url` |N/A |N/A |
 The url to use for adding a policy.
 |=========================================================
 
@@ -1063,10 +1062,10 @@ $ pgo load [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--load-config` |-l |String |
+|`--load-config` |N/A |String |
 The load configuration to use that defines the load job.
 
-|`--policies` |-z |String |
+|`--policies` |N/A |String |
 The policies to apply before loading a file, comma separated.
 
 |`--selector` |-s |String |
@@ -1107,25 +1106,25 @@ $ pgo user [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--change-password` |-c |String |
+|`--change-password` |N/A |String |
 Updates the password for a user on selective clusters.
 
-|`--db` |-b |String |
+|`--db` |N/A |String |
 Grants the user access to a database.
 
-|`--expired` |-e |String |
+|`--expired` |N/A |String |
 Shows passwords that will expire in X days.
 
-|`--managed` |-m |N/A |
+|`--managed` |N/A |N/A |
 Creates a user with secrets that can be managed by the Operator.
 
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 
-|`--update-passwords` |-u |N/A |
+|`--update-passwords` |N/A |N/A |
 Performs password updating on expired passwords.
 
-|`--valid-days` |-v |Int |
+|`--valid-days` |N/A |Int |
 Sets passwords for new users to X days (default 30).
 |=========================================================
 

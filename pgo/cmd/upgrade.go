@@ -59,8 +59,8 @@ var upgradeCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(upgradeCmd)
 
-	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "t", "minor", "The upgrade type. Accepted values are either 'minor' or 'major'.")
-	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+	upgradeCmd.Flags().StringVarP(&UpgradeType, "upgrade-type", "", "minor", "The upgrade type. Accepted values are either 'minor' or 'major'.")
+	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 
 }
 
