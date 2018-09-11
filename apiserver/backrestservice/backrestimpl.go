@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"time"
+	"time"
 )
 
 const backrestCommand = "pgbackrest"
@@ -107,8 +107,24 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 
 			//remove any previous backup job
 
-			kubeapi.DeleteJobs(apiserver.Clientset, util.LABEL_PG_CLUSTER+"="+clusterName+","+util.LABEL_BACKREST+"=true", apiserver.Namespace)
-			//time.Sleep(time.Seconds * 2)
+			selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_BACKREST + "=true"
+			err = kubeapi.DeleteJobs(apiserver.Clientset, selector, apiserver.Namespace)
+			if err != nil {
+				log.Error(err)
+			}
+
+			//a hack sort of due to slow propagation
+			for i := 0; i < 3; i++ {
+				jobList, err := kubeapi.GetJobs(apiserver.Clientset, selector, apiserver.Namespace)
+				if err != nil {
+					log.Error(err)
+				}
+				if len(jobList.Items) > 0 {
+					log.Debug("sleeping a bit for delete job propagation")
+					time.Sleep(time.Second * 2)
+				}
+			}
+
 		}
 
 		//get pod name from cluster
