@@ -51,8 +51,8 @@ func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredenti
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		log.Println(err)
+		log.Debugf("%v\n", resp.Body)
+		log.Debug(err)
 		return response, err
 	}
 
@@ -92,6 +92,7 @@ func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.Basi
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
+		fmt.Println("Error: ", err)
 		log.Println(err)
 		return response, err
 	}

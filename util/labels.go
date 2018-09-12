@@ -69,3 +69,5 @@ const LABEL_BACKUP_TYPE_BACKREST = "pgbackrest"
 const LABEL_DATA_ROOT = "data-root"
 const LABEL_PVC_NAME = "pvc-name"
 const LABEL_VOLUME_NAME = "volume-name"
+
+const LABEL_SESSION_ID = "sessionid"
