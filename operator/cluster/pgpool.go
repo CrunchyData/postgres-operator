@@ -24,6 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -32,8 +33,8 @@ import (
 )
 
 type PgpoolPasswdFields struct {
-	PG_USERNAME     string
-	PG_PASSWORD_MD5 string
+	Username string
+	Password string
 }
 
 type PgpoolHBAFields struct {
@@ -144,7 +145,7 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 		log.Error(err)
 		return err
 	}
-	pgpoolPasswdBytes, err = getPgpoolPasswd(username, password)
+	pgpoolPasswdBytes, err = getPgpoolPasswd(clientset, namespace, db, username, password)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -154,8 +155,8 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels["pg-database"] = db
-	secret.ObjectMeta.Labels["pgpool"] = "true"
+	secret.ObjectMeta.Labels[util.LABEL_PG_DATABASE] = db
+	secret.ObjectMeta.Labels[util.LABEL_PGPOOL] = "true"
 	secret.Data = make(map[string][]byte)
 	secret.Data["pgpool.conf"] = pgpoolConfBytes
 	secret.Data["pool_hba.conf"] = pgpoolHBABytes
@@ -203,15 +204,30 @@ func getPgpoolConf(primary, replica, username, password string) ([]byte, error) 
 	return doc.Bytes(), err
 }
 
-func getPgpoolPasswd(username, password string) ([]byte, error) {
-	var err error
-
-	fields := PgpoolPasswdFields{}
-	fields.PG_USERNAME = username
-	fields.PG_PASSWORD_MD5 = "md5" + GetMD5Hash(password+username)
-
+func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName, username, password string) ([]byte, error) {
 	var doc bytes.Buffer
-	err = operator.PgpoolPasswdTemplate.Execute(&doc, fields)
+
+	//go get all non-pgpool secrets
+	selector := util.LABEL_PG_DATABASE + "=" + clusterName + "," + util.LABEL_PGPOOL + "!=true"
+
+	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return doc.Bytes(), err
+	}
+
+	creds := make([]PgpoolPasswdFields, 0)
+	for _, sec := range secrets.Items {
+		//log.Debugf("in pgpool passwd with username=%s password=%s\n", sec.Data[util.LABEL_USERNAME][:], sec.Data[util.LABEL_PASSWORD][:])
+		username := string(sec.Data[util.LABEL_USERNAME][:])
+		password := string(sec.Data[util.LABEL_PASSWORD][:])
+		c := PgpoolPasswdFields{}
+		c.Username = username
+		c.Password = "md5" + GetMD5Hash(password+username)
+		creds = append(creds, c)
+	}
+
+	err = operator.PgpoolPasswdTemplate.Execute(&doc, creds)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err

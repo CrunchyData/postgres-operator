@@ -197,6 +197,20 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
+	//replaced with ccpimagetag instead of pg version
+	//setFullVersion(client, cl, namespace)
+
+	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
+
+	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in status patch " + err.Error())
+	}
+	err = util.Patch(client, "/spec/PrimaryStorage/name", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in pvcname patch " + err.Error())
+	}
+
 	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[util.LABEL_PGPOOL])
 	//add pgpool deployment if requested
 	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
@@ -213,20 +227,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debug("pgpool secret created")
 		//create the pgpool deployment using that credential
 		AddPgpool(clientset, client, cl, namespace, secretName)
-	}
-
-	//replaced with ccpimagetag instead of pg version
-	//setFullVersion(client, cl, namespace)
-
-	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
-
-	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error in status patch " + err.Error())
-	}
-	err = util.Patch(client, "/spec/PrimaryStorage/name", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error in pvcname patch " + err.Error())
 	}
 
 }

@@ -28,7 +28,7 @@ import (
 func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := "pgpool!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(Clientset, selector, Namespace)
 	if err != nil {

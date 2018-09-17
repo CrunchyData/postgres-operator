@@ -71,3 +71,5 @@ const LABEL_PVC_NAME = "pvc-name"
 const LABEL_VOLUME_NAME = "volume-name"
 
 const LABEL_SESSION_ID = "sessionid"
+const LABEL_USERNAME = "username"
+const LABEL_PASSWORD = "password"
