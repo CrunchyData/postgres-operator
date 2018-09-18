@@ -61,10 +61,100 @@ type PgpoolTemplateFields struct {
 
 const PGPOOL_SUFFIX = "-pgpool"
 
+func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
+	log.Debug("AddPgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+
+	//look up the pgcluster from the task
+	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
+	pgcluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return
+	}
+	AddPgpool(clientset, &pgcluster, namespace)
+
+	//remove task
+	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	//update the pgcluster CRD
+	pgcluster.Spec.UserLabels[util.LABEL_PGPOOL] = "true"
+	err = kubeapi.Updatepgcluster(restclient, &pgcluster, pgcluster.Name, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Debugf("added pgpool to cluster [%s]\n", clusterName)
+}
+
+func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
+	log.Debug("DeletePgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+
+	//look up the pgcluster from the task
+	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
+	pgcluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return
+	}
+
+	//remove the pgpool service
+	serviceName := clusterName + "-pgpool"
+	err = kubeapi.DeleteService(clientset, serviceName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//remove the pgpool deployment
+	err = kubeapi.DeleteDeployment(clientset, clusterName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//remove the pgpool secret
+	secretName := clusterName + "-pgpool-secret"
+	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//remove task
+	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//update the pgcluster CRD
+	pgcluster.Spec.UserLabels[util.LABEL_PGPOOL] = "false"
+	err = kubeapi.Updatepgcluster(restclient, &pgcluster, pgcluster.Name, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+	log.Debugf("delete pgpool from cluster [%s]\n", clusterName)
+}
+
 // ProcessPgpool ...
-func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace, secretName string) {
+func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) {
 	var doc bytes.Buffer
 	var err error
+
+	//generate a secret for pgpool using the testuser credential
+	secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
+	primaryName := cl.Spec.Name
+	replicaName := cl.Spec.Name + "-replica"
+	err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Debug("pgpool secret created")
 
 	clusterName := cl.Spec.Name
 	pgpoolName := clusterName + PGPOOL_SUFFIX
@@ -130,9 +220,10 @@ func DeletePgpool(clientset *kubernetes.Clientset, clusterName, namespace string
 }
 
 // CreatePgpoolSecret create a secret used by pgpool
-func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, username, password, namespace string) error {
+func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, namespace string) error {
 
 	var err error
+	var username, password string
 	var pgpoolHBABytes, pgpoolConfBytes, pgpoolPasswdBytes []byte
 
 	pgpoolHBABytes, err = getPgpoolHBA()
@@ -140,12 +231,14 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 		log.Error(err)
 		return err
 	}
-	pgpoolConfBytes, err = getPgpoolConf(primary, replica, username, password)
+
+	pgpoolPasswdBytes, username, password, err = getPgpoolPasswd(clientset, namespace, db)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	pgpoolPasswdBytes, err = getPgpoolPasswd(clientset, namespace, db, username, password)
+
+	pgpoolConfBytes, err = getPgpoolConf(primary, replica, username, password)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -204,8 +297,9 @@ func getPgpoolConf(primary, replica, username, password string) ([]byte, error) 
 	return doc.Bytes(), err
 }
 
-func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName, username, password string) ([]byte, error) {
+func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName string) ([]byte, string, string, error) {
 	var doc bytes.Buffer
+	var pgpoolUsername, pgpoolPassword string
 
 	//go get all non-pgpool secrets
 	selector := util.LABEL_PG_DATABASE + "=" + clusterName + "," + util.LABEL_PGPOOL + "!=true"
@@ -213,7 +307,7 @@ func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName, us
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err)
-		return doc.Bytes(), err
+		return doc.Bytes(), pgpoolUsername, pgpoolPassword, err
 	}
 
 	creds := make([]PgpoolPasswdFields, 0)
@@ -225,16 +319,22 @@ func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName, us
 		c.Username = username
 		c.Password = "md5" + GetMD5Hash(password+username)
 		creds = append(creds, c)
+
+		//we will use the postgres user for pgpool to auth with
+		if username == "postgres" {
+			pgpoolUsername = username
+			pgpoolPassword = password
+		}
 	}
 
 	err = operator.PgpoolPasswdTemplate.Execute(&doc, creds)
 	if err != nil {
 		log.Error(err)
-		return doc.Bytes(), err
+		return doc.Bytes(), pgpoolUsername, pgpoolPassword, err
 	}
 	log.Debug(doc.String())
 
-	return doc.Bytes(), err
+	return doc.Bytes(), pgpoolUsername, pgpoolPassword, err
 }
 
 func GetMD5Hash(text string) string {
