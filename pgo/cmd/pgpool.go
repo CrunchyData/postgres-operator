@@ -46,6 +46,9 @@ func createPgpool(args []string) {
 		}
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
 		os.Exit(2)
 	}
 

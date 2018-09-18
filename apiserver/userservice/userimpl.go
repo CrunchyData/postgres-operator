@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"time"
@@ -480,6 +481,34 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
+		}
+
+		//reconfigure pgpool if it exists for this cluster
+		if c.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+			spec := crv1.PgtaskSpec{}
+			spec.Name = util.LABEL_PGPOOL_TASK_RECONFIGURE + "-" + c.Name
+			spec.TaskType = crv1.PgtaskReconfigurePgpool
+			spec.StorageSpec = crv1.PgStorageSpec{}
+			spec.Parameters = make(map[string]string)
+			spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = c.Name
+
+			newInstance := &crv1.Pgtask{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: spec.Name,
+				},
+				Spec: spec,
+			}
+
+			newInstance.ObjectMeta.Labels = make(map[string]string)
+			newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = c.Name
+			newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_RECONFIGURE] = "true"
+
+			err := kubeapi.Createpgtask(apiserver.RESTClient,
+				newInstance, apiserver.Namespace)
+			if err != nil {
+				log.Error(err)
+			}
+
 		}
 
 	}

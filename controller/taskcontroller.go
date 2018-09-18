@@ -124,6 +124,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskDeletePgpool:
 		log.Info("delete pgpool task added")
 		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskReconfigurePgpool:
+		log.Info("Reconfiguredelete pgpool task added")
+		clusteroperator.ReconfigurePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskAddPgpool:
 		log.Info("add pgpool task added")
 		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)

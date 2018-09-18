@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
+	"time"
 )
 
 type PgpoolPasswdFields struct {
@@ -61,6 +62,59 @@ type PgpoolTemplateFields struct {
 
 const PGPOOL_SUFFIX = "-pgpool"
 
+func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
+	log.Debug("ReconfigurePgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+
+	//look up the pgcluster from the task
+	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
+	pgcluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return
+	}
+
+	depName := clusterName + "-pgpool"
+	//remove the pgpool deployment (deployment name is the same as svcname)
+	err = kubeapi.DeleteDeployment(clientset, depName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//remove the pgpool secret
+	secretName := clusterName + "-pgpool-secret"
+	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//check for the deployment to be fully deleted
+	for i := 0; i < 10; i++ {
+		_, found, err := kubeapi.GetDeployment(clientset, depName, namespace)
+		if !found {
+			break
+		}
+		if err != nil {
+			log.Error(err)
+		}
+		log.Debugf("pgpool reconfigure sleeping till deployment [%s] is removed\n", depName)
+		time.Sleep(time.Second * time.Duration(4))
+	}
+
+	//create the pgpool but leave the existing service in place
+	AddPgpool(clientset, &pgcluster, namespace, false)
+
+	//remove task to cleanup
+	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Debugf("reconfigure pgpool to cluster [%s]\n", clusterName)
+}
+
 func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
 	log.Debug("AddPgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
 
@@ -73,7 +127,7 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 		return
 	}
-	AddPgpool(clientset, &pgcluster, namespace)
+	AddPgpool(clientset, &pgcluster, namespace, true)
 
 	//remove task
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -112,8 +166,8 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		log.Error(err)
 	}
 
-	//remove the pgpool deployment
-	err = kubeapi.DeleteDeployment(clientset, clusterName, namespace)
+	//remove the pgpool deployment (deployment name is the same as svcname)
+	err = kubeapi.DeleteDeployment(clientset, serviceName, namespace)
 	if err != nil {
 		log.Error(err)
 	}
@@ -141,7 +195,7 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 }
 
 // ProcessPgpool ...
-func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) {
+func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) {
 	var doc bytes.Buffer
 	var err error
 
@@ -193,16 +247,18 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		return
 	}
 
-	//create a service for the pgpool
-	svcFields := ServiceTemplateFields{}
-	svcFields.Name = pgpoolName
-	svcFields.ClusterName = clusterName
-	svcFields.Port = "5432"
+	if createService {
+		//create a service for the pgpool
+		svcFields := ServiceTemplateFields{}
+		svcFields.Name = pgpoolName
+		svcFields.ClusterName = clusterName
+		svcFields.Port = "5432"
 
-	err = CreateService(clientset, &svcFields, namespace)
-	if err != nil {
-		log.Error(err)
-		return
+		err = CreateService(clientset, &svcFields, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 	}
 }
 

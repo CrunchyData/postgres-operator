@@ -1197,3 +1197,87 @@ To update expired passwords in a cluster:
 ....
 pgo user --update-passwords --selector=name=mycluster
 ....
+
+== pgpool Basics
+
+Adding a pgpool deployment into your PG cluster follows
+a sequence similar to this:
+
+....
+pgo create cluster mycluster
+....
+
+Then you will scale it up:
+....
+pgo scale mycluster
+....
+
+Then you will add managed users of your choice:
+....
+pgo create user somenewuser mycluster --managed
+....
+
+Then you will create a pgpool for the new cluster:
+....
+pgo create pgpool mycluster
+....
+
+This will create a pgpool user credential for each pgo
+managed user you have created.
+
+=== Create pgpool
+
+The `create pgpool` command will create a pgpool deployment that
+is part of a cluster.
+
+==== Syntax
+
+$ pgo create pgpool CLUSTERNAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Creation
+
+Create a pgpool:
+....
+pgo create pgpool mycluster
+....
+
+=== Delete pgpool
+
+The `delete pgpool` command will by delete the pgpool deployment that
+is part of a cluster.
+
+==== Syntax
+
+$ pgo delete pgpool CLUSTERNAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Deletion
+
+Delete a pgpool:
+....
+pgo delete pgpool mycluster
+....
+

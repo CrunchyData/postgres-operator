@@ -73,13 +73,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
-			deleteDatabaseSecrets(cluster.Spec.Name)
-			createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
+			err := deleteDatabaseSecrets(cluster.Spec.Name)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
 		}
 
 		err := kubeapi.Deletepgcluster(apiserver.RESTClient,
 			cluster.Spec.Name, apiserver.Namespace)
-
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -858,7 +867,7 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 }
 
 // removes data and or backup volumes for all pods in a cluster
-func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool) {
+func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool) error {
 
 	var err error
 
@@ -879,7 +888,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 	log.Debugf("got %d cluster pods for %s\n", len(pods.Items), clusterName)
 
@@ -919,7 +928,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 
 		for _, dep := range deps.Items {
@@ -931,7 +940,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 			} else {
 				if err != nil {
 					log.Error(err)
-					return
+					return err
 				}
 				//by convention, the root directory name
 				//created by the backup job is depName-backups
@@ -941,6 +950,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 		}
 	}
+	return err
 }
 
 func createTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string) {
@@ -1055,15 +1065,22 @@ func validateBackrestConfig(labels map[string]string) error {
 }
 
 // deleteDatabaseSecrets delete secrets that match pg-database=somecluster
-func deleteDatabaseSecrets(db string) {
+func deleteDatabaseSecrets(db string) error {
+	var err error
 	//get all that match pg-database=db
 	selector := util.LABEL_PG_DATABASE + "=" + db
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
-		return
+		log.Error(err)
+		return err
 	}
 
 	for _, s := range secrets.Items {
-		kubeapi.DeleteSecret(apiserver.Clientset, s.ObjectMeta.Name, apiserver.Namespace)
+		err := kubeapi.DeleteSecret(apiserver.Clientset, s.ObjectMeta.Name, apiserver.Namespace)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
 	}
+	return err
 }

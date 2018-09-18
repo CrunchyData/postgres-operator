@@ -24,6 +24,7 @@ const PgtaskResourcePlural = "pgtasks"
 
 const PgtaskAddPgpool = "add-pgpool"
 const PgtaskDeletePgpool = "delete-pgpool"
+const PgtaskReconfigurePgpool = "reconfigure-pgpool"
 const PgtaskDeleteBackups = "delete-backups"
 const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"

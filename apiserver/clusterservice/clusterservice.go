@@ -142,7 +142,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	deleteBackups := false
 	deleteBackupsStr := r.URL.Query().Get("delete-backups")
-	if deleteDataStr != "" {
+	if deleteBackupsStr != "" {
 		log.Debug("delete-backups param was [" + deleteBackupsStr + "]")
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}

@@ -214,20 +214,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	//add pgpool deployment if requested
 	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
 		log.Debug("pgpool requested")
-		/**
-		//generate a secret for pgpool using the testuser credential
-		secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
-		primaryName := cl.Spec.Name
-		replicaName := cl.Spec.Name + "-replica"
-		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Debug("pgpool secret created")
-		*/
 		//create the pgpool deployment using that credential
-		AddPgpool(clientset, cl, namespace)
+		AddPgpool(clientset, cl, namespace, true)
 	}
 
 }

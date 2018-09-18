@@ -101,10 +101,16 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
 		newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_ADD] = "true"
 
-		err := kubeapi.Createpgtask(apiserver.RESTClient,
-			newInstance, apiserver.Namespace)
-		if err != nil {
-			log.Error(err)
+		//check if this cluster already has a pgpool
+		if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+			resp.Results = append(resp.Results, cluster.Name+" already has pgpool added")
+			resp.Status.Code = msgs.Error
+		} else {
+			err := kubeapi.Createpgtask(apiserver.RESTClient,
+				newInstance, apiserver.Namespace)
+			if err != nil {
+				log.Error(err)
+			}
 		}
 
 	}
