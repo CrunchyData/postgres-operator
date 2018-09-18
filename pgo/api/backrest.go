@@ -39,11 +39,11 @@ func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredenti
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println("Error: Do: ", err)
 		return response, err
 	}
+	defer resp.Body.Close()
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)
 	if err != nil {
@@ -79,10 +79,10 @@ func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.Basi
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return response, err
 	}
+	defer resp.Body.Close()
 
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)

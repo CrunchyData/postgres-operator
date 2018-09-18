@@ -38,11 +38,11 @@ func ShowTest(httpclient *http.Client, arg, selector string, SessionCredentials 
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println("Error: Do: ", err)
 		return response, err
 	}
+	defer resp.Body.Close()
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)
 	if err != nil {

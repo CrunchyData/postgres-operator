@@ -39,11 +39,11 @@ func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println("Error: Do: ", err)
 		return response, err
 	}
+	defer resp.Body.Close()
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)
 	if err != nil {
@@ -76,10 +76,10 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return response, err
 	}
+	defer resp.Body.Close()
 
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)
@@ -152,10 +152,10 @@ func ApplyPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		return response, err
 	}
+	defer resp.Body.Close()
 
 	log.Debugf("%v\n", resp)
 	err = StatusCheck(resp)
