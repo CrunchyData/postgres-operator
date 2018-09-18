@@ -55,8 +55,8 @@ func init() {
 	RootCmd.AddCommand(loadCmd)
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job.")
-	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated.")
+	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "", "", "The load configuration to use that defines the load job.")
+	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "", "", "The policies to apply before loading a file, comma separated.")
 
 }
 

@@ -55,9 +55,9 @@ func init() {
 	RootCmd.AddCommand(labelCmd)
 
 	labelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "l", "", "The new label to apply for any selected or specified clusters.")
-	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "Shows the clusters that the label would be applied to, without labelling them.")
-	labelCmd.Flags().BoolVarP(&DeleteLabel, "delete-label", "x", false, "Deletes a label from specified clusters.")
+	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The new label to apply for any selected or specified clusters.")
+	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Shows the clusters that the label would be applied to, without labelling them.")
+	labelCmd.Flags().BoolVarP(&DeleteLabel, "delete-label", "", false, "Deletes a label from specified clusters.")
 
 }
 
