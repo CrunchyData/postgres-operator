@@ -1147,6 +1147,9 @@ pgo create user sally --managed --selector=name=mycluster
 A *managed* account is one that the Operator can manipulate as well; when you run `pgo test mycluster` the account is tested with
 the other default accounts, etc.
 
+When you create a managed user, if pgpool is part of your cluster, 
+then pgpool is reconfigured to pick up the new user.
+
 ===== Complex User Creation
 
 In this example, a user named *user1* is created with a *valid until* password date
@@ -1165,6 +1168,9 @@ To delete a Postgres user in the *mycluster* cluster, execute:
 pgo delete user sally --selector=name=mycluster
 ....
 
+If pgpool is part of your cluster, deletion of a managed user
+will cause pgpool to be reconfigured to pick up the user deletion.
+
 ===== Change Password
 
 To change the password for a user in the *mycluster* cluster:
@@ -1181,6 +1187,10 @@ In this example, a user named *user1* has its password changed to a generated
 value and the *valid until* expiration date set to 10 days from now. This
 command will take effect across all clusters that match the selector. If you
 specify *valid-days=-1* it will mean the password will not expire (e.g. infinity).
+
+If pgpool is part of your cluster, changing a managed user password
+will cause pgpool to be reconfigured to pick up the password change.
+
 
 ===== Viewing Expired Passwords
 

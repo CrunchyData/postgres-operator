@@ -114,13 +114,19 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(defaultPasswordLength)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, apiserver.Namespace)
+				pgpool := false
+				if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+					pgpool = true
+				}
+
+				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, apiserver.Namespace, pgpool)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
 					resp.Status.Msg = err.Error()
 					return resp
 				}
+
 			}
 
 			if request.Expired != "" {
@@ -133,7 +139,11 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(defaultPasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, apiserver.Namespace)
+							pgpool := false
+							if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+								pgpool = true
+							}
+							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, apiserver.Namespace, pgpool)
 							if err != nil {
 								log.Error("error in updating password")
 							}
@@ -199,7 +209,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 }
 
 // updatePassword ...
-func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string) error {
+func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, pgpool bool) error {
 	var err error
 	var conn *sql.DB
 
@@ -247,6 +257,14 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	if err != nil {
 		log.Debug(err.Error())
 		return err
+	}
+
+	if pgpool {
+		err := reconfigurePgpool(clusterName)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
 	}
 
 	return err
@@ -475,40 +493,17 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 		}
 		newPassword := util.GeneratePassword(defaultPasswordLength)
 		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, apiserver.Namespace)
+
+		pgpool := false
+		if c.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+			pgpool = true
+		}
+		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, apiserver.Namespace, pgpool)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
-		}
-
-		//reconfigure pgpool if it exists for this cluster
-		if c.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
-			spec := crv1.PgtaskSpec{}
-			spec.Name = util.LABEL_PGPOOL_TASK_RECONFIGURE + "-" + c.Name
-			spec.TaskType = crv1.PgtaskReconfigurePgpool
-			spec.StorageSpec = crv1.PgStorageSpec{}
-			spec.Parameters = make(map[string]string)
-			spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = c.Name
-
-			newInstance := &crv1.Pgtask{
-				ObjectMeta: meta_v1.ObjectMeta{
-					Name: spec.Name,
-				},
-				Spec: spec,
-			}
-
-			newInstance.ObjectMeta.Labels = make(map[string]string)
-			newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = c.Name
-			newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_RECONFIGURE] = "true"
-
-			err := kubeapi.Createpgtask(apiserver.RESTClient,
-				newInstance, apiserver.Namespace)
-			if err != nil {
-				log.Error(err)
-			}
-
 		}
 
 	}
@@ -569,6 +564,19 @@ func DeleteUser(name, selector string) msgs.DeleteUserResponse {
 		msg = name + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
 		log.Debug(msg)
 		response.Results = append(response.Results, msg)
+
+		//see if pgpool needs to be reconfigured
+		if managed {
+			if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+				err := reconfigurePgpool(clusterName)
+				if err != nil {
+					log.Error(err)
+					response.Status.Code = msgs.Error
+					response.Status.Msg = err.Error()
+					return response
+				}
+			}
+		}
 
 	}
 
@@ -635,5 +643,34 @@ func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	secretName := clustername + "-" + username + "-secret"
 
 	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
+	return err
+}
+
+func reconfigurePgpool(clusterName string) error {
+	var err error
+	spec := crv1.PgtaskSpec{}
+	spec.Name = util.LABEL_PGPOOL_TASK_RECONFIGURE + "-" + clusterName
+	spec.TaskType = crv1.PgtaskReconfigurePgpool
+	spec.StorageSpec = crv1.PgStorageSpec{}
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = clusterName
+
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+		},
+		Spec: spec,
+	}
+
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_RECONFIGURE] = "true"
+
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 	return err
 }
