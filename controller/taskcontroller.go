@@ -121,6 +121,12 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskDeletePgpool:
+		log.Info("delete pgpool task added")
+		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskAddPgpool:
+		log.Info("add pgpool task added")
+		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskFailover:
 		log.Info("failover task added")
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)

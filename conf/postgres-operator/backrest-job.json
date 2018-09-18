@@ -2,7 +2,7 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backrest-{{.PodName}}",
+                "name": "backrest-{{.Command}}-{{.ClusterName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
@@ -13,7 +13,7 @@
     "spec": {
         "template": {
             "metadata": {
-                "name": "backrest-{{.PodName}}",
+                "name": "backrest-{{.Command}}-{{.ClusterName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",

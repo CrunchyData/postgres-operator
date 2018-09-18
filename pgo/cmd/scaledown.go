@@ -34,7 +34,7 @@ var scaledownCmd = &cobra.Command{
 	pgo scaledown mycluster --query
 
 	To scale down a specific replica:
-	pgo scaledown mycluster --scale-down-target=mycluster-replica-xxxx`,
+	pgo scaledown mycluster --target=mycluster-replica-xxxx`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("scaledown called")
 

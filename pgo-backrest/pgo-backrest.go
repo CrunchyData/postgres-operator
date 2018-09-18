@@ -51,10 +51,6 @@ func main() {
 
 	COMMAND_OPTS := os.Getenv("COMMAND_OPTS")
 	log.Debug("setting COMMAND_OPTS to " + COMMAND_OPTS)
-	if COMMAND_OPTS == "" {
-		log.Error("COMMAND_OPTS env var not set")
-		os.Exit(2)
-	}
 
 	PODNAME := os.Getenv("PODNAME")
 	log.Debug("setting PODNAME to " + PODNAME)

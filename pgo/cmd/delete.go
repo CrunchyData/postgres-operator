@@ -24,12 +24,13 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a user, policy, cluster, backup, or upgrade",
-	Long: `The delete command allows you to delete a user, policy, cluster, backup, or upgrade. For example:
+	Short: "Delete a user, policy, cluster, pgpool, backup, or upgrade",
+	Long: `The delete command allows you to delete a user, policy, cluster, pgpool, backup, or upgrade. For example:
 
 	pgo delete user testuser --selector=name=mycluster
 	pgo delete policy mypolicy
 	pgo delete cluster mycluster
+	pgo delete pgpool mycluster
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
 	pgo delete backup mycluster
@@ -41,6 +42,7 @@ var deleteCmd = &cobra.Command{
 	* policy
 	* user
 	* cluster
+	* pgpool
 	* backup
 	* ingest
 	* upgrade`)
@@ -49,6 +51,7 @@ var deleteCmd = &cobra.Command{
 			case "policy":
 			case "user":
 			case "cluster":
+			case "pgpool":
 			case "backup":
 			case "ingest":
 			case "upgrade":
@@ -58,6 +61,7 @@ var deleteCmd = &cobra.Command{
 	* policy
 	* user
 	* cluster
+	* pgpool
 	* backup
 	* ingest
 	* upgrade`)
@@ -76,10 +80,12 @@ func init() {
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteIngestCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
+	deleteCmd.AddCommand(deletePgpoolCmd)
 	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
 	deleteCmd.AddCommand(deleteBackupCmd)
@@ -91,10 +97,6 @@ var deleteIngestCmd = &cobra.Command{
 	Use:   "ingest",
 	Short: "Delete an ingest",
 	Long: `Delete an ingest. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete ingest myingest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -113,10 +115,6 @@ var deleteUpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Delete an upgrade",
 	Long: `Delete an upgrade. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -135,10 +133,6 @@ var deleteBackupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Delete a backup",
 	Long: `Delete a backup. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -158,10 +152,6 @@ var deleteUserCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Delete a user",
 	Long: `Delete a user. For example:
-<<<<<<< HEAD
-=======
-
->>>>>>> pre32
 	pgo delete user someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -213,6 +203,27 @@ var deletePolicyCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+// deletePgpoolCmd ...
+var deletePgpoolCmd = &cobra.Command{
+	Use:   "pgpool",
+	Short: "Delete a pgpool from a cluster",
+	Long: `Delete a pgpool from a cluster. For example:
+
+	pgo delete pgpool mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: A cluster name or selector is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgpool(args)
+
 			} else {
 				fmt.Println("Aborting...")
 			}

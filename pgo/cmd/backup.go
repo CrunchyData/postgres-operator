@@ -161,7 +161,7 @@ func createBackup(args []string) {
 	response, err := api.CreateBackup(httpclient, &SessionCredentials, request)
 
 	if err != nil {
-		fmt.Println("Error: " + response.Status.Msg)
+		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
 	}
 

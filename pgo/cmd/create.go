@@ -39,10 +39,11 @@ var Series int
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Cluster, Policy, or User",
-	Long: `CREATE allows you to create a new Cluster, Policy, or User. For example:
+	Short: "Create a Cluster, pgpool, Policy, or User",
+	Long: `CREATE allows you to create a new Cluster, pgpool, Policy, or User. For example:
 
 	pgo create cluster
+	pgo create pgpool
 	pgo create policy
 	pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -51,6 +52,7 @@ var CreateCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
 	* cluster
 	* user
+	* pgpool
 	* policy`)
 		}
 	},
@@ -103,6 +105,24 @@ var createPolicyCmd = &cobra.Command{
 	},
 }
 
+// createPgpoolCmd ...
+var createPgpoolCmd = &cobra.Command{
+	Use:   "pgpool",
+	Short: "Create a pgpool ",
+	Long: `Create a pgpool. For example:
+
+	pgo create pgpool mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("create pgpool called ")
+
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`Error: A cluster name or selector is required for this command.`)
+		} else {
+			createPgpool(args)
+		}
+	},
+}
+
 // createIngestCmd ...
 var createIngestCmd = &cobra.Command{
 	Use:   "ingest",
@@ -151,6 +171,7 @@ func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
+	CreateCmd.AddCommand(createPgpoolCmd)
 	CreateCmd.AddCommand(createIngestCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
@@ -167,6 +188,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
+
 	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for initial database users.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The backup archive PVC to restore from.")
@@ -178,6 +200,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "", "", "The policy file path to use for adding a policy.")
+
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")

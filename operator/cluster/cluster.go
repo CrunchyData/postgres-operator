@@ -177,8 +177,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
-	var testPassword string
-	_, _, testPassword, err = createDatabaseSecrets(clientset, client, cl, namespace)
+	_, _, _, err = createDatabaseSecrets(clientset, client, cl, namespace)
 	if err != nil {
 		log.Error("error in create secrets " + err.Error())
 		return
@@ -197,21 +196,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	//add pgpool deployment if requested
-	if cl.Spec.UserLabels[util.LABEL_PGPOOL_SECRET] == "true" {
-		//generate a secret for pgpool using the testuser credential
-		secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
-		primaryName := cl.Spec.Name
-		replicaName := cl.Spec.Name + "-replica"
-		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		//create the pgpool deployment using that credential
-		AddPgpool(clientset, client, cl, namespace, secretName)
-	}
-
 	//replaced with ccpimagetag instead of pg version
 	//setFullVersion(client, cl, namespace)
 
@@ -224,6 +208,26 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	err = util.Patch(client, "/spec/PrimaryStorage/name", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
+	}
+
+	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[util.LABEL_PGPOOL])
+	//add pgpool deployment if requested
+	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+		log.Debug("pgpool requested")
+		/**
+		//generate a secret for pgpool using the testuser credential
+		secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
+		primaryName := cl.Spec.Name
+		replicaName := cl.Spec.Name + "-replica"
+		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, "testuser", testPassword, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("pgpool secret created")
+		*/
+		//create the pgpool deployment using that credential
+		AddPgpool(clientset, cl, namespace)
 	}
 
 }

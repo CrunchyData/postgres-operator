@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/reloadservice"
@@ -120,6 +121,8 @@ func main() {
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")
+	r.HandleFunc("/pgpool", pgpoolservice.CreatePgpoolHandler).Methods("POST")
+	r.HandleFunc("/pgpooldelete", pgpoolservice.DeletePgpoolHandler).Methods("POST")
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

@@ -127,3 +127,21 @@ func Createpgcluster(client *rest.RESTClient, cluster *crv1.Pgcluster, namespace
 
 	return err
 }
+
+// Updatepgcluster updates a pgcluster
+func Updatepgcluster(client *rest.RESTClient, cluster *crv1.Pgcluster, name, namespace string) error {
+
+	err := client.Put().
+		Name(name).
+		Namespace(namespace).
+		Resource(crv1.PgclusterResourcePlural).
+		Body(cluster).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error updating pgcluster " + err.Error())
+	}
+
+	log.Debug("updated pgcluster " + cluster.Name)
+	return err
+}

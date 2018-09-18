@@ -302,8 +302,8 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 	//get the postgres user secret info
 	var username, password, database, hostip string
 	for _, s := range secrets.Items {
-		username = string(s.Data["username"][:])
-		password = string(s.Data["password"][:])
+		username = string(s.Data[util.LABEL_USERNAME][:])
+		password = string(s.Data[util.LABEL_PASSWORD][:])
 		database = "postgres"
 		hostip = service.Spec.ClusterIP
 		if username == "postgres" {
