@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -243,6 +244,9 @@ func ScaleQuery(name string) msgs.ScaleQueryResponse {
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
 		//get the rep status
+		receiveLocation, replayLocation := util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace)
+
+		target.RepStatus = fmt.Sprintf("receive %d replay %d", receiveLocation, replayLocation)
 		response.Targets = append(response.Targets, target)
 	}
 
@@ -293,6 +297,20 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 		return response
 	}
 
+	//validate the replica name that was passed
+	replica := crv1.Pgreplica{}
+	found, err := kubeapi.Getpgreplica(apiserver.RESTClient, &replica, replicaName, apiserver.Namespace)
+	if !found || err != nil {
+		log.Error(err)
+		response.Status.Code = msgs.Error
+		if !found {
+			response.Status.Msg = replicaName + " replica not found"
+		} else {
+			response.Status.Msg = err.Error()
+		}
+		return response
+	}
+
 	if len(replicaList.Items) == 1 {
 		log.Debug("removing replica service when scaling down to 0 replicas")
 		err = kubeapi.DeleteService(apiserver.Clientset, clusterName+"-replica", apiserver.Namespace)
@@ -301,14 +319,6 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 			response.Status.Msg = err.Error()
 			return response
 		}
-	}
-
-	replica := crv1.Pgreplica{}
-	found, err := kubeapi.Getpgreplica(apiserver.RESTClient, &replica, replicaName, apiserver.Namespace)
-	if !found || err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
 	}
 
 	err = kubeapi.Deletepgreplica(apiserver.RESTClient, replicaName, apiserver.Namespace)

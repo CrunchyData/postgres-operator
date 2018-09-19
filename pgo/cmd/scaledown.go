@@ -44,6 +44,10 @@ var scaledownCmd = &cobra.Command{
 			if Query {
 				queryCluster(args)
 			} else {
+				if Target == "" {
+					fmt.Println(`Error: You must specify --target`)
+					os.Exit(2)
+				}
 				if util.AskForConfirmation(NoPrompt, "") {
 				} else {
 					fmt.Println("Aborting...")
@@ -113,5 +117,5 @@ func scaleDownCluster(clusterName string) {
 }
 
 func printScaleTarget(target msgs.ScaleQueryTargetSpec) {
-	fmt.Printf("\t%s (%s) (%s)\n", target.Name, target.ReadyStatus, target.Node)
+	fmt.Printf("\t%s (%s) (%s) (%s)\n", target.Name, target.ReadyStatus, target.Node, target.RepStatus)
 }
