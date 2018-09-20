@@ -44,7 +44,7 @@ var caCertPath, clientCertPath, clientKeyPath string
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
-	log.Debugf("http status code is %d\n", resp.StatusCode)
+	log.Debugf("HTTP status code is %d\n", resp.StatusCode)
 	if resp.StatusCode == 401 {
 		fmt.Println("Error: Authentication Failed: %d\n", resp.StatusCode)
 		os.Exit(2)
@@ -83,14 +83,14 @@ func GetCredentials() {
 
 	dir := UserHomeDir()
 	fullPath := dir + "/" + ".pgouser"
-	log.Debug("looking in " + fullPath + " for credentials")
+	log.Debugf("looking in %s for credentials", fullPath)
 	dat, err := ioutil.ReadFile(fullPath)
 	found := false
 	if err != nil {
-		log.Debug(fullPath + " not found")
+		log.Debugf("%s not found", fullPath)
 	} else {
-		log.Debug(fullPath + " found")
-		log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
+		log.Debugf("%s found", fullPath)
+		log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
 		SessionCredentials = parseCredentials(string(dat))
 		found = true
 
@@ -100,10 +100,10 @@ func GetCredentials() {
 		fullPath = etcpath
 		dat, err = ioutil.ReadFile(fullPath)
 		if err != nil {
-			log.Debug(etcpath + " not found")
+			log.Debugf("%s not found", etcpath)
 		} else {
-			log.Debug(fullPath + " found")
-			log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
+			log.Debugf("%s found", fullPath)
+			log.Debugf("pgouser file found at %s contains ", fullPath, string(dat))
 			SessionCredentials = parseCredentials(string(dat))
 			found = true
 		}
@@ -112,19 +112,19 @@ func GetCredentials() {
 	if !found {
 		pgoUser := os.Getenv(pgouserenvvar)
 		if pgoUser == "" {
-			fmt.Println("Error: " + pgouserenvvar + " env var not set")
+			fmt.Println("Error: %s environment variable not set", pgouserenvvar)
 			os.Exit(2)
 		}
 
 		fullPath = pgoUser
-		log.Debug(pgouserenvvar + " environment variable is being used at " + fullPath)
+		log.Debugf("%s environment variable is being used at %s", pgouserenvvar, fullPath)
 		dat, err = ioutil.ReadFile(fullPath)
 		if err != nil {
-			fmt.Println("Error: " + fullPath + " file not found")
+			fmt.Println("Error: %s file not found", fullPath)
 			os.Exit(2)
 		}
 
-		log.Debug("pgouser file found at " + fullPath + "contains " + string(dat))
+		log.Debugf("pgouser file found at %s contains ", fullPath, string(dat))
 		SessionCredentials = parseCredentials(string(dat))
 	}
 
@@ -152,7 +152,7 @@ func GetCredentials() {
 
 	_, err = ioutil.ReadFile(clientCertPath)
 	if err != nil {
-		log.Debug(clientCertPath + " not found")
+		log.Debugf("%s not found", clientCertPath)
 		os.Exit(2)
 	}
 
@@ -165,7 +165,7 @@ func GetCredentials() {
 
 	_, err = ioutil.ReadFile(clientKeyPath)
 	if err != nil {
-		log.Debug(clientKeyPath + " not found")
+		log.Debugf("%s not found", clientKeyPath)
 		os.Exit(2)
 	}
 	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
