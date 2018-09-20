@@ -31,7 +31,7 @@ func ShowCluster(httpclient *http.Client, arg, selector string, SessionCredentia
 
 	url := SessionCredentials.APIServerURL + "/clusters/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 
-	log.Debug("show cluster called [" + url + "]")
+	log.Debugf("show cluster called [%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -69,11 +69,11 @@ func DeleteCluster(httpclient *http.Client, arg, selector string, SessionCredent
 
 	var response msgs.DeleteClusterResponse
 
-	log.Debug("deleting cluster " + arg + " with delete-data " + strconv.FormatBool(deleteData))
+	log.Debugf("deleting cluster %s with delete-data %s\n", arg, strconv.FormatBool(deleteData))
 
 	url := SessionCredentials.APIServerURL + "/clustersdelete/" + arg + "?selector=" + selector + "&delete-data=" + strconv.FormatBool(deleteData) + "&delete-backups=" + strconv.FormatBool(deleteBackups) + "&version=" + msgs.PGO_VERSION
 
-	log.Debug("delete cluster called [" + url + "]")
+	log.Debugf("delete cluster called %s", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -112,7 +112,7 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/clusters"
-	log.Debug("createCluster called...[" + url + "]")
+	log.Debugf("createCluster called [%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
