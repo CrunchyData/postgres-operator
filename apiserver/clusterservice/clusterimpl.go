@@ -128,7 +128,7 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 		return response
 	}
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowClusterDetail{}
@@ -259,7 +259,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 	response.Results = make([]msgs.ClusterTestResult, 0)
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	log.Debug("selector is " + selector)
+	log.Debugf("selector is %s", selector)
 	if selector == "" && name == "all" {
 		log.Debug("selector is empty and name is all")
 	} else {
@@ -370,7 +370,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 	var err error
 
 	connString := "sslmode=disable user=" + dbUser + " host=" + dbHost + " port=" + dbPort + " dbname=" + database + " password=" + dbPassword
-	log.Debug("connString=" + connString)
+	log.Debugf("connString=%s", connString)
 
 	conn, err = sql.Open("postgres", connString)
 	if err != nil {
@@ -400,7 +400,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 			log.Debug(err.Error())
 			return false
 		}
-		log.Debug("returned " + ts)
+		log.Debugf("returned %s", ts)
 		return true
 	}
 	return false
@@ -433,18 +433,18 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		if request.Series > 1 {
 			clusterName = request.Name + strconv.Itoa(i)
 		}
-		log.Debug("create cluster called for " + clusterName)
+		log.Debugf("create cluster called for %s", clusterName)
 		result := crv1.Pgcluster{}
 
 		// error if it already exists
 		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &result, clusterName, apiserver.Namespace)
 		if err == nil {
-			log.Debug("pgcluster " + clusterName + " was found so we will not create it")
+			log.Debugf("pgcluster %s was found so we will not create it", clusterName)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "pgcluster " + clusterName + " was found so we will not create it"
 			return resp
 		} else if !found {
-			log.Debug("pgcluster " + clusterName + " not found so we will create it")
+			log.Debugf("pgcluster %s not found so we will create it", clusterName)
 		} else {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "error getting pgcluster " + clusterName + err.Error()
@@ -644,7 +644,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag string) error {
 	var configPolicies string
 
 	if PoliciesFlag == "" {
-		log.Debug(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
+		log.Debugf("%s is Pgo.Cluster.Policies", apiserver.Pgo.Cluster.Policies)
 		configPolicies = apiserver.Pgo.Cluster.Policies
 	} else {
 		configPolicies = PoliciesFlag
@@ -732,7 +732,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	log.Println(apiserver.Pgo.Cluster.CCPImageTag + " is Pgo.Cluster.CCPImageTag")
 	if request.CCPImageTag != "" {
 		spec.CCPImageTag = request.CCPImageTag
-		log.Debug("using CCPImageTag from command line " + request.CCPImageTag)
+		log.Debugf("using CCPImageTag from command line %s", request.CCPImageTag)
 	}
 
 	spec.Name = name
@@ -822,7 +822,7 @@ func validateSecretFrom(secretname string) error {
 		return err
 	}
 
-	log.Debug("secrets for " + secretname)
+	log.Debugf("secrets for %s", secretname)
 	pgprimaryFound := false
 	pgrootFound := false
 	pguserFound := false
@@ -884,7 +884,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	cluster.Spec.Name = clusterName
 
 	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
-	log.Debug("selector for delete is " + selector)
+	log.Debugf("selector for delete is %s", selector)
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
@@ -901,7 +901,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		//get the volumes for this pod
 		for _, v := range pod.Spec.Volumes {
 
-			log.Debug("volume name in delete logic is " + v.Name)
+			log.Debugf("volume name in delete logic is %s", v.Name)
 			dataRoots := make([]string, 0)
 			if v.Name == "pgdata" {
 				dataRoots = append(dataRoots, deploymentName)
@@ -933,10 +933,10 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 		for _, dep := range deps.Items {
 			pvcName := dep.Name + "-backup"
-			log.Debug("checking dep %s for backup pvc %s\n", dep.Name, pvcName)
+			log.Debugf("checking dep %s for backup pvc %s\n", dep.Name, pvcName)
 			_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, apiserver.Namespace)
 			if !found {
-				log.Debug("%s pvc was not found when looking for backups to delete\n", pvcName)
+				log.Debugf("%s pvc was not found when looking for backups to delete\n", pvcName)
 			} else {
 				if err != nil {
 					log.Error(err)
@@ -1054,7 +1054,7 @@ func validateBackrestConfig(labels map[string]string) error {
 			//check the global configmap here
 			_, found := kubeapi.GetConfigMap(apiserver.Clientset, util.GLOBAL_CUSTOM_CONFIGMAP, apiserver.Namespace)
 			if !found {
-				log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found")
+				log.Debugf("%s was not found", util.GLOBAL_CUSTOM_CONFIGMAP )
 				return errors.New(util.GLOBAL_CUSTOM_CONFIGMAP + " global configmap or --custom-config flag not set, one of these is required for enabling pgbackrest")
 			}
 

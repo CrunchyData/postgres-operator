@@ -222,7 +222,7 @@ func ScaleQuery(name string) msgs.ScaleQueryResponse {
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {
-		log.Debug("no replicas found ")
+		log.Debug("no replicas found")
 		response.Status.Msg = "no replicas found for " + name
 		return response
 	} else if err != nil {
@@ -238,7 +238,7 @@ func ScaleQuery(name string) msgs.ScaleQueryResponse {
 	log.Debugf("deps len %d\n", len(deployments.Items))
 
 	for _, dep := range deployments.Items {
-		log.Debug("found " + dep.Name)
+		log.Debugf("found %s", dep.Name)
 		target := msgs.ScaleQueryTargetSpec{}
 		target.Name = dep.Name
 		//get the pod status
