@@ -37,7 +37,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 	response.Results = make([]msgs.DfDetail, 0)
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	log.Debug("selector is " + selector)
+	log.Debugf("selector is %s", selector)
 	if selector == "" && name == "all" {
 		log.Debug("selector is empty and name is all")
 	} else {
@@ -58,7 +58,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 
 	//loop thru each cluster
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 
@@ -186,7 +186,7 @@ func getPGSize(port, host, databaseName, clusterName string) (string, int, error
 			log.Error(err.Error())
 			return "", 0, err
 		}
-		log.Debug("returned %s %d\n", dbsizePretty, dbsize)
+		log.Debugf("returned %s %d\n", dbsizePretty, dbsize)
 		return dbsizePretty, dbsize, err
 	}
 
