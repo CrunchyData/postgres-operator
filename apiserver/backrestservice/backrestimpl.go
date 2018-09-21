@@ -69,7 +69,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	}
 
 	for _, clusterName := range request.Args {
-		log.Debug("create backrestbackup called for " + clusterName)
+		log.Debugf("create backrestbackup called for %s", clusterName)
 		taskName := clusterName + "-backrest-backup"
 
 		cluster := crv1.Pgcluster{}
@@ -89,14 +89,14 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 		// error if it already exists
 		found, err = kubeapi.Getpgtask(apiserver.RESTClient, &result, taskName, apiserver.Namespace)
 		if !found {
-			log.Debug("backrest backup pgtask " + taskName + " not found so we create it")
+			log.Debugf("backrest backup pgtask %s was not found so we will create it", taskName)
 		} else if err != nil {
 
 			resp.Results = append(resp.Results, "error getting pgtask for "+taskName)
 			break
 		} else {
 
-			log.Debug("pgtask " + taskName + " was found so we recreate it")
+			log.Debugf("pgtask %s was found so we will recreate it", taskName)
 			//remove the existing pgtask
 			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, apiserver.Namespace)
 			if err != nil {
@@ -246,7 +246,7 @@ func ShowBackrest(name, selector string) msgs.ShowBackrestResponse {
 		return response
 	}
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowBackrestDetail{}
@@ -340,7 +340,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		pgtask.Name,
 		apiserver.Namespace)
 	if found {
-		log.Debug("deleting prior pgtask " + pgtask.Name)
+		log.Debugf("deleting prior pgtask %s", pgtask.Name)
 		err = kubeapi.Deletepgtask(apiserver.RESTClient,
 			pgtask.Name,
 			apiserver.Namespace)
