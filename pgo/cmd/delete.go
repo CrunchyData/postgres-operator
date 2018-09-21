@@ -24,12 +24,13 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a user, policy, cluster, pgpool, backup, or upgrade",
-	Long: `The delete command allows you to delete a user, policy, cluster, pgpool, backup, or upgrade. For example:
+	Short: "Delete a user, policy, cluster, pgbouncer, pgpool, backup, or upgrade",
+	Long: `The delete command allows you to delete a user, policy, cluster, pgbouncer, pgpool, backup, or upgrade. For example:
 
 	pgo delete user testuser --selector=name=mycluster
 	pgo delete policy mypolicy
 	pgo delete cluster mycluster
+	pgo delete pgbouncer mycluster
 	pgo delete pgpool mycluster
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
@@ -42,6 +43,7 @@ var deleteCmd = &cobra.Command{
 	* policy
 	* user
 	* cluster
+	* pgbouncer
 	* pgpool
 	* backup
 	* ingest
@@ -51,6 +53,7 @@ var deleteCmd = &cobra.Command{
 			case "policy":
 			case "user":
 			case "cluster":
+			case "pgbouncer":
 			case "pgpool":
 			case "backup":
 			case "ingest":
@@ -61,6 +64,7 @@ var deleteCmd = &cobra.Command{
 	* policy
 	* user
 	* cluster
+	* pgbouncer
 	* pgpool
 	* backup
 	* ingest
@@ -80,11 +84,13 @@ func init() {
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteIngestCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
+	deleteCmd.AddCommand(deletePgbouncerCmd)
 	deleteCmd.AddCommand(deletePgpoolCmd)
 	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
@@ -203,6 +209,27 @@ var deletePolicyCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+// deletePgbouncerCmd ...
+var deletePgbouncerCmd = &cobra.Command{
+	Use:   "pgbouncer",
+	Short: "Delete a pgbouncer from a cluster",
+	Long: `Delete a pgbouncer from a cluster. For example:
+
+	pgo delete pgbouncer mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: A cluster name or selector is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgbouncer(args)
+
 			} else {
 				fmt.Println("Aborting...")
 			}

@@ -1,0 +1,68 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "extensions/v1beta1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "name": "{{.Name}}",
+            "pg-cluster": "{{.ClusterName}}"
+        }
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{.Name}}",
+                    "crunchy-pgbouncer": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+
+                "containers": [{
+                    "name": "pgbouncer",
+                    "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
+                    "ports": [{
+                        "containerPort": {{.Port}},
+                        "protocol": "TCP"
+                    }],
+                    "env": [{
+                        "name": "PG_USERNAME",
+                        "value": "testuser"
+                    }, {
+                        "name": "PG_PASSWORD",
+                        "value": "password"
+                    }, {
+                        "name": "PG_PRIMARY_SERVICE_NAME",
+                        "value": "{{.PrimaryServiceName}}"
+                    }, {
+                        "name": "PG_REPLICA_SERVICE_NAME",
+                        "value": "{{.ReplicaServiceName}}"
+                    }],
+                    "volumeMounts": [{
+                        "name": "pgbouncer-conf",
+                        "mountPath": "/pgconf/",
+                        "readOnly": false
+                    }]
+                }],
+                "volumes": [{
+                "name": "pgbouncer-conf",
+                "secret": {
+                    "secretName": "{{.SecretsName}}",
+                    "defaultMode": 511
+                    }
+                }],
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

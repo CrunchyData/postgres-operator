@@ -175,6 +175,7 @@ func createCluster(args []string) {
 	r.ServiceType = ServiceType
 	r.AutofailFlag = AutofailFlag
 	r.PgpoolFlag = PgpoolFlag
+	r.PgbouncerFlag = PgbouncerFlag
 	r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
 	r.PgpoolSecret = PgpoolSecret

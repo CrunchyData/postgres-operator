@@ -31,22 +31,22 @@ import (
 	"time"
 )
 
-type PgpoolPasswdFields struct {
+type PgbouncerPasswdFields struct {
 	Username string
 	Password string
 }
 
-type PgpoolHBAFields struct {
+type PgbouncerHBAFields struct {
 }
 
-type PgpoolConfFields struct {
+type PgbouncerConfFields struct {
 	PG_PRIMARY_SERVICE_NAME string
 	PG_REPLICA_SERVICE_NAME string
 	PG_USERNAME             string
 	PG_PASSWORD             string
 }
 
-type PgpoolTemplateFields struct {
+type PgbouncerTemplateFields struct {
 	Name               string
 	ClusterName        string
 	SecretsName        string
@@ -58,13 +58,13 @@ type PgpoolTemplateFields struct {
 	ReplicaServiceName string
 }
 
-const PGPOOL_SUFFIX = "-pgpool"
+const PGBOUNCER_SUFFIX = "-pgbouncer"
 
-func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("ReconfigurePgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
+	log.Debug("ReconfigurePgbouncerFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
-	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
+	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
 	pgcluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
@@ -73,15 +73,15 @@ func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 
-	depName := clusterName + "-pgpool"
-	//remove the pgpool deployment (deployment name is the same as svcname)
+	depName := clusterName + "-pgbouncer"
+	//remove the pgbouncer deployment (deployment name is the same as svcname)
 	err = kubeapi.DeleteDeployment(clientset, depName, namespace)
 	if err != nil {
 		log.Error(err)
 	}
 
-	//remove the pgpool secret
-	secretName := clusterName + "-pgpool-secret"
+	//remove the pgbouncer secret
+	secretName := clusterName + "-pgbouncer-secret"
 	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
 	if err != nil {
 		log.Error(err)
@@ -96,12 +96,12 @@ func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest
 		if err != nil {
 			log.Error(err)
 		}
-		log.Debugf("pgpool reconfigure sleeping till deployment [%s] is removed\n", depName)
+		log.Debugf("pgbouncer reconfigure sleeping till deployment [%s] is removed\n", depName)
 		time.Sleep(time.Second * time.Duration(4))
 	}
 
-	//create the pgpool but leave the existing service in place
-	AddPgpool(clientset, &pgcluster, namespace, false)
+	//create the pgbouncer but leave the existing service in place
+	AddPgbouncer(clientset, &pgcluster, namespace, false)
 
 	//remove task to cleanup
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -110,14 +110,14 @@ func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 
-	log.Debugf("reconfigure pgpool to cluster [%s]\n", clusterName)
+	log.Debugf("reconfigure pgbouncer to cluster [%s]\n", clusterName)
 }
 
-func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("AddPgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
+	log.Debug("AddPgbouncerFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
-	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
+	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
 	pgcluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
@@ -125,7 +125,7 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 		return
 	}
-	AddPgpool(clientset, &pgcluster, namespace, true)
+	AddPgbouncer(clientset, &pgcluster, namespace, true)
 
 	//remove task
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -135,20 +135,20 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 	}
 
 	//update the pgcluster CRD
-	pgcluster.Spec.UserLabels[util.LABEL_PGPOOL] = "true"
+	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER] = "true"
 	err = kubeapi.Updatepgcluster(restclient, &pgcluster, pgcluster.Name, namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	log.Debugf("added pgpool to cluster [%s]\n", clusterName)
+	log.Debugf("added pgbouncer to cluster [%s]\n", clusterName)
 }
 
-func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("DeletePgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
+	log.Debug("DeletePgbouncerFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
-	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
+	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
 	pgcluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
@@ -157,21 +157,21 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		return
 	}
 
-	//remove the pgpool service
-	serviceName := clusterName + "-pgpool"
+	//remove the pgbouncer service
+	serviceName := clusterName + "-pgbouncer"
 	err = kubeapi.DeleteService(clientset, serviceName, namespace)
 	if err != nil {
 		log.Error(err)
 	}
 
-	//remove the pgpool deployment (deployment name is the same as svcname)
+	//remove the pgbouncer deployment (deployment name is the same as svcname)
 	err = kubeapi.DeleteDeployment(clientset, serviceName, namespace)
 	if err != nil {
 		log.Error(err)
 	}
 
-	//remove the pgpool secret
-	secretName := clusterName + "-pgpool-secret"
+	//remove the pgbouncer secret
+	secretName := clusterName + "-pgbouncer-secret"
 	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
 	if err != nil {
 		log.Error(err)
@@ -184,37 +184,37 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 	}
 
 	//update the pgcluster CRD
-	pgcluster.Spec.UserLabels[util.LABEL_PGPOOL] = "false"
+	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER] = "false"
 	err = kubeapi.Updatepgcluster(restclient, &pgcluster, pgcluster.Name, namespace)
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debugf("delete pgpool from cluster [%s]\n", clusterName)
+	log.Debugf("delete pgbouncer from cluster [%s]\n", clusterName)
 }
 
-// ProcessPgpool ...
-func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) {
+// ProcessPgbouncer ...
+func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) {
 	var doc bytes.Buffer
 	var err error
 
-	//generate a secret for pgpool using the testuser credential
-	secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
+	//generate a secret for pgbouncer using the testuser credential
+	secretName := cl.Spec.Name + "-" + util.LABEL_PGBOUNCER_SECRET
 	primaryName := cl.Spec.Name
 	replicaName := cl.Spec.Name + "-replica"
-	err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
+	err = CreatePgbouncerSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	log.Debug("pgpool secret created")
+	log.Debug("pgbouncer secret created")
 
 	clusterName := cl.Spec.Name
-	pgpoolName := clusterName + PGPOOL_SUFFIX
-	log.Debug("adding a pgpool " + pgpoolName)
+	pgbouncerName := clusterName + PGBOUNCER_SUFFIX
+	log.Debug("adding a pgbouncer " + pgbouncerName)
 
-	//create the pgpool deployment
-	fields := PgpoolTemplateFields{
-		Name:           pgpoolName,
+	//create the pgbouncer deployment
+	fields := PgbouncerTemplateFields{
+		Name:           pgbouncerName,
 		ClusterName:    clusterName,
 		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:    cl.Spec.CCPImageTag,
@@ -222,33 +222,33 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		SecretsName:    secretName,
 	}
 
-	err = operator.PgpoolTemplate.Execute(&doc, fields)
+	err = operator.PgbouncerTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgpoolTemplate.Execute(os.Stdout, fields)
+		operator.PgbouncerTemplate.Execute(os.Stdout, fields)
 	}
 
 	deployment := v1beta1.Deployment{}
 	err = json.Unmarshal(doc.Bytes(), &deployment)
 	if err != nil {
-		log.Error("error unmarshalling pgpool json into Deployment " + err.Error())
+		log.Error("error unmarshalling pgbouncer json into Deployment " + err.Error())
 		return
 	}
 
 	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
-		log.Error("error creating pgpool Deployment " + err.Error())
+		log.Error("error creating pgbouncer Deployment " + err.Error())
 		return
 	}
 
 	if createService {
-		//create a service for the pgpool
+		//create a service for the pgbouncer
 		svcFields := ServiceTemplateFields{}
-		svcFields.Name = pgpoolName
+		svcFields.Name = pgbouncerName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = "5432"
 
@@ -260,39 +260,39 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 	}
 }
 
-// DeletePgpool
-func DeletePgpool(clientset *kubernetes.Clientset, clusterName, namespace string) {
+// DeletePgbouncer
+func DeletePgbouncer(clientset *kubernetes.Clientset, clusterName, namespace string) {
 
-	pgpoolDepName := clusterName + "-pgpool"
+	pgbouncerDepName := clusterName + "-pgbouncer"
 
-	kubeapi.DeleteDeployment(clientset, pgpoolDepName, namespace)
+	kubeapi.DeleteDeployment(clientset, pgbouncerDepName, namespace)
 
-	//delete the service name=<clustename>-pgpool
+	//delete the service name=<clustename>-pgbouncer
 
-	kubeapi.DeleteService(clientset, pgpoolDepName, namespace)
+	kubeapi.DeleteService(clientset, pgbouncerDepName, namespace)
 
 }
 
-// CreatePgpoolSecret create a secret used by pgpool
-func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, namespace string) error {
+// CreatePgbouncerSecret create a secret used by pgbouncer
+func CreatePgbouncerSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, namespace string) error {
 
 	var err error
 	var username, password string
-	var pgpoolHBABytes, pgpoolConfBytes, pgpoolPasswdBytes []byte
+	var pgbouncerHBABytes, pgbouncerConfBytes, pgbouncerPasswdBytes []byte
 
-	pgpoolHBABytes, err = getPgpoolHBA()
+	pgbouncerHBABytes, err = getPgbouncerHBA()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	pgpoolPasswdBytes, username, password, err = getPgpoolPasswd(clientset, namespace, db)
+	pgbouncerPasswdBytes, username, password, err = getPgbouncerPasswd(clientset, namespace, db)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	pgpoolConfBytes, err = getPgpoolConf(primary, replica, username, password)
+	pgbouncerConfBytes, err = getPgbouncerConf(primary, replica, username, password)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -303,11 +303,11 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels[util.LABEL_PG_DATABASE] = db
-	secret.ObjectMeta.Labels[util.LABEL_PGPOOL] = "true"
+	secret.ObjectMeta.Labels[util.LABEL_PGBOUNCER] = "true"
 	secret.Data = make(map[string][]byte)
-	secret.Data["pgpool.conf"] = pgpoolConfBytes
-	secret.Data["pool_hba.conf"] = pgpoolHBABytes
-	secret.Data["pool_passwd"] = pgpoolPasswdBytes
+	secret.Data["pgbouncer.ini"] = pgbouncerConfBytes
+	secret.Data["pg_hba.conf"] = pgbouncerHBABytes
+	secret.Data["users.txt"] = pgbouncerPasswdBytes
 
 	err = kubeapi.CreateSecret(clientset, &secret, namespace)
 
@@ -315,13 +315,13 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 
 }
 
-func getPgpoolHBA() ([]byte, error) {
+func getPgbouncerHBA() ([]byte, error) {
 	var err error
 
-	fields := PgpoolHBAFields{}
+	fields := PgbouncerHBAFields{}
 
 	var doc bytes.Buffer
-	err = operator.PgpoolHBATemplate.Execute(&doc, fields)
+	err = operator.PgbouncerHBATemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -331,17 +331,18 @@ func getPgpoolHBA() ([]byte, error) {
 	return doc.Bytes(), err
 }
 
-func getPgpoolConf(primary, replica, username, password string) ([]byte, error) {
+//NOTE: The config files currently uses the postgres user to admin pgouncer by default
+func getPgbouncerConf(primary, replica, username, password string) ([]byte, error) {
 	var err error
 
-	fields := PgpoolConfFields{}
+	fields := PgbouncerConfFields{}
 	fields.PG_PRIMARY_SERVICE_NAME = primary
 	fields.PG_REPLICA_SERVICE_NAME = replica
 	fields.PG_USERNAME = username
 	fields.PG_PASSWORD = password
 
 	var doc bytes.Buffer
-	err = operator.PgpoolConfTemplate.Execute(&doc, fields)
+	err = operator.PgbouncerConfTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -351,41 +352,41 @@ func getPgpoolConf(primary, replica, username, password string) ([]byte, error) 
 	return doc.Bytes(), err
 }
 
-func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName string) ([]byte, string, string, error) {
+func getPgbouncerPasswd(clientset *kubernetes.Clientset, namespace, clusterName string) ([]byte, string, string, error) {
 	var doc bytes.Buffer
-	var pgpoolUsername, pgpoolPassword string
+	var pgbouncerUsername, pgbouncerPassword string
 
-	//go get all non-pgpool secrets
-	selector := util.LABEL_PG_DATABASE + "=" + clusterName + "," + util.LABEL_PGPOOL + "!=true"
+	//go get all non-pgbouncer secrets
+	selector := util.LABEL_PG_DATABASE + "=" + clusterName + "," + util.LABEL_PGBOUNCER + "!=true"
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err)
-		return doc.Bytes(), pgpoolUsername, pgpoolPassword, err
+		return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err
 	}
 
-	creds := make([]PgpoolPasswdFields, 0)
+	creds := make([]PgbouncerPasswdFields, 0)
 	for _, sec := range secrets.Items {
-		//log.Debugf("in pgpool passwd with username=%s password=%s\n", sec.Data[util.LABEL_USERNAME][:], sec.Data[util.LABEL_PASSWORD][:])
+		//log.Debugf("in pgbouncer passwd with username=%s password=%s\n", sec.Data[util.LABEL_USERNAME][:], sec.Data[util.LABEL_PASSWORD][:])
 		username := string(sec.Data[util.LABEL_USERNAME][:])
 		password := string(sec.Data[util.LABEL_PASSWORD][:])
-		c := PgpoolPasswdFields{}
+		c := PgbouncerPasswdFields{}
 		c.Username = username
 		c.Password = "md5" + util.GetMD5HashForAuthFile(password+username)
 		creds = append(creds, c)
 
-		//we will use the postgres user for pgpool to auth with
+		//we will use the postgres user for pgbouncer to auth with
 		if username == "postgres" {
-			pgpoolUsername = username
-			pgpoolPassword = password
+			pgbouncerUsername = username
+			pgbouncerPassword = password
 		}
 	}
 
-	err = operator.PgpoolPasswdTemplate.Execute(&doc, creds)
+	err = operator.PgbouncerUsersTemplate.Execute(&doc, creds)
 	if err != nil {
 		log.Error(err)
-		return doc.Bytes(), pgpoolUsername, pgpoolPassword, err
+		return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err
 	}
 	log.Debug(doc.String())
 
-	return doc.Bytes(), pgpoolUsername, pgpoolPassword, err
+	return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err
 }

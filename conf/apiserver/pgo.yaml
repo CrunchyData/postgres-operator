@@ -23,18 +23,18 @@ ReplicaStorage: storage1
 Storage:
   storage1:
     AccessMode:  ReadWriteMany
-    Size:  1G
+    Size:  200M
     StorageType:  create
     SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteMany
-    Size:  1G
+    Size:  333M
     StorageType:  dynamic
     StorageClass:  gluster-heketi
     Fsgroup:  26
   storage3:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  440M
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
