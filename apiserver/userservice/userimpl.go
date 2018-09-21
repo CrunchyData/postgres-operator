@@ -150,6 +150,9 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 							log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 						}
 					}
+				} else {
+					log.Debug("no expired passwords....")
+					resp.Results = append(resp.Results, "no users were found with expired passwords")
 				}
 			}
 

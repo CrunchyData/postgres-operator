@@ -6,7 +6,7 @@ weight: 40
 ---
 
 :toc:
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.3.0 {docdate}
 
 == Overview
 

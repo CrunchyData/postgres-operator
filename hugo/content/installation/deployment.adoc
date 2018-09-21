@@ -6,7 +6,7 @@ weight: 50
 ---
 
 :toc:
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.3.0 {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -138,8 +138,8 @@ pgo version
 At this point you should be able to connect to the operator as follows -
 ....
 pgo version
-pgo client version 3.2
-apiserver version 3.2
+pgo client version 3.3.0
+apiserver version 3.3.0
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.

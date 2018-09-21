@@ -5,7 +5,7 @@ draft: false
 weight: 10
 ---
 
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.3.0 {docdate}
 
 == Installation
 
