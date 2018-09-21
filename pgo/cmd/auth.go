@@ -46,10 +46,10 @@ var caCertPath, clientCertPath, clientKeyPath string
 func StatusCheck(resp *http.Response) {
 	log.Debugf("HTTP status code is %d\n", resp.StatusCode)
 	if resp.StatusCode == 401 {
-		fmt.Println("Error: Authentication Failed: %d\n", resp.StatusCode)
+		fmt.Printf("Error: Authentication Failed: %d\n", resp.StatusCode)
 		os.Exit(2)
 	} else if resp.StatusCode != 200 {
-		fmt.Println("Error: Invalid Status Code: %d\n", resp.StatusCode)
+		fmt.Printf("Error: Invalid Status Code: %d\n", resp.StatusCode)
 		os.Exit(2)
 	}
 }
@@ -112,7 +112,7 @@ func GetCredentials() {
 	if !found {
 		pgoUser := os.Getenv(pgouserenvvar)
 		if pgoUser == "" {
-			fmt.Println("Error: %s environment variable not set", pgouserenvvar)
+			fmt.Printf("Error: %s environment variable not set", pgouserenvvar)
 			os.Exit(2)
 		}
 
@@ -120,7 +120,7 @@ func GetCredentials() {
 		log.Debugf("%s environment variable is being used at %s", pgouserenvvar, fullPath)
 		dat, err = ioutil.ReadFile(fullPath)
 		if err != nil {
-			fmt.Println("Error: %s file not found", fullPath)
+			fmt.Printf("Error: %s file not found", fullPath)
 			os.Exit(2)
 		}
 
@@ -136,7 +136,7 @@ func GetCredentials() {
 	}
 	caCert, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		fmt.Printf("Error: %s", err)
 		fmt.Println("could not read ca certificate")
 		os.Exit(2)
 	}
