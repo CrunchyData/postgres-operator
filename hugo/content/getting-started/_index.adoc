@@ -1204,7 +1204,7 @@ pgo user --expired=7 --selector=name=mycluster
 
 To update expired passwords in a cluster:
 ....
-pgo user --update-passwords --selector=name=mycluster
+pgo user --update-passwords --selector=name=mycluster --expired=5
 ....
 
 == pgpool Basics

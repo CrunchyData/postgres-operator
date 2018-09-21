@@ -78,6 +78,12 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 
 	}
 
+	if request.UpdatePasswords && request.Expired == "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "--expired is required when --update-passwords is specified"
+		return resp
+	}
+
 	log.Debug("selector string=[" + sel + "]")
 
 	//get the clusters list
