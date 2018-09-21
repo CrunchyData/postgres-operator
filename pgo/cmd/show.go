@@ -24,7 +24,6 @@ import (
 const TreeBranch = "\t"
 const TreeTrunk = "\t"
 
-var PostgresVersion string
 var ShowPVC bool
 var PVCRoot string
 
@@ -93,7 +92,7 @@ func init() {
 	ShowCmd.AddCommand(ShowUserCmd)
 
 	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", util.LABEL_BACKUP_TYPE_BASEBACKUP, "The backup type output to list. Valid choices are pgbasebackup (default) or pgbackrest.")
-	ShowClusterCmd.Flags().StringVarP(&PostgresVersion, "version", "", "", "Filter the results based on the PostgreSQL version of the cluster.")
+	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "", "", "The PVC directory to list.")

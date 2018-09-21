@@ -25,11 +25,11 @@ import (
 	"strconv"
 )
 
-func ShowCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowClusterResponse, error) {
+func ShowCluster(httpclient *http.Client, arg, selector, ccpimagetag string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowClusterResponse, error) {
 
 	var response msgs.ShowClusterResponse
 
-	url := SessionCredentials.APIServerURL + "/clusters/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/clusters/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&ccpimagetag=" + ccpimagetag
 
 	log.Debug("show cluster called [" + url + "]")
 

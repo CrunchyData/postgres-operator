@@ -103,7 +103,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 }
 
 // ShowCluster ...
-func ShowCluster(name, selector string) msgs.ShowClusterResponse {
+func ShowCluster(name, selector, ccpimagetag string) msgs.ShowClusterResponse {
 	var err error
 
 	response := msgs.ShowClusterResponse{}
@@ -158,7 +158,11 @@ func ShowCluster(name, selector string) msgs.ShowClusterResponse {
 			return response
 		}
 
-		response.Results = append(response.Results, detail)
+		if ccpimagetag == "" {
+			response.Results = append(response.Results, detail)
+		} else if ccpimagetag == c.Spec.CCPImageTag {
+			response.Results = append(response.Results, detail)
+		}
 	}
 
 	return response
@@ -190,6 +194,7 @@ func getDeployments(cluster *crv1.Pgcluster) ([]msgs.ShowClusterDeployment, erro
 
 	return output, err
 }
+
 func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)

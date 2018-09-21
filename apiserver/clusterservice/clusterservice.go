@@ -85,6 +85,10 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	ccpimagetag := r.URL.Query().Get("ccpimagetag")
+	if ccpimagetag != "" {
+		log.Debug("ccpimagetag param was [" + ccpimagetag + "]")
+	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
 		log.Debug("version param was [" + clientVersion + "]")
@@ -107,7 +111,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowClusterDetail, 0)
 	} else {
-		resp = ShowCluster(clustername, selector)
+		resp = ShowCluster(clustername, selector, ccpimagetag)
 	}
 	json.NewEncoder(w).Encode(resp)
 

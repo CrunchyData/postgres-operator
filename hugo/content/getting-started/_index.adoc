@@ -388,7 +388,7 @@ The output format. Currently, JSON is supported.
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 
-|`--version` |N/A |String |
+|`--ccp-image-tag` |N/A |String |
 Filter the results based on the PostgreSQL version of the cluster.
 |=========================================================
 
@@ -421,10 +421,9 @@ pgo show user mycluster
 
 ===== PostgreSQL Version
 
-Filter the results based on the PostgeSQL version of the cluster with the `--version`
-flag:
+Filter the results based on the PostgeSQL version of the cluster with the `--ccp-image-tag` flag:
 ....
-pgo show cluster all --version=9.6.2
+pgo show cluster all --ccp-image-tag=centos7-10.5-2.1.0
 ....
 
 === Test Connection

@@ -67,7 +67,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowCluster(httpclient, v, Selector, &SessionCredentials)
+		response, err := api.ShowCluster(httpclient, v, Selector, CCPImageTag, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
