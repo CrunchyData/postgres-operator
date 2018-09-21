@@ -57,7 +57,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 		return resp
 	}
 
-	log.Debug("create failover called for " + request.ClusterName)
+	log.Debugf("create failover called for %s", request.ClusterName)
 
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
@@ -114,7 +114,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 		return resp
 	}
 
-	log.Debug("query failover called for " + name)
+	log.Debugf("query failover called for %s", name)
 
 	//get failover targets for this cluster
 	//deployments with --selector=primary=false,pg-cluster=ClusterName
@@ -123,7 +123,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {
-		log.Debug("no replicas found ")
+		log.Debug("no replicas found")
 		resp.Status.Msg = "no replicas found for " + name
 		return resp
 	} else if err != nil {
@@ -135,7 +135,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 
 	log.Debugf("deps len %d\n", len(deployments.Items))
 	for _, dep := range deployments.Items {
-		log.Debug("found " + dep.Name)
+		log.Debugf("found %s", dep.Name)
 		target := msgs.FailoverTargetSpec{}
 		target.Name = dep.Name
 

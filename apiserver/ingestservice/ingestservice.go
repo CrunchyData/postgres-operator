@@ -39,7 +39,7 @@ func CreateIngestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("ingestservice.CreateIngestHandler got request " + request.Name)
+	log.Debugf("ingestservice.CreateIngestHandler got request " + request.Name)
 	resp := CreateIngest(apiserver.RESTClient, &request)
 
 	json.NewEncoder(w).Encode(resp)
@@ -53,7 +53,7 @@ func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -86,7 +86,7 @@ func DeleteIngestHandler(w http.ResponseWriter, r *http.Request) {
 	ingestName := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)
