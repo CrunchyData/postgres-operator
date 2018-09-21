@@ -42,7 +42,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("policyservice.CreatePolicyHandler got request " + request.Name)
+	log.Debugf("policyservice.CreatePolicyHandler got request %s", request.Name)
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
@@ -76,7 +76,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	policyname := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -111,7 +111,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)

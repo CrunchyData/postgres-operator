@@ -126,7 +126,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 	for _, arg := range args {
 		for _, p := range policies {
-			log.Debug("applying policy " + p + " to " + arg)
+			log.Debugf("applying policy %s to %s", p, arg)
 			//apply policies to this cluster
 			applyReq := msgs.ApplyPolicyRequest{}
 			applyReq.Name = p
@@ -143,7 +143,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 		}
 
 		//create the load job for this cluster
-		log.Debug("created load for " + arg)
+		log.Debugf("created load for %s", arg)
 		err = createJob(arg, &LoadConfigTemplate)
 		if err != nil {
 			resp.Status.Code = msgs.Error
