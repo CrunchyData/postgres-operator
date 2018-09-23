@@ -30,7 +30,7 @@ func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_CONFIG_PERM, w, r)
