@@ -83,7 +83,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	ccpimagetag := r.URL.Query().Get("ccpimagetag")
 	if ccpimagetag != "" {
@@ -91,7 +91,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
@@ -131,23 +131,23 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	deleteData := false
 	deleteDataStr := r.URL.Query().Get("delete-data")
 	if deleteDataStr != "" {
-		log.Debug("delete-data param was [" + deleteDataStr + "]")
+		log.Debugf("delete-data parameter is [%s]", deleteDataStr)
 		deleteData, _ = strconv.ParseBool(deleteDataStr)
 	}
 	deleteBackups := false
 	deleteBackupsStr := r.URL.Query().Get("delete-backups")
 	if deleteBackupsStr != "" {
-		log.Debug("delete-backups param was [" + deleteBackupsStr + "]")
+		log.Debugf("delete-backups parameter is [%s]", deleteBackupsStr)
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
@@ -178,16 +178,16 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
+	log.Debugf("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)

@@ -35,35 +35,35 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("clusterservice.ScaleClusterHandler %v\n", vars)
 
 	clusterName := vars[util.LABEL_NAME]
-	log.Debugf(" clusterName arg is %v\n", clusterName)
+	log.Debugf("clusterName argument is %v\n", clusterName)
 
 	replicaCount := r.URL.Query().Get(util.LABEL_REPLICA_COUNT)
 	if replicaCount != "" {
-		log.Debug("replica-count param was [" + replicaCount + "]")
+		log.Debugf("replica-count parameter is [%s]", replicaCount)
 	}
 	resourcesConfig := r.URL.Query().Get(util.LABEL_RESOURCES_CONFIG)
 	if resourcesConfig != "" {
-		log.Debug("resources-config param was [" + resourcesConfig + "]")
+		log.Debugf("resources-config parameter is [%s]", resourcesConfig)
 	}
 	storageConfig := r.URL.Query().Get(util.LABEL_STORAGE_CONFIG)
 	if storageConfig != "" {
-		log.Debug("storage-config param was [" + storageConfig + "]")
+		log.Debugf("storage-config parameter is [%s]", storageConfig)
 	}
 	nodeLabel := r.URL.Query().Get(util.LABEL_NODE_LABEL)
 	if nodeLabel != "" {
-		log.Debug("node-label param was [" + nodeLabel + "]")
+		log.Debugf("node-label parameter is [%s]", nodeLabel)
 	}
 	serviceType := r.URL.Query().Get(util.LABEL_SERVICE_TYPE)
 	if serviceType != "" {
-		log.Debug("service-type param was [" + serviceType + "]")
+		log.Debugf("service-type parameter is [%s]", serviceType)
 	}
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 	ccpImageTag := r.URL.Query().Get(util.LABEL_CCP_IMAGE_TAG_KEY)
 	if ccpImageTag != "" {
-		log.Debug("ccp-image-tag param was [" + ccpImageTag + "]")
+		log.Debugf("ccp-image-tag parameter is [%s]", ccpImageTag)
 	}
 
 	switch r.Method {
@@ -93,10 +93,10 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("clusterservice.ScaleQueryHandler %v\n", vars)
 
 	clusterName := vars[util.LABEL_NAME]
-	log.Debugf(" clusterName arg is %v\n", clusterName)
+	log.Debugf(" clusterName argument is %v\n", clusterName)
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	switch r.Method {
@@ -126,18 +126,18 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("clusterservice.ScaleDownHandler %v\n", vars)
 
 	clusterName := vars[util.LABEL_NAME]
-	log.Debugf(" clusterName arg is %v\n", clusterName)
+	log.Debugf("clusterName argument is %v\n", clusterName)
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 	replicaName := r.URL.Query().Get(util.LABEL_REPLICA_NAME)
 	if replicaName != "" {
-		log.Debug("replicaName param was [" + replicaName + "]")
+		log.Debugf("replicaName parameter is [%s]", replicaName)
 	}
 	tmp := r.URL.Query().Get(util.LABEL_DELETE_DATA)
 	if tmp != "" {
-		log.Debug("delete-data param was [" + tmp + "]")
+		log.Debugf("delete-data parameter is [%s]", tmp)
 	}
 
 	switch r.Method {
