@@ -58,11 +58,11 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
