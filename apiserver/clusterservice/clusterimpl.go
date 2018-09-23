@@ -549,6 +549,13 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			log.Debugf("%v", userLabelsMap)
 		}
 
+		if request.PgbouncerFlag {
+			userLabelsMap[util.LABEL_PGBOUNCER] = "true"
+			userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
+			log.Debug("userLabelsMap")
+			log.Debugf("%v", userLabelsMap)
+		}
+
 		if existsGlobalConfig() {
 			userLabelsMap[util.LABEL_CUSTOM_CONFIG] = util.GLOBAL_CUSTOM_CONFIGMAP
 		}

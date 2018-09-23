@@ -54,6 +54,8 @@ const SHOW_INGEST_PERM = "ShowIngest"
 const DELETE_INGEST_PERM = "DeleteIngest"
 const CREATE_FAILOVER_PERM = "CreateFailover"
 const STATUS_PERM = "Status"
+const CREATE_PGBOUNCER_PERM = "CreatePgbouncer"
+const DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
 const CREATE_PGPOOL_PERM = "CreatePgpool"
 const DELETE_PGPOOL_PERM = "DeletePgpool"
 
@@ -97,6 +99,8 @@ func InitializePerms() {
 	PermMap[DELETE_INGEST_PERM] = "yes"
 	PermMap[CREATE_FAILOVER_PERM] = "yes"
 	PermMap[RESTORE_PERM] = "yes"
+	PermMap[CREATE_PGBOUNCER_PERM] = "yes"
+	PermMap[DELETE_PGBOUNCER_PERM] = "yes"
 	PermMap[CREATE_PGPOOL_PERM] = "yes"
 	PermMap[DELETE_PGPOOL_PERM] = "yes"
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))

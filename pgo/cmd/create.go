@@ -24,8 +24,9 @@ import (
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
-var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, MetricsFlag, BadgerFlag bool
+var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
 var PgpoolSecret string
+var PgbouncerSecret string
 var CCPImageTag string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
@@ -39,10 +40,11 @@ var Series int
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Cluster, pgpool, Policy, or User",
-	Long: `CREATE allows you to create a new Cluster, pgpool, Policy, or User. For example:
+	Short: "Create a Cluster, pgbouncer, pgpool, Policy, or User",
+	Long: `CREATE allows you to create a new Cluster, pgbouncer, pgpool, Policy, or User. For example:
 
 	pgo create cluster
+	pgo create pgbouncer
 	pgo create pgpool
 	pgo create policy
 	pgo create user`,
@@ -52,6 +54,7 @@ var CreateCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
 	* cluster
 	* user
+	* pgbouncer
 	* pgpool
 	* policy`)
 		}
@@ -101,6 +104,24 @@ var createPolicyCmd = &cobra.Command{
 			fmt.Println(`Error: A policy name is required for this command.`)
 		} else {
 			createPolicy(args)
+		}
+	},
+}
+
+// createPgbouncerCmd ...
+var createPgbouncerCmd = &cobra.Command{
+	Use:   "pgbouncer",
+	Short: "Create a pgbouncer ",
+	Long: `Create a pgbouncer. For example:
+
+	pgo create pgbouncer mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("create pgbouncer called ")
+
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`Error: A cluster name or selector is required for this command.`)
+		} else {
+			createPgbouncer(args)
 		}
 	},
 }
@@ -171,6 +192,7 @@ func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
+	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
 	CreateCmd.AddCommand(createIngestCmd)
 	CreateCmd.AddCommand(createUserCmd)
@@ -178,8 +200,10 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "", "", "Defines the path of an ingest configuration file.")
+	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds the crunchy-pgbouncer container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "Enables archive logging for the database cluster.")
+	createClusterCmd.Flags().StringVarP(&PgbouncerSecret, "bgbouncer-secret", "", "", "The name of a pgbouncer secret to use for the pgbouncer configuration.")
 	createClusterCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&AutofailFlag, "autofail", "", false, "If set, will cause autofailover to be enabled on this cluster.")

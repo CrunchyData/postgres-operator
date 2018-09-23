@@ -30,6 +30,10 @@ const PgpoolTemplatePath = "/operator-conf/pgpool-template.json"
 const PgpoolConfTemplatePath = "/operator-conf/pgpool.conf"
 const PgpoolPasswdTemplatePath = "/operator-conf/pool_passwd"
 const PgpoolHBATemplatePath = "/operator-conf/pool_hba.conf"
+const PgbouncerTemplatePath = "/operator-conf/pgbouncer-template.json"
+const PgbouncerConfTemplatePath = "/operator-conf/pgbouncer.ini"
+const PgbouncerUsersTemplatePath = "/operator-conf/users.txt"
+const PgbouncerHBATemplatePath = "/operator-conf/pgbouncer_hba.conf"
 const ServiceTemplate1Path = "/operator-conf/cluster-service-1.json"
 
 const jobPath = "/operator-conf/backup-job.json"
@@ -55,6 +59,10 @@ var PgpoolTemplate *template.Template
 var PgpoolConfTemplate *template.Template
 var PgpoolPasswdTemplate *template.Template
 var PgpoolHBATemplate *template.Template
+var PgbouncerTemplate *template.Template
+var PgbouncerConfTemplate *template.Template
+var PgbouncerUsersTemplate *template.Template
+var PgbouncerHBATemplate *template.Template
 var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
@@ -97,6 +105,10 @@ func Initialize() {
 	PgpoolConfTemplate = util.LoadTemplate(PgpoolConfTemplatePath)
 	PgpoolPasswdTemplate = util.LoadTemplate(PgpoolPasswdTemplatePath)
 	PgpoolHBATemplate = util.LoadTemplate(PgpoolHBATemplatePath)
+	PgbouncerTemplate = util.LoadTemplate(PgbouncerTemplatePath)
+	PgbouncerConfTemplate = util.LoadTemplate(PgbouncerConfTemplatePath)
+	PgbouncerUsersTemplate = util.LoadTemplate(PgbouncerUsersTemplatePath)
+	PgbouncerHBATemplate = util.LoadTemplate(PgbouncerHBATemplatePath)
 	ServiceTemplate1 = util.LoadTemplate(ServiceTemplate1Path)
 
 	IngestjobTemplate = util.LoadTemplate(ingestPath)

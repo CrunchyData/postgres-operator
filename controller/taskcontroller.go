@@ -121,6 +121,15 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskDeletePgbouncer:
+		log.Info("delete pgbouncer task added")
+		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskReconfigurePgbouncer:
+		log.Info("Reconfiguredelete pgbouncer task added")
+		clusteroperator.ReconfigurePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskAddPgbouncer:
+		log.Info("add pgbouncer task added")
+		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskDeletePgpool:
 		log.Info("delete pgpool task added")
 		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
