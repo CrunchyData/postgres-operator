@@ -103,7 +103,7 @@ func InitializePerms() {
 	PermMap[DELETE_PGBOUNCER_PERM] = "yes"
 	PermMap[CREATE_PGPOOL_PERM] = "yes"
 	PermMap[DELETE_PGPOOL_PERM] = "yes"
-	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
+	log.Infof("loading PermMap with %d Permissions", len(PermMap))
 
 	readRoles()
 }
@@ -140,8 +140,8 @@ func readRoles() {
 		} else {
 			fields := strings.Split(strings.TrimSpace(line), ":")
 			if len(fields) != 2 {
-				log.Infoln("rolename:perm format not followed")
-				log.Error(errors.New("invalid format found in pgorole, role:perm format must be followed"))
+				log.Infoln("rolename:permission format not followed")
+				log.Error(errors.New("invalid format found in pgorole - rolename:permission format must be followed"))
 				log.Errorf("bad line is %s\n", fields)
 				os.Exit(2)
 			} else {
@@ -152,13 +152,13 @@ func readRoles() {
 				for _, v := range perms {
 					cleanPerm := strings.TrimSpace(v)
 					if PermMap[cleanPerm] == "" {
-						log.Errorf(" [%s] not a valid permission for role [%s]\n", cleanPerm, roleName)
+						log.Errorf(" [%s] not a valid permission for role [%s]", cleanPerm, roleName)
 						os.Exit(2)
 					}
 					permMap[cleanPerm] = "yes"
 				}
 				RoleMap[roleName] = permMap
-				log.Infof("loaded Role [%s] Perms Ct [%d] Perms [%v]\n", roleName, len(permMap), permMap)
+				log.Infof("loaded Role [%s] Perms Ct [%d] Perms [%v]", roleName, len(permMap), permMap)
 			}
 		}
 	}
