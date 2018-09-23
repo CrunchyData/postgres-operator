@@ -34,20 +34,20 @@ func CreateIngest(RESTClient *rest.RESTClient, request *msgs.CreateIngestRequest
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debug("create ingest called for " + request.Name)
+	log.Debugf("create ingest called for %s", request.Name)
 
 	// error if it already exists
 	result := crv1.Pgingest{}
 	found, err := kubeapi.Getpgingest(apiserver.RESTClient,
 		&result, request.Name, apiserver.Namespace)
 	if !found {
-		log.Debug("pgingest " + request.Name + " not found so we will create it")
+		log.Debugf("pgingest %s not found so we will create it", request.Name)
 	} else if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "error getting pgingest " + request.Name + err.Error()
 		return resp
 	} else {
-		log.Debug("pgingest " + request.Name + " was found so we will not create it")
+		log.Debugf("pgingest %s was found so we will not create it", request.Name)
 		resp.Status.Msg = "pingest " + request.Name + " was found so we will not create it"
 		return resp
 	}
@@ -105,7 +105,7 @@ func ShowIngest(name string) msgs.ShowIngestResponse {
 			return response
 		}
 
-		log.Debug("ingests found len is %d\n", len(ingestList.Items))
+		log.Debugf("ingests found len is %d\n", len(ingestList.Items))
 
 		for _, i := range ingestList.Items {
 			detail := msgs.ShowIngestResponseDetail{}
