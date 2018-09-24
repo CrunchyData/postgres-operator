@@ -17,12 +17,13 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
-	"net/http"
-	"strconv"
 )
 
 // TestResults ...
@@ -151,6 +152,13 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
+	deleteConfigs := false
+	deleteConfigsStr := r.URL.Query().Get("delete-configs")
+	if deleteDataStr != "" {
+		log.Debug("delete-configs param was [" + deleteConfigsStr + "]")
+		deleteConfigs, _ = strconv.ParseBool(deleteConfigsStr)
+	}
+
 	err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
@@ -168,7 +176,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]string, 0)
 	} else {
-		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups)
+		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, deleteConfigs)
 	}
 	json.NewEncoder(w).Encode(resp)
 

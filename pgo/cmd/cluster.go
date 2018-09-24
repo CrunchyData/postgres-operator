@@ -18,10 +18,11 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"os"
 )
 
 // deleteCluster ...
@@ -34,7 +35,7 @@ func deleteCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups)
+		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, DeleteConfigMaps)
 		//var response msgs.DeleteClusterResponse
 
 		if err != nil {

@@ -1,0 +1,46 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "extensions/v1beta1",
+    "metadata": {
+        "name": "crunchy-scheduler",
+        "labels": {
+            "name": "crunchy-scheduler"
+        }
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "crunchy-scheduler"
+                }
+            },
+            "spec": {
+                "serviceAccountName": "scheduler-sa",
+                "containers": [
+                    {
+                        "name": "scheduler",
+                        "image": "$CCP_IMAGE_PREFIX/crunchy-scheduler:$CCP_IMAGE_TAG",
+                        "env": [
+                            {
+                                "name": "NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            }
+                        ],
+                        "volumeMounts": [],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }
+                ],
+                "volumes": [],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 30,
+                "dnsPolicy": "ClusterFirst"
+            }
+        }
+    }
+}

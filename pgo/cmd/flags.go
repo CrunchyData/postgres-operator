@@ -15,8 +15,6 @@ package cmd
  limitations under the License.
 */
 
-import ()
-
 //flags used by more than 1 command
 var DeleteData bool
 var Query bool
@@ -28,6 +26,7 @@ var Labelselector string
 var DebugFlag bool
 var Selector string
 var DryRun bool
+var ScheduleName string
 
 var BackupType string
 

@@ -19,9 +19,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"net/http"
 )
 
 func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackrestResponse, error) {

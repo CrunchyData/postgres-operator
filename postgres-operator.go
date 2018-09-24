@@ -20,10 +20,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

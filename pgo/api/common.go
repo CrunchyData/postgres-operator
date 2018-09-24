@@ -18,8 +18,9 @@ package api
 import (
 	"errors"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"net/http"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // StatusCheck ...
