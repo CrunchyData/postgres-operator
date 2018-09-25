@@ -375,7 +375,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 	var err error
 
 	connString := "sslmode=disable user=" + dbUser + " host=" + dbHost + " port=" + dbPort + " dbname=" + database + " password=" + dbPassword
-	log.Debugf("connString=%s", connString)
+	//log.Debugf("connString=%s", connString)
 
 	conn, err = sql.Open("postgres", connString)
 	if err != nil {
@@ -1066,7 +1066,7 @@ func validateBackrestConfig(labels map[string]string) error {
 			//check the global configmap here
 			_, found := kubeapi.GetConfigMap(apiserver.Clientset, util.GLOBAL_CUSTOM_CONFIGMAP, apiserver.Namespace)
 			if !found {
-				log.Debugf("%s was not found", util.GLOBAL_CUSTOM_CONFIGMAP )
+				log.Debugf("%s was not found", util.GLOBAL_CUSTOM_CONFIGMAP)
 				return errors.New(util.GLOBAL_CUSTOM_CONFIGMAP + " global configmap or --custom-config flag not set, one of these is required for enabling pgbackrest")
 			}
 

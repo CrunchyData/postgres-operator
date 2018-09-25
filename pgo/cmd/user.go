@@ -56,7 +56,7 @@ var userCmd = &cobra.Command{
 
 	pgo user --selector=name=mycluster --update-passwords
 	pgo user --expired=7 --selector=name=mycluster
-	pgo user --change-password=bob --selector=name=mycluster`,
+	pgo user --change-password=bob --selector=name=mycluster --password=newpass`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager()
@@ -71,6 +71,7 @@ func init() {
 	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "", "", "Updates the password for a user on selective clusters.")
 	userCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
+	userCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
 	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 
@@ -81,6 +82,7 @@ func userManager() {
 
 	request := msgs.UserRequest{}
 	request.Selector = Selector
+	request.Password = Password
 	request.PasswordAgeDays = PasswordAgeDays
 	request.ChangePasswordForUser = ChangePasswordForUser
 	request.DeleteUser = DeleteUser
@@ -124,6 +126,7 @@ func createUser(args []string) {
 	r := new(msgs.CreateUserRequest)
 	r.Name = args[0]
 	r.Selector = Selector
+	r.Password = Password
 	r.ManagedUser = ManagedUser
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays

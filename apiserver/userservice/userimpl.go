@@ -149,7 +149,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 							if err != nil {
 								log.Error("error in updating password")
 							}
-							log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
+							//log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 						}
 					}
 				} else {
@@ -227,7 +227,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	//var ts string
 	var rows *sql.Rows
 	querystr := "ALTER user " + username + " PASSWORD '" + newPassword + "'"
-	log.Debug(querystr)
+	//log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Debug(err.Error())
@@ -356,7 +356,7 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 }
 
 // addUser ...
-func addUser(UserDBAccess, namespace, clusterName string, info connInfo, newUser string, ManagedUser bool) error {
+func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, info connInfo) error {
 	var conn *sql.DB
 	var err error
 
@@ -368,7 +368,7 @@ func addUser(UserDBAccess, namespace, clusterName string, info connInfo, newUser
 
 	var rows *sql.Rows
 
-	querystr := "create user " + newUser
+	querystr := "create user " + request.Name
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -376,10 +376,10 @@ func addUser(UserDBAccess, namespace, clusterName string, info connInfo, newUser
 		return err
 	}
 
-	if UserDBAccess != "" {
-		querystr = "grant all on database " + UserDBAccess + " to  " + newUser
+	if request.UserDBAccess != "" {
+		querystr = "grant all on database " + request.UserDBAccess + " to  " + request.Name
 	} else {
-		querystr = "grant all on database userdb to  " + newUser
+		querystr = "grant all on database userdb to  " + request.Name
 	}
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
@@ -398,8 +398,11 @@ func addUser(UserDBAccess, namespace, clusterName string, info connInfo, newUser
 	}()
 
 	//add a secret if managed
-	if ManagedUser {
-		err = util.CreateUserSecret(apiserver.Clientset, clusterName, newUser, info.Password, namespace)
+	if request.ManagedUser {
+		if request.Password != "" {
+			info.Password = request.Password
+		}
+		err = util.CreateUserSecret(apiserver.Clientset, clusterName, request.Name, info.Password, namespace)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -494,7 +497,7 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 	for _, c := range clusterList.Items {
 		info := getPostgresUserInfo(apiserver.Namespace, c.Name)
 
-		err = addUser(request.UserDBAccess, apiserver.Namespace, c.Name, info, request.Name, request.ManagedUser)
+		err = addUser(request, apiserver.Namespace, c.Name, info)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -505,6 +508,9 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 			resp.Results = append(resp.Results, msg)
 		}
 		newPassword := util.GeneratePassword(defaultPasswordLength)
+		if request.Password != "" {
+			newPassword = request.Password
+		}
 		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 
 		pgbouncer := c.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
@@ -723,3 +729,4 @@ func reconfigurePgpool(clusterName string) error {
 	}
 	return err
 }
+
