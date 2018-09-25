@@ -1123,6 +1123,9 @@ The selector to use for cluster filtering.
 |`--update-passwords` |N/A |N/A |
 Performs password updating on expired passwords.
 
+|`--password` |N/A |N/A |
+Allows user to specify a password instead of using a generated password.
+
 |`--valid-days` |N/A |Int |
 Sets passwords for new users to X days (default 30).
 |=========================================================
@@ -1140,7 +1143,7 @@ pgo create user sally --selector=name=mycluster
 
 To create a new Postgres user to the *mycluster* cluster that has credentials created with Kubernetes Secrets, use the *--managed* flag:
 ....
-pgo create user sally --managed --selector=name=mycluster
+pgo create user sally --managed --selector=name=mycluster --password=somepass
 ....
 
 A *managed* account is one that the Operator can manipulate as well; when you run `pgo test mycluster` the account is tested with
