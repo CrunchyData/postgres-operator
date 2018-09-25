@@ -43,7 +43,7 @@ var upgradeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("upgrade called")
 		if len(args) == 0 && Selector == "" {
-			fmt.Println(`Error: You must specify the cluster to upgrade or a selector value.`)
+			fmt.Println(`Error: You must specify the cluster to upgrade.`)
 		} else {
 			err := validateCreateUpdate(args)
 			if err != nil {
