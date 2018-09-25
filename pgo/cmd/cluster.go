@@ -59,6 +59,13 @@ func showCluster(args []string) {
 
 	log.Debugf("showCluster called %v\n", args)
 
+	if OutputFormat != "" {
+		if OutputFormat != "json" {
+			fmt.Println("Error: ", "json is the only supported --output format value")
+			os.Exit(2)
+		}
+	}
+
 	log.Debug("selector is " + Selector)
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)

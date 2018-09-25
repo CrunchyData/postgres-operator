@@ -51,6 +51,11 @@ func showStatus(args []string) {
 
 	log.Debugf("showStatus called %v\n", args)
 
+	if OutputFormat != "" && OutputFormat != "json" {
+		fmt.Println("Error: json is the only supported --output-format value ")
+		os.Exit(2)
+	}
+
 	response, err := api.ShowStatus(httpclient, &SessionCredentials)
 
 	if err != nil {
