@@ -886,6 +886,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	log.Info("inside createDeleteDataTasks")
 
 	//get the pods for this cluster
+	/**
 	spec := crv1.PgclusterSpec{}
 	cluster := &crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -894,6 +895,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		Spec: spec,
 	}
 	cluster.Spec.Name = clusterName
+	*/
 
 	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
 	log.Debugf("selector for delete is %s", selector)

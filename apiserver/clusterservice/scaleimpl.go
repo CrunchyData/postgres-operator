@@ -25,7 +25,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
-	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -346,36 +345,60 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 				response.Status.Msg = "pod not found for scale down replica and delete-data"
 				return response
 			}
-			createDeleteTask(&pods.Items[0], replicaName, replica.Spec.ReplicaStorage)
+
+			err = createDeleteDataTasksForReplica(replicaName, replica.Spec.ReplicaStorage)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+
 		}
 	}
 	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
 	return response
 }
 
-func createDeleteTask(pod *v1.Pod, replicaName string, storageSpec crv1.PgStorageSpec) {
-	//create pgtask CRD
-	spec := crv1.PgtaskSpec{}
-	spec.Name = replicaName
-	spec.TaskType = crv1.PgtaskDeleteData
-	spec.StorageSpec = storageSpec
-	spec.Parameters = apiserver.GetPVCName(pod)
+// removes data and or backup volumes for all pods in a cluster replica
+func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStorageSpec) error {
 
-	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: replicaName,
-		},
-		Spec: spec,
-	}
+	var err error
 
-	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = replicaName
-	newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
+	log.Info("inside createDeleteDataTasksForReplica")
 
-	err := kubeapi.Createpgtask(apiserver.RESTClient,
-		newInstance, apiserver.Namespace)
+	selector := util.LABEL_REPLICA_NAME + "=" + replicaName
+	log.Debugf("selector for delete is %s", selector)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
-		return
+		log.Error(err)
+		return err
+	}
+	log.Debugf("got %d cluster pods for %s\n", len(pods.Items), replicaName)
+
+	for _, pod := range pods.Items {
+		deploymentName := pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME]
+
+		//get the volumes for this pod
+		for _, v := range pod.Spec.Volumes {
+
+			log.Debugf("volume name in delete logic is %s", v.Name)
+			dataRoots := make([]string, 0)
+			if v.Name == "pgdata" {
+				dataRoots = append(dataRoots, deploymentName)
+			} else if v.Name == "backrestrepo-volume" {
+				dataRoots = append(dataRoots, deploymentName+"{-backups,-spool}")
+			} else if v.Name == "backup" {
+				dataRoots = append(dataRoots, deploymentName+"-backups")
+			} else if v.Name == "pgwal-volume" {
+				dataRoots = append(dataRoots, deploymentName+"-wal")
+			}
+
+			if v.VolumeSource.PersistentVolumeClaim != nil {
+				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				createTask(storageSpec, replicaName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+			}
+		}
 	}
 
+	return err
 }

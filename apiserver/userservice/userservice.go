@@ -135,6 +135,10 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	expired := r.URL.Query().Get("expired")
+	if expired != "" {
+		log.Debug("expired param was [" + expired + "]")
+	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
 		log.Debug("version param was [" + clientVersion + "]")
