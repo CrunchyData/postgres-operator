@@ -1,0 +1,108 @@
+{
+    "apiVersion": "rbac.authorization.k8s.io/v1beta1",
+    "kind": "ClusterRole",
+    "metadata": {
+        "name": "scheduler-sa"
+    },
+    "rules": [
+        {
+            "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "namespaces",
+                "pods",
+                "configmaps",
+                "deployments",
+                "secrets"
+            ],
+            "verbs": [
+                "get",
+                "list",
+                "watch"
+            ]
+        },
+        {
+            "apiGroups": [
+                "batch",
+                "extensions"
+            ],
+            "resources": [
+                "jobs"
+            ],
+            "verbs": [
+                "get",
+                "list",
+                "watch",
+                "create",
+                "update",
+                "patch",
+                "delete"
+            ]
+        },
+        {
+            "apiGroups": [
+                "extensions",
+                "apps"
+            ],
+            "resources": [
+                "deployments"
+            ],
+            "verbs": [
+                "get",
+                "list",
+                "watch"
+            ]
+        },
+        {
+            "nonResourceURLs": [
+                "/apis"
+            ],
+            "verbs": [
+                "get",
+                "list",
+                "watch"
+            ]
+        },
+        {
+            "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "pods/exec"
+            ],
+            "verbs": [
+                "create"
+            ]
+        }
+    ]
+}
+
+{
+    "apiVersion": "v1",
+    "kind": "ServiceAccount",
+    "metadata": {
+        "name": "scheduler-sa",
+        "namespace": "$CO_NAMESPACE"
+    }
+}
+
+{
+    "apiVersion": "rbac.authorization.k8s.io/v1beta1",
+    "kind": "ClusterRoleBinding",
+    "metadata": {
+        "name": "scheduler-sa"
+    },
+    "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "scheduler-sa"
+    },
+    "subjects": [
+        {
+            "kind": "ServiceAccount",
+            "name": "scheduler-sa",
+            "namespace": "$CO_NAMESPACE"
+        }
+    ]
+}

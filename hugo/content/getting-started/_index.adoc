@@ -320,6 +320,9 @@ $ pgo delete cluster NAME [FLAGS]
 |`--delete-backups` |-b |N/A |
 Causes the backups for this cluster to be removed permanently.
 
+|`--delete-configs` |-b |N/A |
+Causes the configuration maps for this cluster to be removed permanently.
+
 |`--delete-data` |-d |N/A |
 Causes the data for this cluster to be removed permanently.
 
@@ -356,7 +359,7 @@ to be removed.
 
 You can remove a cluster, it's data files, and all backups by running:
 ....
-pgo delete cluster restoredb --delete-data --delete-backups
+pgo delete cluster restoredb --delete-data --delete-backups --delete-configs
 ....
 
 When you specify a destructive delete like above, you will be prompted
@@ -592,6 +595,120 @@ a backup on a disaster recovery PVC.
 To delete a backup enter the following:
 ....
 pgo delete backup mycluster
+....
+
+=== Scheduling
+
+The `schedule` command will generate schedule configuration maps that are utitlized by the 
+link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-scheduler/[crunchy-scheduler]
+container.  This allows users to create automated, scheduled backups for their PostgreSQL clusters.
+
+Currently only two types of backups are supported with the schedule command:
+ * pgBackRest
+ * pgBaseBackup
+ 
+Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for 
+configuration maps with the label `crunchy-scheduler=true` in a specific namespace.  
+After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
+create pgBaseBackup jobs for the configured schedule.
+
+==== Syntax
+
+$ pgo create schedule NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--ccp-image-tag` |-n |N/A |
+Image version to use for pgBaseBackup backup jobs.  Defaults to what PGO is configured to use.
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--pgbackrest-backup-type` |N/A |String |
+The type of pgBackRest backup to perform.  There is no default and the following are valid: `full`, `diff`, `incr`
+
+|`--pvc-name` |N/A |String |
+The PVC name to use for the backup.  Only used for pgBaseBackup schedule types and must be created prior to using.
+
+|`--schedule` |N/A |String |
+The schedule assigned to the cron task.
+
+|`--schedule-type` |N/A |String |
+The schedule type to perform. There is no default and both pgbasebackup and pgbackrest are valid schedule types.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+
+|=========================================================
+
+==== Examples
+
+===== Creating pgBackRest Schedules
+
+Create a pgBackRest `full` backup on Sunday at 1 a.m:
+
+....
+pgo create schedule --schedule="0 1 * * 7" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster
+....
+
+Create a pgBackRest `diff` backup on Monday-Saturday at 1 a.m:
+
+....
+pgo create schedule --schedule="0 1 * * 1-6" --schedule-type=pgbackrest --pgbackrest-backup-type=diff mycluster
+....
+
+===== Creating pgBaseBackup Schedules
+
+Create a pgBaseBackup backup every day at 1 a.m:
+
+....
+pgo create schedule --schedule="0 1 * * *" --schedule-type=pgbasebackup --pvc-name=mycluster-backups mycluster
+....
+
+==== Creating Schedules Using Selectors
+
+Using the `selector` flag, we can create schedules for all clusters that match a label:
+
+....
+pgo create schedule --schedule="0 1 * * *" --schedule-type=pgbasebackup --pvc-name=mycluster-backups --selector=env=test
+....
+
+===== Show Schedules
+
+View the schedules for cluster named `mycluster`:
+
+....
+pgo show schedule mycluster
+...
+
+View the schedules for all clusters with the label `env=test`:
+
+....
+pgo show schedule --selector=env=test
+....
+
+===== Delete Schedules
+
+To delete schedules for a specific cluster:
+
+....
+pgo delete schedule mycluster
+....
+
+To delete a schedule by name:
+
+....
+pgo delete schedule --schedule-name=mycluster-pgbackrest-full
+....
+
+To delete schedules for all clusters with the label `env=test`:
+
+....
+pgo delete schedule --selector=env=test
 ....
 
 === Scaling Replicas

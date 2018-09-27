@@ -54,6 +54,23 @@ func GetConfigMap(clientset *kubernetes.Clientset, name, namespace string) (*v1.
 	return cfg, true
 }
 
+// ListConfigMap lists ConfigMaps with a given selector
+func ListConfigMap(clientset *kubernetes.Clientset, label, namespace string) (*v1.ConfigMapList, bool) {
+	list, err := clientset.CoreV1().ConfigMaps(namespace).List(meta_v1.ListOptions{
+		LabelSelector: label,
+	})
+	if kerrors.IsNotFound(err) {
+		log.Error(err)
+		log.Error("configmap not found with label " + label)
+		return list, false
+	}
+	if err != nil {
+		log.Error(err)
+		return list, false
+	}
+	return list, true
+}
+
 // DeleteConfigMap deletes a ConfigMap by name
 func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) error {
 

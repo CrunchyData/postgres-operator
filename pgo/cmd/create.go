@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -35,28 +36,37 @@ var NodeLabel string
 var UserLabels string
 var IngestConfig string
 var ServiceType string
+var Schedule string
+var ScheduleOptions string
+var ScheduleType string
+var PGBackRestType string
+var Secret string
 
 var Series int
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Cluster, pgbouncer, pgpool, Policy, or User",
-	Long: `CREATE allows you to create a new Cluster, pgbouncer, pgpool, Policy, or User. For example:
+	Short: "Create a Cluster, Ingest, PGBouncer, PGPool, Policy, Schedule, or User",
+	Long: `CREATE allows you to create a new Cluster, Ingest, PGBouncer, PGPool, Policy, Schedule or User. For example: 
 
-	pgo create cluster
-	pgo create pgbouncer
-	pgo create pgpool
-	pgo create policy
-	pgo create user`,
+    pgo create cluster
+    pgo create ingest
+    pgo create pgbouncer
+    pgo create pgpool
+    pgo create policy
+    pgo create schedule
+    pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
 		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") && args[0] != "user" {
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
-	* cluster
-	* user
-	* pgbouncer
-	* pgpool
-	* policy`)
+    * cluster
+    * ingest
+    * pgbouncer
+    * pgpool
+    * policy
+    * schedule
+    * user`)
 		}
 	},
 }
@@ -67,7 +77,7 @@ var createClusterCmd = &cobra.Command{
 	Short: "Create a PostgreSQL cluster",
 	Long: `Create a PostgreSQL cluster consisting of a primary and a number of replica backends. For example:
 
-	pgo create cluster mycluster`,
+    pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create cluster called")
 		if BackupPath != "" || BackupPVC != "" {
@@ -91,7 +101,7 @@ var createPolicyCmd = &cobra.Command{
 	Short: "Create a SQL policy",
 	Long: `Create a policy. For example:
 
-	pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
+    pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create policy called ")
 		if PolicyFile == "" && PolicyURL == "" {
@@ -132,7 +142,7 @@ var createPgpoolCmd = &cobra.Command{
 	Short: "Create a pgpool ",
 	Long: `Create a pgpool. For example:
 
-	pgo create pgpool mycluster`,
+    pgo create pgpool mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create pgpool called ")
 
@@ -150,7 +160,7 @@ var createIngestCmd = &cobra.Command{
 	Short: "Create an ingest",
 	Long: `Create an ingest. For example:
 
-	pgo create ingest myingest --ingest-config=./ingest.json`,
+    pgo create ingest myingest --ingest-config=./ingest.json`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create ingest called ")
 
@@ -166,13 +176,30 @@ var createIngestCmd = &cobra.Command{
 	},
 }
 
+// createScheduleCmd ...
+var createScheduleCmd = &cobra.Command{
+	Use:   "schedule",
+	Short: "Create a cron-like scheduled task",
+	Long: `SCHEDULE creates a cron-like schedule task.  For example:
+
+    pgo create schedule --schedule=”* * * * *” --selector=env=research --schedule-type=pgbackrest`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("create schedule called ")
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
+			return
+		}
+		createSchedule(args)
+	},
+}
+
 // createUserCmd ...
 var createUserCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Create a PostgreSQL user",
 	Long: `Create a postgres user. For example:
 
-	pgo create user user1 --selector=name=mycluster`,
+    pgo create user user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create user called ")
 		if Selector == "" {
@@ -191,19 +218,17 @@ var createUserCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
+	CreateCmd.AddCommand(createIngestCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
-	CreateCmd.AddCommand(createIngestCmd)
+	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
-	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "", "", "Defines the path of an ingest configuration file.")
-	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds the crunchy-pgbouncer container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "Enables archive logging for the database cluster.")
-	createClusterCmd.Flags().StringVarP(&PgbouncerSecret, "bgbouncer-secret", "", "", "The name of a pgbouncer secret to use for the pgbouncer configuration.")
 	createClusterCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&AutofailFlag, "autofail", "", false, "If set, will cause autofailover to be enabled on this cluster.")
@@ -212,23 +237,32 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
+	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users.")
+	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
+	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from.")
+	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
+	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from.")
+	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
+	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series.")
+	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 
-	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for initial database users.")
-	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "", "", "The cluster name to use when restoring secrets.")
-	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The backup archive PVC to restore from.")
-	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "", "", "The labels to apply to this cluster.")
-	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "", "", "The backup archive path to restore from.")
-	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "", "", "The policies to apply when creating a cluster, comma separated.")
-	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
-	createClusterCmd.Flags().IntVarP(&Series, "series", "", 1, "The number of clusters to create in a series.")
-	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
-	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "", "", "The url to use for adding a policy.")
-	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "", "", "The policy file path to use for adding a policy.")
+	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "i", "", "Defines the path of an ingest configuration file.")
+	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
+	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
+
+	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
+	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest or pgbasebackup).")
+	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full or diff).")
+	createScheduleCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The name of the backup PVC to use (only used in pgbasebackup schedules).")
+	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")
+	createScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	createScheduleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
-
 }

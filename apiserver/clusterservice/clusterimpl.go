@@ -19,10 +19,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	//"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
+	"strconv"
+	"strings"
+	"time"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -31,13 +36,10 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // DeleteCluster ...
-func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.DeleteClusterResponse {
+func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfigs bool) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -51,6 +53,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 	}
 	log.Debugf("delete-data is [%v]\n", deleteData)
 	log.Debugf("delete-backups is [%v]\n", deleteBackups)
+	log.Debugf("delete-configs is [%v]\n", deleteConfigs)
 
 	clusterList := crv1.PgclusterList{}
 
@@ -81,6 +84,14 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool) msgs.D
 			}
 			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
 			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+		}
+
+		if deleteConfigs {
+			if err := deleteConfigMaps(cluster.Spec.Name); err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
@@ -1071,11 +1082,9 @@ func validateBackrestConfig(labels map[string]string) error {
 				log.Debugf("%s was not found", util.GLOBAL_CUSTOM_CONFIGMAP)
 				return errors.New(util.GLOBAL_CUSTOM_CONFIGMAP + " global configmap or --custom-config flag not set, one of these is required for enabling pgbackrest")
 			}
-
 		}
 	}
 	return err
-
 }
 
 // deleteDatabaseSecrets delete secrets that match pg-database=somecluster
@@ -1097,4 +1106,20 @@ func deleteDatabaseSecrets(db string) error {
 		}
 	}
 	return err
+}
+
+func deleteConfigMaps(clusterName string) error {
+	label := fmt.Sprintf("pg-cluster=%s", clusterName)
+	list, ok := kubeapi.ListConfigMap(apiserver.Clientset, label, apiserver.Namespace)
+	if !ok {
+		return fmt.Errorf("No configMaps found for selector: %s", label)
+	}
+
+	for _, configmap := range list.Items {
+		err := kubeapi.DeleteConfigMap(apiserver.Clientset, configmap.Name, apiserver.Namespace)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
