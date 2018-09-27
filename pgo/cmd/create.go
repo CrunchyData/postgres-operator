@@ -54,7 +54,6 @@ var CreateCmd = &cobra.Command{
     pgo create pgbouncer
     pgo create pgpool
     pgo create policy
-    pgo create schedule
     pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
@@ -65,7 +64,6 @@ var CreateCmd = &cobra.Command{
     * pgbouncer
     * pgpool
     * policy
-    * schedule
     * user`)
 		}
 	},
@@ -222,7 +220,7 @@ func init() {
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
-	CreateCmd.AddCommand(createScheduleCmd)
+	//CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")

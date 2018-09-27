@@ -40,7 +40,6 @@ var ShowCmd = &cobra.Command{
 	pgo show ingest myingest
 	pgo show policy policy1
 	pgo show pvc mycluster
-	pgo show schedule mycluster
 	pgo show user mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -52,7 +51,6 @@ Valid resource types include:
 	* ingest
 	* policy
 	* pvc
-	* schedule
 	* upgrade
 	* user
 	`)
@@ -64,7 +62,7 @@ Valid resource types include:
 			case "ingest":
 			case "user":
 			case "config":
-			case "schedule":
+				//		case "schedule":
 			case "upgrade":
 			case "backup":
 				break
@@ -77,7 +75,6 @@ Valid resource types include:
 	* ingest
 	* policy
 	* pvc
-	* schedule
 	* upgrade
 	* user`)
 			}
@@ -94,7 +91,7 @@ func init() {
 	ShowCmd.AddCommand(ShowIngestCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
-	ShowCmd.AddCommand(ShowScheduleCmd)
+	//	ShowCmd.AddCommand(ShowScheduleCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
