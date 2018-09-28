@@ -87,6 +87,7 @@ func (c *JobController) onAdd(obj interface{}) {
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
 	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
+	var err error
 	//label is "pgrmdata" and Status of Succeeded
 	labels := job.GetObjectMeta().GetLabels()
 	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] != "" {
@@ -94,7 +95,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 		//remove the pvc referenced by that job
 		log.Debugf("deleting pvc " + labels["claimName"])
-		err := pvc.Delete(c.JobClientset, labels["claimName"], c.Namespace)
+		err = pvc.Delete(c.JobClientset, labels["claimName"], c.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
@@ -104,21 +105,25 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		kubeapi.Deletepgtasks(c.JobClient, util.LABEL_RMDATA+"=true", c.Namespace)
 		kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
 
-	} else if job.Status.Succeeded > 0 && labels[util.LABEL_PGBACKUP] != "" {
-		log.Debugf("got a pgbackup job status=%d", job.Status.Succeeded)
-		log.Debugf("update the status to completed here for pgbackup %s\n ", labels[util.LABEL_PG_DATABASE])
-		dbname := job.ObjectMeta.Labels[util.LABEL_PG_DATABASE]
-
-		err := util.Patch(c.JobClient, "/spec/backupstatus", crv1.UpgradeCompletedStatus, "pgbackups", dbname, c.Namespace)
-
+	} else if labels[util.LABEL_PGBACKUP] != "" {
+		dbname := job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+		status := crv1.JobCompletedStatus
+		log.Debugf("got a pgbackup job status=%d for %s", job.Status.Succeeded, dbname)
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobErrorStatus
+		}
+		err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
 		if err != nil {
 			log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
 		}
-
-	} else if job.Status.Succeeded > 0 && labels[util.LABEL_BACKREST] != "" {
+	} else if labels[util.LABEL_BACKREST] != "" {
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		log.Debugf("update the status to completed here for backrest %s\n ", labels[util.LABEL_PG_DATABASE])
-		err := util.Patch(c.JobClient, "/spec/backreststatus", crv1.UpgradeCompletedStatus, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+		status := crv1.JobCompletedStatus
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobErrorStatus
+		}
+		err = util.Patch(c.JobClient, "/spec/backreststatus", status, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}

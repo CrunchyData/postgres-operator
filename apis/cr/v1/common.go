@@ -57,3 +57,12 @@ type PgContainerResources struct {
 	LimitsMemory   string `json:"limitsmemory"`
 	LimitsCPU      string `json:"limitscpu"`
 }
+
+// JobCompletedStatus ....
+const JobCompletedStatus = "completed"
+
+// JobSubmittedStatus ....
+const JobSubmittedStatus = "submitted"
+
+// JobErrorStatus ....
+const JobErrorStatus = "error"
