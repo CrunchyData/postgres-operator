@@ -35,6 +35,7 @@ var labelCmd = &cobra.Command{
 
 	pgo label mycluster yourcluster --label=environment=prod
 	pgo label mycluster yourcluster --label=environment=prod  --delete-label
+	pgo label all --label=environment=prod 
 	pgo label --label=environment=prod --selector=name=mycluster
 	pgo label --label=environment=prod --selector=status=final --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {

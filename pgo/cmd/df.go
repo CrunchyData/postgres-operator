@@ -34,6 +34,7 @@ var dfCmd = &cobra.Command{
 	Long: `Displays the disk status for PostgreSQL clusters. For example:
 
 	pgo df mycluster
+	pgo df all
 	pgo df --selector=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("df called")

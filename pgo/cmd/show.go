@@ -194,6 +194,7 @@ var ShowClusterCmd = &cobra.Command{
 	Short: "Show cluster information",
 	Long: `Show a PostgreSQL cluster. For example:
 
+	pgo show cluster all
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Selector == "" && len(args) == 0 {

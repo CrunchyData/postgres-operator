@@ -20,6 +20,16 @@ export CO_APISERVER_URL=https://10.104.47.110:8443
 pgo version
 ....
 
+== Cluster Names
+
+Many of the pgo commands take in a cluster name, in some cases
+the special name of *all* is accepted which will cause the
+command to be applied to all PostgreSQL clusters.  For
+example:
+....
+pgo df all
+....
+
 == General
 
 === Operator Version
@@ -309,7 +319,7 @@ the selected cluster, but will not delete the data or the backups unless specifi
 
 ==== Syntax
 
-$ pgo delete cluster NAME [FLAGS]
+$ pgo delete cluster NAME|all [FLAGS]
 
 ==== Flags
 
@@ -377,7 +387,7 @@ any and all specified options (such as whether crunchy_collect is enabled).
 
 ==== Syntax
 
-$ pgo show cluster NAME [FLAGS]
+$ pgo show cluster NAME|all [FLAGS]
 
 ==== Flags
 
@@ -439,7 +449,7 @@ out as connections are tried, along with the connection status.
 
 ==== Syntax
 
-$ pgo test NAME [FLAGS]
+$ pgo test NAME|all [FLAGS]
 
 ==== Flags
 
@@ -1000,7 +1010,7 @@ input being valid.
 
 ==== Syntax
 
-$ pgo label [NAME] [FLAGS]
+$ pgo label [NAME]|all [FLAGS]
 
 ==== Flags
 
@@ -1033,11 +1043,12 @@ pgo label mycluster --label=env=research
 Or if you wanted to apply if to a selection of clusters:
 ....
 pgo label --label=env=research  --selector=project=xray
+pgo label all --label=env=research 
 ....
 
 In the first example, a label of *env=research* is applied to the cluster
 *mycluster*. The second example will apply the label to any clusters that
-have an existing label of *project=xray* applied.
+have an existing label of *project=xray* applied or to all clusters.
 
 === Creating SQL Policies
 
@@ -1131,6 +1142,7 @@ pgo show cluster --selector=policy1=pgpolicy
 To delete a policy use the following form:
 ....
 pgo delete policy policy1
+pgo delete policy all
 ....
 
 === Loading Data

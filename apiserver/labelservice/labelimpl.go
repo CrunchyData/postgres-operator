@@ -58,9 +58,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	}
 
 	clusterList := crv1.PgclusterList{}
-	if request.Selector != "" {
-		log.Debug("selector is " + request.Selector)
-
+	if request.Selector == "" || request.Args[0] == "all" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
 			&clusterList, request.Selector, apiserver.Namespace)
 		if err != nil {
@@ -75,7 +73,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 			return resp
 		}
 	} else {
-		//each arg represents a cluster name or the special 'all' value
+		//each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
 			result := crv1.Pgcluster{}

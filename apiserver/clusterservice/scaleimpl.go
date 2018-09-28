@@ -39,6 +39,12 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 	response := msgs.ClusterScaleResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
+	if name == "all" {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "all is not allowed for the scale command"
+		return response
+	}
+
 	cluster := crv1.Pgcluster{}
 	err = apiserver.RESTClient.Get().
 		Resource(crv1.PgclusterResourcePlural).

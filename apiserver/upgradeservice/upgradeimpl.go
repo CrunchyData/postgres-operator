@@ -170,7 +170,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			&cl, arg, apiserver.Namespace)
 		if !found {
 			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
+			response.Status.Msg = arg + " is not a valid pgcluster"
 			return response
 		}
 

@@ -197,6 +197,7 @@ var deleteClusterCmd = &cobra.Command{
 	Short: "Delete a PostgreSQL cluster",
 	Long: `Delete a PostgreSQL cluster. For example:
 
+    pgo delete cluster all
     pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 && Selector == "" {

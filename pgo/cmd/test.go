@@ -30,7 +30,9 @@ var testCmd = &cobra.Command{
 	Short: "Test cluster connectivity",
 	Long: `TEST allows you to test the connectivity for a cluster. For example:
 
-	pgo test mycluster`,
+	pgo test mycluster
+	pgo test --selector=env=research
+	pgo test all`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("test called")
 		if Selector == "" && len(args) == 0 {
