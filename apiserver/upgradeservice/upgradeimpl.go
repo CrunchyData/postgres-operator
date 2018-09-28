@@ -108,6 +108,12 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 
 	var newInstance *crv1.Pgupgrade
 
+	if request.UpgradeType == MajorUpgrade {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "MajorUpgrade not supported yet"
+		return response
+	}
+
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
 

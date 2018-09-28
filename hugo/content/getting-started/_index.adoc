@@ -968,8 +968,6 @@ $ pgo upgrade NAME [FLAGS]
 |`--ccp-image-tag` |N/A |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
 
-|`--upgrade-type` |N/A |String |
-The upgrade type. Accepted values are either "minor" or "major", with the default being "minor".
 |=========================================================
 
 ==== Examples
@@ -981,19 +979,12 @@ Perform a minor PostgreSQL version upgrade:
 pgo upgrade mycluster
 ....
 
-===== Major Upgrade
-
-Perform a major PostgreSQL version upgrade:
-....
-pgo upgrade mycluster --upgrade-type=major
-....
-
 ===== Overriding Version
 
 Override the `CcpImageTag` variable defined in the pgo.yaml configuration file:
 ....
 pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
-pgo upgrade mycluster --upgrade-type=major --ccp-image-tag=centos7-9.6.9-1.8.3
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
 ....
 
 ===== Delete Upgrade
