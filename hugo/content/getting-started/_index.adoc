@@ -1114,9 +1114,10 @@ pgo apply policy1 --dry-run --selector=name=mycluster
 
 ===== Show Policies
 
-To view all policies:
+To view policies, either all of them or a specific one:
 ....
 pgo show policy all
+pgo show policy somepolicy
 ....
 
 ===== Show Clusters with a Specific Policy
