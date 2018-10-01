@@ -492,6 +492,12 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 		return resp
 	}
 
+	if len(clusterList.Items) == 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "no clusters found with that selector"
+		return resp
+	}
+
 	log.Debug("createUser clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
@@ -729,4 +735,3 @@ func reconfigurePgpool(clusterName string) error {
 	}
 	return err
 }
-
