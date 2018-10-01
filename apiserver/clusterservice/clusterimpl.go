@@ -902,6 +902,10 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	}
 	log.Debugf("got %d cluster pods for %s\n", len(pods.Items), clusterName)
 
+	//a flag for the case when a cluster has performed an autofailover
+	//we need to go back and remove the original primary's pgdata PVC
+	originalClusterPrimaryDeleted := false
+
 	for _, pod := range pods.Items {
 		deploymentName := pod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 		if pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME] != "" {
@@ -925,11 +929,24 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 			if v.VolumeSource.PersistentVolumeClaim != nil {
 				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				if clusterName == v.VolumeSource.PersistentVolumeClaim.ClaimName {
+					originalClusterPrimaryDeleted = true
+				}
 				err := apiserver.CreateRMDataTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
 				if err != nil {
 					return err
 				}
 			}
+		}
+	}
+
+	if originalClusterPrimaryDeleted == false {
+		log.Debugf("for autofailover case, removing orignal primary PVC %s", clusterName)
+		dataRoots := make([]string, 0)
+		dataRoots = append(dataRoots, clusterName)
+		err := apiserver.CreateRMDataTask(storageSpec, clusterName, clusterName, dataRoots)
+		if err != nil {
+			return err
 		}
 	}
 
