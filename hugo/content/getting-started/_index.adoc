@@ -536,9 +536,6 @@ $ pgo backup NAME [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--no-prompt` |-n |N/A |
-No command line confirmation.
-
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 
