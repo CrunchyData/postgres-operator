@@ -66,16 +66,30 @@ func DeleteBackup(backupName string) msgs.DeleteBackupResponse {
 	var err error
 
 	if backupName == "all" {
-		err = kubeapi.DeleteAllpgbackup(apiserver.RESTClient, apiserver.Namespace)
-		resp.Results = append(resp.Results, "all")
-	} else {
-		err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, apiserver.Namespace)
-		resp.Results = append(resp.Results, backupName)
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "all not a valid cluster name"
+		return resp
 	}
+
+	err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, apiserver.Namespace)
 
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
+		return resp
+	}
+	resp.Results = append(resp.Results, backupName)
+
+	//create a pgtask to remove the PVC and its data
+	pvcName := backupName + "-backup"
+	dataRoots := []string{backupName + "-backups"}
+
+	storageSpec := crv1.PgStorageSpec{}
+	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	return resp

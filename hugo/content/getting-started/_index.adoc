@@ -607,6 +607,11 @@ To delete a backup enter the following:
 pgo delete backup mycluster
 ....
 
+When run, this command removes the PVC used for the backups, and
+runs the *rmdata* Job to physically perform data removal of that PVC's
+contents.  It also removes the pgbackup CRD for this cluster that holds
+the last pg_basebackup results.
+
 === Scheduling
 
 The `schedule` command will generate schedule configuration maps that are utitlized by the 

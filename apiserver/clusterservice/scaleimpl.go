@@ -401,7 +401,10 @@ func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStor
 
 			if v.VolumeSource.PersistentVolumeClaim != nil {
 				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
-				createTask(storageSpec, replicaName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				err = apiserver.CreateRMDataTask(storageSpec, replicaName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

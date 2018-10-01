@@ -23,7 +23,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	//"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"strconv"
 	"strings"
 	"time"
@@ -894,20 +893,6 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 	var err error
 
-	log.Info("inside createDeleteDataTasks")
-
-	//get the pods for this cluster
-	/**
-	spec := crv1.PgclusterSpec{}
-	cluster := &crv1.Pgcluster{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: clusterName,
-		},
-		Spec: spec,
-	}
-	cluster.Spec.Name = clusterName
-	*/
-
 	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
@@ -940,7 +925,10 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 			if v.VolumeSource.PersistentVolumeClaim != nil {
 				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
-				createTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				err := apiserver.CreateRMDataTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -970,7 +958,11 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 				//by convention, the root directory name
 				//created by the backup job is depName-backups
 				dataRoots := []string{dep.Name + "-backups"}
-				createTask(storageSpec, clusterName, pvcName, dataRoots)
+				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots)
+				if err != nil {
+					log.Error(err)
+					return err
+				}
 			}
 
 		}
@@ -978,6 +970,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	return err
 }
 
+/**
 func createTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string) {
 	//create a pgtask for each root at this volume/pvc
 	for i := 0; i < len(dataRoots); i++ {
@@ -1012,6 +1005,7 @@ func createTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dat
 	}
 
 }
+*/
 
 func getType(pod *v1.Pod) string {
 
