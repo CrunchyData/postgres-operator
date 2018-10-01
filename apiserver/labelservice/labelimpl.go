@@ -58,7 +58,22 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	}
 
 	clusterList := crv1.PgclusterList{}
-	if request.Selector == "" || request.Args[0] == "all" {
+	if len(request.Args) > 0 && request.Args[0] == "all" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, "", apiserver.Namespace)
+		if err != nil {
+			log.Error("error getting list of clusters" + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "error getting list of clusters" + err.Error()
+			return resp
+		}
+		if len(clusterList.Items) == 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "no clusters found"
+			return resp
+		}
+
+	} else if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
 			&clusterList, request.Selector, apiserver.Namespace)
 		if err != nil {
