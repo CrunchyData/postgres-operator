@@ -90,7 +90,13 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 			return newlines, err
 		}
 		//sleep a bit for the pod to be deleted
-		time.Sleep(2000 * time.Millisecond)
+		for i := 0; i < 9; i++ {
+			time.Sleep(2000 * time.Millisecond)
+			_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, apiserver.Namespace)
+			if !found || err != nil {
+				break
+			}
+		}
 	}
 
 	pvcRoot := "/"
