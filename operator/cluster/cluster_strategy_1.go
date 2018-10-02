@@ -194,6 +194,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 		log.Error("error deleting primary Deployment " + err.Error())
 	}
 
+	//delete the pgbouncer service if exists
+	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+		DeletePgbouncer(clientset, cl.Spec.Name, namespace)
+	}
+
 	//delete the primary service
 	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
 
@@ -201,7 +206,7 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
 
 	//delete the pgpool deployment if necessary
-	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
+	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
 	}
 
