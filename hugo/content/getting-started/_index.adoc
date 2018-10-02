@@ -309,8 +309,10 @@ pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored 
 ....
 
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
-Typically, this will be a RWX file system which will allow you to restore from this PVC
-without having to shutdown the currently attached PostgreSQL cluster.
+Typically, this will be a RWX file system but if the file system is RWO the PVCs will be 
+created without having write access and a backup and restore will fail. The RWX file
+system setup will allow you to restore from this PVC without having to shutdown the currently
+attached PostgreSQL cluster.
 
 === Delete Cluster
 
