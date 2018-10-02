@@ -105,7 +105,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	}
 
 	for _, c := range clusterList.Items {
-		resp.Results = append(resp.Results, "adding label to "+c.Spec.Name)
+		resp.Results = append(resp.Results, c.Spec.Name)
 	}
 
 	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap)
@@ -116,10 +116,10 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 
 func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string) {
 	for i := 0; i < len(items); i++ {
-		log.Debug("adding label to " + items[i].Spec.Name)
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
+			log.Debug("adding label to cluster " + items[i].Spec.Name)
 			err := PatchPgcluster(LabelCmdLabel, items[i])
 			if err != nil {
 				log.Error(err.Error())
