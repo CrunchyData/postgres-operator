@@ -49,3 +49,30 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(resp)
 }
+
+// DeleteLabelHandler ...
+func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
+
+	log.Debug("labelservice.DeleteLabelHandler called")
+
+	var request msgs.DeleteLabelRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	err := apiserver.Authn(apiserver.LABEL_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	var resp msgs.LabelResponse
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp = msgs.LabelResponse{}
+		resp.Status = msgs.Status{Msg: apiserver.VERSION_MISMATCH_ERROR, Code: msgs.Error}
+	} else {
+		resp = DeleteLabel(&request)
+	}
+
+	json.NewEncoder(w).Encode(resp)
+}

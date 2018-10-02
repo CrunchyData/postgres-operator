@@ -1011,9 +1011,6 @@ $ pgo label [NAME]|all [FLAGS]
 |=========================================================
 |Name |Shorthand |Input |Usage
 
-|`--delete-label` |N/A |String |
-Deletes a label from specified clusters.
-
 |`--dry-run` |N/A |N/A |
 Shows the clusters that the label would be applied to, without labelling them.
 
@@ -1042,6 +1039,13 @@ pgo label all --label=env=research
 In the first example, a label of *env=research* is applied to the cluster
 *mycluster*. The second example will apply the label to any clusters that
 have an existing label of *project=xray* applied or to all clusters.
+
+===== Removing Labels
+
+You can delete a user defined label from a cluster as follows:
+....
+pgo delete label mycluster --label=env=research
+....
 
 === Creating SQL Policies
 

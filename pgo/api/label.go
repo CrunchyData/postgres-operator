@@ -59,3 +59,40 @@ func LabelClusters(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	return response, err
 }
+
+func DeleteLabel(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.DeleteLabelRequest) (msgs.LabelResponse, error) {
+
+	var response msgs.LabelResponse
+	url := SessionCredentials.APIServerURL + "/labeldelete"
+	log.Debug("delete label called...[" + url + "]")
+
+	jsonValue, _ := json.Marshal(request)
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		return response, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		return response, err
+	}
+	defer resp.Body.Close()
+
+	log.Debugf("%v\n", resp)
+	err = StatusCheck(resp)
+	if err != nil {
+		return response, err
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Println(err)
+		return response, err
+	}
+
+	return response, err
+}

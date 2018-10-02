@@ -92,6 +92,7 @@ func main() {
 	//here
 	r.HandleFunc("/ingestdelete/{name}", ingestservice.DeleteIngestHandler).Methods("GET")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
+	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")

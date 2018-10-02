@@ -25,14 +25,15 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a backup, cluster, ingest, pgbouncer, pgpool, policy, upgrade, or user",
-	Long: `The delete command allows you to delete a backup, cluster, ingest, pgbouncer, pgpool, policy, upgrade, or user. For example:
+	Short: "Delete a backup, cluster, ingest, pgbouncer, pgpool, label, policy, upgrade, or user",
+	Long: `The delete command allows you to delete a backup, cluster, label, ingest, pgbouncer, pgpool, policy, upgrade, or user. For example:
 
 	pgo delete user testuser --selector=name=mycluster
 	pgo delete policy mypolicy
 	pgo delete cluster mycluster
 	pgo delete pgbouncer mycluster
 	pgo delete pgpool mycluster
+	pgo delete label mycluster --label=env=research
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
 	pgo delete backup mycluster
@@ -49,6 +50,7 @@ var deleteCmd = &cobra.Command{
 	* ingest
 	* pgbouncer
 	* pgpool
+	* label
 	* policy
 	* upgrade
 	* user`)
@@ -58,6 +60,7 @@ var deleteCmd = &cobra.Command{
 			case "cluster":
 			case "ingest":
 			case "pgbouncer":
+			case "label":
 			case "pgpool":
 			case "policy":
 				//			case "schedule":
@@ -70,6 +73,7 @@ var deleteCmd = &cobra.Command{
 	* cluster
 	* ingest
 	* pgbouncer
+	* label
 	* pgpool
 	* policy
 	* upgrade
@@ -92,12 +96,15 @@ func init() {
 	deleteCmd.AddCommand(deletePgbouncerCmd)
 	deleteCmd.AddCommand(deletePgpoolCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
+	deleteCmd.AddCommand(deleteLabelCmd)
 	//	deleteCmd.AddCommand(deleteScheduleCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
 	deleteCmd.AddCommand(deleteUserCmd)
 
 	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteLabelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteLabelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The label to delete for any selected or specified clusters.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteConfigMaps, "delete-configs", "c", false, "Causes the configMaps for this cluster to be removed permanently.")
@@ -292,6 +299,24 @@ var deleteScheduleCmd = &cobra.Command{
 			deleteSchedule(args)
 		} else {
 			fmt.Println("Aborting...")
+		}
+	},
+}
+
+// deleteLabelCmd ...
+var deleteLabelCmd = &cobra.Command{
+	Use:   "label",
+	Short: "Delete a label from clusters",
+	Long: `Delete a label from clusters. For example:
+
+    pgo delete label mycluster --label=env=research
+    pgo delete label all --label=env=research
+    pgo delete label --selector=group=southwest --label=env=research`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: A cluster name or selector is required for this command.")
+		} else {
+			deleteLabel(args)
 		}
 	},
 }
