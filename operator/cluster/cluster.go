@@ -26,9 +26,11 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
 	"k8s.io/client-go/rest"
-	//"strconv"
+	"strconv"
 )
 
 // Strategy ....
@@ -222,6 +224,53 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debug("pgbouncer requested")
 		//create the pgbouncer deployment using that credential
 		AddPgbouncer(clientset, cl, namespace, true)
+	}
+
+	//add replicas if requested
+	if cl.Spec.Replicas != "" {
+		replicaCount, err := strconv.Atoi(cl.Spec.Replicas)
+		if err != nil {
+			log.Error("error in replicas value " + err.Error())
+			return
+		}
+		//create a CRD for each replica
+		for i := 0; i < replicaCount; i++ {
+			spec := crv1.PgreplicaSpec{}
+			//get the resource config
+			//get the storage config
+			spec.ReplicaStorage, _ = operator.Pgo.GetStorageSpec(operator.Pgo.ReplicaStorage)
+
+			spec.UserLabels = cl.Spec.UserLabels
+			labels := make(map[string]string)
+			labels[util.LABEL_PG_CLUSTER] = cl.Spec.Name
+
+			spec.ClusterName = cl.Spec.Name
+			uniqueName := util.RandStringBytesRmndr(4)
+			labels[util.LABEL_NAME] = cl.Spec.Name + "-" + uniqueName
+			spec.Name = labels[util.LABEL_NAME]
+			newInstance := &crv1.Pgreplica{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:   labels[util.LABEL_NAME],
+					Labels: labels,
+				},
+				Spec: spec,
+				Status: crv1.PgreplicaStatus{
+					State:   crv1.PgreplicaStateCreated,
+					Message: "Created, not processed yet",
+				},
+			}
+			result := crv1.Pgreplica{}
+
+			err = client.Post().
+				Resource(crv1.PgreplicaResourcePlural).
+				Namespace(namespace).
+				Body(newInstance).
+				Do().Into(&result)
+			if err != nil {
+				log.Error(" in creating Pgreplica instance" + err.Error())
+			}
+
+		}
 	}
 
 }

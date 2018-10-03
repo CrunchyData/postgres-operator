@@ -448,6 +448,12 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		return resp
 	}
 
+	if request.ReplicaCount < 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "invalid replica-count , should be greater than or equal to 0"
+		return resp
+	}
+
 	errs := validation.IsDNS1035Label(clusterName)
 	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
@@ -740,7 +746,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.ContainerResources != "" {
 		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(request.ContainerResources)
 	} else {
-		log.Println(apiserver.Pgo.DefaultContainerResources + " is Pgo.DefaultContainerResources")
+		log.Debugf("Pgo.DefaultContainerResources is %s", apiserver.Pgo.DefaultContainerResources)
 		defaultContainerResource := apiserver.Pgo.DefaultContainerResources
 		if defaultContainerResource != "" {
 			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
@@ -750,7 +756,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.StorageConfig != "" {
 		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	} else {
-		log.Printf("%v", apiserver.Pgo.PrimaryStorage)
+		log.Debugf("%v", apiserver.Pgo.PrimaryStorage)
 		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	}
 
@@ -758,11 +764,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.ReplicaStorageConfig)
 	} else {
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
-		log.Printf("%v", apiserver.Pgo.ReplicaStorage)
+		log.Debugf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
-	log.Println(apiserver.Pgo.Cluster.CCPImageTag + " is Pgo.Cluster.CCPImageTag")
+	log.Debugf("Pgo.Cluster.CCPImageTag %s", apiserver.Pgo.Cluster.CCPImageTag)
 	if request.CCPImageTag != "" {
 		spec.CCPImageTag = request.CCPImageTag
 		log.Debugf("using CCPImageTag from command line %s", request.CCPImageTag)
@@ -777,7 +783,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.PrimaryHost = name
 	if request.Policies == "" {
 		spec.Policies = apiserver.Pgo.Cluster.Policies
-		log.Println(apiserver.Pgo.Cluster.Policies + " is Pgo.Cluster.Policies")
+		log.Debugf("Pgo.Cluster.Policies %s", apiserver.Pgo.Cluster.Policies)
 	} else {
 		spec.Policies = request.Policies
 	}
@@ -788,35 +794,40 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.Database = "userdb"
 	spec.RootPassword = request.Password
 	spec.Replicas = "0"
+	str := apiserver.Pgo.Cluster.Replicas
+	log.Debugf("%s is the pgo.yaml replicas setting", apiserver.Pgo.Cluster.Replicas)
+	if str != "" {
+		spec.Replicas = str
+	}
+	log.Debugf("replica count is %d", request.ReplicaCount)
+	if request.ReplicaCount > 0 {
+		spec.Replicas = strconv.Itoa(request.ReplicaCount)
+		log.Debugf("replicas is  %s", spec.Replicas)
+	}
 	spec.Strategy = "1"
 	spec.UserLabels = userLabelsMap
 	spec.UserLabels[util.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 
 	//override any values from config file
-	str := apiserver.Pgo.Cluster.Port
-	log.Printf("%d", apiserver.Pgo.Cluster.Port)
+	str = apiserver.Pgo.Cluster.Port
+	log.Debugf("%d", apiserver.Pgo.Cluster.Port)
 	if str != "" {
 		spec.Port = str
 	}
 	str = apiserver.Pgo.Cluster.User
-	log.Println(apiserver.Pgo.Cluster.User + " is Pgo.Cluster.User")
+	log.Debugf("Pgo.Cluster.User is %s", apiserver.Pgo.Cluster.User)
 	if str != "" {
 		spec.User = str
 	}
 	str = apiserver.Pgo.Cluster.Database
-	log.Println(apiserver.Pgo.Cluster.Database + " is Pgo.Cluster.Database")
+	log.Debugf("Pgo.Cluster.Database is %s", apiserver.Pgo.Cluster.Database)
 	if str != "" {
 		spec.Database = str
 	}
 	str = apiserver.Pgo.Cluster.Strategy
-	log.Printf("%d", apiserver.Pgo.Cluster.Strategy)
+	log.Debugf("%d", apiserver.Pgo.Cluster.Strategy)
 	if str != "" {
 		spec.Strategy = str
-	}
-	str = apiserver.Pgo.Cluster.Replicas
-	log.Printf("%d", apiserver.Pgo.Cluster.Replicas)
-	if str != "" {
-		spec.Replicas = str
 	}
 	//pass along command line flags for a restore
 	if request.SecretFrom != "" {

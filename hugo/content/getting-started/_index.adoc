@@ -168,6 +168,9 @@ The name of a pgpool secret to use for the pgpool configuration.
 |`--policies` |N/A |String |
 The policies to apply when creating a cluster, comma separated.
 
+|`--replica-count` |N/A |Int |
+The number of replicas to create as part of this cluster.  After a cluster is created, you can also add replicas using the scale command.
+
 |`--replica-storage-config` |N/A |String |
 The name of a Storage config in pgo.yaml to use for the cluster replica storage.
 
@@ -191,6 +194,11 @@ The name of a Storage config in pgo.yaml to use for the cluster storage.
 Create a single cluster:
 ....
 pgo create cluster mycluster
+....
+
+Create a single cluster with a single replica:
+....
+pgo create cluster mycluster --replica-count=1
 ....
 
 ===== Complex Creation

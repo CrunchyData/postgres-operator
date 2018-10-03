@@ -245,6 +245,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series.")
+	createClusterCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
 	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 
 	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "i", "", "Defines the path of an ingest configuration file.")

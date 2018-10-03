@@ -169,6 +169,7 @@ func createCluster(args []string) {
 
 	r := new(msgs.CreateClusterRequest)
 	r.Name = args[0]
+	r.ReplicaCount = ReplicaCount
 	r.NodeLabel = NodeLabel
 	r.Password = Password
 	r.SecretFrom = SecretFrom
