@@ -84,6 +84,12 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			return resp
 		}
 
+		if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = clusterName + " does not have pgbackrest enabled"
+			return resp
+		}
+
 		result := crv1.Pgtask{}
 
 		// error if it already exists

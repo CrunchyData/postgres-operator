@@ -795,7 +795,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.RootPassword = request.Password
 	spec.Replicas = "0"
 	str := apiserver.Pgo.Cluster.Replicas
-	log.Debugf("%s is the pgo.yaml replicas setting", apiserver.Pgo.Cluster.Replicas)
+	log.Debugf("[%s] is Pgo.Cluster.Replicas", str)
 	if str != "" {
 		spec.Replicas = str
 	}
