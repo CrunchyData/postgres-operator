@@ -56,7 +56,7 @@ var defaultPasswordLength = 8
 
 //  User ...
 // pgo user --change-password=bob --db=userdb
-//  --expired=7 --managed=true --selector=env=research --update-passwords=true
+//  --expired=7 --selector=env=research --update-passwords=true
 //  --valid-days=30
 func User(request *msgs.UserRequest) msgs.UserResponse {
 	var err error

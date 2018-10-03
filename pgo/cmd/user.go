@@ -46,9 +46,6 @@ var Expired string
 // UpdatePasswords update passwords flag
 var UpdatePasswords bool
 
-// ManagedUser managed user flag
-var ManagedUser bool
-
 var userCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Manage PostgreSQL users",
@@ -72,7 +69,6 @@ func init() {
 	userCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	userCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
-	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 
 }
 

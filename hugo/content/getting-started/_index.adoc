@@ -1259,9 +1259,6 @@ Grants the user access to a database.
 Specifies number of days to check for expiring passwords when
 using --update-passwords flag to update passwords.
 
-|`--managed` |N/A |N/A |
-Creates a user with secrets that can be managed by the Operator.
-
 |`--selector` |-s |String |
 The selector to use for cluster filtering.
 

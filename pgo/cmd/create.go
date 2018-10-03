@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var ManagedUser bool
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
