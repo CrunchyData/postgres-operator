@@ -28,6 +28,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
+	"strings"
 )
 
 func DfCluster(name, selector string) msgs.DfResponse {
@@ -72,6 +73,10 @@ func DfCluster(name, selector string) msgs.DfResponse {
 		//for each service get the database size and append to results
 
 		for svcName, svcIP := range services {
+			if strings.Contains(svcName, "-pgbouncer") ||
+				strings.Contains(svcName, "-pgpool") {
+				continue
+			}
 			result := msgs.DfDetail{}
 			//result.Name = c.Name
 			result.Name = svcName
