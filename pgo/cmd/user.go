@@ -55,7 +55,6 @@ var userCmd = &cobra.Command{
 	Long: `USER allows you to manage users and passwords across a set of clusters. For example:
 
 	pgo user --selector=name=mycluster --update-passwords
-	pgo user --expired=7 --selector=name=mycluster
 	pgo user --change-password=bob --selector=name=mycluster --password=newpass`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
@@ -67,7 +66,7 @@ func init() {
 	RootCmd.AddCommand(userCmd)
 
 	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	userCmd.Flags().StringVarP(&Expired, "expired", "", "", "Shows passwords that will expire in X days.")
+	userCmd.Flags().StringVarP(&Expired, "expired", "", "", "required flag when updating passwords that will expire in X days using --update-passwords flag.")
 	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "", "", "Updates the password for a user on selective clusters.")
 	userCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
@@ -184,7 +183,7 @@ func showUser(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowUser(httpclient, v, Selector, &SessionCredentials)
+		response, err := api.ShowUser(httpclient, v, Selector, Expired, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
@@ -226,6 +225,12 @@ func printUsers(detail *msgs.ShowUserDetail) {
 		fmt.Println("secret : " + s.Name)
 		fmt.Println(TreeBranch + "username: " + s.Username)
 		fmt.Println(TreeTrunk + "password: " + s.Password)
+	}
+	if len(detail.ExpiredMsgs) > 0 {
+		fmt.Printf("\nexpired passwords: \n")
+		for _, e := range detail.ExpiredMsgs {
+			fmt.Println(e)
+		}
 	}
 
 }

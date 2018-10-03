@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowUser(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowUserResponse, error) {
+func ShowUser(httpclient *http.Client, arg, selector, expired string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowUserResponse, error) {
 
 	var response msgs.ShowUserResponse
 
-	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&expired=" + expired
 
 	log.Debug("show users called [" + url + "]")
 

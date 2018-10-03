@@ -434,6 +434,21 @@ are available on user management below.
 pgo show user mycluster
 ....
 
+
+===== Viewing Users With Passwords Set to Expire
+
+To see user passwords that have expired past a certain number
+of days in the *mycluster* cluster:
+....
+pgo show user --expired=7 --selector=name=mycluster
+....
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+|`--expired` |N/A |String |
+|=========================================================
+
 ===== PostgreSQL Version
 
 Filter the results based on the PostgeSQL version of the cluster with the `--ccp-image-tag` flag:
@@ -1241,7 +1256,8 @@ Updates the password for a user on selective clusters.
 Grants the user access to a database.
 
 |`--expired` |N/A |String |
-Shows passwords that will expire in X days.
+Specifies number of days to check for expiring passwords when
+using --update-passwords flag to update passwords.
 
 |`--managed` |N/A |N/A |
 Creates a user with secrets that can be managed by the Operator.
@@ -1323,13 +1339,6 @@ If pgpool is part of your cluster, changing a managed user password
 will cause pgpool to be reconfigured to pick up the password change.
 
 
-===== Viewing Expired Passwords
-
-To see user passwords that have expired past a certain number
-of days in the *mycluster* cluster:
-....
-pgo user --expired=7 --selector=name=mycluster
-....
 
 ===== Updating Expired Passwords
 

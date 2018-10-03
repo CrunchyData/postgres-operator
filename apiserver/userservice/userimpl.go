@@ -138,7 +138,6 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				if len(results) > 0 {
 					log.Debug("expired passwords....")
 					for _, v := range results {
-						resp.Results = append(resp.Results, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
 						log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(defaultPasswordLength)
@@ -152,9 +151,6 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 							//log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 						}
 					}
-				} else {
-					log.Debug("no expired passwords....")
-					resp.Results = append(resp.Results, "no users were found with expired passwords")
 				}
 			}
 
@@ -627,7 +623,7 @@ func isManaged(secretName string) (bool, error) {
 }
 
 // ShowUser ...
-func ShowUser(name, selector string) msgs.ShowUserResponse {
+func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 	var err error
 
 	response := msgs.ShowUserResponse{}
@@ -652,11 +648,54 @@ func ShowUser(name, selector string) msgs.ShowUserResponse {
 		return response
 	}
 
+	var expiredInt int
+	if expired != "" {
+		expiredInt, err = strconv.Atoi(expired)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "--expired is not a valid integer"
+			return response
+		}
+		if expiredInt < 1 {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "--expired is requited to be greater than 0"
+			return response
+		}
+	}
+
 	log.Debug("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowUserDetail{}
 		detail.Cluster = c
+		detail.ExpiredMsgs = make([]string, 0)
+
+		if expired != "" {
+			selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+
+			for _, d := range deployments.Items {
+				info := getPostgresUserInfo(apiserver.Namespace, d.ObjectMeta.Name)
+				if expired != "" {
+					results := callDB(info, d.ObjectMeta.Name, expired)
+					if len(results) > 0 {
+						log.Debug("expired passwords....")
+						for _, v := range results {
+							detail.ExpiredMsgs = append(detail.ExpiredMsgs, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
+							log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
+
+						}
+					}
+				}
+
+			}
+		}
+
 		detail.Secrets, err = apiserver.GetSecrets(&c)
 		if err != nil {
 			response.Status.Code = msgs.Error

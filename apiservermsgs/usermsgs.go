@@ -75,8 +75,9 @@ type ShowUserSecret struct {
 
 // ShowUsersDetail ...
 type ShowUserDetail struct {
-	Cluster crv1.Pgcluster
-	Secrets []ShowUserSecret
+	Cluster     crv1.Pgcluster
+	Secrets     []ShowUserSecret
+	ExpiredMsgs []string
 }
 
 // ShowUsersResponse ...
