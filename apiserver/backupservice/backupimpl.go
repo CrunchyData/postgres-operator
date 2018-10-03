@@ -42,7 +42,12 @@ func ShowBackup(name string) msgs.ShowBackupResponse {
 		log.Debugf("backups found len is %d\n", len(response.BackupList.Items))
 	} else {
 		backup := crv1.Pgbackup{}
-		_, err := kubeapi.Getpgbackup(apiserver.RESTClient, &backup, name, apiserver.Namespace)
+		found, err := kubeapi.Getpgbackup(apiserver.RESTClient, &backup, name, apiserver.Namespace)
+		if !found {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "backup not found"
+			return response
+		}
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
