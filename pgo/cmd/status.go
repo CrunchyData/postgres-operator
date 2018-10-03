@@ -43,7 +43,7 @@ var Summary bool
 func init() {
 	RootCmd.AddCommand(statusCmd)
 
-	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
+	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "json", "The output format. Currently, json is the only supported value.")
 
 }
 

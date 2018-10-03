@@ -39,7 +39,7 @@ var testCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the name of the clusters to test.`)
 		} else {
 			if OutputFormat != "" && OutputFormat != "json" {
-				fmt.Println("Error: Only JSON is currently supported for the --output flag value.")
+				fmt.Println("Error: Only 'json' is currently supported for the --output flag value.")
 				os.Exit(2)
 			}
 			showTest(args)
@@ -50,7 +50,7 @@ var testCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(testCmd)
 	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
+	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "json", "The output format. Currently, json is the only supported value.")
 }
 
 func showTest(args []string) {
