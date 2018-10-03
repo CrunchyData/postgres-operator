@@ -50,7 +50,7 @@ var testCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(testCmd)
 	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "json", "The output format. Currently, json is the only supported value.")
+	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 }
 
 func showTest(args []string) {
