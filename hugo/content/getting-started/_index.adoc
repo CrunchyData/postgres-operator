@@ -1340,6 +1340,24 @@ pgo user --update-passwords --selector=name=mycluster --expired=5
 
 == pgbouncer Basics
 
+When a pgbouncer deployment is added into your cluster, it
+will cause the creation of a Secret that holds the pgbouncer
+configuration files:
+ * pg_hba.conf 
+ * pgbouncer.ini
+ * users.txt
+
+Each user that is defined for your cluster is used to define
+the pgbouncer credentials, using the same password.
+
+The pgbouncer configuration includes a connection to a
+database with the name of your cluster (e.g. mycluster) and
+also a database that connects to the cluster's replicas (e.g. mycluster-replica).
+
+When you add a new user, it will cause the pgbouncer to be reconfigured
+and a new secret to be generated, the pgbouncer is restarted to
+pick up the new configuration file.
+
 Adding a pgbouncer deployment into your PG cluster follows
 a sequence similar to this:
 
