@@ -53,8 +53,13 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 		log.Debug("upgrades found len is %d\n", len(response.UpgradeList.Items))
 	} else {
 		upgrade := crv1.Pgupgrade{}
-		_, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
+		found, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
 			&upgrade, name, apiserver.Namespace)
+		if !found {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "upgrade not found"
+			return response
+		}
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

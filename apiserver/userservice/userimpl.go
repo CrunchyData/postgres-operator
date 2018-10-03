@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	//libpq uses this blank import
 	"database/sql"
+	"errors"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -29,6 +30,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -363,8 +365,42 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 	}
 
 	var rows *sql.Rows
+	var querystr string
 
-	querystr := "create user " + request.Name
+	if request.Name != "" {
+		parts := strings.Split(request.Name, " ")
+		if len(parts) > 1 {
+			return errors.New("invalid user name format, can not container special characters")
+		}
+	}
+	//validate userdb if entered
+	if request.UserDBAccess != "" {
+		parts := strings.Split(request.UserDBAccess, " ")
+		if len(parts) > 1 {
+			return errors.New("invalid db name format, can not container special characters")
+		}
+		querystr = "select count(datname) from pg_catalog.pg_database where datname = '" + request.UserDBAccess + "'"
+		log.Debug(querystr)
+		rows, err = conn.Query(querystr)
+		if err != nil {
+			log.Error(err.Error())
+			return err
+		}
+		var returnedName int
+		for rows.Next() {
+			err = rows.Scan(&returnedName)
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+			log.Debug(" returned name %d", returnedName)
+			if returnedName == 0 {
+				return errors.New("dbname is not valid database name")
+			}
+		}
+	}
+
+	querystr = "create user " + request.Name
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -494,7 +530,7 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 		return resp
 	}
 
-	log.Debug("createUser clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		info := getPostgresUserInfo(apiserver.Namespace, c.Name)
