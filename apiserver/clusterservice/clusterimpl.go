@@ -252,6 +252,10 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 	for _, p := range services.Items {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
+		if strings.Contains(p.Name, "-pgbouncer") {
+			d.Pgbouncer = true
+			d.ClusterName = cluster.Name
+		}
 		d.ClusterIP = p.Spec.ClusterIP
 		if len(p.Spec.ExternalIPs) > 0 {
 			d.ExternalIP = p.Spec.ExternalIPs[0]
@@ -352,26 +356,33 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 		//for each service run a test and add results to output
 		for _, service := range detail.Services {
 
+			databases := make([]string, 0)
+			if service.Pgbouncer {
+				databases = append(databases, service.ClusterName)
+				databases = append(databases, service.ClusterName+"-replica")
+			} else {
+				databases = append(databases, "postgres")
+				databases = append(databases, c.Spec.Database)
+			}
 			for _, s := range secrets {
-				item := msgs.ClusterTestDetail{}
-				username := s.Username
-				password := s.Password
-				database := "postgres"
-				if username == c.Spec.User {
-					database = c.Spec.Database
-				}
-				item.PsqlString = "psql -p " + c.Spec.Port + " -h " + service.ClusterIP + " -U " + username + " " + database
-				log.Debug(item.PsqlString)
-				if (service.Name != c.ObjectMeta.Name) && replicaReady == false {
-					item.Working = false
-				} else {
-					status := query(username, service.ClusterIP, c.Spec.Port, database, password)
-					item.Working = false
-					if status {
-						item.Working = true
+				for _, db := range databases {
+					item := msgs.ClusterTestDetail{}
+					username := s.Username
+					password := s.Password
+					database := db
+					item.PsqlString = "psql -p " + c.Spec.Port + " -h " + service.ClusterIP + " -U " + username + " " + database
+					log.Debug(item.PsqlString)
+					if (service.Name != c.ObjectMeta.Name) && replicaReady == false {
+						item.Working = false
+					} else {
+						status := query(username, service.ClusterIP, c.Spec.Port, database, password)
+						item.Working = false
+						if status {
+							item.Working = true
+						}
 					}
+					result.Items = append(result.Items, item)
 				}
-				result.Items = append(result.Items, item)
 			}
 		}
 		response.Results = append(response.Results, result)

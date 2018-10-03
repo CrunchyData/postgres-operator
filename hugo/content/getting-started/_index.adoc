@@ -1338,6 +1338,20 @@ To update expired passwords in a cluster:
 pgo user --update-passwords --selector=name=mycluster --expired=5
 ....
 
+== pgbouncer Basics
+
+Adding a pgbouncer deployment into your PG cluster follows
+a sequence similar to this:
+
+....
+pgo create cluster mycluster --pgbouncer
+....
+
+You can also add pgbouncer after a cluster has been created:
+....
+pgo create pgbouncer mycluster
+....
+
 == pgpool Basics
 
 Adding a pgpool deployment into your PG cluster follows
