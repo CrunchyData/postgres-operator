@@ -35,12 +35,12 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 
 	pvcroot := r.URL.Query().Get("pvcroot")
 	if pvcroot != "" {
-		log.Debug("pvcroot param was [" + pvcroot + "]")
+		log.Debugf("pvcroot parameter is [%s]", pvcroot)
 	}
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	switch r.Method {

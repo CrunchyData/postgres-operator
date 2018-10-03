@@ -88,7 +88,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	ccpimagetag := r.URL.Query().Get("ccpimagetag")
 	if ccpimagetag != "" {
-		log.Debug("ccpimagetag param was [" + ccpimagetag + "]")
+		log.Debugf("ccpimagetag parameter is [%s]", ccpimagetag)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
@@ -155,7 +155,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	deleteConfigs := false
 	deleteConfigsStr := r.URL.Query().Get("delete-configs")
 	if deleteDataStr != "" {
-		log.Debug("delete-configs param was [" + deleteConfigsStr + "]")
+		log.Debugf("delete-configs parameter is [%s]", deleteConfigsStr)
 		deleteConfigs, _ = strconv.ParseBool(deleteConfigsStr)
 	}
 

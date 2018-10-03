@@ -62,7 +62,7 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 		return pvcList, err
 	}
 
-	log.Debug("\nPVC %s\n", pvc.Name+" is found")
+	log.Debugf("\nPVC %s\n is found", pvc.Name)
 	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot)
 
 	return pvcList, err
@@ -84,7 +84,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 		log.Error(err.Error())
 		return newlines, err
 	} else {
-		log.Debug("deleting prior pod " + podName)
+		log.Debugf("deleting prior pod %s", podName)
 		err = kubeapi.DeletePod(apiserver.Clientset, podName, apiserver.Namespace)
 		if err != nil {
 			return newlines, err
@@ -101,9 +101,9 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 
 	pvcRoot := "/"
 	if PVCRoot != "" {
-		log.Debug("using " + PVCRoot + " as the PVC listing root")
+		log.Debugf("using %s as the PVC listing root", PVCRoot)
 		pvcRoot = PVCRoot
-		log.Debug(pvcName + "/" + pvcRoot)
+		log.Debugf("%s/%s", pvcName, pvcRoot)
 	} else {
 		log.Debug(pvcName)
 	}
@@ -152,9 +152,9 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	logOptions := v1.PodLogOptions{}
 	req := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).GetLogs(podName, &logOptions)
 	if req == nil {
-		log.Debug("error in get logs for " + podName)
+		log.Debugf("error in get logs for %s", podName)
 	} else {
-		log.Debug("got the logs for " + podName)
+		log.Debugf("got the logs for %s", podName)
 	}
 	readCloser, err := req.Stream()
 	if err != nil {
@@ -171,7 +171,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	_, err = io.Copy(&buf2, readCloser)
 	log.Debugf("backups are... \n%s", buf2.String())
 
-	log.Debug("pvc=" + pvcName)
+	log.Debugf("pvc = %s", pvcName)
 	lines := strings.Split(buf2.String(), "\n")
 	//chop off last line since its only a newline
 	last := len(lines) - 1
