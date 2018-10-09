@@ -237,6 +237,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		for i := 0; i < replicaCount; i++ {
 			spec := crv1.PgreplicaSpec{}
 			//get the resource config
+			spec.ContainerResources = cl.Spec.ContainerResources
 			//get the storage config
 			spec.ReplicaStorage, _ = operator.Pgo.GetStorageSpec(operator.Pgo.ReplicaStorage)
 
