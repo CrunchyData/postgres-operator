@@ -199,6 +199,7 @@ var createUserCmd = &cobra.Command{
 	Short: "Create a PostgreSQL user",
 	Long: `Create a postgres user. For example:
 
+    pgo create user manageduser --managed --selector=name=mycluster
     pgo create user user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create user called ")
