@@ -659,7 +659,13 @@ func DeleteUser(name, selector string) msgs.DeleteUserResponse {
 
 func isManaged(secretName string) (bool, error) {
 	_, found, err := kubeapi.GetSecret(apiserver.Clientset, secretName, apiserver.Namespace)
-	if !found || err != nil {
+	if !found {
+		return false, nil
+	}
+	if found {
+		return true, nil
+	}
+	if err != nil {
 		return false, err
 	}
 
