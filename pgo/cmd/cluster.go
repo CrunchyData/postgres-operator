@@ -125,6 +125,13 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		}
 	}
 
+	resources := detail.Cluster.Spec.ContainerResources
+	resourceStr := fmt.Sprintf("%sresources : CPU Limit=%s Memory Limit=%s, CPU Request=%s Memory Request=%s", TreeBranch, resources.LimitsCPU, resources.LimitsMemory, resources.RequestsCPU, resources.RequestsMemory)
+	fmt.Println(resourceStr)
+
+	storageStr := fmt.Sprintf("%sstorage : Primary=%s Replica=%s", TreeBranch, detail.Cluster.Spec.PrimaryStorage.Size, detail.Cluster.Spec.ReplicaStorage.Size)
+	fmt.Println(storageStr)
+
 	for _, d := range detail.Deployments {
 		fmt.Println(TreeBranch + "deployment : " + d.Name)
 	}
