@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Getting Started on Crunchy Data PostgreSQL Operator Documentation</title>
+    <link>https://crunchydata.github.io/postgres-operator/latest/getting-started/</link>
+    <description>Recent content in Getting Started on Crunchy Data PostgreSQL Operator Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 24 Apr 2018 18:26:43 -0700</lastBuildDate>
+    
+	<atom:link href="https://crunchydata.github.io/postgres-operator/latest/getting-started/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+  </channel>
+</rss>
