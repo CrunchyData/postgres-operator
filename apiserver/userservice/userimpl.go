@@ -121,6 +121,15 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(defaultPasswordLength)
+				if request.Password != "" {
+					parts := strings.Split(request.Password, " ")
+					if len(parts) > 1 {
+						resp.Status.Code = msgs.Error
+						resp.Status.Msg = "invalid password format, can not contain spaces"
+						return resp
+					}
+					newPassword = request.Password
+				}
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 				pgbouncer := cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
 				pgpool := cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
