@@ -246,7 +246,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-10</p>
+<p>Latest Release: 3.2.0 2018-10-10</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -628,8 +628,6 @@ looks like this -</p>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">BasicAuth:  true
 Cluster:
-  PrimaryNodeLabel:
-  ReplicaNodeLabel:
   CCPImageTag:  centos7-10.5-2.1.0
   Metrics:  false
   Badger:  false
@@ -676,7 +674,7 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.3.0</code></pre>
+  COImageTag:  centos7-2.7</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -698,14 +696,6 @@ Pgo:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>BasicAuth</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">if set to <strong>true</strong> will enable Basic Authentication</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.PrimaryNodeLabel</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.ReplicaNodeLabel</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.CCPImageTag</code></p></td>

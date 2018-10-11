@@ -238,27 +238,35 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-10</p>
+<p>Latest Release: 3.2.0 2018-10-10</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>There are currently <strong>quickstart</strong> script that seek to automate
+<p>There are currently <strong>quickstart</strong> scripts that seek to automate
 the deployment to popular Kubernetes environments -</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><a href="https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh">quickstart.sh</a></p>
+<p><a href="https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-gke.sh">quickstart-for-gke.sh</a></p>
+</li>
+<li>
+<p><a href="https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart-for-ocp.sh">quickstart-for-ocp.sh</a></p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>The <strong>quickstart</strong> script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.</p>
+<p>The <strong>quickstart-for-gke</strong> script will deploy the operator to
+a GKE Kube cluster.</p>
 </div>
 <div class="paragraph">
-<p>The script assumes you have a StorageClass defined for persistence.</p>
+<p>The <strong>quickstart-for-ocp</strong> script will deploy the operator to
+an Openshift Container Platform cluster.</p>
+</div>
+<div class="paragraph">
+<p>Both scripts assume you have a StorageClass defined for persistence.</p>
 </div>
 <div class="paragraph">
 <p>Pre-compiled versions of the Operator <strong>pgo</strong> client are provided for the x86_64, Mac OSX, and Windows hosts.</p>
@@ -271,7 +279,7 @@ the deployment to popular Kubernetes environments -</p>
 <div class="sect2">
 <h3 id="_gke_pks">GKE/PKS</h3>
 <div class="paragraph">
-<p>The <strong>quickstart.sh</strong> script will allow users to set up the Postgres Operator quickly on GKE including PKS.
+<p>The <strong>quickstart-for-gke.sh</strong> script will allow users to set up the Postgres Operator quickly on GKE including PKS.
 This script is tested on GKE but can be modified for use with other Kubernetes environments as well.</p>
 </div>
 <div class="paragraph">
@@ -293,8 +301,7 @@ This script is tested on GKE but can be modified for use with other Kubernetes e
 <div class="paragraph">
 <p>Executing the script will give you a default Operator deployment
 that assumes <strong>dynamic</strong> storage and a storage class named <strong>standard</strong>,
-things that GKE provides, user provided values are also allowed by
-the script.</p>
+things that GKE provides.</p>
 </div>
 <div class="paragraph">
 <p>The script performs the following -</p>
@@ -362,7 +369,9 @@ and provide Windows and Mac installation scripts.</p>
 <div class="sect2">
 <h3 id="_openshift_container_platform">Openshift Container Platform</h3>
 <div class="paragraph">
-<p>The script also is used for installing the operator on OCP.</p>
+<p>A similar script for installing the operator on OCP is
+offered with similar features as the GKE script.  This script is
+tested on OCP 3.7 with a StorageClass defined.</p>
 </div>
 </div>
 </div>
