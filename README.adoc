@@ -11,24 +11,26 @@ Latest Release: 3.3.0 {docdate}
 
 The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
 
-Please view the official Crunchy Data PostgreSQL Operator documentation link:https://crunchydata.github.io/postgres-operator/[here]. If you are
-interested in contributing or making an update to the documentation, please view the link:https://crunchydata.github.io/postgres-operator/contributing/[Contributing Guidelines].
+Please view the official Crunchy Data PostgreSQL Operator documentation link:https://crunchydata.github.io/postgres-operator/stable/[here]. If you are
+interested in contributing or making an update to the documentation, please view the link:https://crunchydata.github.io/postgres-operator/stable/contributing/[Contributing Guidelines].
 
-[link=https://crunchydata.github.io/postgres-operator/]
+[link=https://crunchydata.github.io/postgres-operator/stable/]
 image::btn.png[Official Documentation]
+
+If you are looking for the latest documentation, please see the develop branch which is considered unstable. The development documentation can be reviewed  link:https://crunchydata.github.io/postgres-operator/latest/[here]
 
 == Installation
 
-To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:https://crunchydata.github.io/postgres-operator/installation/[Installation] page.
+To build and deploy the Operator on your Kubernetes system, follow the instructions documented on the link:https://crunchydata.github.io/postgres-operator/stable/installation/[Installation] page.
 
-If you're seeking to upgrade your existing Operator installation, please visit the link:https://crunchydata.github.io/postgres-operator/installation/upgrading-the-operator/[Upgrading the Operator] page.  Also read the Release Notes as to details on recent changes to the Operator.
+If you're seeking to upgrade your existing Operator installation, please visit the link:https://crunchydata.github.io/postgres-operator/stable/installation/upgrading-the-operator/[Upgrading the Operator] page.  Also read the Release Notes as to details on recent changes to the Operator.
 
-More design information is found on the link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works] page.
+More design information is found on the link:https://crunchydata.github.io/postgres-operator/stable/how-it-works/[How It Works] page.
 
 == Configuration
 
-The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:https://crunchydata.github.io/postgres-operator/installation/configuration/[Configuration] page.
+The operator is template-driven; this makes it simple to configure both the client and the operator. The configuration options are documented on the link:https://crunchydata.github.io/postgres-operator/stable/installation/configuration/[Configuration] page.
 
 == Getting Started
 
-*postgres-operator* commands are documented on the link:https://crunchydata.github.io/postgres-operator/getting-started/[Getting Started] page.
+*postgres-operator* commands are documented on the link:https://crunchydata.github.io/postgres-operator/stable/getting-started/[Getting Started] page.
