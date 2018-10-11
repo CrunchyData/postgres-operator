@@ -25,8 +25,6 @@ import (
 	"strings"
 )
 
-//const PGO_VERSION = "3.2"
-
 type ClusterStruct struct {
 	CCPImagePrefix   string `yaml:"CCPImagePrefix"`
 	CCPImageTag      string `yaml:"CCPImageTag"`
