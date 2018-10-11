@@ -1278,13 +1278,16 @@ Allows user to specify a password instead of using a generated password.
 
 |`--valid-days` |N/A |Int |
 Sets passwords for new users to X days (default 30).
+
+|`--password-length` |N/A |Int |
+When no password is provided, generates a password with this number of characters (default 12).
 |=========================================================
 
 ==== Examples
 
 ===== Basic User Creation
 
-To create a new Postgres user assigned to the *mycluster* cluster, execute:
+To create a new Postgres user assigned to the *mycluster* cluster, execute (password will be auto generated and 12 characters long):
 ....
 pgo create user sally --selector=name=mycluster
 ....
@@ -1325,7 +1328,7 @@ will cause pgpool to be reconfigured to pick up the user deletion.
 
 ===== Change Password
 
-To change the password for a user in the *mycluster* cluster:
+To change the password for a user in the *mycluster* cluster (password will be auto generated and 12 characters long):
 ....
 pgo user --change-password=sally --selector=name=mycluster
 ....

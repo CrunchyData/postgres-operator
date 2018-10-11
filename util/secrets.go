@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+
 	//"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
@@ -122,12 +123,12 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 }
 
 // CreateUserSecret will create a new secret holding a user credential
-func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string, passwordLength int) error {
 
 	var err error
 
 	secretName := clustername + "-" + username + "-secret"
-	var enPassword = GeneratePassword(10)
+	var enPassword = GeneratePassword(passwordLength)
 	if password != "" {
 		log.Debug("using user specified password for secret " + secretName)
 		enPassword = password
@@ -141,7 +142,7 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 }
 
 // UpdateUserSecret updates a user secret with a new password
-func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string, passwordLength int) error {
 
 	var err error
 
@@ -151,7 +152,7 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
 	if err == nil {
 		//create secret with updated password
-		err = CreateUserSecret(clientset, clustername, username, password, namespace)
+		err = CreateUserSecret(clientset, clustername, username, password, namespace, passwordLength)
 		if err != nil {
 			log.Error("UpdateUserSecret error creating secret" + err.Error())
 		} else {
