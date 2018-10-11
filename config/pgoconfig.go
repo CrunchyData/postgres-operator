@@ -22,28 +22,29 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"strconv"
+	"strings"
 )
 
-const PGO_VERSION = "3.2"
-
 type ClusterStruct struct {
-	CCPImagePrefix  string `yaml:"CCPImagePrefix"`
-	CCPImageTag     string `yaml:"CCPImageTag"`
-	Policies        string `yaml:"Policies"`
-	Metrics         bool   `yaml:"Metrics"`
-	Badger          bool   `yaml:"Badger"`
-	Port            string `yaml:"Port"`
-	ArchiveTimeout  string `yaml:"ArchiveTimeout"`
-	ArchiveMode     string `yaml:"ArchiveMode"`
-	User            string `yaml:"User"`
-	Database        string `yaml:"Database"`
-	PasswordAgeDays string `yaml:"PasswordAgeDays"`
-	PasswordLength  string `yaml:"PasswordLength"`
-	Strategy        string `yaml:"Strategy"`
-	Replicas        string `yaml:"Replicas"`
-	ServiceType     string `yaml:"ServiceType"`
-	Backrest        bool   `yaml:"Backrest"`
-	Autofail        bool   `yaml:"Autofail"`
+	CCPImagePrefix   string `yaml:"CCPImagePrefix"`
+	CCPImageTag      string `yaml:"CCPImageTag"`
+	PrimaryNodeLabel string `yaml:"PrimaryNodeLabel"`
+	ReplicaNodeLabel string `yaml:"ReplicaNodeLabel"`
+	Policies         string `yaml:"Policies"`
+	Metrics          bool   `yaml:"Metrics"`
+	Badger           bool   `yaml:"Badger"`
+	Port             string `yaml:"Port"`
+	ArchiveTimeout   string `yaml:"ArchiveTimeout"`
+	ArchiveMode      string `yaml:"ArchiveMode"`
+	User             string `yaml:"User"`
+	Database         string `yaml:"Database"`
+	PasswordAgeDays  string `yaml:"PasswordAgeDays"`
+	PasswordLength   string `yaml:"PasswordLength"`
+	Strategy         string `yaml:"Strategy"`
+	Replicas         string `yaml:"Replicas"`
+	ServiceType      string `yaml:"ServiceType"`
+	Backrest         bool   `yaml:"Backrest"`
+	Autofail         bool   `yaml:"Autofail"`
 }
 
 type StorageStruct struct {
@@ -90,6 +91,21 @@ const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 
 func (c *PgoConfig) Validate() error {
 	var err error
+
+	if c.Cluster.PrimaryNodeLabel != "" {
+		parts := strings.Split(c.Cluster.PrimaryNodeLabel, "=")
+		if len(parts) != 2 {
+			return errors.New("Cluster.PrimaryNodeLabel does not follow key=value format")
+		}
+	}
+
+	if c.Cluster.ReplicaNodeLabel != "" {
+		parts := strings.Split(c.Cluster.ReplicaNodeLabel, "=")
+		if len(parts) != 2 {
+			return errors.New("Cluster.ReplicaNodeLabel does not follow key=value format")
+		}
+	}
+
 	log.Info("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {

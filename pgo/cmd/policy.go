@@ -16,14 +16,12 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
 	"io/ioutil"
-	"net/http"
 	"os"
 )
 
@@ -53,7 +51,7 @@ func init() {
 	RootCmd.AddCommand(applyCmd)
 
 	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "d", false, "Shows the clusters that the label would be applied to, without labelling them.")
+	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Shows the clusters that the label would be applied to, without labelling them.")
 
 }
 
@@ -76,39 +74,11 @@ func applyPolicy(args []string) {
 	r.DryRun = DryRun
 	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
+	response, err := api.ApplyPolicy(httpclient, &SessionCredentials, r)
 
-	url := APIServerURL + "/policies/apply"
-	log.Debug("applyPolicy called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	log.Debugf("response is %v\n", resp)
-
-	var response msgs.ApplyPolicyResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if DryRun {
@@ -132,36 +102,11 @@ func applyPolicy(args []string) {
 func showPolicy(args []string) {
 
 	for _, v := range args {
-		url := APIServerURL + "/policies/" + v + "?version=" + msgs.PGO_VERSION
-		log.Debug("showPolicy called...[" + url + "]")
+		response, err := api.ShowPolicy(httpclient, v, &SessionCredentials)
 
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowPolicyResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code != msgs.Ok {
@@ -214,36 +159,11 @@ func createPolicy(args []string) {
 		}
 	}
 
-	jsonValue, _ := json.Marshal(r)
+	response, err := api.CreatePolicy(httpclient, &SessionCredentials, r)
 
-	url := APIServerURL + "/policies"
-	log.Debug("createPolicy called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreatePolicyResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -273,34 +193,9 @@ func deletePolicy(args []string) {
 	for _, arg := range args {
 		log.Debug("deleting policy " + arg)
 
-		url := APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
-
-		log.Debug("delete policy called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
+		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-		var response msgs.DeletePolicyResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
 		}
 
 		if response.Status.Code == msgs.Ok {

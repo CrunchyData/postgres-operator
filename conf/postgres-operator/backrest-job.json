@@ -2,7 +2,7 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backrest-{{.PodName}}",
+                "name": "backrest-{{.Command}}-{{.ClusterName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
@@ -11,9 +11,10 @@
                 }
     },
     "spec": {
+	"backoffLimit": 0,
         "template": {
             "metadata": {
-                "name": "backrest-{{.PodName}}",
+                "name": "backrest-{{.Command}}-{{.ClusterName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
@@ -31,6 +32,9 @@
                     "env": [{
                         "name": "COMMAND",
                         "value": "{{.Command}}"
+                    }, {
+                        "name": "COMMAND_OPTS",
+                        "value": "{{.CommandOpts}}"
                     }, {
                         "name": "PODNAME",
                         "value": "{{.PodName}}"

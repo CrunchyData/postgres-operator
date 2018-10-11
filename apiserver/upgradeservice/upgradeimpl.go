@@ -53,8 +53,13 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 		log.Debug("upgrades found len is %d\n", len(response.UpgradeList.Items))
 	} else {
 		upgrade := crv1.Pgupgrade{}
-		_, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
+		found, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
 			&upgrade, name, apiserver.Namespace)
+		if !found {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "upgrade not found"
+			return response
+		}
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -107,6 +112,12 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 	log.Debug("createUpgrade called %v\n", request)
 
 	var newInstance *crv1.Pgupgrade
+
+	if request.UpgradeType == MajorUpgrade {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "MajorUpgrade not supported yet"
+		return response
+	}
 
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
@@ -170,7 +181,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			&cl, arg, apiserver.Namespace)
 		if !found {
 			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
+			response.Status.Msg = arg + " is not a valid pgcluster"
 			return response
 		}
 

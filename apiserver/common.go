@@ -20,6 +20,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 )
@@ -28,7 +30,7 @@ import (
 func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := "pgpool!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := util.LABEL_PGBOUNCER + "!=true," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(Clientset, selector, Namespace)
 	if err != nil {
@@ -84,5 +86,44 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 	}
 
 	return pvcList
+
+}
+
+func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string) error {
+	var err error
+
+	//create a pgtask for each root at this volume/pvc
+	for i := 0; i < len(dataRoots); i++ {
+
+		//create pgtask CRD
+		spec := crv1.PgtaskSpec{}
+		spec.Name = pvcName
+		spec.TaskType = crv1.PgtaskDeleteData
+		spec.StorageSpec = storageSpec
+
+		spec.Parameters = make(map[string]string)
+		spec.Parameters[util.LABEL_PVC_NAME] = pvcName
+		spec.Parameters[util.LABEL_DATA_ROOT] = dataRoots[i]
+		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+
+		newInstance := &crv1.Pgtask{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: pvcName,
+			},
+			Spec: spec,
+		}
+		newInstance.ObjectMeta.Labels = make(map[string]string)
+		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+		//newInstance.ObjectMeta.Labels[util.LABEL_DATA_ROOT] = dataRoots[i]
+		newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
+
+		err := kubeapi.Createpgtask(RESTClient,
+			newInstance, Namespace)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+	}
+	return err
 
 }

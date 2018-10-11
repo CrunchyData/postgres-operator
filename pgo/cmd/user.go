@@ -16,13 +16,12 @@ package cmd
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -47,17 +46,13 @@ var Expired string
 // UpdatePasswords update passwords flag
 var UpdatePasswords bool
 
-// ManagedUser managed user flag
-var ManagedUser bool
-
 var userCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Manage PostgreSQL users",
 	Long: `USER allows you to manage users and passwords across a set of clusters. For example:
 
 	pgo user --selector=name=mycluster --update-passwords
-	pgo user --expired=7 --selector=name=mycluster
-	pgo user --change-password=bob --selector=name=mycluster`,
+	pgo user --change-password=bob --selector=name=mycluster --password=newpass`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager()
@@ -68,12 +63,12 @@ func init() {
 	RootCmd.AddCommand(userCmd)
 
 	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	userCmd.Flags().StringVarP(&Expired, "expired", "e", "", "Shows passwords that will expire in X days.")
-	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "v", 30, "Sets passwords for new users to X days.")
-	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "c", "", "Updates the password for a user on selective clusters.")
-	userCmd.Flags().StringVarP(&UserDBAccess, "db", "b", "", "Grants the user access to a database.")
-	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "u", false, "Performs password updating on expired passwords.")
-	userCmd.Flags().BoolVarP(&ManagedUser, "managed", "m", false, "Creates a user with secrets that can be managed by the Operator.")
+	userCmd.Flags().StringVarP(&Expired, "expired", "", "", "required flag when updating passwords that will expire in X days using --update-passwords flag.")
+	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
+	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "", "", "Updates the password for a user on selective clusters.")
+	userCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
+	userCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
+	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
 
 }
 
@@ -82,6 +77,7 @@ func userManager() {
 
 	request := msgs.UserRequest{}
 	request.Selector = Selector
+	request.Password = Password
 	request.PasswordAgeDays = PasswordAgeDays
 	request.ChangePasswordForUser = ChangePasswordForUser
 	request.DeleteUser = DeleteUser
@@ -92,36 +88,11 @@ func userManager() {
 	request.ManagedUser = ManagedUser
 	request.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.UserManager(httpclient, &SessionCredentials, &request)
 
-	url := APIServerURL + "/user"
-	log.Debug("User called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.UserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -150,41 +121,16 @@ func createUser(args []string) {
 	r := new(msgs.CreateUserRequest)
 	r.Name = args[0]
 	r.Selector = Selector
+	r.Password = Password
 	r.ManagedUser = ManagedUser
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
 	r.ClientVersion = msgs.PGO_VERSION
 
-	jsonValue, _ := json.Marshal(r)
-	url := APIServerURL + "/users"
-	log.Debug("createUser called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.CreateUser(httpclient, &SessionCredentials, r)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateUserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -203,33 +149,10 @@ func deleteUser(username string) {
 	log.Debugf("deleteUser called %v\n", username)
 
 	log.Debug("deleting user " + username + " selector " + Selector)
+	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials)
 
-	url := APIServerURL + "/usersdelete/" + username + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-
-	log.Debug("delete users called [" + url + "]")
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-	defer resp.Body.Close()
-	var response msgs.DeleteUserResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
+		fmt.Println("Error: ", err.Error())
 		return
 	}
 
@@ -256,35 +179,18 @@ func showUser(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/users/" + v + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-
-		log.Debug("show users called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
-
+		response, err := api.ShowUser(httpclient, v, Selector, Expired, &SessionCredentials)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
+			fmt.Println("Error: ", err.Error())
+			os.Exit(2)
 		}
 
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
+		if response.Status.Code != msgs.Ok {
+			fmt.Println("Error: " + response.Status.Msg)
+			os.Exit(2)
 		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowUserResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
+		if len(response.Results) == 0 {
+			fmt.Println("No clusters found.")
 			return
 		}
 
@@ -294,15 +200,6 @@ func showUser(args []string) {
 				fmt.Println("Error: ", err)
 			}
 			fmt.Println(string(b))
-			return
-		}
-
-		if response.Status.Code != msgs.Ok {
-			fmt.Println("Error: " + response.Status.Msg)
-			os.Exit(2)
-		}
-		if len(response.Results) == 0 {
-			fmt.Println("No clusters found.")
 			return
 		}
 
@@ -324,6 +221,12 @@ func printUsers(detail *msgs.ShowUserDetail) {
 		fmt.Println("secret : " + s.Name)
 		fmt.Println(TreeBranch + "username: " + s.Username)
 		fmt.Println(TreeTrunk + "password: " + s.Password)
+	}
+	if len(detail.ExpiredMsgs) > 0 {
+		fmt.Printf("\nexpired passwords: \n")
+		for _, e := range detail.ExpiredMsgs {
+			fmt.Println(e)
+		}
 	}
 
 }

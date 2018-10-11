@@ -42,7 +42,12 @@ func ShowBackup(name string) msgs.ShowBackupResponse {
 		log.Debugf("backups found len is %d\n", len(response.BackupList.Items))
 	} else {
 		backup := crv1.Pgbackup{}
-		_, err := kubeapi.Getpgbackup(apiserver.RESTClient, &backup, name, apiserver.Namespace)
+		found, err := kubeapi.Getpgbackup(apiserver.RESTClient, &backup, name, apiserver.Namespace)
+		if !found {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "backup not found"
+			return response
+		}
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -66,16 +71,30 @@ func DeleteBackup(backupName string) msgs.DeleteBackupResponse {
 	var err error
 
 	if backupName == "all" {
-		err = kubeapi.DeleteAllpgbackup(apiserver.RESTClient, apiserver.Namespace)
-		resp.Results = append(resp.Results, "all")
-	} else {
-		err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, apiserver.Namespace)
-		resp.Results = append(resp.Results, backupName)
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "all not a valid cluster name"
+		return resp
 	}
+
+	err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, apiserver.Namespace)
 
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
+		return resp
+	}
+	resp.Results = append(resp.Results, backupName)
+
+	//create a pgtask to remove the PVC and its data
+	pvcName := backupName + "-backup"
+	dataRoots := []string{backupName + "-backups"}
+
+	storageSpec := crv1.PgStorageSpec{}
+	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	return resp
@@ -131,7 +150,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	}
 
 	for _, arg := range request.Args {
-		log.Debug("create backup called for " + arg)
+		log.Debugf("create backup called for %s", arg)
 
 		cluster := crv1.Pgcluster{}
 		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, arg, apiserver.Namespace)
@@ -153,12 +172,12 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		// error if it already exists
 		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, apiserver.Namespace)
 		if !found {
-			log.Debug("pgbackup " + arg + " not found so we create it")
+			log.Debugf("pgbackup %s was not found so we will create it", arg)
 		} else if err != nil {
 			resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
 			break
 		} else {
-			log.Debug("pgbackup " + arg + " was found so we recreate it")
+			log.Debugf("pgbackup %s was found so we will recreate it", arg)
 			dels := make([]string, 1)
 			dels[0] = arg
 			DeleteBackup(arg)
@@ -173,7 +192,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			break
 		}
 		if request.PVCName != "" {
-			log.Debug("jeff----> backuppvc is " + request.PVCName)
+			log.Debugf("backuppvc is %s", request.PVCName)
 			newInstance.Spec.BackupPVC = request.PVCName
 		}
 

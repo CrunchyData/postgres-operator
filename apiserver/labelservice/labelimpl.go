@@ -34,7 +34,6 @@ import (
 
 // Label ... 2 forms ...
 // pgo label  myucluser yourcluster --label=env=prod
-// pgo label  myucluser yourcluster --label=env=prod --delete-label
 // pgo label  --label=env=prod --selector=name=mycluster
 func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	var err error
@@ -58,9 +57,22 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	}
 
 	clusterList := crv1.PgclusterList{}
-	if request.Selector != "" {
-		log.Debug("selector is " + request.Selector)
+	if len(request.Args) > 0 && request.Args[0] == "all" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, "", apiserver.Namespace)
+		if err != nil {
+			log.Error("error getting list of clusters" + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "error getting list of clusters" + err.Error()
+			return resp
+		}
+		if len(clusterList.Items) == 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "no clusters found"
+			return resp
+		}
 
+	} else if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
 			&clusterList, request.Selector, apiserver.Namespace)
 		if err != nil {
@@ -75,7 +87,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 			return resp
 		}
 	} else {
-		//each arg represents a cluster name or the special 'all' value
+		//each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
 			result := crv1.Pgcluster{}
@@ -93,7 +105,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	}
 
 	for _, c := range clusterList.Items {
-		resp.Results = append(resp.Results, "adding label to "+c.Spec.Name)
+		resp.Results = append(resp.Results, c.Spec.Name)
 	}
 
 	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap)
@@ -104,10 +116,10 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 
 func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string) {
 	for i := 0; i < len(items); i++ {
-		log.Debug("adding label to " + items[i].Spec.Name)
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
+			log.Debug("adding label to cluster " + items[i].Spec.Name)
 			err := PatchPgcluster(LabelCmdLabel, items[i])
 			if err != nil {
 				log.Error(err.Error())
@@ -177,7 +189,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 
 	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		log.Debug("error patching deployment " + err.Error())
+		log.Debug("error updating patching deployment " + err.Error())
 	}
 	return err
 
@@ -242,4 +254,206 @@ func validateLabel(LabelCmdLabel string) (map[string]string, error) {
 		labelMap[pair[0]] = pair[1]
 	}
 	return labelMap, err
+}
+
+// DeleteLabel ...
+// pgo delete label  mycluster yourcluster --label=env=prod
+// pgo delete label  --label=env=prod --selector=group=somegroup
+func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
+	var err error
+	var labelsMap map[string]string
+	resp := msgs.LabelResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	if len(request.Args) == 0 && request.Selector == "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "no clusters specified"
+		return resp
+	}
+
+	labelsMap, err = validateLabel(request.LabelCmdLabel)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "labels not formatted correctly"
+		return resp
+	}
+
+	clusterList := crv1.PgclusterList{}
+	if len(request.Args) > 0 && request.Args[0] == "all" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, "", apiserver.Namespace)
+		if err != nil {
+			log.Error("error getting list of clusters" + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "error getting list of clusters" + err.Error()
+			return resp
+		}
+		if len(clusterList.Items) == 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "no clusters found"
+			return resp
+		}
+
+	} else if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, apiserver.Namespace)
+		if err != nil {
+			log.Error("error getting list of clusters" + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "error getting list of clusters" + err.Error()
+			return resp
+		}
+		if len(clusterList.Items) == 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "no clusters found"
+			return resp
+		}
+	} else {
+		//each arg represents a cluster name
+		items := make([]crv1.Pgcluster, 0)
+		for _, cluster := range request.Args {
+			result := crv1.Pgcluster{}
+			_, err := kubeapi.Getpgcluster(apiserver.RESTClient,
+				&result, cluster, apiserver.Namespace)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "error getting list of clusters" + err.Error()
+				return resp
+			}
+
+			items = append(items, result)
+		}
+		clusterList.Items = items
+	}
+
+	for _, c := range clusterList.Items {
+		resp.Results = append(resp.Results, "deleting label from "+c.Spec.Name)
+	}
+
+	err = deleteLabels(clusterList.Items, request.LabelCmdLabel, labelsMap)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	return resp
+
+}
+
+func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[string]string) error {
+	var err error
+
+	for i := 0; i < len(items); i++ {
+		log.Debugf("deleting label from %s", items[i].Spec.Name)
+		err = deletePatchPgcluster(LabelCmdLabel, items[i])
+		if err != nil {
+			log.Error(err.Error())
+			return err
+		}
+	}
+
+	for i := 0; i < len(items); i++ {
+		//get deployments for this CRD
+		selector := util.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+		if err != nil {
+			return err
+		}
+
+		for _, d := range deployments.Items {
+			err = deleteTheLabel(&d, items[i].Spec.Name, labelsMap)
+			if err != nil {
+				log.Error(err.Error())
+				return err
+			}
+		}
+
+	}
+	return err
+}
+
+func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
+
+	fields := strings.Split(newLabel, "=")
+	labelKey := fields[0]
+	//labelValue := fields[1]
+	oldData, err := json.Marshal(oldCRD)
+	if err != nil {
+		return err
+	}
+	if oldCRD.ObjectMeta.Labels == nil {
+		oldCRD.ObjectMeta.Labels = make(map[string]string)
+	}
+	delete(oldCRD.ObjectMeta.Labels, labelKey)
+
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCRD)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+	_, err6 := apiserver.RESTClient.Patch(types.MergePatchType).
+		Namespace(apiserver.Namespace).
+		Resource(crv1.PgclusterResourcePlural).
+		Name(oldCRD.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
+}
+
+func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMap map[string]string) error {
+
+	var err error
+
+	log.Debugf("%v are the labels to delete\n", labelsMap)
+
+	var patchBytes, newData, origData []byte
+	origData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	accessor, err2 := meta.Accessor(deployment)
+	if err2 != nil {
+		return err2
+	}
+
+	objLabels := accessor.GetLabels()
+	if objLabels == nil {
+		objLabels = make(map[string]string)
+	}
+
+	for k, _ := range labelsMap {
+		delete(objLabels, k)
+	}
+	log.Debugf("revised labels after delete are %v\n", objLabels)
+
+	accessor.SetLabels(objLabels)
+	newData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	if err != nil {
+		return err
+	}
+
+	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
+	if err != nil {
+		log.Debug("error patching deployment " + err.Error())
+	}
+	return err
+
 }

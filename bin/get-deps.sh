@@ -15,12 +15,22 @@
 
 echo "Getting project dependencies..."
 
-sudo yum -y install mercurial golang
+#sudo yum -y install mercurial golang
+which go
+if [ $? -eq 1 ]; then
+	echo "installing golang..."
+	sudo yum -y install golang
+fi
 
-go get github.com/tools/godep
+which dep
+if [ $? -eq 1 ]; then
+	echo "installing dep"
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+fi
+
 go get github.com/blang/expenv
 
-godep restore
+#dep ensure
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

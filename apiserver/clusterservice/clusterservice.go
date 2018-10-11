@@ -17,12 +17,13 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
-	"net/http"
-	"strconv"
 )
 
 // TestResults ...
@@ -83,11 +84,15 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
+	}
+	ccpimagetag := r.URL.Query().Get("ccpimagetag")
+	if ccpimagetag != "" {
+		log.Debugf("ccpimagetag parameter is [%s]", ccpimagetag)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
@@ -107,7 +112,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowClusterDetail, 0)
 	} else {
-		resp = ShowCluster(clustername, selector)
+		resp = ShowCluster(clustername, selector, ccpimagetag)
 	}
 	json.NewEncoder(w).Encode(resp)
 
@@ -127,24 +132,31 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	deleteData := false
 	deleteDataStr := r.URL.Query().Get("delete-data")
 	if deleteDataStr != "" {
-		log.Debug("delete-data param was [" + deleteDataStr + "]")
+		log.Debugf("delete-data parameter is [%s]", deleteDataStr)
 		deleteData, _ = strconv.ParseBool(deleteDataStr)
 	}
 	deleteBackups := false
 	deleteBackupsStr := r.URL.Query().Get("delete-backups")
-	if deleteDataStr != "" {
-		log.Debug("delete-backups param was [" + deleteBackupsStr + "]")
+	if deleteBackupsStr != "" {
+		log.Debugf("delete-backups parameter is [%s]", deleteBackupsStr)
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
+	}
+
+	deleteConfigs := false
+	deleteConfigsStr := r.URL.Query().Get("delete-configs")
+	if deleteDataStr != "" {
+		log.Debugf("delete-configs parameter is [%s]", deleteConfigsStr)
+		deleteConfigs, _ = strconv.ParseBool(deleteConfigsStr)
 	}
 
 	err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
@@ -164,7 +176,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]string, 0)
 	} else {
-		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups)
+		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, deleteConfigs)
 	}
 	json.NewEncoder(w).Encode(resp)
 
@@ -174,16 +186,16 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debug("clusterservice.TestClusterHandler %v\n", vars)
+	log.Debugf("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)

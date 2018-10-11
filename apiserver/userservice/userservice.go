@@ -135,6 +135,10 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	if selector != "" {
 		log.Debug("selector param was [" + selector + "]")
 	}
+	expired := r.URL.Query().Get("expired")
+	if expired != "" {
+		log.Debug("expired param was [" + expired + "]")
+	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
 		log.Debug("version param was [" + clientVersion + "]")
@@ -157,7 +161,7 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowUserDetail, 0)
 	} else {
-		resp = ShowUser(clustername, selector)
+		resp = ShowUser(clustername, selector, expired)
 	}
 	json.NewEncoder(w).Encode(resp)
 

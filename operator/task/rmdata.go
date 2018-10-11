@@ -42,44 +42,39 @@ type rmdatajobTemplateFields struct {
 func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
 	//create the Job to remove the data
-	//in this case the pvcname is the key value in the map
-	//map holds [volumename] = [pvcname]
-	//in the case of multiple volumes (pgdata and pgwal) we iterate
 
 	var pvcName string
-	for k, v := range task.Spec.Parameters {
-		pvcName = v
+	pvcName = task.Spec.Parameters[util.LABEL_PVC_NAME]
 
-		jobFields := rmdatajobTemplateFields{
-			Name:            task.Spec.Name + "-" + k,
-			ClusterName:     task.Spec.Name,
-			PvcName:         pvcName,
-			COImagePrefix:   operator.Pgo.Pgo.COImagePrefix,
-			COImageTag:      operator.Pgo.Pgo.COImageTag,
-			SecurityContext: util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
-			DataRoot:        task.Spec.Name,
-		}
-		log.Debugf("creating rmdata job for pvc [%s]", pvcName)
-
-		var doc2 bytes.Buffer
-		err := operator.RmdatajobTemplate.Execute(&doc2, jobFields)
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-
-		if operator.CRUNCHY_DEBUG {
-			operator.RmdatajobTemplate.Execute(os.Stdout, jobFields)
-		}
-
-		newjob := v1batch.Job{}
-		err = json.Unmarshal(doc2.Bytes(), &newjob)
-		if err != nil {
-			log.Error("error unmarshalling json into Job " + err.Error())
-			return
-		}
-
-		kubeapi.CreateJob(clientset, &newjob, namespace)
+	jobFields := rmdatajobTemplateFields{
+		Name:            task.Spec.Name + "-" + pvcName,
+		ClusterName:     task.Spec.Name,
+		PvcName:         pvcName,
+		COImagePrefix:   operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:      operator.Pgo.Pgo.COImageTag,
+		SecurityContext: util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
+		DataRoot:        task.Spec.Parameters[util.LABEL_DATA_ROOT],
 	}
+	log.Debugf("creating rmdata job for pvc [%s]", pvcName)
+
+	var doc2 bytes.Buffer
+	err := operator.RmdatajobTemplate.Execute(&doc2, jobFields)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
+	if operator.CRUNCHY_DEBUG {
+		operator.RmdatajobTemplate.Execute(os.Stdout, jobFields)
+	}
+
+	newjob := v1batch.Job{}
+	err = json.Unmarshal(doc2.Bytes(), &newjob)
+	if err != nil {
+		log.Error("error unmarshalling json into Job " + err.Error())
+		return
+	}
+
+	kubeapi.CreateJob(clientset, &newjob, namespace)
 
 }

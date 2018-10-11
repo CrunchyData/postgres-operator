@@ -20,8 +20,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -30,14 +30,16 @@ var testCmd = &cobra.Command{
 	Short: "Test cluster connectivity",
 	Long: `TEST allows you to test the connectivity for a cluster. For example:
 
-	pgo test mycluster`,
+	pgo test mycluster
+	pgo test --selector=env=research
+	pgo test all`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("test called")
 		if Selector == "" && len(args) == 0 {
 			fmt.Println(`Error: You must specify the name of the clusters to test.`)
 		} else {
 			if OutputFormat != "" && OutputFormat != "json" {
-				fmt.Println("Error: Only JSON is currently supported for the --output flag value.")
+				fmt.Println("Error: Only 'json' is currently supported for the --output flag value.")
 				os.Exit(2)
 			}
 			showTest(args)
@@ -48,7 +50,7 @@ var testCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(testCmd)
 	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
+	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 }
 
 func showTest(args []string) {
@@ -62,35 +64,10 @@ func showTest(args []string) {
 	}
 
 	for _, arg := range args {
-		url := APIServerURL + "/clusters/test/" + arg + "?selector=" + Selector + "&version=" + msgs.PGO_VERSION
-		log.Debug(url)
-
-		req, err := http.NewRequest("GET", url, nil)
+		response, err := api.ShowTest(httpclient, arg, Selector, &SessionCredentials)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ClusterTestResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code != msgs.Ok {

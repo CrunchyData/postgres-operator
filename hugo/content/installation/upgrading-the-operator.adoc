@@ -5,11 +5,11 @@ draft: false
 weight: 60
 ---
 
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.3.0 {docdate}
 
-{{% expand "Upgrading to v3.2" %}}
+{{% expand "Upgrading to v3.3" %}}
 
-The following changes are mandatory when upgrading to 3.2 from previous operator versions:
+The following changes are mandatory when upgrading to 3.3 from previous operator versions:
 
  * The MatchLabels attribute was added to the pgo.yaml file as an optional
    storage configuration setting. You do not have to specify this setting,
@@ -89,7 +89,7 @@ $COROOT/bin/upgrade-secret.sh
 
 For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.2[here].
+page link:https://github.com/CrunchyData/postgres-operator/releases/tag/3.3.0[here].
 
 == Required Updates
 

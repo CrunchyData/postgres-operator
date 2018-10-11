@@ -5,6 +5,7 @@
         "name": "upgrade-{{.Name}}"
     },
     "spec": {
+	"backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.Name}}",

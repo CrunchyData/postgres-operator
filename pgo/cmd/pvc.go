@@ -16,11 +16,11 @@ package cmd
 */
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"net/http"
+	"github.com/crunchydata/postgres-operator/pgo/api"
+	"os"
 )
 
 func showPVC(args []string) {
@@ -42,31 +42,11 @@ func showPVC(args []string) {
 
 func printPVC(pvcName, pvcRoot string) {
 
-	url := APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION
-	log.Debug("showPolicy called...[" + url + "]")
+	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-	var response msgs.ShowPVCResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Error {

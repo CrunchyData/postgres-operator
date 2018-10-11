@@ -1,0 +1,208 @@
+package pgpoolservice
+
+/*
+Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+import (
+	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/apiserver"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// CreatePgpool ...
+// pgo create pgpool mycluster
+// pgo create pgpool --selector=name=mycluster
+func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
+	var err error
+	resp := msgs.CreatePgpoolResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	log.Debugf("createPgpool selector is [%s]\n", request.Selector)
+
+	if request.Selector == "" && len(request.Args) == 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "either a cluster list or a selector needs to be supplied for this command"
+		return resp
+	}
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, apiserver.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
+	if len(request.Args) > 0 {
+		argCluster := crv1.Pgcluster{}
+
+		for i := 0; i < len(request.Args); i++ {
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
+				&argCluster, request.Args[i], apiserver.Namespace)
+
+			if !found || err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			clusterList.Items = append(clusterList.Items, argCluster)
+
+		}
+	}
+
+	log.Debugf("createPgpool clusters found len is %d\n", len(clusterList.Items))
+	if len(clusterList.Items) == 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "no clusters found that match request selector or arguments"
+		return resp
+	}
+
+	for _, cluster := range clusterList.Items {
+		log.Debugf("adding pgpool to cluster [%s]\n", cluster.Name)
+
+		spec := crv1.PgtaskSpec{}
+		spec.Name = util.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
+		spec.TaskType = crv1.PgtaskAddPgpool
+		spec.StorageSpec = crv1.PgStorageSpec{}
+		spec.Parameters = make(map[string]string)
+		spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
+
+		newInstance := &crv1.Pgtask{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: spec.Name,
+			},
+			Spec: spec,
+		}
+
+		newInstance.ObjectMeta.Labels = make(map[string]string)
+		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
+		newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_ADD] = "true"
+
+		//check if this cluster already has a pgpool
+		if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+			resp.Results = append(resp.Results, cluster.Name+" already has pgpool added")
+			resp.Status.Code = msgs.Error
+		} else {
+			err := kubeapi.Createpgtask(apiserver.RESTClient,
+				newInstance, apiserver.Namespace)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+
+	}
+
+	return resp
+
+}
+
+// DeletePgpool ...
+// pgo delete pgpool mycluster
+// pgo delete pgpool --selector=name=mycluster
+func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
+	var err error
+	resp := msgs.DeletePgpoolResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	log.Debugf("deletePgpool selector is [%s]\n", request.Selector)
+
+	if request.Selector == "" && len(request.Args) == 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "either a cluster list or a selector needs to be supplied for this command"
+		return resp
+	}
+
+	clusterList := crv1.PgclusterList{}
+
+	//get a list of all clusters
+	if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, apiserver.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
+	if len(request.Args) > 0 {
+		argCluster := crv1.Pgcluster{}
+
+		for i := 0; i < len(request.Args); i++ {
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
+				&argCluster, request.Args[i], apiserver.Namespace)
+
+			if !found || err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			clusterList.Items = append(clusterList.Items, argCluster)
+
+		}
+	}
+
+	log.Debugf("deletePgpool clusters found len is %d\n", len(clusterList.Items))
+	if len(clusterList.Items) == 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "no clusters found that match request selector or arguments"
+		return resp
+	}
+
+	for _, cluster := range clusterList.Items {
+		log.Debugf("deleting pgpool from cluster [%s]\n", cluster.Name)
+
+		spec := crv1.PgtaskSpec{}
+		spec.Name = util.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name
+		spec.TaskType = crv1.PgtaskDeletePgpool
+		spec.StorageSpec = crv1.PgStorageSpec{}
+		spec.Parameters = make(map[string]string)
+		spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
+
+		newInstance := &crv1.Pgtask{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name: spec.Name,
+			},
+			Spec: spec,
+		}
+
+		newInstance.ObjectMeta.Labels = make(map[string]string)
+		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
+		newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_DELETE] = "true"
+
+		err := kubeapi.Createpgtask(apiserver.RESTClient,
+			newInstance, apiserver.Namespace)
+		if err != nil {
+			log.Error(err)
+		}
+
+	}
+
+	return resp
+
+}

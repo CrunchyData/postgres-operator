@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
+	"time"
 )
 
 type jobTemplateFields struct {
@@ -122,5 +123,18 @@ func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, 
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())
 		return
+	}
+
+	//make sure job is actually reporting as deleted
+	for i := 0; i < 5; i++ {
+		_, found := kubeapi.GetJob(clientset, jobName, namespace)
+		if !found {
+			break
+		}
+		if err != nil {
+			log.Error(err)
+		}
+		log.Debugf("waiting for backup job to report being deleted")
+		time.Sleep(time.Second * time.Duration(3))
 	}
 }

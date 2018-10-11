@@ -20,9 +20,9 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -42,8 +42,8 @@ var Summary bool
 
 func init() {
 	RootCmd.AddCommand(statusCmd)
-	
-	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, JSON is supported.")
+
+	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 
 }
 
@@ -51,35 +51,16 @@ func showStatus(args []string) {
 
 	log.Debugf("showStatus called %v\n", args)
 
-	url := APIServerURL + "/status?version=" + msgs.PGO_VERSION
-	log.Debug(url)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
+	if OutputFormat != "" && OutputFormat != "json" {
+		fmt.Println("Error: json is the only supported --output-format value ")
+		os.Exit(2)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
+	response, err := api.ShowStatus(httpclient, &SessionCredentials)
 
-	resp, err := httpclient.Do(req)
 	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.StatusResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code != msgs.Ok {

@@ -16,12 +16,11 @@ package cmd
 */
 
 import (
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -43,36 +42,11 @@ func init() {
 
 func showVersion() {
 
-	url := APIServerURL + "/version"
-	log.Debug(url)
+	response, err := api.ShowVersion(httpclient, &SessionCredentials)
 
-	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-
-	defer resp.Body.Close()
-
-	StatusCheck(resp)
-
-	var response msgs.VersionResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	fmt.Println("pgo client version " + msgs.PGO_VERSION)

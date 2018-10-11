@@ -17,16 +17,13 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/util"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	labelutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
-	"net/http"
 	"os"
 )
 
@@ -43,16 +40,16 @@ var backupCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
-					createBackrestBackup(args)
-				} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
-					createBackup(args)
-				} else {
-					fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
+			if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
+				if StorageConfig != "" {
+					fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
+					return
 				}
+				createBackrestBackup(args, BackrestOpts)
+			} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
+				createBackup(args)
 			} else {
-				fmt.Println("Aborting...")
+				fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
 			}
 		}
 
@@ -64,9 +61,9 @@ func init() {
 
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
-	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
-	backupCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
+	backupCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest backup options to pass.")
 
 }
 
@@ -76,35 +73,11 @@ func showBackup(args []string) {
 
 	//show pod information for job
 	for _, v := range args {
-		url := APIServerURL + "/backups/" + v + "?version=" + msgs.PGO_VERSION
+		response, err := api.ShowBackup(httpclient, v, &SessionCredentials)
 
-		log.Debug("show backup called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowBackupResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code != msgs.Ok {
@@ -150,36 +123,11 @@ func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v\n", args)
 
 	for _, v := range args {
-		url := APIServerURL + "/backupsdelete/" + v + "?version=" + msgs.PGO_VERSION
+		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
 
-		log.Debug("delete backup called [" + url + "]")
-
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.DeleteBackupResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
@@ -209,38 +157,11 @@ func createBackup(args []string) {
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.CreateBackup(httpclient, &SessionCredentials, request)
 
-	url := APIServerURL + "/backups"
-
-	log.Debug("create backup called [" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateBackupResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {

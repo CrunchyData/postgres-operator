@@ -18,6 +18,11 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strconv"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
@@ -29,18 +34,17 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/reloadservice"
+	"github.com/crunchydata/postgres-operator/apiserver/scheduleservice"
 	"github.com/crunchydata/postgres-operator/apiserver/statusservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/gorilla/mux"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"strconv"
 )
 
 const serverCert = "/config/server.crt"
@@ -88,6 +92,7 @@ func main() {
 	//here
 	r.HandleFunc("/ingestdelete/{name}", ingestservice.DeleteIngestHandler).Methods("GET")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
+	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
 	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
 	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
@@ -120,6 +125,16 @@ func main() {
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")
+	r.HandleFunc("/pgbouncer", pgbouncerservice.CreatePgbouncerHandler).Methods("POST")
+	r.HandleFunc("/pgbouncer", pgbouncerservice.DeletePgbouncerHandler).Methods("DELETE")
+	r.HandleFunc("/pgbouncerdelete", pgbouncerservice.DeletePgbouncerHandler).Methods("POST")
+	r.HandleFunc("/pgpool", pgpoolservice.CreatePgpoolHandler).Methods("POST")
+	r.HandleFunc("/pgpooldelete", pgpoolservice.DeletePgpoolHandler).Methods("POST")
+
+	//schedule
+	r.HandleFunc("/schedule", scheduleservice.CreateScheduleHandler).Methods("POST")
+	r.HandleFunc("/scheduledelete", scheduleservice.DeleteScheduleHandler).Methods("POST")
+	r.HandleFunc("/scheduleshow", scheduleservice.ShowScheduleHandler).Methods("POST")
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

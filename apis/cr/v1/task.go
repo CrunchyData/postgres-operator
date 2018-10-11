@@ -22,6 +22,12 @@ import (
 // PgtaskResourcePlural ...
 const PgtaskResourcePlural = "pgtasks"
 
+const PgtaskAddPgbouncer = "add-pgbouncer"
+const PgtaskDeletePgbouncer = "delete-pgbouncer"
+const PgtaskReconfigurePgbouncer = "reconfigure-pgbouncer"
+const PgtaskAddPgpool = "add-pgpool"
+const PgtaskDeletePgpool = "delete-pgpool"
+const PgtaskReconfigurePgpool = "reconfigure-pgpool"
 const PgtaskDeleteBackups = "delete-backups"
 const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"

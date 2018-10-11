@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"time"
+	"time"
 )
 
 const backrestCommand = "pgbackrest"
@@ -34,8 +34,8 @@ const backrestInfoCommand = "info"
 const containername = "database"
 
 //  CreateBackup ...
-// pgo backrest mycluster
-// pgo backrest --selector=name=mycluster
+// pgo backup mycluster
+// pgo backup --selector=name=mycluster
 func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrestBackupResponse {
 	resp := msgs.CreateBackrestBackupResponse{}
 	resp.Status.Code = msgs.Ok
@@ -69,7 +69,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	}
 
 	for _, clusterName := range request.Args {
-		log.Debug("create backrestbackup called for " + clusterName)
+		log.Debugf("create backrestbackup called for %s", clusterName)
 		taskName := clusterName + "-backrest-backup"
 
 		cluster := crv1.Pgcluster{}
@@ -84,19 +84,25 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			return resp
 		}
 
+		if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = clusterName + " does not have pgbackrest enabled"
+			return resp
+		}
+
 		result := crv1.Pgtask{}
 
 		// error if it already exists
 		found, err = kubeapi.Getpgtask(apiserver.RESTClient, &result, taskName, apiserver.Namespace)
 		if !found {
-			log.Debug("backrest backup pgtask " + taskName + " not found so we create it")
+			log.Debugf("backrest backup pgtask %s was not found so we will create it", taskName)
 		} else if err != nil {
 
 			resp.Results = append(resp.Results, "error getting pgtask for "+taskName)
 			break
 		} else {
 
-			log.Debug("pgtask " + taskName + " was found so we recreate it")
+			log.Debugf("pgtask %s was found so we will recreate it", taskName)
 			//remove the existing pgtask
 			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, apiserver.Namespace)
 			if err != nil {
@@ -107,8 +113,24 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 
 			//remove any previous backup job
 
-			kubeapi.DeleteJobs(apiserver.Clientset, util.LABEL_PG_CLUSTER+"="+clusterName+","+util.LABEL_BACKREST+"=true", apiserver.Namespace)
-			//time.Sleep(time.Seconds * 2)
+			selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_BACKREST + "=true"
+			err = kubeapi.DeleteJobs(apiserver.Clientset, selector, apiserver.Namespace)
+			if err != nil {
+				log.Error(err)
+			}
+
+			//a hack sort of due to slow propagation
+			for i := 0; i < 3; i++ {
+				jobList, err := kubeapi.GetJobs(apiserver.Clientset, selector, apiserver.Namespace)
+				if err != nil {
+					log.Error(err)
+				}
+				if len(jobList.Items) > 0 {
+					log.Debug("sleeping a bit for delete job propagation")
+					time.Sleep(time.Second * 2)
+				}
+			}
+
 		}
 
 		//get pod name from cluster
@@ -122,7 +144,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			return resp
 		}
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database"), apiserver.Namespace)
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -135,7 +157,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -146,6 +168,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName strin
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
 	spec.Parameters[util.LABEL_BACKREST_COMMAND] = action
+	spec.Parameters[util.LABEL_BACKREST_OPTS] = backupOpts
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -229,7 +252,7 @@ func ShowBackrest(name, selector string) msgs.ShowBackrestResponse {
 		return response
 	}
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowBackrestDetail{}
@@ -323,7 +346,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		pgtask.Name,
 		apiserver.Namespace)
 	if found {
-		log.Debug("deleting prior pgtask " + pgtask.Name)
+		log.Debugf("deleting prior pgtask %s", pgtask.Name)
 		err = kubeapi.Deletepgtask(apiserver.RESTClient,
 			pgtask.Name,
 			apiserver.Namespace)
@@ -344,7 +367,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToCluster+" opts="+request.RestoreOpts)
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts)
 
 	return resp
 }
@@ -353,11 +376,11 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
-	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToCluster
+	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToPVC
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_CLUSTER] = request.ToCluster
+	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
 
 	newInstance = &crv1.Pgtask{

@@ -17,15 +17,13 @@ package cmd
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
-	"net/http"
 	"os"
 )
 
@@ -57,8 +55,8 @@ func init() {
 	RootCmd.AddCommand(loadCmd)
 
 	loadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "l", "", "The load configuration to use that defines the load job.")
-	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply before loading a file, comma separated.")
+	loadCmd.Flags().StringVarP(&LoadConfig, "load-config", "", "", "The load configuration to use that defines the load job.")
+	loadCmd.Flags().StringVarP(&PoliciesFlag, "policies", "", "", "The policies to apply before loading a file, comma separated.")
 
 }
 
@@ -88,36 +86,11 @@ func createLoad(args []string) {
 
 	//make the request
 
-	jsonValue, _ := json.Marshal(request)
+	response, err := api.CreateLoad(httpclient, &SessionCredentials, &request)
 
-	url := APIServerURL + "/load"
-	log.Debug("LoadPolicy called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.LoadResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	//get the response

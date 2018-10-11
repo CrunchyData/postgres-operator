@@ -17,7 +17,7 @@ limitations under the License.
 
 import ()
 
-const PGO_VERSION = "3.2"
+const PGO_VERSION = "3.3.0"
 
 // Ok status
 const Ok = "ok"
@@ -27,4 +27,10 @@ const Error = "error"
 type Status struct {
 	Code string
 	Msg  string
+}
+
+type BasicAuthCredentials struct {
+	Username     string
+	Password     string
+	APIServerURL string
 }

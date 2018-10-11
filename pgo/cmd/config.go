@@ -20,7 +20,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"net/http"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"os"
 )
 
@@ -28,35 +28,11 @@ func showConfig(args []string) {
 
 	log.Debugf("showConfig called %v\n", args)
 
-	url := APIServerURL + "/config?version=" + msgs.PGO_VERSION
-	log.Debug(url)
+	response, err := api.ShowConfig(httpclient, &SessionCredentials)
 
-	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.ShowConfigResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code != msgs.Ok {
@@ -77,9 +53,14 @@ func showConfig(args []string) {
 
 	fmt.Printf("%s%s\n", "BasicAuth:  ", pgo.BasicAuth)
 	fmt.Printf("%s\n", "Cluster:")
+	fmt.Printf("%s%s\n", "  PrimaryNodeLabel:  ", pgo.Cluster.PrimaryNodeLabel)
+	fmt.Printf("%s%s\n", "  ReplicaNodeLabel:  ", pgo.Cluster.ReplicaNodeLabel)
 	fmt.Printf("%s%s\n", "  CCPImagePrefix:  ", pgo.Cluster.CCPImagePrefix)
 	fmt.Printf("%s%s\n", "  CCPImageTag:  ", pgo.Cluster.CCPImageTag)
+	fmt.Printf("%s%s\n", "  ServiceType:  ", pgo.Cluster.ServiceType)
 	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Cluster.Metrics)
+	fmt.Printf("%s%t\n", "  Backrest:  ", pgo.Cluster.Backrest)
+	fmt.Printf("%s%t\n", "  Autofail:  ", pgo.Cluster.Autofail)
 	fmt.Printf("%s%t\n", "  Badger:  ", pgo.Cluster.Badger)
 	fmt.Printf("%s%s\n", "  Policies:  ", pgo.Cluster.Policies)
 	fmt.Printf("%s%s\n", "  Port:  ", pgo.Cluster.Port)

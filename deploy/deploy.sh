@@ -21,6 +21,13 @@ if [ "$CO_CMD" = "kubectl" ]; then
 	NS="--namespace=$CO_NAMESPACE"
 fi
 
+$CO_CMD $NS get role pgo-role > /dev/null
+if [ $? -ne 0 ]
+then
+	echo ERROR: pgo-role was not found in $CO_NAMESPACE namespace
+	echo Verify you ran install-rbac.sh
+fi
+
 $CO_CMD $NS create secret generic apiserver-conf-secret \
         --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
         --from-file=server.key=$COROOT/conf/apiserver/server.key \
@@ -55,3 +62,5 @@ else
 	$CO_CMD $NS create -f $DIR/service.json
 fi
 
+#expenv -f $DIR/scheduler-sa.json | $CO_CMD $NS create -f -
+#expenv -f $DIR/scheduler.json | $CO_CMD $NS create -f -

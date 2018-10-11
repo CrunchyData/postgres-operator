@@ -16,13 +16,12 @@ package cmd
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/api"
 	"io/ioutil"
-	"net/http"
 	"os"
 )
 
@@ -53,36 +52,10 @@ func createIngest(args []string) {
 		return
 	}
 
-	jsonValue, _ := json.Marshal(r)
-
-	url := APIServerURL + "/ingest"
-	log.Debug("createIngest called...[" + url + "]")
-
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	response, err := api.CreateIngest(httpclient, &SessionCredentials, &r)
 	if err != nil {
-		fmt.Println("Error: NewRequest: ", err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		fmt.Println("Error: Do: ", err)
-		return
-	}
-	log.Debugf("%v\n", resp)
-	StatusCheck(resp)
-
-	defer resp.Body.Close()
-
-	var response msgs.CreateIngestResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		fmt.Println("Error: ", err)
-		log.Println(err)
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -99,33 +72,11 @@ func deleteIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingestdelete/" + v + "?version=" + msgs.PGO_VERSION
-		log.Debug("deleteIngest called...[" + url + "]")
+		response, err := api.DeleteIngest(httpclient, v, &SessionCredentials)
 
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.DeleteIngestResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: ", response.Status.Msg)
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Ok {
@@ -150,34 +101,11 @@ func showIngest(args []string) {
 
 	for _, v := range args {
 
-		url := APIServerURL + "/ingest/" + v + "?version=" + msgs.PGO_VERSION
-		log.Debug("showIngest called...[" + url + "]")
+		response, err := api.ShowIngest(httpclient, v, &SessionCredentials)
 
-		action := "GET"
-		req, err := http.NewRequest(action, url, nil)
 		if err != nil {
-			fmt.Println("Error: NewRequest: ", err)
-			return
-		}
-
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			fmt.Println("Error: Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.ShowIngestResponse
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			fmt.Println("Error: ", err)
-			log.Println(err)
-			return
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
 		}
 
 		if response.Status.Code == msgs.Error {

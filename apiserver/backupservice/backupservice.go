@@ -34,7 +34,7 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version param was [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
@@ -67,7 +67,7 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	backupname := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version param was [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
@@ -94,26 +94,19 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 // pgo backup --selector=name=mycluster
 // pgo backup mycluster
 func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
-
 	log.Debug("backupservice.CreateBackupHandler called")
 
 	var request msgs.CreateBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
+	err := apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
 	resp := CreateBackup(&request)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-	}
 
 	json.NewEncoder(w).Encode(resp)
 }

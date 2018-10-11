@@ -31,17 +31,17 @@ import (
 // CreatePolicy ...
 func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile string) error {
 
-	log.Debug("create policy called for " + policyName)
+	log.Debugf("create policy called for %s", policyName)
 	result := crv1.Pgpolicy{}
 
 	// error if it already exists
 	found, err := kubeapi.Getpgpolicy(RESTClient,
 		&result, policyName, apiserver.Namespace)
 	if err == nil {
-		log.Debug("pgpolicy " + policyName + " was found so we will not create it")
+		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
 		return err
 	} else if !found {
-		log.Debug("pgpolicy " + policyName + " not found so we will create it")
+		log.Debugf("pgpolicy %s was not found so we will create it", policyName)
 	} else {
 		return err
 	}
@@ -115,14 +115,14 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 	}
 
 	policyFound := false
-	log.Debug("deleting policy " + policyName)
+	log.Debugf("deleting policy %s", policyName)
 	for _, policy := range policyList.Items {
 		if policyName == "all" || policyName == policy.Spec.Name {
 			policyFound = true
 			err = kubeapi.Deletepgpolicy(RESTClient,
 				policy.Spec.Name, apiserver.Namespace)
 			if err == nil {
-				log.Debug("deleted pgpolicy " + policy.Spec.Name)
+				log.Debugf("deleted pgpolicy %s", policy.Spec.Name)
 			} else {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
@@ -133,7 +133,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 	}
 
 	if !policyFound {
-		log.Debug("policy " + policyName + " not found")
+		log.Debugf("policy %s not found", policyName)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "policy " + policyName + " not found"
 		return resp
@@ -162,7 +162,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 
 	//get filtered list of Deployments
 	selector := request.Selector + "," + util.LABEL_PRIMARY + "=true"
-	log.Debug("selector string=[" + selector + "]")
+	log.Debugf("selector string=[%s]", selector)
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -173,7 +173,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 
 	if request.DryRun {
 		for _, d := range deployments.Items {
-			log.Debug("deployment : " + d.ObjectMeta.Name)
+			log.Debugf("deployment : %s", d.ObjectMeta.Name)
 			resp.Name = append(resp.Name, d.ObjectMeta.Name)
 		}
 		return resp
@@ -183,7 +183,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	labels[request.Name] = "pgpolicy"
 
 	for _, d := range deployments.Items {
-		log.Debug("apply policy " + request.Name + " on deployment " + d.ObjectMeta.Name + " based on selector " + selector)
+		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
 		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.Namespace, request.Name, d.ObjectMeta.Name)
 		if err != nil {

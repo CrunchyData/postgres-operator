@@ -32,6 +32,7 @@ type CreateClusterRequest struct {
 	Policies             string
 	CCPImageTag          string
 	Series               int
+	ReplicaCount         int
 	ServiceType          string
 	MetricsFlag          bool
 	BadgerFlag           bool
@@ -39,7 +40,9 @@ type CreateClusterRequest struct {
 	ArchiveFlag          bool
 	BackrestFlag         bool
 	PgpoolFlag           bool
+	PgbouncerFlag        bool
 	PgpoolSecret         string
+	PgbouncerSecret      string
 	CustomConfig         string
 	StorageConfig        string
 	ReplicaStorageConfig string
@@ -55,10 +58,12 @@ type CreateClusterResponse struct {
 
 // ShowClusterService
 type ShowClusterService struct {
-	Name       string
-	Data       string
-	ClusterIP  string
-	ExternalIP string
+	Name        string
+	Data        string
+	ClusterIP   string
+	ExternalIP  string
+	ClusterName string
+	Pgbouncer   bool
 }
 
 const PodTypePrimary = "primary"

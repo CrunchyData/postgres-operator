@@ -66,7 +66,7 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 	}
 
 	for _, arg := range request.Args {
-		log.Debug("reload called for " + arg)
+		log.Debugf("reload called for %s", arg)
 
 		cluster := crv1.Pgcluster{}
 		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, arg, apiserver.Namespace)
@@ -120,7 +120,7 @@ func reload(
 	command := make([]string, 1)
 	command[0] = "/opt/cpm/bin/reload.sh"
 
-	log.Debug("running Exec with namespace=[" + namespace + "] podname=[" + pod.Name + "] container name=[" + pod.Spec.Containers[0].Name + "]")
+	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, apiserver.Namespace, nil)
 	if err != nil {
 		log.Error(err)

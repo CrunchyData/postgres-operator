@@ -6,7 +6,7 @@ draft: false
 
 image::crunchy-logo.jpg[Crunchy Data Logo,width="12%",height="12%", align="center"]
 
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.3.0 {docdate}
 
 == Documentation
 

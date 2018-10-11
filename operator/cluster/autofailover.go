@@ -244,7 +244,10 @@ func (*AutoFailoverTask) Print(restclient *rest.RESTClient, namespace string) {
 func (*AutoFailoverTask) Clear(restclient *rest.RESTClient, clusterName, namespace string) {
 
 	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
-	kubeapi.Deletepgtask(restclient, taskName, namespace)
+	err := kubeapi.Deletepgtask(restclient, taskName, namespace)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, namespace string) (string, map[string]string) {
@@ -345,7 +348,29 @@ func (s *StateMachine) triggerFailover() {
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = s.ClusterName + "-" + util.LABEL_FAILOVER
-	kubeapi.Deletepgtask(s.RESTClient, s.ClusterName, s.Namespace)
+
+	//see if task is already present (e.g. a prior failover)
+	priorTask := crv1.Pgtask{}
+	var found bool
+	found, err = kubeapi.Getpgtask(s.RESTClient, &priorTask, spec.Name, s.Namespace)
+	if found {
+		//kubeapi.Deletepgtask(s.RESTClient, s.ClusterName, s.Namespace)
+		log.Debugf("deleting pgtask %s", spec.Name)
+		err = kubeapi.Deletepgtask(s.RESTClient, spec.Name, s.Namespace)
+		if err != nil {
+			log.Errorf("error removing pgtask %s failover is not able to proceed", spec.Name)
+			return
+		}
+		//give time to delete the pgtask before recreating it
+		time.Sleep(time.Second * time.Duration(1))
+	} else if !found {
+		log.Debugf("pgtask %s not found, no need to delete it", spec.Name)
+	} else if err != nil {
+		log.Error(err)
+		log.Error("problem removing pgtask in failover logic, %s", spec.Name)
+		return
+	}
+
 	spec.TaskType = crv1.PgtaskFailover
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[s.ClusterName] = s.ClusterName

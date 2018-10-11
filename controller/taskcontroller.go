@@ -121,6 +121,24 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskDeletePgbouncer:
+		log.Info("delete pgbouncer task added")
+		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskReconfigurePgbouncer:
+		log.Info("Reconfiguredelete pgbouncer task added")
+		clusteroperator.ReconfigurePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskAddPgbouncer:
+		log.Info("add pgbouncer task added")
+		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskDeletePgpool:
+		log.Info("delete pgpool task added")
+		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskReconfigurePgpool:
+		log.Info("Reconfiguredelete pgpool task added")
+		clusteroperator.ReconfigurePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
+	case crv1.PgtaskAddPgpool:
+		log.Info("add pgpool task added")
+		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskFailover:
 		log.Info("failover task added")
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
@@ -137,6 +155,8 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskBackrestRestore:
 		log.Info("backrest restore task added")
 		backrestoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskAutoFailover:
+		log.Infof("autofailover task added %s", task.ObjectMeta.Name)
 	default:
 		log.Info("unknown task type on pgtask added")
 	}

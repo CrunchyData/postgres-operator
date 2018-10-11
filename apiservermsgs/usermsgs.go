@@ -26,6 +26,7 @@ type UserRequest struct {
 	Namespace             string
 	PasswordAgeDays       int
 	ChangePasswordForUser string
+	Password              string
 	DeleteUser            string
 	ValidDays             string
 	UserDBAccess          string
@@ -52,6 +53,7 @@ type UserResponse struct {
 type CreateUserRequest struct {
 	Name            string
 	Selector        string
+	Password        string
 	ManagedUser     bool
 	UserDBAccess    string
 	PasswordAgeDays int
@@ -73,8 +75,9 @@ type ShowUserSecret struct {
 
 // ShowUsersDetail ...
 type ShowUserDetail struct {
-	Cluster crv1.Pgcluster
-	Secrets []ShowUserSecret
+	Cluster     crv1.Pgcluster
+	Secrets     []ShowUserSecret
+	ExpiredMsgs []string
 }
 
 // ShowUsersResponse ...

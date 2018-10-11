@@ -17,7 +17,7 @@ LOG="pgo-installer.log"
 if [[ "$CO_VERSION" != "" ]]; then
 	echo "CO_VERSION is set to " $CO_VERSION
 else
-	export CO_VERSION=3.2.0
+	export CO_VERSION=3.3.0
 fi
 if [[ "$CO_NAMESPACE" != "" ]]; then
 	echo "CO_NAMESPACE is set to " $CO_NAMESPACE
@@ -74,6 +74,15 @@ else
 	echo "setting CO_IMAGE_PREFIX to " $CO_IMAGE_PREFIX
 fi
 echo "user has entered "$CO_IMAGE_PREFIX " for the operator image prefix"| tee -a $LOG
+echo -n "enter container-suite image prefix ["$CCP_IMAGE_PREFIX"]"
+read REPLY
+if [[ "$REPLY" != "" ]]; then
+	echo "setting CCP_IMAGE_PREFIX="$REPLY
+	export CCP_IMAGE_PREFIX=$REPLY
+else
+	echo "setting CCP_IMAGE_PREFIX to " $CCP_IMAGE_PREFIX
+fi
+echo "user has entered "$CCP_IMAGE_PREFIX " for the container-suite image prefix"| tee -a $LOG
 
 echo "Testing for dependencies..." | tee -a $LOG
 
@@ -183,7 +192,8 @@ echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
 cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/crunchydata/'"$CO_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/COImagePrefix:  crunchydata/'"COImagePrefix:  $CO_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/CCPImagePrefix:  crunchydata/'"CCPImagePrefix:  $CCP_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/apiserver/pgo.yaml
 sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
 sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/rbac.yaml

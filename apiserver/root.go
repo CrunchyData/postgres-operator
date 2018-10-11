@@ -87,11 +87,12 @@ func Initialize() {
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
+	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
 	Pgo.Validate()
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
-		log.Error("NAMESPACE env var is required")
+		log.Error("NAMESPACE environment variable is required")
 		os.Exit(2)
 	}
 	log.Info("Namespace is [" + Namespace + "]")
@@ -116,6 +117,7 @@ func Initialize() {
 
 	ConnectToKube()
 
+	validateWithKube()
 }
 
 // ConnectToKube ...
@@ -178,7 +180,7 @@ func initConfig() {
 			os.Exit(2)
 		}
 	}
-	log.Infof("BasicAuth is %v\n", BasicAuth)
+	log.Infof("BasicAuth is %v", BasicAuth)
 
 	if !validStorageSettings() {
 		log.Error("Storage Settings are not defined correctly, can't continue")
@@ -243,7 +245,7 @@ func validateCredentials() error {
 	var err error
 
 	for _, v := range Credentials {
-		log.Infof("validating user %s and role %s ", v.Username, v.Role)
+		log.Infof("validating user %s and role %s", v.Username, v.Role)
 		if RoleMap[v.Role] == nil {
 			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
 			log.Error(errMsg)
@@ -278,11 +280,11 @@ func BasicAuthzCheck(username, perm string) bool {
 	if creds == (CredentialDetail{}) {
 		//this means username not found in pgouser file
 		//should not happen at this point in code!
-		log.Error("%s not found in pgouser file\n", username)
+		log.Error("%s not found in pgouser file", username)
 		return false
 	}
 
-	log.Infof(" BasicAuthzCheck %s %s %v\n", creds.Role, perm, HasPerm(creds.Role, perm))
+	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
 
 }
@@ -293,34 +295,34 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
 
 	username, password, authOK := r.BasicAuth()
 	if AuditFlag {
-		log.Infof("[audit] %s username=[%s] method=[%s]\n", perm, username, r.Method)
+		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s]", perm, username, r.Method, r.RemoteAddr)
 	}
 
-	log.Debugf("Authn Attempt %s username=[%s]\n", perm, username)
+	log.Debugf("Authentication Attempt %s username=[%s]", perm, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
 		return errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
-		log.Errorf("Authn Failed %s username=[%s]\n", perm, username)
+		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
 		return errors.New("Not Authenticated")
 	}
 
 	if !BasicAuthzCheck(username, perm) {
-		log.Errorf("Authn Failed %s username=[%s]\n", perm, username)
+		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
 		http.Error(w, "Not authorized for this apiserver action", 401)
-		return errors.New("Not Authorized for this apiserver action")
+		return errors.New("Not authorized for this apiserver action")
 	}
 
-	log.Debug("Authn Success")
+	log.Debug("Authentication Success")
 	return err
 
 }
 
 func validContainerResourcesSettings() bool {
-	log.Infof("ContainerResources has %d definitions \n", len(Pgo.ContainerResources))
+	log.Infof("ContainerResources has %d definitions", len(Pgo.ContainerResources))
 
 	//validate any Container Resources in pgo.yaml for correct formats
 	if !IsValidContainerResourceValues() {
@@ -346,7 +348,7 @@ func validContainerResourcesSettings() bool {
 }
 
 func validStorageSettings() bool {
-	log.Infof("Storage has %d definitions\n", len(Pgo.Storage))
+	log.Infof("Storage has %d definitions", len(Pgo.Storage))
 
 	ps := Pgo.PrimaryStorage
 	if IsValidStorageName(ps) {
@@ -418,26 +420,26 @@ func IsValidContainerResourceValues() bool {
 	var err error
 
 	for k, v := range Pgo.ContainerResources {
-		log.Infof("Container Resources %s [%v]\n", k, v)
+		log.Infof("Container Resources %s [%v]", k, v)
 		resources, _ := Pgo.GetContainerResource(k)
 		_, err = resource.ParseQuantity(resources.RequestsMemory)
 		if err != nil {
-			log.Errorf("%s.RequestsMemory value invalid format\n", k)
+			log.Errorf("%s.RequestsMemory value invalid format", k)
 			return false
 		}
 		_, err = resource.ParseQuantity(resources.RequestsCPU)
 		if err != nil {
-			log.Errorf("%s.RequestsCPU value invalid format\n", k)
+			log.Errorf("%s.RequestsCPU value invalid format", k)
 			return false
 		}
 		_, err = resource.ParseQuantity(resources.LimitsMemory)
 		if err != nil {
-			log.Errorf("%s.LimitsMemory value invalid format\n", k)
+			log.Errorf("%s.LimitsMemory value invalid format", k)
 			return false
 		}
 		_, err = resource.ParseQuantity(resources.LimitsCPU)
 		if err != nil {
-			log.Errorf("%s.LimitsCPU value invalid format\n", k)
+			log.Errorf("%s.LimitsCPU value invalid format", k)
 			return false
 		}
 	}
@@ -455,4 +457,39 @@ func initTemplates() {
 
 	JobTemplate = util.LoadTemplate(LoadTemplatePath)
 
+}
+
+func validateWithKube() {
+	log.Debug("validateWithKube called")
+
+	configNodeLabels := make([]string, 2)
+	configNodeLabels[0] = Pgo.Cluster.PrimaryNodeLabel
+	configNodeLabels[1] = Pgo.Cluster.ReplicaNodeLabel
+
+	for _, n := range configNodeLabels {
+
+		if n != "" {
+			parts := strings.Split(n, "=")
+			if len(parts) != 2 {
+				log.Error(n + " node label in pgo.yaml does not follow key=value format")
+				os.Exit(2)
+			}
+
+			keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
+			if err != nil {
+				log.Error(err)
+				os.Exit(2)
+			}
+
+			if !keyValid {
+				log.Error(n + " key not a valid node label key in pgo.yaml")
+				os.Exit(2)
+			}
+			if !valueValid {
+				log.Error(n + "value not a valid node label value in pgo.yaml ")
+				os.Exit(2)
+			}
+			log.Debug(n + " is a valid pgo.yaml node label default")
+		}
+	}
 }

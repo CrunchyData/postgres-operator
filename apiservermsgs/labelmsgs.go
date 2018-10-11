@@ -28,6 +28,15 @@ type LabelRequest struct {
 	ClientVersion string
 }
 
+// DeleteLabelRequest ...
+type DeleteLabelRequest struct {
+	Selector      string
+	Namespace     string
+	Args          []string
+	LabelCmdLabel string
+	ClientVersion string
+}
+
 // LabelResponse ...
 type LabelResponse struct {
 	Results []string

@@ -1,4 +1,6 @@
 Cluster:
+  PrimaryNodeLabel:  
+  ReplicaNodeLabel: 
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
@@ -21,20 +23,20 @@ ReplicaStorage: storage1
 Storage:
   storage1:
     AccessMode:  ReadWriteMany
-    Size:  200M
+    Size:  1G
     StorageType:  create
     SupplementalGroups:  65534
   storage2:
-    AccessMode:  ReadWriteOnce
-    Size:  333M
+    AccessMode:  ReadWriteMany
+    Size:  1G
     StorageType:  dynamic
     StorageClass:  gluster-heketi
     Fsgroup:  26
   storage3:
     AccessMode:  ReadWriteOnce
-    Size:  440M
+    Size:  1G
     StorageType:  dynamic
-    StorageClass:  fast
+    StorageClass:  rook-ceph-block
     Fsgroup:  26
 DefaultContainerResource: 
 ContainerResources:
@@ -54,4 +56,4 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.2.0
+  COImageTag:  centos7-3.3.0

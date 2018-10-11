@@ -8,7 +8,7 @@ theme = "docdock"
 #themesdir = "themes/"
 pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
-publishDir = "../docs"
+publishDir = "../public"
 canonifyurls = true
 
 defaultContentLanguage = "en"

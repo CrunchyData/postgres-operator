@@ -6,7 +6,7 @@ weight: 50
 ---
 
 :toc:
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.3.0 {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -116,6 +116,8 @@ This alias (`setip`) will set the `CO_APISERVER_URL` IP address for you.
 
 ==== Running Kubernetes Remotely
 
+===== Port forwarding
+
 Set up a port-forward tunnel from your host to the Kube remote host, specifying the operator pod -
 ....
 kubectl get pod --selector=name=postgres-operator
@@ -131,6 +133,41 @@ export CO_APISERVER_URL=https://127.0.0.1:8443
 pgo version
 ....
 
+===== Using an ingress
+
+Ingresses allows you to access Kubernetes services throught a controller.
+
+First you will need to ensure a NGINX Ingress Controller is available in your Kubernetes cluster.
+
+If you are using Minikube, you can easily deploy one using
+....
+minikube addons enable ingress
+....
+If not, please refer to the https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal[Nginx Ingress Controller's official documentation] for its installation.
+
+Once your controller is running, just deploy the ingress using
+....
+kubectl create -f $COROOT/deploy/ingress.yml
+....
+Due to the annotations used, please note this ingress is currently usable only with Nginx Ingress Controller.
+
+Now you can use the adress IP of the host where the nginx-ingress-controller pod is to connect to the pgo apiserver. The port will be 443 (and not 8443).
+
+To retrieve the address ip:
+....
+kubectl get ingress postgres-operator -o jsonpath="{.status.loadBalancer.ingress[0].ip}"
+
+export CO_APISERVER_URL=https://`kubectl get ingress postgres-operator -o jsonpath="{.status.loadBalancer.ingress[0].ip}"`
+....
+
+If you are using minikube, the address IP displayed is incorrect, just use:
+....
+minikube ip
+
+export CO_APISERVER_URL=https://`minikube ip`
+....
+
+
 {{% /expand%}}
 
 == Verify pgo Client
@@ -138,8 +175,8 @@ pgo version
 At this point you should be able to connect to the operator as follows -
 ....
 pgo version
-pgo client version 3.2
-apiserver version 3.2
+pgo client version 3.3.0
+apiserver version 3.3.0
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.

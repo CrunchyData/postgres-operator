@@ -194,6 +194,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 		log.Error("error deleting primary Deployment " + err.Error())
 	}
 
+	//delete the pgbouncer service if exists
+	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+		DeletePgbouncer(clientset, cl.Spec.Name, namespace)
+	}
+
 	//delete the primary service
 	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
 
@@ -201,7 +206,7 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
 
 	//delete the pgpool deployment if necessary
-	if cl.Spec.UserLabels["crunchy-pgpool"] == "true" {
+	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
 	}
 
@@ -543,7 +548,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = cluster.Spec.Name + "-xlog"
+		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
 	//check for --ccp-image-tag at the command line
@@ -552,34 +557,41 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		imageTag = replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY]
 	}
 
+	//allow the user to override the replica resources
+	cs := replica.Spec.ContainerResources
+	if replica.Spec.ContainerResources.LimitsCPU == "" {
+		cs = cluster.Spec.ContainerResources
+	}
+
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:              replica.Spec.Name,
-		ClusterName:       replica.Spec.ClusterName,
-		PgMode:            "replica",
-		Port:              cluster.Spec.Port,
-		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:       imageTag,
-		PVCName:           util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
-		BackupPVCName:     util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
-		PrimaryHost:       cluster.Spec.PrimaryHost,
-		BackupPath:        "",
-		Database:          cluster.Spec.Database,
-		DataPathOverride:  replica.Spec.Name,
-		ArchiveMode:       archiveMode,
-		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
-		BackrestPVCName:   util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:    archiveTimeout,
-		Replicas:          "1",
-		ConfVolume:        GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
-		OperatorLabels:    util.GetLabelsFromMap(replicaLabels),
-		SecurityContext:   util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:    cluster.Spec.RootSecretName,
-		PrimarySecretName: cluster.Spec.PrimarySecretName,
-		UserSecretName:    cluster.Spec.UserSecretName,
-		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
-		CollectAddon:      GetCollectAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:       GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		Name:               replica.Spec.Name,
+		ClusterName:        replica.Spec.ClusterName,
+		PgMode:             "replica",
+		Port:               cluster.Spec.Port,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        imageTag,
+		PVCName:            util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:      util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
+		PrimaryHost:        cluster.Spec.PrimaryHost,
+		BackupPath:         "",
+		Database:           cluster.Spec.Database,
+		DataPathOverride:   replica.Spec.Name,
+		ArchiveMode:        archiveMode,
+		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
+		BackrestPVCName:    util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:     archiveTimeout,
+		Replicas:           "1",
+		ConfVolume:         GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
+		OperatorLabels:     util.GetLabelsFromMap(replicaLabels),
+		SecurityContext:    util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:     cluster.Spec.RootSecretName,
+		PrimarySecretName:  cluster.Spec.PrimarySecretName,
+		UserSecretName:     cluster.Spec.UserSecretName,
+		ContainerResources: GetContainerResources(&cs),
+		NodeSelector:       GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:       GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cluster.Spec),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
