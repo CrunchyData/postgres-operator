@@ -81,7 +81,7 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	upgradename := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -116,7 +116,7 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	upgradename := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)
