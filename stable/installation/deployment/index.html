@@ -234,7 +234,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-10</p>
+<p>Latest Release: 3.2.0 2018-10-10</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -412,8 +412,6 @@ pgo version</pre>
     <div class="expand-content" style="display: none;">
 <div class="sect3">
 <h4 id="_running_kubernetes_remotely">Running Kubernetes Remotely</h4>
-<div class="sect4">
-<h5 id="_port_forwarding">Port forwarding</h5>
 <div class="paragraph">
 <p>Set up a port-forward tunnel from your host to the Kube remote host, specifying the operator pod -</p>
 </div>
@@ -436,61 +434,6 @@ pgo version</pre>
 </div>
 </div>
 </div>
-<div class="sect4">
-<h5 id="_using_an_ingress">Using an ingress</h5>
-<div class="paragraph">
-<p>Ingresses allows you to access Kubernetes services throught a controller.</p>
-</div>
-<div class="paragraph">
-<p>First you will need to ensure a NGINX Ingress Controller is available in your Kubernetes cluster.</p>
-</div>
-<div class="paragraph">
-<p>If you are using Minikube, you can easily deploy one using</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>minikube addons enable ingress</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If not, please refer to the <a href="https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal">Nginx Ingress Controller&#8217;s official documentation</a> for its installation.</p>
-</div>
-<div class="paragraph">
-<p>Once your controller is running, just deploy the ingress using</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>kubectl create -f $COROOT/deploy/ingress.yml</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Due to the annotations used, please note this ingress is currently usable only with Nginx Ingress Controller.</p>
-</div>
-<div class="paragraph">
-<p>Now you can use the adress IP of the host where the nginx-ingress-controller pod is to connect to the pgo apiserver. The port will be 443 (and not 8443).</p>
-</div>
-<div class="paragraph">
-<p>To retrieve the address ip:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>kubectl get ingress postgres-operator -o jsonpath="{.status.loadBalancer.ingress[0].ip}"
-
-export CO_APISERVER_URL=https://`kubectl get ingress postgres-operator -o jsonpath="{.status.loadBalancer.ingress[0].ip}"`</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If you are using minikube, the address IP displayed is incorrect, just use:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>minikube ip
-
-export CO_APISERVER_URL=https://`minikube ip`</pre>
-</div>
-</div>
-</div>
-</div>
 
     </div>
 </div>
@@ -506,8 +449,8 @@ export CO_APISERVER_URL=https://`minikube ip`</pre>
 <div class="literalblock">
 <div class="content">
 <pre>pgo version
-pgo client version 3.3.0
-apiserver version 3.3.0</pre>
+pgo client version 3.2
+apiserver version 3.2</pre>
 </div>
 </div>
 <div class="paragraph">
