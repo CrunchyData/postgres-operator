@@ -129,7 +129,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			response.Status.Msg = err.Error()
 			return response
 		}
-		log.Debug("myselector is %s\n", myselector.String())
+		log.Debugf("myselector is %s\n", myselector.String())
 
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
@@ -155,7 +155,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 	}
 
 	for _, arg := range request.Args {
-		log.Debug("create upgrade called for " + arg)
+		log.Debugf("create upgrade called for %s", arg)
 		result := crv1.Pgupgrade{}
 
 		// error if it already exists
@@ -168,7 +168,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 				log.Error("could not delete previous pgupgrade " + arg)
 			}
 		} else if !found {
-			log.Debug("pgupgrade " + arg + " not found so we will create it")
+			log.Debugf("pgupgrade %s not found so we will create it", arg)
 		} else {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -245,7 +245,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 	spec.StorageSpec.Size = storage.Size
 
 	if request.CCPImageTag != "" {
-		log.Debug("using CCPImageTag from command line " + request.CCPImageTag)
+		log.Debugf("using CCPImageTag from command line %s", request.CCPImageTag)
 		spec.CCPImageTag = request.CCPImageTag
 	}
 
@@ -265,7 +265,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 			return nil, err
 		}
 	} else if !found {
-		log.Debug(name + " is not a cluster")
+		log.Debugf("%s is not a cluster", name)
 		return nil, err
 	} else {
 		log.Error(err.Error())

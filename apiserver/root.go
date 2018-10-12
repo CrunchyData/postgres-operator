@@ -489,7 +489,7 @@ func validateWithKube() {
 				log.Error(n + "value not a valid node label value in pgo.yaml ")
 				os.Exit(2)
 			}
-			log.Debug(n + " is a valid pgo.yaml node label default")
+			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}
 }

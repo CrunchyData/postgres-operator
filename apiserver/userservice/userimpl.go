@@ -86,7 +86,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 		return resp
 	}
 
-	log.Debug("selector string=[" + sel + "]")
+	log.Debugf("selector string=[%s]", sel)
 
 	//get the clusters list
 	clusterList := crv1.PgclusterList{}
@@ -147,9 +147,9 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 			if request.Expired != "" {
 				results := callDB(info, d.ObjectMeta.Name, request.Expired)
 				if len(results) > 0 {
-					log.Debug("expired passwords....")
+					log.Debug("expired passwords...")
 					for _, v := range results {
-						log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
+						log.Debugf("RoleName " + v.Rolname + " Role Valid Until ", v.Rolvaliduntil)
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(defaultPasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
@@ -213,7 +213,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 			return results
 		}
 		results = append(results, p)
-		log.Debug("returned " + ts)
+		log.Debugf("returned %s", ts)
 	}
 
 	return results
@@ -261,7 +261,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	secretName := clusterName + "-" + username + "-" + "secret"
 	_, _, err = util.GetPasswordFromSecret(apiserver.Clientset, namespace, secretName)
 	if err != nil {
-		log.Debug(secretName + " secret does not exist")
+		log.Debugf("%s secret does not exist", secretName)
 		return nil
 	}
 
@@ -714,7 +714,7 @@ func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 		}
 	}
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowUserDetail{}
@@ -735,7 +735,7 @@ func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 				if expired != "" {
 					results := callDB(info, d.ObjectMeta.Name, expired)
 					if len(results) > 0 {
-						log.Debug("expired passwords....")
+						log.Debug("expired passwords...")
 						for _, v := range results {
 							detail.ExpiredMsgs = append(detail.ExpiredMsgs, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
 							log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)

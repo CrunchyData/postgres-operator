@@ -121,7 +121,7 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	newExample := newObj.(*crv1.Pgcluster)
-	log.Debug("pgcluster " + newExample.ObjectMeta.Name + " updated ")
+	log.Debugf("pgcluster %s updated", newExample.ObjectMeta.Name)
 
 }
 
