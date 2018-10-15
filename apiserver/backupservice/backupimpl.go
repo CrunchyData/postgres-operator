@@ -223,15 +223,15 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
-	spec.BackupUser = "primaryuser"
-	spec.BackupPass = "password"
+	spec.BackupUserSecret = "primaryuser"
 	spec.BackupPort = "5432"
 
 	cluster := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, name, apiserver.Namespace)
 	if err == nil {
 		spec.BackupHost = cluster.Spec.Name
-		spec.BackupPass, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
+		spec.BackupUserSecret = cluster.Spec.Name + crv1.PrimarySecretSuffix
+		_, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
 		if err != nil {
 			return newInstance, err
 		}

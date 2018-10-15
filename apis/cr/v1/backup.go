@@ -24,15 +24,14 @@ const PgbackupResourcePlural = "pgbackups"
 
 // PgbackupSpec ...
 type PgbackupSpec struct {
-	Name         string        `json:"name"`
-	StorageSpec  PgStorageSpec `json:"storagespec"`
-	CCPImageTag  string        `json:"ccpimagetag"`
-	BackupHost   string        `json:"backuphost"`
-	BackupUser   string        `json:"backupuser"`
-	BackupPass   string        `json:"backuppass"`
-	BackupPort   string        `json:"backupport"`
-	BackupStatus string        `json:"backupstatus"`
-	BackupPVC    string        `json:"backuppvc"`
+	Name             string        `json:"name"`
+	StorageSpec      PgStorageSpec `json:"storagespec"`
+	CCPImageTag      string        `json:"ccpimagetag"`
+	BackupHost       string        `json:"backuphost"`
+	BackupUserSecret string        `json:"backupusersecret"`
+	BackupPort       string        `json:"backupport"`
+	BackupStatus     string        `json:"backupstatus"`
+	BackupPVC        string        `json:"backuppvc"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

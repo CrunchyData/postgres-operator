@@ -8,15 +8,14 @@ func (in *Pgbackup) DeepCopyInto(out *Pgbackup) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta
 	out.Spec = PgbackupSpec{
-		Name:         in.Spec.Name,
-		StorageSpec:  in.Spec.StorageSpec,
-		CCPImageTag:  in.Spec.CCPImageTag,
-		BackupHost:   in.Spec.BackupHost,
-		BackupUser:   in.Spec.BackupUser,
-		BackupPass:   in.Spec.BackupPass,
-		BackupPort:   in.Spec.BackupPort,
-		BackupStatus: in.Spec.BackupStatus,
-		BackupPVC:    in.Spec.BackupPVC,
+		Name:             in.Spec.Name,
+		StorageSpec:      in.Spec.StorageSpec,
+		CCPImageTag:      in.Spec.CCPImageTag,
+		BackupHost:       in.Spec.BackupHost,
+		BackupUserSecret: in.Spec.BackupUserSecret,
+		BackupPort:       in.Spec.BackupPort,
+		BackupStatus:     in.Spec.BackupStatus,
+		BackupPVC:        in.Spec.BackupPVC,
 	}
 	out.Status = in.Status
 }
