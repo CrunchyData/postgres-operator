@@ -39,7 +39,7 @@ func GetpgingestsBySelector(client *rest.RESTClient, ingestList *crv1.PgingestLi
 		}
 	}
 
-	log.Debug("myselector is " + myselector.String())
+	log.Debugf("myselector is %s", myselector.String())
 
 	err = client.Get().
 		Resource(crv1.PgingestResourcePlural).
@@ -78,7 +78,7 @@ func Getpgingest(client *rest.RESTClient, ingest *crv1.Pgingest, name, namespace
 		Name(name).
 		Do().Into(ingest)
 	if kerrors.IsNotFound(err) {
-		log.Debug("ingest " + name + " not found")
+		log.Debugf("ingest %s not found", name)
 		return false, err
 	}
 	if err != nil {
@@ -119,7 +119,7 @@ func Deletepgingest(client *rest.RESTClient, name, namespace string) error {
 		return err
 	}
 
-	log.Debug("deleted pgingest " + name)
+	log.Debugf("deleted pgingest %s", name)
 	return err
 }
 
