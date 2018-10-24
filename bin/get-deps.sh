@@ -15,11 +15,19 @@
 
 echo "Getting project dependencies..."
 
+if [ $(command -v apt-get) ]; then
+	echo "using apt-get as package manager..."
+	PM="apt-get"
+elif [ $(command -v yum) ]; then
+	echo "using yum as package manager..."
+	PM="yum"
+fi
+
 #sudo yum -y install mercurial golang
 which go
 if [ $? -eq 1 ]; then
 	echo "installing golang..."
-	sudo yum -y install golang
+	sudo $PM -y install golang
 fi
 
 which dep
@@ -28,9 +36,12 @@ if [ $? -eq 1 ]; then
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
 
+
+echo "getting expenv go library..."
 go get github.com/blang/expenv
 
-#dep ensure
+echo "getting all libraries for project..."
+dep ensure
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
