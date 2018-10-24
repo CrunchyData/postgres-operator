@@ -150,7 +150,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				if len(results) > 0 {
 					log.Debug("expired passwords...")
 					for _, v := range results {
-						log.Debugf("RoleName " + v.Rolname + " Role Valid Until ", v.Rolvaliduntil)
+						log.Debugf("RoleName "+v.Rolname+" Role Valid Until ", v.Rolvaliduntil)
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(request.PasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
@@ -555,6 +555,11 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 			log.Debug(msg)
 			resp.Results = append(resp.Results, msg)
 		}
+
+		if request.PasswordLength == 0 {
+			request.PasswordLength = defaultPasswordLength
+		}
+
 		newPassword := util.GeneratePassword(request.PasswordLength)
 		if request.Password != "" {
 			newPassword = request.Password
