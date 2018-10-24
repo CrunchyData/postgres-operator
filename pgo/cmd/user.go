@@ -18,11 +18,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // PasswordAgeDays password age flag
@@ -45,6 +46,9 @@ var Expired string
 
 // UpdatePasswords update passwords flag
 var UpdatePasswords bool
+
+// PasswordLength password length flag
+var PasswordLength int
 
 var userCmd = &cobra.Command{
 	Use:   "user",
@@ -69,6 +73,7 @@ func init() {
 	userCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	userCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
+	userCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
 
 }
 
@@ -87,6 +92,7 @@ func userManager() {
 	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
 	request.ClientVersion = msgs.PGO_VERSION
+	request.PasswordLength = PasswordLength
 
 	response, err := api.UserManager(httpclient, &SessionCredentials, &request)
 
@@ -126,6 +132,7 @@ func createUser(args []string) {
 	r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
 	r.ClientVersion = msgs.PGO_VERSION
+	r.PasswordLength = PasswordLength
 
 	response, err := api.CreateUser(httpclient, &SessionCredentials, r)
 	if err != nil {
