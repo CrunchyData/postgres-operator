@@ -60,7 +60,7 @@ func CreateDeployment(clientset *kubernetes.Clientset, deployment *v1beta1.Deplo
 func GetDeployment(clientset *kubernetes.Clientset, name, namespace string) (*v1beta1.Deployment, bool, error) {
 	deploymentResult, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
-		log.Debug("deployment " + name + " not found")
+		log.Debugf("deployment %s not found", name)
 		return deploymentResult, false, err
 	}
 	if err != nil {

@@ -39,7 +39,7 @@ func GetpgclustersBySelector(client *rest.RESTClient, clusterList *crv1.Pgcluste
 		}
 	}
 
-	log.Debug("myselector is " + myselector.String())
+	log.Debugf("myselector is %s", myselector.String())
 
 	err = client.Get().
 		Resource(crv1.PgclusterResourcePlural).
@@ -48,7 +48,7 @@ func GetpgclustersBySelector(client *rest.RESTClient, clusterList *crv1.Pgcluste
 		Do().
 		Into(clusterList)
 	if kerrors.IsNotFound(err) {
-		log.Debug("clusters for  " + myselector.String() + " not found")
+		log.Debugf("clusters for %s not found", myselector.String())
 	}
 	if err != nil {
 		log.Error("error getting list of clusters " + err.Error())
@@ -81,7 +81,7 @@ func Getpgcluster(client *rest.RESTClient, cluster *crv1.Pgcluster, name, namesp
 		Name(name).
 		Do().Into(cluster)
 	if kerrors.IsNotFound(err) {
-		log.Debug("cluster " + name + " not found")
+		log.Debugf("cluster %s not found", name)
 		return false, err
 	}
 	if err != nil {
@@ -106,7 +106,7 @@ func Deletepgcluster(client *rest.RESTClient, name, namespace string) error {
 		return err
 	}
 
-	log.Debug("deleted pgcluster " + name)
+	log.Debugf("deleted pgcluster %s", name)
 	return err
 }
 
@@ -142,6 +142,6 @@ func Updatepgcluster(client *rest.RESTClient, cluster *crv1.Pgcluster, name, nam
 		log.Error("error updating pgcluster " + err.Error())
 	}
 
-	log.Debug("updated pgcluster " + cluster.Name)
+	log.Debugf("updated pgcluster %s", cluster.Name)
 	return err
 }

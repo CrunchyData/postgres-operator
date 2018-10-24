@@ -132,5 +132,5 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 	if err != nil {
 		log.Errorf("ERROR deleting pgpolicy: %v", err)
 	}
-	log.Debug("DELETED pgpolicy " + policy.ObjectMeta.Name)
+	log.Debugf("DELETED pgpolicy %s", policy.ObjectMeta.Name)
 }
