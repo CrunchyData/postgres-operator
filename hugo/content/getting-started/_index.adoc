@@ -266,7 +266,7 @@ or watch for NotReady events on this cluster. When those occur, it will
  create a failover state machine which acts as a timer for the cluster.
 If the timer expires, then a failover is triggered on the cluster turning
 one of the cluster replica pods into the replacement primary pod. See the
-link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works]
+link:https://crunchydata.github.io/postgres-operator/stable/how-it-works/#_auto_failover[How It Works]
 documentation for more details on auto failover.
 
 ===== pgBackRest
@@ -317,7 +317,7 @@ pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored 
 ....
 
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
-Typically, this will be a RWX file system but if the file system is RWO the PVCs will be 
+Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file
 system setup will allow you to restore from this PVC without having to shutdown the currently
 attached PostgreSQL cluster.
@@ -636,16 +636,16 @@ the last pg_basebackup results.
 
 === Scheduling
 
-The `schedule` command will generate schedule configuration maps that are utitlized by the 
+The `schedule` command will generate schedule configuration maps that are utitlized by the
 link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-scheduler/[crunchy-scheduler]
 container.  This allows users to create automated, scheduled backups for their PostgreSQL clusters.
 
 Currently only two types of backups are supported with the schedule command:
  * pgBackRest
  * pgBaseBackup
- 
-Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for 
-configuration maps with the label `crunchy-scheduler=true` in a specific namespace.  
+
+Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for
+configuration maps with the label `crunchy-scheduler=true` in a specific namespace.
 After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
 create pgBaseBackup jobs for the configured schedule.
 
@@ -1058,7 +1058,7 @@ pgo label mycluster --label=env=research
 Or if you wanted to apply if to a selection of clusters:
 ....
 pgo label --label=env=research  --selector=project=xray
-pgo label all --label=env=research 
+pgo label all --label=env=research
 ....
 
 In the first example, a label of *env=research* is applied to the cluster
@@ -1302,7 +1302,7 @@ pgo create user sally --managed --selector=name=mycluster --password=somepass
 A *managed* account is one that the Operator can manipulate as well; when you run `pgo test mycluster` the account is tested with
 the other default accounts, etc.
 
-When you create a managed user, if pgpool is part of your cluster, 
+When you create a managed user, if pgpool is part of your cluster,
 then pgpool is reconfigured to pick up the new user.
 
 ===== Complex User Creation
@@ -1360,7 +1360,7 @@ pgo user --update-passwords --selector=name=mycluster --expired=5
 When a pgbouncer deployment is added into your cluster, it
 will cause the creation of a Secret that holds the pgbouncer
 configuration files:
- * pg_hba.conf 
+ * pg_hba.conf
  * pgbouncer.ini
  * users.txt
 
