@@ -5,7 +5,10 @@ draft: false
 weight: 60
 ---
 
-Latest Release: 3.3.0 {docdate}
+Latest Release: 3.4.0 {docdate}
+
+{{% expand "Upgrading to v3.4" %}}
+No upgrade steps are required when moving from 3.3.0 to 3.4.0.
 
 {{% expand "Upgrading to v3.3" %}}
 

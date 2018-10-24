@@ -530,8 +530,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap[util.LABEL_AUTOFAIL] = "true"
 		}
 		if request.ServiceType != "" {
-			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE {
-
+			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error ServiceType should be either ClusterIP or LoadBalancer "
 

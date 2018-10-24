@@ -6,7 +6,7 @@ weight: 40
 ---
 
 :toc:
-Latest Release: 3.3.0 {docdate}
+Latest Release: 3.4.0 {docdate}
 
 == Overview
 
@@ -275,7 +275,7 @@ Pgo:
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   CSVLoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.3.0
+  COImageTag:  centos7-3.4.0
 ....
 
 Values in the pgo configuration file have the following meaning:

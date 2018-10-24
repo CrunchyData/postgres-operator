@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-Latest Release: 3.3.0 {docdate}
+Latest Release: 3.4.0 {docdate}
 
 == First Steps
 
@@ -776,7 +776,7 @@ $ pgo scale NAME [FLAGS]
 |Name |Shorthand |Input |Usage
 
 |`--service-type` |N/A |String |
-The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.
+The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.  Possible values include LoadBalancer, ClusterIP, and NodePort.
 
 |`--ccp-image-tag` |N/A |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.

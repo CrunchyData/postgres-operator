@@ -88,6 +88,7 @@ type PgoConfig struct {
 const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
 const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
+const NODEPORT_SERVICE_TYPE = "NodePort"
 
 func (c *PgoConfig) Validate() error {
 	var err error
@@ -170,8 +171,9 @@ func (c *PgoConfig) Validate() error {
 		c.Cluster.ServiceType = DEFAULT_SERVICE_TYPE
 	} else {
 		if c.Cluster.ServiceType != DEFAULT_SERVICE_TYPE &&
-			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE {
-			return errors.New("Cluster.ServiceType is required to be either ClusterIP or LoadBalancer")
+			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE &&
+			c.Cluster.ServiceType != NODEPORT_SERVICE_TYPE {
+			return errors.New("Cluster.ServiceType is required to be either ClusterIP, NodePort, or LoadBalancer")
 		}
 	}
 
