@@ -18,6 +18,9 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -27,20 +30,17 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type jobTemplateFields struct {
-	Name            string
-	PvcName         string
-	CCPImagePrefix  string
-	CCPImageTag     string
-	SecurityContext string
-	BackupHost      string
-	BackupUser      string
-	BackupPass      string
-	BackupPort      string
+	Name             string
+	PvcName          string
+	CCPImagePrefix   string
+	CCPImageTag      string
+	SecurityContext  string
+	BackupHost       string
+	BackupUserSecret string
+	BackupPort       string
 }
 
 // AddBackupBase creates a backup job and its pvc
@@ -73,15 +73,14 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 
 	//create the job -
 	jobFields := jobTemplateFields{
-		Name:            job.Spec.Name,
-		PvcName:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
-		CCPImagePrefix:  operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:     job.Spec.CCPImageTag,
-		SecurityContext: util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
-		BackupHost:      job.Spec.BackupHost,
-		BackupUser:      job.Spec.BackupUser,
-		BackupPass:      job.Spec.BackupPass,
-		BackupPort:      job.Spec.BackupPort,
+		Name:             job.Spec.Name,
+		PvcName:          util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
+		CCPImagePrefix:   operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:      job.Spec.CCPImageTag,
+		SecurityContext:  util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
+		BackupHost:       job.Spec.BackupHost,
+		BackupUserSecret: job.Spec.BackupUserSecret,
+		BackupPort:       job.Spec.BackupPort,
 	}
 
 	var doc2 bytes.Buffer
