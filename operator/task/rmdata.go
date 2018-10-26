@@ -29,13 +29,19 @@ import (
 )
 
 type rmdatajobTemplateFields struct {
-	Name            string
-	PvcName         string
-	ClusterName     string
-	COImagePrefix   string
-	COImageTag      string
-	SecurityContext string
-	DataRoot        string
+	Name               string
+	PvcName            string
+	ClusterName        string
+	COImagePrefix      string
+	COImageTag         string
+	SecurityContext    string
+	DataRoot           string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // RemoveData ...
@@ -46,14 +52,26 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	var pvcName string
 	pvcName = task.Spec.Parameters[util.LABEL_PVC_NAME]
 
+	cr := ""
+	if operator.Pgo.DefaultRmdataResources != "" {
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultRmdataResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cr = GetContainerResources(&tmp)
+
+	}
+
 	jobFields := rmdatajobTemplateFields{
-		Name:            task.Spec.Name + "-" + pvcName,
-		ClusterName:     task.Spec.Name,
-		PvcName:         pvcName,
-		COImagePrefix:   operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:      operator.Pgo.Pgo.COImageTag,
-		SecurityContext: util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
-		DataRoot:        task.Spec.Parameters[util.LABEL_DATA_ROOT],
+		Name:               task.Spec.Name + "-" + pvcName,
+		ClusterName:        task.Spec.Name,
+		PvcName:            pvcName,
+		COImagePrefix:      operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:         operator.Pgo.Pgo.COImageTag,
+		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
+		DataRoot:           task.Spec.Parameters[util.LABEL_DATA_ROOT],
+		ContainerResources: cr,
 	}
 	log.Debugf("creating rmdata job for pvc [%s]", pvcName)
 
@@ -77,4 +95,32 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
 
+}
+
+// GetContainerResources ...
+func GetContainerResources(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	var doc bytes.Buffer
+	err := operator.ContainerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		operator.ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

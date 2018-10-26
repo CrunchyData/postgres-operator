@@ -13,6 +13,7 @@
                     "initialDelaySeconds": 20,
                     "periodSeconds": 10
                 },
+		{{.ContainerResources }}
                 "env": [ {
 		"name": "BADGER_TARGET",
 		"value": "{{.BadgerTarget}}"

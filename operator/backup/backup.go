@@ -33,14 +33,20 @@ import (
 )
 
 type jobTemplateFields struct {
-	Name             string
-	PvcName          string
-	CCPImagePrefix   string
-	CCPImageTag      string
-	SecurityContext  string
-	BackupHost       string
-	BackupUserSecret string
-	BackupPort       string
+	Name               string
+	PvcName            string
+	CCPImagePrefix     string
+	CCPImageTag        string
+	SecurityContext    string
+	BackupHost         string
+	BackupUserSecret   string
+	BackupPort         string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // AddBackupBase creates a backup job and its pvc
@@ -71,16 +77,28 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	//update the pvc name in the CRD
 	err = util.Patch(client, "/spec/storagespec/name", pvcName, "pgbackups", job.Spec.Name, namespace)
 
+	cr := ""
+	if operator.Pgo.DefaultBackupResources != "" {
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBackupResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cr = GetContainerResources(&tmp)
+
+	}
+
 	//create the job -
 	jobFields := jobTemplateFields{
-		Name:             job.Spec.Name,
-		PvcName:          util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
-		CCPImagePrefix:   operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:      job.Spec.CCPImageTag,
-		SecurityContext:  util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
-		BackupHost:       job.Spec.BackupHost,
-		BackupUserSecret: job.Spec.BackupUserSecret,
-		BackupPort:       job.Spec.BackupPort,
+		Name:               job.Spec.Name,
+		PvcName:            util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        job.Spec.CCPImageTag,
+		SecurityContext:    util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
+		BackupHost:         job.Spec.BackupHost,
+		BackupUserSecret:   job.Spec.BackupUserSecret,
+		BackupPort:         job.Spec.BackupPort,
+		ContainerResources: cr,
 	}
 
 	var doc2 bytes.Buffer
@@ -136,4 +154,32 @@ func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, 
 		log.Debugf("waiting for backup job to report being deleted")
 		time.Sleep(time.Second * time.Duration(3))
 	}
+}
+
+// GetContainerResources ...
+func GetContainerResources(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	var doc bytes.Buffer
+	err := operator.ContainerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		operator.ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

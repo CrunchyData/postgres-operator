@@ -214,12 +214,24 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 
 	//create the pgpool deployment
 	fields := PgpoolTemplateFields{
-		Name:           pgpoolName,
-		ClusterName:    clusterName,
-		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    cl.Spec.CCPImageTag,
-		Port:           "5432",
-		SecretsName:    secretName,
+		Name:               pgpoolName,
+		ClusterName:        clusterName,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		Port:               "5432",
+		SecretsName:        secretName,
+		ContainerResources: "",
+	}
+
+	if operator.Pgo.DefaultPgpoolResources != "" {
+
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgpoolResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		fields.ContainerResources = GetContainerResources(&tmp)
+
 	}
 
 	err = operator.PgpoolTemplate.Execute(&doc, fields)

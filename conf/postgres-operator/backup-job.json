@@ -36,6 +36,7 @@
                         "name": "pgdata",
                         "readOnly": false
                     }],
+		    {{.ContainerResources }}
                     "env": [{
                         "name": "BACKUP_HOST",
                         "value": "{{.BackupHost}}"

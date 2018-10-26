@@ -28,23 +28,30 @@ import (
 	operutil "github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"os"
 	"strings"
 )
 
 type loadJobTemplateFields struct {
-	Name            string
-	COImagePrefix   string
-	COImageTag      string
-	DbHost          string
-	DbDatabase      string
-	DbUser          string
-	DbPass          string
-	DbPort          string
-	TableToLoad     string
-	FilePath        string
-	FileType        string
-	PVCName         string
-	SecurityContext string
+	Name               string
+	COImagePrefix      string
+	COImageTag         string
+	DbHost             string
+	DbDatabase         string
+	DbUser             string
+	DbPass             string
+	DbPort             string
+	TableToLoad        string
+	FilePath           string
+	FileType           string
+	PVCName            string
+	SecurityContext    string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // LoadConfig ...
@@ -81,6 +88,17 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	LoadConfigTemplate.FileType = LoadCfg.FileType
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
 	LoadConfigTemplate.SecurityContext = LoadCfg.SecurityContext
+	//apiserver.Pgo.DefaultContainerResources
+	LoadConfigTemplate.ContainerResources = ""
+	if apiserver.Pgo.DefaultLoadResources != "" {
+		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLoadResources)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		LoadConfigTemplate.ContainerResources = GetContainerResources(&tmp)
+	}
 
 	args := request.Args
 	if request.Selector != "" {
@@ -189,4 +207,32 @@ func createJob(clusterName string, template *loadJobTemplateFields) error {
 
 	return err
 
+}
+
+// GetContainerResources ...
+func GetContainerResources(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	var doc bytes.Buffer
+	err := apiserver.ContainerResourcesTemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		apiserver.ContainerResourcesTemplate.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

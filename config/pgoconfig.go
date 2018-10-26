@@ -83,6 +83,13 @@ type PgoConfig struct {
 	ReplicaStorage            string                              `yaml:"ReplicaStorage"`
 	Storage                   map[string]StorageStruct            `yaml:"Storage"`
 	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
+	DefaultLoadResources      string                              `yaml:"DefaultLoadResources"`
+	DefaultLspvcResources     string                              `yaml:"DefaultLspvcResources"`
+	DefaultRmdataResources    string                              `yaml:"DefaultRmdataResources"`
+	DefaultBackupResources    string                              `yaml:"DefaultBackupResources"`
+	DefaultBadgerResources    string                              `yaml:"DefaultBadgerResources"`
+	DefaultPgpoolResources    string                              `yaml:"DefaultPgpoolResources"`
+	DefaultPgbouncerResources    string                              `yaml:"DefaultPgbouncerResources"`
 }
 
 const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
@@ -145,6 +152,48 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultContainerResources]
 		if !ok {
 			return errors.New("DefaultContainerResources setting invalid")
+		}
+	}
+	if c.DefaultLspvcResources != "" {
+		_, ok = c.ContainerResources[c.DefaultLspvcResources]
+		if !ok {
+			return errors.New("DefaultLspvcResources setting invalid")
+		}
+	}
+	if c.DefaultLoadResources != "" {
+		_, ok = c.ContainerResources[c.DefaultLoadResources]
+		if !ok {
+			return errors.New("DefaultLoadResources setting invalid")
+		}
+	}
+	if c.DefaultRmdataResources != "" {
+		_, ok = c.ContainerResources[c.DefaultRmdataResources]
+		if !ok {
+			return errors.New("DefaultRmdataResources setting invalid")
+		}
+	}
+	if c.DefaultBackupResources != "" {
+		_, ok = c.ContainerResources[c.DefaultBackupResources]
+		if !ok {
+			return errors.New("DefaultBackupResources setting invalid")
+		}
+	}
+	if c.DefaultBadgerResources != "" {
+		_, ok = c.ContainerResources[c.DefaultBadgerResources]
+		if !ok {
+			return errors.New("DefaultBadgerResources setting invalid")
+		}
+	}
+	if c.DefaultPgpoolResources != "" {
+		_, ok = c.ContainerResources[c.DefaultPgpoolResources]
+		if !ok {
+			return errors.New("DefaultPgpoolResources setting invalid")
+		}
+	}
+	if c.DefaultPgbouncerResources != "" {
+		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
+		if !ok {
+			return errors.New("DefaultPgbouncerResources setting invalid")
 		}
 	}
 

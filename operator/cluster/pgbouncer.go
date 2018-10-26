@@ -52,10 +52,10 @@ type PgbouncerTemplateFields struct {
 	SecretsName        string
 	CCPImagePrefix     string
 	CCPImageTag        string
-	ContainerResources string
 	Port               string
 	PrimaryServiceName string
 	ReplicaServiceName string
+	ContainerResources string
 }
 
 const PGBOUNCER_SUFFIX = "-pgbouncer"
@@ -214,12 +214,23 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 
 	//create the pgbouncer deployment
 	fields := PgbouncerTemplateFields{
-		Name:           pgbouncerName,
-		ClusterName:    clusterName,
-		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    cl.Spec.CCPImageTag,
-		Port:           "5432",
-		SecretsName:    secretName,
+		Name:               pgbouncerName,
+		ClusterName:        clusterName,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		Port:               "5432",
+		SecretsName:        secretName,
+		ContainerResources: "",
+	}
+
+	if operator.Pgo.DefaultPgbouncerResources != "" {
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgbouncerResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		fields.ContainerResources = GetContainerResources(&tmp)
+
 	}
 
 	err = operator.PgbouncerTemplate.Execute(&doc, fields)

@@ -53,9 +53,9 @@ At this point, the server side of the operator is deployed and ready.
 
 The pgo command line client requires TLS for securing the connection to the operator's REST API.  This configuration is performed as follows -
 ....
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 ....
 
 The pgo client uses Basic Authentication to authenticate to the operator REST API. For authentication, add the following `.pgouser` file to your $HOME -
@@ -80,7 +80,7 @@ rolename: permissionA, permissionB
 
 These are defined in the following file -
 ....
-$COROOT/conf/apiserver/pgorole
+$COROOT/conf/postgres-operator/pgorole
 ....
 
 The complete set of permissions is documented in the link:/installation/configuration/[Configuration] document.

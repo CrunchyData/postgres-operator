@@ -29,13 +29,14 @@ then
 fi
 
 $CO_CMD $NS create secret generic apiserver-conf-secret \
-        --from-file=server.crt=$COROOT/conf/apiserver/server.crt \
-        --from-file=server.key=$COROOT/conf/apiserver/server.key \
-        --from-file=pgouser=$COROOT/conf/apiserver/pgouser \
-        --from-file=pgorole=$COROOT/conf/apiserver/pgorole \
-        --from-file=pgo.yaml=$COROOT/conf/apiserver/pgo.yaml \
-        --from-file=pgo.load-template.json=$COROOT/conf/apiserver/pgo.load-template.json \
-        --from-file=pgo.lspvc-template.json=$COROOT/conf/apiserver/pgo.lspvc-template.json
+        --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
+        --from-file=server.key=$COROOT/conf/postgres-operator/server.key \
+        --from-file=pgouser=$COROOT/conf/postgres-operator/pgouser \
+        --from-file=pgorole=$COROOT/conf/postgres-operator/pgorole \
+        --from-file=pgo.yaml=$COROOT/conf/postgres-operator/pgo.yaml \
+        --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
+        --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
+        --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json
 
 $CO_CMD $NS create configmap operator-conf \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
@@ -52,8 +53,8 @@ $CO_CMD $NS create configmap operator-conf \
 if [ "$CO_UI" = "true" ]; then
 $CO_CMD $NS create configmap pgo-ui-conf \
 	--from-file=$COROOT/conf/pgo-ui/config.json \
-        --from-file=$COROOT/conf/apiserver/server.crt \
-        --from-file=$COROOT/conf/apiserver/server.key 
+        --from-file=$COROOT/conf/postgres-operator/server.crt \
+        --from-file=$COROOT/conf/postgres-operator/server.key 
 
 	expenv -f $DIR/deployment-with-ui.json | $CO_CMD $NS create -f -
 	$CO_CMD $NS create -f $DIR/service-with-ui.json

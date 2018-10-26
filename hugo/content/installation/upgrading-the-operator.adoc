@@ -8,7 +8,19 @@ weight: 60
 Latest Release: 3.4.0 {docdate}
 
 {{% expand "Upgrading to v3.4" %}}
-No upgrade steps are required when moving from 3.3.0 to 3.4.0.
+
+ * The conf/apiserver/ configuration files were moved into the 
+conf/postgres-operator directory to consolidate all config
+files into a single location.  You will need to perform
+this step manually start with version 3.4.0 if you are running
+an existing Operator version prior to 3.4.0.  The Helm chart
+is also updated to reflect this change.
+ * new configuration settings were added into pgo.yaml to support
+resource configuration settings for the various *helper* containers.
+The new settings include DefaultLoadResources, DefaultLspvcResources,
+DefaultRmdataResources, DefaultBackupResources.  You will need to add
+these manually into your existing pgo.yaml file if you want to
+make use of this feature.
 
 {{% expand "Upgrading to v3.3" %}}
 

@@ -57,9 +57,10 @@ type collectTemplateFields struct {
 	CCPImagePrefix  string
 }
 type badgerTemplateFields struct {
-	CCPImageTag    string
-	CCPImagePrefix string
-	BadgerTarget   string
+	CCPImageTag        string
+	CCPImagePrefix     string
+	BadgerTarget       string
+	ContainerResources string
 }
 
 // Strategy1  ...
@@ -644,6 +645,17 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
 		badgerTemplateFields.BadgerTarget = spec.Name
 		badgerTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
+		badgerTemplateFields.ContainerResources = ""
+
+		if operator.Pgo.DefaultBadgerResources != "" {
+			tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBadgerResources)
+			if err != nil {
+				log.Error(err)
+				return ""
+			}
+			badgerTemplateFields.ContainerResources = GetContainerResources(&tmp)
+
+		}
 
 		var badgerDoc bytes.Buffer
 		err := operator.BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)

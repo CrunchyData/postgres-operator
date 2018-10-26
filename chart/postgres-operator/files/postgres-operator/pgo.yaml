@@ -1,9 +1,5 @@
 Cluster:
-  PrimaryNodeLabel:  
-  ReplicaNodeLabel: 
   CCPImagePrefix:  crunchydata
-  Metrics:  false
-  Badger:  false
   CCPImageTag:  centos7-10.5-2.1.0
   Port:  5432
   User:  testuser
@@ -14,7 +10,6 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ArchiveTimeout:  60
-  ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
 PrimaryStorage: storage1
@@ -25,20 +20,21 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  1G
     StorageType:  create
-    SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteMany
     Size:  1G
-    StorageType:  dynamic
-    StorageClass:  gluster-heketi
-    Fsgroup:  26
+    StorageType:  create
   storage3:
-    AccessMode:  ReadWriteOnce
+    AccessMode:  ReadWriteMany
     Size:  1G
-    StorageType:  dynamic
-    StorageClass:  rook-ceph-block
-    Fsgroup:  26
+    StorageType:  create
 DefaultContainerResource: 
+DefaultLoadResources:  
+DefaultLspvcResources:  
+DefaultRmdataResources:  
+DefaultBackupResources:  
+DefaultPgbouncerResources:  
+DefaultPgpoolResources:  
 ContainerResources:
   small:
     RequestsMemory:  512Mi
@@ -51,9 +47,9 @@ ContainerResources:
     LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
-  AutofailSleepSeconds:  9
   Audit:  false
+  Metrics:  false
   LSPVCTemplate:  /config/pgo.lspvc-template.json
   LoadTemplate:  /config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.4.0-rc1
+  COImageTag:  centos7-3.3.0

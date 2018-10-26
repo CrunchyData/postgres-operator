@@ -36,6 +36,10 @@ import (
 	"text/template"
 )
 
+const loadTemplatePath = "/config/pgo.load-template.json"
+const lspvcTemplatePath = "/config/pgo.lspvc-template.json"
+const containerResourcesTemplatePath = "/config/container-resources.json"
+
 // pgouserPath ...
 const pgouserPath = "/config/pgouser"
 
@@ -78,6 +82,8 @@ type CredentialDetail struct {
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
 
+var ContainerResourcesTemplate *template.Template
+var LoadTemplate *template.Template
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
@@ -447,7 +453,7 @@ func IsValidContainerResourceValues() bool {
 }
 
 func initTemplates() {
-	LspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
+	LspvcTemplate = util.LoadTemplate(lspvcTemplatePath)
 
 	LoadTemplatePath := Pgo.Pgo.LoadTemplate
 	if LoadTemplatePath == "" {
@@ -456,6 +462,8 @@ func initTemplates() {
 	}
 
 	JobTemplate = util.LoadTemplate(LoadTemplatePath)
+
+	ContainerResourcesTemplate = util.LoadTemplate(containerResourcesTemplatePath)
 
 }
 

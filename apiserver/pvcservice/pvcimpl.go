@@ -19,23 +19,31 @@ import (
 	"bytes"
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"io"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 	"strings"
 	"time"
 )
 
 type lspvcTemplateFields struct {
-	Name          string
-	ClusterName   string
-	COImagePrefix string
-	COImageTag    string
-	BackupRoot    string
-	PVCName       string
+	Name               string
+	ClusterName        string
+	COImagePrefix      string
+	COImageTag         string
+	BackupRoot         string
+	PVCName            string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // ShowPVC ...
@@ -108,13 +116,25 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 		log.Debug(pvcName)
 	}
 
+	cr := ""
+	if apiserver.Pgo.DefaultLspvcResources != "" {
+		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLspvcResources)
+		if err != nil {
+			log.Error(err.Error())
+			return newlines, err
+		}
+		cr = GetContainerResources(&tmp)
+
+	}
+
 	pvcFields := lspvcTemplateFields{
-		Name:          podName,
-		ClusterName:   clusterName,
-		COImagePrefix: apiserver.Pgo.Pgo.COImagePrefix,
-		COImageTag:    apiserver.Pgo.Pgo.COImageTag,
-		BackupRoot:    pvcRoot,
-		PVCName:       pvcName,
+		Name:               podName,
+		ClusterName:        clusterName,
+		COImagePrefix:      apiserver.Pgo.Pgo.COImagePrefix,
+		COImageTag:         apiserver.Pgo.Pgo.COImageTag,
+		BackupRoot:         pvcRoot,
+		PVCName:            pvcName,
+		ContainerResources: cr,
 	}
 
 	err = apiserver.LspvcTemplate.Execute(&doc2, pvcFields)
@@ -190,4 +210,32 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	err = kubeapi.DeletePod(apiserver.Clientset, podName, apiserver.Namespace)
 	return newlines, err
 
+}
+
+// GetContainerResources ...
+func GetContainerResources(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	var doc bytes.Buffer
+	err := apiserver.ContainerResourcesTemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		apiserver.ContainerResourcesTemplate.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

@@ -5,14 +5,14 @@ replicaCount: 1
 
 image:
   repository: crunchydata/postgres-operator
-  tag: centos7-3.3.0
+  tag: centos7-3.4.0
   pullPolicy: IfNotPresent
 
 env:
   debug: "true"
   ccp_image_prefix: "crunchydata"
   co_image_prefix: "crunchydata"
-  co_image_tag: "centos7-3.3.0"
+  co_image_tag: "centos7-3.4.0"
 
 service:
   type: ClusterIP
