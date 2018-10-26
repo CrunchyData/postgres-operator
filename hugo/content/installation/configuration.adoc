@@ -259,6 +259,12 @@ Storage:
     Size:  440M
     StorageType:  create
 DefaultContainerResource: small
+DefaultLoadResources:
+DefaultLspvcResources:
+DefaultRmdataResources:
+DefaultBackupResources:
+DefaultPgbouncerResources:
+DefaultPgpoolResources:
 ContainerResources:
   small:
     RequestsMemory:  2Gi
@@ -313,6 +319,12 @@ Values in the pgo configuration file have the following meaning:
 |Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |Storage.storage1.MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *name=clustername* is added to the PVC as a match criteria
 |DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
+|DefaultLoadResource    |optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container
+|DefaultLspvcResource    |optional, the value of the container resources configuration to use for pgo-lspvc containers, if not set, no resource limits or requests are added on the database container
+|DefaultRmdataResource    |optional, the value of the container resources configuration to use for pgo-rmdata containers, if not set, no resource limits or requests are added on the database container
+|DefaultBackupResource    |optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container
+|DefaultPgbouncerResource    |optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container
+|DefaultPgpoolResource    |optional, the value of the container resources configuration to use for crunchy-pgpool containers, if not set, no resource limits or requests are added on the database container
 |ContainerResources.small.RequestsMemory        | request size of memory in bytes
 |ContainerResources.small.RequestsCPU        | request size of CPU cores
 |ContainerResources.small.LimitsMemory        | request size of memory in bytes
