@@ -29,7 +29,7 @@ import (
 // pgo status --selector=env=research
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debug("statusservice.StatusHandler %v\n", vars)
+	log.Debug("statusservice.StatusHandler %v", vars)
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {

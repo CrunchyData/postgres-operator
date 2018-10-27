@@ -71,7 +71,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	_, found, err := kubeapi.GetPVC(clientset, pvcName, namespace)
 	if !found {
-		log.Debug("pvc " + pvcName + " not found, will create as part of restore")
+		log.Debugf("pvc %s not found, will create as part of restore", pvcName)
 		//delete the pvc if it already exists
 		//kubeapi.DeletePVC(clientset, pvcName, namespace)
 
@@ -82,7 +82,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 			return
 		}
 	} else {
-		log.Debug("pvc " + pvcName + " found, will NOT recreate as part of restore")
+		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
 	}
 
 	//delete the configmap if it exists from a prior run

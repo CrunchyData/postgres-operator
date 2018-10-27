@@ -140,7 +140,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	if request.Policies != "" {
 		policies = strings.Split(request.Policies, ",")
 	}
-	log.Debugf("policies to apply before loading are %v len=%d\n", request.Policies, len(policies))
+	log.Debugf("policies to apply before loading are %v len=%d", request.Policies, len(policies))
 
 	for _, arg := range args {
 		for _, p := range policies {

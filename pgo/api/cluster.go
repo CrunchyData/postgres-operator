@@ -54,7 +54,7 @@ func ShowCluster(httpclient *http.Client, arg, selector, ccpimagetag string, Ses
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -93,7 +93,7 @@ func DeleteCluster(httpclient *http.Client, arg, selector string, SessionCredent
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -116,7 +116,7 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	jsonValue, _ := json.Marshal(request)
 	url := fmt.Sprintf(createClusterURL, SessionCredentials.APIServerURL)
-	log.Debug("createCluster called...[" + url + "]")
+	log.Debugf("createCluster called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -133,7 +133,7 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

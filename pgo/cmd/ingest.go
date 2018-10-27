@@ -68,7 +68,7 @@ func createIngest(args []string) {
 }
 
 func deleteIngest(args []string) {
-	log.Debugf("deleteIngest called %v\n", args)
+	log.Debugf("deleteIngest called %v", args)
 
 	for _, v := range args {
 
@@ -97,7 +97,7 @@ func deleteIngest(args []string) {
 }
 
 func showIngest(args []string) {
-	log.Debugf("showIngest called %v\n", args)
+	log.Debugf("showIngest called %v", args)
 
 	for _, v := range args {
 
@@ -118,7 +118,7 @@ func showIngest(args []string) {
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
+		log.Debugf("response = %v", response)
 		for _, d := range response.Details {
 			showIngestItem(&d)
 		}

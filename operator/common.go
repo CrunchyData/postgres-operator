@@ -94,7 +94,7 @@ func Initialize() {
 	}
 
 	NAMESPACE = os.Getenv("NAMESPACE")
-	log.Debug("setting NAMESPACE to " + NAMESPACE)
+	log.Debugf("setting NAMESPACE to %s", NAMESPACE)
 	if NAMESPACE == "" {
 		log.Error("NAMESPACE env var not set")
 		panic("NAMESPACE env var not set")
@@ -135,13 +135,13 @@ func Initialize() {
 		log.Debug("pgo.yaml CCPImagePrefix not set, using default")
 		Pgo.Cluster.CCPImagePrefix = "crunchydata"
 	} else {
-		log.Debug("pgo.yaml CCPImagePrefix set, using " + Pgo.Cluster.CCPImagePrefix)
+		log.Debugf("pgo.yaml CCPImagePrefix set, using %s", Pgo.Cluster.CCPImagePrefix)
 	}
 	if Pgo.Pgo.COImagePrefix == "" {
 		log.Debug("pgo.yaml COImagePrefix not set, using default")
 		Pgo.Pgo.COImagePrefix = "crunchydata"
 	} else {
-		log.Debug("COImagePrefix set, using " + Pgo.Pgo.COImagePrefix)
+		log.Debugf("COImagePrefix set, using %s", Pgo.Pgo.COImagePrefix)
 	}
 	if Pgo.Pgo.COImageTag == "" {
 		log.Error("pgo.yaml COImageTag not set, required ")

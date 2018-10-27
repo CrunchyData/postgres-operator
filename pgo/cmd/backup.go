@@ -70,7 +70,7 @@ func init() {
 
 // showBackup ....
 func showBackup(args []string) {
-	log.Debugf("showBackup called %v\n", args)
+	log.Debugf("showBackup called %v", args)
 
 	//show pod information for job
 	for _, v := range args {
@@ -91,8 +91,8 @@ func showBackup(args []string) {
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
-		log.Debugf("len of items = %d\n", len(response.BackupList.Items))
+		log.Debugf("response = %v", response)
+		log.Debugf("len of items = %d", len(response.BackupList.Items))
 
 		for _, backup := range response.BackupList.Items {
 			printBackupCRD(&backup)
@@ -121,7 +121,7 @@ func printBackupCRD(result *crv1.Pgbackup) {
 
 // deleteBackup ....
 func deleteBackup(args []string) {
-	log.Debugf("deleteBackup called %v\n", args)
+	log.Debugf("deleteBackup called %v", args)
 
 	for _, v := range args {
 		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
@@ -150,7 +150,7 @@ func deleteBackup(args []string) {
 
 // createBackup ....
 func createBackup(args []string) {
-	log.Debugf("createBackup called %v\n", args)
+	log.Debugf("createBackup called %v", args)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args

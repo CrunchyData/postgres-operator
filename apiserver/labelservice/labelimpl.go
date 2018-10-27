@@ -119,7 +119,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
-			log.Debug("adding label to cluster " + items[i].Spec.Name)
+			log.Debugf("adding label to cluster %s", items[i].Spec.Name)
 			err := PatchPgcluster(LabelCmdLabel, items[i])
 			if err != nil {
 				log.Error(err.Error())
@@ -152,7 +152,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 
 	var err error
 
-	log.Debugf("%v are the labels to apply\n", newLabels)
+	log.Debugf("%v are the labels to apply", newLabels)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)
@@ -174,7 +174,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 	for key, value := range newLabels {
 		objLabels[key] = value
 	}
-	log.Debugf("updated labels are %v\n", objLabels)
+	log.Debugf("updated labels are %v", objLabels)
 
 	accessor.SetLabels(objLabels)
 	newData, err = json.Marshal(deployment)
@@ -189,7 +189,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 
 	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		log.Debug("error updating patching deployment " + err.Error())
+		log.Debugf("error updating patching deployment %s", err.Error())
 	}
 	return err
 
@@ -416,7 +416,7 @@ func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMa
 
 	var err error
 
-	log.Debugf("%v are the labels to delete\n", labelsMap)
+	log.Debugf("%v are the labels to delete", labelsMap)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)
@@ -437,7 +437,7 @@ func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMa
 	for k, _ := range labelsMap {
 		delete(objLabels, k)
 	}
-	log.Debugf("revised labels after delete are %v\n", objLabels)
+	log.Debugf("revised labels after delete are %v", objLabels)
 
 	accessor.SetLabels(objLabels)
 	newData, err = json.Marshal(deployment)
@@ -452,7 +452,7 @@ func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMa
 
 	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		log.Debug("error patching deployment " + err.Error())
+		log.Debugf("error patching deployment ", err.Error())
 	}
 	return err
 

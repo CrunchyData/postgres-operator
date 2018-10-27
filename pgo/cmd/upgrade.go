@@ -57,7 +57,7 @@ func init() {
 }
 
 func showUpgrade(args []string) {
-	log.Debugf("showUpgrade called %v\n", args)
+	log.Debugf("showUpgrade called %v", args)
 
 	for _, v := range args {
 
@@ -78,7 +78,7 @@ func showUpgrade(args []string) {
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
+		log.Debugf("response = %v", response)
 		for _, upgrade := range response.UpgradeList.Items {
 			showUpgradeItem(&upgrade)
 		}
@@ -108,7 +108,7 @@ func showUpgradeItem(upgrade *crv1.Pgupgrade) {
 }
 
 func deleteUpgrade(args []string) {
-	log.Debugf("deleteUpgrade called %v\n", args)
+	log.Debugf("deleteUpgrade called %v", args)
 
 	for _, v := range args {
 
@@ -137,7 +137,7 @@ func deleteUpgrade(args []string) {
 }
 
 func createUpgrade(args []string) {
-	log.Debugf("createUpgrade called %v\n", args)
+	log.Debugf("createUpgrade called %v", args)
 
 	if len(args) == 0 && Selector == "" {
 		fmt.Println("Error: Cluster name(s) or a selector flag is required.")

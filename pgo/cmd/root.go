@@ -73,7 +73,7 @@ func initConfig() {
 			os.Exit(-1)
 		}
 	}
-	log.Debug("in initConfig with url=" + APIServerURL)
+	log.Debugf("in initConfig with url=%s", APIServerURL)
 	GetCredentials()
 }
 

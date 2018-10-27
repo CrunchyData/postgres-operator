@@ -67,7 +67,7 @@ func init() {
 
 // restore ....
 func restore(args []string) {
-	log.Debugf("restore called %v\n", args)
+	log.Debugf("restore called %v", args)
 
 	request := new(msgs.RestoreRequest)
 	request.FromCluster = args[0]

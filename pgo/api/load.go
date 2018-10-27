@@ -27,7 +27,7 @@ func CreateLoad(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 
 	var response msgs.LoadResponse
 	url := SessionCredentials.APIServerURL + "/load"
-	log.Debug("LoadPolicy called...[" + url + "]")
+	log.Debugf("LoadPolicy called...[%s]", url)
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -45,7 +45,7 @@ func CreateLoad(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

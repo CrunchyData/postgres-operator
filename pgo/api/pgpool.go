@@ -29,7 +29,7 @@ func CreatePgpool(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgpool"
-	log.Debug("createPgpool called...[" + url + "]")
+	log.Debugf("createPgpool called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -45,7 +45,7 @@ func CreatePgpool(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -66,7 +66,7 @@ func DeletePgpool(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgpooldelete"
-	log.Debug("deletePgpool called...[" + url + "]")
+	log.Debugf("deletePgpool called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -82,7 +82,7 @@ func DeletePgpool(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

@@ -30,7 +30,7 @@ func ShowUser(httpclient *http.Client, arg, selector, expired string, SessionCre
 
 	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&expired=" + expired
 
-	log.Debug("show users called [" + url + "]")
+	log.Debugf("show users called [%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -45,7 +45,7 @@ func ShowUser(httpclient *http.Client, arg, selector, expired string, SessionCre
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -66,7 +66,7 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/users"
-	log.Debug("createUsers called...[" + url + "]")
+	log.Debugf("createUsers called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -82,7 +82,7 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -103,7 +103,7 @@ func DeleteUser(httpclient *http.Client, username, selector string, SessionCrede
 
 	url := SessionCredentials.APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 
-	log.Debug("delete users called [" + url + "]")
+	log.Debugf("delete users called [%s]", url)
 
 	action := "GET"
 
@@ -119,7 +119,7 @@ func DeleteUser(httpclient *http.Client, username, selector string, SessionCrede
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -142,7 +142,7 @@ func UserManager(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/user"
-	log.Debug("User Manager called...[" + url + "]")
+	log.Debugf("User Manager called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -158,7 +158,7 @@ func UserManager(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

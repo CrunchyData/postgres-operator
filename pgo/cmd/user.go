@@ -153,9 +153,9 @@ func createUser(args []string) {
 
 // deleteUser ...
 func deleteUser(username string) {
-	log.Debugf("deleteUser called %v\n", username)
+	log.Debugf("deleteUser called %v", username)
 
-	log.Debug("deleting user " + username + " selector " + Selector)
+	log.Debugf("deleting user %s selector=%s", username, Selector)
 	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials)
 
 	if err != nil {
@@ -176,9 +176,9 @@ func deleteUser(username string) {
 // showUsers ...
 func showUser(args []string) {
 
-	log.Debugf("showUser called %v\n", args)
+	log.Debugf("showUser called %v", args)
 
-	log.Debug("selector is " + Selector)
+	log.Debugf("selector is %s", Selector)
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
 		args[0] = "all"

@@ -118,7 +118,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
 				if v.Ready {
-					log.Debug(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + " went to Ready, apply policies...")
+					log.Debugf("%s went to Ready, apply policies...", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
 					taskoperator.ApplyPolicies(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
 				}
 			}

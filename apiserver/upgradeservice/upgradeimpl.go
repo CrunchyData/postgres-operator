@@ -50,7 +50,7 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
-		log.Debug("upgrades found len is %d\n", len(response.UpgradeList.Items))
+		log.Debugf("upgrades found len is %d", len(response.UpgradeList.Items))
 	} else {
 		upgrade := crv1.Pgupgrade{}
 		found, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
@@ -109,7 +109,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 1)
 
-	log.Debug("createUpgrade called %v\n", request)
+	log.Debugf("createUpgrade called %v", request)
 
 	var newInstance *crv1.Pgupgrade
 
@@ -129,7 +129,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 			response.Status.Msg = err.Error()
 			return response
 		}
-		log.Debugf("myselector is %s\n", myselector.String())
+		log.Debugf("myselector is %s", myselector.String())
 
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
@@ -353,7 +353,7 @@ func parseMajorVersion(st string) (float64, string, error) {
 		strRep = fullversionparts[0] + "." + fullversionparts[1]
 	}
 
-	log.Debugf("parseMajorVersion is %f\n", numericVersion)
+	log.Debugf("parseMajorVersion is %f", numericVersion)
 
 	return numericVersion, strRep, err
 }

@@ -26,7 +26,7 @@ import (
 )
 
 func createSchedule(args []string) {
-	log.Debugf("createSchedule called %v\n", args)
+	log.Debugf("createSchedule called %v", args)
 
 	if len(args) == 0 && Selector == "" {
 		fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
@@ -87,7 +87,7 @@ func createSchedule(args []string) {
 }
 
 func deleteSchedule(args []string) {
-	log.Debugf("deleteSchedule called %v\n", args)
+	log.Debugf("deleteSchedule called %v", args)
 
 	if len(args) == 0 && Selector == "" && ScheduleName == "" {
 		fmt.Println("Error: cluster name, schedule name or selector is required to delete a schedule.")
@@ -129,7 +129,7 @@ func deleteSchedule(args []string) {
 }
 
 func showSchedule(args []string) {
-	log.Debugf("showSchedule called %v\n", args)
+	log.Debugf("showSchedule called %v", args)
 
 	if len(args) == 0 && Selector == "" && ScheduleName == "" {
 		fmt.Println("Error: cluster name, schedule name or selector is required to show a schedule.")

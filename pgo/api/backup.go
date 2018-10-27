@@ -30,7 +30,7 @@ func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 
 	url := SessionCredentials.APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION
 
-	log.Debug("show backup called [" + url + "]")
+	log.Debugf("show backup called [%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -45,7 +45,7 @@ func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -65,7 +65,7 @@ func DeleteBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.
 	var response msgs.DeleteBackupResponse
 	url := SessionCredentials.APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
-	log.Debug("delete backup called [" + url + "]")
+	log.Debug("delete backup called [%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -80,7 +80,7 @@ func DeleteBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -103,7 +103,7 @@ func CreateBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/backups"
 
-	log.Debug("create backup called [" + url + "]")
+	log.Debugf("create backup called [%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -119,7 +119,7 @@ func CreateBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

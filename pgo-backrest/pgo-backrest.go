@@ -36,24 +36,24 @@ func main() {
 	}
 
 	Namespace := os.Getenv("NAMESPACE")
-	log.Debug("setting NAMESPACE to " + Namespace)
+	log.Debugf("setting NAMESPACE to %s", Namespace)
 	if Namespace == "" {
 		log.Error("NAMESPACE env var not set")
 		os.Exit(2)
 	}
 
 	COMMAND := os.Getenv("COMMAND")
-	log.Debug("setting COMMAND to " + COMMAND)
+	log.Debugf("setting COMMAND to %s", COMMAND)
 	if COMMAND == "" {
 		log.Error("COMMAND env var not set")
 		os.Exit(2)
 	}
 
 	COMMAND_OPTS := os.Getenv("COMMAND_OPTS")
-	log.Debug("setting COMMAND_OPTS to " + COMMAND_OPTS)
+	log.Debugf("setting COMMAND_OPTS to %s", COMMAND_OPTS)
 
 	PODNAME := os.Getenv("PODNAME")
-	log.Debug("setting PODNAME to " + PODNAME)
+	log.Debugf("setting PODNAME to %s", PODNAME)
 	if PODNAME == "" {
 		log.Error("PODNAME env var not set")
 		os.Exit(2)

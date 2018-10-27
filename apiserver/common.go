@@ -37,7 +37,7 @@ func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
 		return output, err
 	}
 
-	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
+	log.Debugf("got %d secrets for %s", len(secrets.Items), cluster.Spec.Name)
 	for _, s := range secrets.Items {
 		d := msgs.ShowUserSecret{}
 		d.Name = s.Name

@@ -49,7 +49,7 @@ func init() {
 
 func showStatus(args []string) {
 
-	log.Debugf("showStatus called %v\n", args)
+	log.Debugf("showStatus called %v", args)
 
 	if OutputFormat != "" && OutputFormat != "json" {
 		fmt.Println("Error: json is the only supported --output-format value ")

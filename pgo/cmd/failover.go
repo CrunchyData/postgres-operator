@@ -64,7 +64,7 @@ func init() {
 
 // createFailover ....
 func createFailover(args []string) {
-	log.Debugf("createFailover called %v\n", args)
+	log.Debugf("createFailover called %v", args)
 
 	request := new(msgs.CreateFailoverRequest)
 	request.ClusterName = args[0]
@@ -91,7 +91,7 @@ func createFailover(args []string) {
 
 // queryFailover ....
 func queryFailover(args []string) {
-	log.Debugf("queryFailover called %v\n", args)
+	log.Debugf("queryFailover called %v", args)
 
 	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials)
 	if err != nil {

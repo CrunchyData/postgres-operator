@@ -60,7 +60,7 @@ func init() {
 
 // reload ....
 func reload(args []string) {
-	log.Debugf("reload called %v\n", args)
+	log.Debugf("reload called %v", args)
 
 	request := new(msgs.ReloadRequest)
 	request.Args = args

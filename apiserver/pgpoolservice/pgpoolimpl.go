@@ -35,7 +35,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("createPgpool selector is [%s]\n", request.Selector)
+	log.Debugf("createPgpool selector is [%s]", request.Selector)
 
 	if request.Selector == "" && len(request.Args) == 0 {
 		resp.Status.Code = msgs.Error
@@ -73,7 +73,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 		}
 	}
 
-	log.Debugf("createPgpool clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("createPgpool clusters found len is %d", len(clusterList.Items))
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "no clusters found that match request selector or arguments"
@@ -81,7 +81,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		log.Debugf("adding pgpool to cluster [%s]\n", cluster.Name)
+		log.Debugf("adding pgpool to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
 		spec.Name = util.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
@@ -132,7 +132,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("deletePgpool selector is [%s]\n", request.Selector)
+	log.Debugf("deletePgpool selector is [%s]", request.Selector)
 
 	if request.Selector == "" && len(request.Args) == 0 {
 		resp.Status.Code = msgs.Error
@@ -170,7 +170,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 		}
 	}
 
-	log.Debugf("deletePgpool clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("deletePgpool clusters found len is %d", len(clusterList.Items))
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "no clusters found that match request selector or arguments"
@@ -178,7 +178,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		log.Debugf("deleting pgpool from cluster [%s]\n", cluster.Name)
+		log.Debugf("deleting pgpool from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
 		spec.Name = util.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name

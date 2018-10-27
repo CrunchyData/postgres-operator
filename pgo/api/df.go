@@ -27,7 +27,7 @@ func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *m
 
 	var response msgs.DfResponse
 
-	log.Debugf("ShowDf called %s with selector=%s\n", arg, selector)
+	log.Debugf("ShowDf called %s with selector=%s", arg, selector)
 
 	url := SessionCredentials.APIServerURL + "/df/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
 	log.Debug(url)
@@ -46,7 +46,7 @@ func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *m
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

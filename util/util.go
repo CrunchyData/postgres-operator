@@ -27,6 +27,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -288,7 +290,7 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 // RunPsql runs a psql statement
 func RunPsql(password string, hostip string, sqlstring string) {
 
-	log.Debug("RunPsql hostip=[" + hostip + "] sql=[" + sqlstring + "]")
+	log.Debugf("RunPsql hostip=[%s] sql=[%s]", hostip, sqlstring)
 	cmd := exec.Command("runpsql.sh", password, hostip)
 
 	cmd.Stdin = strings.NewReader(sqlstring)
@@ -305,7 +307,7 @@ func RunPsql(password string, hostip string, sqlstring string) {
 		return
 	}
 
-	log.Debugf("runpsql output [%s]\n", out.String()[0:20])
+	log.Debugf("runpsql output [%s]", out.String()[0:20])
 }
 
 // GetSecretPassword ...
@@ -319,10 +321,10 @@ func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace st
 		return "", err
 	}
 
-	log.Debug("secrets for " + db)
+	log.Debugf("secrets for %s", db)
 	secretName := db + suffix
 	for _, s := range secrets.Items {
-		log.Debug("secret : " + s.ObjectMeta.Name)
+		log.Debugf("secret : %s", s.ObjectMeta.Name)
 		if s.ObjectMeta.Name == secretName {
 			log.Debug("pgprimary password found")
 			return string(s.Data["password"][:]), err
@@ -368,4 +370,25 @@ func GetMD5HashForAuthFile(text string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(text))
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+// NewClient gets a REST connection to Kube
+func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
+	scheme := runtime.NewScheme()
+	if err := crv1.AddToScheme(scheme); err != nil {
+		return nil, nil, err
+	}
+
+	config := *cfg
+	config.GroupVersion = &crv1.SchemeGroupVersion
+	config.APIPath = "/apis"
+	config.ContentType = runtime.ContentTypeJSON
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+
+	client, err := rest.RESTClientFor(&config)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return client, scheme, nil
 }

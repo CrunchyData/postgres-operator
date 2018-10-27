@@ -26,7 +26,7 @@ import (
 
 func showConfig(args []string) {
 
-	log.Debugf("showConfig called %v\n", args)
+	log.Debugf("showConfig called %v", args)
 
 	response, err := api.ShowConfig(httpclient, &SessionCredentials)
 

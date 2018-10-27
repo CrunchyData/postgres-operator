@@ -49,7 +49,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 	}
 
 	//lastly, run the psql script
-	log.Debugf("running psql password=%s ip=%s sql=[%s]\n", password, service.Spec.ClusterIP, sqlString)
+	log.Debugf("running psql password=%s ip=%s sql=[%s]", password, service.Spec.ClusterIP, sqlString)
 	RunPsql(password, service.Spec.ClusterIP, sqlString)
 
 	return nil
@@ -107,9 +107,9 @@ func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName st
 		Do().
 		Into(&result)
 	if err == nil {
-		log.Debug("pgpolicy " + policyName + " was validated")
+		log.Debugf("pgpolicy %s was validated", policyName)
 	} else if kerrors.IsNotFound(err) {
-		log.Debug("pgpolicy " + policyName + " not found fail validation")
+		log.Debugf("pgpolicy %s not found fail validation", policyName)
 	} else {
 		log.Error("error getting pgpolicy " + policyName + err.Error())
 	}

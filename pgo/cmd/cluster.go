@@ -27,7 +27,7 @@ import (
 
 // deleteCluster ...
 func deleteCluster(args []string) {
-	log.Debugf("deleteCluster called %v\n", args)
+	log.Debugf("deleteCluster called %v", args)
 
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
@@ -58,7 +58,7 @@ func deleteCluster(args []string) {
 // showCluster ...
 func showCluster(args []string) {
 
-	log.Debugf("showCluster called %v\n", args)
+	log.Debugf("showCluster called %v", args)
 
 	if OutputFormat != "" {
 		if OutputFormat != "json" {
@@ -67,7 +67,7 @@ func showCluster(args []string) {
 		}
 	}
 
-	log.Debug("selector is " + Selector)
+	log.Debugf("selector is %s", Selector)
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
 		args[0] = "all"

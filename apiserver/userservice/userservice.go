@@ -86,7 +86,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeleteUserResponse
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("userservice.DeleteUserHandler %v\n", vars)
+	log.Debugf("userservice.DeleteUserHandler %v", vars)
 
 	username := vars["name"]
 

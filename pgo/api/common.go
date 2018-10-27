@@ -25,7 +25,7 @@ import (
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) error {
-	log.Debugf("http status code is %d\n", resp.StatusCode)
+	log.Debugf("http status code is %d", resp.StatusCode)
 	if resp.StatusCode == 401 {
 		return errors.New(fmt.Sprintf("Authentication Failed: %d\n", resp.StatusCode))
 	} else if resp.StatusCode != 200 {

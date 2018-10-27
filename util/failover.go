@@ -73,14 +73,14 @@ func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace strin
 
 	for _, p := range pods.Items {
 		pod = p
-		log.Debug("pod found for replica " + pod.Name)
+		log.Debugf("pod found for replica %s", pod.Name)
 		if len(pods.Items) == 1 {
 			log.Debug("only 1 pod found for failover best match..using it by default")
 			return &pod, &deployment, err
 		}
 
 		for _, c := range pod.Spec.Containers {
-			log.Debug("container " + c.Name + " found in pod")
+			log.Debugf("container %s found in pod", c.Name)
 		}
 
 	}
@@ -137,7 +137,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	}
 
 	if len(podList.Items) != 1 {
-		log.Debug("no replicas found for dep " + dep.Name)
+		log.Debugf("no replicas found for dep %s", dep.Name)
 		return receiveLocation, replayLocation
 	}
 
@@ -271,7 +271,7 @@ func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namesp
 		return output, err
 	}
 
-	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
+	log.Debugf("got %d secrets for %s", len(secrets.Items), cluster.Spec.Name)
 	for _, s := range secrets.Items {
 		d := msgs.ShowUserSecret{}
 		d.Name = s.Name

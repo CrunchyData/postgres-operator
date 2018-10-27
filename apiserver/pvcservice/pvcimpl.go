@@ -57,7 +57,7 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 			return pvcList, err
 		}
 
-		log.Debugf("got %d PVCs from ShowPVC query\n", len(pvcs.Items))
+		log.Debugf("got %d PVCs from ShowPVC query", len(pvcs.Items))
 		for _, p := range pvcs.Items {
 			pvcList = append(pvcList, p.Name)
 		}
@@ -69,7 +69,7 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 		return pvcList, err
 	}
 
-	log.Debugf("\nPVC %s\n is found", pvc.Name)
+	log.Debugf("PVC %s is found", pvc.Name)
 	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot)
 
 	return pvcList, err
@@ -188,7 +188,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	}()
 	var buf2 bytes.Buffer
 	_, err = io.Copy(&buf2, readCloser)
-	log.Debugf("backups are... \n%s", buf2.String())
+	log.Debugf("backups are... %s", buf2.String())
 
 	log.Debugf("pvc = %s", pvcName)
 	lines := strings.Split(buf2.String(), "\n")
@@ -199,9 +199,9 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 
 	for k, v := range newlines {
 		if k == len(newlines)-1 {
-			log.Debugf("%s%s\n", apiserver.TreeTrunk, "/"+v)
+			log.Debugf("%s%s", apiserver.TreeTrunk, "/"+v)
 		} else {
-			log.Debugf("%s%s\n", apiserver.TreeBranch, "/"+v)
+			log.Debugf("%s%s", apiserver.TreeBranch, "/"+v)
 		}
 	}
 

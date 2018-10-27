@@ -30,7 +30,7 @@ func Reload(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentia
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/reload"
 
-	log.Debug("reload called [" + url + "]")
+	log.Debugf("reload called [%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -46,7 +46,7 @@ func Reload(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentia
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

@@ -42,7 +42,7 @@ func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClie
 	if found && err == nil {
 		//apply those policies
 		for k, _ := range task.Spec.Parameters {
-			log.Debug("applying policy %s to %s", k, clusterName)
+			log.Debugf("applying policy %s to %s", k, clusterName)
 			applyPolicy(Clientset, RESTClient, k, clusterName)
 		}
 		//delete the pgtask to not redo this again

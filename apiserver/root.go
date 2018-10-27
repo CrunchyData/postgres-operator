@@ -21,7 +21,7 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crdclient "github.com/crunchydata/postgres-operator/client"
+	//crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
@@ -144,7 +144,8 @@ func ConnectToKube() {
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	RESTClient, _, err = crdclient.NewClient(RESTConfig)
+	//RESTClient, _, err = crdclient.NewClient(RESTConfig)
+	RESTClient, _, err = util.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
 	}

@@ -29,7 +29,7 @@ func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 	var response msgs.ShowPolicyResponse
 
 	url := SessionCredentials.APIServerURL + "/policies/" + arg + "?version=" + msgs.PGO_VERSION
-	log.Debug("showPolicy called...[" + url + "]")
+	log.Debugf("showPolicy called...[%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -44,7 +44,7 @@ func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -65,7 +65,7 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/policies"
-	log.Debug("createPolicy called...[" + url + "]")
+	log.Debugf("createPolicy called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -81,7 +81,7 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -102,7 +102,7 @@ func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.
 
 	url := SessionCredentials.APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
 
-	log.Debug("delete policy called [" + url + "]")
+	log.Debugf("delete policy called [%s]", url)
 
 	action := "GET"
 
@@ -118,7 +118,7 @@ func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -141,7 +141,7 @@ func ApplyPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/policies/apply"
-	log.Debug("applyPolicy called...[" + url + "]")
+	log.Debugf("applyPolicy called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -157,7 +157,7 @@ func ApplyPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

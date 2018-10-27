@@ -44,7 +44,7 @@ var caCertPath, clientCertPath, clientKeyPath string
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
-	log.Debugf("HTTP status code is %d\n", resp.StatusCode)
+	log.Debugf("HTTP status code is %d", resp.StatusCode)
 	if resp.StatusCode == 401 {
 		fmt.Printf("Error: Authentication Failed: %d\n", resp.StatusCode)
 		os.Exit(2)
@@ -67,8 +67,8 @@ func UserHomeDir() string {
 func parseCredentials(dat string) msgs.BasicAuthCredentials {
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	log.Debugf("%v\n", fields)
-	log.Debugf("username=[%s] password=[%s]\n", fields[0], fields[1])
+	log.Debugf("%v", fields)
+	log.Debugf("username=[%s] password=[%s]", fields[0], fields[1])
 	//return fields[0], fields[1]
 	creds := msgs.BasicAuthCredentials{
 		Username:     fields[0],

@@ -63,7 +63,7 @@ func CreateSecret(clientset *kubernetes.Clientset, secret *v1.Secret, namespace 
 		log.Error(err)
 		log.Error("error creating secret " + secret.Name)
 	}
-	log.Debug("created secret " + secret.Name)
+	log.Debugf("created secret %s", secret.Name)
 
 	return err
 }
@@ -76,7 +76,7 @@ func DeleteSecret(clientset *kubernetes.Clientset, name, namespace string) error
 		log.Error(err)
 		log.Error("error deleting secret " + name)
 	} else {
-		log.Debug("deleted secret " + name)
+		log.Debugf("deleted secret %s", name)
 	}
 
 	return err

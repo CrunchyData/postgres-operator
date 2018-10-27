@@ -31,7 +31,7 @@ func CreateFailover(httpclient *http.Client, SessionCredentials *msgs.BasicAuthC
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/failover"
 
-	log.Debug("create failover called [" + url + "]")
+	log.Debugf("create failover called [%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -47,7 +47,7 @@ func CreateFailover(httpclient *http.Client, SessionCredentials *msgs.BasicAuthC
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -67,7 +67,7 @@ func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs
 	var response msgs.QueryFailoverResponse
 
 	url := SessionCredentials.APIServerURL + "/failover/" + arg + "?version=" + msgs.PGO_VERSION
-	log.Debug("query failover called [" + url + "]")
+	log.Debugf("query failover called [%s]", url)
 
 	action := "GET"
 
@@ -83,7 +83,7 @@ func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

@@ -39,7 +39,7 @@ func GetpgreplicasBySelector(client *rest.RESTClient, replicaList *crv1.Pgreplic
 		}
 	}
 
-	log.Debug("myselector is " + myselector.String())
+	log.Debugf("myselector is %s", myselector.String())
 
 	err = client.Get().
 		Resource(crv1.PgreplicaResourcePlural).
@@ -78,7 +78,7 @@ func Getpgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, namesp
 		Name(name).
 		Do().Into(replica)
 	if kerrors.IsNotFound(err) {
-		log.Debug("replica " + name + " not found")
+		log.Debugf("replica %s not found", name)
 		return false, err
 	}
 	if err != nil {

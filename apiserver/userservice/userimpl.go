@@ -150,7 +150,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				if len(results) > 0 {
 					log.Debug("expired passwords...")
 					for _, v := range results {
-						log.Debugf("RoleName "+v.Rolname+" Role Valid Until ", v.Rolvaliduntil)
+						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(request.PasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
@@ -403,7 +403,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 				log.Error(err)
 				return err
 			}
-			log.Debug(" returned name %d", returnedName)
+			log.Debugf(" returned name %d", returnedName)
 			if returnedName == 0 {
 				return errors.New("dbname is not valid database name")
 			}
@@ -515,7 +515,7 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 
 	getDefaults()
 
-	log.Debug("createUser selector is " + request.Selector)
+	log.Debugf("createUser selector is ", request.Selector)
 	if request.Selector == "" {
 		log.Error("--selector value is empty not allowed")
 		resp.Status.Code = msgs.Error
@@ -744,7 +744,7 @@ func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 						log.Debug("expired passwords...")
 						for _, v := range results {
 							detail.ExpiredMsgs = append(detail.ExpiredMsgs, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
-							log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
+							log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
 
 						}
 					}

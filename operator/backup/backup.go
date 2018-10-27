@@ -152,7 +152,7 @@ func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, 
 		if err != nil {
 			log.Error(err)
 		}
-		log.Debugf("waiting for backup job to report being deleted")
+		log.Debug("waiting for backup job to report being deleted")
 		time.Sleep(time.Second * time.Duration(3))
 	}
 }

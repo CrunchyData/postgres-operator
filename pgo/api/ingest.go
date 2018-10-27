@@ -29,7 +29,7 @@ func ShowIngest(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 	var response msgs.ShowIngestResponse
 
 	url := SessionCredentials.APIServerURL + "/ingest/" + arg + "?version=" + msgs.PGO_VERSION
-	log.Debug("showIngest called...[" + url + "]")
+	log.Debugf("showIngest called...[%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -44,7 +44,7 @@ func ShowIngest(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -63,7 +63,7 @@ func CreateIngest(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 
 	var response msgs.CreateIngestResponse
 	url := SessionCredentials.APIServerURL + "/ingest"
-	log.Debug("createIngest called...[" + url + "]")
+	log.Debug("createIngest called...[%s]", url)
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -81,7 +81,7 @@ func CreateIngest(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -101,7 +101,7 @@ func DeleteIngest(httpclient *http.Client, arg string, SessionCredentials *msgs.
 	var response msgs.DeleteIngestResponse
 
 	url := SessionCredentials.APIServerURL + "/ingestdelete/" + arg + "?version=" + msgs.PGO_VERSION
-	log.Debug("deleteIngest called...[" + url + "]")
+	log.Debugf("deleteIngest called...[%s]", url)
 
 	action := "GET"
 
@@ -117,7 +117,7 @@ func DeleteIngest(httpclient *http.Client, arg string, SessionCredentials *msgs.
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

@@ -32,7 +32,7 @@ func CreatePVC(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeClaim, n
 		return err
 	}
 
-	log.Debug("created PVC " + result.Name)
+	log.Debugf("created PVC %s", result.Name)
 
 	return err
 

@@ -39,7 +39,7 @@ func CreateIngestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debugf("ingestservice.CreateIngestHandler got request " + request.Name)
+	log.Debugf("ingestservice.CreateIngestHandler got request ", request.Name)
 	resp := CreateIngest(apiserver.RESTClient, &request)
 
 	json.NewEncoder(w).Encode(resp)
@@ -47,7 +47,7 @@ func CreateIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("ingestservice.ShowIngestHandler %v\n", vars)
+	log.Debugf("ingestservice.ShowIngestHandler %v", vars)
 
 	ingestName := vars["name"]
 
@@ -81,7 +81,7 @@ func ShowIngestHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteIngestHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("ingestservice.DeleteIngestHandler %v\n", vars)
+	log.Debugf("ingestservice.DeleteIngestHandler %v", vars)
 
 	ingestName := vars["name"]
 	clientVersion := r.URL.Query().Get("version")

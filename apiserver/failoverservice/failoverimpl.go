@@ -133,7 +133,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 		return resp
 	}
 
-	log.Debugf("deps len %d\n", len(deployments.Items))
+	log.Debugf("deps len %d", len(deployments.Items))
 	for _, dep := range deployments.Items {
 		log.Debugf("found %s", dep.Name)
 		target := msgs.FailoverTargetSpec{}
