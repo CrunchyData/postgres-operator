@@ -62,7 +62,7 @@ Valid resource types include:
 			case "ingest":
 			case "user":
 			case "config":
-				//		case "schedule":
+			case "schedule":
 			case "upgrade":
 			case "backup":
 				break
@@ -91,7 +91,7 @@ func init() {
 	ShowCmd.AddCommand(ShowIngestCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
-	//	ShowCmd.AddCommand(ShowScheduleCmd)
+	ShowCmd.AddCommand(ShowScheduleCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
