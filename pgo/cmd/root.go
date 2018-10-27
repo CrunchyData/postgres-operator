@@ -27,7 +27,7 @@ import (
 var RootCmd = &cobra.Command{
 	Use:   "pgo",
 	Short: "The pgo command line interface.",
-	Long: `The pgo command line interface lets you create and manage PostgreSQL clusters.`,
+	Long:  `The pgo command line interface lets you create and manage PostgreSQL clusters.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -53,6 +53,9 @@ func init() {
 	RED = color.New(color.FgRed).SprintFunc()
 
 	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "The URL for the PostgreSQL Operator apiserver.")
+	RootCmd.PersistentFlags().StringVar(&PGO_CA_CERT, "pgo-ca-cert", "", "The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
+	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_KEY, "pgo-client-key", "", "The Client Key file path for authenticating to the PostgreSQL Operator apiserver.")
+	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_CERT, "pgo-client-cert", "", "The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "Enable debugging when true.")
 
 }

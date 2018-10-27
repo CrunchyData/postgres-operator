@@ -122,6 +122,12 @@ export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 ....
 
+You can also specify these credentials using the following
+command flags where you can reference they keys from any file path directly:
+....
+pgo version --pgo-ca-cert=/tmp/server.crt --pgo-client-cert=/tmp/server.crt --pgo-client-key=/tmp/server.key
+....
+
 The sample server keys are used as the client keys; adjust to suit
 security requirements.
 
