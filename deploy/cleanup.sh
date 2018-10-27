@@ -30,8 +30,8 @@ $CO_CMD $NS delete service postgres-operator
 
 $CO_CMD $NS delete deployment postgres-operator 
 
-#$CO_CMD $NS delete deployment crunchy-scheduler
-#$CO_CMD $NS delete clusterrolebinding,clusterrole,sa,rolebinding scheduler-sa scheduler-sa
+$CO_CMD $NS delete deployment crunchy-scheduler
+$CO_CMD $NS delete clusterrolebinding,clusterrole,sa,rolebinding scheduler-sa scheduler-sa
 
 sleep 5
 
