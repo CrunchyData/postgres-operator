@@ -19,7 +19,7 @@
                     "name": "pgdata",
                     "persistentVolumeClaim" : {
                         "claimName": "{{.PVCName}}"
-            }
+                    }
                 }],
 
         {{.SecurityContext}}
@@ -32,6 +32,9 @@
                         "name": "pgdata",
                         "readOnly": false
                     }],
+
+		    {{.ContainerResources }}
+
                     "env": [{
                         "name": "TABLE_TO_LOAD",
                         "value": "{{.TableToLoad}}"

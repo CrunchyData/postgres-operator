@@ -24,11 +24,11 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"os"
 	"strings"
 )
 
@@ -97,7 +97,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		LoadConfigTemplate.ContainerResources = GetContainerResources(&tmp)
+		LoadConfigTemplate.ContainerResources = config.GetContainerResourcesJSON(&tmp)
 	}
 
 	args := request.Args
@@ -207,32 +207,4 @@ func createJob(clusterName string, template *loadJobTemplateFields) error {
 
 	return err
 
-}
-
-// GetContainerResources ...
-func GetContainerResources(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
-	}
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
-
-	var doc bytes.Buffer
-	err := apiserver.ContainerResourcesTemplate.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	if log.GetLevel() == log.DebugLevel {
-		apiserver.ContainerResourcesTemplate.Execute(os.Stdout, fields)
-	}
-
-	return doc.String()
 }

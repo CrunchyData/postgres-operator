@@ -23,8 +23,8 @@ if [ "$CO_UI" = "true" ]; then
 $CO_CMD $NS delete configmap pgo-ui-conf 
 fi
 
-$CO_CMD $NS delete configmap operator-conf 
-$CO_CMD $NS delete secret apiserver-conf-secret
+$CO_CMD $NS delete secret pgo-auth-secret
+$CO_CMD $NS delete configmap pgo-config
 
 $CO_CMD $NS delete service postgres-operator
 

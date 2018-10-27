@@ -2,16 +2,22 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backup-{{.Name}}"
+        "name": "backup-{{.Name}}",
+       	"labels": {
+       		"vendor": "crunchydata",
+               	"pgbackup": "true",
+                "pg-cluster": "{{.Name}}"
+	}
     },
     "spec": {
+        "backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
                 "labels": {
-                    "vendor": "crunchydata",
-                    "pgbackup": "true",
-                    "pg-database": "{{.Name}}"
+       			"vendor": "crunchydata",
+               		"pgbackup": "true",
+                    	"pg-cluster": "{{.Name}}"
                 }
             },
             "spec": {
@@ -30,25 +36,26 @@
                         "name": "pgdata",
                         "readOnly": false
                     }],
+		    {{.ContainerResources }}
                     "env": [{
                         "name": "BACKUP_HOST",
                         "value": "{{.BackupHost}}"
                     }, {
                         "name": "BACKUP_USER",
-			"valueFrom": {
-			  "secretKeyRef": {
-			    "name": "{{.BackupUserSecret}}",
-			    "key": "username"
-			  }
-			}
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.BackupUserSecret}}",
+                                "key": "username"
+                            }
+                        }
                     }, {
                         "name": "BACKUP_PASS",
-			"valueFrom": {
-			  "secretKeyRef": {
-			    "name": "{{.BackupUserSecret}}",
-			    "key": "password"
-			  }
-			}
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.BackupUserSecret}}",
+                                "key": "password"
+                            }
+                        }
                     }, {
                         "name": "BACKUP_PORT",
                         "value": "{{.BackupPort}}"

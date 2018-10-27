@@ -14,7 +14,13 @@ conf/postgres-operator directory to consolidate all config
 files into a single location.  You will need to perform
 this step manually start with version 3.4.0 if you are running
 an existing Operator version prior to 3.4.0.  The Helm chart
-is also updated to reflect this change.
+is also updated to reflect this change.  Starting with 3.4.0
+there is a secret, *pgo-auth-secret* that holds authentication and
+authorization files used by the operator to authenticate REST
+clients.  Also, the configuration files are stored in a configmap
+named *pgo-config*.  Existing users will need to update
+their deploy.sh script and deployment.yaml files to pick up the
+the new naming conventions.
  * new configuration settings were added into pgo.yaml to support
 resource configuration settings for the various *helper* containers.
 The new settings include DefaultLoadResources, DefaultLspvcResources,

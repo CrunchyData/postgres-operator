@@ -73,7 +73,7 @@ const SHOW_UPGRADE_PERM = "ShowUpgrade"
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
-const pgorolePath = "/config/pgorole"
+const pgorolePath = "/pgo-auth-secret/pgorole"
 
 func InitializePerms() {
 	PermMap = make(map[string]string)

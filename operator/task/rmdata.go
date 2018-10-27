@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -59,7 +60,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 			log.Error(err)
 			return
 		}
-		cr = GetContainerResources(&tmp)
+		cr = config.GetContainerResourcesJSON(&tmp)
 
 	}
 
@@ -95,32 +96,4 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
 
-}
-
-// GetContainerResources ...
-func GetContainerResources(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
-	}
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
-
-	var doc bytes.Buffer
-	err := operator.ContainerResourcesTemplate1.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	if log.GetLevel() == log.DebugLevel {
-		operator.ContainerResourcesTemplate1.Execute(os.Stdout, fields)
-	}
-
-	return doc.String()
 }

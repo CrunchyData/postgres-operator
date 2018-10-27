@@ -18,6 +18,7 @@
                 "privileged": false
             },
             "image": "{{.COImagePrefix}}/pgo-lspvc:{{.COImageTag}}",
+	    {{.ContainerResources }}
             "env": [{
                 "name": "BACKUP_ROOT",
                 "value": "{{.BackupRoot}}"

@@ -49,7 +49,7 @@ ContainerResources:
 Pgo:
   Audit:  false
   Metrics:  false
-  LSPVCTemplate:  /config/pgo.lspvc-template.json
-  LoadTemplate:  /config/pgo.load-template.json
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.3.0
+  COImageTag:  centos7-3.4.0

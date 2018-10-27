@@ -36,12 +36,12 @@ import (
 	"text/template"
 )
 
-const loadTemplatePath = "/config/pgo.load-template.json"
-const lspvcTemplatePath = "/config/pgo.lspvc-template.json"
-const containerResourcesTemplatePath = "/config/container-resources.json"
+const loadTemplatePath = "/pgo-config/pgo.load-template.json"
+const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
+const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
 
 // pgouserPath ...
-const pgouserPath = "/config/pgouser"
+const pgouserPath = "/pgo-auth-secret/pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 

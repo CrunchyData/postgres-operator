@@ -39,12 +39,12 @@
                         "value": "false"
                     }],
                     "volumeMounts": [{
-                        "mountPath": "/config",
-                        "name": "apiserver-conf",
+                        "mountPath": "/pgo-config",
+                        "name": "pgo-config",
                         "readOnly": true
-                    }, {
-                        "mountPath": "/operator-conf",
-                        "name": "operator-conf",
+                    },{
+                        "mountPath": "/pgo-auth-secret",
+                        "name": "pgo-auth-secret",
                         "readOnly": true
                     }]
                 }, {
@@ -70,24 +70,20 @@
                         }
                     }],
                     "volumeMounts": [{
-                        "mountPath": "/operator-conf",
-                        "name": "operator-conf",
-                        "readOnly": true
-                    }, {
-                        "mountPath": "/config",
-                        "name": "apiserver-conf",
+                        "mountPath": "/pgo-config",
+                        "name": "pgo-config",
                         "readOnly": true
                     }]
                 }],
                 "volumes": [{
-                    "name": "operator-conf",
+                    "name": "pgo-config",
                     "configMap": {
-                        "name": "operator-conf"
+                        "name": "pgo-config"
                     }
-                }, {
-                    "name": "apiserver-conf",
+                },{
+                    "name": "pgo-auth-secret",
                     "secret": {
-                        "secretName": "apiserver-conf-secret",
+                        "secretName": "pgo-auth-secret",
                         "defaultMode": 511
                     }
                 }]

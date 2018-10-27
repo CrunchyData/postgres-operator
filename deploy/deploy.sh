@@ -28,17 +28,16 @@ then
 	echo Verify you ran install-rbac.sh
 fi
 
-$CO_CMD $NS create secret generic apiserver-conf-secret \
+$CO_CMD $NS create secret generic pgo-auth-secret \
         --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
         --from-file=server.key=$COROOT/conf/postgres-operator/server.key \
         --from-file=pgouser=$COROOT/conf/postgres-operator/pgouser \
-        --from-file=pgorole=$COROOT/conf/postgres-operator/pgorole \
+        --from-file=pgorole=$COROOT/conf/postgres-operator/pgorole 
+$CO_CMD $NS create configmap pgo-config \
         --from-file=pgo.yaml=$COROOT/conf/postgres-operator/pgo.yaml \
         --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
         --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
-        --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json
-
-$CO_CMD $NS create configmap operator-conf \
+        --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pgo-ingest-watch-job.json \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \

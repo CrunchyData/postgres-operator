@@ -16,13 +16,16 @@ limitations under the License.
 */
 
 import (
+	"bytes"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 type ClusterStruct struct {
@@ -89,13 +92,23 @@ type PgoConfig struct {
 	DefaultBackupResources    string                              `yaml:"DefaultBackupResources"`
 	DefaultBadgerResources    string                              `yaml:"DefaultBadgerResources"`
 	DefaultPgpoolResources    string                              `yaml:"DefaultPgpoolResources"`
-	DefaultPgbouncerResources    string                              `yaml:"DefaultPgbouncerResources"`
+	DefaultPgbouncerResources string                              `yaml:"DefaultPgbouncerResources"`
 }
 
 const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
 const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
+const CONFIG_PATH = "/pgo-config/pgo.yaml"
+
+const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
+
+var ContainerResourcesTemplate1 *template.Template
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
 
 func (c *PgoConfig) Validate() error {
 	var err error
@@ -238,7 +251,7 @@ func (c *PgoConfig) Validate() error {
 
 func (c *PgoConfig) GetConf() *PgoConfig {
 
-	yamlFile, err := ioutil.ReadFile("config/pgo.yaml")
+	yamlFile, err := ioutil.ReadFile(CONFIG_PATH)
 	if err != nil {
 		log.Printf("yamlFile.Get err   #%v ", err)
 	}
@@ -290,4 +303,32 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 
 	return r, err
 
+}
+
+// GetContainerResources ...
+func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	var doc bytes.Buffer
+	err := ContainerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

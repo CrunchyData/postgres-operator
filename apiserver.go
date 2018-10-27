@@ -47,8 +47,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const serverCert = "/config/server.crt"
-const serverKey = "/config/server.key"
+const serverCert = "/pgo-auth-secret/server.crt"
+const serverKey = "/pgo-auth-secret/server.key"
 
 func main() {
 

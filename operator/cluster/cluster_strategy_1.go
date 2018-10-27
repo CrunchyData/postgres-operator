@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -138,7 +139,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		UserSecretName:     cl.Spec.UserSecretName,
 		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
+		ContainerResources: config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cl.Spec),
@@ -329,7 +330,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		SecurityContext:    util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
-		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
+		ContainerResources: config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		UserSecretName:     cl.Spec.UserSecretName,
 		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
 	}
@@ -491,34 +492,6 @@ func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace stri
 	return "\"emptyDir\": { \"medium\": \"Memory\" }"
 }
 
-// GetContainerResources ...
-func GetContainerResources(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
-	}
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
-
-	var doc bytes.Buffer
-	err := operator.ContainerResourcesTemplate1.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		operator.ContainerResourcesTemplate1.Execute(os.Stdout, fields)
-	}
-
-	return doc.String()
-}
-
 // Scale ...
 func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace, pvcName string, cluster *crv1.Pgcluster) error {
 	var err error
@@ -589,7 +562,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		RootSecretName:     cluster.Spec.RootSecretName,
 		PrimarySecretName:  cluster.Spec.PrimarySecretName,
 		UserSecretName:     cluster.Spec.UserSecretName,
-		ContainerResources: GetContainerResources(&cs),
+		ContainerResources: config.GetContainerResourcesJSON(&cs),
 		NodeSelector:       GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:       GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cluster.Spec),
@@ -653,7 +626,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 				log.Error(err)
 				return ""
 			}
-			badgerTemplateFields.ContainerResources = GetContainerResources(&tmp)
+			badgerTemplateFields.ContainerResources = config.GetContainerResourcesJSON(&tmp)
 
 		}
 

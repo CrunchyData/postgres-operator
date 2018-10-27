@@ -71,10 +71,10 @@ These values will be read by the *pgo* client and passed to the *apiserver* on e
 REST API call.
 
 For the *apiserver*, a list of usernames and passwords is specified in the
-*apiserver-conf-secret* Secret.  The values specified in a deployment are found in
+*pgo-auth-secret* Secret.  The values specified in a deployment are found in
 the following location -
 ....
-$COROOT/conf/apiserver/pgouser
+$COROOT/conf/postgres-operator/pgouser
 ....
 
 The sample configuration for `pgouser` is as follows -
@@ -105,8 +105,8 @@ setting in the `pgo.yaml` configuration file to `false`.
 TLS is used to secure communications to the apiserver. Sample keys and
 certifications that can be used by TLS are found here -
 ....
-$COROOT/conf/apiserver/server.crt
-$COROOT/conf/apiserver/server.key
+$COROOT/conf/postgres-operator/server.crt
+$COROOT/conf/postgres-operator/server.key
 ....
 
 If you want to generate your own keys, you can use the script found in -
@@ -117,9 +117,9 @@ $COROOT/bin/make-certs.sh
 The *pgo* client is required to use keys to connect to the *apiserver*.
 Specify the keys for pgo by setting the following environment variables -
 ....
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 ....
 
 The sample server keys are used as the client keys; adjust to suit
@@ -142,7 +142,7 @@ The pgo command line utility talks to the apiserver REST API instead of
 the Kubernetes API. It is therefore necessary for the pgo client to make
 use of RBAC configuration.
 
-Starting in Release 3.0, the */conf/apiserver/pgorole* is used to define some sample pgo roles, *pgadmin* and *pgoreader*.
+Starting in Release 3.0, the */conf/postgres-operator/pgorole* is used to define some sample pgo roles, *pgadmin* and *pgoreader*.
 
 These roles are meant as examples that you can configure to suit security
 requirements as necessary. The *pgadmin* role grants a user authorization to
@@ -203,12 +203,11 @@ FATA[0000] Authentication Failed: 40
 The postgres-operator pod includes the apiserver which is a REST API that pgo
 users are able to communicate with.
 
-The apiserver uses the following configuration files found in `$COROOT/conf/apiserver`
-to determine how the Operator will provision PostgreSQL containers -
+The apiserver uses the following configuration files found in `$COROOT/conf/postgres-operator` to determine how the Operator will provision PostgreSQL containers -
 ....
-$COROOT/conf/apiserver/pgo.yaml
-$COROOT/conf/apiserver/pgo.lspvc-template.json
-$COROOT/conf/apiserver/pgo.load-template.json
+$COROOT/conf/postgres-operator/pgo.yaml
+$COROOT/conf/postgres-operator/pgo.lspvc-template.json
+$COROOT/conf/postgres-operator/pgo.load-template.json
 ....
 
 Note that the default pgo.yaml file assumes you are going to use *HostPath* Persistent
@@ -217,10 +216,10 @@ or other storage configurations. Some examples of how are listed in the manual i
 document.
 
 The version of PostgreSQL container the Operator will deploy is determined by the *CCPImageTag*
-setting in the `$COROOT/conf/apiserver/pgo.yaml` configuration file. By default, this value is
+setting in the `$COROOT/conf/postgres-operator/pgo.yaml` configuration file. By default, this value is
 set to the latest release of the Crunchy Container Suite.
 
-The default pgo.yaml configuration file, included in `$COROOT/conf/apiserver/pgo.yaml`,
+The default pgo.yaml configuration file, included in `$COROOT/conf/postgres-operator/pgo.yaml`,
 looks like this -
 
 [source,yaml]
@@ -278,8 +277,8 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   Audit:  false
-  LSPVCTemplate:  /config/pgo.lspvc-template.json
-  CSVLoadTemplate:  /config/pgo.load-template.json
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  CSVLoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
   COImageTag:  centos7-3.4.0
 ....
@@ -657,7 +656,7 @@ The operator will work with HostPath, NFS, Dynamic, and GKE Storage.
 
 To configure the operator to use NFS for storage, a sample *pgo.yaml.nfs* file is provided.  Overlay the default `pgo.yaml` file with that file -
 ....
-cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml
+cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/postgres-operator/pgo.yaml
 ....
 
 Then, in your .bashrc file, set the variable `CO_NFS_IP` to the IP address of your NFS server:
@@ -677,7 +676,7 @@ Finally, run the `$COROOT/pv/create-pv-nfs.sh` script to create persistent volum
 
 To configure the operator to use Dynamic Storage classes for storage, a sample *pgo.yaml.storageclass* file is provided.  Overlay the default *pgo.yaml* file with that file -
 ....
-cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
+cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/postgres-operator/pgo.yaml
 ....
 
 Edit the *pgo.yaml* file to specify the storage class you will be using, the default value assumed is *standard* which is the name used by default within a GKE Kube cluster deployment.  Update the value to match your storage classes.
