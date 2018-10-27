@@ -110,6 +110,9 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 				newInstance, apiserver.Namespace)
 			if err != nil {
 				log.Error(err)
+				resp.Results = append(resp.Results, "error adding pgpool for "+cluster.Name+err.Error())
+			} else {
+				resp.Results = append(resp.Results, "pgpool added for "+cluster.Name)
 			}
 		}
 
