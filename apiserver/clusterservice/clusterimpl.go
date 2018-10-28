@@ -664,6 +664,14 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		t := time.Now()
 		newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
 
+		//create secrets
+		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName)
+		if err != nil {
+			resp.Results = append(resp.Results, err.Error())
+			return resp
+		}
+
+		//create CRD for new cluster
 		err = kubeapi.Createpgcluster(apiserver.RESTClient,
 			newInstance, apiserver.Namespace)
 		if err != nil {
@@ -787,11 +795,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Policies = request.Policies
 	}
 
-	spec.PrimaryPassword = request.Password
 	spec.User = "testuser"
-	spec.Password = request.Password
 	spec.Database = "userdb"
-	spec.RootPassword = request.Password
 	spec.Replicas = "0"
 	str := apiserver.Pgo.Cluster.Replicas
 	log.Debugf("[%s] is Pgo.Cluster.Replicas", str)
@@ -1154,4 +1159,79 @@ func deleteConfigMaps(clusterName string) error {
 		}
 	}
 	return nil
+}
+
+func createSecrets(request *msgs.CreateClusterRequest, clusterName string) (error, string, string, string) {
+	var err error
+	var RootPassword, Password, PrimaryPassword string
+	var RootSecretName, PrimarySecretName, UserSecretName string
+
+	//allows user to override with their own passwords
+	if request.Password != "" {
+		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
+		RootPassword = request.Password
+		Password = request.Password
+		PrimaryPassword = request.Password
+	}
+
+	if request.SecretFrom != "" {
+		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
+		_, RootPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, apiserver.Namespace, request.SecretFrom+crv1.RootSecretSuffix)
+		_, Password, err = util.GetPasswordFromSecret(apiserver.Clientset, apiserver.Namespace, request.SecretFrom+crv1.UserSecretSuffix)
+		_, PrimaryPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, apiserver.Namespace, request.SecretFrom+crv1.PrimarySecretSuffix)
+		if err != nil {
+			log.Error("error getting secrets using SecretFrom " + request.SecretFrom)
+			return err, RootSecretName, PrimarySecretName, UserSecretName
+		}
+	}
+
+	//pgroot
+	username := "postgres"
+
+	RootSecretName = clusterName + crv1.RootSecretSuffix
+	pgPassword := util.GeneratePassword(10)
+	if RootPassword != "" {
+		log.Debugf("using user specified password for secret %s", RootSecretName)
+		pgPassword = RootPassword
+	}
+
+	err = util.CreateSecret(apiserver.Clientset, clusterName, RootSecretName, username, pgPassword, apiserver.Namespace)
+	if err != nil {
+		log.Error("error creating secret" + err.Error())
+		return err, RootSecretName, PrimarySecretName, UserSecretName
+	}
+
+	///primary
+	username = "primaryuser"
+
+	PrimarySecretName = clusterName + crv1.PrimarySecretSuffix
+	primaryPassword := util.GeneratePassword(10)
+	if PrimaryPassword != "" {
+		log.Debugf("using user specified password for secret %s", PrimarySecretName)
+		primaryPassword = PrimaryPassword
+	}
+
+	err = util.CreateSecret(apiserver.Clientset, clusterName, PrimarySecretName, username, primaryPassword, apiserver.Namespace)
+	if err != nil {
+		log.Error("error creating secret2" + err.Error())
+		return err, RootSecretName, PrimarySecretName, UserSecretName
+	}
+
+	///pguser
+	username = "testuser"
+
+	UserSecretName = clusterName + crv1.UserSecretSuffix
+	testPassword := util.GeneratePassword(10)
+	if Password != "" {
+		log.Debugf("using user specified password for secret %s", UserSecretName)
+		testPassword = Password
+	}
+
+	err = util.CreateSecret(apiserver.Clientset, clusterName, UserSecretName, username, testPassword, apiserver.Namespace)
+	if err != nil {
+		log.Error("error creating secret " + err.Error())
+		return err, RootSecretName, PrimarySecretName, UserSecretName
+	}
+
+	return err, RootSecretName, PrimarySecretName, UserSecretName
 }

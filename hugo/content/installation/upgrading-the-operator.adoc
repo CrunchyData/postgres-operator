@@ -27,6 +27,11 @@ The new settings include DefaultLoadResources, DefaultLspvcResources,
 DefaultRmdataResources, DefaultBackupResources.  You will need to add
 these manually into your existing pgo.yaml file if you want to
 make use of this feature.
+ * the pgcluster CRD was changed to remove the password fields, instead
+secret names are stored in the CRD to avoid having to have passwords
+in the CRD, the password fields are totally removed starting in this
+release. No changes are required for existing CRD resources, new
+CRDs that are created will not have the  password fields.
 
 {{% expand "Upgrading to v3.3" %}}
 

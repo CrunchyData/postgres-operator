@@ -158,32 +158,39 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
+	//var RootPassword, Password, PrimaryPassword string
+
 	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
 	//allows user to override with their own passwords
+	/**
 	if cl.Spec.Password != "" {
 		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
-		cl.Spec.RootPassword = cl.Spec.Password
-		cl.Spec.Password = cl.Spec.Password
-		cl.Spec.PrimaryPassword = cl.Spec.Password
+		RootPassword = cl.Spec.Password
+		Password = cl.Spec.Password
+		PrimaryPassword = cl.Spec.Password
 	}
 
 	var err1, err2, err3 error
 	if cl.Spec.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", cl.Spec.SecretFrom)
-		_, cl.Spec.RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
-		_, cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
-		_, cl.Spec.PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
+		_, RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
+		_, Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
+		_, PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
 		if err1 != nil || err2 != nil || err3 != nil {
 			log.Error("error getting secrets using SecretFrom " + cl.Spec.SecretFrom)
 			return
 		}
 	}
+	*/
 
-	_, _, _, err = createDatabaseSecrets(clientset, client, cl, namespace)
+	/**
+	_, _, _, err = createDatabaseSecrets(clientset, client, cl, namespace,
+		RootPassword, Password, PrimaryPassword)
 	if err != nil {
 		log.Error("error in create secrets " + err.Error())
 		return
 	}
+	*/
 
 	if cl.Spec.Strategy == "" {
 		cl.Spec.Strategy = "1"
@@ -485,8 +492,9 @@ import (
 )
 
 */
+/**
 // createDatabaseSecrets create pgroot, pgprimary, and pguser secrets
-func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) (string, string, string, error) {
+func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace, RootPassword, Password, PrimaryPassword string) (string, string, string, error) {
 
 	//pgroot
 	username := "postgres"
@@ -497,9 +505,9 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	pgPassword := util.GeneratePassword(10)
-	if cl.Spec.RootPassword != "" {
+	if RootPassword != "" {
 		log.Debugf("using user specified password for secret %s", secretName)
-		pgPassword = cl.Spec.RootPassword
+		pgPassword = RootPassword
 	}
 
 	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, pgPassword, namespace)
@@ -519,9 +527,9 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	primaryPassword := util.GeneratePassword(10)
-	if cl.Spec.PrimaryPassword != "" {
+	if PrimaryPassword != "" {
 		log.Debugf("using user specified password for secret %s", secretName)
-		primaryPassword = cl.Spec.PrimaryPassword
+		primaryPassword = PrimaryPassword
 	}
 
 	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, primaryPassword, namespace)
@@ -541,9 +549,9 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	testPassword := util.GeneratePassword(10)
-	if cl.Spec.Password != "" {
+	if Password != "" {
 		log.Debugf("using user specified password for secret %s", secretName)
-		testPassword = cl.Spec.Password
+		testPassword = Password
 	}
 
 	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, testPassword, namespace)
@@ -559,3 +567,4 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	return pgPassword, primaryPassword, testPassword, err
 }
+*/
