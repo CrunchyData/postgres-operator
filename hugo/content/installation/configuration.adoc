@@ -230,13 +230,13 @@ looks like this -
 
 [source,yaml]
 ....
-BasicAuth:  true
 Cluster:
-  PrimaryNodeLabel:  
-  ReplicaNodeLabel:  
-  CCPImageTag:  centos7-10.5-2.1.0
+  PrimaryNodeLabel:
+  ReplicaNodeLabel:
+  CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
+  CCPImageTag:  centos7-10.5-2.2.0
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -247,23 +247,34 @@ Cluster:
   ArchiveMode:  false
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
-PrimaryStorage: storage1
-BackupStorage: storage1
-ReplicaStorage: storage1
+  Backrest:  false
+  Autofail:  false
+PrimaryStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
 Storage:
-  storage1:
+  hostpathstorage:
     AccessMode:  ReadWriteMany
-    Size:  200M
+    Size:  1G
     StorageType:  create
+  nfsstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteMany
-    Size:  333M
-    StorageType:  create
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  gluster-heketi
+    Fsgroup:  26
   storage3:
-    AccessMode:  ReadWriteMany
-    Size:  440M
-    StorageType:  create
-DefaultContainerResource: small
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  rook-ceph-block
+    Fsgroup:  26
+DefaultContainerResources:
 DefaultLoadResources:
 DefaultLspvcResources:
 DefaultRmdataResources:
@@ -272,21 +283,22 @@ DefaultPgbouncerResources:
 DefaultPgpoolResources:
 ContainerResources:
   small:
-    RequestsMemory:  2Gi
-    RequestsCPU:  0.5
-    LimitsMemory:  2Gi
-    LimitsCPU:  1.0
+    RequestsMemory:  512Mi
+    RequestsCPU:  0.1
+    LimitsMemory:  512Mi
+    LimitsCPU:  0.1
   large:
-    RequestsMemory:  8Gi
+    RequestsMemory:  2Gi
     RequestsCPU:  2.0
-    LimitsMemory:  12Gi
+    LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
+  AutofailSleepSeconds:  9
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
-  CSVLoadTemplate:  /pgo-config/pgo.load-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.4.0
+  COImageTag:  centos7-3.4.0-rc1
 ....
 
 Values in the pgo configuration file have the following meaning:

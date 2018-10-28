@@ -474,9 +474,11 @@ func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace stri
 		_, found = kubeapi.GetConfigMap(clientset, customConfig, namespace)
 		if !found {
 			//you should NOT get this error because of apiserver validation of this value!
-			log.Error(customConfig + " was not found, error, skipping user provided configMap")
+			log.Errorf("%s was not found, error, skipping user provided configMap", customConfig)
+		} else {
+			log.Debugf("user provided configmap %s was used for this cluster", customConfig)
+			return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
 		}
-		return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
 
 	}
 
