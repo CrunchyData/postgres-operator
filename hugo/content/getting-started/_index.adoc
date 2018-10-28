@@ -77,6 +77,7 @@ $ pgo show config
 The *pgo df* command will let you see the disk capacity of a cluster's PVC
 versus that of the PostgreSQL data that has been written to disk. If the capacity
 is less than 50%, then the output is printed in red in order to alert the user.
+The listing is broken out by the cluster's Pods.
 
 ==== Syntax
 
