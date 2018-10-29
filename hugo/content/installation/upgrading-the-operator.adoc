@@ -32,6 +32,14 @@ secret names are stored in the CRD to avoid having to have passwords
 in the CRD, the password fields are totally removed starting in this
 release. No changes are required for existing CRD resources, new
 CRDs that are created will not have the  password fields.
+ * starting in 3.4, a new operator upgrade process is developed that
+eventually will handle various forms of automated upgrades depending
+on user settings and changes to the postgres-operator in between
+versions.  When starting a new Operator it will scan the pgcluster
+and pgreplica instances and update the pgo-version to match the
+current operator version, it will also create a user label on 
+the pgreplica/pgcluster to indicate the upgrade date.  More advanced
+upgrade features are planned to be developed.
 
 {{% expand "Upgrading to v3.3" %}}
 

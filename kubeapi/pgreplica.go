@@ -123,3 +123,21 @@ func Createpgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, namespace
 
 	return err
 }
+
+// Updatepgreplica updates a pgreplica
+func Updatepgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, namespace string) error {
+
+	err := client.Put().
+		Name(name).
+		Namespace(namespace).
+		Resource(crv1.PgreplicaResourcePlural).
+		Body(replica).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error updating pgreplica " + err.Error())
+	}
+
+	log.Debugf("updated pgreplica %s", replica.Name)
+	return err
+}

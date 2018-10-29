@@ -36,6 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
 )
@@ -156,6 +157,8 @@ func main() {
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
+
+	operatorupgrade.OperatorUpgrade(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")
 
