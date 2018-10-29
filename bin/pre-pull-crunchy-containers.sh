@@ -16,7 +16,7 @@
 CCP_IMAGE_PREFIX=crunchydata
 CCP_IMAGE_TAG=centos7-10.5-2.1.0
 
-for CNAME in crunchy-postgres crunchy-collect crunchy-grafana crunchy-prometheus crunchy-backup crunchy-backrest-restore crunchy-scheduler
+for CNAME in crunchy-postgres crunchy-collect crunchy-grafana crunchy-prometheus crunchy-backup crunchy-backrest-restore
 do
 	docker pull $CCP_IMAGE_PREFIX/$CNAME:$CCP_IMAGE_TAG
 done
