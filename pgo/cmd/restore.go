@@ -60,7 +60,7 @@ func init() {
 	RootCmd.AddCommand(restoreCmd)
 
 	restoreCmd.Flags().StringVarP(&ToPVC, "to-pvc", "", "", "The name of the new PVC to restore to.")
-	restoreCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest options for the restore.")
+	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 
 }
@@ -72,7 +72,7 @@ func restore(args []string) {
 	request := new(msgs.RestoreRequest)
 	request.FromCluster = args[0]
 	request.ToPVC = ToPVC
-	request.RestoreOpts = BackrestOpts
+	request.RestoreOpts = BackupOpts
 
 	response, err := api.Restore(httpclient, &SessionCredentials, request)
 	if err != nil {

@@ -24,16 +24,14 @@ import (
 	"os"
 )
 
-var BackrestOpts string
-
 // createBackrestBackup ....
-func createBackrestBackup(args []string, backupOpts string) {
-	log.Debugf("createBackrestBackup called %v %s", args, backupOpts)
+func createBackrestBackup(args []string) {
+	log.Debugf("createBackrestBackup called %v %s", args, BackupOpts)
 
 	request := new(msgs.CreateBackrestBackupRequest)
 	request.Args = args
 	request.Selector = Selector
-	request.BackupOpts = backupOpts
+	request.BackupOpts = BackupOpts
 
 	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
 	if err != nil {

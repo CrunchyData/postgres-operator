@@ -46,7 +46,7 @@ var backupCmd = &cobra.Command{
 					fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
 					return
 				}
-				createBackrestBackup(args, BackrestOpts)
+				createBackrestBackup(args)
 			} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
 				createBackup(args)
 			} else {
@@ -60,12 +60,11 @@ var backupCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
-	backupCmd.Flags().StringVarP(&BackupOpts, "pgbasebackup-opts", "", "", "The pgbasebackup options to pass into pgbasebackup (only applies to pgbasebackup).")
+	backupCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackup options to pass into pgbasebackup or pgbackrest.")
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
-	backupCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest backup options to pass.")
 
 }
 
