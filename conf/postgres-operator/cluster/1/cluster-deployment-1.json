@@ -50,6 +50,12 @@
                         "name": "PG_PRIMARY_HOST",
                         "value": "{{.PrimaryHost}}"
                     }, {
+                        "name": "LOG_STATEMENT",
+                        "value": "{{.LogStatement}}"
+                    }, {
+                        "name": "LOG_MIN_DURATION_STATEMENT",
+                        "value": "{{.LogMinDurationStatement}}"
+                    }, {
                         "name": "PG_LOCALE",
                         "value": "en_US.UTF8"
                     }, {

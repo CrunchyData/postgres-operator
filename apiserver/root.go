@@ -94,7 +94,12 @@ func Initialize() {
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
 	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
-	Pgo.Validate()
+	err := Pgo.Validate()
+	if err != nil {
+		log.Error(err)
+		log.Error("something did not validate in the pgo.yaml")
+		os.Exit(2)
+	}
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
@@ -116,7 +121,7 @@ func Initialize() {
 
 	InitializePerms()
 
-	err := validateCredentials()
+	err = validateCredentials()
 	if err != nil {
 		os.Exit(2)
 	}

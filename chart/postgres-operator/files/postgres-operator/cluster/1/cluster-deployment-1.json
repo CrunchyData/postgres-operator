@@ -53,6 +53,12 @@
                         "name": "PG_LOCALE",
                         "value": "en_US.UTF8"
                     }, {
+                        "name": "LOG_STATEMENT",
+                        "value": "{{.LogStatement}}"
+                    }, {
+                        "name": "LOG_MIN_DURATION_STATEMENT",
+                        "value": "{{.LogMinDurationStatement}}"
+                    }, {
                         "name": "BACKUP_PATH",
                         "value": "{{.BackupPath}}"
                     }, {

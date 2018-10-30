@@ -12,6 +12,8 @@ Cluster:
   ArchiveTimeout:  60
   Backrest:  false
   Autofail:  false
+  LogStatement:  none
+  LogMinDurationStatement:  60000
 PrimaryStorage: storage1
 BackupStorage: storage1
 ReplicaStorage: storage1

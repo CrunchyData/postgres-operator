@@ -29,25 +29,27 @@ import (
 )
 
 type ClusterStruct struct {
-	CCPImagePrefix   string `yaml:"CCPImagePrefix"`
-	CCPImageTag      string `yaml:"CCPImageTag"`
-	PrimaryNodeLabel string `yaml:"PrimaryNodeLabel"`
-	ReplicaNodeLabel string `yaml:"ReplicaNodeLabel"`
-	Policies         string `yaml:"Policies"`
-	Metrics          bool   `yaml:"Metrics"`
-	Badger           bool   `yaml:"Badger"`
-	Port             string `yaml:"Port"`
-	ArchiveTimeout   string `yaml:"ArchiveTimeout"`
-	ArchiveMode      string `yaml:"ArchiveMode"`
-	User             string `yaml:"User"`
-	Database         string `yaml:"Database"`
-	PasswordAgeDays  string `yaml:"PasswordAgeDays"`
-	PasswordLength   string `yaml:"PasswordLength"`
-	Strategy         string `yaml:"Strategy"`
-	Replicas         string `yaml:"Replicas"`
-	ServiceType      string `yaml:"ServiceType"`
-	Backrest         bool   `yaml:"Backrest"`
-	Autofail         bool   `yaml:"Autofail"`
+	CCPImagePrefix          string `yaml:"CCPImagePrefix"`
+	CCPImageTag             string `yaml:"CCPImageTag"`
+	PrimaryNodeLabel        string `yaml:"PrimaryNodeLabel"`
+	ReplicaNodeLabel        string `yaml:"ReplicaNodeLabel"`
+	Policies                string `yaml:"Policies"`
+	LogStatement            string `yaml:"LogStatement"`
+	LogMinDurationStatement string `yaml:"LogMinDurationStatement"`
+	Metrics                 bool   `yaml:"Metrics"`
+	Badger                  bool   `yaml:"Badger"`
+	Port                    string `yaml:"Port"`
+	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
+	ArchiveMode             string `yaml:"ArchiveMode"`
+	User                    string `yaml:"User"`
+	Database                string `yaml:"Database"`
+	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
+	PasswordLength          string `yaml:"PasswordLength"`
+	Strategy                string `yaml:"Strategy"`
+	Replicas                string `yaml:"Replicas"`
+	ServiceType             string `yaml:"ServiceType"`
+	Backrest                bool   `yaml:"Backrest"`
+	Autofail                bool   `yaml:"Autofail"`
 }
 
 type StorageStruct struct {
@@ -110,8 +112,38 @@ type containerResourcesTemplateFields struct {
 	LimitsMemory, LimitsCPU     string
 }
 
+var log_statement_values = []string{"ddl", "none", "mod", "all"}
+
+const DEFAULT_LOG_STATEMENT = "none"
+const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
+
 func (c *PgoConfig) Validate() error {
 	var err error
+
+	if c.Cluster.LogStatement != "" {
+		found := false
+		for _, v := range log_statement_values {
+			if v == c.Cluster.LogStatement {
+				found = true
+			}
+		}
+		if !found {
+			return errors.New("Cluster.LogStatement does not container a valid value for log_statement")
+		}
+	} else {
+		log.Info("using default log_statement value since it was not specified in pgo.yaml")
+		c.Cluster.LogStatement = DEFAULT_LOG_STATEMENT
+	}
+
+	if c.Cluster.LogMinDurationStatement != "" {
+		_, err = strconv.Atoi(c.Cluster.LogMinDurationStatement)
+		if err != nil {
+			return errors.New("Cluster.LogMinDurationStatement invalid int value found")
+		}
+	} else {
+		log.Info("using default log_min_duration_statement value since it was not specified in pgo.yaml")
+		c.Cluster.LogMinDurationStatement = DEFAULT_LOG_MIN_DURATION_STATEMENT
+	}
 
 	if c.Cluster.PrimaryNodeLabel != "" {
 		parts := strings.Split(c.Cluster.PrimaryNodeLabel, "=")

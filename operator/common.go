@@ -128,7 +128,13 @@ func Initialize() {
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	Pgo.Validate()
+	err := Pgo.Validate()
+	if err != nil {
+		log.Error(err)
+		log.Error("pgo.yaml validation failed, can't continue")
+		os.Exit(2)
+	}
+
 	log.Printf("PrimaryStorage=%v\n", Pgo.Storage["storage1"])
 
 	if Pgo.Cluster.CCPImagePrefix == "" {

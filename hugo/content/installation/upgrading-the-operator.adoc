@@ -40,6 +40,14 @@ and pgreplica instances and update the pgo-version to match the
 current operator version, it will also create a user label on 
 the pgreplica/pgcluster to indicate the upgrade date.  More advanced
 upgrade features are planned to be developed.
+ * in 3.4, the pgo.yaml LogStatement and LogMinDurationStatement settings
+are present, if not set, defaults are supplied for both.  These settings
+let you define more precisely the degree of Postgres logging for 
+any Postgres clusters created by the Operator.  The LogStatement default
+is 'none' and the LogMinDurationStatement defaults to 60000 (milliseconds).
+These settings greatly reduce the log file sizes and only will log
+statements that are longer running that 60000 milliseconds.  If you
+want to see all statements logged, set LogStatement to 'all'.
 
 {{% expand "Upgrading to v3.3" %}}
 
