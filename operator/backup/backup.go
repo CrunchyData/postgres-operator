@@ -42,6 +42,7 @@ type jobTemplateFields struct {
 	BackupHost         string
 	BackupUserSecret   string
 	BackupPort         string
+	BackupOpts         string
 	ContainerResources string
 }
 
@@ -99,6 +100,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 		BackupHost:         job.Spec.BackupHost,
 		BackupUserSecret:   job.Spec.BackupUserSecret,
 		BackupPort:         job.Spec.BackupPort,
+		BackupOpts:         job.Spec.BackupOpts,
 		ContainerResources: cr,
 	}
 

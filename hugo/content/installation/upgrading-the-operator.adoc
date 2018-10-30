@@ -48,6 +48,10 @@ is 'none' and the LogMinDurationStatement defaults to 60000 (milliseconds).
 These settings greatly reduce the log file sizes and only will log
 statements that are longer running that 60000 milliseconds.  If you
 want to see all statements logged, set LogStatement to 'all'.
+ * in 3.4, the pgbackup CRD includes a new field called BackupOpts, used
+to hold the pgbasebackup command options which can now be passed in
+on the CLI backup command, no changes to existing pgbackup CRD resources is
+required.
 
 {{% expand "Upgrading to v3.3" %}}
 

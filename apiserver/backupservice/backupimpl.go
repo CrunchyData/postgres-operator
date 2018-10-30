@@ -184,7 +184,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 		}
 
 		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg, request.StorageConfig)
+		newInstance, err = getBackupParams(arg, request)
 		if err != nil {
 			msg := "error creating backup for " + arg
 			log.Error(err)
@@ -209,14 +209,14 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	return resp
 }
 
-func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
+func getBackupParams(name string, request *msgs.CreateBackupRequest) (*crv1.Pgbackup, error) {
 	var err error
 	var newInstance *crv1.Pgbackup
 
 	spec := crv1.PgbackupSpec{}
 	spec.Name = name
-	if storageConfig != "" {
-		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
+	if request.StorageConfig != "" {
+		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	} else {
 		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackupStorage)
 	}
@@ -225,6 +225,7 @@ func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
 	spec.BackupHost = "basic"
 	spec.BackupUserSecret = "primaryuser"
 	spec.BackupPort = "5432"
+	spec.BackupOpts = request.BackupOpts
 
 	cluster := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, name, apiserver.Namespace)

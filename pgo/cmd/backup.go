@@ -60,6 +60,7 @@ var backupCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
+	backupCmd.Flags().StringVarP(&BackupOpts, "pgbasebackup-opts", "", "", "The pgbasebackup options to pass into pgbasebackup (only applies to pgbasebackup).")
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
@@ -157,6 +158,7 @@ func createBackup(args []string) {
 	request.Selector = Selector
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
+	request.BackupOpts = BackupOpts
 
 	response, err := api.CreateBackup(httpclient, &SessionCredentials, request)
 

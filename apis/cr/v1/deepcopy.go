@@ -14,6 +14,7 @@ func (in *Pgbackup) DeepCopyInto(out *Pgbackup) {
 		BackupHost:       in.Spec.BackupHost,
 		BackupUserSecret: in.Spec.BackupUserSecret,
 		BackupPort:       in.Spec.BackupPort,
+		BackupOpts:       in.Spec.BackupOpts,
 		BackupStatus:     in.Spec.BackupStatus,
 		BackupPVC:        in.Spec.BackupPVC,
 	}

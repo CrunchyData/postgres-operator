@@ -41,6 +41,9 @@
                         "name": "BACKUP_HOST",
                         "value": "{{.BackupHost}}"
                     }, {
+                        "name": "BACKUP_OPTS",
+                        "value": "{{.BackupOpts}}"
+                    }, {
                         "name": "BACKUP_USER",
                         "valueFrom": {
                             "secretKeyRef": {
