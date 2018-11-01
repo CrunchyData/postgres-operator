@@ -88,6 +88,10 @@ type DeploymentTemplateFields struct {
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
+	//next are for pgbackrest
+	PgbackrestStanza   string
+	PgbackrestDBPath   string
+	PgbackrestRepoPath string
 }
 
 // ReplicaSuffix ...

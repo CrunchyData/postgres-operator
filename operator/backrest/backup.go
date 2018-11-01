@@ -36,6 +36,9 @@ type backrestJobTemplateFields struct {
 	PodName       string
 	COImagePrefix string
 	COImageTag    string
+	Stanza        string
+	DBPath        string
+	RepoPath      string
 }
 
 // Backrest ...
@@ -52,6 +55,9 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		CommandOpts:   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
 		COImagePrefix: operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:    operator.Pgo.Pgo.COImageTag,
+		Stanza:        task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		DBPath:        task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		RepoPath:      task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
 	}
 
 	var doc2 bytes.Buffer

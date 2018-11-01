@@ -29,7 +29,6 @@ import (
 )
 
 const backrestCommand = "pgbackrest"
-const backrestStanza = "--stanza=db"
 const backrestInfoCommand = "info"
 const containername = "database"
 
@@ -134,7 +133,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 		}
 
 		//get pod name from cluster
-		var podname string
+		var podname, deployName string
 		podname, err = getPrimaryPodName(&cluster)
 
 		if err != nil {
@@ -144,7 +143,16 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			return resp
 		}
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
+		//get deployment name for this cluster
+		deployName, err = getDeployName(&cluster)
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(deployName, clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -157,7 +165,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
+func getBackupParams(deployName, clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -181,6 +189,26 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 
 func removeBackupJob(clusterName string) {
 
+}
+
+func getDeployName(cluster *crv1.Pgcluster) (string, error) {
+	var depName string
+
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	if err != nil {
+		return depName, err
+	}
+
+	if len(deps.Items) != 1 {
+		return depName, errors.New("error:  deployment count is wrong for backrest backup " + cluster.Spec.Name)
+	}
+	for _, d := range deps.Items {
+		return d.Name, err
+	}
+
+	return depName, errors.New("unknown error in backrest backup")
 }
 
 func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
@@ -291,7 +319,6 @@ func getInfo(clusterName, podname string) (string, error) {
 	log.Info("backrest info command requested")
 	//pgbackrest --stanza=db info
 	cmd = append(cmd, backrestCommand)
-	cmd = append(cmd, backrestStanza)
 	cmd = append(cmd, backrestInfoCommand)
 
 	log.Infof("command is %v ", cmd)

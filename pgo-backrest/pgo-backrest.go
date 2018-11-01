@@ -14,10 +14,9 @@ import (
 
 var Clientset *kubernetes.Clientset
 
-const sourceCommand = `source /.bashrc && `
+const sourceCommand = `pgbackrest stanza-create --no-online && `
 const backrestCommand = "pgbackrest"
 
-const backrestStanza = "--stanza=db"
 const backrestBackupCommand = `backup`
 const backrestInfoCommand = `info`
 const containername = "database"
@@ -79,14 +78,12 @@ func main() {
 		log.Info("backrest info command requested")
 		cmd = append(cmd, sourceCommand)
 		cmd = append(cmd, backrestCommand)
-		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
 		cmd = append(cmd, COMMAND_OPTS)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
 		cmd = append(cmd, sourceCommand)
 		cmd = append(cmd, backrestCommand)
-		cmd = append(cmd, backrestStanza)
 		cmd = append(cmd, backrestBackupCommand)
 		cmd = append(cmd, COMMAND_OPTS)
 	default:

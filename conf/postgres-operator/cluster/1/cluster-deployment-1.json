@@ -65,6 +65,18 @@
                         "name": "PGDATA_PATH_OVERRIDE",
                         "value": "{{.DataPathOverride}}"
                     }, {
+                        "name": "PGBACKREST_STANZA",
+                        "value": "{{.PgbackrestStanza}}"
+                    }, {
+                        "name": "PGBACKREST_DB_PATH",
+                        "value": "{{.PgbackrestDBPath}}"
+                    }, {
+                        "name": "PGBACKREST_REPO_PATH",
+                        "value": "{{.PgbackrestRepoPath}}"
+                    }, {
+                        "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
+                    }, {
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
                     }, {

@@ -142,9 +142,12 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		UserSecretName:          cl.Spec.UserSecretName,
 		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
 		ContainerResources:      config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
-		ConfVolume:              GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		ConfVolume:              GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
+		PgbackrestStanza:        "db",
+		PgbackrestDBPath:        "/pgdata/" + cl.Spec.Name,
+		PgbackrestRepoPath:      "/backrestrepo/" + cl.Spec.Name + "-backups",
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -329,7 +332,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		BackupPath:              "",
 		Database:                cl.Spec.Database,
 		Replicas:                "1",
-		ConfVolume:              GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		ConfVolume:              GetConfVolume(clientset, cl, namespace),
 		OperatorLabels:          util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:         util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:          cl.Spec.RootSecretName,
@@ -337,6 +340,9 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		ContainerResources:      config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		UserSecretName:          cl.Spec.UserSecretName,
 		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
+		PgbackrestStanza:        "db",
+		PgbackrestDBPath:        "/pgdata/" + depName,
+		PgbackrestRepoPath:      "/backrestrepo/" + depName + "-backups",
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -470,18 +476,18 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 }
 
 // GetConfVolume ...
-func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace string) string {
+func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
 	var found bool
 
 	//check for user provided configmap
-	if customConfig != "" {
-		_, found = kubeapi.GetConfigMap(clientset, customConfig, namespace)
+	if cl.Spec.CustomConfig != "" {
+		_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
 		if !found {
 			//you should NOT get this error because of apiserver validation of this value!
-			log.Errorf("%s was not found, error, skipping user provided configMap", customConfig)
+			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
 		} else {
-			log.Debugf("user provided configmap %s was used for this cluster", customConfig)
-			return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
+			log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
+			return "\"configMap\": { \"name\": \"" + cl.Spec.CustomConfig + "\" }"
 		}
 
 	}
@@ -492,6 +498,16 @@ func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace stri
 		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
 	} else {
 		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
+	}
+
+	//check for pgbackrest global config
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] != "" {
+		_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP, namespace)
+		if !found {
+			log.Debug(util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+		} else {
+			return "\"configMap\": { \"name\": \"pgo-pgbackrest-config\" }"
+		}
 	}
 
 	//the default situation
@@ -564,7 +580,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:          archiveTimeout,
 		Replicas:                "1",
-		ConfVolume:              GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
+		ConfVolume:              GetConfVolume(clientset, cluster, namespace),
 		OperatorLabels:          util.GetLabelsFromMap(replicaLabels),
 		SecurityContext:         util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:          cluster.Spec.RootSecretName,
@@ -574,6 +590,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		PgbackrestStanza:        "db",
+		PgbackrestDBPath:        "/pgdata/" + replica.Spec.Name,
+		PgbackrestRepoPath:      "/backrestrepo/" + replica.Spec.Name + "-backups",
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

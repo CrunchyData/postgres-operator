@@ -52,6 +52,25 @@ want to see all statements logged, set LogStatement to 'all'.
 to hold the pgbasebackup command options which can now be passed in
 on the CLI backup command, no changes to existing pgbackup CRD resources is
 required.
+* operator 3.3 introduced the alpha version of pgbackrest integration.
+Now in 3.4, the pgbackrest integration was changed so that users
+no longer have to specify a custom configuration file using *--custom-config*.
+
+With 3.4, there is a global configmap created as part of the
+deployment process which will serve this same purpose, that is to 
+indicate to the Postgres container that it must allocate the pgbackrest
+directories within the mounted /backrestrepo volume mount.  This
+means however, that if you specify a global configuration file or
+specify your own custom configuration that you have to include
+the pgbackrest.conf file and key within that configmap.  The sample
+global custom configuration map, pgo-custom-pg-config, now includes
+pgbackrest.conf within it.  
+
+This new integration only works with pgbackrest v2.6 which is included 
+into crunchy-postgres 2.2.0.  This means that to use pgbackrest, you 
+must run crunchy-postgres 2.2.0 or greater which will require users
+to upgrade the pgo.yaml to use the 2.2.0 CCPImageTag.  pgbackrest commands
+will NOT work with clusters using older Postgres images.
 
 {{% expand "Upgrading to v3.3" %}}
 

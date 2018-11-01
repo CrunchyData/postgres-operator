@@ -27,7 +27,7 @@
                     }, {
                         "name": "PODNAME",
                         "value": "{{.PodName}}"
-                    }, {
+	   	    }, {
                         "name": "NAMESPACE",
                         "valueFrom": {
                             "fieldRef": {

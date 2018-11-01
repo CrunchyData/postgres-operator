@@ -28,6 +28,8 @@ then
 	echo Verify you ran install-rbac.sh
 fi
 
+$CO_CMD create configmap pgo-pgbackrest-config --from-file=$DIR/pgbackrest.conf
+
 $CO_CMD $NS create secret generic pgo-auth-secret \
         --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
         --from-file=server.key=$COROOT/conf/postgres-operator/server.key \

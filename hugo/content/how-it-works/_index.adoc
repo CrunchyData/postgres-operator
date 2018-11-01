@@ -327,6 +327,13 @@ files when setting up a new database instance.  You do *NOT* have to
 specify all of the configuration files. It is entirely up to your use case
 to determine which to use.
 
+This global configmap holds the pgbackrest.conf file, this is required
+for pgbackrest backups to work!  This also applies to ANY custom
+configuration file you wish to use, it MUST contain a pgbackrest.conf
+file as a key.  See the example for pgo-custom-pg-config for the
+pgbackrest.conf file and how to add it to your custom configuration
+ConfigMap.
+
 An example set of configuration files and a script to create the
 global configMap is found at -
 ....
@@ -348,6 +355,12 @@ file used to initially populate the database after the initial *initdb*
 is run when the database is first created. Changes would be made
 to this if you wanted to define which database objects are created by
 default.
+
+The *pgbackrest.conf* file is merely used to tell the Postgres container
+that it should allocate a pgbackrest configuration directory when
+initializing the container.  The contents of this file do not get inspected
+but the name has to be *pgbackrest.conf*.  This requirement will change
+in upcoming operator releases.
 
 ==== Granular Config Maps
 

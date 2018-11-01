@@ -272,8 +272,10 @@ documentation for more details on auto failover.
 
 ===== pgBackRest
 
-Support for link:https://pgbackrest.org/[pgBackRest] began in Operator release 3.2. This is
-alpha support at this point and is intended to give users a preview of this feature support.
+pgbackrest beta integration was implemented in version 3.4.0 of the
+Operator.   NOTE:  pgbackrest integration is still subject to change in
+upcoming releases.
+
 The backrestrepo PVC, used by pgBackRest, has to be created on a RWX file system type in this
 release. pgBackRest is a more advanced backup and restore capability exposed by the Operator.
 
@@ -283,15 +285,10 @@ within the pgo.yaml configuration.
 
 Create a PG cluster that enables pgBackRest specifically for that cluster:
 ....
-pgo create cluster mycluster --pgbackrest --custom-config=pgo-pgbackrest-config
+pgo create cluster mycluster --pgbackrest
 ....
 
-NOTE:  Currently a pgbackrest configuration file is required to be specified
-using the *--custom-config* flag, see examples/backrest-config for the
-example of creating this custom ConfigMap.
-
-Setting this value will cause the Operator to create a PVC specifically dedicated for holding
-pgBackRest backups.
+Setting this value will cause the Operator to create a PVC specifically dedicated for holding pgBackRest backups.
 
 Create a pgBackRest backup:
 ....
@@ -306,7 +303,7 @@ pgo backup mycluster --backup-type=pgbackrest --pgbackrest-opts="--type=incr"
 Note, you can not specify *--storage-config* flag when specifying
 a pgbackrest backup.
 
-Obtain pgBackRest information:
+List pgBackRest information:
 ....
 pgo show backup mycluster --backup-type=pgbackrest
 ....

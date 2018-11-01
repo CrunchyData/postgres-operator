@@ -499,10 +499,15 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		}
 
 		if request.CustomConfig != "" {
-			found := validateCustomConfig(request.CustomConfig)
+			found, err := validateCustomConfig(request.CustomConfig)
 			if !found {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = request.CustomConfig + " configmap was not found "
+				return resp
+			}
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
 				return resp
 			}
 			//add a label for the custom config
@@ -554,14 +559,7 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap[util.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
 		}
 
-		err = validateBackrestConfig(userLabelsMap)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-
-		//add archive if backrest is requested
+		//add archive if backrest is requested and figure out map
 		if userLabelsMap[util.LABEL_BACKREST] == "true" {
 			userLabelsMap[util.LABEL_ARCHIVE] = "true"
 		}
@@ -749,6 +747,10 @@ func validateConfigPolicies(clusterName, PoliciesFlag string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{}
+
+	if userLabelsMap[util.LABEL_CUSTOM_CONFIG] != "" {
+		spec.CustomConfig = userLabelsMap[util.LABEL_CUSTOM_CONFIG]
+	}
 
 	if request.ContainerResources != "" {
 		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(request.ContainerResources)
@@ -1068,9 +1070,23 @@ func getType(pod *v1.Pod) string {
 
 }
 
-func validateCustomConfig(configmapname string) bool {
-	_, found := kubeapi.GetConfigMap(apiserver.Clientset, configmapname, apiserver.Namespace)
-	return found
+func validateCustomConfig(configmapname string) (bool, error) {
+	var err error
+	mymap, found := kubeapi.GetConfigMap(apiserver.Clientset, configmapname, apiserver.Namespace)
+	if !found {
+		return found, err
+	}
+
+	//make sure custom config has a pgbackrest.conf file in it
+	if mymap.Data["pgbackrest.conf"] != "" {
+		log.Debugf("found pgbackrest.conf in map %s", mymap.Data["pgbackrest.conf"])
+	} else {
+		log.Error("pgbackrest.conf NOT found pgbackrest.conf in custom config map")
+		return true, errors.New(configmapname + " custom config map doesn't include a pgbackrest.conf which is required")
+
+	}
+
+	return found, err
 }
 
 func existsGlobalConfig() bool {
@@ -1103,25 +1119,6 @@ func getReplicas(cluster *crv1.Pgcluster) ([]msgs.ShowClusterReplica, error) {
 	}
 
 	return output, err
-}
-
-func validateBackrestConfig(labels map[string]string) error {
-	var err error
-
-	if labels[util.LABEL_BACKREST] == "true" {
-		if labels[util.LABEL_CUSTOM_CONFIG] != "" {
-			//TODO could check the contents of that config map here tomake sure it include a pgbackrest.conf key
-			return err
-		} else {
-			//check the global configmap here
-			_, found := kubeapi.GetConfigMap(apiserver.Clientset, util.GLOBAL_CUSTOM_CONFIGMAP, apiserver.Namespace)
-			if !found {
-				log.Debugf("%s was not found", util.GLOBAL_CUSTOM_CONFIGMAP)
-				return errors.New(util.GLOBAL_CUSTOM_CONFIGMAP + " global configmap or --custom-config flag not set, one of these is required for enabling pgbackrest")
-			}
-		}
-	}
-	return err
 }
 
 // deleteDatabaseSecrets delete secrets that match pg-database=somecluster
