@@ -157,6 +157,11 @@ The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml def
 |`--pgbackrest` |N/A |N/A |
 Enables a pgBackRest volume for the database pod.
 
+|`--pgbackrest-restore-from` |N/A |N/A |
+Only applies when creating a cluster from a pgbackrest restored PVC.  This
+is the name of the cluster from which the restored PVC was created from and
+which the new cluster credentials will be based.  This setting is required in the scenario.  
+
 |`--pgbadger` |N/A |N/A |
 Adds the crunchy-pgbadger container to the database pod.
 
@@ -310,15 +315,17 @@ pgo show backup mycluster --backup-type=pgbackrest
 
 Restore from an existing cluster into a newly created PVC:
 ....
-pgo restore withbr --to-pvc=restored
-pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest
+pgo restore mycluster --to-pvc=restored
+pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest
 ....
 
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
 Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file
 system setup will allow you to restore from this PVC without having to shutdown the currently
-attached PostgreSQL cluster.
+attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
+has to attach the same pgbackrest repo used by the original cluster the restore
+was based off of.
 
 === Delete Cluster
 

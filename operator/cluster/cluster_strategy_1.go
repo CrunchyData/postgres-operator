@@ -105,6 +105,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		archivePVCName = cl.Spec.Name + "-xlog"
 	}
 
+	backrestRepoTarget := cl.Spec.Name
 	backrestPVCName := ""
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		backrestPVCName = cl.Spec.Name + "-backrestrepo"
@@ -112,6 +113,10 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
+		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
+			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+			backrestPVCName = backrestRepoTarget + "-backrestrepo"
+		}
 	}
 
 	//create the primary deployment
@@ -147,7 +152,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
 		PgbackrestStanza:        "db",
 		PgbackrestDBPath:        "/pgdata/" + cl.Spec.Name,
-		PgbackrestRepoPath:      "/backrestrepo/" + cl.Spec.Name + "-backups",
+		PgbackrestRepoPath:      "/backrestrepo/" + backrestRepoTarget + "-backups",
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

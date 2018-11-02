@@ -168,35 +168,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
 	//allows user to override with their own passwords
-	/**
-	if cl.Spec.Password != "" {
-		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
-		RootPassword = cl.Spec.Password
-		Password = cl.Spec.Password
-		PrimaryPassword = cl.Spec.Password
-	}
-
-	var err1, err2, err3 error
-	if cl.Spec.SecretFrom != "" {
-		log.Debugf("secret-from is specified! using %s", cl.Spec.SecretFrom)
-		_, RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
-		_, Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
-		_, PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
-		if err1 != nil || err2 != nil || err3 != nil {
-			log.Error("error getting secrets using SecretFrom " + cl.Spec.SecretFrom)
-			return
-		}
-	}
-	*/
-
-	/**
-	_, _, _, err = createDatabaseSecrets(clientset, client, cl, namespace,
-		RootPassword, Password, PrimaryPassword)
-	if err != nil {
-		log.Error("error in create secrets " + err.Error())
-		return
-	}
-	*/
 
 	if cl.Spec.Strategy == "" {
 		cl.Spec.Strategy = "1"

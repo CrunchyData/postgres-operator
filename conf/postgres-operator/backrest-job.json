@@ -2,7 +2,7 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-                "name": "backrest-{{.Command}}-{{.ClusterName}}",
+                "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
@@ -14,7 +14,7 @@
 	"backoffLimit": 0,
         "template": {
             "metadata": {
-                "name": "backrest-{{.Command}}-{{.ClusterName}}",
+                "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
@@ -23,12 +23,16 @@
                 }
             },
             "spec": {
-                "volumes": [],
+                "volumes": [
+		{{.PgbackrestRestoreVolumes}}
+			],
                 "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.COImagePrefix}}/pgo-backrest:{{.COImageTag}}",
-                    "volumeMounts": [],
+                    "volumeMounts": [
+		{{.PgbackrestRestoreVolumeMounts}}
+			    ],
                     "env": [{
                         "name": "COMMAND",
                         "value": "{{.Command}}"
@@ -38,6 +42,18 @@
                     }, {
                         "name": "PODNAME",
                         "value": "{{.PodName}}"
+                    }, {
+                        "name": "PGBACKREST_STANZA",
+                        "value": "{{.PgbackrestStanza}}"
+                    }, {
+                        "name": "PGBACKREST_DB_PATH",
+                        "value": "{{.PgbackrestDBPath}}"
+                    }, {
+                        "name": "PGBACKREST_REPO_PATH",
+                        "value": "{{.PgbackrestRepoPath}}"
+                    }, {
+                        "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
                     }, {
                         "name": "NAMESPACE",
                         "valueFrom": {

@@ -1,0 +1,11 @@
+{
+	"name": "backrestrepo",
+	"persistentVolumeClaim": { 
+		"claimName": "{{.FromClusterPVCName}}" 
+	}
+}, {
+	"name": "pgdata",
+	"persistentVolumeClaim": { 
+		"claimName": "{{.ToClusterPVCName}}" 
+	}
+}

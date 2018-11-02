@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -9,6 +10,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -19,6 +21,7 @@ const backrestCommand = "pgbackrest"
 
 const backrestBackupCommand = `backup`
 const backrestInfoCommand = `info`
+const backrestRestoreCommand = `restore`
 const containername = "database"
 
 func main() {
@@ -86,16 +89,41 @@ func main() {
 		cmd = append(cmd, backrestCommand)
 		cmd = append(cmd, backrestBackupCommand)
 		cmd = append(cmd, COMMAND_OPTS)
+	case crv1.PgtaskBackrestRestore:
+		err := os.Mkdir(os.Getenv("PGBACKREST_DB_PATH"), 0770)
+		if err != nil {
+			log.Error(err)
+			os.Exit(2)
+		}
+		log.Info("backrest Restore command requested")
+		cmd = append(cmd, sourceCommand)
+		cmd = append(cmd, backrestCommand)
+		cmd = append(cmd, backrestRestoreCommand)
+		cmd = append(cmd, COMMAND_OPTS)
 	default:
 		log.Error("unsupported backup command specified " + COMMAND)
 		os.Exit(2)
 	}
 
-	log.Infof("command is %s ", strings.Join(cmd, " "))
-	reader := strings.NewReader(strings.Join(cmd, " "))
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
-	log.Info("output=[" + output + "]")
-	log.Info("stderr=[" + stderr + "]")
+	if COMMAND == crv1.PgtaskBackrestRestore {
+		cmd := exec.Command(backrestCommand, backrestRestoreCommand, COMMAND_OPTS)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Infof("output=[%s]", out.String())
+	} else {
+		log.Infof("command is %s ", strings.Join(cmd, " "))
+		reader := strings.NewReader(strings.Join(cmd, " "))
+		output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
+		if err != nil {
+			log.Error(err)
+		}
+		log.Info("output=[" + output + "]")
+		log.Info("stderr=[" + stderr + "]")
+	}
 
 	log.Info("pgo-backrest ends")
 

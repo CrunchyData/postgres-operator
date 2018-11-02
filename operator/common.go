@@ -42,6 +42,8 @@ const rmdatajobPath = "/pgo-config/rmdata-job.json"
 const backrestjobPath = "/pgo-config/backrest-job.json"
 const backrestRestorejobPath = "/pgo-config/backrest-restore-job.json"
 const backrestRestoreConfigMapPath = "/pgo-config/backrest-restore-configmap.json"
+const backrestRestoreVolumesPath = "/pgo-config/backrest-restore-volumes.json"
+const backrestRestoreVolumeMountsPath = "/pgo-config/backrest-restore-volume-mounts.json"
 const PVCPath = "/pgo-config/pvc.json"
 const PVCMatchLabelsPath = "/pgo-config/pvc-matchlabels.json"
 const PVCSCPath = "/pgo-config/pvc-storageclass.json"
@@ -67,6 +69,8 @@ var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
 var BackrestjobTemplate *template.Template
+var BackrestRestoreVolumesTemplate *template.Template
+var BackrestRestoreVolumeMountsTemplate *template.Template
 var BackrestRestorejobTemplate *template.Template
 var BackrestRestoreConfigMapTemplate *template.Template
 var PVCTemplate *template.Template
@@ -114,6 +118,8 @@ func Initialize() {
 	IngestjobTemplate = util.LoadTemplate(ingestPath)
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
+	BackrestRestoreVolumesTemplate = util.LoadTemplate(backrestRestoreVolumesPath)
+	BackrestRestoreVolumeMountsTemplate = util.LoadTemplate(backrestRestoreVolumeMountsPath)
 	BackrestRestorejobTemplate = util.LoadTemplate(backrestRestorejobPath)
 	BackrestRestoreConfigMapTemplate = util.LoadTemplate(backrestRestoreConfigMapPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)

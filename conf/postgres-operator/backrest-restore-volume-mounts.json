@@ -1,0 +1,10 @@
+{
+	"mountPath": "/pgdata",
+	"name": "pgdata",
+	"readOnly": false
+}, {
+	"mountPath": "/backrestrepo",
+	"name": "backrestrepo",
+	"readOnly": true
+}
+

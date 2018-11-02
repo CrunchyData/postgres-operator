@@ -47,6 +47,8 @@ $CO_CMD $NS create configmap pgo-config \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
+	--from-file=$COROOT/conf/postgres-operator/backrest-restore-volumes.json \
+	--from-file=$COROOT/conf/postgres-operator/backrest-restore-volume-mounts.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-restore-configmap.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1

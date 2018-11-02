@@ -25,16 +25,17 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"os"
 	"time"
 )
 
-type backrestRestoreConfigMapTemplateFields struct {
-	ToClusterName        string
-	FromClusterName      string
-	RestoreConfigMapName string
+type backrestRestoreVolumesFields struct {
+	ToClusterPVCName   string
+	FromClusterPVCName string
+}
+
+type backrestRestoreVolumeMountsFields struct {
 }
 
 type backrestRestoreJobTemplateFields struct {
@@ -86,15 +87,15 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	}
 
 	//delete the configmap if it exists from a prior run
-	kubeapi.DeleteConfigMap(clientset, task.Spec.Name, namespace)
+	//kubeapi.DeleteConfigMap(clientset, task.Spec.Name, namespace)
 
 	//create the backrest-restore configmap
 
-	err = createRestoreJobConfigMap(clientset, task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER], task.Spec.Name, namespace)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
+	//err = createRestoreJobConfigMap(clientset, task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER], task.Spec.Name, namespace)
+	//if err != nil {
+	//	log.Error(err.Error())
+	//	return
+	//}
 
 	//delete the job if it exists from a prior run
 	kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
@@ -103,6 +104,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	//create the Job to run the backrest restore container
 
+	/**
 	jobFields := backrestRestoreJobTemplateFields{
 		RestoreName:          task.Spec.Name,
 		SecurityContext:      util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
@@ -115,16 +117,42 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:    operator.Pgo.Cluster.CCPImageTag,
 	}
+	*/
+
+	//cmd := task.Spec.Parameters[util.LABEL_BACKREST_COMMAND]
+
+	jobFields := backrestJobTemplateFields{
+		JobName:                       "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		ClusterName:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		PodName:                       "na",
+		Command:                       crv1.PgtaskBackrestRestore,
+		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
+		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:                    operator.Pgo.Pgo.COImageTag,
+		PgbackrestStanza:              task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:              task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepoPath:            task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRestoreVolumes:      getRestoreVolumes(task),
+		PgbackrestRestoreVolumeMounts: getRestoreVolumeMounts(),
+	}
 
 	var doc2 bytes.Buffer
-	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
+	//	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
+	//	if err != nil {
+	//		log.Error(err.Error())
+	//		return
+	//	}
+
+	err = operator.BackrestjobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
+		//		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
+		operator.BackrestjobTemplate.Execute(os.Stdout, jobFields)
+
 	}
 
 	newjob := v1batch.Job{}
@@ -135,38 +163,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	}
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
-
-}
-
-// Create a restore job configmap
-func createRestoreJobConfigMap(clientset *kubernetes.Clientset, toName, fromName, mapName string, namespace string) error {
-	log.Debug("in createRestoreJobConfigMap")
-	var doc2 bytes.Buffer
-	var err error
-
-	configmapFields := backrestRestoreConfigMapTemplateFields{
-		ToClusterName:        toName,
-		FromClusterName:      fromName,
-		RestoreConfigMapName: mapName,
-	}
-
-	err = operator.BackrestRestoreConfigMapTemplate.Execute(&doc2, configmapFields)
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreConfigMapTemplate.Execute(os.Stdout, configmapFields)
-	}
-
-	newConfigMap := v1.ConfigMap{}
-	err = json.Unmarshal(doc2.Bytes(), &newConfigMap)
-	if err != nil {
-		log.Error("error unmarshalling json into ConfigMap " + err.Error())
-		return err
-	}
-
-	err = kubeapi.CreateConfigMap(clientset, &newConfigMap, namespace)
-	if err != nil {
-		return err
-	}
-	return err
 
 }
 
@@ -188,3 +184,40 @@ func getPITREnvVar(restoretype, pitrtarget string) string {
 	return ""
 }
 */
+
+func getRestoreVolumes(task *crv1.Pgtask) string {
+	var doc2 bytes.Buffer
+
+	fields := backrestRestoreVolumesFields{
+		FromClusterPVCName: task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
+		ToClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
+	}
+
+	err := operator.BackrestRestoreVolumesTemplate.Execute(&doc2, fields)
+	if operator.CRUNCHY_DEBUG {
+		operator.BackrestRestoreVolumesTemplate.Execute(os.Stdout, fields)
+	}
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	return doc2.String()
+}
+
+func getRestoreVolumeMounts() string {
+	var doc2 bytes.Buffer
+
+	fields := backrestRestoreVolumeMountsFields{}
+
+	err := operator.BackrestRestoreVolumeMountsTemplate.Execute(&doc2, fields)
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
+	if operator.CRUNCHY_DEBUG {
+		operator.BackrestRestoreVolumeMountsTemplate.Execute(os.Stdout, fields)
+	}
+
+	return doc2.String()
+}
