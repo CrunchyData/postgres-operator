@@ -37,6 +37,7 @@ type backrestJobTemplateFields struct {
 	PodName                       string
 	COImagePrefix                 string
 	COImageTag                    string
+	SecurityContext               string
 	PgbackrestStanza              string
 	PgbackrestDBPath              string
 	PgbackrestRepoPath            string
@@ -55,6 +56,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		JobName:                       "backrest-backup-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		ClusterName:                   task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		PodName:                       task.Spec.Parameters[util.LABEL_POD_NAME],
+		SecurityContext:               "",
 		Command:                       cmd,
 		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
 		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,

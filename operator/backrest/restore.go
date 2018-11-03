@@ -107,7 +107,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	/**
 	jobFields := backrestRestoreJobTemplateFields{
 		RestoreName:          task.Spec.Name,
-		SecurityContext:      util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
 		RestoreConfigMapName: task.Spec.Name,
 		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
@@ -126,6 +125,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		ClusterName:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		PodName:                       "na",
 		Command:                       crv1.PgtaskBackrestRestore,
+		SecurityContext:               util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
 		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:                    operator.Pgo.Pgo.COImageTag,

@@ -19,26 +19,24 @@ Cluster:
   Autofail:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storage1
-BackupStorage: storage1
-ReplicaStorage: storage1
+PrimaryStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
 Storage:
-  storage1:
+  hostpathstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+  nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
     StorageType:  create
     SupplementalGroups:  65534
-  storage2:
-    AccessMode:  ReadWriteMany
-    Size:  1G
-    StorageType:  dynamic
-    StorageClass:  gluster-heketi
-    Fsgroup:  26
-  storage3:
+  storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
     StorageType:  dynamic
-    StorageClass:  rook-ceph-block
+    StorageClass:  fast
     Fsgroup:  26
 DefaultContainerResources: 
 DefaultLoadResources:  

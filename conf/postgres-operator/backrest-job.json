@@ -26,6 +26,7 @@
                 "volumes": [
 		{{.PgbackrestRestoreVolumes}}
 			],
+		{{.SecurityContext}}
                 "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "backrest",
