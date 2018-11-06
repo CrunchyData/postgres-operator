@@ -103,7 +103,13 @@ echo ""
 case $CO_CMD in
 kubectl)
 $CO_CMD get namespaces
-export CO_NAMESPACE=`$CO_CMD config view -o "jsonpath={.contexts[?(@.name==\"$($CO_CMD config current-context 2>/dev/null)\")].context.namespace}"`
+
+export CO_CURRENT_CONTEXT=`$CO_CMD config current-context 2>/dev/null`
+echo ""
+echo "Using current context "$CO_CURRENT_CONTEXT | tee -a $LOG
+echo ""
+
+export CO_NAMESPACE=`$CO_CMD config view -o "jsonpath={.contexts[?(@.name==\"$CO_CURRENT_CONTEXT\")].context.namespace}"`
 	;;
 oc)
 $CO_CMD project
