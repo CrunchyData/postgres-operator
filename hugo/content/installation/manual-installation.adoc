@@ -67,7 +67,7 @@ To run the operator and the *pgo* client, you will need the following -
 ....
 kubectl create -f examples/demo-namespace.json
 kubectl config set-context $(kubectl config current-context) --namespace=demo
-kubectl config view | grep namespace
+kubectl config view -o "jsonpath={.contexts[?(@.name==\"$(kubectl config current-context 2>/dev/null)\")].context.namespace}"
 ....
 
 Run the Makefile `setup` target to install depedencies and also
