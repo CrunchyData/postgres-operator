@@ -1,5 +1,7 @@
 RELTMPDIR=/tmp/release.$(CO_VERSION)
+HELMTMPDIR=/tmp/helm-release.$(CO_VERSION)
 RELFILE=/tmp/postgres-operator.$(CO_VERSION).tar.gz
+HELMRELFILE=/tmp/postgres-operator-helm-chart.$(CO_VERSION).tar.gz
 
 #======= Safety checks =======
 check-go-vars:
@@ -131,10 +133,11 @@ release:	check-go-vars
 	make macpgo
 	make winpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)
-	mkdir $(RELTMPDIR)
+	mkdir $(RELTMPDIR) $(HELMTMPDIR)
 	cp -r $(COROOT)/examples $(RELTMPDIR)
 	cp -r $(COROOT)/deploy $(RELTMPDIR)
 	cp -r $(COROOT)/conf $(RELTMPDIR)
+	cp -r $(COROOT)/chart $(HELMTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
 	cp $(GOBIN)/pgo.exe $(RELTMPDIR)
@@ -143,6 +146,7 @@ release:	check-go-vars
 	cp $(GOBIN)/expenv.exe $(RELTMPDIR)
 	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
+	tar czvf $(HELMRELFILE) -C $(HELMTMPDIR) .
 default:
 	all
 
