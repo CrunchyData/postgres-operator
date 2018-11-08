@@ -12,4 +12,4 @@ VOLUME ["/pgdata"]
 
 USER 26
 
-CMD ["sh", "-c", "ls /pgdata/${BACKUP_ROOT}"]
+CMD ["sh", "-c", "find /pgdata/${BACKUP_ROOT}"]
