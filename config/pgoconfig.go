@@ -159,7 +159,7 @@ func (c *PgoConfig) Validate() error {
 		}
 	}
 
-	log.Info("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
+	log.Infof("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
 		return errors.New("PrimaryStorage setting required")
@@ -171,6 +171,12 @@ func (c *PgoConfig) Validate() error {
 	_, ok = c.Storage[c.ReplicaStorage]
 	if !ok {
 		return errors.New("ReplicaStorage setting required")
+	}
+	for k, _ := range c.Storage {
+		_, err = c.GetStorageSpec(k)
+		if err != nil {
+			return err
+		}
 	}
 	if c.Pgo.LSPVCTemplate == "" {
 		return errors.New("Pgo.LSPVCTemplate is required")
@@ -313,6 +319,12 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	storage.Fsgroup = s.Fsgroup
 	storage.MatchLabels = s.MatchLabels
 	storage.SupplementalGroups = s.SupplementalGroups
+
+	if s.Fsgroup != "" && s.SupplementalGroups != "" {
+		err = errors.New("invalid Storage config " + name + " can not have both fsgroup and supplementalGroups specified in the same config, choose one.")
+		log.Error(err)
+		return storage, err
+	}
 
 	return storage, err
 
