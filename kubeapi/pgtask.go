@@ -122,6 +122,7 @@ func Createpgtask(client *rest.RESTClient, task *crv1.Pgtask, namespace string) 
 	}
 
 	log.Debugf("created pgtask %s", task.Name)
+	log.Debugf("pgtask result: %+v", result)
 	return err
 }
 
