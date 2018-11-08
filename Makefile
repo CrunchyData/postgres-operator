@@ -70,6 +70,12 @@ pgo-backrest:	check-go-vars
 pgo-backrest-image:	check-go-vars pgo-backrest
 	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
 	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
+foo:	check-go-vars
+	go install foo/foo.go
+	mv $(GOBIN)/foo ./bin/foo/
+foo-image:	check-go-vars foo
+	docker build -t foo -f $(CO_BASEOS)/Dockerfile.foo.$(CO_BASEOS) .
+	docker tag foo $(CO_IMAGE_PREFIX)/foo:$(CO_IMAGE_TAG)
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars

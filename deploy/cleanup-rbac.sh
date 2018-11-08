@@ -27,5 +27,11 @@ $CO_CMD $NS delete clusterrolebinding pgopclusterbinding pgopclusterbindingcrd
 $CO_CMD $NS delete role pgo-role
 $CO_CMD $NS delete rolebinding pgo-role-binding
 
+$CO_CMD $NS delete serviceaccount pgo-backrest
+$CO_CMD $NS delete role pgo-backrest-role
+$CO_CMD $NS delete rolebinding pgo-backrest-role-binding
+
+$CO_CMD $NS delete clusterrolebinding,clusterrole,sa,rolebinding scheduler-sa scheduler-sa
+
 sleep 5
 

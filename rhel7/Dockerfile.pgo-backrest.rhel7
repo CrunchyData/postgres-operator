@@ -12,21 +12,27 @@ LABEL name="crunchydata/pgo-backrest-" \
     summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-ENV PGVERSION="10" 
+ENV PGVERSION="11" 
 
 # Crunchy Postgres repo
-ADD conf/CRUNCHY-GPG-KEY.public  /
-ADD conf/crunchypg10.repo /etc/yum.repos.d/
-RUN rpm --import CRUNCHY-GPG-KEY.public
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
 
 COPY redhat/atomic/pgo_backrest/help.1 /help.1
 COPY redhat/atomic/pgo_backrest/help.md /help.md
 COPY redhat/licenses /licenses
 
-RUN yum -y update && yum -y install postgresql10-server && yum -y install crunchy-backrest && yum -y clean all
+RUN yum -y update && yum -y install postgresql11-server && yum -y install crunchy-backrest && yum -y clean all
 
-RUN mkdir -p /opt/cpm/bin && chown -R 26:26 /opt/cpm
+#RUN mkdir -p /opt/cpm/bin /pgdata /backrestrepo && chown -R 26:26 /opt/cpm && chmod -R g=u /pgdata 
+RUN mkdir -p /opt/cpm/bin /pgdata /backrestrepo && chown -R 26:26 /opt/cpm 
 ADD bin/pgo-backrest/ /opt/cpm/bin
 
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
 USER 26
+ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+VOLUME ["/pgdata","/backrestrepo"]
 CMD ["/opt/cpm/bin/pgo-backrest"]

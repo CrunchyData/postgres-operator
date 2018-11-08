@@ -26,6 +26,7 @@ if [ $? -ne 0 ]
 then
 	echo ERROR: pgo-role was not found in $CO_NAMESPACE namespace
 	echo Verify you ran install-rbac.sh
+	exit
 fi
 
 $CO_CMD create configmap pgo-pgbackrest-config --from-file=$DIR/pgbackrest.conf
@@ -66,5 +67,4 @@ else
 	$CO_CMD $NS create -f $DIR/service.json
 fi
 
-expenv -f $DIR/scheduler-sa.json | $CO_CMD $NS create -f -
 expenv -f $DIR/scheduler.json | $CO_CMD $NS create -f -

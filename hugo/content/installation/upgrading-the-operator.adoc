@@ -55,6 +55,9 @@ required.
 * operator 3.3 introduced the alpha version of pgbackrest integration.
 Now in 3.4, the pgbackrest integration was changed so that users
 no longer have to specify a custom configuration file using *--custom-config*.
+* the pgo-backrest backup-job is secured with a new service account
+named pgo-backrest, that SA is now included in the rbac.yaml file and is
+to be created by an a cluster admin user
 
 With 3.4, there is a global configmap created as part of the
 deployment process which will serve this same purpose, that is to 

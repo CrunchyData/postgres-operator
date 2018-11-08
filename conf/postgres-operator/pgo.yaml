@@ -19,9 +19,9 @@ Cluster:
   Autofail:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storageos
-BackupStorage: storageos
-ReplicaStorage: storageos
+PrimaryStorage: nfsstorage
+BackupStorage: nfsstorage
+ReplicaStorage: nfsstorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
