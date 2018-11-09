@@ -34,6 +34,12 @@ const PgtaskFailover = "failover"
 const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
 
+const PgtaskWorkflow = "workflow"
+const PgtaskWorkflowCreateClusterType = "createcluster"
+const PgtaskWorkflowSubmittedStatus = "submitted"
+const PgtaskWorkflowCompletedStatus = "completed"
+const PgtaskWorkflowID = "workflowid"
+
 const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"
 const PgtaskBackrestInfo = "info"

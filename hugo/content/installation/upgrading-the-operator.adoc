@@ -58,6 +58,7 @@ no longer have to specify a custom configuration file using *--custom-config*.
 * the pgo-backrest backup-job is secured with a new service account
 named pgo-backrest, that SA is now included in the rbac.yaml file and is
 to be created by an a cluster admin user
+* the permission SHOW_WORKFLOW_PERM was created and added to the default pgorole example, this permission lets users view workflow status, workflows are stored as pgtask CRDs
 
 With 3.4, there is a global configmap created as part of the
 deployment process which will serve this same purpose, that is to 

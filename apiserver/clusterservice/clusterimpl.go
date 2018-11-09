@@ -23,6 +23,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
@@ -436,6 +437,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 // CreateCluster ...
 // pgo create cluster mycluster
 func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterResponse {
+	var id string
 	resp := msgs.CreateClusterResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -682,6 +684,12 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		} else {
 			resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
 		}
+		id, err = createWorkflowTask(clusterName)
+		if err != nil {
+			resp.Results = append(resp.Results, err.Error())
+			return resp
+		}
+		resp.Results = append(resp.Results, "workflow id "+id)
 	}
 
 	return resp
@@ -1020,42 +1028,42 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	return err
 }
 
-/**
-func createTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string) {
-	//create a pgtask for each root at this volume/pvc
-	for i := 0; i < len(dataRoots); i++ {
+func createWorkflowTask(clusterName string) (string, error) {
 
-		//create pgtask CRD
-		spec := crv1.PgtaskSpec{}
-		spec.Name = pvcName
-		spec.TaskType = crv1.PgtaskDeleteData
-		spec.StorageSpec = storageSpec
+	//create pgtask CRD
+	spec := crv1.PgtaskSpec{}
+	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
+	spec.TaskType = crv1.PgtaskWorkflow
 
-		spec.Parameters = make(map[string]string)
-		spec.Parameters[util.LABEL_PVC_NAME] = pvcName
-		spec.Parameters[util.LABEL_DATA_ROOT] = dataRoots[i]
-		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 
-		newInstance := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: pvcName,
-			},
-			Spec: spec,
-		}
-		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
-		//newInstance.ObjectMeta.Labels[util.LABEL_DATA_ROOT] = dataRoots[i]
-		newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
-
-		err := kubeapi.Createpgtask(apiserver.RESTClient,
-			newInstance, apiserver.Namespace)
-		if err != nil {
-			log.Error(err)
-		}
+	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
+	if err != nil {
+		log.Error(err)
+		return "", err
 	}
+	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
 
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+		},
+		Spec: spec,
+	}
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
+
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	return spec.Parameters[crv1.PgtaskWorkflowID], err
 }
-*/
 
 func getType(pod *v1.Pod) string {
 

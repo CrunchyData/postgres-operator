@@ -120,6 +120,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 				if v.Ready {
 					log.Debugf("%s went to Ready, apply policies...", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
 					taskoperator.ApplyPolicies(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
+					taskoperator.CompleteCreateClusterWorkflow(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
 				}
 			}
 		}
@@ -127,6 +128,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 
 }
 
+/**
 func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//if the pod has a metadata label of  pg-cluster and
 	//eventually pg-failover == true then...
@@ -148,3 +150,4 @@ func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	}
 
 }
+*/

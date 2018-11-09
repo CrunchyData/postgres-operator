@@ -1478,3 +1478,16 @@ Delete a pgpool:
 pgo delete pgpool mycluster
 ....
 
+=== Workflow
+
+Starting with Release 3.4, there is a workflow concept that
+you can use to check the status of a cluster creation.  When
+you create a cluster (e.g. pgo create cluster), you will
+see in the response a workflow ID.  You can use that ID
+to check the status of the cluster creation.
+
+==== Syntax
+
+....
+pgo show workflow ID 
+....
