@@ -167,6 +167,11 @@ func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
 		return deployment, errors.New("no target found named " + deployName)
 	}
 
+	//make sure the primary is not being selected by the user
+	if deployment.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+		return deployment, errors.New("deployment primary can not be selected as failover target")
+	}
+
 	return deployment, err
 
 }
