@@ -12,7 +12,7 @@ LABEL name="postgres-operator" \
 	summary="Crunchy Data PostgreSQL Operator" \
 	description="Crunchy Data PostgreSQL Operator"
 
-ENV PGVERSION="10"
+ENV PGVERSION="11"
 
 COPY redhat/atomic/postgres_operator/help.1 /help.1
 COPY redhat/atomic/postgres_operator/help.md /help.md
@@ -20,9 +20,9 @@ COPY redhat/licenses /licenses
 
 # Crunchy PostgreSQL repository
 
-ADD conf/CRUNCHY-GPG-KEY.public  /
-ADD conf/crunchypg10.repo /etc/yum.repos.d/
-RUN rpm --import CRUNCHY-GPG-KEY.public
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
 
 RUN yum -y update && yum -y install postgresql${PGVERSION} && yum -y clean all
 

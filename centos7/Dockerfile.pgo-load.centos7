@@ -2,8 +2,8 @@ FROM centos:7
 
 LABEL name="crunchydata/pgo-load" \
     vendor="crunchy data" \
-	PostgresVersion="10" \
-	PostgresFullVersion="10.5" \
+	PostgresVersion="11" \
+	PostgresFullVersion="11.1" \
 	Version="7.5" \
 	Release="3.4.0" \
     url="https://crunchydata.com" \
@@ -14,7 +14,7 @@ LABEL name="crunchydata/pgo-load" \
     io.openshift.expose-services="" \
     io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
+ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm"
 
 # PGDG PostgreSQL Repository
 
@@ -27,7 +27,7 @@ RUN yum -y update &&  yum -y install epel-release \
  	nss_wrapper \
 	openssh-clients \
 	procps-ng \
- && yum -y install postgresql10 \
+ && yum -y install postgresql11 \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
