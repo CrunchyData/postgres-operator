@@ -63,7 +63,8 @@ func DfCluster(name, selector string) msgs.DfResponse {
 
 	for _, c := range clusterList.Items {
 
-		selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name
+		selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
+			util.LABEL_PGBACKUP + "!=true"
 
 		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
