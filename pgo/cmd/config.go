@@ -82,9 +82,15 @@ func showConfig(args []string) {
 		fmt.Printf("%s%s\n", "    AccessMode:  ", v.AccessMode)
 		fmt.Printf("%s%s\n", "    Size:  ", v.Size)
 		fmt.Printf("%s%s\n", "    StorageType:  ", v.StorageType)
-		fmt.Printf("%s%s\n", "    StorageClass:  ", v.StorageClass)
-		fmt.Printf("%s%s\n", "    Fsgroup:  ", v.Fsgroup)
-		fmt.Printf("%s%s\n", "    SupplementalGroups:  ", v.SupplementalGroups)
+		if v.StorageClass != "" {
+			fmt.Printf("%s%s\n", "    StorageClass:  ", v.StorageClass)
+		}
+		if v.Fsgroup != "" {
+			fmt.Printf("%s%s\n", "    Fsgroup:  ", v.Fsgroup)
+		}
+		if v.SupplementalGroups != "" {
+			fmt.Printf("%s%s\n", "    SupplementalGroups:  ", v.SupplementalGroups)
+		}
 	}
 
 	fmt.Printf("%s%s\n", "DefaultContainerResources:", pgo.DefaultContainerResources)
