@@ -53,12 +53,15 @@ cat $PGPASSFILE
 
 OUTFILE=/tmp/copycommand
 
+#echo "going to sleep for debugging..."
+#sleep 100000
+
 if [ "$FILE_TYPE" = "json" ]; then
 	echo "file type is json"
-	echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$FILE_PATH' csv quote e'\x01' delimiter e'\x02';" > $OUTFILE
+	echo "\COPY $TABLE_TO_LOAD  FROM '/pgdata/$FILE_PATH' csv quote e'\x01' delimiter e'\x02';" > $OUTFILE
 else
 	echo "assuming file type is csv"
-	echo "COPY $TABLE_TO_LOAD  FROM '/pgdata/$FILE_PATH' WITH (FORMAT csv);" > $OUTFILE
+	echo "\COPY $TABLE_TO_LOAD  FROM '/pgdata/$FILE_PATH' WITH (FORMAT csv);" > $OUTFILE
 fi
 psql -U $DB_USER -h $DB_HOST $DB_DATABASE -f $OUTFILE
 echo "pgo-load has ended!"
