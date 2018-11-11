@@ -33,17 +33,18 @@ chmod 0600 .pgpass
 export PGPASSFILE=/tmp/.pgpass
 #chown $UID:$UID $PGPASSFILE
 }
-function ose_hack() {
-        export USER_ID=$(id -u)
-        export GROUP_ID=$(id -g)
-        envsubst < /opt/cpm/conf/passwd.template > /tmp/passwd
-        export LD_PRELOAD=/usr/lib64/libnss_wrapper.so
-        export NSS_WRAPPER_PASSWD=/tmp/passwd
-        export NSS_WRAPPER_GROUP=/etc/group
-}
+
+#function ose_hack() {
+#        export USER_ID=$(id -u)
+#        export GROUP_ID=$(id -g)
+#        envsubst < /opt/cpm/conf/passwd.template > /tmp/passwd
+#        export LD_PRELOAD=/usr/lib64/libnss_wrapper.so
+#        export NSS_WRAPPER_PASSWD=/tmp/passwd
+#        export NSS_WRAPPER_GROUP=/etc/group
+#}
 
 
-ose_hack
+#ose_hack
 
 echo $FILE_PATH is the file path
 

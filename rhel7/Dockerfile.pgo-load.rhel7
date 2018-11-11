@@ -24,14 +24,9 @@ ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-
-RUN yum -y update &&  yum -y install epel-release \
- && yum install -y \
+RUN yum -y update && yum install -y \
 	gettext \
 	hostname \
- 	nss_wrapper \
-	openssh-clients \
 	procps-ng \
  && yum -y install postgresql${PGVERSION} \
  && yum clean all -y
@@ -42,6 +37,11 @@ ADD conf/pgo-load/ /opt/cpm/conf
 RUN chown -R 26:26 /opt/cpm
 
 VOLUME /pgdata
+
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
+ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
 
 USER 26
 
