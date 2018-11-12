@@ -98,7 +98,14 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 			}
 		}
 
-		err := kubeapi.Deletepgcluster(apiserver.RESTClient,
+		err := kubeapi.Deletepgtask(apiserver.RESTClient,
+			cluster.Spec.Name+"-createcluster", apiserver.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
 			cluster.Spec.Name, apiserver.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
@@ -1200,24 +1207,12 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName string) (erro
 		}
 	}
 
-	//pgroot
-	username := "postgres"
-
 	RootSecretName = clusterName + crv1.RootSecretSuffix
 	pgPassword := util.GeneratePassword(10)
 	if RootPassword != "" {
 		log.Debugf("using user specified password for secret %s", RootSecretName)
 		pgPassword = RootPassword
 	}
-
-	err = util.CreateSecret(apiserver.Clientset, clusterName, RootSecretName, username, pgPassword, apiserver.Namespace)
-	if err != nil {
-		log.Error("error creating secret" + err.Error())
-		return err, RootSecretName, PrimarySecretName, UserSecretName
-	}
-
-	///primary
-	username = "primaryuser"
 
 	PrimarySecretName = clusterName + crv1.PrimarySecretSuffix
 	primaryPassword := util.GeneratePassword(10)
@@ -1226,15 +1221,6 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName string) (erro
 		primaryPassword = PrimaryPassword
 	}
 
-	err = util.CreateSecret(apiserver.Clientset, clusterName, PrimarySecretName, username, primaryPassword, apiserver.Namespace)
-	if err != nil {
-		log.Error("error creating secret2" + err.Error())
-		return err, RootSecretName, PrimarySecretName, UserSecretName
-	}
-
-	///pguser
-	username = "testuser"
-
 	UserSecretName = clusterName + crv1.UserSecretSuffix
 	testPassword := util.GeneratePassword(10)
 	if Password != "" {
@@ -1242,9 +1228,32 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName string) (erro
 		testPassword = Password
 	}
 
+	var found bool
+	_, found, err = kubeapi.GetSecret(apiserver.Clientset, RootSecretName, apiserver.Namespace)
+	if found {
+		log.Debugf("not creating secrets %s since it already exists", RootSecretName)
+		return err, RootSecretName, PrimarySecretName, UserSecretName
+
+	}
+
+	username := "postgres"
+	err = util.CreateSecret(apiserver.Clientset, clusterName, RootSecretName, username, pgPassword, apiserver.Namespace)
+	if err != nil {
+		log.Errorf("error creating secret %s %s", RootSecretName, err.Error())
+		return err, RootSecretName, PrimarySecretName, UserSecretName
+	}
+
+	username = "primaryuser"
+	err = util.CreateSecret(apiserver.Clientset, clusterName, PrimarySecretName, username, primaryPassword, apiserver.Namespace)
+	if err != nil {
+		log.Errorf("error creating secret %s %s", PrimarySecretName, err.Error())
+		return err, RootSecretName, PrimarySecretName, UserSecretName
+	}
+
+	username = "testuser"
 	err = util.CreateSecret(apiserver.Clientset, clusterName, UserSecretName, username, testPassword, apiserver.Namespace)
 	if err != nil {
-		log.Error("error creating secret " + err.Error())
+		log.Errorf("error creating secret %s %s", UserSecretName, err.Error())
 		return err, RootSecretName, PrimarySecretName, UserSecretName
 	}
 

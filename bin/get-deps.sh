@@ -40,8 +40,9 @@ fi
 echo "getting expenv go library..."
 go get github.com/blang/expenv
 
-echo "getting all libraries for project..."
-dep ensure
+# uncomment only if you want to develop on the project
+#echo "getting all libraries for project..."
+#dep ensure
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

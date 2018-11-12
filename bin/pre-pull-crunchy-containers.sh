@@ -13,10 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CCP_IMAGE_PREFIX=crunchydata
-CCP_IMAGE_TAG=centos7-10.5-2.1.0
+gcloud auth login
+gcloud config set project container-suite
 
-for CNAME in crunchy-postgres crunchy-collect crunchy-grafana crunchy-prometheus crunchy-backup crunchy-backrest-restore
+REGISTRY='us.gcr.io/container-suite'
+LOCALREGISTRY=cortado-k1:5000/crunchydata
+CCP_IMAGE_TAG=centos7-11.0-2.2.0-rc6
+for CNAME in crunchy-scheduler crunchy-postgres crunchy-collect crunchy-grafana crunchy-prometheus crunchy-backup
 do
-	docker pull $CCP_IMAGE_PREFIX/$CNAME:$CCP_IMAGE_TAG
+	docker pull us.gcr.io/container-suite/$CNAME:$CCP_IMAGE_TAG
+	docker tag $REGISTRY/$CNAME:$CCP_IMAGE_TAG $LOCALREGISTRY/$CNAME:$CCP_IMAGE_TAG
+	docker push $LOCALREGISTRY/$CNAME:$CCP_IMAGE_TAG
 done
