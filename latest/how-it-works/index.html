@@ -250,7 +250,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.2.0 2018-10-10</p>
+<p>Latest Release: 3.4.0 2018-11-14</p>
 </div>
 <div class="sect1">
 <h2 id="_reference_architecture">Reference Architecture</h2>
@@ -732,6 +732,14 @@ specify all of the configuration files. It is entirely up to your use case
 to determine which to use.</p>
 </div>
 <div class="paragraph">
+<p>This global configmap holds the pgbackrest.conf file, this is required
+for pgbackrest backups to work!  This also applies to ANY custom
+configuration file you wish to use, it MUST contain a pgbackrest.conf
+file as a key.  See the example for pgo-custom-pg-config for the
+pgbackrest.conf file and how to add it to your custom configuration
+ConfigMap.</p>
+</div>
+<div class="paragraph">
 <p>An example set of configuration files and a script to create the
 global configMap is found at -</p>
 </div>
@@ -760,6 +768,13 @@ file used to initially populate the database after the initial <strong>initdb</s
 is run when the database is first created. Changes would be made
 to this if you wanted to define which database objects are created by
 default.</p>
+</div>
+<div class="paragraph">
+<p>The <strong>pgbackrest.conf</strong> file is merely used to tell the Postgres container
+that it should allocate a pgbackrest configuration directory when
+initializing the container.  The contents of this file do not get inspected
+but the name has to be <strong>pgbackrest.conf</strong>.  This requirement will change
+in upcoming operator releases.</p>
 </div>
 </div>
 <div class="sect3">
@@ -810,7 +825,7 @@ Postgres cluster.</p>
 as defined within the <strong>crunchy-containers</strong> project.</p>
 </div>
 <div class="paragraph">
-<p>See <a href="https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_and_performance">the crunchy-containers Metrics example</a> for more details on setting up the <strong>crunchy-metrics</strong> solution.</p>
+<p>See <a href="https://crunchydata.github.io/crunchy-containers/stable/getting-started/kubernetes-and-openshift/#_metrics_and_performance">the crunchy-containers Metrics example</a> for more details on setting up the <strong>crunchy-metrics</strong> solution.</p>
 </div>
 </div>
 <div class="sect2">

@@ -234,7 +234,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-10</p>
+<p>Latest Release: 3.4.0 2018-11-14</p>
 </div>
 <div class="paragraph">
 <p>This document details verifying the installation of the PostgreSQL Operator
@@ -303,9 +303,9 @@ pgupgrades.cr.client-go.k8s.io   2d</pre>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
+<pre>export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -343,7 +343,7 @@ security requirements.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$COROOT/conf/apiserver/pgorole</pre>
+<pre>$COROOT/conf/postgres-operator/pgorole</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -506,8 +506,8 @@ export CO_APISERVER_URL=https://`minikube ip`</pre>
 <div class="literalblock">
 <div class="content">
 <pre>pgo version
-pgo client version 3.3.0
-apiserver version 3.3.0</pre>
+pgo client version 3.4.0
+apiserver version 3.4.0</pre>
 </div>
 </div>
 <div class="paragraph">
