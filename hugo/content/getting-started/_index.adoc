@@ -228,7 +228,7 @@ pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
 ===== Metrics
 
 Add the
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-collect/[crunchy-collect]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-collect/[crunchy-collect]
 container from the Crunchy Container Suite to the database cluster pod and enable metrics collection
 on the database:
 ....
@@ -237,7 +237,7 @@ pgo create cluster mycluster --metrics
 
 You can connect these containers to a metrics pipeline using link:https://grafana.com[Grafana]
 and link:https://prometheus.io[Prometheus] by following the example found in the
-link:https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_collection[Crunchy Container Suite documentation].
+link:https://crunchydata.github.io/crunchy-containers/stable/getting-started/kubernetes-and-openshift/#_metrics_collection[Crunchy Container Suite documentation].
 
 ===== pgBadger
 
@@ -246,7 +246,7 @@ Add a link:https://github.com/dalibo/pgbadger[pgBadger] sidecar into the Postgre
 pgo create cluster mycluster --pgbadger
 ....
 
-This command flag adds the link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgbadger/[crunchy-pgbadger]
+This command flag adds the link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgbadger/[crunchy-pgbadger]
 container into the database pod. pgBadger reports can then be accessed through port 10000 at `/api/badgergenerate`.
 
 ===== pgPool II
@@ -254,7 +254,7 @@ container into the database pod. pgBadger reports can then be accessed through p
 By appending the `--pgpool` command line flag, you can add
 link:http://www.pgpool.net/mediawiki/index.php/Main_Page[pgPool II] to the database cluster.
 The container used for this functionality is the
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgpool/[crunchy-pgpool]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgpool/[crunchy-pgpool]
 container image from the Crunchy Container Suite.
 ....
 pgo create cluster mycluster --pgpool
@@ -546,7 +546,7 @@ pgo reload mycluster
 
 === Backups
 
-The `backup` command will utilize the link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-backup/[crunchy-backup]
+The `backup` command will utilize the link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-backup/[crunchy-backup]
 container to execute a full backup against another database container
 using the standard pg_basebackup utility that is included with PostgreSQL.
 
@@ -645,7 +645,7 @@ the last pg_basebackup results.
 === Scheduling
 
 The `schedule` command will generate schedule configuration maps that are utitlized by the
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-scheduler/[crunchy-scheduler]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-scheduler/[crunchy-scheduler]
 container.  This allows users to create automated, scheduled backups for their PostgreSQL clusters.
 
 Currently only two types of backups are supported with the schedule command:
@@ -972,7 +972,7 @@ replica can take longer depending on how much data is being replicated.
 The *upgrade* command will allow you to upgrade the PostgreSQL version of
 your cluster with the pg_upgrade utility. Minor or major upgrades are
 supported. The Crunchy Container Suite
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-upgrade/[crunchy-upgrade]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-upgrade/[crunchy-upgrade]
 container is responsible for performing this task.
 
 By default, it will request confirmation for the command as the operator
