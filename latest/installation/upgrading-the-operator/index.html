@@ -225,7 +225,7 @@
     
     
     <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-10</p>
+<p>Latest Release: 3.4.0 2018-11-14</p>
 </div>
 <div class="paragraph">
 <div class="expand">
@@ -234,185 +234,315 @@
         <span>
         
         
-        Upgrading to v3.3
+        Upgrading to v3.4
         
         </span>
     </div>
     <div class="expand-content" style="display: none;">
-<div class="paragraph">
-<p>The following changes are mandatory when upgrading to 3.3 from previous operator versions:</p>
-</div>
 <div class="ulist">
 <ul>
 <li>
-<p>The MatchLabels attribute was added to the pgo.yaml file as an optional
-storage configuration setting. You do not have to specify this setting,
-however, the operator-conf ConfigMap now has to include the <code>pvc-matchlabels.json</code>
-template file as required by this new feature. If you upgrade to
-3.2, you will need to rebuild your <strong>operator-conf</strong> ConfigMap to include
-<code>pvc-matchlabels.json</code> and redeploy the Operator using the new ConfigMap.</p>
+<p>The conf/apiserver/ configuration files were moved into the
+conf/postgres-operator directory to consolidate all config
+files into a single location.  You will need to perform
+this step manually start with version 3.4.0 if you are running
+an existing Operator version prior to 3.4.0.  The Helm chart
+is also updated to reflect this change.  Starting with 3.4.0
+there is a secret, <strong>pgo-auth-secret</strong> that holds authentication and
+authorization files used by the operator to authenticate REST
+clients.  Also, the configuration files are stored in a configmap
+named <strong>pgo-config</strong>.  Existing users will need to update
+their deploy.sh script and deployment.yaml files to pick up the
+the new naming conventions.</p>
 </li>
 <li>
-<p>The <code>CCP_IMAGE_PREFIX</code>, <code>CO_IMAGE_PREFIX</code>, and <code>CO_IMAGE_TAG</code> environment variables are now pulled from the <code>pgo.yaml</code> configuration file that is mounted by both the apiserver and operator containers. To clean up an existing deployment, remove these environment variable definitions from your <code>deployment.yaml</code> file or Helm chart equivalent.</p>
+<p>new configuration settings were added into pgo.yaml to support
+resource configuration settings for the various <strong>helper</strong> containers.
+The new settings include DefaultLoadResources, DefaultLspvcResources,
+DefaultRmdataResources, DefaultBackupResources.  You will need to add
+these manually into your existing pgo.yaml file if you want to
+make use of this feature.</p>
 </li>
 <li>
-<p>The <code>ExternalIP</code> field was added to the <code>apiservermsgs.ShowClusterService</code>
-struct. This field is now passed back to apiserver clients in the
-REST API when viewing cluster details. For custom clients you might
-have written, you will see this new field in the REST message.</p>
+<p>the pgcluster CRD was changed to remove the password fields, instead
+secret names are stored in the CRD to avoid having to have passwords
+in the CRD, the password fields are totally removed starting in this
+release. No changes are required for existing CRD resources, new
+CRDs that are created will not have the  password fields.</p>
 </li>
 <li>
-<p>Clusters that were created prior to 3.1 will need a new label to be applied. For primary deployments, apply the label <code>primary=true</code>. For example, <code>kubectl label deploy mycluster primary=true</code>. For replica deployments, specify <code>primary=false</code>. For example,	<code>kubectl label deploy mycluster-xxxx primary=false</code>.</p>
+<p>starting in 3.4, a new operator upgrade process is developed that
+eventually will handle various forms of automated upgrades depending
+on user settings and changes to the postgres-operator in between
+versions.  When starting a new Operator it will scan the pgcluster
+and pgreplica instances and update the pgo-version to match the
+current operator version, it will also create a user label on
+the pgreplica/pgcluster to indicate the upgrade date.  More advanced
+upgrade features are planned to be developed.</p>
 </li>
 <li>
-<p>The <code>collect.json</code> template now specifies a pgmonitor credential that
-must match the <code>PGMONITOR_PASSWORD</code> environment variable which was
-added into the <code>cluster-deployment-1.json</code> template.  These changes
-were required to support crunchy-collect (2.1.0) changes that were
-introduced.  Users should upgrade to <code>crunchy-collect:centos7-10.5-2.1.0</code>
-to use this feature.  If you do not want to upgrade to this new
-metrics collector, you will need to retain and reuse the prior version
-of <code>collect.json</code> used by the Operator and make sure you deploy that
-version.</p>
+<p>in 3.4, the pgo.yaml LogStatement and LogMinDurationStatement settings
+are present, if not set, defaults are supplied for both.  These settings
+let you define more precisely the degree of Postgres logging for
+any Postgres clusters created by the Operator.  The LogStatement default
+is 'none' and the LogMinDurationStatement defaults to 60000 (milliseconds).
+These settings greatly reduce the log file sizes and only will log
+statements that are longer running that 60000 milliseconds.  If you
+want to see all statements logged, set LogStatement to 'all'.</p>
+</li>
+<li>
+<p>in 3.4, the pgbackup CRD includes a new field called BackupOpts, used
+to hold the pgbasebackup command options which can now be passed in
+on the CLI backup command, no changes to existing pgbackup CRD resources is
+required.</p>
+</li>
+<li>
+<p>operator 3.3 introduced the alpha version of pgbackrest integration.
+Now in 3.4, the pgbackrest integration was changed so that users
+no longer have to specify a custom configuration file using <strong>--custom-config</strong>.</p>
+</li>
+<li>
+<p>the pgo-backrest backup-job is secured with a new service account
+named pgo-backrest, that SA is now included in the rbac.yaml file and is
+to be created by an a cluster admin user</p>
+</li>
+<li>
+<p>the permission SHOW_WORKFLOW_PERM was created and added to the default pgorole example, this permission lets users view workflow status, workflows are stored as pgtask CRDs</p>
 </li>
 </ul>
 </div>
-
-    </div>
-</div>
+<div class="paragraph">
+<p>With 3.4, there is a global configmap created as part of the
+deployment process which will serve this same purpose, that is to
+indicate to the Postgres container that it must allocate the pgbackrest
+directories within the mounted /backrestrepo volume mount.  This
+means however, that if you specify a global configuration file or
+specify your own custom configuration that you have to include
+the pgbackrest.conf file and key within that configmap.  The sample
+global custom configuration map, pgo-custom-pg-config, now includes
+pgbackrest.conf within it.</p>
 </div>
 <div class="paragraph">
-<div class="expand">
-    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
-        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
-        <span>
-        
-        
-        Upgrading from v2.6 to v3.1
-        
-        </span>
-    </div>
-    <div class="expand-content" style="display: none;">
-<div class="paragraph">
-<p>Clusters that were created prior to 3.1 will need a new label to be applied.
-For primary deployments, apply the label <code>primary=true</code>. For example,
-<code>kubectl label deploy mycluster primary=true</code>. For replica deployments, specify
-<code>primary=false</code>. For example,	<code>kubectl label deploy mycluster-xxxx primary=false</code>.</p>
-</div>
-
-    </div>
-</div>
+<p>This new integration only works with pgbackrest v2.6 which is included
+into crunchy-postgres 2.2.0.  This means that to use pgbackrest, you
+must run crunchy-postgres 2.2.0 or greater which will require users
+to upgrade the pgo.yaml to use the 2.2.0 CCPImageTag.  pgbackrest commands
+will NOT work with clusters using older Postgres images.</p>
 </div>
 <div class="paragraph">
-<div class="expand">
-    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
-        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
-        <span>
-        
-        
-        Upgrading from v2.4 to v2.5
-        
-        </span>
-    </div>
-    <div class="expand-content" style="display: none;">
-<div class="paragraph">
-<p>For a full list of additions and revisions that occurred in the
-PostgreSQL Operator v2.5 release, please view the related release
-page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/2.5">here</a>.</p>
-</div>
-<div class="sect1">
-<h2 id="_required_updates">Required Updates</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>This section notes some required steps that will need to be taken
-in the process of upgrading from v2.4 to v2.5.</p>
-</div>
-<div class="sect2">
-<h3 id="_configuration_file">Configuration File</h3>
-<div class="paragraph">
-<p>It will be necessary to update your existing <code>pgo.yaml</code> configuration
-file where the Storage Configuration sections are concerned. The updated
-file for v2.5 can be found
-<a href="https://github.com/CrunchyData/postgres-operator/blob/2.5/conf/apiserver/pgo.yaml">here</a>.
-The file contained within the local installation of the Operator is located
-by default in the following location -</p>
+<p>&lt;div class="expand"&gt;
+    &lt;div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});"&gt;
+        &lt;i style="font-size:x-small;" class="fa fa-chevron-right"&gt;&lt;/i&gt;
+        &lt;span&gt;</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$COROOT/conf/apiserver/pgo.yaml</pre>
+<pre>Upgrading to v3.3</pre>
 </div>
 </div>
+<div class="literalblock">
+<div class="content">
+<pre>        &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="expand-content" style="display: none;"&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;The following changes are mandatory when upgrading to 3.3 from previous operator versions:&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="ulist"&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;The MatchLabels attribute was added to the pgo.yaml file as an optional
+storage configuration setting. You do not have to specify this setting,
+however, the operator-conf ConfigMap now has to include the &lt;code&gt;pvc-matchlabels.json&lt;/code&gt;
+template file as required by this new feature. If you upgrade to
+3.2, you will need to rebuild your &lt;strong&gt;operator-conf&lt;/strong&gt; ConfigMap to include
+&lt;code&gt;pvc-matchlabels.json&lt;/code&gt; and redeploy the Operator using the new ConfigMap.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;CCP_IMAGE_PREFIX&lt;/code&gt;, &lt;code&gt;CO_IMAGE_PREFIX&lt;/code&gt;, and &lt;code&gt;CO_IMAGE_TAG&lt;/code&gt; environment variables are now pulled from the &lt;code&gt;pgo.yaml&lt;/code&gt; configuration file that is mounted by both the apiserver and operator containers. To clean up an existing deployment, remove these environment variable definitions from your &lt;code&gt;deployment.yaml&lt;/code&gt; file or Helm chart equivalent.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;ExternalIP&lt;/code&gt; field was added to the &lt;code&gt;apiservermsgs.ShowClusterService&lt;/code&gt;
+struct. This field is now passed back to apiserver clients in the
+REST API when viewing cluster details. For custom clients you might
+have written, you will see this new field in the REST message.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Clusters that were created prior to 3.1 will need a new label to be applied. For primary deployments, apply the label &lt;code&gt;primary=true&lt;/code&gt;. For example, &lt;code&gt;kubectl label deploy mycluster primary=true&lt;/code&gt;. For replica deployments, specify &lt;code&gt;primary=false&lt;/code&gt;. For example,	&lt;code&gt;kubectl label deploy mycluster-xxxx primary=false&lt;/code&gt;.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;The &lt;code&gt;collect.json&lt;/code&gt; template now specifies a pgmonitor credential that
+must match the &lt;code&gt;PGMONITOR_PASSWORD&lt;/code&gt; environment variable which was
+added into the &lt;code&gt;cluster-deployment-1.json&lt;/code&gt; template.  These changes
+were required to support crunchy-collect (2.1.0) changes that were
+introduced.  Users should upgrade to &lt;code&gt;crunchy-collect:centos7-10.5-2.1.0&lt;/code&gt;
+to use this feature.  If you do not want to upgrade to this new
+metrics collector, you will need to retain and reuse the prior version
+of &lt;code&gt;collect.json&lt;/code&gt; used by the Operator and make sure you deploy that
+version.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;</pre>
 </div>
-<div class="sect2">
-<h3 id="_secrets">Secrets</h3>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    &lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
+</div>
 <div class="paragraph">
-<p>2.5 changed the names of the database credentials that are created
+<p>&lt;div class="expand"&gt;
+    &lt;div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});"&gt;
+        &lt;i style="font-size:x-small;" class="fa fa-chevron-right"&gt;&lt;/i&gt;
+        &lt;span&gt;</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Upgrading from v2.6 to v3.1</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>        &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="expand-content" style="display: none;"&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;Clusters that were created prior to 3.1 will need a new label to be applied.
+For primary deployments, apply the label &lt;code&gt;primary=true&lt;/code&gt;. For example,
+&lt;code&gt;kubectl label deploy mycluster primary=true&lt;/code&gt;. For replica deployments, specify
+&lt;code&gt;primary=false&lt;/code&gt;. For example,	&lt;code&gt;kubectl label deploy mycluster-xxxx primary=false&lt;/code&gt;.&lt;/p&gt;
+&lt;/div&gt;</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>    &lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>&lt;div class="expand"&gt;
+    &lt;div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});"&gt;
+        &lt;i style="font-size:x-small;" class="fa fa-chevron-right"&gt;&lt;/i&gt;
+        &lt;span&gt;</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Upgrading from v2.4 to v2.5</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>        &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="expand-content" style="display: none;"&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;For a full list of additions and revisions that occurred in the
+PostgreSQL Operator v2.5 release, please view the related release
+page &lt;a href="https://github.com/CrunchyData/postgres-operator/releases/tag/2.5"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="sect1"&gt;
+&lt;h2 id="_required_updates"&gt;Required Updates&lt;/h2&gt;
+&lt;div class="sectionbody"&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;This section notes some required steps that will need to be taken
+in the process of upgrading from v2.4 to v2.5.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_configuration_file"&gt;Configuration File&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;It will be necessary to update your existing &lt;code&gt;pgo.yaml&lt;/code&gt; configuration
+file where the Storage Configuration sections are concerned. The updated
+file for v2.5 can be found
+&lt;a href="https://github.com/CrunchyData/postgres-operator/blob/2.5/conf/apiserver/pgo.yaml"&gt;here&lt;/a&gt;.
+The file contained within the local installation of the Operator is located
+by default in the following location -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;$COROOT/conf/apiserver/pgo.yaml&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_secrets"&gt;Secrets&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;2.5 changed the names of the database credentials that are created
 by default in order to be consistent with the way new database credentials
-are named.</p>
-</div>
-<div class="paragraph">
-<p>It will be necessary to run the following script to update your
+are named.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;It will be necessary to run the following script to update your
 existing clusters. This script will essentially copy the existing
 secrets values and create new secrets with those same values but
 named to the new standard. Run the script by passing in the name of
-an existing cluster as a parameter.</p>
+an existing cluster as a parameter.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;$COROOT/bin/upgrade-secret.sh&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$COROOT/bin/upgrade-secret.sh</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-    </div>
+<pre>    &lt;/div&gt;
+&lt;/div&gt;</pre>
 </div>
 </div>
 <div class="paragraph">
-<div class="expand">
-    <div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});">
-        <i style="font-size:x-small;" class="fa fa-chevron-right"></i>
-        <span>
-        
-        
-        Upgrading from v2.5 to v2.6
-        
-        </span>
-    </div>
-    <div class="expand-content" style="display: none;">
-<div class="paragraph">
-<p>For a full list of additions and revisions that occurred in the
+<p>&lt;div class="expand"&gt;
+    &lt;div class="expand-label" style="cursor: pointer;" onclick="$h = $(this);$h.next('div').slideToggle(100,function () {$h.children('i').attr('class',function () {return $h.next('div').is(':visible') ? 'fa fa-chevron-down' : 'fa fa-chevron-right';});});"&gt;
+        &lt;i style="font-size:x-small;" class="fa fa-chevron-right"&gt;&lt;/i&gt;
+        &lt;span&gt;</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>Upgrading from v2.5 to v2.6</pre>
+</div>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>        &lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div class="expand-content" style="display: none;"&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;For a full list of additions and revisions that occurred in the
 PostgreSQL Operator v2.5 release, please view the related release
-page <a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.3.0">here</a>.</p>
-</div>
-<div class="sect1">
-<h2 id="_required_updates">Required Updates</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>This section notes some required steps that will need to be taken
-in the process of upgrading from v2.5 to v2.6.</p>
-</div>
-<div class="sect2">
-<h3 id="_configuration_file">Configuration File</h3>
-<div class="paragraph">
-<p>One update in v2.6 changed the <code>pgo.yaml</code> file through removing the Debug flag.
-The <code>Pgo.Debug</code> variable can now be removed from the <code>pgo.yaml</code> file as a
-result. The debug flag is now called <code>CRUNCHY_DEBUG</code> and is set in the
-<code>deployment.json</code> file as a default environment variable.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_container_resources">Container Resources</h3>
-<div class="paragraph">
-<p>Release 2.6 added the concept of container resource configurations
-to the <code>pgo.yaml</code> file. In order to specify the optional container
-resource configurations, add a section as follows to your <code>pgo.yaml</code>
-file -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>DefaultContainerResource: small
+page &lt;a href="https://github.com/CrunchyData/postgres-operator/releases/tag/3.3.0"&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="sect1"&gt;
+&lt;h2 id="_required_updates"&gt;Required Updates&lt;/h2&gt;
+&lt;div class="sectionbody"&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;This section notes some required steps that will need to be taken
+in the process of upgrading from v2.5 to v2.6.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_configuration_file"&gt;Configuration File&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;One update in v2.6 changed the &lt;code&gt;pgo.yaml&lt;/code&gt; file through removing the Debug flag.
+The &lt;code&gt;Pgo.Debug&lt;/code&gt; variable can now be removed from the &lt;code&gt;pgo.yaml&lt;/code&gt; file as a
+result. The debug flag is now called &lt;code&gt;CRUNCHY_DEBUG&lt;/code&gt; and is set in the
+&lt;code&gt;deployment.json&lt;/code&gt; file as a default environment variable.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_container_resources"&gt;Container Resources&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;Release 2.6 added the concept of container resource configurations
+to the &lt;code&gt;pgo.yaml&lt;/code&gt; file. In order to specify the optional container
+resource configurations, add a section as follows to your &lt;code&gt;pgo.yaml&lt;/code&gt;
+file -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;DefaultContainerResource: small
 ContainerResources:
  small:
    RequestsMemory:  2Gi
@@ -423,102 +553,110 @@ ContainerResources:
    RequestsMemory:  8Gi
    RequestsCPU:  2.0
    LimitsMemory:  12Gi
-   LimitsCPU:  4.0</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>If these settings are set incorrectly or if the Kubernetes cluster
+   LimitsCPU:  4.0&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;If these settings are set incorrectly or if the Kubernetes cluster
 cannot meet the defined memory and CPU requirements, deployments will go into
-a <strong>pending</strong> state.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_kube_rbac">Kube RBAC</h3>
-<div class="paragraph">
-<p>Release 2.6 added a <code>rbac.yaml</code> file to capture the Kube RBAC
-rules. These RBAC rules allow the <strong>apiserver</strong> and <strong>postgres-operator</strong>
+a &lt;strong&gt;pending&lt;/strong&gt; state.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_kube_rbac"&gt;Kube RBAC&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;Release 2.6 added a &lt;code&gt;rbac.yaml&lt;/code&gt; file to capture the Kube RBAC
+rules. These RBAC rules allow the &lt;strong&gt;apiserver&lt;/strong&gt; and &lt;strong&gt;postgres-operator&lt;/strong&gt;
 containers access to the Kubernetes resources required for
 the operator to work. As part of the deployment process, it is necessary to
-execute the <code>rbac.yaml</code> file to set the roles and bindings required by the
-operator. Adjust this file to suit local security requirements.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_application_rbac">Application RBAC</h3>
-<div class="paragraph">
-<p>Release 2.6 added an RBAC capability to secure the <strong>pgo</strong> application.
-The <strong>pgouser</strong> now has a role appended at the end of of each user definition
-as follows -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>username:password:pgoadmin
+execute the &lt;code&gt;rbac.yaml&lt;/code&gt; file to set the roles and bindings required by the
+operator. Adjust this file to suit local security requirements.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_application_rbac"&gt;Application RBAC&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;Release 2.6 added an RBAC capability to secure the &lt;strong&gt;pgo&lt;/strong&gt; application.
+The &lt;strong&gt;pgouser&lt;/strong&gt; now has a role appended at the end of of each user definition
+as follows -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;username:password:pgoadmin
 testuser:testpass:pgoadmin
-readonlyuser:testpass:pgoreader</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>These are defined in the following file -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>$COROOT/conf/apiserver/pgouser</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>To match the behavior of the pre 2.6 releases, the <strong>pgadmin</strong> role
-is set on the previous user definitions, but a <strong>readonlyuser</strong> is
+readonlyuser:testpass:pgoreader&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;These are defined in the following file -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;$COROOT/conf/apiserver/pgouser&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;To match the behavior of the pre 2.6 releases, the &lt;strong&gt;pgadmin&lt;/strong&gt; role
+is set on the previous user definitions, but a &lt;strong&gt;readonlyuser&lt;/strong&gt; is
 now defined to test other role definitions. The roles are defined in
-a new file called <strong>pgorole</strong>. This file defines each role and the
-permissions for that role. By default, two roles are defined as samples -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgoadmin
-pgoreader</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Adjust these default settings to meet local security requirements.</p>
-</div>
-<div class="paragraph">
-<p>The format of this file is as follows -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>rolename: permissionA, permissionB</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>These are defined in the following file -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>$COROOT/conf/apiserver/pgorole</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The complete set of permissions is documented in the <a href="https://crunchydata.github.io/postgres-operator/latest/installation/configuration/">Configuration</a> document.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_user_creation">User Creation</h3>
-<div class="paragraph">
-<p>Release 2.6 replaced the <code>pgo user --add</code> command with the <code>pgo create user</code>
+a new file called &lt;strong&gt;pgorole&lt;/strong&gt;. This file defines each role and the
+permissions for that role. By default, two roles are defined as samples -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;pgoadmin
+pgoreader&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;Adjust these default settings to meet local security requirements.&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;The format of this file is as follows -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;rolename: permissionA, permissionB&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;These are defined in the following file -&lt;/p&gt;
+&lt;/div&gt;
+&lt;div class="literalblock"&gt;
+&lt;div class="content"&gt;
+&lt;pre&gt;$COROOT/conf/apiserver/pgorole&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;The complete set of permissions is documented in the &lt;a href="https://crunchydata.github.io/postgres-operator/latest/installation/configuration/"&gt;Configuration&lt;/a&gt; document.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_user_creation"&gt;User Creation&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;Release 2.6 replaced the &lt;code&gt;pgo user --add&lt;/code&gt; command with the &lt;code&gt;pgo create user&lt;/code&gt;
 command to improve consistency across command usage. Any scripts written
 using the older style of command require an update to use the new command
-syntax.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_replica_crd">Replica CRD</h3>
-<div class="paragraph">
-<p>There is a new Kubernetes Custom Resource Definition that serves the purpose
-of holding replica information, called <strong>pgreplicas</strong>. This CRD is populated
+syntax.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class="sect2"&gt;
+&lt;h3 id="_replica_crd"&gt;Replica CRD&lt;/h3&gt;
+&lt;div class="paragraph"&gt;
+&lt;p&gt;There is a new Kubernetes Custom Resource Definition that serves the purpose
+of holding replica information, called &lt;strong&gt;pgreplicas&lt;/strong&gt;. This CRD is populated
 with the pgo scale command and is used to hold per-replica specific information
-such as the resource and storage configurations requested at run time.</p>
+such as the resource and storage configurations requested at run time.&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;</pre>
 </div>
 </div>
+<div class="literalblock">
+<div class="content">
+<pre>    &lt;/div&gt;
+&lt;/div&gt;</pre>
 </div>
 </div>
 
