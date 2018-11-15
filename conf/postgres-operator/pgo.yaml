@@ -62,4 +62,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  rhel7-3.4.0-rc1
+  COImageTag:  rhel7-3.4.0-rc2
