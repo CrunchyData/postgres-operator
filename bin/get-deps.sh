@@ -46,5 +46,5 @@ go get github.com/blang/expenv
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "pre-pulling container suite images used by the operator..."
-$DIR/pre-pull-crunchy-containers.sh
+#echo "pre-pulling container suite images used by the operator..."
+#$DIR/pre-pull-crunchy-containers.sh
