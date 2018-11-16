@@ -49,7 +49,6 @@ installrbac:
 	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
-	cd examples/backrest-config && ./create.sh
 setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json
 	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
@@ -75,9 +74,6 @@ pgo-backrest-image:	check-go-vars pgo-backrest
 foo:	check-go-vars
 	go install foo/foo.go
 	mv $(GOBIN)/foo ./bin/foo/
-foo-image:	check-go-vars foo
-	docker build -t foo -f $(CO_BASEOS)/Dockerfile.foo.$(CO_BASEOS) .
-	docker tag foo $(CO_IMAGE_PREFIX)/foo:$(CO_IMAGE_TAG)
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars
@@ -132,7 +128,7 @@ pull:
 release:	check-go-vars
 	make macpgo
 	make winpgo
-	rm -rf $(RELTMPDIR) $(RELFILE)
+	rm -rf $(RELTMPDIR) $(RELFILE) $(HELMTMPDIR)
 	mkdir $(RELTMPDIR) $(HELMTMPDIR)
 	cp -r $(COROOT)/examples $(RELTMPDIR)
 	cp -r $(COROOT)/deploy $(RELTMPDIR)

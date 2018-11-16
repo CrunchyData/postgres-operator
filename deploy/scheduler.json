@@ -29,6 +29,10 @@
                                         "fieldPath": "metadata.namespace"
                                     }
                                 }
+                            },
+                            {
+                                "name": "TIMEOUT",
+                                "value": "3600"
                             }
                         ],
                         "volumeMounts": [],
