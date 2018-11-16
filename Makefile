@@ -49,7 +49,6 @@ installrbac:
 	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
-	cd examples/backrest-config && ./create.sh
 setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json
 	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
@@ -132,7 +131,7 @@ pull:
 release:	check-go-vars
 	make macpgo
 	make winpgo
-	rm -rf $(RELTMPDIR) $(RELFILE)
+	rm -rf $(RELTMPDIR) $(RELFILE) $(HELMTMPDIR)
 	mkdir $(RELTMPDIR) $(HELMTMPDIR)
 	cp -r $(COROOT)/examples $(RELTMPDIR)
 	cp -r $(COROOT)/deploy $(RELTMPDIR)
