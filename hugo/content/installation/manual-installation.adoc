@@ -77,22 +77,38 @@ kubectl config view -o "jsonpath={.contexts[?(@.name==\"$(kubectl config current
 On Openshift Container Platform, you would have a Project and User defined
 for installing the Operator.  
 
-Run the Makefile `setup` target to install depedencies and also
-create the operator CRD resources and RBAC rules.
-
-[WARNING]
-====
-The 'make setup' target is required to be run as a Kubernetes user that has
-'cluster-admin' priviledges.  This is required to create cluster roles and
-clusterrole bindings, along with the CRDs used by the Operator.
-
-The namespace used by the operator is determined by the
-CO_NAMESPACE environment variable setting.
-====
-
+Run the Makefile `setup` target to install depedencies.
 ....
 make setup
 ....
+
+Next, run the Makefile `installrbac` target as a user with cluster-admin
+priviledges, not as a normal Kube or Openshift user.  This target creates the RBAC
+roles and CRDs required by the Operator and is only required to be created
+one time.
+
+For example, on an Openshift system you would run this target as
+follows using the system:admin Openshift user:
+....
+$ sudo su -
+# oc login -u system:admin
+# cd /home/oper
+# . .bashrc
+# export PATH=$PATH:/home/oper/odev/bin
+# cd odev/src/github.com/crunchydata/postgres-operator
+# make installrbac
+....
+
+On a Kube system, you would be connected as a cluster-admin user
+and just issue:
+....
+# cd /home/oper
+# . .bashrc
+# export PATH=$PATH:/home/oper/odev/bin
+# cd odev/src/github.com/crunchydata/postgres-operator
+make installrbac
+....
+
 
 == Basic Installation
 
@@ -138,7 +154,6 @@ tar xvzf ./postgres-operator.3.4.0.tar.gz
 Next, deploy the operator to your Kubernetes cluster -
 ....
 cd $COROOT
-make installrbac
 make deployoperator
 ....
 
@@ -183,20 +198,6 @@ This Operator is developed and tested on the following operating systems but is 
 * *CentOS 7*
 * *RHEL 7*
 
-Before using the Makefile targets, install the `expenv` package:
-....
-go get github.com/blang/expenv
-....
-
-The following Makefile targets will pull down source dependencies:
-....
-cd $COROOT
-make setup
-make all
-make installrbac
-make deployoperator
-....
-
 {{% /expand%}}
 
 == Makefile Targets
@@ -207,15 +208,16 @@ The following table describes the Makefile targets -
 [width="80%",frame="topbot",options="header"]
 |======================
 |Target | Description
-|all        | compile all binaries and build all images
-|setup        | fetch the dependent packages required to build with, and create Kube RBAC resources
+|macpgo      | build the Mac version of the pgo CLI binary
+|winpgo      | build the Windows version of the pgo CLI binary
+|installrbac | only run once and by a cluster-admin user, this target creates the Operator CRDs and RBAC resources required by the Operator
+|setupnamespace | only run once, will create a namespace called *demo*
 |bounce        | delete the Operator pod only, this is a way to upgrade the operator without a full redeploy, as the operator runs in a Deployment, a new pod will be created to replace the old one, a simple way to bounce the pod
 |deployoperator        | deploy the Operator (apiserver and postgers-operator) to Kubernetes
+|all        | compile all binaries and build all images
+|setup        | fetch the dependent packages required to build with, and create Kube RBAC resources
 |main        | compile the postgres-operator
-|runmain        | locally execute the postgres-operator
 |pgo        | build the pgo binary
-|runpgo        | run the pgo binary
-|runapiserver        | run the apiserver binary outside of Kube
 |clean        | remove binaries and compiled packages, restore dependencies
 |operatorimage        | compile and build the postgres-operator Docker image
 |apiserverimage        | compile and build the apiserver Docker image
@@ -224,7 +226,6 @@ The following table describes the Makefile targets -
 |rmdataimage        | build the data deletion Docker image
 |pgo-backrest-image        | build the pgbackrest interface Docker image
 |release        | build the postgres-operator release
-|installrbac      | build the postgres-operator service account
 |======================
 
 == Next Steps
