@@ -240,7 +240,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.4.0 2018-11-14</p>
+<p>Latest Release: 3.4.0 2018-11-16</p>
 </div>
 <div class="sect1">
 <h2 id="_project_structure">Project Structure</h2>
@@ -259,7 +259,7 @@ export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
 export CO_BASEOS=centos7
 export CO_VERSION=3.4.0
-export CO_IMAGE_TAG=centos7-$CO_VERSION
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 
 # for the pgo CLI auth
 export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
@@ -277,6 +277,10 @@ alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o j
 </div>
 </div>
 <div class="paragraph">
+<p>If you have access to the Crunchy RHEL images, you would change
+the above references to centos7 to rhel7.</p>
+</div>
+<div class="paragraph">
 <p>When deploying on Openshift Container Platform, the CO_CMD environment
 variable should be:</p>
 </div>
@@ -290,7 +294,8 @@ variable should be:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/</pre>
+<pre>. .bashrc
+mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -333,32 +338,49 @@ kubectl config view -o "jsonpath={.contexts[?(@.name==\"$(kubectl config current
 </div>
 </div>
 <div class="paragraph">
-<p>Run the Makefile <code>setup</code> target to install depedencies and also
-create the operator CRD resources and RBAC rules.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The 'make setup' target is required to be run as a Kubernetes user that has
-'cluster-admin' priviledges.  This is required to create cluster roles and
-clusterrole bindings, along with the CRDs used by the Operator.</p>
+<p>On Openshift Container Platform, you would have a Project and User defined
+for installing the Operator.</p>
 </div>
 <div class="paragraph">
-<p>The namespace used by the operator is determined by the
-CO_NAMESPACE environment variable setting.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>Run the Makefile <code>setup</code> target to install depedencies.</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>make setup</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, run the Makefile <code>installrbac</code> target as a user with cluster-admin
+priviledges, not as a normal Kube or Openshift user.  This target creates the RBAC
+roles and CRDs required by the Operator and is only required to be created
+one time.</p>
+</div>
+<div class="paragraph">
+<p>For example, on an Openshift system you would run this target as
+follows using the system:admin Openshift user:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$ sudo su -
+# oc login -u system:admin
+# cd /home/oper
+# . .bashrc
+# export PATH=$PATH:/home/oper/odev/bin
+# cd odev/src/github.com/crunchydata/postgres-operator
+# make installrbac</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On a Kube system, you would be connected as a cluster-admin user
+and just issue:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># cd /home/oper
+# . .bashrc
+# export PATH=$PATH:/home/oper/odev/bin
+# cd odev/src/github.com/crunchydata/postgres-operator
+make installrbac</pre>
 </div>
 </div>
 </div>
@@ -451,7 +473,6 @@ tar xvzf ./postgres-operator.3.4.0.tar.gz</pre>
 <div class="literalblock">
 <div class="content">
 <pre>cd $COROOT
-make installrbac
 make deployoperator</pre>
 </div>
 </div>
@@ -545,26 +566,6 @@ Container Platform environments.</p>
 </li>
 </ul>
 </div>
-<div class="paragraph">
-<p>Before using the Makefile targets, install the <code>expenv</code> package:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>go get github.com/blang/expenv</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The following Makefile targets will pull down source dependencies:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
-make setup
-make all
-make installrbac
-make deployoperator</pre>
-</div>
-</div>
 </div>
 </div>
 
@@ -593,12 +594,20 @@ make deployoperator</pre>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">compile all binaries and build all images</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">macpgo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">build the Mac version of the pgo CLI binary</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with, and create Kube RBAC resources</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">winpgo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">build the Windows version of the pgo CLI binary</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">installrbac</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">only run once and by a cluster-admin user, this target creates the Operator CRDs and RBAC resources required by the Operator</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">setupnamespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">only run once, will create a namespace called <strong>demo</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bounce</p></td>
@@ -609,24 +618,20 @@ make deployoperator</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">deploy the Operator (apiserver and postgers-operator) to Kubernetes</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">compile all binaries and build all images</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with, and create Kube RBAC resources</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">compile the postgres-operator</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runmain</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">locally execute the postgres-operator</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">pgo</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">build the pgo binary</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runpgo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">run the pgo binary</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runapiserver</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">run the apiserver binary outside of Kube</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">clean</p></td>
@@ -659,10 +664,6 @@ make deployoperator</pre>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">release</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">build the postgres-operator release</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">installrbac</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the postgres-operator service account</p></td>
 </tr>
 </tbody>
 </table>
