@@ -138,7 +138,8 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		for _, d := range deployments.Items {
 			//update Deployment with the label
 			if !DryRun {
-				err := updateLabels(&d, items[i].Spec.Name, newLabels)
+				//err := updateLabels(&d, items[i].Spec.Name, newLabels)
+				err := updateLabels(&d, d.Name, newLabels)
 				if err != nil {
 					log.Error(err.Error())
 				}
