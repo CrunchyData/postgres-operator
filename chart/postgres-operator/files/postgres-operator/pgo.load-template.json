@@ -5,6 +5,7 @@
         "name": "{{.Name}}"
     },
     "spec": {
+	"backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
@@ -30,7 +31,7 @@
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",
-                        "readOnly": false
+                        "readOnly": true
                     }],
 
 		    {{.ContainerResources }}

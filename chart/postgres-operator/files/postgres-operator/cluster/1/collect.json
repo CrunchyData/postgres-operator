@@ -10,6 +10,11 @@
     }],
     "env": [{
         "name": "DATA_SOURCE_NAME",
-        "value": "postgresql://primaryuser:{{.PrimaryPassword}}@127.0.0.1:5432/postgres?sslmode=disable"
-    }]
+        "value": "postgresql://ccp_monitoring:password@127.0.0.1:5432/postgres?sslmode=disable"
+    },
+    {
+    	"name": "JOB_NAME",
+    	"value": "{{.JobName}}"
+    }
+    ]
 }

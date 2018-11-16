@@ -27,6 +27,7 @@
                         "containerPort": {{.Port}},
                         "protocol": "TCP"
                     }],
+		    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
                         "value": "testuser"
