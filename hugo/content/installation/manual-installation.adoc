@@ -21,7 +21,7 @@ export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
 export CO_BASEOS=centos7
 export CO_VERSION=3.4.0
-export CO_IMAGE_TAG=centos7-$CO_VERSION
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 
 # for the pgo CLI auth
 export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
@@ -38,6 +38,9 @@ alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o j
 alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'
 ....
 
+If you have access to the Crunchy RHEL images, you would change
+the above references to centos7 to rhel7.
+
 When deploying on Openshift Container Platform, the CO_CMD environment
 variable should be:
 ....
@@ -46,6 +49,7 @@ export CO_CMD=oc
 
 To perform an installation of the operator, first create the project structure as follows on your host, here we assume a local directory called *odev* -
 ....
+. .bashrc
 mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/
 ....
 
@@ -69,6 +73,9 @@ kubectl create -f examples/demo-namespace.json
 kubectl config set-context $(kubectl config current-context) --namespace=demo
 kubectl config view -o "jsonpath={.contexts[?(@.name==\"$(kubectl config current-context 2>/dev/null)\")].context.namespace}"
 ....
+
+On Openshift Container Platform, you would have a Project and User defined
+for installing the Operator.  
 
 Run the Makefile `setup` target to install depedencies and also
 create the operator CRD resources and RBAC rules.

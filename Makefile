@@ -128,7 +128,7 @@ pull:
 release:	check-go-vars
 	make macpgo
 	make winpgo
-	rm -rf $(RELTMPDIR) $(RELFILE)
+	rm -rf $(RELTMPDIR) $(RELFILE) $(HELMTMPDIR)
 	mkdir $(RELTMPDIR) $(HELMTMPDIR)
 	cp -r $(COROOT)/examples $(RELTMPDIR)
 	cp -r $(COROOT)/deploy $(RELTMPDIR)
