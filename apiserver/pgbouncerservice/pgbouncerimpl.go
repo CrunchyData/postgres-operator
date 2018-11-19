@@ -110,6 +110,10 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 				newInstance, apiserver.Namespace)
 			if err != nil {
 				log.Error(err)
+				resp.Results = append(resp.Results, err.Error())
+				return resp
+			} else {
+				resp.Results = append(resp.Results, cluster.Name+" pgbouncer added")
 			}
 		}
 
@@ -199,6 +203,11 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 			newInstance, apiserver.Namespace)
 		if err != nil {
 			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Results = append(resp.Results, err.Error())
+			return resp
+		} else {
+			resp.Results = append(resp.Results, cluster.Name+" pgbouncer deleted")
 		}
 
 	}
