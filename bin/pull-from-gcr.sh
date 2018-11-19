@@ -3,7 +3,7 @@
 set -e -u
 
 REGISTRY='us.gcr.io/container-suite'
-VERSION=centos7-3.4.0-rc1
+VERSION=$CO_IMAGE_TAG
 IMAGES=(
     postgres-operator
     pgo-apiserver
