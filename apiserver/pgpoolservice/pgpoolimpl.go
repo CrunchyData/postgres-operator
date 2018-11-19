@@ -165,7 +165,12 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
 				&argCluster, request.Args[i], apiserver.Namespace)
 
-			if !found || err != nil {
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.Args[i] + " not found"
+				return resp
+			}
+			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
@@ -207,6 +212,11 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 			newInstance, apiserver.Namespace)
 		if err != nil {
 			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Results = append(resp.Results, cluster.Name+err.Error())
+			return resp
+		} else {
+			resp.Results = append(resp.Results, cluster.Name+" pgpool deleted")
 		}
 
 	}

@@ -63,7 +63,12 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
 				&argCluster, request.Args[i], apiserver.Namespace)
 
-			if !found || err != nil {
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.Args[i] + " not found"
+				return resp
+			}
+			if !found {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
