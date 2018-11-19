@@ -15,7 +15,9 @@ the deployment to popular Kubernetes environments -
 
  * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh[quickstart.sh]
 
-The *quickstart* script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.
+The *quickstart* script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.  The *quickstart* script is intended to get
+you up and running quickly, for a typical more custom installation, the
+*manual* installation is recommended.
 
 The script assumes you have a StorageClass defined for persistence.
 
@@ -45,6 +47,9 @@ The script performs the following -
  * deploys the Operator Deployment
  * sets your .bashrc to include the Operator environment variables
  * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
+
+You should copy the *quickstart.sh* script from github rather than
+cloning the entire github Operator repository!
 
 A tip, if you want to set your Kube context to some particular namespace you 
 can run commands similar to this to set it to a *demo* namespace if

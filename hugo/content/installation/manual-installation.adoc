@@ -112,12 +112,25 @@ make installrbac
 
 == Basic Installation
 
-The basic installation uses the default operator configuration settings. These
-settings assume you want to use HostPath storage on your Kubernetes cluster for
-database persistence. Other persistent options are available and documented
+The basic pgo.yaml configuration specifies 3 different
+storage configurations:
+ * hostpath 
+ * nfs (default)
+ * storage-class 
+
+Storage configurations are documented here:
 link:/installation/configuration/#_storage_configuration[here].
 
-=== Create HostPath Directory
+The default storage configuration used for creating Primary, Replica, and
+Backups is set to NFS in the default pgo.yaml file.  Adjust this setting
+to meet your storage requirements.
+
+Sample PV creation scripts are found in the following directory:
+....
+examples/pv
+....
+
+=== HostPath Persistent Volumes
 
 The default Persistent Volume script assumes a default HostPath directory be created called */data*:
 ....
@@ -128,6 +141,21 @@ sudo chmod 777 /data
 Create some sample Persistent Volumes using the following script:
 ....
 $COROOT/pv/create-pv.sh
+....
+
+=== NFS Persistent Volumes
+
+The NFS Persistent Volume script assumes a default directory be created called */nfsfileshare* as the NFS mount point on your system:
+....
+sudo ls /nfsfileshare
+....
+
+See the crunchy-containers documentation on how to install NFS on a
+centos/RHEL system if you want to use NFS for testing the operator.
+
+Create some sample NFS Persistent Volumes using the following script:
+....
+$COROOT/pv/create-nfs-pv.sh
 ....
 
 == Build Images & Deploy
