@@ -37,7 +37,7 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Info("Reload %v\n", request)
+	log.Debugf("Reload %v", request)
 
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on

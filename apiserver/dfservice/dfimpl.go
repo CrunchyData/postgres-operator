@@ -59,7 +59,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 
 	//loop thru each cluster
 
-	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 
@@ -92,14 +92,14 @@ func DfCluster(name, selector string) msgs.DfResponse {
 				response.Status.Msg = "pgdata volume not found in pod "
 				return response
 			}
-			log.Debug("pvc found to be %s", pvcName)
+			log.Debugf("pvc found to be %s", pvcName)
 
 			result := msgs.DfDetail{}
 			result.Name = p.Name
 			result.Working = true
 
 			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, p.Status.PodIP, "postgres", c.Spec.Name)
-			log.Infof("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty)
+			log.Infof("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty, c.Spec.Name)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()

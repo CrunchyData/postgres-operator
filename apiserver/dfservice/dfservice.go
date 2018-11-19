@@ -30,7 +30,7 @@ import (
 // pgo df --selector=env=research
 func DfHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("dfservice.DfHandler %v\n", vars)
+	log.Debugf("dfservice.DfHandler %v", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
