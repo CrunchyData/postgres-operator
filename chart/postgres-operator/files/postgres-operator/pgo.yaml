@@ -1,6 +1,10 @@
 Cluster:
+  PrimaryNodeLabel:  
+  ReplicaNodeLabel: 
   CCPImagePrefix:  crunchydata
-  CCPImageTag:  centos7-10.5-2.1.0
+  Metrics:  false
+  Badger:  false
+  CCPImageTag:  rhel7-10.5-2.2.0-rc7
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -10,27 +14,31 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ArchiveTimeout:  60
+  ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storage1
-BackupStorage: storage1
-ReplicaStorage: storage1
+PrimaryStorage: nfsstorage
+BackupStorage: nfsstorage
+ReplicaStorage: nfsstorage
 Storage:
-  storage1:
+  hostpathstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
     StorageType:  create
-  storage2:
+  nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
     StorageType:  create
-  storage3:
-    AccessMode:  ReadWriteMany
+    SupplementalGroups:  65534
+  storageos:
+    AccessMode:  ReadWriteOnce
     Size:  1G
-    StorageType:  create
-DefaultContainerResource: 
+    StorageType:  dynamic
+    StorageClass:  fast
+    Fsgroup:  26
+DefaultContainerResources: 
 DefaultLoadResources:  
 DefaultLspvcResources:  
 DefaultRmdataResources:  
@@ -49,9 +57,9 @@ ContainerResources:
     LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
+  AutofailSleepSeconds:  9
   Audit:  false
-  Metrics:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.4.0
+  COImageTag:  rhel7-3.4.0-rc2

@@ -5,6 +5,6 @@
     },
     "kind": "ConfigMap",
     "metadata": {
-        "name": "{{.RestoreConfigMapName}}",
+        "name": "{{.RestoreConfigMapName}}"
     }
 }

@@ -26,16 +26,20 @@ spec:
           env:
             - name: CRUNCHY_DEBUG
               value: "{{ .Values.env.debug }}"
+            - name: PORT
+              value: "8443"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: TLS_NO_VERIFY
+              value: "{{ .Values.env.tls_no_verify }}"
           volumeMounts:
-            - name: apiserver-conf
-              mountPath: /config
+            - name: pgo-config
+              mountPath: /pgo-config
               readOnly: true
-            - name: operator-conf
-              mountPath: /operator-conf
+            - name: pgo-auth-secret
+              mountPath: /pgo-auth-secret
               readOnly: true
         - name: operator
           image: "{{ .Values.env.co_image_prefix }}/postgres-operator:{{ .Values.env.co_image_tag }}"
@@ -44,12 +48,6 @@ spec:
           env:
             - name: CRUNCHY_DEBUG
               value: "{{ .Values.env.debug }}"
-            - name: CCP_IMAGE_PREFIX
-              value: "{{ .Values.env.ccp_image_prefix }}"
-            - name: CO_IMAGE_PREFIX
-              value: "{{ .Values.env.co_image_prefix }}"
-            - name: CO_IMAGE_TAG
-              value: "{{ .Values.env.co_image_tag }}"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -59,18 +57,15 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
           volumeMounts:
-            - name: apiserver-conf
-              mountPath: /config
-              readOnly: true
-            - name: operator-conf
-              mountPath: /operator-conf
+            - name: pgo-config
+              mountPath: /pgo-config
               readOnly: true
           resources:
 {{ toYaml .Values.resources | indent 12 }}
       volumes:
-        - name: operator-conf
+        - name: pgo-config
           configMap:
             name: {{ template "postgres-operator.fullname" . }}-operator
-        - name: apiserver-conf
+        - name: pgo-auth-secret
           secret:
             secretName: {{ template "postgres-operator.fullname" . }}-apiserver

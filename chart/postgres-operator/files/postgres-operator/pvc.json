@@ -9,6 +9,9 @@
         }
     },
     "spec": {
+
+    {{.MatchLabels}}
+
         "accessModes": [
             "{{.AccessMode}}"
         ],
