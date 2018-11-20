@@ -29,8 +29,8 @@ The registry location and name of the image. For example, Name="crunchydata/post
 
 `Version=`
 
-The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.5"
+The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.6"
 
 `Release=`
 
-The specific release number of the container. For example, Release="3.2.0"
+The specific release number of the container. For example, Release="3.4.0"
