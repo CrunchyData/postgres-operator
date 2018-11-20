@@ -26,19 +26,18 @@ Pre-compiled versions of the Operator *pgo* client are provided for the x86_64, 
 == Quickstart
 
 === GKE/PKS
-The *quickstart.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
-This script is tested on GKE but can be modified for use with other Kubernetes environments as well.
+The *quickstart.sh* script will allow users to set up the Postgres Operator quickly on GKE, PKS, and Openshift.
 
 The script requires a few things in order to work -
 
  * wget utility installed
- * kubectl utility installed
+ * kubectl or oc utility installed
  * StorageClass defined on your GKE instance
 
 Executing the script will give you a default Operator deployment
 that assumes *dynamic* storage and a storage class named *standard*,
-things that GKE provides, user provided values are also allowed by
-the script.
+user provided values are also allowed by the script to override these
+defaults.
 
 The script performs the following -
 
@@ -48,7 +47,7 @@ The script performs the following -
  * sets your .bashrc to include the Operator environment variables
  * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
 
-You should copy the *quickstart.sh* script from github rather than
+NOTE:  You should copy the *quickstart.sh* script from github rather than
 cloning the entire github Operator repository!
 
 A tip, if you want to set your Kube context to some particular namespace you 
@@ -61,7 +60,8 @@ kubectl config use-context demo
 ....
 
 For Mac and Windows users, pre-built *pgo* binaries are included in
-the operator release tar ball:
+the operator release tar ball, you would download the pgo CLI binaries 
+from the Releases page to your local machine as part of the quick installation:
 
  * pgo-mac is the Mac binary
  * pgo.exe is the Windows binary
