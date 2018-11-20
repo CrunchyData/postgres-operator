@@ -746,6 +746,11 @@ View the schedules for all clusters with the label `env=test`:
 pgo show schedule --selector=env=test
 ....
 
+or for a particular cluster:
+....
+pgo show schedule --selector=pg-cluster=mycluster
+....
+
 ===== Delete Schedules
 
 To delete schedules for a specific cluster:
