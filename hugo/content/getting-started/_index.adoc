@@ -657,6 +657,10 @@ configuration maps with the label `crunchy-scheduler=true` in a specific namespa
 After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
 create pgBaseBackup jobs for the configured schedule.
 
+NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a 
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be 
+a requirement in the 3.5.0 version of the Operator.
+
 ==== Syntax
 
 $ pgo create schedule NAME [FLAGS]
