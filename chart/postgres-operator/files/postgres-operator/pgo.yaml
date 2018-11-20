@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  rhel7-10.6-2.2.0-rc7
+  CCPImageTag:  rhel7-10.6-2.2.0-rc8
   Port:  5432
   User:  testuser
   Database:  userdb
