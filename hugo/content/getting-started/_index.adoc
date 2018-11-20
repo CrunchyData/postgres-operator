@@ -600,6 +600,12 @@ pgo show backup mycluster
 
 ===== Backup PVC Management
 
+NOTE:  'pgo show pvc' can run into file permission issues if
+you are trying to view a PVC that is on a RWO (read write once) file
+system (e.g. cloud storage, ceph, storageos, etc.).  If another
+pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
+command in the current 3.4.0 release.  
+
 View the PVC folder and the backups contained therein:
 
 ....
