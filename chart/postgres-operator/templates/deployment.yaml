@@ -14,6 +14,7 @@ spec:
       labels:
         app: {{ template "postgres-operator.name" . }}
         release: {{ .Release.Name }}
+        name: "postgres-operator"
     spec:
       serviceAccountName: postgres-operator
       containers:

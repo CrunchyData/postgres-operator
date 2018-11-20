@@ -10,7 +10,7 @@ roleRef:
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: postgres-operator
+  name: system:serviceaccount:{{ .Release.Namespace }}:postgres-operator
 
 ---
 
@@ -25,6 +25,6 @@ roleRef:
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: postgres-operator
+  name: system:serviceaccount:{{ .Release.Namespace }}:postgres-operator
 
 {{ end }}
