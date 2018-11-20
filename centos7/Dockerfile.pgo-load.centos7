@@ -32,6 +32,8 @@ RUN yum -y update &&  yum -y install epel-release \
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
 ADD bin/pgo-load/ /opt/cpm/bin
+ADD bin/uid_postgres.sh /opt/cpm/bin
+
 ADD conf/pgo-load/ /opt/cpm/conf
 RUN chown -R 26:26 /opt/cpm
 
