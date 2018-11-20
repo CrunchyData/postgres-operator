@@ -37,6 +37,11 @@ RUN chown -R 26:26 /opt/cpm
 
 VOLUME /pgdata
 
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
+ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
+
 USER 26
 
 CMD ["/opt/cpm/bin/start.sh"]

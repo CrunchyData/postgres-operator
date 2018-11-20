@@ -8,13 +8,18 @@ LABEL Vendor="Crunchy Data Solutions" \
 
 RUN yum -y update && yum -y clean all
 
-
-
 RUN mkdir -p /opt/cpm/bin 
 ADD bin/pgo-rmdata/ /opt/cpm/bin
+ADD bin/uid_postgres.sh /opt/cpm/bin
+
 RUN chown -R 26:26 /opt/cpm
 
-VOLUME ["/pgdata"]
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
 USER 26
 
+ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+
+VOLUME ["/pgdata"]
 CMD ["/opt/cpm/bin/start.sh"]

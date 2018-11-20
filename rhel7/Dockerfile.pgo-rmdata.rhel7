@@ -18,6 +18,7 @@ RUN yum -y update && yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin
 ADD bin/pgo-rmdata/ /opt/cpm/bin
+ADD bin/uid_postgres.sh /opt/cpm/bin
 RUN chown -R 26:26 /opt/cpm
 
 RUN chmod g=u /etc/passwd && \
