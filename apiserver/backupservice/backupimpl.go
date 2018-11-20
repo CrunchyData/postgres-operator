@@ -180,7 +180,14 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			log.Debugf("pgbackup %s was found so we will recreate it", arg)
 			dels := make([]string, 1)
 			dels[0] = arg
-			DeleteBackup(arg)
+			//DeleteBackup(arg)
+			err = kubeapi.Deletepgbackup(apiserver.RESTClient, arg, apiserver.Namespace)
+
+	if err != nil {
+		log.Error(err)
+		resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+		break
+	}
 		}
 
 		// Create an instance of our CRD
