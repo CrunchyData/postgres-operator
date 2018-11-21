@@ -72,6 +72,7 @@ type DeploymentTemplateFields struct {
 	ArchiveMode             string
 	ArchivePVCName          string
 	ArchiveTimeout          string
+	XLOGDir                 string
 	BackrestPVCName         string
 	PVCName                 string
 	BackupPVCName           string

@@ -553,6 +553,13 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap[util.LABEL_SERVICE_TYPE] = request.ServiceType
 		}
 
+		if request.ArchiveFlag && request.BackrestFlag {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "error --archive and --pgbackrest flags are mutually exclusive, use one or the other."
+
+			return resp
+		}
+
 		if request.ArchiveFlag {
 			userLabelsMap[util.LABEL_ARCHIVE] = "true"
 			log.Debug("archive set to true in user labels")

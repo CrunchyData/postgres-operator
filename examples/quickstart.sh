@@ -31,7 +31,7 @@ echo $CO_BASEOS is the baseos entered | tee -a $LOG
 if [[ "$CO_VERSION" != "" ]]; then
 	echo "CO_VERSION is set to " $CO_VERSION
 else
-	export CO_VERSION=3.4.0-rc2
+	export CO_VERSION=3.4.0
 	echo -n "Which Operator version do you want to install? ["$CO_VERSION"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
@@ -57,7 +57,7 @@ echo $CO_NAMESPACE is the namespace entered | tee -a $LOG
 if [[ "$CCP_IMAGE_TAG" != "" ]]; then
 	echo "CCP_IMAGE_TAG is set to " $CCP_IMAGE_TAG
 else
-	export CCP_IMAGE_TAG=$CO_BASEOS-10.5-2.2.0-rc7
+	export CCP_IMAGE_TAG=$CO_BASEOS-10.6-2.2.0
 	echo -n "Which CCP image tag do you want to use? ["$CCP_IMAGE_TAG"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then

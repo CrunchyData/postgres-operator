@@ -89,6 +89,9 @@
                         "name": "ARCHIVE_TIMEOUT",
                         "value": "{{.ArchiveTimeout}}"
                     }, {
+                        "name": "XLOGDIR",
+                        "value": "{{.XLOGDir}}"
+                    }, {
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],

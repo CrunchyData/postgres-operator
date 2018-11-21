@@ -99,10 +99,12 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
+	xlogdir := "false"
 	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
+		xlogdir = "true"
 	}
 
 	backrestRepoTarget := cl.Spec.Name
@@ -113,6 +115,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
+		xlogdir = "false"
 		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
 			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 			backrestPVCName = backrestRepoTarget + "-backrestrepo"
@@ -139,6 +142,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		Database:                cl.Spec.Database,
 		ArchiveMode:             archiveMode,
 		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:                 xlogdir,
 		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:          archiveTimeout,
 		SecurityContext:         util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
@@ -537,10 +541,12 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
+	xlogdir := "false"
 	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
+		xlogdir = "true"
 	}
 
 	backrestPVCName := ""
@@ -550,6 +556,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
+		xlogdir = "false"
 	}
 
 	//check for --ccp-image-tag at the command line
@@ -582,6 +589,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		DataPathOverride:        replica.Spec.Name,
 		ArchiveMode:             archiveMode,
 		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:                 xlogdir,
 		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
 		ArchiveTimeout:          archiveTimeout,
 		Replicas:                "1",
