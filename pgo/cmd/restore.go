@@ -34,7 +34,7 @@ var restoreCmd = &cobra.Command{
 	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. For example:
 
 	pgo restore withbr --to-pvc=restored
-	pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest`,
+	pgo create cluster restored --pgbackrest-restore-from=withbr --pgbackrest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("restore called")
 		if len(args) == 0 {
