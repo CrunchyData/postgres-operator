@@ -16,7 +16,8 @@ import (
 
 var Clientset *kubernetes.Clientset
 
-const sourceCommand = `pgbackrest stanza-create --no-online && `
+//const sourceCommand = `pgbackrest stanza-create --no-online && `
+const sourceCommand = ` `
 const backrestCommand = "pgbackrest"
 
 const backrestBackupCommand = `backup`
