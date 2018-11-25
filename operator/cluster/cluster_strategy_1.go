@@ -104,7 +104,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
-		xlogdir = "true"
+		//xlogdir = "true"
 	}
 
 	backrestRepoTarget := cl.Spec.Name
@@ -546,7 +546,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
-		xlogdir = "true"
+		//	xlogdir = "true"
 	}
 
 	backrestPVCName := ""
