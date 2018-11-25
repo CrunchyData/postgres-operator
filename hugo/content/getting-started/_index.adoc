@@ -343,7 +343,9 @@ $ pgo delete cluster NAME|all [FLAGS]
 |Name |Shorthand |Input |Usage
 
 |`--delete-backups` |-b |N/A |
-Causes the backups for this cluster to be removed permanently.
+Causes the backups for this cluster to be removed permanently.  This only 
+is applicable with pgbasebackup backup volumes and does not remove
+pgbackrest repo volumes.
 
 |`--delete-configs` |-b |N/A |
 Causes the configuration maps for this cluster to be removed permanently.
