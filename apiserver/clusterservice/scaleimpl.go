@@ -93,9 +93,10 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 	}
 	if serviceType != "" {
 		if serviceType != config.DEFAULT_SERVICE_TYPE &&
+			serviceType != config.NODEPORT_SERVICE_TYPE &&
 			serviceType != config.LOAD_BALANCER_SERVICE_TYPE {
 			response.Status.Code = msgs.Error
-			response.Status.Msg = "error --service-type should be either ClusterIP or LoadBalancer "
+			response.Status.Msg = "error --service-type should be either ClusterIP, NodePort, or LoadBalancer "
 			return response
 		}
 		spec.UserLabels[util.LABEL_SERVICE_TYPE] = serviceType
