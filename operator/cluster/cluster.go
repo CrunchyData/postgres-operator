@@ -86,10 +86,13 @@ type DeploymentTemplateFields struct {
 	ConfVolume              string
 	CollectAddon            string
 	BadgerAddon             string
+	PgbackrestEnvVars       string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
-	//next are for pgbackrest
+}
+
+type PgbackrestEnvVarsTemplateFields struct {
 	PgbackrestStanza   string
 	PgbackrestDBPath   string
 	PgbackrestRepoPath string

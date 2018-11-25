@@ -154,9 +154,9 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ConfVolume:              GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestStanza:        "db",
-		PgbackrestDBPath:        "/pgdata/" + cl.Spec.Name,
-		PgbackrestRepoPath:      "/backrestrepo/" + backrestRepoTarget + "-backups",
+		PgbackrestEnvVars: GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db",
+			"/pgdata/"+cl.Spec.Name,
+			"/backrestrepo/"+backrestRepoTarget+"-backups"),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -349,9 +349,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		ContainerResources:      config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		UserSecretName:          cl.Spec.UserSecretName,
 		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
-		PgbackrestStanza:        "db",
-		PgbackrestDBPath:        "/pgdata/" + depName,
-		PgbackrestRepoPath:      "/backrestrepo/" + depName + "-backups",
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+depName, "/backrestrepo/"+depName+"-backups"),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -510,6 +508,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	}
 
 	//check for pgbackrest global config
+	/**
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] != "" {
 		_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP, namespace)
 		if !found {
@@ -518,6 +517,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 			return "\"configMap\": { \"name\": \"pgo-pgbackrest-config\" }"
 		}
 	}
+	*/
 
 	//the default situation
 	return "\"emptyDir\": { \"medium\": \"Memory\" }"
@@ -603,9 +603,8 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestStanza:        "db",
-		PgbackrestDBPath:        "/pgdata/" + replica.Spec.Name,
-		PgbackrestRepoPath:      "/backrestrepo/" + replica.Spec.Name + "-backups",
+		PgbackrestEnvVars: GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+replica.Spec.Name,
+			"/backrestrepo/"+replica.Spec.Name+"-backups"),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -683,4 +682,24 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		return badgerDoc.String()
 	}
 	return ""
+}
+
+func GetPgbackrestEnvVars(backrestEnabled, stanza, dbpath, repopath string) string {
+	if backrestEnabled == "true" {
+		fields := PgbackrestEnvVarsTemplateFields{
+			PgbackrestStanza:   stanza,
+			PgbackrestDBPath:   dbpath,
+			PgbackrestRepoPath: repopath,
+		}
+
+		var doc bytes.Buffer
+		err := operator.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+		return doc.String()
+	}
+	return ""
+
 }

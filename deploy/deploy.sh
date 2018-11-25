@@ -29,7 +29,7 @@ then
 	exit
 fi
 
-$CO_CMD create configmap pgo-pgbackrest-config --from-file=$DIR/pgbackrest.conf
+#$CO_CMD create configmap pgo-pgbackrest-config --from-file=$DIR/pgbackrest.conf
 
 $CO_CMD $NS create secret generic pgo-auth-secret \
         --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
