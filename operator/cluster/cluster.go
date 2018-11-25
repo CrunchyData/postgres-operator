@@ -403,12 +403,19 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//create the replica service if it doesnt exist
+
+	st := operator.Pgo.Cluster.ServiceType
+
+	if cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+		st = cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	}
+
 	serviceName := replica.Spec.ClusterName + "-replica"
 	serviceFields := ServiceTemplateFields{
 		Name:        serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
-		ServiceType: operator.Pgo.Cluster.ServiceType,
+		ServiceType: st,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)
