@@ -1412,6 +1412,10 @@ You can also add pgbouncer after a cluster has been created:
 pgo create pgbouncer mycluster
 ....
 
+NOTE:  currently you are required to have a replica in your PG
+cluster for the pgbouncer sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+
 == pgpool Basics
 
 Adding a pgpool deployment into your PG cluster follows
@@ -1466,6 +1470,10 @@ Create a pgpool:
 ....
 pgo create pgpool mycluster
 ....
+
+NOTE:  currently you are required to have a replica in your PG
+cluster for the pgpool sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
 
 === Delete pgpool
 
