@@ -406,7 +406,9 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 
 	st := operator.Pgo.Cluster.ServiceType
 
-	if cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+	if replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+		st = replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	} else if cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
 		st = cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
 	}
 
