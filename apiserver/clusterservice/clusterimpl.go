@@ -1104,15 +1104,6 @@ func validateCustomConfig(configmapname string) (bool, error) {
 		return found, err
 	}
 
-	//make sure custom config has a pgbackrest.conf file in it
-	if mymap.Data["pgbackrest.conf"] != "" {
-		log.Debugf("found pgbackrest.conf in map %s", mymap.Data["pgbackrest.conf"])
-	} else {
-		log.Error("pgbackrest.conf NOT found pgbackrest.conf in custom config map")
-		return true, errors.New(configmapname + " custom config map doesn't include a pgbackrest.conf which is required")
-
-	}
-
 	return found, err
 }
 
