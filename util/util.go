@@ -89,8 +89,10 @@ func CreateSecContext(fsGroup string, suppGroup string) string {
 
 // LoadTemplate will load a JSON template from a path
 func LoadTemplate(path string) *template.Template {
+	log.Debugf("loading path [%s]", path)
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
+		log.Error(err)
 		log.Error("error loading template path=" + path + err.Error())
 		panic(err.Error())
 	}

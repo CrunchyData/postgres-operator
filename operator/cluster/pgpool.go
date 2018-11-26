@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/config"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -231,7 +231,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 			log.Error(err)
 			return
 		}
-		fields.ContainerResources = config.GetContainerResourcesJSON(&tmp)
+		fields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
 
 	}
 

@@ -16,16 +16,16 @@ limitations under the License.
 */
 
 import (
-	"bytes"
+	//"bytes"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"os"
+	//"os"
 	"strconv"
 	"strings"
-	"text/template"
+	//"text/template"
 )
 
 type ClusterStruct struct {
@@ -103,14 +103,16 @@ const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
 const CONFIG_PATH = "/pgo-config/pgo.yaml"
 
-const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
+//const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
 
-var ContainerResourcesTemplate1 *template.Template
+//var ContainerResourcesTemplate1 *template.Template
 
+/**
 type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
 	LimitsMemory, LimitsCPU     string
 }
+*/
 
 var log_statement_values = []string{"ddl", "none", "mod", "all"}
 
@@ -349,6 +351,7 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 
 }
 
+/**
 // GetContainerResources ...
 func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 
@@ -363,7 +366,7 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	fields.LimitsMemory = resources.LimitsMemory
 	fields.LimitsCPU = resources.LimitsCPU
 
-	var doc bytes.Buffer
+	doc := bytes.Buffer{}
 	err := ContainerResourcesTemplate1.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err.Error())
@@ -376,3 +379,4 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 
 	return doc.String()
 }
+*/

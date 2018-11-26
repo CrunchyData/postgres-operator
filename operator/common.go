@@ -16,7 +16,9 @@ package operator
 */
 
 import (
+	"bytes"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
 	"os"
@@ -87,6 +89,11 @@ var ReplicadeploymentTemplate1 *template.Template
 var ReplicadeploymentTemplate1Shared *template.Template
 
 var Pgo config.PgoConfig
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
 
 func Initialize() {
 
@@ -162,4 +169,32 @@ func Initialize() {
 		log.Error("pgo.yaml COImageTag not set, required ")
 		panic("pgo.yaml COImageTag env var not set")
 	}
+}
+
+// GetContainerResources ...
+func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	doc := bytes.Buffer{}
+	err := ContainerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

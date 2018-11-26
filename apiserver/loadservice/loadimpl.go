@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/config"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
@@ -97,7 +97,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		LoadConfigTemplate.ContainerResources = config.GetContainerResourcesJSON(&tmp)
+		LoadConfigTemplate.ContainerResources = apiserver.GetContainerResourcesJSON(&tmp)
 	}
 
 	args := request.Args

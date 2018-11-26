@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/config"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -60,7 +60,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 			log.Error(err)
 			return
 		}
-		cr = config.GetContainerResourcesJSON(&tmp)
+		cr = operator.GetContainerResourcesJSON(&tmp)
 
 	}
 

@@ -23,7 +23,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/config"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
@@ -86,7 +86,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 			log.Error(err)
 			return
 		}
-		cr = config.GetContainerResourcesJSON(&tmp)
+		cr = operator.GetContainerResourcesJSON(&tmp)
 
 	}
 

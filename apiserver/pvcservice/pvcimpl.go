@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/config"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"io"
@@ -122,7 +122,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 			log.Error(err.Error())
 			return newlines, err
 		}
-		cr = config.GetContainerResourcesJSON(&tmp)
+		cr = apiserver.GetContainerResourcesJSON(&tmp)
 
 	}
 

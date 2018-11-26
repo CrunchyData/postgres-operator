@@ -23,7 +23,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/config"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -150,7 +150,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		PrimarySecretName:       cl.Spec.PrimarySecretName,
 		UserSecretName:          cl.Spec.UserSecretName,
 		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ContainerResources:      config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		ConfVolume:              GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
@@ -346,7 +346,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		SecurityContext:         util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:          cl.Spec.RootSecretName,
 		PrimarySecretName:       cl.Spec.PrimarySecretName,
-		ContainerResources:      config.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		UserSecretName:          cl.Spec.UserSecretName,
 		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
 		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+depName, "/backrestrepo/"+depName+"-backups"),
@@ -599,7 +599,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		RootSecretName:          cluster.Spec.RootSecretName,
 		PrimarySecretName:       cluster.Spec.PrimarySecretName,
 		UserSecretName:          cluster.Spec.UserSecretName,
-		ContainerResources:      config.GetContainerResourcesJSON(&cs),
+		ContainerResources:      operator.GetContainerResourcesJSON(&cs),
 		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
@@ -665,7 +665,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 				log.Error(err)
 				return ""
 			}
-			badgerTemplateFields.ContainerResources = config.GetContainerResourcesJSON(&tmp)
+			badgerTemplateFields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
 
 		}
 

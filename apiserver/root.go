@@ -22,6 +22,8 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	//crdclient "github.com/crunchydata/postgres-operator/client"
+	"bytes"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
@@ -88,6 +90,11 @@ var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
 var Pgo config.PgoConfig
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
 
 func Initialize() {
 
@@ -506,4 +513,32 @@ func validateWithKube() {
 			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}
+}
+
+// GetContainerResources ...
+func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	doc := bytes.Buffer{}
+	err := ContainerResourcesTemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		ContainerResourcesTemplate.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }
