@@ -1099,7 +1099,7 @@ func getType(pod *v1.Pod) string {
 
 func validateCustomConfig(configmapname string) (bool, error) {
 	var err error
-	mymap, found := kubeapi.GetConfigMap(apiserver.Clientset, configmapname, apiserver.Namespace)
+	_, found := kubeapi.GetConfigMap(apiserver.Clientset, configmapname, apiserver.Namespace)
 	if !found {
 		return found, err
 	}
