@@ -269,7 +269,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.4.0 2018-11-16</p>
+<p>Latest Release: 3.4.0 2018-11-27</p>
 </div>
 <div class="sect1">
 <h2 id="_first_steps">First Steps</h2>
@@ -839,7 +839,9 @@ the selected cluster, but will not delete the data or the backups unless specifi
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-backups</code></p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">-b</p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the backups for this cluster to be removed permanently.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the backups for this cluster to be removed permanently.  This only
+is applicable with pgbasebackup backup volumes and does not remove
+pgbackrest repo volumes.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-configs</code></p></td>
@@ -1298,6 +1300,22 @@ to creating a new Job with the same name.</p>
 </div>
 <div class="sect4">
 <h5 id="_backup_pvc_management">Backup PVC Management</h5>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+'pgo show pvc' can run into file permission issues if
+you are trying to view a PVC that is on a RWO (read write once) file
+system (e.g. cloud storage, ceph, storageos, etc.).  If another
+pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
+command in the current 3.4.0 release.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>View the PVC folder and the backups contained therein:</p>
 </div>
@@ -1377,6 +1395,20 @@ container.  This allows users to create automated, scheduled backups for their P
 configuration maps with the label <code>crunchy-scheduler=true</code> in a specific namespace.
 After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
 create pgBaseBackup jobs for the configured schedule.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+in operator version 3.4.0, you are REQUIRED, a single time,  to run a
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be
+a requirement in the 3.5.0 version of the Operator.
+</td>
+</tr>
+</table>
 </div>
 <div class="sect3">
 <h4 id="_syntax_11">Syntax</h4>
@@ -1506,6 +1538,14 @@ create pgBaseBackup jobs for the configured schedule.</p>
 <div class="literalblock">
 <div class="content">
 <pre>pgo show schedule --selector=env=test</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>or for a particular cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show schedule --selector=pg-cluster=mycluster</pre>
 </div>
 </div>
 </div>
@@ -2637,6 +2677,20 @@ a sequence similar to this:</p>
 <pre>pgo create pgbouncer mycluster</pre>
 </div>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+currently you are required to have a replica in your PG
+cluster for the pgbouncer sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -2729,6 +2783,20 @@ is part of a cluster.</p>
 <div class="content">
 <pre>pgo create pgpool mycluster</pre>
 </div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+currently you are required to have a replica in your PG
+cluster for the pgpool sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>

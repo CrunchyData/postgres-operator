@@ -231,7 +231,8 @@
 <li><a href="#_installation_prerequsites">Installation Prerequsites</a></li>
 <li><a href="#_basic_installation">Basic Installation</a>
 <ul class="sectlevel2">
-<li><a href="#_create_hostpath_directory">Create HostPath Directory</a></li>
+<li><a href="#_hostpath_persistent_volumes">HostPath Persistent Volumes</a></li>
+<li><a href="#_nfs_persistent_volumes">NFS Persistent Volumes</a></li>
 </ul>
 </li>
 <li><a href="#_build_images_deploy">Build Images &amp; Deploy</a></li>
@@ -240,7 +241,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.4.0 2018-11-16</p>
+<p>Latest Release: 3.4.0 2018-11-27</p>
 </div>
 <div class="sect1">
 <h2 id="_project_structure">Project Structure</h2>
@@ -268,7 +269,7 @@ export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 
 # for crunchy-scheduler startup
 export CCP_IMAGE_PREFIX=crunchydata
-export CCP_IMAGE_TAG=centos7-10.5-2.2.0
+export CCP_IMAGE_TAG=centos7-10.6-2.2.0
 
 # useful aliases
 alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
@@ -389,13 +390,31 @@ make installrbac</pre>
 <h2 id="_basic_installation">Basic Installation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The basic installation uses the default operator configuration settings. These
-settings assume you want to use HostPath storage on your Kubernetes cluster for
-database persistence. Other persistent options are available and documented
+<p>The basic pgo.yaml configuration specifies 3 different
+storage configurations:
+ * hostpath
+ * nfs (default)
+ * storage-class</p>
+</div>
+<div class="paragraph">
+<p>Storage configurations are documented here:
 <a href="https://crunchydata.github.io/postgres-operator/latest/installation/configuration/#_storage_configuration">here</a>.</p>
 </div>
+<div class="paragraph">
+<p>The default storage configuration used for creating Primary, Replica, and
+Backups is set to NFS in the default pgo.yaml file.  Adjust this setting
+to meet your storage requirements.</p>
+</div>
+<div class="paragraph">
+<p>Sample PV creation scripts are found in the following directory:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>examples/pv</pre>
+</div>
+</div>
 <div class="sect2">
-<h3 id="_create_hostpath_directory">Create HostPath Directory</h3>
+<h3 id="_hostpath_persistent_volumes">HostPath Persistent Volumes</h3>
 <div class="paragraph">
 <p>The default Persistent Volume script assumes a default HostPath directory be created called <strong>/data</strong>:</p>
 </div>
@@ -411,6 +430,29 @@ sudo chmod 777 /data</pre>
 <div class="literalblock">
 <div class="content">
 <pre>$COROOT/pv/create-pv.sh</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_nfs_persistent_volumes">NFS Persistent Volumes</h3>
+<div class="paragraph">
+<p>The NFS Persistent Volume script assumes a default directory be created called <strong>/nfsfileshare</strong> as the NFS mount point on your system:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>sudo ls /nfsfileshare</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the crunchy-containers documentation on how to install NFS on a
+centos/RHEL system if you want to use NFS for testing the operator.</p>
+</div>
+<div class="paragraph">
+<p>Create some sample NFS Persistent Volumes using the following script:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/pv/create-nfs-pv.sh</pre>
 </div>
 </div>
 </div>

@@ -244,6 +244,7 @@
 <ul class="sectlevel2">
 <li><a href="#_reload">Reload</a></li>
 <li><a href="#_backups">Backups</a></li>
+<li><a href="#_scheduling">Scheduling</a></li>
 <li><a href="#_scaling_replicas">Scaling Replicas</a></li>
 <li><a href="#_manual_failover">Manual Failover</a></li>
 <li><a href="#_upgrading_postgresql">Upgrading PostgreSQL</a></li>
@@ -262,12 +263,13 @@
 <ul class="sectlevel2">
 <li><a href="#_create_pgpool">Create pgpool</a></li>
 <li><a href="#_delete_pgpool">Delete pgpool</a></li>
+<li><a href="#_workflow">Workflow</a></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.2.0 2018-10-31</p>
+<p>Latest Release: 3.4.0 2018-11-27</p>
 </div>
 <div class="sect1">
 <h2 id="_first_steps">First Steps</h2>
@@ -380,7 +382,8 @@ verifying the setup is as expected.</p>
 <div class="paragraph">
 <p>The <strong>pgo df</strong> command will let you see the disk capacity of a cluster&#8217;s PVC
 versus that of the PostgreSQL data that has been written to disk. If the capacity
-is less than 50%, then the output is printed in red in order to alert the user.</p>
+is less than 50%, then the output is printed in red in order to alert the user.
+The listing is broken out by the cluster&#8217;s Pods.</p>
 </div>
 <div class="sect3">
 <h4 id="_syntax_4">Syntax</h4>
@@ -540,6 +543,14 @@ Kubernetes or OpenShift using a Deployment.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Enables a pgBackRest volume for the database pod.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pgbackrest-restore-from</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Only applies when creating a cluster from a pgbackrest restored PVC.  This
+is the name of the cluster from which the restored PVC was created from and
+which the new cluster credentials will be based.  This setting is required in the scenario.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pgbadger</code></p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
@@ -653,7 +664,7 @@ flag:</p>
 <h5 id="_metrics">Metrics</h5>
 <div class="paragraph">
 <p>Add the
-<a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-collect/">crunchy-collect</a>
+<a href="https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-collect/">crunchy-collect</a>
 container from the Crunchy Container Suite to the database cluster pod and enable metrics collection
 on the database:</p>
 </div>
@@ -665,7 +676,7 @@ on the database:</p>
 <div class="paragraph">
 <p>You can connect these containers to a metrics pipeline using <a href="https://grafana.com">Grafana</a>
 and <a href="https://prometheus.io">Prometheus</a> by following the example found in the
-<a href="https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_collection">Crunchy Container Suite documentation</a>.</p>
+<a href="https://crunchydata.github.io/crunchy-containers/stable/getting-started/kubernetes-and-openshift/#_metrics_collection">Crunchy Container Suite documentation</a>.</p>
 </div>
 </div>
 <div class="sect4">
@@ -679,7 +690,7 @@ and <a href="https://prometheus.io">Prometheus</a> by following the example foun
 </div>
 </div>
 <div class="paragraph">
-<p>This command flag adds the <a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgbadger/">crunchy-pgbadger</a>
+<p>This command flag adds the <a href="https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgbadger/">crunchy-pgbadger</a>
 container into the database pod. pgBadger reports can then be accessed through port 10000 at <code>/api/badgergenerate</code>.</p>
 </div>
 </div>
@@ -689,7 +700,7 @@ container into the database pod. pgBadger reports can then be accessed through p
 <p>By appending the <code>--pgpool</code> command line flag, you can add
 <a href="http://www.pgpool.net/mediawiki/index.php/Main_Page">pgPool II</a> to the database cluster.
 The container used for this functionality is the
-<a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgpool/">crunchy-pgpool</a>
+<a href="https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgpool/">crunchy-pgpool</a>
 container image from the Crunchy Container Suite.</p>
 </div>
 <div class="literalblock">
@@ -714,16 +725,19 @@ or watch for NotReady events on this cluster. When those occur, it will
  create a failover state machine which acts as a timer for the cluster.
 If the timer expires, then a failover is triggered on the cluster turning
 one of the cluster replica pods into the replacement primary pod. See the
-<a href="https://crunchydata.github.io/postgres-operator/how-it-works/">How It Works</a>
+<a href="https://crunchydata.github.io/postgres-operator/stable/how-it-works/#_auto_failover">How It Works</a>
 documentation for more details on auto failover.</p>
 </div>
 </div>
 <div class="sect4">
 <h5 id="_pgbackrest">pgBackRest</h5>
 <div class="paragraph">
-<p>Support for <a href="https://pgbackrest.org/">pgBackRest</a> began in Operator release 3.2. This is
-alpha support at this point and is intended to give users a preview of this feature support.
-The backrestrepo PVC, used by pgBackRest, has to be created on a RWX file system type in this
+<p>pgbackrest beta integration was implemented in version 3.4.0 of the
+Operator.   NOTE:  pgbackrest integration is still subject to change in
+upcoming releases.</p>
+</div>
+<div class="paragraph">
+<p>The backrestrepo PVC, used by pgBackRest, has to be created on a RWX file system type in this
 release. pgBackRest is a more advanced backup and restore capability exposed by the Operator.</p>
 </div>
 <div class="paragraph">
@@ -736,26 +750,11 @@ within the pgo.yaml configuration.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo create cluster mycluster --pgbackrest --custom-config=pgo-pgbackrest-config</pre>
+<pre>pgo create cluster mycluster --pgbackrest</pre>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Note</div>
-</td>
-<td class="content">
-Currently a pgbackrest configuration file is required to be specified
-using the <strong>--custom-config</strong> flag, see examples/backrest-config for the
-example of creating this custom ConfigMap.
-</td>
-</tr>
-</table>
 </div>
 <div class="paragraph">
-<p>Setting this value will cause the Operator to create a PVC specifically dedicated for holding
-pgBackRest backups.</p>
+<p>Setting this value will cause the Operator to create a PVC specifically dedicated for holding pgBackRest backups.</p>
 </div>
 <div class="paragraph">
 <p>Create a pgBackRest backup:</p>
@@ -778,7 +777,7 @@ pgBackRest backups.</p>
 a pgbackrest backup.</p>
 </div>
 <div class="paragraph">
-<p>Obtain pgBackRest information:</p>
+<p>List pgBackRest information:</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -790,8 +789,8 @@ a pgbackrest backup.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>pgo restore withbr --to-pvc=restored
-pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest</pre>
+<pre>pgo restore mycluster --to-pvc=restored
+pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -799,7 +798,9 @@ pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored 
 Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file
 system setup will allow you to restore from this PVC without having to shutdown the currently
-attached PostgreSQL cluster.</p>
+attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
+has to attach the same pgbackrest repo used by the original cluster the restore
+was based off of.</p>
 </div>
 </div>
 </div>
@@ -838,7 +839,9 @@ the selected cluster, but will not delete the data or the backups unless specifi
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-backups</code></p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">-b</p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the backups for this cluster to be removed permanently.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Causes the backups for this cluster to be removed permanently.  This only
+is applicable with pgbasebackup backup volumes and does not remove
+pgbackrest repo volumes.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--delete-configs</code></p></td>
@@ -1203,7 +1206,7 @@ pgo test all</pre>
 <div class="sect2">
 <h3 id="_backups">Backups</h3>
 <div class="paragraph">
-<p>The <code>backup</code> command will utilize the <a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-backup/">crunchy-backup</a>
+<p>The <code>backup</code> command will utilize the <a href="https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-backup/">crunchy-backup</a>
 container to execute a full backup against another database container
 using the standard pg_basebackup utility that is included with PostgreSQL.</p>
 </div>
@@ -1257,6 +1260,12 @@ to creating a new Job with the same name.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock">The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--backup-opts</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The options to pass to pgbasebackup or pgbackrest, use appropriate command options depending on which type of backup you are performing.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--storage-config</code></p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
@@ -1291,6 +1300,22 @@ to creating a new Job with the same name.</p>
 </div>
 <div class="sect4">
 <h5 id="_backup_pvc_management">Backup PVC Management</h5>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+'pgo show pvc' can run into file permission issues if
+you are trying to view a PVC that is on a RWO (read write once) file
+system (e.g. cloud storage, ceph, storageos, etc.).  If another
+pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
+command in the current 3.4.0 release.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>View the PVC folder and the backups contained therein:</p>
 </div>
@@ -1354,6 +1379,206 @@ the last pg_basebackup results.</p>
 </div>
 </div>
 <div class="sect2">
+<h3 id="_scheduling">Scheduling</h3>
+<div class="paragraph">
+<p>The <code>schedule</code> command will generate schedule configuration maps that are utitlized by the
+<a href="https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-scheduler/">crunchy-scheduler</a>
+container.  This allows users to create automated, scheduled backups for their PostgreSQL clusters.</p>
+</div>
+<div class="paragraph">
+<p>Currently only two types of backups are supported with the schedule command:
+ * pgBackRest
+ * pgBaseBackup</p>
+</div>
+<div class="paragraph">
+<p>Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for
+configuration maps with the label <code>crunchy-scheduler=true</code> in a specific namespace.
+After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
+create pgBaseBackup jobs for the configured schedule.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+in operator version 3.4.0, you are REQUIRED, a single time,  to run a
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be
+a requirement in the 3.5.0 version of the Operator.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_syntax_11">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo create schedule NAME [FLAGS]</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_9">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--ccp-image-tag</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-n</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Image version to use for pgBaseBackup backup jobs.  Defaults to what PGO is configured to use.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--no-prompt</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-n</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No command line confirmation.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pgbackrest-backup-type</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The type of pgBackRest backup to perform.  There is no default and the following are valid: <code>full</code>, <code>diff</code>, <code>incr</code></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--pvc-name</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The PVC name to use for the backup.  Only used for pgBaseBackup schedule types and must be created prior to using.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--schedule</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The schedule assigned to the cron task.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--schedule-type</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The schedule type to perform. There is no default and both pgbasebackup and pgbackrest are valid schedule types.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_8">Examples</h4>
+<div class="sect4">
+<h5 id="_creating_pgbackrest_schedules">Creating pgBackRest Schedules</h5>
+<div class="paragraph">
+<p>Create a pgBackRest <code>full</code> backup on Sunday at 1 a.m:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create schedule --schedule="0 1 * * 7" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Create a pgBackRest <code>diff</code> backup on Monday-Saturday at 1 a.m:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create schedule --schedule="0 1 * * 1-6" --schedule-type=pgbackrest --pgbackrest-backup-type=diff mycluster</pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_creating_pgbasebackup_schedules">Creating pgBaseBackup Schedules</h5>
+<div class="paragraph">
+<p>Create a pgBaseBackup backup every day at 1 a.m:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create schedule --schedule="0 1 * * *" --schedule-type=pgbasebackup --pvc-name=mycluster-backups mycluster</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_creating_schedules_using_selectors">Creating Schedules Using Selectors</h4>
+<div class="paragraph">
+<p>Using the <code>selector</code> flag, we can create schedules for all clusters that match a label:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create schedule --schedule="0 1 * * *" --schedule-type=pgbasebackup --pvc-name=mycluster-backups --selector=env=test</pre>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_show_schedules">Show Schedules</h5>
+<div class="paragraph">
+<p>View the schedules for cluster named <code>mycluster</code>:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show schedule mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>View the schedules for all clusters with the label <code>env=test</code>:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show schedule --selector=env=test</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>or for a particular cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show schedule --selector=pg-cluster=mycluster</pre>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_delete_schedules">Delete Schedules</h5>
+<div class="paragraph">
+<p>To delete schedules for a specific cluster:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete schedule mycluster</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To delete a schedule by name:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete schedule --schedule-name=mycluster-pgbackrest-full</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To delete schedules for all clusters with the label <code>env=test</code>:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo delete schedule --selector=env=test</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
 <h3 id="_scaling_replicas">Scaling Replicas</h3>
 <div class="paragraph">
 <p>When you create a Cluster, you will see in the output a variety of Kubernetes
@@ -1385,13 +1610,13 @@ connect to the primary. This forms a streaming replication PostgreSQL cluster.
 The PostgreSQL replicas are read-only whereas the primary is read-write.</p>
 </div>
 <div class="sect3">
-<h4 id="_syntax_11">Syntax</h4>
+<h4 id="_syntax_12">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo scale NAME [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_9">Flags</h4>
+<h4 id="_flags_10">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -1412,7 +1637,7 @@ The PostgreSQL replicas are read-only whereas the primary is read-write.</p>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--service-type</code></p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.  Possible values include LoadBalancer, ClusterIP, and NodePort.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>--ccp-image-tag</code></p></td>
@@ -1454,7 +1679,7 @@ The PostgreSQL replicas are read-only whereas the primary is read-write.</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_8">Examples</h4>
+<h4 id="_examples_9">Examples</h4>
 <div class="sect4">
 <h5 id="_scaling_up">Scaling Up</h5>
 <div class="paragraph">
@@ -1488,13 +1713,13 @@ scaling down the replicas.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_syntax_12">Syntax</h4>
+<h4 id="_syntax_13">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo scaledown NAME [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_10">Flags</h4>
+<h4 id="_flags_11">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -1637,13 +1862,13 @@ to the primary to be routed to the new primary (targeted replica)</p>
 </ul>
 </div>
 <div class="sect3">
-<h4 id="_syntax_13">Syntax</h4>
+<h4 id="_syntax_14">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo failover NAME [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_11">Flags</h4>
+<h4 id="_flags_12">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -1682,7 +1907,7 @@ to the primary to be routed to the new primary (targeted replica)</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_9">Examples</h4>
+<h4 id="_examples_10">Examples</h4>
 <div class="sect4">
 <h5 id="_manual_failover_2">Manual Failover</h5>
 <div class="paragraph">
@@ -1729,7 +1954,7 @@ replica can take longer depending on how much data is being replicated.</p>
 <p>The <strong>upgrade</strong> command will allow you to upgrade the PostgreSQL version of
 your cluster with the pg_upgrade utility. Minor or major upgrades are
 supported. The Crunchy Container Suite
-<a href="https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-upgrade/">crunchy-upgrade</a>
+<a href="https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-upgrade/">crunchy-upgrade</a>
 container is responsible for performing this task.</p>
 </div>
 <div class="paragraph">
@@ -1751,13 +1976,13 @@ this can take a long time if your database is large. The operator creates a
 watch on the upgrade job to know when and how to proceed.</p>
 </div>
 <div class="sect3">
-<h4 id="_syntax_14">Syntax</h4>
+<h4 id="_syntax_15">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo upgrade NAME [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_12">Flags</h4>
+<h4 id="_flags_13">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -1784,7 +2009,7 @@ watch on the upgrade job to know when and how to proceed.</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_10">Examples</h4>
+<h4 id="_examples_11">Examples</h4>
 <div class="sect4">
 <h5 id="_minor_upgrade">Minor Upgrade</h5>
 <div class="paragraph">
@@ -1828,13 +2053,13 @@ pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3</pre>
 input being valid.</p>
 </div>
 <div class="sect3">
-<h4 id="_syntax_15">Syntax</h4>
+<h4 id="_syntax_16">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo label [NAME]|all [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_13">Flags</h4>
+<h4 id="_flags_14">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -1873,7 +2098,7 @@ input being valid.</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_11">Examples</h4>
+<h4 id="_examples_12">Examples</h4>
 <div class="sect4">
 <h5 id="_applying_labels">Applying Labels</h5>
 <div class="paragraph">
@@ -1932,13 +2157,13 @@ PostgreSQL. These should therefore be exercised with caution.</p>
 
 </div>
 <div class="sect3">
-<h4 id="_syntax_16">Syntax</h4>
+<h4 id="_syntax_17">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo create policy [NAME] [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_14">Flags</h4>
+<h4 id="_flags_15">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -1971,7 +2196,7 @@ PostgreSQL. These should therefore be exercised with caution.</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_12">Examples</h4>
+<h4 id="_examples_13">Examples</h4>
 <div class="sect4">
 <h5 id="_creating_policies">Creating Policies</h5>
 <div class="paragraph">
@@ -2146,13 +2371,13 @@ by running:</p>
 into that PVC location (e.g. /data or /nfsfileshare).</p>
 </div>
 <div class="sect3">
-<h4 id="_syntax_17">Syntax</h4>
+<h4 id="_syntax_18">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo load [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_15">Flags</h4>
+<h4 id="_flags_16">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -2191,7 +2416,7 @@ into that PVC location (e.g. /data or /nfsfileshare).</p>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_13">Examples</h4>
+<h4 id="_examples_14">Examples</h4>
 <div class="sect4">
 <h5 id="_loading_csv_files">Loading CSV Files</h5>
 <div class="paragraph">
@@ -2229,13 +2454,13 @@ example:</p>
 credentials for the PostgreSQL clusters.</p>
 </div>
 <div class="sect3">
-<h4 id="_syntax_18">Syntax</h4>
+<h4 id="_syntax_19">Syntax</h4>
 <div class="paragraph">
 <p>$ pgo user [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_flags_16">Flags</h4>
+<h4 id="_flags_17">Flags</h4>
 <table class="tableblock frame-all grid-all spread">
 <colgroup>
 <col style="width: 25%;">
@@ -2295,15 +2520,21 @@ using --update-passwords flag to update passwords.</p></td>
 <td class="tableblock halign-center valign-top"><p class="tableblock">Int</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Sets passwords for new users to X days (default 30).</p></td>
 </tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--password-length</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">N/A</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">Int</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">When no password is provided, generates a password with this number of characters (default 12).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 <div class="sect3">
-<h4 id="_examples_14">Examples</h4>
+<h4 id="_examples_15">Examples</h4>
 <div class="sect4">
 <h5 id="_basic_user_creation">Basic User Creation</h5>
 <div class="paragraph">
-<p>To create a new Postgres user assigned to the <strong>mycluster</strong> cluster, execute:</p>
+<p>To create a new Postgres user assigned to the <strong>mycluster</strong> cluster, execute (password will be auto generated and 12 characters long):</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -2363,7 +2594,7 @@ will cause pgpool to be reconfigured to pick up the user deletion.</p>
 <div class="sect4">
 <h5 id="_change_password">Change Password</h5>
 <div class="paragraph">
-<p>To change the password for a user in the <strong>mycluster</strong> cluster:</p>
+<p>To change the password for a user in the <strong>mycluster</strong> cluster (password will be auto generated and 12 characters long):</p>
 </div>
 <div class="literalblock">
 <div class="content">
@@ -2446,6 +2677,20 @@ a sequence similar to this:</p>
 <pre>pgo create pgbouncer mycluster</pre>
 </div>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+currently you are required to have a replica in your PG
+cluster for the pgbouncer sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -2495,63 +2740,9 @@ managed user you have created.</p>
 is part of a cluster.</p>
 </div>
 <div class="sect3">
-<h4 id="_syntax_19">Syntax</h4>
-<div class="paragraph">
-<p>$ pgo create pgpool CLUSTERNAME [FLAGS]</p>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_flags_17">Flags</h4>
-<table class="tableblock frame-all grid-all spread">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 5%;">
-<col style="width: 5%;">
-<col style="width: 65%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Name</th>
-<th class="tableblock halign-center valign-top">Shorthand</th>
-<th class="tableblock halign-center valign-top">Input</th>
-<th class="tableblock halign-left valign-top">Usage</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="sect3">
-<h4 id="_examples_15">Examples</h4>
-<div class="sect4">
-<h5 id="_simple_creation_2">Simple Creation</h5>
-<div class="paragraph">
-<p>Create a pgpool:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>pgo create pgpool mycluster</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_delete_pgpool">Delete pgpool</h3>
-<div class="paragraph">
-<p>The <code>delete pgpool</code> command will by delete the pgpool deployment that
-is part of a cluster.</p>
-</div>
-<div class="sect3">
 <h4 id="_syntax_20">Syntax</h4>
 <div class="paragraph">
-<p>$ pgo delete pgpool CLUSTERNAME [FLAGS]</p>
+<p>$ pgo create pgpool CLUSTERNAME [FLAGS]</p>
 </div>
 </div>
 <div class="sect3">
@@ -2584,6 +2775,74 @@ is part of a cluster.</p>
 <div class="sect3">
 <h4 id="_examples_16">Examples</h4>
 <div class="sect4">
+<h5 id="_simple_creation_2">Simple Creation</h5>
+<div class="paragraph">
+<p>Create a pgpool:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo create pgpool mycluster</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+currently you are required to have a replica in your PG
+cluster for the pgpool sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_delete_pgpool">Delete pgpool</h3>
+<div class="paragraph">
+<p>The <code>delete pgpool</code> command will by delete the pgpool deployment that
+is part of a cluster.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_21">Syntax</h4>
+<div class="paragraph">
+<p>$ pgo delete pgpool CLUSTERNAME [FLAGS]</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_flags_19">Flags</h4>
+<table class="tableblock frame-all grid-all spread">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 5%;">
+<col style="width: 5%;">
+<col style="width: 65%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Name</th>
+<th class="tableblock halign-center valign-top">Shorthand</th>
+<th class="tableblock halign-center valign-top">Input</th>
+<th class="tableblock halign-left valign-top">Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>--selector</code></p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">-s</p></td>
+<td class="tableblock halign-center valign-top"><p class="tableblock">String</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The selector to use for cluster filtering.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_examples_17">Examples</h4>
+<div class="sect4">
 <h5 id="_simple_deletion_2">Simple Deletion</h5>
 <div class="paragraph">
 <p>Delete a pgpool:</p>
@@ -2592,6 +2851,24 @@ is part of a cluster.</p>
 <div class="content">
 <pre>pgo delete pgpool mycluster</pre>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_workflow">Workflow</h3>
+<div class="paragraph">
+<p>Starting with Release 3.4, there is a workflow concept that
+you can use to check the status of a cluster creation.  When
+you create a cluster (e.g. pgo create cluster), you will
+see in the response a workflow ID.  You can use that ID
+to check the status of the cluster creation.</p>
+</div>
+<div class="sect3">
+<h4 id="_syntax_22">Syntax</h4>
+<div class="literalblock">
+<div class="content">
+<pre>pgo show workflow ID</pre>
 </div>
 </div>
 </div>

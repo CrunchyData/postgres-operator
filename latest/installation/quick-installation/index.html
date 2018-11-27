@@ -238,7 +238,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.4.0 2018-11-16</p>
+<p>Latest Release: 3.4.0 2018-11-27</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -255,7 +255,9 @@ the deployment to popular Kubernetes environments -</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>The <strong>quickstart</strong> script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.</p>
+<p>The <strong>quickstart</strong> script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.  The <strong>quickstart</strong> script is intended to get
+you up and running quickly, for a typical more custom installation, the
+<strong>manual</strong> installation is recommended.</p>
 </div>
 <div class="paragraph">
 <p>The script assumes you have a StorageClass defined for persistence.</p>
@@ -271,8 +273,7 @@ the deployment to popular Kubernetes environments -</p>
 <div class="sect2">
 <h3 id="_gke_pks">GKE/PKS</h3>
 <div class="paragraph">
-<p>The <strong>quickstart.sh</strong> script will allow users to set up the Postgres Operator quickly on GKE including PKS.
-This script is tested on GKE but can be modified for use with other Kubernetes environments as well.</p>
+<p>The <strong>quickstart.sh</strong> script will allow users to set up the Postgres Operator quickly on GKE, PKS, and Openshift.</p>
 </div>
 <div class="paragraph">
 <p>The script requires a few things in order to work -</p>
@@ -283,7 +284,7 @@ This script is tested on GKE but can be modified for use with other Kubernetes e
 <p>wget utility installed</p>
 </li>
 <li>
-<p>kubectl utility installed</p>
+<p>kubectl or oc utility installed</p>
 </li>
 <li>
 <p>StorageClass defined on your GKE instance</p>
@@ -293,8 +294,8 @@ This script is tested on GKE but can be modified for use with other Kubernetes e
 <div class="paragraph">
 <p>Executing the script will give you a default Operator deployment
 that assumes <strong>dynamic</strong> storage and a storage class named <strong>standard</strong>,
-things that GKE provides, user provided values are also allowed by
-the script.</p>
+user provided values are also allowed by the script to override these
+defaults.</p>
 </div>
 <div class="paragraph">
 <p>The script performs the following -</p>
@@ -318,6 +319,19 @@ the script.</p>
 </li>
 </ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+You should copy the <strong>quickstart.sh</strong> script from github rather than
+cloning the entire github Operator repository!
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>A tip, if you want to set your Kube context to some particular namespace you
 can run commands similar to this to set it to a <strong>demo</strong> namespace if
@@ -332,7 +346,8 @@ kubectl config use-context demo</pre>
 </div>
 <div class="paragraph">
 <p>For Mac and Windows users, pre-built <strong>pgo</strong> binaries are included in
-the operator release tar ball:</p>
+the operator release tar ball, you would download the pgo CLI binaries
+from the Releases page to your local machine as part of the quick installation:</p>
 </div>
 <div class="ulist">
 <ul>
