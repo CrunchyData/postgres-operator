@@ -100,7 +100,7 @@ func labelClusters(clusters []string) {
 
 // deleteLabel ...
 func deleteLabel(args []string) {
-	log.Debugf("deleteLabel called %v\n", args)
+	log.Debugf("deleteLabel called %v", args)
 
 	req := msgs.DeleteLabelRequest{}
 	req.Selector = Selector

@@ -39,7 +39,7 @@ func GetpgreplicasBySelector(client *rest.RESTClient, replicaList *crv1.Pgreplic
 		}
 	}
 
-	log.Debug("myselector is " + myselector.String())
+	log.Debugf("myselector is %s", myselector.String())
 
 	err = client.Get().
 		Resource(crv1.PgreplicaResourcePlural).
@@ -78,7 +78,7 @@ func Getpgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, namesp
 		Name(name).
 		Do().Into(replica)
 	if kerrors.IsNotFound(err) {
-		log.Debug("replica " + name + " not found")
+		log.Debugf("replica %s not found", name)
 		return false, err
 	}
 	if err != nil {
@@ -121,5 +121,23 @@ func Createpgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, namespace
 		log.Error("error creating pgreplica " + err.Error())
 	}
 
+	return err
+}
+
+// Updatepgreplica updates a pgreplica
+func Updatepgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, namespace string) error {
+
+	err := client.Put().
+		Name(name).
+		Namespace(namespace).
+		Resource(crv1.PgreplicaResourcePlural).
+		Body(replica).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error updating pgreplica " + err.Error())
+	}
+
+	log.Debugf("updated pgreplica %s", replica.Name)
 	return err
 }

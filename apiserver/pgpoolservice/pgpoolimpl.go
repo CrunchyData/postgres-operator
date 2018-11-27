@@ -35,7 +35,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("createPgpool selector is [%s]\n", request.Selector)
+	log.Debugf("createPgpool selector is [%s]", request.Selector)
 
 	if request.Selector == "" && len(request.Args) == 0 {
 		resp.Status.Code = msgs.Error
@@ -63,7 +63,12 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
 				&argCluster, request.Args[i], apiserver.Namespace)
 
-			if !found || err != nil {
+			if !found {
+				resp.Status.Msg = request.Args[i] + " was not found"
+				resp.Status.Code = msgs.Error
+				return resp
+			}
+			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
@@ -73,7 +78,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 		}
 	}
 
-	log.Debugf("createPgpool clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("createPgpool clusters found len is %d", len(clusterList.Items))
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "no clusters found that match request selector or arguments"
@@ -81,7 +86,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		log.Debugf("adding pgpool to cluster [%s]\n", cluster.Name)
+		log.Debugf("adding pgpool to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
 		spec.Name = util.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
@@ -110,6 +115,9 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 				newInstance, apiserver.Namespace)
 			if err != nil {
 				log.Error(err)
+				resp.Results = append(resp.Results, "error adding pgpool for "+cluster.Name+err.Error())
+			} else {
+				resp.Results = append(resp.Results, "pgpool added for "+cluster.Name)
 			}
 		}
 
@@ -129,7 +137,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("deletePgpool selector is [%s]\n", request.Selector)
+	log.Debugf("deletePgpool selector is [%s]", request.Selector)
 
 	if request.Selector == "" && len(request.Args) == 0 {
 		resp.Status.Code = msgs.Error
@@ -157,7 +165,12 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
 				&argCluster, request.Args[i], apiserver.Namespace)
 
-			if !found || err != nil {
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.Args[i] + " not found"
+				return resp
+			}
+			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
@@ -167,7 +180,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 		}
 	}
 
-	log.Debugf("deletePgpool clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("deletePgpool clusters found len is %d", len(clusterList.Items))
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "no clusters found that match request selector or arguments"
@@ -175,7 +188,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		log.Debugf("deleting pgpool from cluster [%s]\n", cluster.Name)
+		log.Debugf("deleting pgpool from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
 		spec.Name = util.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name
@@ -199,6 +212,11 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 			newInstance, apiserver.Namespace)
 		if err != nil {
 			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Results = append(resp.Results, cluster.Name+err.Error())
+			return resp
+		} else {
+			resp.Results = append(resp.Results, cluster.Name+" pgpool deleted")
 		}
 
 	}

@@ -43,23 +43,23 @@ type PgclusterSpec struct {
 	ReplicaStorage     PgStorageSpec        `json:replicastorage`
 	ContainerResources PgContainerResources `json:containerresources`
 	PrimaryHost        string               `json:"primaryhost"`
-	PrimaryPassword    string               `json:"primarypassword"`
-	User               string               `json:"user"`
-	Password           string               `json:"password"`
-	Database           string               `json:"database"`
-	RootPassword       string               `json:"rootpassword"`
-	Replicas           string               `json:"replicas"`
-	Strategy           string               `json:"strategy"`
-	SecretFrom         string               `json:"secretfrom"`
-	BackupPVCName      string               `json:"backuppvcname"`
-	BackupPath         string               `json:"backuppath"`
-	UserSecretName     string               `json:"usersecretname"`
-	RootSecretName     string               `json:"rootsecretname"`
-	PrimarySecretName  string               `json:"primarysecretname"`
-	Status             string               `json:"status"`
-	PswLastUpdate      string               `json:"pswlastupdate"`
-	CustomConfig       string               `json:"customconfig"`
-	UserLabels         map[string]string    `json:"userlabels"`
+	//PrimaryPassword    string               `json:"primarypassword"`
+	User string `json:"user"`
+	//Password           string               `json:"password"`
+	Database string `json:"database"`
+	//RootPassword       string               `json:"rootpassword"`
+	Replicas          string            `json:"replicas"`
+	Strategy          string            `json:"strategy"`
+	SecretFrom        string            `json:"secretfrom"`
+	BackupPVCName     string            `json:"backuppvcname"`
+	BackupPath        string            `json:"backuppath"`
+	UserSecretName    string            `json:"usersecretname"`
+	RootSecretName    string            `json:"rootsecretname"`
+	PrimarySecretName string            `json:"primarysecretname"`
+	Status            string            `json:"status"`
+	PswLastUpdate     string            `json:"pswlastupdate"`
+	CustomConfig      string            `json:"customconfig"`
+	UserLabels        map[string]string `json:"userlabels"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

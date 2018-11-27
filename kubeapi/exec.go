@@ -56,7 +56,7 @@ func ExecToPodThroughAPI(config *rest.Config, clientset *kubernetes.Clientset, c
 		TTY:       false,
 	}, parameterCodec)
 
-	log.Debug("Request URL:", req.URL().String())
+	log.Debugf("Request URL: %s", req.URL().String())
 
 	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {

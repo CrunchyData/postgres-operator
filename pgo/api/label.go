@@ -27,7 +27,7 @@ func LabelClusters(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	var response msgs.LabelResponse
 	url := SessionCredentials.APIServerURL + "/label"
-	log.Debug("label called...[" + url + "]")
+	log.Debugf("label called...[%s]", url)
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -45,7 +45,7 @@ func LabelClusters(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -64,7 +64,7 @@ func DeleteLabel(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 
 	var response msgs.LabelResponse
 	url := SessionCredentials.APIServerURL + "/labeldelete"
-	log.Debug("delete label called...[" + url + "]")
+	log.Debugf("delete label called...[%s]", url)
 
 	jsonValue, _ := json.Marshal(request)
 
@@ -82,7 +82,7 @@ func DeleteLabel(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

@@ -33,3 +33,6 @@ expenv -f $DIR/cluster-rbac.yaml | $CO_CMD create -f -
 # create the service account, role, role-binding and add to the service account
 expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
 
+# create the rbac for the scheduler
+expenv -f $DIR/scheduler-sa.json | $CO_CMD $NS create -f -
+

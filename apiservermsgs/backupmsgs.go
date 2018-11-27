@@ -32,6 +32,7 @@ type CreateBackupRequest struct {
 	Selector      string
 	PVCName       string
 	StorageConfig string
+	BackupOpts    string
 }
 
 // ShowBackupResponse ...

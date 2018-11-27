@@ -34,7 +34,7 @@ var restoreCmd = &cobra.Command{
 	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. For example:
 
 	pgo restore withbr --to-pvc=restored
-	pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest`,
+	pgo create cluster restored --pgbackrest-restore-from=withbr --pgbackrest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("restore called")
 		if len(args) == 0 {
@@ -60,19 +60,19 @@ func init() {
 	RootCmd.AddCommand(restoreCmd)
 
 	restoreCmd.Flags().StringVarP(&ToPVC, "to-pvc", "", "", "The name of the new PVC to restore to.")
-	restoreCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest options for the restore.")
+	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 
 }
 
 // restore ....
 func restore(args []string) {
-	log.Debugf("restore called %v\n", args)
+	log.Debugf("restore called %v", args)
 
 	request := new(msgs.RestoreRequest)
 	request.FromCluster = args[0]
 	request.ToPVC = ToPVC
-	request.RestoreOpts = BackrestOpts
+	request.RestoreOpts = BackupOpts
 
 	response, err := api.Restore(httpclient, &SessionCredentials, request)
 	if err != nil {

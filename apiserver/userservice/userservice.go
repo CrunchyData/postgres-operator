@@ -86,17 +86,17 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeleteUserResponse
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("userservice.DeleteUserHandler %v\n", vars)
+	log.Debugf("userservice.DeleteUserHandler %v", vars)
 
 	username := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
@@ -133,15 +133,15 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debug("selector param was [" + selector + "]")
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	expired := r.URL.Query().Get("expired")
 	if expired != "" {
-		log.Debug("expired param was [" + expired + "]")
+		log.Debugf("expired parameter is [%s]", expired)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_SECRETS_PERM, w, r)

@@ -34,7 +34,7 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debugf("version param was [%s]", clientVersion)
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
@@ -67,7 +67,7 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	backupname := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debugf("version param was [%s]", clientVersion)
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)

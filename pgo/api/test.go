@@ -43,7 +43,7 @@ func ShowTest(httpclient *http.Client, arg, selector string, SessionCredentials 
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

@@ -41,7 +41,7 @@ func GetpgupgradesBySelector(client *rest.RESTClient, upgradeList *crv1.Pgupgrad
 		}
 	}
 
-	log.Debug("myselector is " + myselector.String())
+	log.Debugf("myselector is %s", myselector.String())
 
 	err = client.Get().
 		Resource(crv1.PgupgradeResourcePlural).
@@ -80,7 +80,7 @@ func Getpgupgrade(client *rest.RESTClient, upgrade *crv1.Pgupgrade, name, namesp
 		Name(name).
 		Do().Into(upgrade)
 	if kerrors.IsNotFound(err) {
-		log.Debug("upgrade " + name + " not found")
+		log.Debugf("upgrade %s not found", name)
 		return false, err
 	}
 	if err != nil {
@@ -122,7 +122,7 @@ func Deletepgupgrade(client *rest.RESTClient, name, namespace string) error {
 		return err
 	}
 
-	log.Debug("deleted pgupgrade " + name)
+	log.Debugf("deleted pgupgrade %s", name)
 	return err
 }
 
@@ -153,7 +153,7 @@ func Patchpgupgrade(client *rest.RESTClient, name, path, value, namespace string
 		return err
 	}
 
-	log.Debug("patched pgupgrade " + name)
+	log.Debugf("patched pgupgrade %s", name)
 	return err
 }
 

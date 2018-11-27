@@ -44,7 +44,7 @@ func ShowConfig(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

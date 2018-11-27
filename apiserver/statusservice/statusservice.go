@@ -29,11 +29,11 @@ import (
 // pgo status --selector=env=research
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debug("statusservice.StatusHandler %v\n", vars)
+	log.Debug("statusservice.StatusHandler %v", vars)
 
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.STATUS_PERM, w, r)

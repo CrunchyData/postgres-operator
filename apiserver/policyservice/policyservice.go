@@ -71,7 +71,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeletePolicyResponse
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("policyservice.DeletePolicyHandler %v\n", vars)
+	log.Debugf("policyservice.DeletePolicyHandler %v", vars)
 
 	policyname := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
@@ -105,7 +105,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowPolicyResponse
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("policyservice.ShowPolicyHandler %v\n", vars)
+	log.Debugf("policyservice.ShowPolicyHandler %v", vars)
 
 	policyname := vars["name"]
 

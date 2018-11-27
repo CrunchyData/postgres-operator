@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"io"
@@ -30,12 +31,18 @@ import (
 )
 
 type lspvcTemplateFields struct {
-	Name          string
-	ClusterName   string
-	COImagePrefix string
-	COImageTag    string
-	BackupRoot    string
-	PVCName       string
+	Name               string
+	ClusterName        string
+	COImagePrefix      string
+	COImageTag         string
+	BackupRoot         string
+	PVCName            string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // ShowPVC ...
@@ -50,7 +57,7 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 			return pvcList, err
 		}
 
-		log.Debugf("got %d PVCs from ShowPVC query\n", len(pvcs.Items))
+		log.Debugf("got %d PVCs from ShowPVC query", len(pvcs.Items))
 		for _, p := range pvcs.Items {
 			pvcList = append(pvcList, p.Name)
 		}
@@ -62,7 +69,7 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 		return pvcList, err
 	}
 
-	log.Debugf("\nPVC %s\n is found", pvc.Name)
+	log.Debugf("PVC %s is found", pvc.Name)
 	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot)
 
 	return pvcList, err
@@ -108,13 +115,25 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 		log.Debug(pvcName)
 	}
 
+	cr := ""
+	if apiserver.Pgo.DefaultLspvcResources != "" {
+		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLspvcResources)
+		if err != nil {
+			log.Error(err.Error())
+			return newlines, err
+		}
+		cr = apiserver.GetContainerResourcesJSON(&tmp)
+
+	}
+
 	pvcFields := lspvcTemplateFields{
-		Name:          podName,
-		ClusterName:   clusterName,
-		COImagePrefix: apiserver.Pgo.Pgo.COImagePrefix,
-		COImageTag:    apiserver.Pgo.Pgo.COImageTag,
-		BackupRoot:    pvcRoot,
-		PVCName:       pvcName,
+		Name:               podName,
+		ClusterName:        clusterName,
+		COImagePrefix:      apiserver.Pgo.Pgo.COImagePrefix,
+		COImageTag:         apiserver.Pgo.Pgo.COImageTag,
+		BackupRoot:         pvcRoot,
+		PVCName:            pvcName,
+		ContainerResources: cr,
 	}
 
 	err = apiserver.LspvcTemplate.Execute(&doc2, pvcFields)
@@ -169,7 +188,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	}()
 	var buf2 bytes.Buffer
 	_, err = io.Copy(&buf2, readCloser)
-	log.Debugf("backups are... \n%s", buf2.String())
+	log.Debugf("backups are... %s", buf2.String())
 
 	log.Debugf("pvc = %s", pvcName)
 	lines := strings.Split(buf2.String(), "\n")
@@ -180,9 +199,9 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 
 	for k, v := range newlines {
 		if k == len(newlines)-1 {
-			log.Debugf("%s%s\n", apiserver.TreeTrunk, "/"+v)
+			log.Debugf("%s%s", apiserver.TreeTrunk, "/"+v)
 		} else {
-			log.Debugf("%s%s\n", apiserver.TreeBranch, "/"+v)
+			log.Debugf("%s%s", apiserver.TreeBranch, "/"+v)
 		}
 	}
 

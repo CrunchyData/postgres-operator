@@ -55,9 +55,9 @@ func init() {
 
 func showDf(args []string) {
 
-	log.Debugf("showDf called %v\n", args)
+	log.Debugf("showDf called %v", args)
 
-	log.Debug("selector is " + Selector)
+	log.Debugf("selector is %s", Selector)
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
 		args[0] = "all"
@@ -90,7 +90,16 @@ func showDf(args []string) {
 			return
 		}
 
-		fmt.Printf("%s", util.Rpad("CLUSTER", " ", 20))
+		var maxLen int
+		for _, result := range response.Results {
+			tmp := len(result.Name)
+			if tmp > maxLen {
+				maxLen = tmp
+			}
+		}
+		maxLen++
+
+		fmt.Printf("%s", util.Rpad("POD", " ", maxLen))
 		fmt.Printf("%s", util.Rpad("STATUS", " ", 10))
 		fmt.Printf("%s", util.Rpad("PGSIZE", " ", 10))
 		fmt.Printf("%s", util.Rpad("CAPACITY", " ", 10))
@@ -98,7 +107,7 @@ func showDf(args []string) {
 		fmt.Println("")
 
 		for _, result := range response.Results {
-			fmt.Printf("%s", util.Rpad(result.Name, " ", 20))
+			fmt.Printf("%s", util.Rpad(result.Name, " ", maxLen))
 			if result.Working {
 				fmt.Printf("%s", GREEN(util.Rpad("up", " ", 10)))
 			} else {

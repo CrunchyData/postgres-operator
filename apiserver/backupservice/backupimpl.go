@@ -180,11 +180,18 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			log.Debugf("pgbackup %s was found so we will recreate it", arg)
 			dels := make([]string, 1)
 			dels[0] = arg
-			DeleteBackup(arg)
+			//DeleteBackup(arg)
+			err = kubeapi.Deletepgbackup(apiserver.RESTClient, arg, apiserver.Namespace)
+
+			if err != nil {
+				log.Error(err)
+				resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+				break
+			}
 		}
 
 		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg, request.StorageConfig)
+		newInstance, err = getBackupParams(arg, request)
 		if err != nil {
 			msg := "error creating backup for " + arg
 			log.Error(err)
@@ -209,29 +216,30 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 	return resp
 }
 
-func getBackupParams(name, storageConfig string) (*crv1.Pgbackup, error) {
+func getBackupParams(name string, request *msgs.CreateBackupRequest) (*crv1.Pgbackup, error) {
 	var err error
 	var newInstance *crv1.Pgbackup
 
 	spec := crv1.PgbackupSpec{}
 	spec.Name = name
-	if storageConfig != "" {
-		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
+	if request.StorageConfig != "" {
+		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	} else {
 		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackupStorage)
 	}
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
-	spec.BackupUser = "primaryuser"
-	spec.BackupPass = "password"
+	spec.BackupUserSecret = "primaryuser"
 	spec.BackupPort = "5432"
+	spec.BackupOpts = request.BackupOpts
 
 	cluster := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, name, apiserver.Namespace)
 	if err == nil {
 		spec.BackupHost = cluster.Spec.Name
-		spec.BackupPass, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
+		spec.BackupUserSecret = cluster.Spec.Name + crv1.PrimarySecretSuffix
+		_, err = util.GetSecretPassword(apiserver.Clientset, cluster.Spec.Name, crv1.PrimarySecretSuffix, apiserver.Namespace)
 		if err != nil {
 			return newInstance, err
 		}

@@ -29,7 +29,7 @@ import (
 func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	vars := mux.Vars(r)
-	log.Debugf("pvcervice.ShowPVCHandler %v\n", vars)
+	log.Debugf("pvcervice.ShowPVCHandler %v", vars)
 
 	pvcname := vars["pvcname"]
 

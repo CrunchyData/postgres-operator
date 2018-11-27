@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -29,13 +30,19 @@ import (
 )
 
 type rmdatajobTemplateFields struct {
-	Name            string
-	PvcName         string
-	ClusterName     string
-	COImagePrefix   string
-	COImageTag      string
-	SecurityContext string
-	DataRoot        string
+	Name               string
+	PvcName            string
+	ClusterName        string
+	COImagePrefix      string
+	COImageTag         string
+	SecurityContext    string
+	DataRoot           string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // RemoveData ...
@@ -46,14 +53,26 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	var pvcName string
 	pvcName = task.Spec.Parameters[util.LABEL_PVC_NAME]
 
+	cr := ""
+	if operator.Pgo.DefaultRmdataResources != "" {
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultRmdataResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cr = operator.GetContainerResourcesJSON(&tmp)
+
+	}
+
 	jobFields := rmdatajobTemplateFields{
-		Name:            task.Spec.Name + "-" + pvcName,
-		ClusterName:     task.Spec.Name,
-		PvcName:         pvcName,
-		COImagePrefix:   operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:      operator.Pgo.Pgo.COImageTag,
-		SecurityContext: util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
-		DataRoot:        task.Spec.Parameters[util.LABEL_DATA_ROOT],
+		Name:               task.Spec.Name + "-" + pvcName,
+		ClusterName:        task.Spec.Name,
+		PvcName:            pvcName,
+		COImagePrefix:      operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:         operator.Pgo.Pgo.COImageTag,
+		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
+		DataRoot:           task.Spec.Parameters[util.LABEL_DATA_ROOT],
+		ContainerResources: cr,
 	}
 	log.Debugf("creating rmdata job for pvc [%s]", pvcName)
 

@@ -27,7 +27,7 @@ import (
 
 // deleteCluster ...
 func deleteCluster(args []string) {
-	log.Debugf("deleteCluster called %v\n", args)
+	log.Debugf("deleteCluster called %v", args)
 
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
@@ -58,7 +58,7 @@ func deleteCluster(args []string) {
 // showCluster ...
 func showCluster(args []string) {
 
-	log.Debugf("showCluster called %v\n", args)
+	log.Debugf("showCluster called %v", args)
 
 	if OutputFormat != "" {
 		if OutputFormat != "json" {
@@ -67,7 +67,7 @@ func showCluster(args []string) {
 		}
 	}
 
-	log.Debug("selector is " + Selector)
+	log.Debugf("selector is %s", Selector)
 	if len(args) == 0 && Selector != "" {
 		args = make([]string, 1)
 		args[0] = "all"
@@ -124,6 +124,13 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 			fmt.Println(TreeBranch + "pvc : " + pvc)
 		}
 	}
+
+	resources := detail.Cluster.Spec.ContainerResources
+	resourceStr := fmt.Sprintf("%sresources : CPU Limit=%s Memory Limit=%s, CPU Request=%s Memory Request=%s", TreeBranch, resources.LimitsCPU, resources.LimitsMemory, resources.RequestsCPU, resources.RequestsMemory)
+	fmt.Println(resourceStr)
+
+	storageStr := fmt.Sprintf("%sstorage : Primary=%s Replica=%s", TreeBranch, detail.Cluster.Spec.PrimaryStorage.Size, detail.Cluster.Spec.ReplicaStorage.Size)
+	fmt.Println(storageStr)
 
 	for _, d := range detail.Deployments {
 		fmt.Println(TreeBranch + "deployment : " + d.Name)
@@ -187,6 +194,7 @@ func createCluster(args []string) {
 	r.PgbouncerFlag = PgbouncerFlag
 	r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
+	r.BackrestRestoreFrom = BackrestRestoreFrom
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

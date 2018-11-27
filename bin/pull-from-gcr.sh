@@ -3,14 +3,14 @@
 set -e -u
 
 REGISTRY='us.gcr.io/container-suite'
-VERSION=${CO_IMAGE_TAG?}
+VERSION=$CO_IMAGE_TAG
 IMAGES=(
-pgo-lspvc
-pgo-rmdata
-pgo-load
-postgres-operator
-pgo-apiserver
-pgo-backrest
+    postgres-operator
+    pgo-apiserver
+    pgo-lspvc
+    pgo-rmdata
+    pgo-backrest
+    pgo-load
 )
 
 function echo_green() {

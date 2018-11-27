@@ -29,7 +29,7 @@ func CreatePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgbouncer"
-	log.Debug("createPgbouncer called...[" + url + "]")
+	log.Debugf("createPgbouncer called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -45,7 +45,7 @@ func CreatePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -66,7 +66,7 @@ func DeletePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgbouncer"
-	log.Debug("deletePgbouncer called...[" + url + "]")
+	log.Debugf("deletePgbouncer called...[%s]", url)
 
 	action := "DELETE"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -82,7 +82,7 @@ func DeletePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

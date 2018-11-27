@@ -29,7 +29,7 @@ func RemoveBackups(namespace string, clientset *kubernetes.Clientset, task *crv1
 	//delete any backup jobs for this cluster
 	//kubectl delete job --selector=pg-cluster=clustername
 
-	log.Debug("deleting backup jobs with selector=" + util.LABEL_PG_CLUSTER + "=" + task.Spec.Parameters[util.LABEL_PG_CLUSTER])
+	log.Debugf("deleting backup jobs with selector=%s=%s", util.LABEL_PG_CLUSTER, task.Spec.Parameters[util.LABEL_PG_CLUSTER])
 	kubeapi.DeleteJobs(clientset, util.LABEL_PG_CLUSTER+"="+task.Spec.Parameters[util.LABEL_PG_CLUSTER], namespace)
 
 }

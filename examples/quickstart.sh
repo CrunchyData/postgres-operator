@@ -14,75 +14,87 @@
 # limitations under the License.
 
 LOG="pgo-installer.log"
+
+if [[ "$CO_BASEOS" != "" ]]; then
+	echo "CO_BASEOS is set to " $CO_BASEOS
+else
+	export CO_BASEOS=centos7
+	echo -n "Which crunchy images do you want to install (rhel7 or centos7)? ["$REPLY"]"
+	read REPLY
+	if [[ "$REPLY" != "" ]]; then
+		echo "setting CO_BASEOS="$REPLY
+		export CO_BASEOS=$REPLY
+	fi
+fi
+echo $CO_BASEOS is the baseos entered | tee -a $LOG
+
 if [[ "$CO_VERSION" != "" ]]; then
 	echo "CO_VERSION is set to " $CO_VERSION
 else
-	export CO_VERSION=3.3.0
-fi
-if [[ "$CO_NAMESPACE" != "" ]]; then
-	echo "CO_NAMESPACE is set to " $CO_NAMESPACE
-fi
-
-echo -n "Which Operator version do you want to install? ["$CO_VERSION"]"
-read REPLY
-if [[ "$REPLY" != "" ]]; then
-	echo "setting CO_VERSION="$REPLY
-	export CO_VERSION=$REPLY
+	export CO_VERSION=3.4.0
+	echo -n "Which Operator version do you want to install? ["$CO_VERSION"]"
+	read REPLY
+	if [[ "$REPLY" != "" ]]; then
+		echo "setting CO_VERSION="$REPLY
+		export CO_VERSION=$REPLY
+	fi
 fi
 echo $CO_VERSION is the version entered | tee -a $LOG
 
-echo -n "Is this a 'kube' install or an 'ocp' install?[kube]"
+if [[ "$CO_NAMESPACE" != "" ]]; then
+	echo "CO_NAMESPACE is set to " $CO_NAMESPACE
+else
+	export CO_NAMESPACE=demo
+	echo -n "Which namespace do you want to install into? ["$CO_NAMESPACE"]"
+	read REPLY
+	if [[ "$REPLY" != "" ]]; then
+		echo "setting CO_NAMESPACE="$REPLY
+		export CO_NAMESPACE=$REPLY
+	fi
+fi
+echo $CO_NAMESPACE is the namespace entered | tee -a $LOG
+
+if [[ "$CCP_IMAGE_TAG" != "" ]]; then
+	echo "CCP_IMAGE_TAG is set to " $CCP_IMAGE_TAG
+else
+	export CCP_IMAGE_TAG=$CO_BASEOS-10.6-2.2.0
+	echo -n "Which CCP image tag do you want to use? ["$CCP_IMAGE_TAG"]"
+	read REPLY
+	if [[ "$REPLY" != "" ]]; then
+		echo "setting CCP_IMAGE_TAG="$REPLY
+		export CCP_IMAGE_TAG=$REPLY
+	fi
+fi
+echo $CCP_IMAGE_TAG is the CCP image tag entered | tee -a $LOG
+
+if [[ "$CO_IMAGE_PREFIX" != "" ]]; then
+	echo "CO_IMAGE_PREFIX is set to " $CO_IMAGE_PREFIX
+	CCP_IMAGE_PREFIX=$CO_IMAGE_PREFIX
+	echo "CCP_IMAGE_PREFIX is set to " $CCP_IMAGE_PREFIX
+else
+	export CO_IMAGE_PREFIX=crunchydata
+	export CCP_IMAGE_PREFIX=$CO_IMAGE_PREFIX
+	echo -n "Which image prefix do you want to use? ["$CO_IMAGE_PREFIX"]"
+	read REPLY
+	if [[ "$REPLY" != "" ]]; then
+		echo "setting CO_IMAGE_PREFIX="$REPLY
+		echo "setting CCP_IMAGE_PREFIX="$REPLY
+		export CO_IMAGE_PREFIX=$REPLY
+		export CCP_IMAGE_PREFIX=$REPLY
+	fi
+fi
+echo $CO_IMAGE_PREFIX is the CO image prefix entered | tee -a $LOG
+echo $CCP_IMAGE_PREFIX is the CCP image prefix entered | tee -a $LOG
+
+export CO_CMD=kubectl
+REPLY=kube
+echo -n "Is this a 'kube' install or an 'ocp' install?["$REPLY"]"
 read REPLY
 case $REPLY in
-kube)
-	echo "user has selected a kube install" | tee -a $LOG
-	export CO_CMD=kubectl
-	;;
 ocp)
-	echo "user has selected an ocp install" | tee -a $LOG
 	export CO_CMD=oc
 	;;
-*)
-	echo "user has selected a kube install" | tee -a $LOG
-	export CO_CMD=kubectl
-	;;
 esac
-
-echo -n "use centos7 or rhel7 based images?[centos7], NOTE:  rhel images available only to crunchy customers)"
-read REPLY
-case $REPLY in
-centos7)
-	echo "user has selected centos images" | tee -a $LOG
-	export CO_BASEOS=centos7
-	;;
-rhel7)
-	echo "user has selected rhel images" | tee -a $LOG
-	export CO_BASEOS=rhel7
-	;;
-*)
-	echo "user has selected centos images" | tee -a $LOG
-	export CO_BASEOS=centos7
-	;;
-esac
-
-echo -n "enter operator image prefix ["$CO_IMAGE_PREFIX"]"
-read REPLY
-if [[ "$REPLY" != "" ]]; then
-	echo "setting CO_IMAGE_PREFIX="$REPLY
-	export CO_IMAGE_PREFIX=$REPLY
-else
-	echo "setting CO_IMAGE_PREFIX to " $CO_IMAGE_PREFIX
-fi
-echo "user has entered "$CO_IMAGE_PREFIX " for the operator image prefix"| tee -a $LOG
-echo -n "enter container-suite image prefix ["$CCP_IMAGE_PREFIX"]"
-read REPLY
-if [[ "$REPLY" != "" ]]; then
-	echo "setting CCP_IMAGE_PREFIX="$REPLY
-	export CCP_IMAGE_PREFIX=$REPLY
-else
-	echo "setting CCP_IMAGE_PREFIX to " $CCP_IMAGE_PREFIX
-fi
-echo "user has entered "$CCP_IMAGE_PREFIX " for the container-suite image prefix"| tee -a $LOG
 
 echo "Testing for dependencies..." | tee -a $LOG
 
@@ -103,7 +115,13 @@ echo ""
 case $CO_CMD in
 kubectl)
 $CO_CMD get namespaces
-export CO_NAMESPACE=`$CO_CMD config view | grep namespace:| cut -f2 -d':' | cut -f2 -d' '`
+
+export CO_CURRENT_CONTEXT=`$CO_CMD config current-context 2>/dev/null`
+echo ""
+echo "Using current context "$CO_CURRENT_CONTEXT | tee -a $LOG
+echo ""
+
+export CO_NAMESPACE=`$CO_CMD config view -o "jsonpath={.contexts[?(@.name==\"$CO_CURRENT_CONTEXT\")].context.namespace}"`
 	;;
 oc)
 $CO_CMD project
@@ -136,21 +154,33 @@ export PATH=$PATH:$GOPATH/bin
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_APISERVER_URL=https://127.0.0.1:18443
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 
 echo "Setting environment variables in $HOME/.bashrc..." | tee -a $LOG
 
 cat <<'EOF' >> $HOME/.bashrc
 
 # operator env vars
+export PATH=$PATH:$HOME/odev/bin
 export CO_APISERVER_URL=https://127.0.0.1:18443
-export PGO_CA_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/apiserver/server.key
+export PGO_CA_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/postgres-operator/server.key
+alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
+alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver'
+alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'
 #
 EOF
+echo "export CCP_IMAGE_TAG="$CCP_IMAGE_TAG >> $HOME/.bashrc
+echo "export CCP_IMAGE_PREFIX="$CCP_IMAGE_PREFIX >> $HOME/.bashrc
+echo "export CO_CMD="$CO_CMD >> $HOME/.bashrc
+echo "export CO_BASEOS="$CO_BASEOS >> $HOME/.bashrc
+echo "export CO_VERSION="$CO_VERSION >> $HOME/.bashrc
+echo "export CO_NAMESPACE="$CO_NAMESPACE >> $HOME/.bashrc
+echo "export CO_IMAGE_TAG="$CO_IMAGE_TAG >> $HOME/.bashrc
+echo "export CO_IMAGE_PREFIX="$CO_IMAGE_PREFIX >> $HOME/.bashrc
 
 echo "Setting up installation directory..." | tee -a $LOG
 
@@ -190,11 +220,11 @@ read STORAGE_CLASS
 
 echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
-cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/standard/'"$STORAGE_CLASS"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/COImagePrefix:  crunchydata/'"COImagePrefix:  $CO_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/CCPImagePrefix:  crunchydata/'"CCPImagePrefix:  $CCP_IMAGE_PREFIX"'/' $COROOT/conf/apiserver/pgo.yaml
-sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/apiserver/pgo.yaml
+sed --in-place=.bak 's/Storage: nfsstorage/'"Storage: storageos"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed --in-place=.bak 's/fast/'"$STORAGE_CLASS"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed --in-place=.bak 's/COImagePrefix:  crunchydata/'"COImagePrefix:  $CO_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed --in-place=.bak 's/CCPImagePrefix:  crunchydata/'"CCPImagePrefix:  $CCP_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/postgres-operator/pgo.yaml
 sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
 sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 

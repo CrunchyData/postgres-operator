@@ -42,6 +42,7 @@
                         "name": "pgdata",
                         "readOnly": false
                     }],
+		    {{.ContainerResources }}
                     "env": [{
                         "name": "DATA_ROOT",
                         "value": "{{.DataRoot}}"

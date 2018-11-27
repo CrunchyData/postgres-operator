@@ -37,7 +37,7 @@ func CreateSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	jsonValue, _ := json.Marshal(r)
 	url := fmt.Sprintf(createScheduleURL, SessionCredentials.APIServerURL)
 
-	log.Debug("create schedule called [" + url + "]")
+	log.Debugf("create schedule called [%s]", url)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
@@ -52,7 +52,7 @@ func CreateSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	if err := StatusCheck(resp); err != nil {
 		return response, err
 	}
@@ -72,7 +72,7 @@ func DeleteSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	jsonValue, _ := json.Marshal(r)
 	url := fmt.Sprintf(deleteScheduleURL, SessionCredentials.APIServerURL)
 
-	log.Debug("delete schedule called [" + url + "]")
+	log.Debugf("delete schedule called [%s]", url)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
@@ -88,7 +88,7 @@ func DeleteSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCrede
 
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	if err := StatusCheck(resp); err != nil {
 		return response, err
 	}
@@ -107,7 +107,7 @@ func ShowSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCredent
 
 	jsonValue, _ := json.Marshal(r)
 	url := fmt.Sprintf(showScheduleURL, SessionCredentials.APIServerURL)
-	log.Debug("show schedule called [" + url + "]")
+	log.Debugf("show schedule called [%s]", url)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
@@ -123,7 +123,7 @@ func ShowSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCredent
 
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	if err := StatusCheck(resp); err != nil {
 		return response, err
 	}

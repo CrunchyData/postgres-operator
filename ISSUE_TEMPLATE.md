@@ -36,6 +36,7 @@
  - Operating System:
  - Container Image Tag:
  - Operator Version:
+ - Storage (NFS, hostpath, storage class):
  - PostgreSQL Version:
  - Platform (Docker, Kubernetes, OpenShift):
  - Platform Version: 

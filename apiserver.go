@@ -44,11 +44,12 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
+	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
 	"github.com/gorilla/mux"
 )
 
-const serverCert = "/config/server.crt"
-const serverKey = "/config/server.key"
+const serverCert = "/pgo-auth-secret/server.crt"
+const serverKey = "/pgo-auth-secret/server.key"
 
 func main() {
 
@@ -85,6 +86,7 @@ func main() {
 	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET")
 	//here
 	r.HandleFunc("/policiesdelete/{name}", policyservice.DeletePolicyHandler).Methods("GET")
+	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/ingest", ingestservice.CreateIngestHandler).Methods("POST")

@@ -1,8 +1,8 @@
 FROM centos:7
 
 LABEL Vendor="Crunchy Data Solutions" \
-	Version="7.5" \
-	Release="3.3.0" \
+	Version="7.6" \
+	Release="3.4.0" \
 	summary="Crunchy Data PostgreSQL Operator - Display PVC" \
 	description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
 
@@ -12,4 +12,4 @@ VOLUME ["/pgdata"]
 
 USER 26
 
-CMD ["sh", "-c", "ls /pgdata/${BACKUP_ROOT}"]
+CMD ["sh", "-c", "find /pgdata/${BACKUP_ROOT}"]

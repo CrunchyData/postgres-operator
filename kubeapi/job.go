@@ -53,7 +53,7 @@ func GetJob(clientset *kubernetes.Clientset, name, namespace string) (*v1batch.J
 
 // DeleteJob deletes a job
 func DeleteJob(clientset *kubernetes.Clientset, jobName, namespace string) error {
-	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
+	log.Debugf("deleting Job with Name=%s in namespace %s", jobName, namespace)
 	delOptions := meta_v1.DeleteOptions{}
 	var delProp meta_v1.DeletionPropagation
 	delProp = meta_v1.DeletePropagationForeground
@@ -85,7 +85,7 @@ func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace stri
 
 // DeleteJobs deletes all jobs that match a selector
 func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) error {
-	log.Debug("deleting Jobs with selector=" + selector + " in namespace " + namespace)
+	log.Debugf("deleting Jobs with selector=%s in namespace %s", selector, namespace)
 
 	//delete the job
 	delOptions := meta_v1.DeleteOptions{}

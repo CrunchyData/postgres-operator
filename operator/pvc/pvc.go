@@ -57,7 +57,7 @@ func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec,
 		pvcName = storageSpec.Name
 	case "create", "dynamic":
 		log.Debug("StorageType is create")
-		log.Debugf("pvcname=%s storagespec=%v\n", pvcName, storageSpec)
+		log.Debugf("pvcname=%s storagespec=%v", pvcName, storageSpec)
 		err = Create(clientset, pvcName, clusterName, storageSpec, namespace)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
@@ -91,10 +91,10 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 			operator.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
 		}
 	} else {
-		log.Debug("matchlabels from spec is [" + storageSpec.MatchLabels + "]")
+		log.Debugf("matchlabels from spec is [%s]", storageSpec.MatchLabels)
 		if storageSpec.MatchLabels != "" {
 			pvcFields.MatchLabels = getMatchLabels(clusterName)
-			log.Debug("matchlabels constructed is " + pvcFields.MatchLabels)
+			log.Debugf("matchlabels constructed is %s", pvcFields.MatchLabels)
 		}
 
 		err = operator.PVCTemplate.Execute(&doc2, pvcFields)
@@ -140,10 +140,10 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 		return nil
 	}
 
-	log.Debugf("\nPVC %s\n", pvc.Name+" is found")
+	log.Debugf("PVC %s is found", pvc.Name)
 
 	if pvc.ObjectMeta.Labels[util.LABEL_PGREMOVE] == "true" {
-		log.Debug("delete PVC " + name + " in namespace " + namespace)
+		log.Debugf("delete PVC %s in namespace %s", name, namespace)
 		err = kubeapi.DeletePVC(clientset, name, namespace)
 		if err != nil {
 			return err

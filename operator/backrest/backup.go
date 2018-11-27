@@ -29,13 +29,20 @@ import (
 )
 
 type backrestJobTemplateFields struct {
-	Name          string
-	ClusterName   string
-	Command       string
-	CommandOpts   string
-	PodName       string
-	COImagePrefix string
-	COImageTag    string
+	JobName                       string
+	Name                          string
+	ClusterName                   string
+	Command                       string
+	CommandOpts                   string
+	PodName                       string
+	COImagePrefix                 string
+	COImageTag                    string
+	SecurityContext               string
+	PgbackrestStanza              string
+	PgbackrestDBPath              string
+	PgbackrestRepoPath            string
+	PgbackrestRestoreVolumes      string
+	PgbackrestRestoreVolumeMounts string
 }
 
 // Backrest ...
@@ -46,12 +53,19 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	cmd := task.Spec.Parameters[util.LABEL_BACKREST_COMMAND]
 
 	jobFields := backrestJobTemplateFields{
-		ClusterName:   task.Spec.Parameters[util.LABEL_PG_CLUSTER],
-		PodName:       task.Spec.Parameters[util.LABEL_POD_NAME],
-		Command:       cmd,
-		CommandOpts:   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
-		COImagePrefix: operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:    operator.Pgo.Pgo.COImageTag,
+		JobName:                       "backrest-backup-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER],
+		ClusterName:                   task.Spec.Parameters[util.LABEL_PG_CLUSTER],
+		PodName:                       task.Spec.Parameters[util.LABEL_POD_NAME],
+		SecurityContext:               "",
+		Command:                       cmd,
+		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
+		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:                    operator.Pgo.Pgo.COImageTag,
+		PgbackrestStanza:              task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:              task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepoPath:            task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRestoreVolumes:      "",
+		PgbackrestRestoreVolumeMounts: "",
 	}
 
 	var doc2 bytes.Buffer

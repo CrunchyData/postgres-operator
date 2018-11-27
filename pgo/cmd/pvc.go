@@ -24,7 +24,7 @@ import (
 )
 
 func showPVC(args []string) {
-	log.Debugf("showPVC called %v\n", args)
+	log.Debugf("showPVC called %v", args)
 
 	if args[0] == "all" {
 		//special case to just list all the PVCs
@@ -32,7 +32,7 @@ func showPVC(args []string) {
 	} else {
 		//args are a list of pvc names...for this case show details
 		for _, arg := range args {
-			log.Debug("show pvc called for " + arg)
+			log.Debugf("show pvc called for %s", arg)
 			printPVC(arg, PVCRoot)
 
 		}
@@ -58,7 +58,7 @@ func printPVC(pvcName, pvcRoot string) {
 		fmt.Println("No PVC Results")
 		return
 	}
-	log.Debugf("response = %v\n", response)
+	log.Debugf("response = %v", response)
 
 	if pvcName == "all" {
 		fmt.Println("All Operator Labeled PVCs")

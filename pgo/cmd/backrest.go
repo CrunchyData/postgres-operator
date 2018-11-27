@@ -24,16 +24,14 @@ import (
 	"os"
 )
 
-var BackrestOpts string
-
 // createBackrestBackup ....
-func createBackrestBackup(args []string, backupOpts string) {
-	log.Debugf("createBackrestBackup called %v %s\n", args, backupOpts)
+func createBackrestBackup(args []string) {
+	log.Debugf("createBackrestBackup called %v %s", args, BackupOpts)
 
 	request := new(msgs.CreateBackrestBackupRequest)
 	request.Args = args
 	request.Selector = Selector
-	request.BackupOpts = backupOpts
+	request.BackupOpts = BackupOpts
 
 	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
 	if err != nil {
@@ -59,7 +57,7 @@ func createBackrestBackup(args []string, backupOpts string) {
 
 // showBackrest ....
 func showBackrest(args []string) {
-	log.Debugf("showBackrest called %v\n", args)
+	log.Debugf("showBackrest called %v", args)
 
 	for _, v := range args {
 		response, err := api.ShowBackrest(httpclient, v, Selector, &SessionCredentials)
@@ -78,8 +76,8 @@ func showBackrest(args []string) {
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
-		log.Debugf("len of items = %d\n", len(response.Items))
+		log.Debugf("response = %v", response)
+		log.Debugf("len of items = %d", len(response.Items))
 
 		for _, backup := range response.Items {
 			printBackrest(&backup)

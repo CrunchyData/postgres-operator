@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -57,9 +58,10 @@ type collectTemplateFields struct {
 	CCPImagePrefix  string
 }
 type badgerTemplateFields struct {
-	CCPImageTag    string
-	CCPImagePrefix string
-	BadgerTarget   string
+	CCPImageTag        string
+	CCPImagePrefix     string
+	BadgerTarget       string
+	ContainerResources string
 }
 
 // Strategy1  ...
@@ -97,12 +99,15 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
+	xlogdir := "false"
 	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
+		//xlogdir = "true"
 	}
 
+	backrestRepoTarget := cl.Spec.Name
 	backrestPVCName := ""
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		backrestPVCName = cl.Spec.Name + "-backrestrepo"
@@ -110,37 +115,48 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
+		xlogdir = "false"
+		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
+			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+			backrestPVCName = backrestRepoTarget + "-backrestrepo"
+		}
 	}
 
 	//create the primary deployment
 	deploymentFields := DeploymentTemplateFields{
-		Name:               cl.Spec.Name,
-		Replicas:           "1",
-		PgMode:             "primary",
-		ClusterName:        cl.Spec.Name,
-		PrimaryHost:        cl.Spec.Name,
-		Port:               cl.Spec.Port,
-		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:        cl.Spec.CCPImageTag,
-		PVCName:            util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
-		OperatorLabels:     util.GetLabelsFromMap(primaryLabels),
-		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
-		BackupPath:         cl.Spec.BackupPath,
-		DataPathOverride:   cl.Spec.Name,
-		Database:           cl.Spec.Database,
-		ArchiveMode:        archiveMode,
-		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
-		BackrestPVCName:    util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:     archiveTimeout,
-		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
-		RootSecretName:     cl.Spec.RootSecretName,
-		PrimarySecretName:  cl.Spec.PrimarySecretName,
-		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
-		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
-		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cl.Spec),
+		Name:                    cl.Spec.Name,
+		Replicas:                "1",
+		PgMode:                  "primary",
+		ClusterName:             cl.Spec.Name,
+		PrimaryHost:             cl.Spec.Name,
+		Port:                    cl.Spec.Port,
+		LogStatement:            operator.Pgo.Cluster.LogStatement,
+		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
+		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:             cl.Spec.CCPImageTag,
+		PVCName:                 util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
+		OperatorLabels:          util.GetLabelsFromMap(primaryLabels),
+		BackupPVCName:           util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
+		BackupPath:              cl.Spec.BackupPath,
+		DataPathOverride:        cl.Spec.Name,
+		Database:                cl.Spec.Database,
+		ArchiveMode:             archiveMode,
+		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:                 xlogdir,
+		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:          archiveTimeout,
+		SecurityContext:         util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:          cl.Spec.RootSecretName,
+		PrimarySecretName:       cl.Spec.PrimarySecretName,
+		UserSecretName:          cl.Spec.UserSecretName,
+		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ConfVolume:              GetConfVolume(clientset, cl, namespace),
+		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
+		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
+		PgbackrestEnvVars: GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db",
+			"/pgdata/"+cl.Spec.Name,
+			"/backrestrepo/"+backrestRepoTarget+"-backups"),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -310,27 +326,30 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:               depName,
-		ClusterName:        clusterName,
-		PgMode:             "replica",
-		Port:               cl.Spec.Port,
-		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:        cl.Spec.CCPImageTag,
-		PVCName:            util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
-		BackupPVCName:      util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
-		DataPathOverride:   depName,
-		PrimaryHost:        cl.Spec.PrimaryHost,
-		BackupPath:         "",
-		Database:           cl.Spec.Database,
-		Replicas:           "1",
-		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
-		OperatorLabels:     util.GetLabelsFromMap(replicaLabels),
-		SecurityContext:    util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:     cl.Spec.RootSecretName,
-		PrimarySecretName:  cl.Spec.PrimarySecretName,
-		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
-		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
+		Name:                    depName,
+		ClusterName:             clusterName,
+		PgMode:                  "replica",
+		Port:                    cl.Spec.Port,
+		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		LogStatement:            operator.Pgo.Cluster.LogStatement,
+		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
+		CCPImageTag:             cl.Spec.CCPImageTag,
+		PVCName:                 util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:           util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
+		DataPathOverride:        depName,
+		PrimaryHost:             cl.Spec.PrimaryHost,
+		BackupPath:              "",
+		Database:                cl.Spec.Database,
+		Replicas:                "1",
+		ConfVolume:              GetConfVolume(clientset, cl, namespace),
+		OperatorLabels:          util.GetLabelsFromMap(replicaLabels),
+		SecurityContext:         util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:          cl.Spec.RootSecretName,
+		PrimarySecretName:       cl.Spec.PrimarySecretName,
+		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		UserSecretName:          cl.Spec.UserSecretName,
+		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+depName, "/backrestrepo/"+depName+"-backups"),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -464,17 +483,19 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 }
 
 // GetConfVolume ...
-func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace string) string {
+func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
 	var found bool
 
 	//check for user provided configmap
-	if customConfig != "" {
-		_, found = kubeapi.GetConfigMap(clientset, customConfig, namespace)
+	if cl.Spec.CustomConfig != "" {
+		_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
 		if !found {
 			//you should NOT get this error because of apiserver validation of this value!
-			log.Error(customConfig + " was not found, error, skipping user provided configMap")
+			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
+		} else {
+			log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
+			return "\"configMap\": { \"name\": \"" + cl.Spec.CustomConfig + "\" }"
 		}
-		return "\"configMap\": { \"name\": \"" + customConfig + "\" }"
 
 	}
 
@@ -486,36 +507,20 @@ func GetConfVolume(clientset *kubernetes.Clientset, customConfig, namespace stri
 		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
 	}
 
+	//check for pgbackrest global config
+	/**
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] != "" {
+		_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP, namespace)
+		if !found {
+			log.Debug(util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+		} else {
+			return "\"configMap\": { \"name\": \"pgo-pgbackrest-config\" }"
+		}
+	}
+	*/
+
 	//the default situation
 	return "\"emptyDir\": { \"medium\": \"Memory\" }"
-}
-
-// GetContainerResources ...
-func GetContainerResources(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
-	}
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
-
-	var doc bytes.Buffer
-	err := operator.ContainerResourcesTemplate1.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		operator.ContainerResourcesTemplate1.Execute(os.Stdout, fields)
-	}
-
-	return doc.String()
 }
 
 // Scale ...
@@ -536,10 +541,12 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
+	xlogdir := "false"
 	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
+		//	xlogdir = "true"
 	}
 
 	backrestPVCName := ""
@@ -549,6 +556,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
+		xlogdir = "false"
 	}
 
 	//check for --ccp-image-tag at the command line
@@ -565,33 +573,38 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 
 	//create the replica deployment
 	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:               replica.Spec.Name,
-		ClusterName:        replica.Spec.ClusterName,
-		PgMode:             "replica",
-		Port:               cluster.Spec.Port,
-		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:        imageTag,
-		PVCName:            util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
-		BackupPVCName:      util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
-		PrimaryHost:        cluster.Spec.PrimaryHost,
-		BackupPath:         "",
-		Database:           cluster.Spec.Database,
-		DataPathOverride:   replica.Spec.Name,
-		ArchiveMode:        archiveMode,
-		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
-		BackrestPVCName:    util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:     archiveTimeout,
-		Replicas:           "1",
-		ConfVolume:         GetConfVolume(clientset, cluster.Spec.CustomConfig, namespace),
-		OperatorLabels:     util.GetLabelsFromMap(replicaLabels),
-		SecurityContext:    util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:     cluster.Spec.RootSecretName,
-		PrimarySecretName:  cluster.Spec.PrimarySecretName,
-		UserSecretName:     cluster.Spec.UserSecretName,
-		ContainerResources: GetContainerResources(&cs),
-		NodeSelector:       GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
-		CollectAddon:       GetCollectAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		Name:                    replica.Spec.Name,
+		ClusterName:             replica.Spec.ClusterName,
+		PgMode:                  "replica",
+		Port:                    cluster.Spec.Port,
+		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		LogStatement:            operator.Pgo.Cluster.LogStatement,
+		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
+		CCPImageTag:             imageTag,
+		PVCName:                 util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
+		BackupPVCName:           util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
+		PrimaryHost:             cluster.Spec.PrimaryHost,
+		BackupPath:              "",
+		Database:                cluster.Spec.Database,
+		DataPathOverride:        replica.Spec.Name,
+		ArchiveMode:             archiveMode,
+		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:                 xlogdir,
+		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:          archiveTimeout,
+		Replicas:                "1",
+		ConfVolume:              GetConfVolume(clientset, cluster, namespace),
+		OperatorLabels:          util.GetLabelsFromMap(replicaLabels),
+		SecurityContext:         util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:          cluster.Spec.RootSecretName,
+		PrimarySecretName:       cluster.Spec.PrimarySecretName,
+		UserSecretName:          cluster.Spec.UserSecretName,
+		ContainerResources:      operator.GetContainerResourcesJSON(&cs),
+		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		PgbackrestEnvVars: GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+replica.Spec.Name,
+			"/backrestrepo/"+replica.Spec.Name+"-backups"),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -644,6 +657,17 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
 		badgerTemplateFields.BadgerTarget = spec.Name
 		badgerTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
+		badgerTemplateFields.ContainerResources = ""
+
+		if operator.Pgo.DefaultBadgerResources != "" {
+			tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBadgerResources)
+			if err != nil {
+				log.Error(err)
+				return ""
+			}
+			badgerTemplateFields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
+
+		}
 
 		var badgerDoc bytes.Buffer
 		err := operator.BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)
@@ -658,4 +682,24 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		return badgerDoc.String()
 	}
 	return ""
+}
+
+func GetPgbackrestEnvVars(backrestEnabled, stanza, dbpath, repopath string) string {
+	if backrestEnabled == "true" {
+		fields := PgbackrestEnvVarsTemplateFields{
+			PgbackrestStanza:   stanza,
+			PgbackrestDBPath:   dbpath,
+			PgbackrestRepoPath: repopath,
+		}
+
+		var doc bytes.Buffer
+		err := operator.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+		return doc.String()
+	}
+	return ""
+
 }

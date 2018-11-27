@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-10.5-2.1.0
+  CCPImageTag:  centos7-10.6-2.2.0
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -17,28 +17,34 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
-PrimaryStorage: storage1
-BackupStorage: storage1
-ReplicaStorage: storage1
+  LogStatement:  none
+  LogMinDurationStatement:  60000
+PrimaryStorage: nfsstorage
+BackupStorage: nfsstorage
+ReplicaStorage: nfsstorage
 Storage:
-  storage1:
+  hostpathstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+  nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
     StorageType:  create
     SupplementalGroups:  65534
-  storage2:
-    AccessMode:  ReadWriteMany
-    Size:  1G
-    StorageType:  dynamic
-    StorageClass:  gluster-heketi
-    Fsgroup:  26
-  storage3:
+  storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
     StorageType:  dynamic
-    StorageClass:  rook-ceph-block
+    StorageClass:  fast
     Fsgroup:  26
-DefaultContainerResource: 
+DefaultContainerResources: 
+DefaultLoadResources:  
+DefaultLspvcResources:  
+DefaultRmdataResources:  
+DefaultBackupResources:  
+DefaultPgbouncerResources:  
+DefaultPgpoolResources:   
 ContainerResources:
   small:
     RequestsMemory:  512Mi
@@ -53,7 +59,7 @@ ContainerResources:
 Pgo:
   AutofailSleepSeconds:  9
   Audit:  false
-  LSPVCTemplate:  /config/pgo.lspvc-template.json
-  LoadTemplate:  /config/pgo.load-template.json
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.3.0
+  COImageTag:  centos7-3.4.0

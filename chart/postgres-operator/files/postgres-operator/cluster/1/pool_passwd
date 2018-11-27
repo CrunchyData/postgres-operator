@@ -1,1 +1,2 @@
-{{.PG_USERNAME}}:{{.PG_PASSWORD_MD5}}
+{{range $key, $value := .}}{{.Username}}:{{.Password}}
+{{end}}

@@ -16,35 +16,40 @@ limitations under the License.
 */
 
 import (
+	//"bytes"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	//"os"
 	"strconv"
 	"strings"
+	//"text/template"
 )
 
 type ClusterStruct struct {
-	CCPImagePrefix   string `yaml:"CCPImagePrefix"`
-	CCPImageTag      string `yaml:"CCPImageTag"`
-	PrimaryNodeLabel string `yaml:"PrimaryNodeLabel"`
-	ReplicaNodeLabel string `yaml:"ReplicaNodeLabel"`
-	Policies         string `yaml:"Policies"`
-	Metrics          bool   `yaml:"Metrics"`
-	Badger           bool   `yaml:"Badger"`
-	Port             string `yaml:"Port"`
-	ArchiveTimeout   string `yaml:"ArchiveTimeout"`
-	ArchiveMode      string `yaml:"ArchiveMode"`
-	User             string `yaml:"User"`
-	Database         string `yaml:"Database"`
-	PasswordAgeDays  string `yaml:"PasswordAgeDays"`
-	PasswordLength   string `yaml:"PasswordLength"`
-	Strategy         string `yaml:"Strategy"`
-	Replicas         string `yaml:"Replicas"`
-	ServiceType      string `yaml:"ServiceType"`
-	Backrest         bool   `yaml:"Backrest"`
-	Autofail         bool   `yaml:"Autofail"`
+	CCPImagePrefix          string `yaml:"CCPImagePrefix"`
+	CCPImageTag             string `yaml:"CCPImageTag"`
+	PrimaryNodeLabel        string `yaml:"PrimaryNodeLabel"`
+	ReplicaNodeLabel        string `yaml:"ReplicaNodeLabel"`
+	Policies                string `yaml:"Policies"`
+	LogStatement            string `yaml:"LogStatement"`
+	LogMinDurationStatement string `yaml:"LogMinDurationStatement"`
+	Metrics                 bool   `yaml:"Metrics"`
+	Badger                  bool   `yaml:"Badger"`
+	Port                    string `yaml:"Port"`
+	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
+	ArchiveMode             string `yaml:"ArchiveMode"`
+	User                    string `yaml:"User"`
+	Database                string `yaml:"Database"`
+	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
+	PasswordLength          string `yaml:"PasswordLength"`
+	Strategy                string `yaml:"Strategy"`
+	Replicas                string `yaml:"Replicas"`
+	ServiceType             string `yaml:"ServiceType"`
+	Backrest                bool   `yaml:"Backrest"`
+	Autofail                bool   `yaml:"Autofail"`
 }
 
 type StorageStruct struct {
@@ -83,14 +88,64 @@ type PgoConfig struct {
 	ReplicaStorage            string                              `yaml:"ReplicaStorage"`
 	Storage                   map[string]StorageStruct            `yaml:"Storage"`
 	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
+	DefaultLoadResources      string                              `yaml:"DefaultLoadResources"`
+	DefaultLspvcResources     string                              `yaml:"DefaultLspvcResources"`
+	DefaultRmdataResources    string                              `yaml:"DefaultRmdataResources"`
+	DefaultBackupResources    string                              `yaml:"DefaultBackupResources"`
+	DefaultBadgerResources    string                              `yaml:"DefaultBadgerResources"`
+	DefaultPgpoolResources    string                              `yaml:"DefaultPgpoolResources"`
+	DefaultPgbouncerResources string                              `yaml:"DefaultPgbouncerResources"`
 }
 
 const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
 const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
+const NODEPORT_SERVICE_TYPE = "NodePort"
+const CONFIG_PATH = "/pgo-config/pgo.yaml"
+
+//const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
+
+//var ContainerResourcesTemplate1 *template.Template
+
+/**
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
+*/
+
+var log_statement_values = []string{"ddl", "none", "mod", "all"}
+
+const DEFAULT_LOG_STATEMENT = "none"
+const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
 
 func (c *PgoConfig) Validate() error {
 	var err error
+
+	if c.Cluster.LogStatement != "" {
+		found := false
+		for _, v := range log_statement_values {
+			if v == c.Cluster.LogStatement {
+				found = true
+			}
+		}
+		if !found {
+			return errors.New("Cluster.LogStatement does not container a valid value for log_statement")
+		}
+	} else {
+		log.Info("using default log_statement value since it was not specified in pgo.yaml")
+		c.Cluster.LogStatement = DEFAULT_LOG_STATEMENT
+	}
+
+	if c.Cluster.LogMinDurationStatement != "" {
+		_, err = strconv.Atoi(c.Cluster.LogMinDurationStatement)
+		if err != nil {
+			return errors.New("Cluster.LogMinDurationStatement invalid int value found")
+		}
+	} else {
+		log.Info("using default log_min_duration_statement value since it was not specified in pgo.yaml")
+		c.Cluster.LogMinDurationStatement = DEFAULT_LOG_MIN_DURATION_STATEMENT
+	}
 
 	if c.Cluster.PrimaryNodeLabel != "" {
 		parts := strings.Split(c.Cluster.PrimaryNodeLabel, "=")
@@ -106,7 +161,7 @@ func (c *PgoConfig) Validate() error {
 		}
 	}
 
-	log.Info("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
+	log.Infof("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
 		return errors.New("PrimaryStorage setting required")
@@ -118,6 +173,12 @@ func (c *PgoConfig) Validate() error {
 	_, ok = c.Storage[c.ReplicaStorage]
 	if !ok {
 		return errors.New("ReplicaStorage setting required")
+	}
+	for k, _ := range c.Storage {
+		_, err = c.GetStorageSpec(k)
+		if err != nil {
+			return err
+		}
 	}
 	if c.Pgo.LSPVCTemplate == "" {
 		return errors.New("Pgo.LSPVCTemplate is required")
@@ -146,6 +207,48 @@ func (c *PgoConfig) Validate() error {
 			return errors.New("DefaultContainerResources setting invalid")
 		}
 	}
+	if c.DefaultLspvcResources != "" {
+		_, ok = c.ContainerResources[c.DefaultLspvcResources]
+		if !ok {
+			return errors.New("DefaultLspvcResources setting invalid")
+		}
+	}
+	if c.DefaultLoadResources != "" {
+		_, ok = c.ContainerResources[c.DefaultLoadResources]
+		if !ok {
+			return errors.New("DefaultLoadResources setting invalid")
+		}
+	}
+	if c.DefaultRmdataResources != "" {
+		_, ok = c.ContainerResources[c.DefaultRmdataResources]
+		if !ok {
+			return errors.New("DefaultRmdataResources setting invalid")
+		}
+	}
+	if c.DefaultBackupResources != "" {
+		_, ok = c.ContainerResources[c.DefaultBackupResources]
+		if !ok {
+			return errors.New("DefaultBackupResources setting invalid")
+		}
+	}
+	if c.DefaultBadgerResources != "" {
+		_, ok = c.ContainerResources[c.DefaultBadgerResources]
+		if !ok {
+			return errors.New("DefaultBadgerResources setting invalid")
+		}
+	}
+	if c.DefaultPgpoolResources != "" {
+		_, ok = c.ContainerResources[c.DefaultPgpoolResources]
+		if !ok {
+			return errors.New("DefaultPgpoolResources setting invalid")
+		}
+	}
+	if c.DefaultPgbouncerResources != "" {
+		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
+		if !ok {
+			return errors.New("DefaultPgbouncerResources setting invalid")
+		}
+	}
 
 	if c.Cluster.ArchiveMode == "" {
 		log.Info("Pgo.Cluster.ArchiveMode not set, using 'false'")
@@ -170,8 +273,9 @@ func (c *PgoConfig) Validate() error {
 		c.Cluster.ServiceType = DEFAULT_SERVICE_TYPE
 	} else {
 		if c.Cluster.ServiceType != DEFAULT_SERVICE_TYPE &&
-			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE {
-			return errors.New("Cluster.ServiceType is required to be either ClusterIP or LoadBalancer")
+			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE &&
+			c.Cluster.ServiceType != NODEPORT_SERVICE_TYPE {
+			return errors.New("Cluster.ServiceType is required to be either ClusterIP, NodePort, or LoadBalancer")
 		}
 	}
 
@@ -187,7 +291,7 @@ func (c *PgoConfig) Validate() error {
 
 func (c *PgoConfig) GetConf() *PgoConfig {
 
-	yamlFile, err := ioutil.ReadFile("config/pgo.yaml")
+	yamlFile, err := ioutil.ReadFile(CONFIG_PATH)
 	if err != nil {
 		log.Printf("yamlFile.Get err   #%v ", err)
 	}
@@ -218,6 +322,12 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	storage.MatchLabels = s.MatchLabels
 	storage.SupplementalGroups = s.SupplementalGroups
 
+	if s.Fsgroup != "" && s.SupplementalGroups != "" {
+		err = errors.New("invalid Storage config " + name + " can not have both fsgroup and supplementalGroups specified in the same config, choose one.")
+		log.Error(err)
+		return storage, err
+	}
+
 	return storage, err
 
 }
@@ -240,3 +350,33 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 	return r, err
 
 }
+
+/**
+// GetContainerResources ...
+func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	doc := bytes.Buffer{}
+	err := ContainerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
+}
+*/

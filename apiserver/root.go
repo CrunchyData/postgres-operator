@@ -21,7 +21,9 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	crdclient "github.com/crunchydata/postgres-operator/client"
+	//crdclient "github.com/crunchydata/postgres-operator/client"
+	"bytes"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
@@ -36,8 +38,12 @@ import (
 	"text/template"
 )
 
+const loadTemplatePath = "/pgo-config/pgo.load-template.json"
+const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
+const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
+
 // pgouserPath ...
-const pgouserPath = "/config/pgouser"
+const pgouserPath = "/pgo-auth-secret/pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
@@ -78,17 +84,29 @@ type CredentialDetail struct {
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
 
+var ContainerResourcesTemplate *template.Template
+var LoadTemplate *template.Template
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
 
 var Pgo config.PgoConfig
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
 
 func Initialize() {
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
 	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
-	Pgo.Validate()
+	err := Pgo.Validate()
+	if err != nil {
+		log.Error(err)
+		log.Error("something did not validate in the pgo.yaml")
+		os.Exit(2)
+	}
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
@@ -110,7 +128,7 @@ func Initialize() {
 
 	InitializePerms()
 
-	err := validateCredentials()
+	err = validateCredentials()
 	if err != nil {
 		os.Exit(2)
 	}
@@ -138,7 +156,8 @@ func ConnectToKube() {
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	RESTClient, _, err = crdclient.NewClient(RESTConfig)
+	//RESTClient, _, err = crdclient.NewClient(RESTConfig)
+	RESTClient, _, err = util.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -447,7 +466,7 @@ func IsValidContainerResourceValues() bool {
 }
 
 func initTemplates() {
-	LspvcTemplate = util.LoadTemplate("/config/pgo.lspvc-template.json")
+	LspvcTemplate = util.LoadTemplate(lspvcTemplatePath)
 
 	LoadTemplatePath := Pgo.Pgo.LoadTemplate
 	if LoadTemplatePath == "" {
@@ -456,6 +475,8 @@ func initTemplates() {
 	}
 
 	JobTemplate = util.LoadTemplate(LoadTemplatePath)
+
+	ContainerResourcesTemplate = util.LoadTemplate(containerResourcesTemplatePath)
 
 }
 
@@ -489,7 +510,35 @@ func validateWithKube() {
 				log.Error(n + "value not a valid node label value in pgo.yaml ")
 				os.Exit(2)
 			}
-			log.Debug(n + " is a valid pgo.yaml node label default")
+			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}
+}
+
+// GetContainerResources ...
+func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	doc := bytes.Buffer{}
+	err := ContainerResourcesTemplate.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		ContainerResourcesTemplate.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

@@ -44,7 +44,7 @@ func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget stri
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -81,7 +81,7 @@ func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

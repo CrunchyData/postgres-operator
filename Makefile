@@ -1,5 +1,7 @@
 RELTMPDIR=/tmp/release.$(CO_VERSION)
+HELMTMPDIR=/tmp/helm-release.$(CO_VERSION)
 RELFILE=/tmp/postgres-operator.$(CO_VERSION).tar.gz
+HELMRELFILE=/tmp/postgres-operator-helm-chart.$(CO_VERSION).tar.gz
 
 #======= Safety checks =======
 check-go-vars:
@@ -47,7 +49,6 @@ installrbac:
 	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
-	cd examples/backrest-config && ./create.sh
 setupnamespace:
 	kubectl create -f ./examples/demo-namespace.json
 	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
@@ -70,6 +71,9 @@ pgo-backrest:	check-go-vars
 pgo-backrest-image:	check-go-vars pgo-backrest
 	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
 	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
+foo:	check-go-vars
+	go install foo/foo.go
+	mv $(GOBIN)/foo ./bin/foo/
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars
@@ -124,11 +128,12 @@ pull:
 release:	check-go-vars
 	make macpgo
 	make winpgo
-	rm -rf $(RELTMPDIR) $(RELFILE)
-	mkdir $(RELTMPDIR)
+	rm -rf $(RELTMPDIR) $(RELFILE) $(HELMTMPDIR)
+	mkdir $(RELTMPDIR) $(HELMTMPDIR)
 	cp -r $(COROOT)/examples $(RELTMPDIR)
 	cp -r $(COROOT)/deploy $(RELTMPDIR)
 	cp -r $(COROOT)/conf $(RELTMPDIR)
+	cp -r $(COROOT)/chart $(HELMTMPDIR)
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
 	cp $(GOBIN)/pgo.exe $(RELTMPDIR)
@@ -137,6 +142,7 @@ release:	check-go-vars
 	cp $(GOBIN)/expenv.exe $(RELTMPDIR)
 	cp $(COROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
+	tar czvf $(HELMRELFILE) -C $(HELMTMPDIR) .
 default:
 	all
 

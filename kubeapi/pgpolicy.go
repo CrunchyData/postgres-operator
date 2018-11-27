@@ -89,6 +89,6 @@ func Createpgpolicy(client *rest.RESTClient, policy *crv1.Pgpolicy, namespace st
 		return err
 	}
 
-	log.Debug("created pgpolicy " + policy.Name)
+	log.Debugf("created pgpolicy %s", policy.Name)
 	return err
 }

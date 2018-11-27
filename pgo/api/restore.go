@@ -30,7 +30,7 @@ func Restore(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredenti
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/restore"
 
-	log.Debug("restore called [" + url + "]")
+	log.Debugf("restore called [%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -46,7 +46,7 @@ func Restore(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredenti
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

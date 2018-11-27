@@ -18,8 +18,12 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
@@ -27,20 +31,24 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type jobTemplateFields struct {
-	Name            string
-	PvcName         string
-	CCPImagePrefix  string
-	CCPImageTag     string
-	SecurityContext string
-	BackupHost      string
-	BackupUser      string
-	BackupPass      string
-	BackupPort      string
+	Name               string
+	PvcName            string
+	CCPImagePrefix     string
+	CCPImageTag        string
+	SecurityContext    string
+	BackupHost         string
+	BackupUserSecret   string
+	BackupPort         string
+	BackupOpts         string
+	ContainerResources string
+}
+
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
 }
 
 // AddBackupBase creates a backup job and its pvc
@@ -71,17 +79,29 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	//update the pvc name in the CRD
 	err = util.Patch(client, "/spec/storagespec/name", pvcName, "pgbackups", job.Spec.Name, namespace)
 
+	cr := ""
+	if operator.Pgo.DefaultBackupResources != "" {
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBackupResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		cr = operator.GetContainerResourcesJSON(&tmp)
+
+	}
+
 	//create the job -
 	jobFields := jobTemplateFields{
-		Name:            job.Spec.Name,
-		PvcName:         util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
-		CCPImagePrefix:  operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:     job.Spec.CCPImageTag,
-		SecurityContext: util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
-		BackupHost:      job.Spec.BackupHost,
-		BackupUser:      job.Spec.BackupUser,
-		BackupPass:      job.Spec.BackupPass,
-		BackupPort:      job.Spec.BackupPort,
+		Name:               job.Spec.Name,
+		PvcName:            util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        job.Spec.CCPImageTag,
+		SecurityContext:    util.CreateSecContext(job.Spec.StorageSpec.Fsgroup, job.Spec.StorageSpec.SupplementalGroups),
+		BackupHost:         job.Spec.BackupHost,
+		BackupUserSecret:   job.Spec.BackupUserSecret,
+		BackupPort:         job.Spec.BackupPort,
+		BackupOpts:         job.Spec.BackupOpts,
+		ContainerResources: cr,
 	}
 
 	var doc2 bytes.Buffer
@@ -134,7 +154,7 @@ func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, 
 		if err != nil {
 			log.Error(err)
 		}
-		log.Debugf("waiting for backup job to report being deleted")
+		log.Debug("waiting for backup job to report being deleted")
 		time.Sleep(time.Second * time.Duration(3))
 	}
 }

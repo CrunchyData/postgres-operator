@@ -32,10 +32,12 @@ import (
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	crdclient "github.com/crunchydata/postgres-operator/client"
+	//crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -55,7 +57,7 @@ func main() {
 	}
 
 	Namespace = os.Getenv("NAMESPACE")
-	log.Debug("setting NAMESPACE to " + Namespace)
+	log.Debugf("setting NAMESPACE to %s", Namespace)
 	if Namespace == "" {
 		log.Error("NAMESPACE env var not set")
 		os.Exit(2)
@@ -76,7 +78,8 @@ func main() {
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	crdClient, crdScheme, err := crdclient.NewClient(config)
+	//crdClient, crdScheme, err := crdclient.NewClient(config)
+	crdClient, crdScheme, err := util.NewClient(config)
 	if err != nil {
 		panic(err)
 	}
@@ -154,6 +157,8 @@ func main() {
 	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
+
+	operatorupgrade.OperatorUpgrade(Clientset, crdClient, Namespace)
 
 	fmt.Print("at end of setup, beginning wait...")
 

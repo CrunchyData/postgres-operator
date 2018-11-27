@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -52,16 +53,16 @@ type PgbouncerTemplateFields struct {
 	SecretsName        string
 	CCPImagePrefix     string
 	CCPImageTag        string
-	ContainerResources string
 	Port               string
 	PrimaryServiceName string
 	ReplicaServiceName string
+	ContainerResources string
 }
 
 const PGBOUNCER_SUFFIX = "-pgbouncer"
 
 func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("ReconfigurePgbouncerFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debugf("ReconfigurePgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
@@ -96,7 +97,7 @@ func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *r
 		if err != nil {
 			log.Error(err)
 		}
-		log.Debugf("pgbouncer reconfigure sleeping till deployment [%s] is removed\n", depName)
+		log.Debugf("pgbouncer reconfigure sleeping till deployment [%s] is removed", depName)
 		time.Sleep(time.Second * time.Duration(4))
 	}
 
@@ -110,11 +111,11 @@ func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *r
 		return
 	}
 
-	log.Debugf("reconfigure pgbouncer to cluster [%s]\n", clusterName)
+	log.Debugf("reconfigure pgbouncer to cluster [%s]", clusterName)
 }
 
 func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("AddPgbouncerFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debug("AddPgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
@@ -141,11 +142,11 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		log.Error(err)
 		return
 	}
-	log.Debugf("added pgbouncer to cluster [%s]\n", clusterName)
+	log.Debugf("added pgbouncer to cluster [%s]", clusterName)
 }
 
 func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("DeletePgbouncerFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debugf("DeletePgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
@@ -189,7 +190,7 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debugf("delete pgbouncer from cluster [%s]\n", clusterName)
+	log.Debugf("delete pgbouncer from cluster [%s]", clusterName)
 }
 
 // ProcessPgbouncer ...
@@ -210,16 +211,27 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 
 	clusterName := cl.Spec.Name
 	pgbouncerName := clusterName + PGBOUNCER_SUFFIX
-	log.Debug("adding a pgbouncer " + pgbouncerName)
+	log.Debugf("adding a pgbouncer %s", pgbouncerName)
 
 	//create the pgbouncer deployment
 	fields := PgbouncerTemplateFields{
-		Name:           pgbouncerName,
-		ClusterName:    clusterName,
-		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    cl.Spec.CCPImageTag,
-		Port:           "5432",
-		SecretsName:    secretName,
+		Name:               pgbouncerName,
+		ClusterName:        clusterName,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		Port:               "5432",
+		SecretsName:        secretName,
+		ContainerResources: "",
+	}
+
+	if operator.Pgo.DefaultPgbouncerResources != "" {
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgbouncerResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		fields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
+
 	}
 
 	err = operator.PgbouncerTemplate.Execute(&doc, fields)

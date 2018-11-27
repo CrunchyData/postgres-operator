@@ -4,8 +4,8 @@ MAINTAINER jeff.mccormick@crunchydata.com
 
 LABEL name="pgo-lspvc" \
     vendor="crunchydata.com" \
-	Version="7.5" \
-	Release="3.3.0" \
+	Version="7.6" \
+	Release="3.4.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Display PVC" \
     description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
@@ -16,8 +16,14 @@ COPY redhat/licenses /licenses
 
 RUN yum -y update && yum -y clean all
 
-VOLUME ["/pgdata"]
+#RUN mkdir -p /opt/cpm/bin && chown -R 26:26 /opt/cpm
+#RUN mkdir /pgdata && chmod -R g=u /pgdata
+#ADD bin/pgo-lspvc /opt/cpm/bin
+
+#RUN chmod g=u /etc/passwd && \
+#        chmod g=u /etc/group
 
 USER 26
-
-CMD ["sh", "-c", "ls /pgdata/${BACKUP_ROOT}"]
+#ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+VOLUME ["/pgdata"]
+CMD ["sh", "-c", "find /pgdata/${BACKUP_ROOT}"]

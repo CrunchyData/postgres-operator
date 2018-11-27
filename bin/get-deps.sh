@@ -15,11 +15,19 @@
 
 echo "Getting project dependencies..."
 
+if [ $(command -v apt-get) ]; then
+	echo "using apt-get as package manager..."
+	PM="apt-get"
+elif [ $(command -v yum) ]; then
+	echo "using yum as package manager..."
+	PM="yum"
+fi
+
 #sudo yum -y install mercurial golang
 which go
 if [ $? -eq 1 ]; then
 	echo "installing golang..."
-	sudo yum -y install golang
+	sudo $PM -y install golang
 fi
 
 which dep
@@ -28,11 +36,15 @@ if [ $? -eq 1 ]; then
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
 
+
+echo "getting expenv go library..."
 go get github.com/blang/expenv
 
+# uncomment only if you want to develop on the project
+#echo "getting all libraries for project..."
 #dep ensure
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-echo "pre-pulling container suite images used by the operator..."
-$DIR/pre-pull-crunchy-containers.sh
+#echo "pre-pulling container suite images used by the operator..."
+#$DIR/pre-pull-crunchy-containers.sh

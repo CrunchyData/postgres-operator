@@ -119,7 +119,7 @@ func showPolicy(args []string) {
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
+		log.Debugf("response = %v", response)
 
 		for _, policy := range response.PolicyList.Items {
 			fmt.Println("")
@@ -188,10 +188,10 @@ func getPolicyString(filename string) (string, error) {
 
 func deletePolicy(args []string) {
 
-	log.Debugf("deletePolicy called %v\n", args)
+	log.Debugf("deletePolicy called %v", args)
 
 	for _, arg := range args {
-		log.Debug("deleting policy " + arg)
+		log.Debugf("deleting policy %s", arg)
 
 		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials)
 		if err != nil {

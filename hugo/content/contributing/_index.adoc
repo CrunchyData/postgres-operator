@@ -5,7 +5,7 @@ draft: false
 weight: 40
 ---
 
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.4.0 {docdate}
 
 == Getting Started
 

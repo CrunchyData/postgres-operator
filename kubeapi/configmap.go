@@ -32,7 +32,7 @@ func CreateConfigMap(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, n
 		return err
 	}
 
-	log.Debug("created ConfigMap " + result.Name)
+	log.Debugf("created ConfigMap %s", result.Name)
 
 	return err
 

@@ -105,7 +105,7 @@ func ShowIngest(name string) msgs.ShowIngestResponse {
 			return response
 		}
 
-		log.Debugf("ingests found len is %d\n", len(ingestList.Items))
+		log.Debugf("ingests found len is %d", len(ingestList.Items))
 
 		for _, i := range ingestList.Items {
 			detail := msgs.ShowIngestResponseDetail{}
@@ -174,7 +174,7 @@ func getJobCounts(ingestName string) (int, int) {
 	if err != nil {
 		return 0, 0
 	}
-	log.Debugf("There are %d ingest load pods completed\n", len(pods.Items))
+	log.Debugf("There are %d ingest load pods completed", len(pods.Items))
 	completed = len(pods.Items)
 
 	fieldselector = "status.phase!=Succeeded"
@@ -182,7 +182,7 @@ func getJobCounts(ingestName string) (int, int) {
 	if err != nil {
 		return 0, 0
 	}
-	log.Debugf("There are %d ingest load pods running\n", len(pods.Items))
+	log.Debugf("There are %d ingest load pods running", len(pods.Items))
 	running = len(pods.Items)
 
 	return running, completed

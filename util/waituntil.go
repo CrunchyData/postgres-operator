@@ -17,10 +17,10 @@ package util
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/api/core/v1"
 	"time"
 )
 
@@ -42,7 +42,7 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPh
 		func(event watch.Event) (bool, error) {
 			log.Debug("watch Modified called")
 			gotpod2 := event.Object.(*v1.Pod)
-			log.Debug("pod2 phase=" + gotpod2.Status.Phase)
+			log.Debugf("pod2 phase=%s", gotpod2.Status.Phase)
 			if gotpod2.Status.Phase == podPhase {
 				return true, nil
 			}

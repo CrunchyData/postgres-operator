@@ -39,7 +39,7 @@ func GetpgtasksBySelector(client *rest.RESTClient, taskList *crv1.PgtaskList, se
 		}
 	}
 
-	log.Debug("myselector is " + myselector.String())
+	log.Debugf("myselector is %s", myselector.String())
 
 	err = client.Get().
 		Resource(crv1.PgtaskResourcePlural).
@@ -78,7 +78,7 @@ func Getpgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace strin
 		Name(name).
 		Do().Into(task)
 	if kerrors.IsNotFound(err) {
-		log.Debug("task " + name + " not found")
+		log.Debugf("task %s not found ", name)
 		return false, err
 	}
 	if err != nil {
@@ -121,7 +121,8 @@ func Createpgtask(client *rest.RESTClient, task *crv1.Pgtask, namespace string) 
 		log.Error("error creating pgtask " + err.Error())
 	}
 
-	log.Debug("created pgtask " + task.Name)
+	log.Debugf("created pgtask %s", task.Name)
+	log.Debugf("pgtask result: %+v", result)
 	return err
 }
 
@@ -139,7 +140,7 @@ func Updatepgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace st
 		log.Error("error updating pgtask " + err.Error())
 	}
 
-	log.Debug("updated pgtask " + task.Name)
+	log.Debugf("updated pgtask %s", task.Name)
 	return err
 }
 

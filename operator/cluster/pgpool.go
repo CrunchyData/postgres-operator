@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -61,7 +62,7 @@ type PgpoolTemplateFields struct {
 const PGPOOL_SUFFIX = "-pgpool"
 
 func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("ReconfigurePgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+	log.Debugf("ReconfigurePgpoolFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
@@ -96,7 +97,7 @@ func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest
 		if err != nil {
 			log.Error(err)
 		}
-		log.Debugf("pgpool reconfigure sleeping till deployment [%s] is removed\n", depName)
+		log.Debugf("pgpool reconfigure sleeping till deployment [%s] is removed", depName)
 		time.Sleep(time.Second * time.Duration(4))
 	}
 
@@ -110,11 +111,11 @@ func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 
-	log.Debugf("reconfigure pgpool to cluster [%s]\n", clusterName)
+	log.Debugf("reconfigure pgpool to cluster [%s]", clusterName)
 }
 
 func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("AddPgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+	log.Debugf("AddPgpoolFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
@@ -141,11 +142,11 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 		return
 	}
-	log.Debugf("added pgpool to cluster [%s]\n", clusterName)
+	log.Debugf("added pgpool to cluster [%s]", clusterName)
 }
 
 func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("DeletePgpoolFromTask task cluster=[%s]\n", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
+	log.Debugf("DeletePgpoolFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER]
@@ -189,7 +190,7 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 	if err != nil {
 		log.Error(err)
 	}
-	log.Debugf("delete pgpool from cluster [%s]\n", clusterName)
+	log.Debugf("delete pgpool from cluster [%s]", clusterName)
 }
 
 // ProcessPgpool ...
@@ -210,16 +211,28 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 
 	clusterName := cl.Spec.Name
 	pgpoolName := clusterName + PGPOOL_SUFFIX
-	log.Debug("adding a pgpool " + pgpoolName)
+	log.Debugf("adding a pgpool %s", pgpoolName)
 
 	//create the pgpool deployment
 	fields := PgpoolTemplateFields{
-		Name:           pgpoolName,
-		ClusterName:    clusterName,
-		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    cl.Spec.CCPImageTag,
-		Port:           "5432",
-		SecretsName:    secretName,
+		Name:               pgpoolName,
+		ClusterName:        clusterName,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		Port:               "5432",
+		SecretsName:        secretName,
+		ContainerResources: "",
+	}
+
+	if operator.Pgo.DefaultPgpoolResources != "" {
+
+		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgpoolResources)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		fields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
+
 	}
 
 	err = operator.PgpoolTemplate.Execute(&doc, fields)

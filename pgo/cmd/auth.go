@@ -44,7 +44,7 @@ var caCertPath, clientCertPath, clientKeyPath string
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
-	log.Debugf("HTTP status code is %d\n", resp.StatusCode)
+	log.Debugf("HTTP status code is %d", resp.StatusCode)
 	if resp.StatusCode == 401 {
 		fmt.Printf("Error: Authentication Failed: %d\n", resp.StatusCode)
 		os.Exit(2)
@@ -67,8 +67,8 @@ func UserHomeDir() string {
 func parseCredentials(dat string) msgs.BasicAuthCredentials {
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	log.Debugf("%v\n", fields)
-	log.Debugf("username=[%s] password=[%s]\n", fields[0], fields[1])
+	log.Debugf("%v", fields)
+	log.Debugf("username=[%s] password=[%s]", fields[0], fields[1])
 	//return fields[0], fields[1]
 	creds := msgs.BasicAuthCredentials{
 		Username:     fields[0],
@@ -128,7 +128,11 @@ func GetCredentials() {
 		SessionCredentials = parseCredentials(string(dat))
 	}
 
-	caCertPath = os.Getenv("PGO_CA_CERT")
+	if PGO_CA_CERT != "" {
+		caCertPath = PGO_CA_CERT
+	} else {
+		caCertPath = os.Getenv("PGO_CA_CERT")
+	}
 
 	if caCertPath == "" {
 		fmt.Println("Error: PGO_CA_CERT not specified")
@@ -143,7 +147,11 @@ func GetCredentials() {
 	caCertPool = x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	clientCertPath = os.Getenv("PGO_CLIENT_CERT")
+	if PGO_CLIENT_CERT != "" {
+		clientCertPath = PGO_CLIENT_CERT
+	} else {
+		clientCertPath = os.Getenv("PGO_CLIENT_CERT")
+	}
 
 	if clientCertPath == "" {
 		fmt.Println("Error: PGO_CLIENT_CERT not specified")
@@ -156,7 +164,11 @@ func GetCredentials() {
 		os.Exit(2)
 	}
 
-	clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
+	if PGO_CLIENT_KEY != "" {
+		clientKeyPath = PGO_CLIENT_KEY
+	} else {
+		clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
+	}
 
 	if clientKeyPath == "" {
 		fmt.Println("Error: PGO_CLIENT_KEY not specified")

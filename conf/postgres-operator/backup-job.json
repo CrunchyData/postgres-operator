@@ -36,15 +36,29 @@
                         "name": "pgdata",
                         "readOnly": false
                     }],
+		    {{.ContainerResources }}
                     "env": [{
                         "name": "BACKUP_HOST",
                         "value": "{{.BackupHost}}"
                     }, {
+                        "name": "BACKUP_OPTS",
+                        "value": "{{.BackupOpts}}"
+                    }, {
                         "name": "BACKUP_USER",
-                        "value": "{{.BackupUser}}"
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.BackupUserSecret}}",
+                                "key": "username"
+                            }
+                        }
                     }, {
                         "name": "BACKUP_PASS",
-                        "value": "{{.BackupPass}}"
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.BackupUserSecret}}",
+                                "key": "password"
+                            }
+                        }
                     }, {
                         "name": "BACKUP_PORT",
                         "value": "{{.BackupPort}}"

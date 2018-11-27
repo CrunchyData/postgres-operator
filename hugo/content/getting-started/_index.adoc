@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-Latest Release: 3.2.0 {docdate}
+Latest Release: 3.4.0 {docdate}
 
 == First Steps
 
@@ -77,6 +77,7 @@ $ pgo show config
 The *pgo df* command will let you see the disk capacity of a cluster's PVC
 versus that of the PostgreSQL data that has been written to disk. If the capacity
 is less than 50%, then the output is printed in red in order to alert the user.
+The listing is broken out by the cluster's Pods.
 
 ==== Syntax
 
@@ -156,6 +157,11 @@ The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml def
 |`--pgbackrest` |N/A |N/A |
 Enables a pgBackRest volume for the database pod.
 
+|`--pgbackrest-restore-from` |N/A |N/A |
+Only applies when creating a cluster from a pgbackrest restored PVC.  This
+is the name of the cluster from which the restored PVC was created from and
+which the new cluster credentials will be based.  This setting is required in the scenario.  
+
 |`--pgbadger` |N/A |N/A |
 Adds the crunchy-pgbadger container to the database pod.
 
@@ -222,7 +228,7 @@ pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
 ===== Metrics
 
 Add the
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-collect/[crunchy-collect]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-collect/[crunchy-collect]
 container from the Crunchy Container Suite to the database cluster pod and enable metrics collection
 on the database:
 ....
@@ -231,7 +237,7 @@ pgo create cluster mycluster --metrics
 
 You can connect these containers to a metrics pipeline using link:https://grafana.com[Grafana]
 and link:https://prometheus.io[Prometheus] by following the example found in the
-link:https://crunchydata.github.io/crunchy-containers/getting-started/kubernetes-and-openshift/#_metrics_collection[Crunchy Container Suite documentation].
+link:https://crunchydata.github.io/crunchy-containers/stable/getting-started/kubernetes-and-openshift/#_metrics_collection[Crunchy Container Suite documentation].
 
 ===== pgBadger
 
@@ -240,7 +246,7 @@ Add a link:https://github.com/dalibo/pgbadger[pgBadger] sidecar into the Postgre
 pgo create cluster mycluster --pgbadger
 ....
 
-This command flag adds the link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgbadger/[crunchy-pgbadger]
+This command flag adds the link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgbadger/[crunchy-pgbadger]
 container into the database pod. pgBadger reports can then be accessed through port 10000 at `/api/badgergenerate`.
 
 ===== pgPool II
@@ -248,7 +254,7 @@ container into the database pod. pgBadger reports can then be accessed through p
 By appending the `--pgpool` command line flag, you can add
 link:http://www.pgpool.net/mediawiki/index.php/Main_Page[pgPool II] to the database cluster.
 The container used for this functionality is the
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-pgpool/[crunchy-pgpool]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgpool/[crunchy-pgpool]
 container image from the Crunchy Container Suite.
 ....
 pgo create cluster mycluster --pgpool
@@ -266,13 +272,15 @@ or watch for NotReady events on this cluster. When those occur, it will
  create a failover state machine which acts as a timer for the cluster.
 If the timer expires, then a failover is triggered on the cluster turning
 one of the cluster replica pods into the replacement primary pod. See the
-link:https://crunchydata.github.io/postgres-operator/how-it-works/[How It Works]
+link:https://crunchydata.github.io/postgres-operator/stable/how-it-works/#_auto_failover[How It Works]
 documentation for more details on auto failover.
 
 ===== pgBackRest
 
-Support for link:https://pgbackrest.org/[pgBackRest] began in Operator release 3.2. This is
-alpha support at this point and is intended to give users a preview of this feature support.
+pgbackrest beta integration was implemented in version 3.4.0 of the
+Operator.   NOTE:  pgbackrest integration is still subject to change in
+upcoming releases.
+
 The backrestrepo PVC, used by pgBackRest, has to be created on a RWX file system type in this
 release. pgBackRest is a more advanced backup and restore capability exposed by the Operator.
 
@@ -282,15 +290,10 @@ within the pgo.yaml configuration.
 
 Create a PG cluster that enables pgBackRest specifically for that cluster:
 ....
-pgo create cluster mycluster --pgbackrest --custom-config=pgo-pgbackrest-config
+pgo create cluster mycluster --pgbackrest
 ....
 
-NOTE:  Currently a pgbackrest configuration file is required to be specified
-using the *--custom-config* flag, see examples/backrest-config for the
-example of creating this custom ConfigMap.
-
-Setting this value will cause the Operator to create a PVC specifically dedicated for holding
-pgBackRest backups.
+Setting this value will cause the Operator to create a PVC specifically dedicated for holding pgBackRest backups.
 
 Create a pgBackRest backup:
 ....
@@ -305,22 +308,24 @@ pgo backup mycluster --backup-type=pgbackrest --pgbackrest-opts="--type=incr"
 Note, you can not specify *--storage-config* flag when specifying
 a pgbackrest backup.
 
-Obtain pgBackRest information:
+List pgBackRest information:
 ....
 pgo show backup mycluster --backup-type=pgbackrest
 ....
 
 Restore from an existing cluster into a newly created PVC:
 ....
-pgo restore withbr --to-pvc=restored
-pgo create cluster restored --custom-config=backrest-restore-withbr-to-restored --secret-from=withbr --pgbackrest
+pgo restore mycluster --to-pvc=restored
+pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest
 ....
 
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
-Typically, this will be a RWX file system but if the file system is RWO the PVCs will be 
+Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file
 system setup will allow you to restore from this PVC without having to shutdown the currently
-attached PostgreSQL cluster.
+attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
+has to attach the same pgbackrest repo used by the original cluster the restore
+was based off of.
 
 === Delete Cluster
 
@@ -338,7 +343,9 @@ $ pgo delete cluster NAME|all [FLAGS]
 |Name |Shorthand |Input |Usage
 
 |`--delete-backups` |-b |N/A |
-Causes the backups for this cluster to be removed permanently.
+Causes the backups for this cluster to be removed permanently.  This only 
+is applicable with pgbasebackup backup volumes and does not remove
+pgbackrest repo volumes.
 
 |`--delete-configs` |-b |N/A |
 Causes the configuration maps for this cluster to be removed permanently.
@@ -541,7 +548,7 @@ pgo reload mycluster
 
 === Backups
 
-The `backup` command will utilize the link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-backup/[crunchy-backup]
+The `backup` command will utilize the link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-backup/[crunchy-backup]
 container to execute a full backup against another database container
 using the standard pg_basebackup utility that is included with PostgreSQL.
 
@@ -570,6 +577,9 @@ The PVC name to use for the backup instead of the default.
 |`--backup-type` |N/A |String |
 The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.
 
+|`--backup-opts` |N/A |String |
+The options to pass to pgbasebackup or pgbackrest, use appropriate command options depending on which type of backup you are performing.
+
 |`--storage-config` |N/A |String |
 The name of a Storage config in pgo.yaml to use for the cluster storage.
 |=========================================================
@@ -591,6 +601,12 @@ pgo show backup mycluster
 ....
 
 ===== Backup PVC Management
+
+NOTE:  'pgo show pvc' can run into file permission issues if
+you are trying to view a PVC that is on a RWO (read write once) file
+system (e.g. cloud storage, ceph, storageos, etc.).  If another
+pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
+command in the current 3.4.0 release.  
 
 View the PVC folder and the backups contained therein:
 
@@ -636,18 +652,22 @@ the last pg_basebackup results.
 
 === Scheduling
 
-The `schedule` command will generate schedule configuration maps that are utitlized by the 
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-scheduler/[crunchy-scheduler]
+The `schedule` command will generate schedule configuration maps that are utitlized by the
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-scheduler/[crunchy-scheduler]
 container.  This allows users to create automated, scheduled backups for their PostgreSQL clusters.
 
 Currently only two types of backups are supported with the schedule command:
  * pgBackRest
  * pgBaseBackup
- 
-Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for 
-configuration maps with the label `crunchy-scheduler=true` in a specific namespace.  
+
+Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for
+configuration maps with the label `crunchy-scheduler=true` in a specific namespace.
 After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
 create pgBaseBackup jobs for the configured schedule.
+
+NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a 
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be 
+a requirement in the 3.5.0 version of the Operator.
 
 ==== Syntax
 
@@ -720,12 +740,17 @@ View the schedules for cluster named `mycluster`:
 
 ....
 pgo show schedule mycluster
-...
+....
 
 View the schedules for all clusters with the label `env=test`:
 
 ....
 pgo show schedule --selector=env=test
+....
+
+or for a particular cluster:
+....
+pgo show schedule --selector=pg-cluster=mycluster
 ....
 
 ===== Delete Schedules
@@ -776,7 +801,7 @@ $ pgo scale NAME [FLAGS]
 |Name |Shorthand |Input |Usage
 
 |`--service-type` |N/A |String |
-The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.
+The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.  Possible values include LoadBalancer, ClusterIP, and NodePort.
 
 |`--ccp-image-tag` |N/A |String |
 The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.
@@ -964,7 +989,7 @@ replica can take longer depending on how much data is being replicated.
 The *upgrade* command will allow you to upgrade the PostgreSQL version of
 your cluster with the pg_upgrade utility. Minor or major upgrades are
 supported. The Crunchy Container Suite
-link:https://crunchydata.github.io/crunchy-containers/container-specifications/crunchy-upgrade/[crunchy-upgrade]
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-upgrade/[crunchy-upgrade]
 container is responsible for performing this task.
 
 By default, it will request confirmation for the command as the operator
@@ -1058,7 +1083,7 @@ pgo label mycluster --label=env=research
 Or if you wanted to apply if to a selection of clusters:
 ....
 pgo label --label=env=research  --selector=project=xray
-pgo label all --label=env=research 
+pgo label all --label=env=research
 ....
 
 In the first example, a label of *env=research* is applied to the cluster
@@ -1278,13 +1303,16 @@ Allows user to specify a password instead of using a generated password.
 
 |`--valid-days` |N/A |Int |
 Sets passwords for new users to X days (default 30).
+
+|`--password-length` |N/A |Int |
+When no password is provided, generates a password with this number of characters (default 12).
 |=========================================================
 
 ==== Examples
 
 ===== Basic User Creation
 
-To create a new Postgres user assigned to the *mycluster* cluster, execute:
+To create a new Postgres user assigned to the *mycluster* cluster, execute (password will be auto generated and 12 characters long):
 ....
 pgo create user sally --selector=name=mycluster
 ....
@@ -1299,7 +1327,7 @@ pgo create user sally --managed --selector=name=mycluster --password=somepass
 A *managed* account is one that the Operator can manipulate as well; when you run `pgo test mycluster` the account is tested with
 the other default accounts, etc.
 
-When you create a managed user, if pgpool is part of your cluster, 
+When you create a managed user, if pgpool is part of your cluster,
 then pgpool is reconfigured to pick up the new user.
 
 ===== Complex User Creation
@@ -1325,7 +1353,7 @@ will cause pgpool to be reconfigured to pick up the user deletion.
 
 ===== Change Password
 
-To change the password for a user in the *mycluster* cluster:
+To change the password for a user in the *mycluster* cluster (password will be auto generated and 12 characters long):
 ....
 pgo user --change-password=sally --selector=name=mycluster
 ....
@@ -1357,7 +1385,7 @@ pgo user --update-passwords --selector=name=mycluster --expired=5
 When a pgbouncer deployment is added into your cluster, it
 will cause the creation of a Secret that holds the pgbouncer
 configuration files:
- * pg_hba.conf 
+ * pg_hba.conf
  * pgbouncer.ini
  * users.txt
 
@@ -1383,6 +1411,10 @@ You can also add pgbouncer after a cluster has been created:
 ....
 pgo create pgbouncer mycluster
 ....
+
+NOTE:  currently you are required to have a replica in your PG
+cluster for the pgbouncer sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
 
 == pgpool Basics
 
@@ -1439,6 +1471,10 @@ Create a pgpool:
 pgo create pgpool mycluster
 ....
 
+NOTE:  currently you are required to have a replica in your PG
+cluster for the pgpool sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+
 === Delete pgpool
 
 The `delete pgpool` command will by delete the pgpool deployment that
@@ -1467,3 +1503,16 @@ Delete a pgpool:
 pgo delete pgpool mycluster
 ....
 
+=== Workflow
+
+Starting with Release 3.4, there is a workflow concept that
+you can use to check the status of a cluster creation.  When
+you create a cluster (e.g. pgo create cluster), you will
+see in the response a workflow ID.  You can use that ID
+to check the status of the cluster creation.
+
+==== Syntax
+
+....
+pgo show workflow ID 
+....

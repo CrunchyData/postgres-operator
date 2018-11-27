@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+
 	//"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
@@ -96,7 +97,7 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 // CopySecrets will copy a secret to another secret
 func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
 
-	log.Debug("CopySecrets " + fromCluster + " to " + toCluster)
+	log.Debugf("CopySecrets %s to %s", fromCluster, toCluster)
 	selector := "pg-database=" + fromCluster
 
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
@@ -105,7 +106,7 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 	}
 
 	for _, s := range secrets.Items {
-		log.Debug("found secret : " + s.ObjectMeta.Name)
+		log.Debugf("found secret : %s", s.ObjectMeta.Name)
 		secret := v1.Secret{}
 		secret.Name = strings.Replace(s.ObjectMeta.Name, fromCluster, toCluster, 1)
 		secret.ObjectMeta.Labels = make(map[string]string)
@@ -122,14 +123,14 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 }
 
 // CreateUserSecret will create a new secret holding a user credential
-func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string, passwordLength int) error {
 
 	var err error
 
 	secretName := clustername + "-" + username + "-secret"
-	var enPassword = GeneratePassword(10)
+	var enPassword = GeneratePassword(passwordLength)
 	if password != "" {
-		log.Debug("using user specified password for secret " + secretName)
+		log.Debugf("using user specified password for secret %s", secretName)
 		enPassword = password
 	}
 	err = CreateSecret(clientset, clustername, secretName, username, enPassword, namespace)
@@ -141,7 +142,7 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 }
 
 // UpdateUserSecret updates a user secret with a new password
-func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string, passwordLength int) error {
 
 	var err error
 
@@ -151,38 +152,13 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
 	if err == nil {
 		//create secret with updated password
-		err = CreateUserSecret(clientset, clustername, username, password, namespace)
+		err = CreateUserSecret(clientset, clustername, username, password, namespace, passwordLength)
 		if err != nil {
 			log.Error("UpdateUserSecret error creating secret" + err.Error())
 		} else {
-			log.Debug("created secret " + secretName)
+			log.Debugf("created secret %s", secretName)
 		}
 	}
 
 	return err
 }
-
-/**
-func GetSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
-
-	output := make([]msgs.ShowUserSecret, 0)
-	selector := "pgpool!=true," + LABEL_PG_DATABASE + "=" + cluster.Spec.Name
-
-	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
-	if err != nil {
-		return output, err
-	}
-
-	log.Debugf("got %d secrets for %s\n", len(secrets.Items), cluster.Spec.Name)
-	for _, s := range secrets.Items {
-		d := msgs.ShowUserSecret{}
-		d.Name = s.Name
-		d.Username = string(s.Data["username"][:])
-		d.Password = string(s.Data["password"][:])
-		output = append(output, d)
-
-	}
-
-	return output, err
-}
-*/

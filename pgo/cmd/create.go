@@ -28,6 +28,7 @@ var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
 var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
+var BackrestRestoreFrom string
 var PgpoolSecret string
 var PgbouncerSecret string
 var CCPImageTag string
@@ -223,10 +224,11 @@ func init() {
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
-	//CreateCmd.AddCommand(createScheduleCmd)
+	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
+	createClusterCmd.Flags().StringVarP(&BackrestRestoreFrom, "pgbackrest-restore-from", "", "", "specifies the cluster name from where the restore is from, used to restore from a pgbackrest restore")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
@@ -268,4 +270,5 @@ func init() {
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
+	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
 }

@@ -40,6 +40,7 @@ var ShowCmd = &cobra.Command{
 	pgo show ingest myingest
 	pgo show policy policy1
 	pgo show pvc mycluster
+	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5
 	pgo show user mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
@@ -51,6 +52,7 @@ Valid resource types include:
 	* ingest
 	* policy
 	* pvc
+	* workflow
 	* upgrade
 	* user
 	`)
@@ -62,7 +64,8 @@ Valid resource types include:
 			case "ingest":
 			case "user":
 			case "config":
-				//		case "schedule":
+			case "schedule":
+			case "workflow":
 			case "upgrade":
 			case "backup":
 				break
@@ -75,6 +78,7 @@ Valid resource types include:
 	* ingest
 	* policy
 	* pvc
+	* workflow
 	* upgrade
 	* user`)
 			}
@@ -91,7 +95,8 @@ func init() {
 	ShowCmd.AddCommand(ShowIngestCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
-	//	ShowCmd.AddCommand(ShowScheduleCmd)
+	ShowCmd.AddCommand(ShowWorkflowCmd)
+	ShowCmd.AddCommand(ShowScheduleCmd)
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
@@ -116,6 +121,17 @@ var ShowConfigCmd = &cobra.Command{
 	pgo show config`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showConfig(args)
+	},
+}
+
+var ShowWorkflowCmd = &cobra.Command{
+	Use:   "workflow",
+	Short: "Show workflow information",
+	Long: `Show workflow information for a given workflow. For example:
+
+	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showWorkflow(args)
 	},
 }
 

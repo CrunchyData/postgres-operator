@@ -30,7 +30,7 @@ func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredenti
 	var response msgs.ShowBackrestResponse
 	url := SessionCredentials.APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector
 
-	log.Debug("show backrest called [" + url + "]")
+	log.Debugf("show backrest called [%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -45,14 +45,14 @@ func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredenti
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Debugf("%v\n", resp.Body)
+		log.Debugf("%v", resp.Body)
 		log.Debug(err)
 		return response, err
 	}
@@ -69,7 +69,7 @@ func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.Basi
 
 	url := SessionCredentials.APIServerURL + "/backrestbackup"
 
-	log.Debug("create backrest backup called [" + url + "]")
+	log.Debugf("create backrest backup called [%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -85,7 +85,7 @@ func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.Basi
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

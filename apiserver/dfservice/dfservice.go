@@ -30,16 +30,16 @@ import (
 // pgo df --selector=env=research
 func DfHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("dfservice.DfHandler %v\n", vars)
+	log.Debugf("dfservice.DfHandler %v", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
 	if selector != "" {
-		log.Debugf("selector param was [%s]", selector)
+		log.Debugf("selector parameter is [%s]", selector)
 	}
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debugf("version param was [%s]", clientVersion)
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)

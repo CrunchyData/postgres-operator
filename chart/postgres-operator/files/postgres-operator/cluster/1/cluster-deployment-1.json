@@ -50,6 +50,12 @@
                         "name": "PG_PRIMARY_HOST",
                         "value": "{{.PrimaryHost}}"
                     }, {
+                        "name": "LOG_STATEMENT",
+                        "value": "{{.LogStatement}}"
+                    }, {
+                        "name": "LOG_MIN_DURATION_STATEMENT",
+                        "value": "{{.LogMinDurationStatement}}"
+                    }, {
                         "name": "PG_LOCALE",
                         "value": "en_US.UTF8"
                     }, {
@@ -59,14 +65,21 @@
                         "name": "PGDATA_PATH_OVERRIDE",
                         "value": "{{.DataPathOverride}}"
                     }, {
+			{{.PgbackrestEnvVars}}
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
+                    }, {
+                        "name": "PGMONITOR_PASSWORD",
+                        "value": "password"
                     }, {
                         "name": "ARCHIVE_MODE",
                         "value": "{{.ArchiveMode}}"
                     }, {
                         "name": "ARCHIVE_TIMEOUT",
                         "value": "{{.ArchiveTimeout}}"
+                    }, {
+                        "name": "XLOGDIR",
+                        "value": "{{.XLOGDir}}"
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"

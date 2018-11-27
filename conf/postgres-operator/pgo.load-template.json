@@ -5,6 +5,7 @@
         "name": "{{.Name}}"
     },
     "spec": {
+	"backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
@@ -19,7 +20,7 @@
                     "name": "pgdata",
                     "persistentVolumeClaim" : {
                         "claimName": "{{.PVCName}}"
-            }
+                    }
                 }],
 
         {{.SecurityContext}}
@@ -30,8 +31,11 @@
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",
-                        "readOnly": false
+                        "readOnly": true
                     }],
+
+		    {{.ContainerResources }}
+
                     "env": [{
                         "name": "TABLE_TO_LOAD",
                         "value": "{{.TableToLoad}}"

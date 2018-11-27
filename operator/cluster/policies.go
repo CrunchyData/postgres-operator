@@ -80,10 +80,10 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient
 	}
 
 	if cl.Spec.Policies == "" {
-		log.Debug("no policies to apply to " + clusterName)
+		log.Debugf("no policies to apply to %s", clusterName)
 		return
 	}
-	log.Debug("policies to apply to " + clusterName + " are " + cl.Spec.Policies)
+	log.Debugf("policies to apply to %s are %s", clusterName, cl.Spec.Policies)
 	policies := strings.Split(cl.Spec.Policies, ",")
 
 	//apply the policies

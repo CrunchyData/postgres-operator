@@ -47,7 +47,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 		log.Error(err)
 		return err
 	}
-	log.Debug("best pod to failover to is " + pod.Name)
+	log.Debugf("best pod to failover to is %s", pod.Name)
 
 	//delete the primary deployment
 	err = deletePrimary(clientset, namespace, clusterName)
@@ -85,7 +85,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace, clusterName, message string) {
 
-	log.Debug("updateFailoverStatus namespace=[" + namespace + "] taskName=[" + task.Name + "] message=[" + message + "]")
+	log.Debugf("updateFailoverStatus namespace=[%s] taskName=[%s] message=[%s]", namespace, task.Name, message)
 
 	//update the task
 
@@ -113,7 +113,7 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 	//should only be 1 primary with this name!
 	deps, err := kubeapi.GetDeployments(clientset, util.LABEL_PG_CLUSTER+"="+clusterName+",primary=true", namespace)
 	for _, d := range deps.Items {
-		log.Debugf("deleting deployment %s\n", d.Name)
+		log.Debugf("deleting deployment %s", d.Name)
 		kubeapi.DeleteDeployment(clientset, d.Name, namespace)
 	}
 
@@ -130,9 +130,9 @@ func promote(
 	command := make([]string, 1)
 	command[0] = "/opt/cpm/bin/promote.sh"
 
-	log.Debug("running Exec with namespace=[" + namespace + "] podname=[" + pod.Name + "] container name=[" + pod.Spec.Containers[0].Name + "]")
+	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command, pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
-	log.Debug("stdout=[" + stdout + "] stderr=[" + stderr + "]")
+	log.Debugf("stdout=[%s] stderr=[%s]", stdout, stderr)
 	if err != nil {
 		log.Error(err)
 	}
@@ -172,7 +172,7 @@ func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment 
 
 	var err error
 
-	log.Debugf("%v is the labels to apply\n", newLabels)
+	log.Debugf("%v is the labels to apply", newLabels)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(deployment)
@@ -189,13 +189,13 @@ func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment 
 	if objLabels == nil {
 		objLabels = make(map[string]string)
 	}
-	log.Debugf("current labels are %v\n", objLabels)
+	log.Debugf("current labels are %v", objLabels)
 
 	//update the deployment labels
 	for key, value := range newLabels {
 		objLabels[key] = value
 	}
-	log.Debugf("updated labels are %v\n", objLabels)
+	log.Debugf("updated labels are %v", objLabels)
 
 	accessor.SetLabels(objLabels)
 
@@ -210,7 +210,7 @@ func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment 
 
 	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		log.Debug("error patching deployment " + err.Error())
+		log.Debugf("error patching deployment %s", err.Error())
 	}
 	return err
 
@@ -220,7 +220,7 @@ func updatePodLabels(namespace string, clientset *kubernetes.Clientset, pod *v1.
 
 	var err error
 
-	log.Debugf("%v is the labels to apply\n", newLabels)
+	log.Debugf("%v is the labels to apply", newLabels)
 
 	var patchBytes, newData, origData []byte
 	origData, err = json.Marshal(pod)
@@ -237,13 +237,13 @@ func updatePodLabels(namespace string, clientset *kubernetes.Clientset, pod *v1.
 	if objLabels == nil {
 		objLabels = make(map[string]string)
 	}
-	log.Debugf("current labels are %v\n", objLabels)
+	log.Debugf("current labels are %v", objLabels)
 
 	//update the pod labels
 	for key, value := range newLabels {
 		objLabels[key] = value
 	}
-	log.Debugf("updated labels are %v\n", objLabels)
+	log.Debugf("updated labels are %v", objLabels)
 
 	accessor.SetLabels(objLabels)
 
@@ -258,7 +258,7 @@ func updatePodLabels(namespace string, clientset *kubernetes.Clientset, pod *v1.
 
 	_, err = clientset.CoreV1().Pods(namespace).Patch(pod.Name, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		log.Debug("error patching deployment " + err.Error())
+		log.Debugf("error patching deployment %s", err.Error())
 	}
 	return err
 

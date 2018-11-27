@@ -62,5 +62,43 @@ roleRef:
   name: pgo-role
   apiGroup: rbac.authorization.k8s.io
 
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pgo-backrest
+  namespace: "{{ .Release.Namespace }}"
+
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-backrest-role
+  namespace: "{{ .Release.Namespace }}"
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-backrest-role-binding
+  namespace: "{{ .Release.Namespace }}"
+subjects:
+- kind: ServiceAccount
+  name: pgo-backrest
+  namespace: "{{ .Release.Namespace }}"
+roleRef:
+  kind: Role
+  name: pgo-backrest-role
+  apiGroup: rbac.authorization.k8s.io
 
 {{ end }}

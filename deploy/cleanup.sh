@@ -23,15 +23,16 @@ if [ "$CO_UI" = "true" ]; then
 $CO_CMD $NS delete configmap pgo-ui-conf 
 fi
 
-$CO_CMD $NS delete configmap operator-conf 
-$CO_CMD $NS delete secret apiserver-conf-secret
+#$CO_CMD $NS delete configmap pgo-pgbackrest-config
+
+$CO_CMD $NS delete secret pgo-auth-secret
+$CO_CMD $NS delete configmap pgo-config
 
 $CO_CMD $NS delete service postgres-operator
 
 $CO_CMD $NS delete deployment postgres-operator 
 
-#$CO_CMD $NS delete deployment crunchy-scheduler
-#$CO_CMD $NS delete clusterrolebinding,clusterrole,sa,rolebinding scheduler-sa scheduler-sa
+$CO_CMD $NS delete deployment crunchy-scheduler
 
 sleep 5
 

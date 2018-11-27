@@ -59,38 +59,54 @@ func DfCluster(name, selector string) msgs.DfResponse {
 
 	//loop thru each cluster
 
-	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 
-		services, err := getServices(c.Spec.Name)
+		selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
+			util.LABEL_PGBACKUP + "!=true"
+
+		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
-
-		//for each service get the database size and append to results
-
-		for svcName, svcIP := range services {
-			if strings.Contains(svcName, "-pgbouncer") ||
-				strings.Contains(svcName, "-pgpool") {
+		for _, p := range pods.Items {
+			if strings.Contains(p.Name, "-pgbouncer") ||
+				strings.Contains(p.Name, "-pgpool") {
 				continue
 			}
+
+			var pvcName string
+			var found bool
+			for _, v := range p.Spec.Volumes {
+				if v.Name == "pgdata" {
+					found = true
+					pvcName = v.VolumeSource.PersistentVolumeClaim.ClaimName
+
+				}
+			}
+			if !found {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = "pgdata volume not found in pod "
+				return response
+			}
+			log.Debugf("pvc found to be %s", pvcName)
+
 			result := msgs.DfDetail{}
-			//result.Name = c.Name
-			result.Name = svcName
+			result.Name = p.Name
 			result.Working = true
 
-			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, svcIP, "postgres", c.Spec.Name)
-			log.Infof("svcName=%s pgSize=%d pgSize=%s cluster=%s", svcName, pgSize, pgSizePretty)
+			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, p.Status.PodIP, "postgres", c.Spec.Name)
+			log.Infof("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty, c.Spec.Name)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
 			}
 			result.PGSize = pgSizePretty
-			result.ClaimSize, err = getClaimCapacity(apiserver.Clientset, c.Spec.Name)
+			result.ClaimSize, err = getClaimCapacity(apiserver.Clientset, pvcName)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -199,26 +215,18 @@ func getPGSize(port, host, databaseName, clusterName string) (string, int, error
 
 }
 
-func getClaimCapacity(clientset *kubernetes.Clientset, clusterName string) (string, error) {
+func getClaimCapacity(clientset *kubernetes.Clientset, pvcName string) (string, error) {
 	var err error
 	var found bool
 	var pvc *v1.PersistentVolumeClaim
 
-	clusterDef := crv1.Pgcluster{}
-
-	//find the pgdata volume claimName for this clusterName
-	//pgcluster.spec.PrimaryStorage.Name
-	found, err = kubeapi.Getpgcluster(apiserver.RESTClient, &clusterDef, clusterName, apiserver.Namespace)
-	if !found || err != nil {
-		log.Error(err)
-		return "", err
-	}
-
-	pvcName := clusterDef.Spec.PrimaryStorage.Name
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
 	pvc, found, err = kubeapi.GetPVC(clientset, pvcName, apiserver.Namespace)
 	if err != nil {
+		if !found {
+			log.Debugf("pvc %s not found", pvcName)
+		}
 		return "", err
 	}
 	qty := pvc.Status.Capacity[v1.ResourceStorage]

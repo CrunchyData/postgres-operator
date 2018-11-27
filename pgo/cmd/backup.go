@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	labelutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var PVCName string
@@ -45,7 +46,7 @@ var backupCmd = &cobra.Command{
 					fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
 					return
 				}
-				createBackrestBackup(args, BackrestOpts)
+				createBackrestBackup(args)
 			} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
 				createBackup(args)
 			} else {
@@ -59,17 +60,17 @@ var backupCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
+	backupCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackup options to pass into pgbasebackup or pgbackrest.")
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
-	backupCmd.Flags().StringVarP(&BackrestOpts, "pgbackrest-opts", "", "", "The pgbackrest backup options to pass.")
 
 }
 
 // showBackup ....
 func showBackup(args []string) {
-	log.Debugf("showBackup called %v\n", args)
+	log.Debugf("showBackup called %v", args)
 
 	//show pod information for job
 	for _, v := range args {
@@ -90,8 +91,8 @@ func showBackup(args []string) {
 			return
 		}
 
-		log.Debugf("response = %v\n", response)
-		log.Debugf("len of items = %d\n", len(response.BackupList.Items))
+		log.Debugf("response = %v", response)
+		log.Debugf("len of items = %d", len(response.BackupList.Items))
 
 		for _, backup := range response.BackupList.Items {
 			printBackupCRD(&backup)
@@ -113,14 +114,14 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup User:\t"+result.Spec.BackupUser)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.Spec.BackupUserSecret)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }
 
 // deleteBackup ....
 func deleteBackup(args []string) {
-	log.Debugf("deleteBackup called %v\n", args)
+	log.Debugf("deleteBackup called %v", args)
 
 	for _, v := range args {
 		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
@@ -149,13 +150,14 @@ func deleteBackup(args []string) {
 
 // createBackup ....
 func createBackup(args []string) {
-	log.Debugf("createBackup called %v\n", args)
+	log.Debugf("createBackup called %v", args)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
 	request.Selector = Selector
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
+	request.BackupOpts = BackupOpts
 
 	response, err := api.CreateBackup(httpclient, &SessionCredentials, request)
 

@@ -20,6 +20,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -29,9 +33,6 @@ import (
 	_ "github.com/lib/pq"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // connInfo ....
@@ -86,7 +87,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 		return resp
 	}
 
-	log.Debug("selector string=[" + sel + "]")
+	log.Debugf("selector string=[%s]", sel)
 
 	//get the clusters list
 	clusterList := crv1.PgclusterList{}
@@ -120,7 +121,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				msg := "changing password of user " + request.ChangePasswordForUser + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
-				newPassword := util.GeneratePassword(defaultPasswordLength)
+				newPassword := util.GeneratePassword(request.PasswordLength)
 				if request.Password != "" {
 					parts := strings.Split(request.Password, " ")
 					if len(parts) > 1 {
@@ -134,7 +135,7 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 				pgbouncer := cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
 				pgpool := cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
 
-				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, apiserver.Namespace, pgpool, pgbouncer)
+				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, apiserver.Namespace, pgpool, pgbouncer, request.PasswordLength)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -147,15 +148,15 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 			if request.Expired != "" {
 				results := callDB(info, d.ObjectMeta.Name, request.Expired)
 				if len(results) > 0 {
-					log.Debug("expired passwords....")
+					log.Debug("expired passwords...")
 					for _, v := range results {
-						log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
+						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
 						if request.UpdatePasswords {
-							newPassword := util.GeneratePassword(defaultPasswordLength)
+							newPassword := util.GeneratePassword(request.PasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 							pgbouncer := cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
 							pgpool := cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
-							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, apiserver.Namespace, pgpool, pgbouncer)
+							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, apiserver.Namespace, pgpool, pgbouncer, request.PasswordLength)
 							if err != nil {
 								log.Error("error in updating password")
 							}
@@ -213,7 +214,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 			return results
 		}
 		results = append(results, p)
-		log.Debug("returned " + ts)
+		log.Debugf("returned %s", ts)
 	}
 
 	return results
@@ -221,7 +222,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 }
 
 // updatePassword ...
-func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, pgpool bool, pgbouncer bool) error {
+func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, pgpool bool, pgbouncer bool, passwordLength int) error {
 	var err error
 	var conn *sql.DB
 
@@ -261,11 +262,11 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	secretName := clusterName + "-" + username + "-" + "secret"
 	_, _, err = util.GetPasswordFromSecret(apiserver.Clientset, namespace, secretName)
 	if err != nil {
-		log.Debug(secretName + " secret does not exist")
+		log.Debugf("%s secret does not exist", secretName)
 		return nil
 	}
 
-	err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace)
+	err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace, passwordLength)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
@@ -402,7 +403,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 				log.Error(err)
 				return err
 			}
-			log.Debug(" returned name %d", returnedName)
+			log.Debugf(" returned name %d", returnedName)
 			if returnedName == 0 {
 				return errors.New("dbname is not valid database name")
 			}
@@ -443,7 +444,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 		if request.Password != "" {
 			info.Password = request.Password
 		}
-		err = util.CreateUserSecret(apiserver.Clientset, clusterName, request.Name, info.Password, namespace)
+		err = util.CreateUserSecret(apiserver.Clientset, clusterName, request.Name, info.Password, namespace, request.PasswordLength)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -514,7 +515,7 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 
 	getDefaults()
 
-	log.Debug("createUser selector is " + request.Selector)
+	log.Debugf("createUser selector is ", request.Selector)
 	if request.Selector == "" {
 		log.Error("--selector value is empty not allowed")
 		resp.Status.Code = msgs.Error
@@ -554,7 +555,12 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 			log.Debug(msg)
 			resp.Results = append(resp.Results, msg)
 		}
-		newPassword := util.GeneratePassword(defaultPasswordLength)
+
+		if request.PasswordLength == 0 {
+			request.PasswordLength = defaultPasswordLength
+		}
+
+		newPassword := util.GeneratePassword(request.PasswordLength)
 		if request.Password != "" {
 			newPassword = request.Password
 		}
@@ -562,7 +568,7 @@ func CreateUser(request *msgs.CreateUserRequest) msgs.CreateUserResponse {
 
 		pgbouncer := c.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
 		pgpool := c.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
-		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, apiserver.Namespace, pgpool, pgbouncer)
+		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, apiserver.Namespace, pgpool, pgbouncer, request.PasswordLength)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -714,7 +720,7 @@ func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 		}
 	}
 
-	log.Debug("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowUserDetail{}
@@ -735,10 +741,10 @@ func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 				if expired != "" {
 					results := callDB(info, d.ObjectMeta.Name, expired)
 					if len(results) > 0 {
-						log.Debug("expired passwords....")
+						log.Debug("expired passwords...")
 						for _, v := range results {
 							detail.ExpiredMsgs = append(detail.ExpiredMsgs, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
-							log.Debug("RoleName " + v.Rolname + " Role Valid Until " + v.Rolvaliduntil)
+							log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
 
 						}
 					}

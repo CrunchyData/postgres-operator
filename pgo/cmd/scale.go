@@ -69,7 +69,7 @@ func init() {
 func scaleCluster(args []string) {
 
 	for _, arg := range args {
-		log.Debugf(" %s ReplicaCount is %d\n", arg, ReplicaCount)
+		log.Debugf(" %s ReplicaCount is %d", arg, ReplicaCount)
 		response, err := api.ScaleCluster(httpclient, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, &SessionCredentials)
 
 		if err != nil {

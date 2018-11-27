@@ -29,7 +29,7 @@ func ShowUpgrade(httpclient *http.Client, arg string, SessionCredentials *msgs.B
 	var response msgs.ShowUpgradeResponse
 
 	url := SessionCredentials.APIServerURL + "/upgrades/" + arg + "?version=" + msgs.PGO_VERSION
-	log.Debug("showUpgrade called...[" + url + "]")
+	log.Debugf("showUpgrade called...[%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -44,7 +44,7 @@ func ShowUpgrade(httpclient *http.Client, arg string, SessionCredentials *msgs.B
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -66,7 +66,7 @@ func CreateUpgrade(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/upgrades"
-	log.Debug("CreateUpgrade called...[" + url + "]")
+	log.Debugf("CreateUpgrade called...[%s]", url)
 
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
@@ -82,7 +82,7 @@ func CreateUpgrade(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err
@@ -102,7 +102,7 @@ func DeleteUpgrade(httpclient *http.Client, v string, SessionCredentials *msgs.B
 	var response msgs.DeleteUpgradeResponse
 
 	url := SessionCredentials.APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION
-	log.Debug("deleteUpgrade called...[" + url + "]")
+	log.Debugf("deleteUpgrade called...[%s]", url)
 
 	action := "GET"
 
@@ -118,7 +118,7 @@ func DeleteUpgrade(httpclient *http.Client, v string, SessionCredentials *msgs.B
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

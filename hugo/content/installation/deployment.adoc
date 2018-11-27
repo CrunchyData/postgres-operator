@@ -6,7 +6,7 @@ weight: 50
 ---
 
 :toc:
-Latest Release: 3.3.0 {docdate}
+Latest Release: 3.4.0 {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -53,9 +53,9 @@ At this point, the server side of the operator is deployed and ready.
 
 The pgo command line client requires TLS for securing the connection to the operator's REST API.  This configuration is performed as follows -
 ....
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 ....
 
 The pgo client uses Basic Authentication to authenticate to the operator REST API. For authentication, add the following `.pgouser` file to your $HOME -
@@ -80,7 +80,7 @@ rolename: permissionA, permissionB
 
 These are defined in the following file -
 ....
-$COROOT/conf/apiserver/pgorole
+$COROOT/conf/postgres-operator/pgorole
 ....
 
 The complete set of permissions is documented in the link:/installation/configuration/[Configuration] document.
@@ -175,8 +175,8 @@ export CO_APISERVER_URL=https://`minikube ip`
 At this point you should be able to connect to the operator as follows -
 ....
 pgo version
-pgo client version 3.3.0
-apiserver version 3.3.0
+pgo client version 3.4.0
+apiserver version 3.4.0
 ....
 
 Operator commands are documented on the link:/getting-started/[Getting Started] page.

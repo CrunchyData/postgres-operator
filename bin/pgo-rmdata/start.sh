@@ -14,4 +14,4 @@
 # limitations under the License.
 
 echo [$DATA_ROOT] is data root
-eval rm -rf /pgdata/$DATA_ROOT
+eval rm -rf /pgdata/$DATA_ROOT /pgdata/$DATA_ROOT-spool /pgdata/$DATA_ROOT-wal

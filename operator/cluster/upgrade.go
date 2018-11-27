@@ -55,7 +55,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 // DeleteUpgrade deletes a pgupgrade job
 func DeleteUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string) {
 	var jobName = "upgrade-" + upgrade.Spec.Name
-	log.Debug("deleting Job with Name=" + jobName + " in namespace " + namespace)
+	log.Debugf("deleting Job with Name= %s in namespace %s", jobName, namespace)
 
 	//delete the job
 	kubeapi.DeleteJob(clientset, jobName, namespace)
@@ -130,13 +130,13 @@ func finishUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	if err != nil {
 		return
 	}
-	log.Debug(name + " pgupgrade crv1 is found")
+	log.Debugf("%s pgupgrade crv1 is found", name)
 
 	_, err = kubeapi.Getpgcluster(restclient, &cl, name, namespace)
 	if err != nil {
 		return
 	}
-	log.Debug(name + " pgcluster crv1 is found")
+	log.Debugf("pgcluster crv1 is found", name)
 
 	var clusterStrategy Strategy
 

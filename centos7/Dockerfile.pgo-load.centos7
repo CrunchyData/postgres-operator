@@ -2,10 +2,10 @@ FROM centos:7
 
 LABEL name="crunchydata/pgo-load" \
     vendor="crunchy data" \
-	PostgresVersion="10" \
-	PostgresFullVersion="10.5" \
-	Version="7.5" \
-	Release="3.3.0" \
+	PostgresVersion="11" \
+	PostgresFullVersion="11.1" \
+	Version="7.6" \
+	Release="3.4.0" \
     url="https://crunchydata.com" \
     summary="Crunchy Data PostgreSQL Operator - Load Data" \
     description="Loads a CSV or JSON file into the database." \
@@ -14,7 +14,7 @@ LABEL name="crunchydata/pgo-load" \
     io.openshift.expose-services="" \
     io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="10" PGDG_REPO="pgdg-centos10-10-2.noarch.rpm"
+ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm"
 
 # PGDG PostgreSQL Repository
 
@@ -27,15 +27,22 @@ RUN yum -y update &&  yum -y install epel-release \
  	nss_wrapper \
 	openssh-clients \
 	procps-ng \
- && yum -y install postgresql10 \
+ && yum -y install postgresql11 \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
 ADD bin/pgo-load/ /opt/cpm/bin
+ADD bin/uid_postgres.sh /opt/cpm/bin
+
 ADD conf/pgo-load/ /opt/cpm/conf
 RUN chown -R 26:26 /opt/cpm
 
 VOLUME /pgdata
+
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
+ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
 
 USER 26
 

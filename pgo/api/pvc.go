@@ -28,7 +28,7 @@ func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredential
 	var response msgs.ShowPVCResponse
 
 	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION
-	log.Debug("ShowPVC called...[" + url + "]")
+	log.Debugf("ShowPVC called...[%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)
@@ -43,7 +43,7 @@ func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredential
 		return response, err
 	}
 	defer resp.Body.Close()
-	log.Debugf("%v\n", resp)
+	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

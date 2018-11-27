@@ -76,12 +76,12 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowUpgradeResponse
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("upgradeservice.ShowUpgradeHandler %v\n", vars)
+	log.Debugf("upgradeservice.ShowUpgradeHandler %v", vars)
 
 	upgradename := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -111,12 +111,12 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowUpgradeResponse
 func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("upgradeservice.DeleteUpgradeHandler %v\n", vars)
+	log.Debugf("upgradeservice.DeleteUpgradeHandler %v", vars)
 
 	upgradename := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
 	if clientVersion != "" {
-		log.Debug("version param was [" + clientVersion + "]")
+		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
 	w.WriteHeader(http.StatusOK)

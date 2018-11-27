@@ -164,7 +164,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      cl.Spec.NodeName,
-		ConfVolume:        GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
+		ConfVolume:        GetConfVolume(clientset, cl, namespace),
 		CollectAddon:      GetCollectAddon(clientset, namespace, &cl.Spec),
 	}
 

@@ -6,7 +6,7 @@ weight: 10
 ---
 
 :toc:
-Latest Release: 3.3.0 {docdate}
+Latest Release: 3.4.0 {docdate}
 
 == Overview
 
@@ -15,7 +15,9 @@ the deployment to popular Kubernetes environments -
 
  * link:https://github.com/CrunchyData/postgres-operator/blob/master/examples/quickstart.sh[quickstart.sh]
 
-The *quickstart* script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.
+The *quickstart* script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster.  The *quickstart* script is intended to get
+you up and running quickly, for a typical more custom installation, the
+*manual* installation is recommended.
 
 The script assumes you have a StorageClass defined for persistence.
 
@@ -24,19 +26,18 @@ Pre-compiled versions of the Operator *pgo* client are provided for the x86_64, 
 == Quickstart
 
 === GKE/PKS
-The *quickstart.sh* script will allow users to set up the Postgres Operator quickly on GKE including PKS.
-This script is tested on GKE but can be modified for use with other Kubernetes environments as well.
+The *quickstart.sh* script will allow users to set up the Postgres Operator quickly on GKE, PKS, and Openshift.
 
 The script requires a few things in order to work -
 
  * wget utility installed
- * kubectl utility installed
+ * kubectl or oc utility installed
  * StorageClass defined on your GKE instance
 
 Executing the script will give you a default Operator deployment
 that assumes *dynamic* storage and a storage class named *standard*,
-things that GKE provides, user provided values are also allowed by
-the script.
+user provided values are also allowed by the script to override these
+defaults.
 
 The script performs the following -
 
@@ -45,6 +46,9 @@ The script performs the following -
  * deploys the Operator Deployment
  * sets your .bashrc to include the Operator environment variables
  * sets your $HOME/.bash_completion file to be the *pgo* bash_completion file
+
+NOTE:  You should copy the *quickstart.sh* script from github rather than
+cloning the entire github Operator repository!
 
 A tip, if you want to set your Kube context to some particular namespace you 
 can run commands similar to this to set it to a *demo* namespace if
@@ -56,7 +60,8 @@ kubectl config use-context demo
 ....
 
 For Mac and Windows users, pre-built *pgo* binaries are included in
-the operator release tar ball:
+the operator release tar ball, you would download the pgo CLI binaries 
+from the Releases page to your local machine as part of the quick installation:
 
  * pgo-mac is the Mac binary
  * pgo.exe is the Windows binary

@@ -94,14 +94,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("rmdata job labels=[%v]", labels)
 		log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 		//remove the pvc referenced by that job
-		log.Debugf("deleting pvc " + labels["claimName"])
+		log.Debugf("deleting pvc %s", labels["claimName"])
 		err = pvc.Delete(c.JobClientset, labels["claimName"], c.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//delete the pgtask to cleanup
-		log.Debugf("deleting pgtask for rmdata job name is %s\n", job.ObjectMeta.Name)
+		log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
 		kubeapi.Deletepgtasks(c.JobClient, util.LABEL_RMDATA+"=true", c.Namespace)
 		kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
 
@@ -118,7 +118,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 	} else if labels[util.LABEL_BACKREST] != "" {
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
-		log.Debugf("update the status to completed here for backrest %s\n ", labels[util.LABEL_PG_DATABASE])
+		log.Debugf("update the status to completed here for backrest %s", labels[util.LABEL_PG_DATABASE])
 		status := crv1.JobCompletedStatus
 		if job.Status.Succeeded == 0 {
 			status = crv1.JobErrorStatus

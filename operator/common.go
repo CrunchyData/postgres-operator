@@ -16,7 +16,9 @@ package operator
 */
 
 import (
+	"bytes"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
 	"os"
@@ -26,33 +28,37 @@ import (
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
-const PgpoolTemplatePath = "/operator-conf/pgpool-template.json"
-const PgpoolConfTemplatePath = "/operator-conf/pgpool.conf"
-const PgpoolPasswdTemplatePath = "/operator-conf/pool_passwd"
-const PgpoolHBATemplatePath = "/operator-conf/pool_hba.conf"
-const PgbouncerTemplatePath = "/operator-conf/pgbouncer-template.json"
-const PgbouncerConfTemplatePath = "/operator-conf/pgbouncer.ini"
-const PgbouncerUsersTemplatePath = "/operator-conf/users.txt"
-const PgbouncerHBATemplatePath = "/operator-conf/pgbouncer_hba.conf"
-const ServiceTemplate1Path = "/operator-conf/cluster-service-1.json"
+const pgbackrestEnvVarsPath = "/pgo-config/pgbackrest-env-vars.json"
+const PgpoolTemplatePath = "/pgo-config/pgpool-template.json"
+const PgpoolConfTemplatePath = "/pgo-config/pgpool.conf"
+const PgpoolPasswdTemplatePath = "/pgo-config/pool_passwd"
+const PgpoolHBATemplatePath = "/pgo-config/pool_hba.conf"
+const PgbouncerTemplatePath = "/pgo-config/pgbouncer-template.json"
+const PgbouncerConfTemplatePath = "/pgo-config/pgbouncer.ini"
+const PgbouncerUsersTemplatePath = "/pgo-config/users.txt"
+const PgbouncerHBATemplatePath = "/pgo-config/pgbouncer_hba.conf"
+const ServiceTemplate1Path = "/pgo-config/cluster-service-1.json"
 
-const jobPath = "/operator-conf/backup-job.json"
-const ingestPath = "/operator-conf/pgo-ingest-watch-job.json"
-const rmdatajobPath = "/operator-conf/rmdata-job.json"
-const backrestjobPath = "/operator-conf/backrest-job.json"
-const backrestRestorejobPath = "/operator-conf/backrest-restore-job.json"
-const backrestRestoreConfigMapPath = "/operator-conf/backrest-restore-configmap.json"
-const PVCPath = "/operator-conf/pvc.json"
-const PVCMatchLabelsPath = "/operator-conf/pvc-matchlabels.json"
-const PVCSCPath = "/operator-conf/pvc-storageclass.json"
-const UpgradeJobPath = "/operator-conf/cluster-upgrade-job-1.json"
+const jobPath = "/pgo-config/backup-job.json"
+const ingestPath = "/pgo-config/pgo-ingest-watch-job.json"
+const rmdatajobPath = "/pgo-config/rmdata-job.json"
+const backrestjobPath = "/pgo-config/backrest-job.json"
+const backrestRestorejobPath = "/pgo-config/backrest-restore-job.json"
+const backrestRestoreConfigMapPath = "/pgo-config/backrest-restore-configmap.json"
+const backrestRestoreVolumesPath = "/pgo-config/backrest-restore-volumes.json"
+const backrestRestoreVolumeMountsPath = "/pgo-config/backrest-restore-volume-mounts.json"
+const PVCPath = "/pgo-config/pvc.json"
+const PVCMatchLabelsPath = "/pgo-config/pvc-matchlabels.json"
+const PVCSCPath = "/pgo-config/pvc-storageclass.json"
+const UpgradeJobPath = "/pgo-config/cluster-upgrade-job-1.json"
 
-const DeploymentTemplate1Path = "/operator-conf/cluster-deployment-1.json"
-const CollectTemplate1Path = "/operator-conf/collect.json"
-const BadgerTemplate1Path = "/operator-conf/pgbadger.json"
-const AffinityTemplate1Path = "/operator-conf/affinity.json"
-const ContainerResourcesTemplate1Path = "/operator-conf/container-resources.json"
+const DeploymentTemplate1Path = "/pgo-config/cluster-deployment-1.json"
+const CollectTemplate1Path = "/pgo-config/collect.json"
+const BadgerTemplate1Path = "/pgo-config/pgbadger.json"
+const AffinityTemplate1Path = "/pgo-config/affinity.json"
+const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
 
+var PgbackrestEnvVarsTemplate *template.Template
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
 var PgpoolTemplate *template.Template
@@ -67,6 +73,8 @@ var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
 var BackrestjobTemplate *template.Template
+var BackrestRestoreVolumesTemplate *template.Template
+var BackrestRestoreVolumeMountsTemplate *template.Template
 var BackrestRestorejobTemplate *template.Template
 var BackrestRestoreConfigMapTemplate *template.Template
 var PVCTemplate *template.Template
@@ -82,6 +90,11 @@ var ReplicadeploymentTemplate1Shared *template.Template
 
 var Pgo config.PgoConfig
 
+type containerResourcesTemplateFields struct {
+	RequestsMemory, RequestsCPU string
+	LimitsMemory, LimitsCPU     string
+}
+
 func Initialize() {
 
 	tmp := os.Getenv("CRUNCHY_DEBUG")
@@ -94,12 +107,13 @@ func Initialize() {
 	}
 
 	NAMESPACE = os.Getenv("NAMESPACE")
-	log.Debug("setting NAMESPACE to " + NAMESPACE)
+	log.Debugf("setting NAMESPACE to %s", NAMESPACE)
 	if NAMESPACE == "" {
 		log.Error("NAMESPACE env var not set")
 		panic("NAMESPACE env var not set")
 	}
 
+	PgbackrestEnvVarsTemplate = util.LoadTemplate(pgbackrestEnvVarsPath)
 	JobTemplate = util.LoadTemplate(jobPath)
 	PgpoolTemplate = util.LoadTemplate(PgpoolTemplatePath)
 	PgpoolConfTemplate = util.LoadTemplate(PgpoolConfTemplatePath)
@@ -114,6 +128,8 @@ func Initialize() {
 	IngestjobTemplate = util.LoadTemplate(ingestPath)
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
+	BackrestRestoreVolumesTemplate = util.LoadTemplate(backrestRestoreVolumesPath)
+	BackrestRestoreVolumeMountsTemplate = util.LoadTemplate(backrestRestoreVolumeMountsPath)
 	BackrestRestorejobTemplate = util.LoadTemplate(backrestRestorejobPath)
 	BackrestRestoreConfigMapTemplate = util.LoadTemplate(backrestRestoreConfigMapPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
@@ -128,23 +144,57 @@ func Initialize() {
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	Pgo.Validate()
+	err := Pgo.Validate()
+	if err != nil {
+		log.Error(err)
+		log.Error("pgo.yaml validation failed, can't continue")
+		os.Exit(2)
+	}
+
 	log.Printf("PrimaryStorage=%v\n", Pgo.Storage["storage1"])
 
 	if Pgo.Cluster.CCPImagePrefix == "" {
 		log.Debug("pgo.yaml CCPImagePrefix not set, using default")
 		Pgo.Cluster.CCPImagePrefix = "crunchydata"
 	} else {
-		log.Debug("pgo.yaml CCPImagePrefix set, using " + Pgo.Cluster.CCPImagePrefix)
+		log.Debugf("pgo.yaml CCPImagePrefix set, using %s", Pgo.Cluster.CCPImagePrefix)
 	}
 	if Pgo.Pgo.COImagePrefix == "" {
 		log.Debug("pgo.yaml COImagePrefix not set, using default")
 		Pgo.Pgo.COImagePrefix = "crunchydata"
 	} else {
-		log.Debug("COImagePrefix set, using " + Pgo.Pgo.COImagePrefix)
+		log.Debugf("COImagePrefix set, using %s", Pgo.Pgo.COImagePrefix)
 	}
 	if Pgo.Pgo.COImageTag == "" {
 		log.Error("pgo.yaml COImageTag not set, required ")
 		panic("pgo.yaml COImageTag env var not set")
 	}
+}
+
+// GetContainerResources ...
+func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
+
+	//test for the case where no container resources are specified
+	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
+		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
+		return ""
+	}
+	fields := containerResourcesTemplateFields{}
+	fields.RequestsMemory = resources.RequestsMemory
+	fields.RequestsCPU = resources.RequestsCPU
+	fields.LimitsMemory = resources.LimitsMemory
+	fields.LimitsCPU = resources.LimitsCPU
+
+	doc := bytes.Buffer{}
+	err := ContainerResourcesTemplate1.Execute(&doc, fields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if log.GetLevel() == log.DebugLevel {
+		ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+	}
+
+	return doc.String()
 }

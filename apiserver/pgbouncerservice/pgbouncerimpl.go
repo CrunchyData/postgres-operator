@@ -35,7 +35,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("createPgbouncer selector is [%s]\n", request.Selector)
+	log.Debugf("createPgbouncer selector is [%s]", request.Selector)
 
 	if request.Selector == "" && len(request.Args) == 0 {
 		resp.Status.Code = msgs.Error
@@ -63,7 +63,12 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
 				&argCluster, request.Args[i], apiserver.Namespace)
 
-			if !found || err != nil {
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = request.Args[i] + " not found"
+				return resp
+			}
+			if !found {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
@@ -73,7 +78,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 		}
 	}
 
-	log.Debugf("createPgbouncer clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("createPgbouncer clusters found len is %d", len(clusterList.Items))
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "no clusters found that match request selector or arguments"
@@ -81,7 +86,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 	}
 
 	for _, cluster := range clusterList.Items {
-		log.Debugf("adding pgbouncer to cluster [%s]\n", cluster.Name)
+		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
 		spec.Name = util.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
@@ -110,6 +115,10 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 				newInstance, apiserver.Namespace)
 			if err != nil {
 				log.Error(err)
+				resp.Results = append(resp.Results, err.Error())
+				return resp
+			} else {
+				resp.Results = append(resp.Results, cluster.Name+" pgbouncer added")
 			}
 		}
 
@@ -129,7 +138,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("deletePgbouncer selector is [%s]\n", request.Selector)
+	log.Debugf("deletePgbouncer selector is [%s]", request.Selector)
 
 	if request.Selector == "" && len(request.Args) == 0 {
 		resp.Status.Code = msgs.Error
@@ -167,7 +176,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 		}
 	}
 
-	log.Debugf("deletePgbouncer clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("deletePgbouncer clusters found len is %d", len(clusterList.Items))
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "no clusters found that match request selector or arguments"
@@ -175,7 +184,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 	}
 
 	for _, cluster := range clusterList.Items {
-		log.Debugf("deleting pgbouncer from cluster [%s]\n", cluster.Name)
+		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
 		spec.Name = util.LABEL_PGBOUNCER_TASK_DELETE + "-" + cluster.Name
@@ -199,6 +208,11 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 			newInstance, apiserver.Namespace)
 		if err != nil {
 			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Results = append(resp.Results, err.Error())
+			return resp
+		} else {
+			resp.Results = append(resp.Results, cluster.Name+" pgbouncer deleted")
 		}
 
 	}

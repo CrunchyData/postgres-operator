@@ -58,34 +58,44 @@ type ServiceTemplateFields struct {
 
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name               string
-	ClusterName        string
-	Port               string
-	PgMode             string
-	CCPImagePrefix     string
-	CCPImageTag        string
-	Database           string
-	OperatorLabels     string
-	DataPathOverride   string
-	ArchiveMode        string
-	ArchivePVCName     string
-	ArchiveTimeout     string
-	BackrestPVCName    string
-	PVCName            string
-	BackupPVCName      string
-	BackupPath         string
-	RootSecretName     string
-	UserSecretName     string
-	PrimarySecretName  string
-	SecurityContext    string
-	ContainerResources string
-	NodeSelector       string
-	ConfVolume         string
-	CollectAddon       string
-	BadgerAddon        string
+	Name                    string
+	ClusterName             string
+	Port                    string
+	PgMode                  string
+	LogStatement            string
+	LogMinDurationStatement string
+	CCPImagePrefix          string
+	CCPImageTag             string
+	Database                string
+	OperatorLabels          string
+	DataPathOverride        string
+	ArchiveMode             string
+	ArchivePVCName          string
+	ArchiveTimeout          string
+	XLOGDir                 string
+	BackrestPVCName         string
+	PVCName                 string
+	BackupPVCName           string
+	BackupPath              string
+	RootSecretName          string
+	UserSecretName          string
+	PrimarySecretName       string
+	SecurityContext         string
+	ContainerResources      string
+	NodeSelector            string
+	ConfVolume              string
+	CollectAddon            string
+	BadgerAddon             string
+	PgbackrestEnvVars       string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
+}
+
+type PgbackrestEnvVarsTemplateFields struct {
+	PgbackrestStanza   string
+	PgbackrestDBPath   string
+	PgbackrestRepoPath string
 }
 
 // ReplicaSuffix ...
@@ -111,7 +121,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	_, found, err := kubeapi.GetPVC(clientset, cl.Spec.Name, namespace)
 	if found {
-		log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", cl.Spec.Name)
+		log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", cl.Spec.Name)
 		pvcName = cl.Spec.Name
 	} else {
 		pvcName, err = pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
@@ -119,14 +129,14 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			log.Error(err)
 			return
 		}
-		log.Debug("created primary pvc [" + pvcName + "]")
+		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
 	if cl.Spec.UserLabels["archive"] == "true" {
 		pvcName := cl.Spec.Name + "-xlog"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
-			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", pvcName)
+			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
 		} else {
 			_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, pvcName, cl.Spec.Name, namespace)
 			if err != nil {
@@ -139,7 +149,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		pvcName := cl.Spec.Name + "-backrestrepo"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
-			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate\n", pvcName)
+			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
 		} else {
 			storage := crv1.PgStorageSpec{}
 			pgoStorage := operator.Pgo.Storage[operator.Pgo.BackupStorage]
@@ -158,32 +168,10 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
-	log.Debug("creating Pgcluster object strategy is [" + cl.Spec.Strategy + "]")
+	//var RootPassword, Password, PrimaryPassword string
+
+	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
 	//allows user to override with their own passwords
-	if cl.Spec.Password != "" {
-		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
-		cl.Spec.RootPassword = cl.Spec.Password
-		cl.Spec.Password = cl.Spec.Password
-		cl.Spec.PrimaryPassword = cl.Spec.Password
-	}
-
-	var err1, err2, err3 error
-	if cl.Spec.SecretFrom != "" {
-		log.Debug("secret-from is specified! using " + cl.Spec.SecretFrom)
-		_, cl.Spec.RootPassword, err1 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.RootSecretSuffix)
-		_, cl.Spec.Password, err2 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.UserSecretSuffix)
-		_, cl.Spec.PrimaryPassword, err3 = util.GetPasswordFromSecret(clientset, namespace, cl.Spec.SecretFrom+crv1.PrimarySecretSuffix)
-		if err1 != nil || err2 != nil || err3 != nil {
-			log.Error("error getting secrets using SecretFrom " + cl.Spec.SecretFrom)
-			return
-		}
-	}
-
-	_, _, _, err = createDatabaseSecrets(clientset, client, cl, namespace)
-	if err != nil {
-		log.Error("error in create secrets " + err.Error())
-		return
-	}
 
 	if cl.Spec.Strategy == "" {
 		cl.Spec.Strategy = "1"
@@ -279,7 +267,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 // DeleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
-	log.Debug("deleteCluster called with strategy " + cl.Spec.Strategy)
+	log.Debugf("deleteCluster called with strategy %s", cl.Spec.Strategy)
 
 	aftask := AutoFailoverTask{}
 	aftask.Clear(client, cl.Spec.Name, namespace)
@@ -392,7 +380,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		}
 	}
 
-	log.Debug("created replica pvc [" + pvcName + "]")
+	log.Debugf("created replica pvc [%s]", pvcName)
 
 	//update the replica CRD pvcname
 	err = util.Patch(client, "/spec/replicastorage/name", pvcName, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
@@ -400,7 +388,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	log.Debug("creating Pgreplica object strategy is [" + cluster.Spec.Strategy + "]")
+	log.Debugf("creating Pgreplica object strategy is [%s]", cluster.Spec.Strategy)
 
 	if cluster.Spec.Strategy == "" {
 		log.Info("using default strategy")
@@ -415,12 +403,21 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//create the replica service if it doesnt exist
+
+	st := operator.Pgo.Cluster.ServiceType
+
+	if replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+		st = replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	} else if cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
+		st = cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	}
+
 	serviceName := replica.Spec.ClusterName + "-replica"
 	serviceFields := ServiceTemplateFields{
 		Name:        serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
-		ServiceType: operator.Pgo.Cluster.ServiceType,
+		ServiceType: st,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)
@@ -452,7 +449,7 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 		return
 	}
 
-	log.Debug("creating Pgreplica object strategy is [" + cluster.Spec.Strategy + "]")
+	log.Debugf("creating Pgreplica object strategy is [%s]", cluster.Spec.Strategy)
 
 	if cluster.Spec.Strategy == "" {
 		log.Info("using default strategy")
@@ -485,8 +482,9 @@ import (
 )
 
 */
+/**
 // createDatabaseSecrets create pgroot, pgprimary, and pguser secrets
-func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) (string, string, string, error) {
+func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace, RootPassword, Password, PrimaryPassword string) (string, string, string, error) {
 
 	//pgroot
 	username := "postgres"
@@ -497,9 +495,9 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	pgPassword := util.GeneratePassword(10)
-	if cl.Spec.RootPassword != "" {
-		log.Debug("using user specified password for secret " + secretName)
-		pgPassword = cl.Spec.RootPassword
+	if RootPassword != "" {
+		log.Debugf("using user specified password for secret %s", secretName)
+		pgPassword = RootPassword
 	}
 
 	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, pgPassword, namespace)
@@ -519,9 +517,9 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	primaryPassword := util.GeneratePassword(10)
-	if cl.Spec.PrimaryPassword != "" {
-		log.Debug("using user specified password for secret " + secretName)
-		primaryPassword = cl.Spec.PrimaryPassword
+	if PrimaryPassword != "" {
+		log.Debugf("using user specified password for secret %s", secretName)
+		primaryPassword = PrimaryPassword
 	}
 
 	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, primaryPassword, namespace)
@@ -541,9 +539,9 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	testPassword := util.GeneratePassword(10)
-	if cl.Spec.Password != "" {
-		log.Debug("using user specified password for secret " + secretName)
-		testPassword = cl.Spec.Password
+	if Password != "" {
+		log.Debugf("using user specified password for secret %s", secretName)
+		testPassword = Password
 	}
 
 	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, testPassword, namespace)
@@ -559,3 +557,4 @@ func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	return pgPassword, primaryPassword, testPassword, err
 }
+*/

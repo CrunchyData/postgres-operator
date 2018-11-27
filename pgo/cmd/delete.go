@@ -37,11 +37,11 @@ var deleteCmd = &cobra.Command{
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
 	pgo delete backup mycluster
-	pgo delete upgrade mycluster`,
+	pgo delete upgrade mycluster
+	pgo delete schedule mycluster
+	pgo delete schedule --selector=name=mycluster
+	pgo delete schedule --schedule-name=mycluster-pgbackrest-full`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//pgo delete schedule mycluster
-		//pgo delete schedule --selector=name=mycluster
-		//pgo delete schedule --schedule-name=mycluster-pgbackrest-full`,
 
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
@@ -63,7 +63,7 @@ var deleteCmd = &cobra.Command{
 			case "label":
 			case "pgpool":
 			case "policy":
-				//			case "schedule":
+			case "schedule":
 			case "upgrade":
 			case "user":
 				break
@@ -97,7 +97,7 @@ func init() {
 	deleteCmd.AddCommand(deletePgpoolCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteLabelCmd)
-	//	deleteCmd.AddCommand(deleteScheduleCmd)
+	deleteCmd.AddCommand(deleteScheduleCmd)
 	deleteCmd.AddCommand(deleteUpgradeCmd)
 	deleteCmd.AddCommand(deleteUserCmd)
 

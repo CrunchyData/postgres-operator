@@ -21,7 +21,6 @@ var Query bool
 var Target string
 
 var OutputFormat string
-var APIServerURL string
 var Labelselector string
 var DebugFlag bool
 var Selector string
@@ -29,6 +28,10 @@ var DryRun bool
 var ScheduleName string
 
 var BackupType string
+var BackupOpts string
 
 var RED func(a ...interface{}) string
 var GREEN func(a ...interface{}) string
+
+var APIServerURL string
+var PGO_CA_CERT, PGO_CLIENT_CERT, PGO_CLIENT_KEY string
