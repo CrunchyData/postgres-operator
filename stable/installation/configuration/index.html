@@ -246,7 +246,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-31</p>
+<p>Latest Release: 3.4.0 2018-11-27</p>
 </div>
 <div class="sect1">
 <h2 id="_overview">Overview</h2>
@@ -355,12 +355,12 @@ REST API call.</p>
 </div>
 <div class="paragraph">
 <p>For the <strong>apiserver</strong>, a list of usernames and passwords is specified in the
-<strong>apiserver-conf-secret</strong> Secret.  The values specified in a deployment are found in
+<strong>pgo-auth-secret</strong> Secret.  The values specified in a deployment are found in
 the following location -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$COROOT/conf/apiserver/pgouser</pre>
+<pre>$COROOT/conf/postgres-operator/pgouser</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -402,8 +402,8 @@ certifications that can be used by TLS are found here -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$COROOT/conf/apiserver/server.crt
-$COROOT/conf/apiserver/server.key</pre>
+<pre>$COROOT/conf/postgres-operator/server.crt
+$COROOT/conf/postgres-operator/server.key</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -420,9 +420,18 @@ Specify the keys for pgo by setting the following environment variables -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key</pre>
+<pre>export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also specify these credentials using the following
+command flags where you can reference they keys from any file path directly:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>pgo version --pgo-ca-cert=/tmp/server.crt --pgo-client-cert=/tmp/server.crt --pgo-client-key=/tmp/server.key</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -452,7 +461,7 @@ the Kubernetes API. It is therefore necessary for the pgo client to make
 use of RBAC configuration.</p>
 </div>
 <div class="paragraph">
-<p>Starting in Release 3.0, the <strong>/conf/apiserver/pgorole</strong> is used to define some sample pgo roles, <strong>pgadmin</strong> and <strong>pgoreader</strong>.</p>
+<p>Starting in Release 3.0, the <strong>/conf/postgres-operator/pgorole</strong> is used to define some sample pgo roles, <strong>pgadmin</strong> and <strong>pgoreader</strong>.</p>
 </div>
 <div class="paragraph">
 <p>These roles are meant as examples that you can configure to suit security
@@ -599,14 +608,13 @@ get back this response -</p>
 users are able to communicate with.</p>
 </div>
 <div class="paragraph">
-<p>The apiserver uses the following configuration files found in <code>$COROOT/conf/apiserver</code>
-to determine how the Operator will provision PostgreSQL containers -</p>
+<p>The apiserver uses the following configuration files found in <code>$COROOT/conf/postgres-operator</code> to determine how the Operator will provision PostgreSQL containers -</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>$COROOT/conf/apiserver/pgo.yaml
-$COROOT/conf/apiserver/pgo.lspvc-template.json
-$COROOT/conf/apiserver/pgo.load-template.json</pre>
+<pre>$COROOT/conf/postgres-operator/pgo.yaml
+$COROOT/conf/postgres-operator/pgo.lspvc-template.json
+$COROOT/conf/postgres-operator/pgo.load-template.json</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -617,22 +625,24 @@ document.</p>
 </div>
 <div class="paragraph">
 <p>The version of PostgreSQL container the Operator will deploy is determined by the <strong>CCPImageTag</strong>
-setting in the <code>$COROOT/conf/apiserver/pgo.yaml</code> configuration file. By default, this value is
+setting in the <code>$COROOT/conf/postgres-operator/pgo.yaml</code> configuration file. By default, this value is
 set to the latest release of the Crunchy Container Suite.</p>
 </div>
 <div class="paragraph">
-<p>The default pgo.yaml configuration file, included in <code>$COROOT/conf/apiserver/pgo.yaml</code>,
+<p>The default pgo.yaml configuration file, included in <code>$COROOT/conf/postgres-operator/pgo.yaml</code>,
 looks like this -</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">BasicAuth:  true
-Cluster:
+<pre class="highlight"><code class="language-yaml" data-lang="yaml">Cluster:
   PrimaryNodeLabel:
   ReplicaNodeLabel:
-  CCPImageTag:  centos7-10.5-2.1.0
+  CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
+  CCPImageTag:  centos7-10.6-2.2.0
+  LogStatement:  none
+  LogMinDurationStatement:  60000
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -643,40 +653,58 @@ Cluster:
   ArchiveMode:  false
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
-PrimaryStorage: storage1
-BackupStorage: storage1
-ReplicaStorage: storage1
+  Backrest:  false
+  Autofail:  false
+PrimaryStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
 Storage:
-  storage1:
+  hostpathstorage:
     AccessMode:  ReadWriteMany
-    Size:  200M
+    Size:  1G
     StorageType:  create
+  nfsstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
   storage2:
     AccessMode:  ReadWriteMany
-    Size:  333M
-    StorageType:  create
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  gluster-heketi
+    Fsgroup:  26
   storage3:
-    AccessMode:  ReadWriteMany
-    Size:  440M
-    StorageType:  create
-DefaultContainerResource: small
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  rook-ceph-block
+    Fsgroup:  26
+DefaultContainerResources:
+DefaultLoadResources:
+DefaultLspvcResources:
+DefaultRmdataResources:
+DefaultBackupResources:
+DefaultPgbouncerResources:
+DefaultPgpoolResources:
 ContainerResources:
   small:
-    RequestsMemory:  2Gi
-    RequestsCPU:  0.5
-    LimitsMemory:  2Gi
-    LimitsCPU:  1.0
+    RequestsMemory:  512Mi
+    RequestsCPU:  0.1
+    LimitsMemory:  512Mi
+    LimitsCPU:  0.1
   large:
-    RequestsMemory:  8Gi
+    RequestsMemory:  2Gi
     RequestsCPU:  2.0
-    LimitsMemory:  12Gi
+    LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
+  AutofailSleepSeconds:  9
   Audit:  false
-  LSPVCTemplate:  /config/pgo.lspvc-template.json
-  CSVLoadTemplate:  /config/pgo.load-template.json
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.3.0</code></pre>
+  COImageTag:  centos7-3.4.0-rc1</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -714,6 +742,14 @@ Pgo:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.Port</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">the PostgreSQL port to use for new containers (e.g. 5432)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.LogStatement</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">postgresql.conf log_statement value (required field) (works with crunchy-postgres &gt;= 2.2.0)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.LogMinDurationStatement</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">postgresql.conf log_min_duration_statement value (required field) (works with crunchy-postgres &gt;= 2.2.0)</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>Cluster.User</code></p></td>
@@ -810,6 +846,30 @@ Pgo:
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultContainerResource</code></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultLoadResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultLspvcResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for pgo-lspvc containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultRmdataResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for pgo-rmdata containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultBackupResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultPgbouncerResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>DefaultPgpoolResource</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">optional, the value of the container resources configuration to use for crunchy-pgpool containers, if not set, no resource limits or requests are added on the database container</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>ContainerResources.small.RequestsMemory</code></p></td>
@@ -1361,7 +1421,7 @@ the updated secret file.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/apiserver/pgo.yaml</pre>
+<pre>cp $COROOT/examples/pgo.yaml.nfs $COROOT/conf/postgres-operator/pgo.yaml</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1402,7 +1462,7 @@ the updated secret file.</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/apiserver/pgo.yaml</pre>
+<pre>cp $COROOT/examples/pgo.yaml.storageclass $COROOT/conf/postgres-operator/pgo.yaml</pre>
 </div>
 </div>
 <div class="paragraph">

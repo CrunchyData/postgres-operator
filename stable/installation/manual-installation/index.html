@@ -231,7 +231,8 @@
 <li><a href="#_installation_prerequsites">Installation Prerequsites</a></li>
 <li><a href="#_basic_installation">Basic Installation</a>
 <ul class="sectlevel2">
-<li><a href="#_create_hostpath_directory">Create HostPath Directory</a></li>
+<li><a href="#_hostpath_persistent_volumes">HostPath Persistent Volumes</a></li>
+<li><a href="#_nfs_persistent_volumes">NFS Persistent Volumes</a></li>
 </ul>
 </li>
 <li><a href="#_build_images_deploy">Build Images &amp; Deploy</a></li>
@@ -240,7 +241,7 @@
 </ul>
 </div>
 <div class="paragraph">
-<p>Latest Release: 3.3.0 2018-10-31</p>
+<p>Latest Release: 3.4.0 2018-11-27</p>
 </div>
 <div class="sect1">
 <h2 id="_project_structure">Project Structure</h2>
@@ -258,15 +259,27 @@ export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
 export CO_BASEOS=centos7
-export CO_VERSION=3.3.0
-export CO_IMAGE_TAG=centos7-$CO_VERSION
-export PGO_CA_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/apiserver/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/apiserver/server.key
+export CO_VERSION=3.4.0
+export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
+
+# for the pgo CLI auth
+export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
+
+# for crunchy-scheduler startup
+export CCP_IMAGE_PREFIX=crunchydata
+export CCP_IMAGE_TAG=centos7-10.6-2.2.0
+
+# useful aliases
 alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
 alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver'
 alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'</pre>
 </div>
+</div>
+<div class="paragraph">
+<p>If you have access to the Crunchy RHEL images, you would change
+the above references to centos7 to rhel7.</p>
 </div>
 <div class="paragraph">
 <p>When deploying on Openshift Container Platform, the CO_CMD environment
@@ -282,7 +295,8 @@ variable should be:</p>
 </div>
 <div class="literalblock">
 <div class="content">
-<pre>mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/</pre>
+<pre>. .bashrc
+mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg $GOPATH/src/github.com/crunchydata/</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -293,7 +307,7 @@ variable should be:</p>
 <pre>cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.3.0</pre>
+git checkout 3.4.0</pre>
 </div>
 </div>
 </div>
@@ -321,36 +335,53 @@ git checkout 3.3.0</pre>
 <div class="content">
 <pre>kubectl create -f examples/demo-namespace.json
 kubectl config set-context $(kubectl config current-context) --namespace=demo
-kubectl config view | grep namespace</pre>
+kubectl config view -o "jsonpath={.contexts[?(@.name==\"$(kubectl config current-context 2&gt;/dev/null)\")].context.namespace}"</pre>
 </div>
 </div>
 <div class="paragraph">
-<p>Run the Makefile <code>setup</code> target to install depedencies and also
-create the operator CRD resources and RBAC rules.</p>
-</div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<div class="title">Warning</div>
-</td>
-<td class="content">
-<div class="paragraph">
-<p>The 'make setup' target is required to be run as a Kubernetes user that has
-'cluster-admin' priviledges.  This is required to create cluster roles and
-clusterrole bindings, along with the CRDs used by the Operator.</p>
+<p>On Openshift Container Platform, you would have a Project and User defined
+for installing the Operator.</p>
 </div>
 <div class="paragraph">
-<p>The namespace used by the operator is determined by the
-CO_NAMESPACE environment variable setting.</p>
-</div>
-</td>
-</tr>
-</table>
+<p>Run the Makefile <code>setup</code> target to install depedencies.</p>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>make setup</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next, run the Makefile <code>installrbac</code> target as a user with cluster-admin
+priviledges, not as a normal Kube or Openshift user.  This target creates the RBAC
+roles and CRDs required by the Operator and is only required to be created
+one time.</p>
+</div>
+<div class="paragraph">
+<p>For example, on an Openshift system you would run this target as
+follows using the system:admin Openshift user:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$ sudo su -
+# oc login -u system:admin
+# cd /home/oper
+# . .bashrc
+# export PATH=$PATH:/home/oper/odev/bin
+# cd odev/src/github.com/crunchydata/postgres-operator
+# make installrbac</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On a Kube system, you would be connected as a cluster-admin user
+and just issue:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre># cd /home/oper
+# . .bashrc
+# export PATH=$PATH:/home/oper/odev/bin
+# cd odev/src/github.com/crunchydata/postgres-operator
+make installrbac</pre>
 </div>
 </div>
 </div>
@@ -359,13 +390,31 @@ CO_NAMESPACE environment variable setting.</p>
 <h2 id="_basic_installation">Basic Installation</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The basic installation uses the default operator configuration settings. These
-settings assume you want to use HostPath storage on your Kubernetes cluster for
-database persistence. Other persistent options are available and documented
+<p>The basic pgo.yaml configuration specifies 3 different
+storage configurations:
+ * hostpath
+ * nfs (default)
+ * storage-class</p>
+</div>
+<div class="paragraph">
+<p>Storage configurations are documented here:
 <a href="https://crunchydata.github.io/postgres-operator/stable/installation/configuration/#_storage_configuration">here</a>.</p>
 </div>
+<div class="paragraph">
+<p>The default storage configuration used for creating Primary, Replica, and
+Backups is set to NFS in the default pgo.yaml file.  Adjust this setting
+to meet your storage requirements.</p>
+</div>
+<div class="paragraph">
+<p>Sample PV creation scripts are found in the following directory:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>examples/pv</pre>
+</div>
+</div>
 <div class="sect2">
-<h3 id="_create_hostpath_directory">Create HostPath Directory</h3>
+<h3 id="_hostpath_persistent_volumes">HostPath Persistent Volumes</h3>
 <div class="paragraph">
 <p>The default Persistent Volume script assumes a default HostPath directory be created called <strong>/data</strong>:</p>
 </div>
@@ -381,6 +430,29 @@ sudo chmod 777 /data</pre>
 <div class="literalblock">
 <div class="content">
 <pre>$COROOT/pv/create-pv.sh</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_nfs_persistent_volumes">NFS Persistent Volumes</h3>
+<div class="paragraph">
+<p>The NFS Persistent Volume script assumes a default directory be created called <strong>/nfsfileshare</strong> as the NFS mount point on your system:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>sudo ls /nfsfileshare</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>See the crunchy-containers documentation on how to install NFS on a
+centos/RHEL system if you want to use NFS for testing the operator.</p>
+</div>
+<div class="paragraph">
+<p>Create some sample NFS Persistent Volumes using the following script:</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>$COROOT/pv/create-nfs-pv.sh</pre>
 </div>
 </div>
 </div>
@@ -420,14 +492,14 @@ sudo chmod 777 /data</pre>
 <p><a href="https://github.com/CrunchyData/postgres-operator/releases">Github Releases</a></p>
 </li>
 <li>
-<p>extract (e.g. tar xvzf postgres-operator.3.3.tar.gz)</p>
+<p>extract (e.g. tar xvzf postgres-operator.3.4.0.tar.gz)</p>
 </li>
 </ul>
 </div>
 <div class="literalblock">
 <div class="content">
 <pre>cd $HOME
-tar xvzf ./postgres-operator.3.3.tar.gz</pre>
+tar xvzf ./postgres-operator.3.4.0.tar.gz</pre>
 </div>
 </div>
 <div class="ulist">
@@ -443,7 +515,6 @@ tar xvzf ./postgres-operator.3.3.tar.gz</pre>
 <div class="literalblock">
 <div class="content">
 <pre>cd $COROOT
-make installrbac
 make deployoperator</pre>
 </div>
 </div>
@@ -537,26 +608,6 @@ Container Platform environments.</p>
 </li>
 </ul>
 </div>
-<div class="paragraph">
-<p>Before using the Makefile targets, install the <code>expenv</code> package:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>go get github.com/blang/expenv</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The following Makefile targets will pull down source dependencies:</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT
-make setup
-make all
-make installrbac
-make deployoperator</pre>
-</div>
-</div>
 </div>
 </div>
 
@@ -585,12 +636,20 @@ make deployoperator</pre>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">compile all binaries and build all images</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">macpgo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">build the Mac version of the pgo CLI binary</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with, and create Kube RBAC resources</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">winpgo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">build the Windows version of the pgo CLI binary</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">installrbac</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">only run once and by a cluster-admin user, this target creates the Operator CRDs and RBAC resources required by the Operator</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">setupnamespace</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">only run once, will create a namespace called <strong>demo</strong></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">bounce</p></td>
@@ -601,24 +660,20 @@ make deployoperator</pre>
 <td class="tableblock halign-left valign-top"><p class="tableblock">deploy the Operator (apiserver and postgers-operator) to Kubernetes</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">all</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">compile all binaries and build all images</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">setup</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">fetch the dependent packages required to build with, and create Kube RBAC resources</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">main</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">compile the postgres-operator</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runmain</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">locally execute the postgres-operator</p></td>
-</tr>
-<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">pgo</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">build the pgo binary</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runpgo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">run the pgo binary</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">runapiserver</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">run the apiserver binary outside of Kube</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">clean</p></td>
@@ -651,10 +706,6 @@ make deployoperator</pre>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">release</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">build the postgres-operator release</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">installrbac</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">build the postgres-operator service account</p></td>
 </tr>
 </tbody>
 </table>
