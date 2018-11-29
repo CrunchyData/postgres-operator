@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
@@ -161,13 +162,29 @@ func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 // update service-name label on the pod for each case
 // to match the correct Service selector for the PG cluster
 func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
+	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" || newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
+		pod, _, err := kubeapi.GetPod(c.PodClientset, newpod.Name, c.Namespace)
+		if err != nil {
+			log.Error(err)
+			log.Error(" could not get pod %s", newpod.Name)
+			return
+		}
 
-	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
-		log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
-		//add label onto pod "service-name=clustername"
-	} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
-		log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
-		//add label onto pod "service-name=clustername-replica"
+		if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+			log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+			//add label onto pod "service-name=clustername"
+			pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+		} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
+			log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]+"-replica")
+			//add label onto pod "service-name=clustername-replica"
+			pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "-replica"
+		}
+
+		err = kubeapi.UpdatePod(c.PodClientset, pod, c.Namespace)
+		if err != nil {
+			log.Error(err)
+			log.Error(" could not update pod label for pod %s and label %s", pod.Name, pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME])
+		}
 	}
 
 }
