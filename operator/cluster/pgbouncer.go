@@ -261,6 +261,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		//create a service for the pgbouncer
 		svcFields := ServiceTemplateFields{}
 		svcFields.Name = pgbouncerName
+		svcFields.ServiceName = pgbouncerName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = "5432"
 

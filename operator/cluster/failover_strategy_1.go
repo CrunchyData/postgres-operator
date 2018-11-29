@@ -216,6 +216,7 @@ func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment 
 
 }
 
+/**
 func updatePodLabels(namespace string, clientset *kubernetes.Clientset, pod *v1.Pod, clusterName string, newLabels map[string]string) error {
 
 	var err error
@@ -263,6 +264,7 @@ func updatePodLabels(namespace string, clientset *kubernetes.Clientset, pod *v1.
 	return err
 
 }
+*/
 
 func validateDBContainer(pod *v1.Pod) bool {
 	found := false

@@ -38,7 +38,7 @@
     }
     ],
         "selector": {
-            "name": "{{.Name}}"
+            "service-name": "{{.ServiceName}}"
         },
         "type": "{{.ServiceType}}",
         "sessionAffinity": "None"

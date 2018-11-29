@@ -262,6 +262,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		//create a service for the pgpool
 		svcFields := ServiceTemplateFields{}
 		svcFields.Name = pgpoolName
+		svcFields.ServiceName = pgpoolName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = "5432"
 

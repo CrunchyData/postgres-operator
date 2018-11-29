@@ -90,4 +90,14 @@ func CreatePod(clientset *kubernetes.Clientset, svc *v1.Pod, namespace string) (
 	return result, err
 }
 
+func UpdatePod(clientset *kubernetes.Clientset, pod *v1.Pod, namespace string) error {
+	_, err := clientset.Core().Pods(namespace).Update(pod)
+	if err != nil {
+		log.Error(err)
+		log.Error("error updating pod %s", pod.Name)
+	}
+	return err
+
+}
+
 //TODO include GetLogs as used in pvcimpl.go

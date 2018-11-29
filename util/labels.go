@@ -89,3 +89,6 @@ const LABEL_PGBOUNCER_TASK_RECONFIGURE = "pgbouncer-reconfigure"
 const LABEL_PGBACKREST_STANZA = "pgbackrest-stanza"
 const LABEL_PGBACKREST_DB_PATH = "pgbackrest-db-path"
 const LABEL_PGBACKREST_REPO_PATH = "pgbackrest-repo-path"
+
+const LABEL_DEPLOYMENT_NAME = "deployment-name"
+const LABEL_CURRENT_PRIMARY = "current-primary"

@@ -80,6 +80,9 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 
 // onAdd is called when a pgcluster is added
 func (c *PodController) onAdd(obj interface{}) {
+	newpod := obj.(*apiv1.Pod)
+	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
+	c.checkPostgresPods(newpod)
 }
 
 // onUpdate is called when a pgcluster is updated
@@ -150,4 +153,21 @@ func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	}
 
 }
+
 */
+
+// checkPostgresPods
+// see if this is a primary or replica being created
+// update service-name label on the pod for each case
+// to match the correct Service selector for the PG cluster
+func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
+
+	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+		log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+		//add label onto pod "service-name=clustername"
+	} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
+		log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+		//add label onto pod "service-name=clustername-replica"
+	}
+
+}
