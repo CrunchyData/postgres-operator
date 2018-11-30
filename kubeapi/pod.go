@@ -16,6 +16,10 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
+	jsonpatch "github.com/evanphx/json-patch"
+	"k8s.io/apimachinery/pkg/types"
+
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -98,6 +102,37 @@ func UpdatePod(clientset *kubernetes.Clientset, pod *v1.Pod, namespace string) e
 	}
 	return err
 
+}
+
+func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value, namespace string) error {
+	var newData, patchBytes []byte
+	var err error
+
+	//get the original data before we change it
+	origData, err := json.Marshal(origPod)
+	if err != nil {
+		return err
+	}
+
+	origPod.ObjectMeta.Labels[key] = value
+
+	newData, err = json.Marshal(origPod)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	if err != nil {
+		return err
+	}
+
+	_, err = clientset.Core().Pods(namespace).Patch(origPod.Name, types.MergePatchType, patchBytes)
+	if err != nil {
+		log.Error(err)
+		log.Errorf("error add label to Pod  %s %s=%s", origPod.Name, key, value)
+	}
+	log.Infof("add label to Pod %s %s=%v", origPod.Name, key, value)
+	return err
 }
 
 //TODO include GetLogs as used in pvcimpl.go
