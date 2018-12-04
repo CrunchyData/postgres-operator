@@ -52,10 +52,10 @@ identifier = "kubedoc"
 url = "https://kubernetes.io/docs/"
 weight = 20
 
-#[[menu.shortcuts]]
-#name = "<i class='fas fa-file-pdf'></i> <label>PDF</label>"
-#url = "/pdf/postgis.pdf"
-#weight = 30
+[[menu.shortcuts]]
+name = "<i class='fas fa-file-pdf'></i> <label>PDF</label>"
+url = "/pdf/postgres-operator.pdf"
+weight = 30
 
 #[[menu.shortcuts]]
 #name = "<i class='fas fa-book'></i> <label>EPUB</label>"
