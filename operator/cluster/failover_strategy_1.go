@@ -45,13 +45,29 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	}
 	log.Debugf("best pod to failover to is %s", pod.Name)
 
-	//delete the primary deployment
-	err = deletePrimary(clientset, namespace, clusterName)
-	if err != nil {
-		log.Error(err)
-		return err
+	//delete the primary deployment if it exists
+
+	//in the autofail scenario, some user might accidentally remove
+	//the primary deployment, this would cause an autofail to occur
+	//so the deployment needs to be checked to be present before
+	//we attempt to remove it...in a manual failover case, the
+	//deployment should be found, and then you would proceed to remove
+	//it
+
+	var found bool
+	_, found, err = kubeapi.GetDeployment(clientset, clusterName, namespace)
+	if found {
+		log.Debug("in failover, the primary deployment is found before removal")
+		err = deletePrimary(clientset, namespace, clusterName)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+	} else {
+		log.Debug("in failover, the primary deployment is NOT found so we will not attempt to remove it")
 	}
-	updateFailoverStatus(client, task, namespace, clusterName, "deleting primary deployment "+clusterName)
+
+	updateFailoverStatus(client, task, namespace, clusterName, "deleted primary deployment "+clusterName)
 
 	//trigger the failover on the replica
 	err = promote(pod, clientset, client, namespace, restconfig)
@@ -69,16 +85,17 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	//set the service-name label to the cluster name to match
 	//the primary service selector
-	upod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = clusterName
+	//upod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = clusterName
 
-	err = kubeapi.UpdatePod(clientset, upod, namespace)
+	//err = kubeapi.UpdatePod(clientset, upod, namespace)
+	err = kubeapi.AddLabelToPod(clientset, upod, util.LABEL_SERVICE_NAME, clusterName, namespace)
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating pod during failover relabel")
 		return err
 	}
 
-	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling deployment...pod "+pod.Name+"was the failover target...failover completed")
+	updateFailoverStatus(client, task, namespace, clusterName, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
 
 	return err
 
