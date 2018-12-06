@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,17 +19,12 @@ package cluster
 */
 
 import (
-	"encoding/json"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -62,13 +57,6 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	err = promote(pod, clientset, client, namespace, restconfig)
 	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
-	//drain the deployment, this will shutdown the database pod
-	//err = kubeapi.PatchReplicas(clientset, target, namespace, "/spec/replicas", 0)
-	//	if err != nil {
-	//		log.Error(err)
-	//		return err
-	//	}
-
 	//relabel the deployment with primary labels
 	//by setting service-name=clustername
 	var upod *v1.Pod
@@ -81,7 +69,6 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	//set the service-name label to the cluster name to match
 	//the primary service selector
-	//upod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = pod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 	upod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = clusterName
 
 	err = kubeapi.UpdatePod(clientset, upod, namespace)
@@ -91,16 +78,7 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 		return err
 	}
 
-	//err = relabel(pod, clientset, namespace, clusterName, target)
-
 	updateFailoverStatus(client, task, namespace, clusterName, "re-labeling deployment...pod "+pod.Name+"was the failover target...failover completed")
-
-	//enable the deployment by making replicas equal to 1
-	//	err = kubeapi.PatchReplicas(clientset, target, namespace, "/spec/replicas", 1)
-	//	if err != nil {
-	//		log.Error(err)
-	//		return err
-	//	}
 
 	return err
 
@@ -111,7 +89,6 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 	log.Debugf("updateFailoverStatus namespace=[%s] taskName=[%s] message=[%s]", namespace, task.Name, message)
 
 	//update the task
-
 	_, err := kubeapi.Getpgtask(client, task, task.ObjectMeta.Name,
 		task.ObjectMeta.Namespace)
 	if err != nil {
@@ -178,92 +155,4 @@ func promote(
 	}
 
 	return err
-}
-
-func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterName, target string) error {
-	var err error
-
-	targetDeployment, found, err := kubeapi.GetDeployment(clientset, target, namespace)
-	if !found {
-		return err
-	}
-
-	//set primary=true on the deployment
-	//set name=clustername on the deployment
-	newLabels := make(map[string]string)
-	newLabels[util.LABEL_NAME] = clusterName
-	newLabels[util.LABEL_PRIMARY] = "true"
-
-	err = updateLabels(namespace, clientset, targetDeployment, target, newLabels)
-	if err != nil {
-		log.Error(err)
-	}
-
-	err = kubeapi.MergePatchDeployment(clientset, targetDeployment, clusterName, namespace)
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
-}
-
-// TODO this code came mostly from util/util.go...refactor to merge
-func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string) error {
-
-	var err error
-
-	log.Debugf("%v is the labels to apply", newLabels)
-
-	var patchBytes, newData, origData []byte
-	origData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	accessor, err2 := meta.Accessor(deployment)
-	if err2 != nil {
-		return err2
-	}
-
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-	log.Debugf("current labels are %v", objLabels)
-
-	//update the deployment labels
-	for key, value := range newLabels {
-		objLabels[key] = value
-	}
-	log.Debugf("updated labels are %v", objLabels)
-
-	accessor.SetLabels(objLabels)
-
-	newData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
-	if err != nil {
-		return err
-	}
-
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
-	if err != nil {
-		log.Debugf("error patching deployment %s", err.Error())
-	}
-	return err
-
-}
-
-func validateDBContainer(pod *v1.Pod) bool {
-	found := false
-
-	for _, c := range pod.Spec.Containers {
-		if c.Name == "database" {
-			return true
-		}
-	}
-	return found
-
 }

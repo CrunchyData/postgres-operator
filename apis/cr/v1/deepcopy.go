@@ -196,52 +196,6 @@ func (in *PgclusterList) DeepCopyObject() runtime.Object {
 
 // DeepCopyInto copies all properties of this object into another object of the
 // same type that is provided as a pointer.
-func (in *Pgingest) DeepCopyInto(out *Pgingest) {
-	out.TypeMeta = in.TypeMeta
-	out.ObjectMeta = in.ObjectMeta
-	out.Status = in.Status
-	out.Spec = PgingestSpec{
-		Name:            in.Spec.Name,
-		WatchDir:        in.Spec.WatchDir,
-		DBHost:          in.Spec.DBHost,
-		DBPort:          in.Spec.DBPort,
-		DBName:          in.Spec.DBName,
-		DBSecret:        in.Spec.DBSecret,
-		DBTable:         in.Spec.DBTable,
-		DBColumn:        in.Spec.DBColumn,
-		MaxJobs:         in.Spec.MaxJobs,
-		PVCName:         in.Spec.PVCName,
-		SecurityContext: in.Spec.SecurityContext,
-		Status:          in.Spec.Status,
-	}
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *Pgingest) DeepCopyObject() runtime.Object {
-	out := Pgingest{}
-	in.DeepCopyInto(&out)
-
-	return &out
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *PgingestList) DeepCopyObject() runtime.Object {
-	out := PgingestList{}
-	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
-
-	if in.Items != nil {
-		out.Items = make([]Pgingest, len(in.Items))
-		for i := range in.Items {
-			in.Items[i].DeepCopyInto(&out.Items[i])
-		}
-	}
-
-	return &out
-}
-
-// DeepCopyInto copies all properties of this object into another object of the
-// same type that is provided as a pointer.
 func (in *Pgpolicy) DeepCopyInto(out *Pgpolicy) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta

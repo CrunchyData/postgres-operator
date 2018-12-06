@@ -194,7 +194,8 @@ func removeBackupJob(clusterName string) {
 func getDeployName(cluster *crv1.Pgcluster) (string, error) {
 	var depName string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	//selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -214,7 +215,8 @@ func getDeployName(cluster *crv1.Pgcluster) (string, error) {
 func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	var podname string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	//selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -222,7 +224,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	}
 
 	for _, p := range pods.Items {
-		if isPrimary(&p) && isReady(&p) {
+		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
 			return p.Name, err
 		}
 	}
@@ -230,8 +232,8 @@ func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	return podname, errors.New("primary pod is not in Ready state")
 }
 
-func isPrimary(pod *v1.Pod) bool {
-	if pod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+func isPrimary(pod *v1.Pod, clusterName string) bool {
+	if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		return true
 	}
 	return false

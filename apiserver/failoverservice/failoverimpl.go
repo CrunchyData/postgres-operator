@@ -41,7 +41,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	resp.Results = make([]string, 0)
 
 	if request.Target != "" {
-		_, err = validateDeploymentName(request.Target)
+		_, err = validateDeploymentName(request.Target, request.ClusterName)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -183,7 +183,7 @@ func validateClusterName(clusterName string) (*crv1.Pgcluster, error) {
 	return &cluster, err
 }
 
-func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
+func validateDeploymentName(deployName, clusterName string) (*v1beta1.Deployment, error) {
 
 	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, apiserver.Namespace)
 	if !found {
@@ -191,7 +191,7 @@ func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
 	}
 
 	//make sure the primary is not being selected by the user
-	if deployment.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	if deployment.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		return deployment, errors.New("deployment primary can not be selected as failover target")
 	}
 

@@ -6,7 +6,7 @@ weight: 40
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == Overview
 
@@ -532,11 +532,6 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 *pgo apply policy <name>*
 ....
 curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/apply/<name>
-....
-
-*pgo show ingest <name>*
-....
-curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/ingest/<name>
 ....
 
 *pgo label*

@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017-2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -106,57 +106,35 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//eventually pg-failover == true then...
 	//loop thru status.containerStatuses, find the container with name='database'
 	//print out the 'ready' bool
-	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" &&
-		newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] != "" &&
+	//if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" &&
+	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
+		clusterName != "" &&
 		newpod.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
-		log.Infof("an autofail pg-cluster %s!", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+		log.Infof("an autofail pg-cluster %s!", clusterName)
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
-				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], newpod.ObjectMeta.Namespace)
+				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 			}
 		}
 	}
 
 	//handle applying policies after a database is made Ready
-	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	//if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
 				if v.Ready {
-					log.Debugf("%s went to Ready, apply policies...", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
-					taskoperator.ApplyPolicies(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
-					taskoperator.CompleteCreateClusterWorkflow(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
+					log.Debugf("%s went to Ready, apply policies...", clusterName)
+					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
+					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
 				}
 			}
 		}
 	}
 
 }
-
-/**
-func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
-	//if the pod has a metadata label of  pg-cluster and
-	//eventually pg-failover == true then...
-	//loop thru status.containerStatuses, find the container with name='database'
-	//print out the 'ready' bool
-	log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
-	if newpod.ObjectMeta.Labels["pg-cluster"] != "" {
-		log.Infoln("we have a pg-cluster!")
-		for _, v := range newpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				log.Infof("%s is the containerstatus Name\n", v.Name)
-				if v.Ready {
-					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
-				} else {
-					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
-				}
-			}
-		}
-	}
-
-}
-
-*/
 
 // checkPostgresPods
 // see if this is a primary or replica being created

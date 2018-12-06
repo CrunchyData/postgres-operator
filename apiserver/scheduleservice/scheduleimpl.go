@@ -23,7 +23,8 @@ type scheduleRequest struct {
 
 func getClusterPrimaryPod(cluster string) (string, error) {
 	var podName string
-	selector := fmt.Sprintf("%s=true,%s=%s", util.LABEL_PRIMARY, util.LABEL_PG_CLUSTER, cluster)
+	//selector := fmt.Sprintf("%s=true,%s=%s", util.LABEL_PRIMARY, util.LABEL_PG_CLUSTER, cluster)
+	selector := fmt.Sprintf("%s=%s,%s=%s", util.LABEL_SERVICE_NAME, cluster, util.LABEL_PG_CLUSTER, cluster)
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		return podName, err

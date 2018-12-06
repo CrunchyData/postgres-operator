@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -262,11 +262,12 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 
 func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
 
-	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + clusterName
+	//selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := util.LABEL_SERVICE_NAME + "=" + clusterName + "-replica" + "," + util.LABEL_PG_CLUSTER + "=" + clusterName
 
 	deployments, err := kubeapi.GetDeployments(clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
-		log.Debug("no replicas found ")
+		log.Debug("autofail no replicas found ")
 		return "", err
 	} else if err != nil {
 		log.Error("error getting deployments " + err.Error())
@@ -274,7 +275,7 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	}
 
 	//return a deployment target that has a Ready database
-	log.Debugf("deps len %d\n", len(deployments.Items))
+	log.Debugf("autofail deps len %d\n", len(deployments.Items))
 	found := false
 	readyDeps := make([]v1beta1.Deployment, 0)
 	for _, dep := range deployments.Items {
@@ -318,6 +319,7 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 }
 
 func getPodStatus(clientset *kubernetes.Clientset, depname, ns string) bool {
+	//TODO verify this selector is optimal
 	//get pods with replica-name=deployName
 	pods, err := kubeapi.GetPods(clientset, util.LABEL_REPLICA_NAME+"="+depname, ns)
 	if err != nil {
@@ -354,7 +356,6 @@ func (s *StateMachine) triggerFailover() {
 	var found bool
 	found, err = kubeapi.Getpgtask(s.RESTClient, &priorTask, spec.Name, s.Namespace)
 	if found {
-		//kubeapi.Deletepgtask(s.RESTClient, s.ClusterName, s.Namespace)
 		log.Debugf("deleting pgtask %s", spec.Name)
 		err = kubeapi.Deletepgtask(s.RESTClient, spec.Name, s.Namespace)
 		if err != nil {

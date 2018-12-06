@@ -27,7 +27,6 @@ rules:
       - pgpolicies
       - pgupgrades
       - pgtasks
-      - pgingests
       - pgbackups
       - pgreplicas
 
