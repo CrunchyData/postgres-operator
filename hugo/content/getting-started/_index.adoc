@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == First Steps
 

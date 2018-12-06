@@ -1,7 +1,7 @@
 package kubeapi
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -16,10 +16,13 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
+	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -88,6 +91,47 @@ func CreatePod(clientset *kubernetes.Clientset, svc *v1.Pod, namespace string) (
 
 	log.Info("created pod " + result.Name)
 	return result, err
+}
+
+func UpdatePod(clientset *kubernetes.Clientset, pod *v1.Pod, namespace string) error {
+	_, err := clientset.Core().Pods(namespace).Update(pod)
+	if err != nil {
+		log.Error(err)
+		log.Error("error updating pod %s", pod.Name)
+	}
+	return err
+
+}
+
+func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value, namespace string) error {
+	var newData, patchBytes []byte
+	var err error
+
+	//get the original data before we change it
+	origData, err := json.Marshal(origPod)
+	if err != nil {
+		return err
+	}
+
+	origPod.ObjectMeta.Labels[key] = value
+
+	newData, err = json.Marshal(origPod)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	if err != nil {
+		return err
+	}
+
+	_, err = clientset.Core().Pods(namespace).Patch(origPod.Name, types.MergePatchType, patchBytes)
+	if err != nil {
+		log.Error(err)
+		log.Errorf("error add label to Pod  %s %s=%s", origPod.Name, key, value)
+	}
+	log.Infof("add label to Pod %s %s=%v", origPod.Name, key, value)
+	return err
 }
 
 //TODO include GetLogs as used in pvcimpl.go
