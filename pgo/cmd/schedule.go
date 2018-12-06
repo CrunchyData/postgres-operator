@@ -48,7 +48,9 @@ func createSchedule(args []string) {
 	}
 
 	var clusterName string
-	if len(args) > 0 {
+	if Selector != "" {
+		clusterName = ""
+	} else if len(args) > 0 {
 		clusterName = args[0]
 	}
 
@@ -137,7 +139,9 @@ func showSchedule(args []string) {
 	}
 
 	var clusterName string
-	if len(args) > 0 {
+	if Selector != "" {
+		clusterName = ""
+	} else if len(args) > 0 {
 		clusterName = args[0]
 	}
 

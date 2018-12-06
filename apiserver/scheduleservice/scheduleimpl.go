@@ -25,6 +25,7 @@ func getClusterPrimaryPod(cluster string) (string, error) {
 	var podName string
 	//selector := fmt.Sprintf("%s=true,%s=%s", util.LABEL_PRIMARY, util.LABEL_PG_CLUSTER, cluster)
 	selector := fmt.Sprintf("%s=%s,%s=%s", util.LABEL_SERVICE_NAME, cluster, util.LABEL_PG_CLUSTER, cluster)
+	log.Debugf("selector in scheduler is %s", selector)
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		return podName, err
@@ -62,7 +63,7 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster) *PgSche
 		Type:      s.Request.ScheduleType,
 		Namespace: apiserver.Namespace,
 		PGBackRest: PGBackRest{
-			Label:     fmt.Sprintf("pg-cluster=%s,primary=true", cluster.Name),
+			Label:     fmt.Sprintf("pg-cluster=%s,service-name=%s", cluster.Name, cluster.Name),
 			Container: "database",
 			Type:      s.Request.PGBackRestType,
 		},
@@ -111,7 +112,7 @@ func (s scheduleRequest) createBaseBackupSchedule(cluster *crv1.Pgcluster) *PgSc
 
 //  CreateSchedule
 func CreateSchedule(request *msgs.CreateScheduleRequest) msgs.CreateScheduleResponse {
-	log.Debug("Create schedule called")
+	log.Debugf("Create schedule called clusterName is %s", request.ClusterName)
 	sr := &scheduleRequest{
 		Request: request,
 		Response: &msgs.CreateScheduleResponse{
@@ -128,7 +129,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest) msgs.CreateScheduleResp
 		if sr.Request.Selector != "" {
 			sr.Request.Selector += ","
 		}
-		sr.Request.Selector += fmt.Sprintf("pg-cluster=%s,primary=true", sr.Request.ClusterName)
+		sr.Request.Selector += fmt.Sprintf("pg-cluster=%s,service-name=%s", sr.Request.ClusterName, sr.Request.ClusterName)
 	}
 
 	clusterList := crv1.PgclusterList{}
@@ -312,7 +313,8 @@ func ShowSchedule(request *msgs.ShowScheduleRequest) msgs.ShowScheduleResponse {
 func getSchedules(clusterName, selector string) ([]string, error) {
 	schedules := []string{}
 	label := "crunchy-scheduler=true"
-	if clusterName != "" {
+	if clusterName == "all" {
+	} else if clusterName != "" {
 		label += fmt.Sprintf(",pg-cluster=%s", clusterName)
 	}
 
