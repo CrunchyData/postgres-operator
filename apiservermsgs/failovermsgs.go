@@ -42,9 +42,10 @@ type CreateFailoverResponse struct {
 
 // CreateFailoverRequest ...
 type CreateFailoverRequest struct {
-	ClusterName   string
-	Target        string
-	ClientVersion string
+	ClusterName            string
+	AutofailReplaceReplica string
+	Target                 string
+	ClientVersion          string
 }
 
 // QueryFailoverRequest ...

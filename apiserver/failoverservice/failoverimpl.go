@@ -69,9 +69,21 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	spec.TaskType = crv1.PgtaskFailover
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[request.ClusterName] = request.ClusterName
+
 	labels := make(map[string]string)
 	labels["target"] = request.Target
 	labels[util.LABEL_PG_CLUSTER] = request.ClusterName
+
+	if request.AutofailReplaceReplica != "" {
+		if request.AutofailReplaceReplica == "true" ||
+			request.AutofailReplaceReplica == "false" {
+			labels[util.LABEL_AUTOFAIL_REPLACE_REPLICA] = request.AutofailReplaceReplica
+		} else {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "true or false value required for --autofail-replace-replica flag"
+			return resp
+		}
+	}
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

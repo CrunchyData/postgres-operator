@@ -26,6 +26,8 @@ import (
 	"os"
 )
 
+var AutofailReplaceReplica string
+
 var failoverCmd = &cobra.Command{
 	Use:   "failover",
 	Short: "Performs a manual failover",
@@ -59,6 +61,7 @@ func init() {
 	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
 	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
+	failoverCmd.Flags().StringVarP(&AutofailReplaceReplica, "autofail-replace-replica", "", "", "If 'true', causes a replica to be created to replace the promoted replica.  If 'false', causes a replica to not be created, if not set, the pgo.yaml AutofailReplaceReplica setting is used.")
 
 }
 
@@ -69,6 +72,14 @@ func createFailover(args []string) {
 	request := new(msgs.CreateFailoverRequest)
 	request.ClusterName = args[0]
 	request.Target = Target
+	request.AutofailReplaceReplica = AutofailReplaceReplica
+	if AutofailReplaceReplica != "" {
+		if AutofailReplaceReplica == "true" || AutofailReplaceReplica == "false" {
+		} else {
+			fmt.Println("Error: --autofail-replace-replica if specified is required to be either true or false")
+			os.Exit(2)
+		}
+	}
 	request.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.CreateFailover(httpclient, &SessionCredentials, request)
