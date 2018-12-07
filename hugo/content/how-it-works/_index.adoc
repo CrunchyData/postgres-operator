@@ -6,7 +6,7 @@ weight: 30
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == Reference Architecture
 

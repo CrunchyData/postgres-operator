@@ -234,23 +234,6 @@ func GetLabels(name, clustername string, replica bool) string {
 	return output
 }
 
-// GetLabelsFromMap ...
-func GetLabelsFromMap(labels map[string]string) string {
-	var output string
-
-	mapLen := len(labels)
-	i := 1
-	for key, value := range labels {
-		if i < mapLen {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
-		} else {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\"")
-		}
-		i++
-	}
-	return output
-}
-
 // PatchClusterCRD patches the pgcluster CRD
 func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, oldCrd *crv1.Pgcluster, namespace string) error {
 
