@@ -45,11 +45,6 @@ type affinityTemplateFields struct {
 	OperatorValue  string
 }
 
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
-}
-
 type collectTemplateFields struct {
 	Name            string
 	JobName         string
@@ -322,6 +317,7 @@ func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterNa
 }
 
 // CreateReplica ...
+/**
 func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string) error {
 	var replicaDoc bytes.Buffer
 	var err error
@@ -389,6 +385,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 	return err
 }
+*/
 
 // getPrimaryLabels ...
 func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {

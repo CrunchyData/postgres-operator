@@ -39,11 +39,6 @@ type rmdatajobTemplateFields struct {
 	ContainerResources string
 }
 
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
-}
-
 // RemoveData ...
 func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
