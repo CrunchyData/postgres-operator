@@ -84,7 +84,7 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
-	c.checkPostgresPods2(newpod)
+	c.checkPostgresPods(newpod)
 }
 
 // onUpdate is called when a pgcluster is updated
@@ -147,63 +147,6 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 // update service-name label on the pod for each case
 // to match the correct Service selector for the PG cluster
 func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
-
-	//you have a race condition with Kube events here we
-	//are dealing with, the pod version can change between getting
-	//the pod and updating it here, so we will retry a few times
-	tries := 8
-	for i := 0; i < tries; i++ {
-		if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" || newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
-			pod, _, err := kubeapi.GetPod(c.PodClientset, newpod.Name, c.Namespace)
-			if err != nil {
-				log.Error(err)
-				log.Error(" could not get pod %s", newpod.Name)
-				return
-			}
-
-			if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
-				log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
-				//add label onto pod "service-name=clustername"
-				pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
-			} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
-				log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]+"-replica")
-				//add label onto pod "service-name=clustername-replica"
-				pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "-replica"
-			}
-
-			err = kubeapi.UpdatePod(c.PodClientset, pod, c.Namespace)
-			if err == nil {
-				break
-			} else {
-				log.Error(err)
-				log.Errorf(" could not update pod label for pod %s and label %s will try update again...", pod.Name, pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME])
-				return
-			}
-
-			//add the service name label to the Deployment
-			var dep *v1beta1.Deployment
-			dep, _, err = kubeapi.GetDeployment(c.PodClientset, pod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME], c.Namespace)
-			if err != nil {
-				log.Error("could not get Deployment on pod Add")
-				return
-			}
-			err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, util.LABEL_SERVICE_NAME, pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME], c.Namespace)
-
-			if err != nil {
-				log.Error("could not add label to deployment on pod add")
-				return
-			}
-
-		}
-	}
-
-}
-
-// checkPostgresPods
-// see if this is a primary or replica being created
-// update service-name label on the pod for each case
-// to match the correct Service selector for the PG cluster
-func (c *PodController) checkPostgresPods2(newpod *apiv1.Pod) {
 
 	var dep *v1beta1.Deployment
 	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME], c.Namespace)

@@ -38,20 +38,6 @@ type backrestRestoreVolumesFields struct {
 type backrestRestoreVolumeMountsFields struct {
 }
 
-type backrestRestoreJobTemplateFields struct {
-	RestoreName          string
-	SecurityContext      string
-	ToClusterName        string
-	RestoreConfigMapName string
-	FromClusterPVCName   string
-	ToClusterPVCName     string
-	BackrestRestoreOpts  string
-	DeltaEnvVar          string
-	PITRTargetEnvVar     string
-	CCPImagePrefix       string
-	CCPImageTag          string
-}
-
 // Restore ...
 func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 

@@ -18,9 +18,6 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	"os"
-	"time"
-
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -30,6 +27,8 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
+	"time"
 )
 
 type jobTemplateFields struct {
@@ -43,11 +42,6 @@ type jobTemplateFields struct {
 	BackupPort         string
 	BackupOpts         string
 	ContainerResources string
-}
-
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
 }
 
 // AddBackupBase creates a backup job and its pvc
