@@ -330,7 +330,7 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Cluster.Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |Cluster.Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
-|Cluster.AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, users can override this setting from the command line.
+|Cluster.AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments

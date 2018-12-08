@@ -17,7 +17,7 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
-  AutofailReplaceReplica:  false
+  AutofailReplaceReplica:  true
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: nfsstorage
