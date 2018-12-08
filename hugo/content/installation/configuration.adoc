@@ -332,6 +332,7 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
 |Cluster.AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
+|ArchiveStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
