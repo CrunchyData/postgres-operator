@@ -38,7 +38,6 @@ type Strategy interface {
 	Scale(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgreplica, string, string, *crv1.Pgcluster) error
 	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
 	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
-	//CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
 	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
 
@@ -134,13 +133,21 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
-	if cl.Spec.UserLabels["archive"] == "true" {
+	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		pvcName := cl.Spec.Name + "-xlog"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
 			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
 		} else {
-			_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, pvcName, cl.Spec.Name, namespace)
+			storage := crv1.PgStorageSpec{}
+			pgoStorage := operator.Pgo.Storage[operator.Pgo.ArchiveStorage]
+			storage.StorageClass = pgoStorage.StorageClass
+			storage.AccessMode = pgoStorage.AccessMode
+			storage.Size = pgoStorage.Size
+			storage.StorageType = pgoStorage.StorageType
+			storage.SupplementalGroups = pgoStorage.SupplementalGroups
+			storage.Fsgroup = pgoStorage.Fsgroup
+			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
 			if err != nil {
 				log.Error(err)
 				return
