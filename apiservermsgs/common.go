@@ -17,7 +17,7 @@ limitations under the License.
 
 import ()
 
-const PGO_VERSION = "3.5.0-fastfail"
+const PGO_VERSION = "3.5.0"
 
 // Ok status
 const Ok = "ok"

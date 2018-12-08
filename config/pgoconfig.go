@@ -50,6 +50,7 @@ type ClusterStruct struct {
 	ServiceType             string `yaml:"ServiceType"`
 	Backrest                bool   `yaml:"Backrest"`
 	Autofail                bool   `yaml:"Autofail"`
+	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
 }
 
 type StorageStruct struct {

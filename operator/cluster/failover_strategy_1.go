@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -54,9 +55,11 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	//deployment should be found, and then you would proceed to remove
 	//it
 
-	var found bool
-	_, found, err = kubeapi.GetDeployment(clientset, clusterName, namespace)
-	if found {
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_SERVICE_NAME + "=" + clusterName
+	log.Debugf("selector in failover get deployments is %s", selector)
+	var depList *v1beta1.DeploymentList
+	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
+	if len(depList.Items) > 0 {
 		log.Debug("in failover, the primary deployment is found before removal")
 		err = deletePrimary(clientset, namespace, clusterName)
 		if err != nil {
@@ -88,10 +91,29 @@ func (r Strategy1) Failover(clientset *kubernetes.Clientset, client *rest.RESTCl
 	//upod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = clusterName
 
 	//err = kubeapi.UpdatePod(clientset, upod, namespace)
+	log.Debugf("setting label on pod %s=%s", util.LABEL_SERVICE_NAME, clusterName)
+
 	err = kubeapi.AddLabelToPod(clientset, upod, util.LABEL_SERVICE_NAME, clusterName, namespace)
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating pod during failover relabel")
+		return err
+	}
+
+	targetDepName := upod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME]
+	log.Debug("targetDepName %s", targetDepName)
+	var targetDep *v1beta1.Deployment
+	targetDep, _, err = kubeapi.GetDeployment(clientset, targetDepName, namespace)
+	if err != nil {
+		log.Error(err)
+		log.Errorf("not found error in getting Deployment during failover relabel %s", targetDepName)
+		return err
+	}
+
+	err = kubeapi.AddLabelToDeployment(clientset, targetDep, util.LABEL_SERVICE_NAME, clusterName, namespace)
+	if err != nil {
+		log.Error(err)
+		log.Error("error in updating deployment during failover relabel")
 		return err
 	}
 
