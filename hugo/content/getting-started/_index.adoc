@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == First Steps
 
@@ -126,6 +126,11 @@ Enables archive logging for the database cluster.
 
 |`--autofail` |N/A |N/A |
 If set, will cause autofailover to be enabled on this cluster.
+
+|`--autofail-replace-replica` |N/A |N/A |
+If set, will allow you to override the AutofailReplaceReplica setting as
+specified in the pgo.yaml, this setting lets you control whether a replica
+is created as part of a failover to replace the promoted replica
 
 |`--backup-pvc` |N/A |String |
 The backup archive PVC to restore from.

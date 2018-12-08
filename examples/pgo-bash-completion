@@ -1,6 +1,6 @@
 # bash completion for pgo                                  -*- shell-script -*-
 
-__debug()
+__pgo_debug()
 {
     if [[ -n ${BASH_COMP_DEBUG_FILE} ]]; then
         echo "$*" >> "${BASH_COMP_DEBUG_FILE}"
@@ -9,13 +9,13 @@ __debug()
 
 # Homebrew on Macs have version 1.3 of bash-completion which doesn't include
 # _init_completion. This is a very minimal version of that function.
-__my_init_completion()
+__pgo_init_completion()
 {
     COMPREPLY=()
     _get_comp_words_by_ref "$@" cur prev words cword
 }
 
-__index_of_word()
+__pgo_index_of_word()
 {
     local w word=$1
     shift
@@ -27,7 +27,7 @@ __index_of_word()
     index=-1
 }
 
-__contains_word()
+__pgo_contains_word()
 {
     local w word=$1; shift
     for w in "$@"; do
@@ -36,9 +36,9 @@ __contains_word()
     return 1
 }
 
-__handle_reply()
+__pgo_handle_reply()
 {
-    __debug "${FUNCNAME[0]}"
+    __pgo_debug "${FUNCNAME[0]}"
     case $cur in
         -*)
             if [[ $(type -t compopt) = "builtin" ]]; then
@@ -62,15 +62,15 @@ __handle_reply()
                 fi
 
                 local index flag
-                flag="${cur%%=*}"
-                __index_of_word "${flag}" "${flags_with_completion[@]}"
+                flag="${cur%=*}"
+                __pgo_index_of_word "${flag}" "${flags_with_completion[@]}"
+                COMPREPLY=()
                 if [[ ${index} -ge 0 ]]; then
-                    COMPREPLY=()
                     PREFIX=""
                     cur="${cur#*=}"
                     ${flags_completion[${index}]}
                     if [ -n "${ZSH_VERSION}" ]; then
-                        # zfs completion needs --flag= prefix
+                        # zsh completion needs --flag= prefix
                         eval "COMPREPLY=( \"\${COMPREPLY[@]/#/${flag}=}\" )"
                     fi
                 fi
@@ -81,7 +81,7 @@ __handle_reply()
 
     # check if we are handling a flag with special work handling
     local index
-    __index_of_word "${prev}" "${flags_with_completion[@]}"
+    __pgo_index_of_word "${prev}" "${flags_with_completion[@]}"
     if [[ ${index} -ge 0 ]]; then
         ${flags_completion[${index}]}
         return
@@ -110,25 +110,34 @@ __handle_reply()
         declare -F __custom_func >/dev/null && __custom_func
     fi
 
-    __ltrim_colon_completions "$cur"
+    # available in bash-completion >= 2, not always present on macOS
+    if declare -F __ltrim_colon_completions >/dev/null; then
+        __ltrim_colon_completions "$cur"
+    fi
+
+    # If there is only 1 completion and it is a flag with an = it will be completed
+    # but we don't want a space after the =
+    if [[ "${#COMPREPLY[@]}" -eq "1" ]] && [[ $(type -t compopt) = "builtin" ]] && [[ "${COMPREPLY[0]}" == --*= ]]; then
+       compopt -o nospace
+    fi
 }
 
 # The arguments should be in the form "ext1|ext2|extn"
-__handle_filename_extension_flag()
+__pgo_handle_filename_extension_flag()
 {
     local ext="$1"
     _filedir "@(${ext})"
 }
 
-__handle_subdirs_in_dir_flag()
+__pgo_handle_subdirs_in_dir_flag()
 {
     local dir="$1"
     pushd "${dir}" >/dev/null 2>&1 && _filedir -d && popd >/dev/null 2>&1
 }
 
-__handle_flag()
+__pgo_handle_flag()
 {
-    __debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+    __pgo_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
 
     # if a command required a flag, and we found it, unset must_have_one_flag()
     local flagname=${words[c]}
@@ -136,30 +145,33 @@ __handle_flag()
     # if the word contained an =
     if [[ ${words[c]} == *"="* ]]; then
         flagvalue=${flagname#*=} # take in as flagvalue after the =
-        flagname=${flagname%%=*} # strip everything after the =
+        flagname=${flagname%=*} # strip everything after the =
         flagname="${flagname}=" # but put the = back
     fi
-    __debug "${FUNCNAME[0]}: looking for ${flagname}"
-    if __contains_word "${flagname}" "${must_have_one_flag[@]}"; then
+    __pgo_debug "${FUNCNAME[0]}: looking for ${flagname}"
+    if __pgo_contains_word "${flagname}" "${must_have_one_flag[@]}"; then
         must_have_one_flag=()
     fi
 
     # if you set a flag which only applies to this command, don't show subcommands
-    if __contains_word "${flagname}" "${local_nonpersistent_flags[@]}"; then
+    if __pgo_contains_word "${flagname}" "${local_nonpersistent_flags[@]}"; then
       commands=()
     fi
 
     # keep flag value with flagname as flaghash
-    if [ -n "${flagvalue}" ] ; then
-        flaghash[${flagname}]=${flagvalue}
-    elif [ -n "${words[ $((c+1)) ]}" ] ; then
-        flaghash[${flagname}]=${words[ $((c+1)) ]}
-    else
-        flaghash[${flagname}]="true" # pad "true" for bool flag
+    # flaghash variable is an associative array which is only supported in bash > 3.
+    if [[ -z "${BASH_VERSION}" || "${BASH_VERSINFO[0]}" -gt 3 ]]; then
+        if [ -n "${flagvalue}" ] ; then
+            flaghash[${flagname}]=${flagvalue}
+        elif [ -n "${words[ $((c+1)) ]}" ] ; then
+            flaghash[${flagname}]=${words[ $((c+1)) ]}
+        else
+            flaghash[${flagname}]="true" # pad "true" for bool flag
+        fi
     fi
 
     # skip the argument to a two word flag
-    if __contains_word "${words[c]}" "${two_word_flags[@]}"; then
+    if __pgo_contains_word "${words[c]}" "${two_word_flags[@]}"; then
         c=$((c+1))
         # if we are looking for a flags value, don't show commands
         if [[ $c -eq $cword ]]; then
@@ -171,13 +183,13 @@ __handle_flag()
 
 }
 
-__handle_noun()
+__pgo_handle_noun()
 {
-    __debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+    __pgo_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
 
-    if __contains_word "${words[c]}" "${must_have_one_noun[@]}"; then
+    if __pgo_contains_word "${words[c]}" "${must_have_one_noun[@]}"; then
         must_have_one_noun=()
-    elif __contains_word "${words[c]}" "${noun_aliases[@]}"; then
+    elif __pgo_contains_word "${words[c]}" "${noun_aliases[@]}"; then
         must_have_one_noun=()
     fi
 
@@ -185,47 +197,58 @@ __handle_noun()
     c=$((c+1))
 }
 
-__handle_command()
+__pgo_handle_command()
 {
-    __debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+    __pgo_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
 
     local next_command
     if [[ -n ${last_command} ]]; then
         next_command="_${last_command}_${words[c]//:/__}"
     else
         if [[ $c -eq 0 ]]; then
-            next_command="_$(basename "${words[c]//:/__}")"
+            next_command="_pgo_root_command"
         else
             next_command="_${words[c]//:/__}"
         fi
     fi
     c=$((c+1))
-    __debug "${FUNCNAME[0]}: looking for ${next_command}"
-    declare -F $next_command >/dev/null && $next_command
+    __pgo_debug "${FUNCNAME[0]}: looking for ${next_command}"
+    declare -F "$next_command" >/dev/null && $next_command
 }
 
-__handle_word()
+__pgo_handle_word()
 {
     if [[ $c -ge $cword ]]; then
-        __handle_reply
+        __pgo_handle_reply
         return
     fi
-    __debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
+    __pgo_debug "${FUNCNAME[0]}: c is $c words[c] is ${words[c]}"
     if [[ "${words[c]}" == -* ]]; then
-        __handle_flag
-    elif __contains_word "${words[c]}" "${commands[@]}"; then
-        __handle_command
-    elif [[ $c -eq 0 ]] && __contains_word "$(basename "${words[c]}")" "${commands[@]}"; then
-        __handle_command
+        __pgo_handle_flag
+    elif __pgo_contains_word "${words[c]}" "${commands[@]}"; then
+        __pgo_handle_command
+    elif [[ $c -eq 0 ]]; then
+        __pgo_handle_command
+    elif __pgo_contains_word "${words[c]}" "${command_aliases[@]}"; then
+        # aliashash variable is an associative array which is only supported in bash > 3.
+        if [[ -z "${BASH_VERSION}" || "${BASH_VERSINFO[0]}" -gt 3 ]]; then
+            words[c]=${aliashash[${words[c]}]}
+            __pgo_handle_command
+        else
+            __pgo_handle_noun
+        fi
     else
-        __handle_noun
+        __pgo_handle_noun
     fi
-    __handle_word
+    __pgo_handle_word
 }
 
 _pgo_apply()
 {
     last_command="pgo_apply"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -235,38 +258,15 @@ _pgo_apply()
     flags_completion=()
 
     flags+=("--dry-run")
-    flags+=("-d")
     local_nonpersistent_flags+=("--dry-run")
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_backrest()
-{
-    last_command="pgo_backrest"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--no-prompt")
-    flags+=("-n")
-    local_nonpersistent_flags+=("--no-prompt")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -276,6 +276,9 @@ _pgo_backrest()
 _pgo_backup()
 {
     last_command="pgo_backup"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -284,9 +287,10 @@ _pgo_backup()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--no-prompt")
-    flags+=("-n")
-    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--backup-opts=")
+    local_nonpersistent_flags+=("--backup-opts=")
+    flags+=("--backup-type=")
+    local_nonpersistent_flags+=("--backup-type=")
     flags+=("--pvc-name=")
     local_nonpersistent_flags+=("--pvc-name=")
     flags+=("--selector=")
@@ -296,6 +300,9 @@ _pgo_backup()
     local_nonpersistent_flags+=("--storage-config=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -305,6 +312,9 @@ _pgo_backup()
 _pgo_create_cluster()
 {
     last_command="pgo_create_cluster"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -317,8 +327,6 @@ _pgo_create_cluster()
     local_nonpersistent_flags+=("--archive")
     flags+=("--autofail")
     local_nonpersistent_flags+=("--autofail")
-    flags+=("--backrest")
-    local_nonpersistent_flags+=("--backrest")
     flags+=("--backup-path=")
     two_word_flags+=("-x")
     local_nonpersistent_flags+=("--backup-path=")
@@ -329,19 +337,25 @@ _pgo_create_cluster()
     two_word_flags+=("-c")
     local_nonpersistent_flags+=("--ccp-image-tag=")
     flags+=("--custom-config=")
-    two_word_flags+=("-g")
     local_nonpersistent_flags+=("--custom-config=")
     flags+=("--labels=")
     two_word_flags+=("-l")
     local_nonpersistent_flags+=("--labels=")
     flags+=("--metrics")
-    flags+=("-m")
     local_nonpersistent_flags+=("--metrics")
     flags+=("--node-label=")
     local_nonpersistent_flags+=("--node-label=")
     flags+=("--password=")
     two_word_flags+=("-w")
     local_nonpersistent_flags+=("--password=")
+    flags+=("--pgbackrest")
+    local_nonpersistent_flags+=("--pgbackrest")
+    flags+=("--pgbackrest-restore-from=")
+    local_nonpersistent_flags+=("--pgbackrest-restore-from=")
+    flags+=("--pgbadger")
+    local_nonpersistent_flags+=("--pgbadger")
+    flags+=("--pgbouncer")
+    local_nonpersistent_flags+=("--pgbouncer")
     flags+=("--pgpool")
     local_nonpersistent_flags+=("--pgpool")
     flags+=("--pgpool-secret=")
@@ -349,6 +363,8 @@ _pgo_create_cluster()
     flags+=("--policies=")
     two_word_flags+=("-z")
     local_nonpersistent_flags+=("--policies=")
+    flags+=("--replica-count=")
+    local_nonpersistent_flags+=("--replica-count=")
     flags+=("--replica-storage-config=")
     local_nonpersistent_flags+=("--replica-storage-config=")
     flags+=("--resources-config=")
@@ -366,15 +382,21 @@ _pgo_create_cluster()
     local_nonpersistent_flags+=("--storage-config=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
     noun_aliases=()
 }
 
-_pgo_create_ingest()
+_pgo_create_pgbouncer()
 {
-    last_command="pgo_create_ingest"
+    last_command="pgo_create_pgbouncer"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -383,11 +405,36 @@ _pgo_create_ingest()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--ingest-config=")
-    two_word_flags+=("-i")
-    local_nonpersistent_flags+=("--ingest-config=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_create_pgpool()
+{
+    last_command="pgo_create_pgpool"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -397,6 +444,9 @@ _pgo_create_ingest()
 _pgo_create_policy()
 {
     last_command="pgo_create_policy"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -413,6 +463,53 @@ _pgo_create_policy()
     local_nonpersistent_flags+=("--url=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_create_schedule()
+{
+    last_command="pgo_create_schedule"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--ccp-image-tag=")
+    two_word_flags+=("-c")
+    local_nonpersistent_flags+=("--ccp-image-tag=")
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--pgbackrest-backup-type=")
+    local_nonpersistent_flags+=("--pgbackrest-backup-type=")
+    flags+=("--pvc-name=")
+    local_nonpersistent_flags+=("--pvc-name=")
+    flags+=("--schedule=")
+    local_nonpersistent_flags+=("--schedule=")
+    flags+=("--schedule-opts=")
+    local_nonpersistent_flags+=("--schedule-opts=")
+    flags+=("--schedule-type=")
+    local_nonpersistent_flags+=("--schedule-type=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -422,6 +519,9 @@ _pgo_create_policy()
 _pgo_create_user()
 {
     last_command="pgo_create_user"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -431,19 +531,23 @@ _pgo_create_user()
     flags_completion=()
 
     flags+=("--db=")
-    two_word_flags+=("-b")
     local_nonpersistent_flags+=("--db=")
     flags+=("--managed")
-    flags+=("-m")
     local_nonpersistent_flags+=("--managed")
+    flags+=("--password=")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--password-length=")
+    local_nonpersistent_flags+=("--password-length=")
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
     flags+=("--valid-days=")
-    two_word_flags+=("-v")
     local_nonpersistent_flags+=("--valid-days=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -453,10 +557,15 @@ _pgo_create_user()
 _pgo_create()
 {
     last_command="pgo_create"
+
+    command_aliases=()
+
     commands=()
     commands+=("cluster")
-    commands+=("ingest")
+    commands+=("pgbouncer")
+    commands+=("pgpool")
     commands+=("policy")
+    commands+=("schedule")
     commands+=("user")
 
     flags=()
@@ -467,6 +576,9 @@ _pgo_create()
 
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -476,6 +588,9 @@ _pgo_create()
 _pgo_delete_backup()
 {
     last_command="pgo_delete_backup"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -486,6 +601,9 @@ _pgo_delete_backup()
 
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -495,6 +613,9 @@ _pgo_delete_backup()
 _pgo_delete_cluster()
 {
     last_command="pgo_delete_cluster"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -506,6 +627,9 @@ _pgo_delete_cluster()
     flags+=("--delete-backups")
     flags+=("-b")
     local_nonpersistent_flags+=("--delete-backups")
+    flags+=("--delete-configs")
+    flags+=("-c")
+    local_nonpersistent_flags+=("--delete-configs")
     flags+=("--delete-data")
     flags+=("-d")
     local_nonpersistent_flags+=("--delete-data")
@@ -517,15 +641,21 @@ _pgo_delete_cluster()
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
     noun_aliases=()
 }
 
-_pgo_delete_ingest()
+_pgo_delete_label()
 {
-    last_command="pgo_delete_ingest"
+    last_command="pgo_delete_label"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -534,8 +664,72 @@ _pgo_delete_ingest()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--label=")
+    local_nonpersistent_flags+=("--label=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_delete_pgbouncer()
+{
+    last_command="pgo_delete_pgbouncer"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_delete_pgpool()
+{
+    last_command="pgo_delete_pgpool"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -545,6 +739,9 @@ _pgo_delete_ingest()
 _pgo_delete_policy()
 {
     last_command="pgo_delete_policy"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -558,6 +755,42 @@ _pgo_delete_policy()
     local_nonpersistent_flags+=("--no-prompt")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_delete_schedule()
+{
+    last_command="pgo_delete_schedule"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--schedule-name=")
+    local_nonpersistent_flags+=("--schedule-name=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -567,6 +800,9 @@ _pgo_delete_policy()
 _pgo_delete_upgrade()
 {
     last_command="pgo_delete_upgrade"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -577,6 +813,9 @@ _pgo_delete_upgrade()
 
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -586,6 +825,9 @@ _pgo_delete_upgrade()
 _pgo_delete_user()
 {
     last_command="pgo_delete_user"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -599,6 +841,9 @@ _pgo_delete_user()
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -608,11 +853,17 @@ _pgo_delete_user()
 _pgo_delete()
 {
     last_command="pgo_delete"
+
+    command_aliases=()
+
     commands=()
     commands+=("backup")
     commands+=("cluster")
-    commands+=("ingest")
+    commands+=("label")
+    commands+=("pgbouncer")
+    commands+=("pgpool")
     commands+=("policy")
+    commands+=("schedule")
     commands+=("upgrade")
     commands+=("user")
 
@@ -624,6 +875,9 @@ _pgo_delete()
 
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -633,6 +887,9 @@ _pgo_delete()
 _pgo_df()
 {
     last_command="pgo_df"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -646,6 +903,9 @@ _pgo_df()
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -655,6 +915,9 @@ _pgo_df()
 _pgo_failover()
 {
     last_command="pgo_failover"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -663,6 +926,8 @@ _pgo_failover()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--autofail-replace-replica=")
+    local_nonpersistent_flags+=("--autofail-replace-replica=")
     flags+=("--no-prompt")
     flags+=("-n")
     local_nonpersistent_flags+=("--no-prompt")
@@ -672,6 +937,9 @@ _pgo_failover()
     local_nonpersistent_flags+=("--target=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -681,6 +949,9 @@ _pgo_failover()
 _pgo_label()
 {
     last_command="pgo_label"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -689,20 +960,18 @@ _pgo_label()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--delete-label")
-    flags+=("-x")
-    local_nonpersistent_flags+=("--delete-label")
     flags+=("--dry-run")
-    flags+=("-d")
     local_nonpersistent_flags+=("--dry-run")
     flags+=("--label=")
-    two_word_flags+=("-l")
     local_nonpersistent_flags+=("--label=")
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -712,6 +981,9 @@ _pgo_label()
 _pgo_load()
 {
     last_command="pgo_load"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -721,16 +993,17 @@ _pgo_load()
     flags_completion=()
 
     flags+=("--load-config=")
-    two_word_flags+=("-l")
     local_nonpersistent_flags+=("--load-config=")
     flags+=("--policies=")
-    two_word_flags+=("-z")
     local_nonpersistent_flags+=("--policies=")
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -740,6 +1013,9 @@ _pgo_load()
 _pgo_reload()
 {
     last_command="pgo_reload"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -756,6 +1032,40 @@ _pgo_reload()
     local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_restore()
+{
+    last_command="pgo_restore"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--backup-opts=")
+    local_nonpersistent_flags+=("--backup-opts=")
+    flags+=("--pitr-target=")
+    local_nonpersistent_flags+=("--pitr-target=")
+    flags+=("--to-pvc=")
+    local_nonpersistent_flags+=("--to-pvc=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -765,6 +1075,9 @@ _pgo_reload()
 _pgo_scale()
 {
     last_command="pgo_scale"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -774,41 +1087,37 @@ _pgo_scale()
     flags_completion=()
 
     flags+=("--ccp-image-tag=")
-    two_word_flags+=("-c")
     local_nonpersistent_flags+=("--ccp-image-tag=")
-    flags+=("--delete-data")
-    local_nonpersistent_flags+=("--delete-data")
     flags+=("--no-prompt")
     flags+=("-n")
     local_nonpersistent_flags+=("--no-prompt")
     flags+=("--node-label=")
     local_nonpersistent_flags+=("--node-label=")
-    flags+=("--query")
-    local_nonpersistent_flags+=("--query")
     flags+=("--replica-count=")
-    two_word_flags+=("-r")
     local_nonpersistent_flags+=("--replica-count=")
     flags+=("--resources-config=")
     local_nonpersistent_flags+=("--resources-config=")
-    flags+=("--scale-down-target=")
-    local_nonpersistent_flags+=("--scale-down-target=")
     flags+=("--service-type=")
     local_nonpersistent_flags+=("--service-type=")
     flags+=("--storage-config=")
     local_nonpersistent_flags+=("--storage-config=")
-    flags+=("--target=")
-    local_nonpersistent_flags+=("--target=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
     noun_aliases=()
 }
 
-_pgo_show_backrest()
+_pgo_scaledown()
 {
-    last_command="pgo_show_backrest"
+    last_command="pgo_scaledown"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -817,11 +1126,21 @@ _pgo_show_backrest()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
+    flags+=("--delete-data")
+    flags+=("-d")
+    local_nonpersistent_flags+=("--delete-data")
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--query")
+    local_nonpersistent_flags+=("--query")
+    flags+=("--target=")
+    local_nonpersistent_flags+=("--target=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -831,6 +1150,9 @@ _pgo_show_backrest()
 _pgo_show_backup()
 {
     last_command="pgo_show_backup"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -839,8 +1161,13 @@ _pgo_show_backup()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--backup-type=")
+    local_nonpersistent_flags+=("--backup-type=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -850,229 +1177,9 @@ _pgo_show_backup()
 _pgo_show_cluster()
 {
     last_command="pgo_show_cluster"
-    commands=()
 
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
+    command_aliases=()
 
-    flags+=("--output=")
-    two_word_flags+=("-o")
-    local_nonpersistent_flags+=("--output=")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--version=")
-    two_word_flags+=("-v")
-    local_nonpersistent_flags+=("--version=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show_config()
-{
-    last_command="pgo_show_config"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show_ingest()
-{
-    last_command="pgo_show_ingest"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show_policy()
-{
-    last_command="pgo_show_policy"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show_pvc()
-{
-    last_command="pgo_show_pvc"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--pvc-root=")
-    two_word_flags+=("-r")
-    local_nonpersistent_flags+=("--pvc-root=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show_upgrade()
-{
-    last_command="pgo_show_upgrade"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show_user()
-{
-    last_command="pgo_show_user"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_show()
-{
-    last_command="pgo_show"
-    commands=()
-    commands+=("backrest")
-    commands+=("backup")
-    commands+=("cluster")
-    commands+=("config")
-    commands+=("ingest")
-    commands+=("policy")
-    commands+=("pvc")
-    commands+=("upgrade")
-    commands+=("user")
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_status()
-{
-    last_command="pgo_status"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--output=")
-    two_word_flags+=("-o")
-    local_nonpersistent_flags+=("--output=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_test()
-{
-    last_command="pgo_test"
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--output=")
-    two_word_flags+=("-o")
-    local_nonpersistent_flags+=("--output=")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_pgo_upgrade()
-{
-    last_command="pgo_upgrade"
     commands=()
 
     flags=()
@@ -1082,13 +1189,328 @@ _pgo_upgrade()
     flags_completion=()
 
     flags+=("--ccp-image-tag=")
-    two_word_flags+=("-c")
     local_nonpersistent_flags+=("--ccp-image-tag=")
-    flags+=("--upgrade-type=")
-    two_word_flags+=("-t")
-    local_nonpersistent_flags+=("--upgrade-type=")
+    flags+=("--output=")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--output=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_config()
+{
+    last_command="pgo_show_config"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_policy()
+{
+    last_command="pgo_show_policy"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_pvc()
+{
+    last_command="pgo_show_pvc"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--pvc-root=")
+    local_nonpersistent_flags+=("--pvc-root=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_schedule()
+{
+    last_command="pgo_show_schedule"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--no-prompt")
+    flags+=("-n")
+    local_nonpersistent_flags+=("--no-prompt")
+    flags+=("--schedule-name=")
+    local_nonpersistent_flags+=("--schedule-name=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_upgrade()
+{
+    last_command="pgo_show_upgrade"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_user()
+{
+    last_command="pgo_show_user"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--expired=")
+    local_nonpersistent_flags+=("--expired=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show_workflow()
+{
+    last_command="pgo_show_workflow"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_show()
+{
+    last_command="pgo_show"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("backup")
+    commands+=("cluster")
+    commands+=("config")
+    commands+=("policy")
+    commands+=("pvc")
+    commands+=("schedule")
+    commands+=("upgrade")
+    commands+=("user")
+    commands+=("workflow")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_status()
+{
+    last_command="pgo_status"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--output=")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--output=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_test()
+{
+    last_command="pgo_test"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--output=")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--output=")
+    flags+=("--selector=")
+    two_word_flags+=("-s")
+    local_nonpersistent_flags+=("--selector=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_pgo_upgrade()
+{
+    last_command="pgo_upgrade"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--ccp-image-tag=")
+    local_nonpersistent_flags+=("--ccp-image-tag=")
+    flags+=("--apiserver-url=")
+    flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -1098,6 +1520,9 @@ _pgo_upgrade()
 _pgo_user()
 {
     last_command="pgo_user"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1107,28 +1532,27 @@ _pgo_user()
     flags_completion=()
 
     flags+=("--change-password=")
-    two_word_flags+=("-c")
     local_nonpersistent_flags+=("--change-password=")
     flags+=("--db=")
-    two_word_flags+=("-b")
     local_nonpersistent_flags+=("--db=")
     flags+=("--expired=")
-    two_word_flags+=("-e")
     local_nonpersistent_flags+=("--expired=")
-    flags+=("--managed")
-    flags+=("-m")
-    local_nonpersistent_flags+=("--managed")
+    flags+=("--password=")
+    local_nonpersistent_flags+=("--password=")
+    flags+=("--password-length=")
+    local_nonpersistent_flags+=("--password-length=")
     flags+=("--selector=")
     two_word_flags+=("-s")
     local_nonpersistent_flags+=("--selector=")
     flags+=("--update-passwords")
-    flags+=("-u")
     local_nonpersistent_flags+=("--update-passwords")
     flags+=("--valid-days=")
-    two_word_flags+=("-v")
     local_nonpersistent_flags+=("--valid-days=")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -1138,6 +1562,9 @@ _pgo_user()
 _pgo_version()
 {
     last_command="pgo_version"
+
+    command_aliases=()
+
     commands=()
 
     flags=()
@@ -1151,18 +1578,23 @@ _pgo_version()
     local_nonpersistent_flags+=("--help")
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
     noun_aliases=()
 }
 
-_pgo()
+_pgo_root_command()
 {
     last_command="pgo"
+
+    command_aliases=()
+
     commands=()
     commands+=("apply")
-    commands+=("backrest")
     commands+=("backup")
     commands+=("create")
     commands+=("delete")
@@ -1171,7 +1603,9 @@ _pgo()
     commands+=("label")
     commands+=("load")
     commands+=("reload")
+    commands+=("restore")
     commands+=("scale")
+    commands+=("scaledown")
     commands+=("show")
     commands+=("status")
     commands+=("test")
@@ -1187,6 +1621,9 @@ _pgo()
 
     flags+=("--apiserver-url=")
     flags+=("--debug")
+    flags+=("--pgo-ca-cert=")
+    flags+=("--pgo-client-cert=")
+    flags+=("--pgo-client-key=")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -1197,10 +1634,11 @@ __start_pgo()
 {
     local cur prev words cword
     declare -A flaghash 2>/dev/null || :
+    declare -A aliashash 2>/dev/null || :
     if declare -F _init_completion >/dev/null 2>&1; then
         _init_completion -s || return
     else
-        __my_init_completion -n "=" || return
+        __pgo_init_completion -n "=" || return
     fi
 
     local c=0
@@ -1215,7 +1653,7 @@ __start_pgo()
     local last_command
     local nouns=()
 
-    __handle_word
+    __pgo_handle_word
 }
 
 if [[ $(type -t compopt) = "builtin" ]]; then

@@ -42,7 +42,6 @@ $CO_CMD $NS create configmap pgo-config \
         --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
         --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgo-ingest-watch-job.json \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \

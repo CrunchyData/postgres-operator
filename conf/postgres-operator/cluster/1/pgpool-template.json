@@ -5,7 +5,8 @@
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
-            "pg-cluster": "{{.ClusterName}}"
+            "pg-cluster": "{{.ClusterName}}",
+            "service-name": "{{.Name}}"
         }
     },
     "spec": {
@@ -15,7 +16,8 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "crunchy-pgpool": "true",
-                    "pg-cluster": "{{.ClusterName}}"
+                    "pg-cluster": "{{.ClusterName}}",
+                    "service-name": "{{.Name}}"
                 }
             },
             "spec": {

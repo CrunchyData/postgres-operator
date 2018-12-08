@@ -17,6 +17,7 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
+  AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: nfsstorage
@@ -62,4 +63,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.4.0
+  COImageTag:  centos7-3.5.0
