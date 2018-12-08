@@ -161,7 +161,8 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	}
 
 	//get filtered list of Deployments
-	selector := request.Selector + "," + util.LABEL_PRIMARY + "=true"
+	//selector := request.Selector + "," + util.LABEL_PRIMARY + "=true"
+	selector := request.Selector
 	log.Debugf("selector string=[%s]", selector)
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
@@ -183,6 +184,11 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	labels[request.Name] = "pgpolicy"
 
 	for _, d := range deployments.Items {
+		if d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] {
+			continue
+			//skip non primary deployments
+		}
+
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
 		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.Namespace, request.Name, d.ObjectMeta.Name)
@@ -223,7 +229,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 		}
 
 		//update the pgcluster crd labels with the new policy
-		err = labelservice.PatchPgcluster(request.Name+"=pgpolicy", cl)
+		err = labelservice.PatchPgcluster(request.Name+"="+util.LABEL_PGPOLICY, cl)
 		if err != nil {
 			log.Error(err)
 		}

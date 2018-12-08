@@ -1,0 +1,20 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+{{ .Hugo.Generator }}
+<title>{{ .Title }} :: {{ .Site.Title }}</title>
+<link rel="shortcut icon" href="{{"favicon.png" | relURL}}" type="image/x-icon" />
+<link href="{{"css/font-awesome.min.css" | relURL}}" rel="stylesheet">
+<link href="{{"css/nucleus.css" | relURL}}" rel="stylesheet">
+<link href="{{(printf "theme-%s/style.css" (.Site.Params.themeStyle| default "flex")  ) | relURL}}" rel="stylesheet">
+{{with .Site.Params.themeVariant}}
+	<link href="{{(printf "theme-%s/variant-%s.css" (.Site.Params.themeStyle| default "flex") .) | relURL}}" rel="stylesheet">
+{{end}}
+<link rel="stylesheet" href="{{"css/bootstrap.min.css" | relURL}}">
+<link href="{{"css/custom.css" | relURL}}" rel="stylesheet">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+<script src="{{"js/jquery-2.x.min.js" | relURL}}"></script>
+<script src="{{"js/toc.js" | relURL}}"></script>
+<script type="text/javascript">
+      var baseurl = "{{.Site.BaseURL}}";
+</script>
+{{ partial "custom-head.html" . }}

@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == Project Structure
 
@@ -20,7 +20,7 @@ export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
 export CO_BASEOS=centos7
-export CO_VERSION=3.4.0
+export CO_VERSION=3.5.0
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 
 # for the pgo CLI auth
@@ -58,7 +58,7 @@ Next, get a tagged release of the source code -
 cd $GOPATH/src/github.com/crunchydata
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout 3.4.0
+git checkout 3.5.0
 ....
 
 == Installation Prerequsites
@@ -172,10 +172,10 @@ make pull
 To pull down the prebuilt *pgo* binaries, download the *tar.gz* release file from the following link -
 
  * link:https://github.com/CrunchyData/postgres-operator/releases[Github Releases]
- * extract (e.g. tar xvzf postgres-operator.3.4.0.tar.gz)
+ * extract (e.g. tar xvzf postgres-operator.3.5.0.tar.gz)
 ....
 cd $HOME
-tar xvzf ./postgres-operator.3.4.0.tar.gz
+tar xvzf ./postgres-operator.3.5.0.tar.gz
 ....
  * copy *pgo* client to somewhere in your path (e.g. cp pgo /usr/local/bin)
 

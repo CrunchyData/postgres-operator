@@ -52,7 +52,7 @@ func showVersion() {
 	fmt.Println("pgo client version " + msgs.PGO_VERSION)
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("apiserver version " + response.Version)
+		fmt.Println("pgo-apiserver version " + response.Version)
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)

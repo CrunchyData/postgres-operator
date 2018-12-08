@@ -1,7 +1,7 @@
 package backrest
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2018-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -86,39 +86,12 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
 	}
 
-	//delete the configmap if it exists from a prior run
-	//kubeapi.DeleteConfigMap(clientset, task.Spec.Name, namespace)
-
-	//create the backrest-restore configmap
-
-	//err = createRestoreJobConfigMap(clientset, task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER], task.Spec.Name, namespace)
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	return
-	//}
-
 	//delete the job if it exists from a prior run
 	kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
 	//add a small sleep, this is due to race condition in delete propagation
 	time.Sleep(time.Second * 3)
 
 	//create the Job to run the backrest restore container
-
-	/**
-	jobFields := backrestRestoreJobTemplateFields{
-		RestoreName:          task.Spec.Name,
-		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
-		RestoreConfigMapName: task.Spec.Name,
-		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
-		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
-		BackrestRestoreOpts:  task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
-
-		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    operator.Pgo.Cluster.CCPImageTag,
-	}
-	*/
-
-	//cmd := task.Spec.Parameters[util.LABEL_BACKREST_COMMAND]
 
 	jobFields := backrestJobTemplateFields{
 		JobName:                       "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
@@ -137,12 +110,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	}
 
 	var doc2 bytes.Buffer
-	//	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
-	//	if err != nil {
-	//		log.Error(err.Error())
-	//		return
-	//	}
-
 	err = operator.BackrestjobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
@@ -150,7 +117,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		//		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 		operator.BackrestjobTemplate.Execute(os.Stdout, jobFields)
 
 	}
@@ -165,25 +131,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	kubeapi.CreateJob(clientset, &newjob, namespace)
 
 }
-
-/**
-func getDeltaEnvVar(restoretype string) string {
-	if restoretype == util.LABEL_BACKREST_RESTORE_DELTA {
-		return "{ \"name\": \"DELTA\"" + "},"
-	}
-	return ""
-}
-func getPITREnvVar(restoretype, pitrtarget string) string {
-	if restoretype == util.LABEL_BACKREST_RESTORE_PITR {
-		tmp := "{"
-		tmp = tmp + "\"name\":" + " \"PITR_TARGET\","
-		tmp = tmp + "\"value\":" + " \"" + pitrtarget + "\""
-		tmp = tmp + "},"
-		return tmp
-	}
-	return ""
-}
-*/
 
 func getRestoreVolumes(task *crv1.Pgtask) string {
 	var doc2 bytes.Buffer
