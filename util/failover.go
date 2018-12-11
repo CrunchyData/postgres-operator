@@ -60,7 +60,8 @@ func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace strin
 
 	var pods *v1.PodList
 
-	selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_PRIMARY + "=false"
+	//selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_PRIMARY + "=false"
+	selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 
 	pods, err = kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {

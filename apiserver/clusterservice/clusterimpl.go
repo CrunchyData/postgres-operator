@@ -234,7 +234,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		log.Infof("after getPVCName call")
 
 		d.Primary = false
-		d.Type = getType(&p)
+		d.Type = getType(&p, cluster.Spec.Name)
 		if d.Type == msgs.PodTypePrimary {
 			d.Primary = true
 		}
@@ -1079,14 +1079,14 @@ func createWorkflowTask(clusterName string) (string, error) {
 	return spec.Parameters[crv1.PgtaskWorkflowID], err
 }
 
-func getType(pod *v1.Pod) string {
+func getType(pod *v1.Pod, clusterName string) string {
 
 	log.Infof("%v\n", pod.ObjectMeta.Labels)
 	//map[string]string
 	if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
 		log.Infoln("this is a backup pod")
 		return msgs.PodTypeBackup
-	} else if pod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	} else if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		log.Infoln("this is a primary pod")
 		return msgs.PodTypePrimary
 	} else {

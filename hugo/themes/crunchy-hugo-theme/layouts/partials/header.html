@@ -1,0 +1,11 @@
+{{ $header := print "_header." .Lang }}
+	{{ range where .Site.Pages "Source.BaseFileName" $header }}
+	{{ .Content }}
+	{{else}}
+  {{ if .Site.GetPage "page" "_header.md" }}
+    {{(.Site.GetPage "page" "_header.md").Content}}
+  {{else}}
+    <img alt="Crunchy Data" src="/images/crunchy_reverse_white.png">
+    <a class="baselink" href="/">{{.Site.Title}}</a>
+  {{end}}
+{{end}}

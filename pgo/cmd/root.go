@@ -75,6 +75,8 @@ func initConfig() {
 	}
 	log.Debugf("in initConfig with url=%s", APIServerURL)
 	GetCredentials()
+
+	//generateBashCompletion()
 }
 
 func generateBashCompletion() {

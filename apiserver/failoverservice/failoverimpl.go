@@ -41,7 +41,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	resp.Results = make([]string, 0)
 
 	if request.Target != "" {
-		_, err = validateDeploymentName(request.Target)
+		_, err = validateDeploymentName(request.Target, request.ClusterName)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -69,9 +69,21 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	spec.TaskType = crv1.PgtaskFailover
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[request.ClusterName] = request.ClusterName
+
 	labels := make(map[string]string)
 	labels["target"] = request.Target
 	labels[util.LABEL_PG_CLUSTER] = request.ClusterName
+
+	if request.AutofailReplaceReplica != "" {
+		if request.AutofailReplaceReplica == "true" ||
+			request.AutofailReplaceReplica == "false" {
+			labels[util.LABEL_AUTOFAIL_REPLACE_REPLICA] = request.AutofailReplaceReplica
+		} else {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "true or false value required for --autofail-replace-replica flag"
+			return resp
+		}
+	}
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -116,12 +128,35 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 
 	log.Debugf("query failover called for %s", name)
 
+	//get pods using selector service-name=clusterName-replica
+
+	selector := util.LABEL_SERVICE_NAME + "=" + name + "-replica"
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+	if kerrors.IsNotFound(err) {
+		log.Debug("no replicas found")
+		resp.Status.Msg = "no replicas found for " + name
+		return resp
+	} else if err != nil {
+		log.Error("error getting pods " + err.Error())
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	deploymentNameList := ""
+	for _, p := range pods.Items {
+		deploymentNameList = deploymentNameList + p.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME] + ","
+	}
+	log.Debugf("deployment name list is %s", deploymentNameList)
+
 	//get failover targets for this cluster
 	//deployments with --selector=primary=false,pg-cluster=ClusterName
 
-	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
+	//selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
+	selector = util.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
 
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	var deployments *v1beta1.DeploymentList
+	deployments, err = kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
 		resp.Status.Msg = "no replicas found for " + name
@@ -160,7 +195,7 @@ func validateClusterName(clusterName string) (*crv1.Pgcluster, error) {
 	return &cluster, err
 }
 
-func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
+func validateDeploymentName(deployName, clusterName string) (*v1beta1.Deployment, error) {
 
 	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, apiserver.Namespace)
 	if !found {
@@ -168,7 +203,7 @@ func validateDeploymentName(deployName string) (*v1beta1.Deployment, error) {
 	}
 
 	//make sure the primary is not being selected by the user
-	if deployment.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	if deployment.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		return deployment, errors.New("deployment primary can not be selected as failover target")
 	}
 

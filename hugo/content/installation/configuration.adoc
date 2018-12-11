@@ -6,7 +6,7 @@ weight: 40
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == Overview
 
@@ -251,6 +251,7 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
+  AutofailReplaceReplica:  false
 PrimaryStorage: hostpathstorage
 BackupStorage: hostpathstorage
 ReplicaStorage: hostpathstorage
@@ -329,7 +330,9 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Cluster.Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |Cluster.Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
+|Cluster.AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
+|ArchiveStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
@@ -338,7 +341,7 @@ Values in the pgo configuration file have the following meaning:
 |Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
 |Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|Storage.storage1.MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *name=clustername* is added to the PVC as a match criteria
+|Storage.storage1.MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
 |DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
 |DefaultLoadResource    |optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container
 |DefaultLspvcResource    |optional, the value of the container resources configuration to use for pgo-lspvc containers, if not set, no resource limits or requests are added on the database container
@@ -405,7 +408,7 @@ for users to use as a starting configuration -
 
 Note, when Storage Type is *create*, you can specify a storage
 configuration setting of *MatchLabels*, when set, this will cause a
-*selector* of *name=clustername* to be added into the PVC, this will
+*selector* of *key=value* to be added into the PVC, this will
 let you target specific PV(s) to be matched for this cluster. Note, if a
 PV does not match the claim request, then the cluster will not start.  Users
 that want to use this feature have to place labels on their PV resources
@@ -413,13 +416,21 @@ as part of PG cluster creation before creating the PG cluster.  For
 example, users would add a label like this to their PV before they
 create the PG cluster:
 ....
-kubectl label pv somepv name=myclustername
+kubectl label pv somepv myzone=somezone
 ....
 
 If you do not specify *MatchLabels* in the storage configuration, then
 no match filter is added and any available PV will be used to satisfy
 the PVC request.  This option does not apply to *dynamic* storage
 types.
+
+Example PV creation scripts are provided that add labels to a set of PVs
+and can be used for testing:  $COROOT/pv/create-pv-nfs-labels.sh, in that
+example, a label of crunchyzone=red is set on a set of PVs to test with.
+The pgo.yaml includes a storage config named nfsstoragered that when used
+will demonstrate the label matching.  This feature allows you to support
+n-number of NFS storage configurations and supports spreading a PG
+cluster across different NFS storage configurations.
 
 ==== Overriding Container Resources Configuration Defaults
 
@@ -532,11 +543,6 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 *pgo apply policy <name>*
 ....
 curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/apply/<name>
-....
-
-*pgo show ingest <name>*
-....
-curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/ingest/<name>
 ....
 
 *pgo label*

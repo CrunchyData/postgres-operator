@@ -16,5 +16,5 @@
 $CO_CMD delete svc --selector=pg-cluster
 $CO_CMD delete secret --selector=pg-database
 $CO_CMD delete pvc --selector=pgremove
-$CO_CMD delete crd pgbackups.cr.client-go.k8s.io  pgclusters.cr.client-go.k8s.io  pgingests.cr.client-go.k8s.io  pgpolicies.cr.client-go.k8s.io  pgreplicas.cr.client-go.k8s.io
+$CO_CMD delete crd pgbackups.cr.client-go.k8s.io  pgclusters.cr.client-go.k8s.io  pgpolicies.cr.client-go.k8s.io  pgreplicas.cr.client-go.k8s.io
 $CO_CMD delete crd pgtasks.cr.client-go.k8s.io pgupgrades.cr.client-go.k8s.io
