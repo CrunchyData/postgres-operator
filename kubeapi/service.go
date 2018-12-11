@@ -75,3 +75,13 @@ func CreateService(clientset *kubernetes.Clientset, svc *v1.Service, namespace s
 	log.Info("created service " + result.Name)
 	return result, err
 }
+
+func UpdateService(clientset *kubernetes.Clientset, svc *v1.Service, namespace string) error {
+	_, err := clientset.Core().Services(namespace).Update(svc)
+	if err != nil {
+		log.Error(err)
+		log.Error("error updating service %s", svc.Name)
+	}
+	return err
+
+}

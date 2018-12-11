@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -61,12 +61,48 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		return
 	}
 
+	//get initial count of replicas --selector=pg-cluster=clusterName
+	replicaList := crv1.PgreplicaList{}
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
+	err = kubeapi.GetpgreplicasBySelector(client, &replicaList, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	log.Debug("replica count before failover is %d", len(replicaList.Items))
+
 	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
 	//remove the pgreplica CRD for the promoted replica
 	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
 
-	//scale up the replicas to replace the failover target
-	replaceReplica(client, &cluster)
+	//optionally, scale up the replicas to replace the failover target
+	replaced := false
+	userSelection := task.ObjectMeta.Labels[util.LABEL_AUTOFAIL_REPLACE_REPLICA]
+	if userSelection == "true" {
+		log.Debug("replacing replica based on user selection")
+		replaceReplica(client, &cluster)
+		replaced = true
+	} else if userSelection == "false" {
+		log.Debug("not replacing replica based on user selection")
+	} else if operator.Pgo.Cluster.AutofailReplaceReplica {
+		log.Debug("replacing replica based on pgo.yaml setting")
+		replaceReplica(client, &cluster)
+		replaced = true
+	} else {
+		log.Debug("not replacing replica")
+	}
+
+	//see if the replica service needs to be removed
+	if !replaced {
+		if len(replicaList.Items) == 1 {
+			log.Debug("removing replica service since last replica was removed by the failover %s", clusterName)
+			err = kubeapi.DeleteService(clientset, clusterName+"-replica", namespace)
+			if err != nil {
+				log.Error("could not delete replica service as part of failover")
+				return
+			}
+		}
+	}
 
 }
 

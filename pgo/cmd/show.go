@@ -37,7 +37,6 @@ var ShowCmd = &cobra.Command{
 	pgo show backup mycluster --backup-type=pgbackrest
 	pgo show cluster mycluster
 	pgo show config
-	pgo show ingest myingest
 	pgo show policy policy1
 	pgo show pvc mycluster
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5
@@ -49,7 +48,6 @@ Valid resource types include:
 	* backup
 	* cluster
 	* config
-	* ingest
 	* policy
 	* pvc
 	* workflow
@@ -61,7 +59,6 @@ Valid resource types include:
 			case "cluster":
 			case "pvc":
 			case "policy":
-			case "ingest":
 			case "user":
 			case "config":
 			case "schedule":
@@ -75,7 +72,6 @@ Valid resource types include:
 	* backup
 	* cluster
 	* config
-	* ingest
 	* policy
 	* pvc
 	* workflow
@@ -92,7 +88,6 @@ func init() {
 	ShowCmd.AddCommand(ShowBackupCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
-	ShowCmd.AddCommand(ShowIngestCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
@@ -219,22 +214,6 @@ var ShowClusterCmd = &cobra.Command{
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
 			showCluster(args)
-		}
-	},
-}
-
-// ShowIngestCmd represents the show ingest command
-var ShowIngestCmd = &cobra.Command{
-	Use:   "ingest",
-	Short: "Show ingest information",
-	Long: `Show an ingest. For example:
-
-	pgo show ingest myingest`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Selector == "" && len(args) == 0 {
-			fmt.Println("Error: Ingest name(s) required for this command.")
-		} else {
-			showIngest(args)
 		}
 	},
 }

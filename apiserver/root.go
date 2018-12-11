@@ -17,12 +17,11 @@ limitations under the License.
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//crdclient "github.com/crunchydata/postgres-operator/client"
-	"bytes"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -38,7 +37,6 @@ import (
 	"text/template"
 )
 
-const loadTemplatePath = "/pgo-config/pgo.load-template.json"
 const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
 const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
 

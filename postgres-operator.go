@@ -94,13 +94,6 @@ func main() {
 		Namespace:       Namespace,
 	}
 
-	pgIngestcontroller := controller.PgingestController{
-		PgingestClient:    crdClient,
-		PgingestScheme:    crdScheme,
-		PgingestClientset: Clientset,
-		Namespace:         Namespace,
-	}
-
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
@@ -145,7 +138,6 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go pgTaskcontroller.Run(ctx)
-	go pgIngestcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
 	go pgReplicacontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)

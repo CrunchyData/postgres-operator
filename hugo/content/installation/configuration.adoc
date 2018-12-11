@@ -6,7 +6,7 @@ weight: 40
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == Overview
 
@@ -251,6 +251,7 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
+  AutofailReplaceReplica:  false
 PrimaryStorage: hostpathstorage
 BackupStorage: hostpathstorage
 ReplicaStorage: hostpathstorage
@@ -329,7 +330,9 @@ Values in the pgo configuration file have the following meaning:
 |Cluster.ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Cluster.Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |Cluster.Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
+|Cluster.AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
+|ArchiveStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
@@ -532,11 +535,6 @@ curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --in
 *pgo apply policy <name>*
 ....
 curl -v -X POST -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/policies/apply/<name>
-....
-
-*pgo show ingest <name>*
-....
-curl -v -X GET -u readonlyuser:testpass -H "Content-Type: application/json" --insecure https://10.101.155.218:8443/ingest/<name>
 ....
 
 *pgo label*
