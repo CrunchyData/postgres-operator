@@ -336,6 +336,15 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 		return storage, err
 	}
 
+	if storage.MatchLabels != "" {
+		test := strings.Split(storage.MatchLabels, "=")
+		if len(test) != 2 {
+			err = errors.New("invalid Storage config " + name + " MatchLabels needs to be in key=value format.")
+			log.Error(err)
+			return storage, err
+		}
+	}
+
 	return storage, err
 
 }

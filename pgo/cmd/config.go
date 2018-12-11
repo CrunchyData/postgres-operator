@@ -83,6 +83,9 @@ func showConfig(args []string) {
 		fmt.Printf("  %s:\n", k)
 		fmt.Printf("%s%s\n", "    AccessMode:  ", v.AccessMode)
 		fmt.Printf("%s%s\n", "    Size:  ", v.Size)
+		if v.MatchLabels != "" {
+			fmt.Printf("%s%s\n", "    MatchLabels:  ", v.MatchLabels)
+		}
 		fmt.Printf("%s%s\n", "    StorageType:  ", v.StorageType)
 		if v.StorageClass != "" {
 			fmt.Printf("%s%s\n", "    StorageClass:  ", v.StorageClass)

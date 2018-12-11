@@ -34,6 +34,12 @@ Storage:
     Size:  1G
     StorageType:  create
     SupplementalGroups:  65534
+  nfsstoragered:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    MatchLabels: crunchyzone=red
+    StorageType:  create
+    SupplementalGroups:  65534
   archivestorage:
     AccessMode:  ReadWriteMany
     Size:  800M
