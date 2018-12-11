@@ -105,7 +105,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//handle the case of a service-name re-label
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] !=
 		oldpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] {
-		log.Debug("JEFF the pod was updated and the service names were changed in this pod update, not going to check the ReadyStatus")
+		log.Debug("the pod was updated and the service names were changed in this pod update, not going to check the ReadyStatus")
 		return
 	}
 	//if the pod has a metadata label of  pg-cluster and

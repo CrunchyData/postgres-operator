@@ -18,6 +18,7 @@ package pvc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -26,11 +27,13 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"os"
+	"strings"
 	"time"
 )
 
 type matchLabelsTemplateFields struct {
-	Name string
+	Key   string
+	Value string
 }
 
 // TemplateFields ...
@@ -81,7 +84,7 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 		StorageClass: storageSpec.StorageClass,
 		ClusterName:  clusterName,
 		Size:         storageSpec.Size,
-		MatchLabels:  "",
+		MatchLabels:  storageSpec.MatchLabels,
 	}
 
 	if storageSpec.StorageType == "dynamic" {
@@ -93,7 +96,12 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 	} else {
 		log.Debugf("matchlabels from spec is [%s]", storageSpec.MatchLabels)
 		if storageSpec.MatchLabels != "" {
-			pvcFields.MatchLabels = getMatchLabels(clusterName)
+			arr := strings.Split(storageSpec.MatchLabels, "=")
+			if len(arr) != 2 {
+				log.Error("%s MatchLabels is not formatted correctly", storageSpec.MatchLabels)
+				return errors.New("match labels is not formatted correctly")
+			}
+			pvcFields.MatchLabels = getMatchLabels(arr[0], arr[1])
 			log.Debugf("matchlabels constructed is %s", pvcFields.MatchLabels)
 		}
 
@@ -161,10 +169,11 @@ func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool
 	return found
 }
 
-func getMatchLabels(name string) string {
+func getMatchLabels(key, value string) string {
 
 	matchLabelsTemplateFields := matchLabelsTemplateFields{}
-	matchLabelsTemplateFields.Name = name
+	matchLabelsTemplateFields.Key = key
+	matchLabelsTemplateFields.Value = value
 
 	var doc bytes.Buffer
 	err := operator.PVCMatchLabelsTemplate.Execute(&doc, matchLabelsTemplateFields)

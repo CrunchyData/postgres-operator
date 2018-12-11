@@ -145,6 +145,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			storage.AccessMode = pgoStorage.AccessMode
 			storage.Size = pgoStorage.Size
 			storage.StorageType = pgoStorage.StorageType
+			storage.MatchLabels = pgoStorage.MatchLabels
 			storage.SupplementalGroups = pgoStorage.SupplementalGroups
 			storage.Fsgroup = pgoStorage.Fsgroup
 			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
@@ -166,6 +167,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			storage.AccessMode = pgoStorage.AccessMode
 			storage.Size = pgoStorage.Size
 			storage.StorageType = pgoStorage.StorageType
+			storage.MatchLabels = pgoStorage.MatchLabels
 			storage.SupplementalGroups = pgoStorage.SupplementalGroups
 			storage.Fsgroup = pgoStorage.Fsgroup
 
