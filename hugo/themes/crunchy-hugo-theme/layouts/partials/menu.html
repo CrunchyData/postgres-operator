@@ -30,9 +30,9 @@
 
         {{- if ne $numberOfPages 0 }}
           {{- if or (.IsAncestor $currentNode) (.Params.alwaysopen) }}
-            <i class="fa fa-angle-down fa-lg category-icon"></i>
+            <i class="fas fa-angle-down fa-lg category-icon"></i>
           {{- else -}}
-            <i class="fa fa-angle-right fa-lg category-icon"></i>
+            <i class="fas fa-angle-right fa-lg category-icon"></i>
           {{- end}}
         {{- end}}
 
