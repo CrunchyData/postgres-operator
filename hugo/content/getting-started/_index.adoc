@@ -324,6 +324,11 @@ pgo restore mycluster --to-pvc=restored
 pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest
 ....
 
+To do restore based on a point in time:
+....
+pgo restore mycluster --to-pvc=restored --backup-opts="--type=time" --pitr-target="2018-12-12 14:45:58 EST"
+....
+
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
 Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file

@@ -73,6 +73,7 @@ func restore(args []string) {
 	request.FromCluster = args[0]
 	request.ToPVC = ToPVC
 	request.RestoreOpts = BackupOpts
+	request.PITRTarget = PITRTarget
 
 	response, err := api.Restore(httpclient, &SessionCredentials, request)
 	if err != nil {
