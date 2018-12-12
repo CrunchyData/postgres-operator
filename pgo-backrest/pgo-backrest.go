@@ -16,8 +16,6 @@ import (
 
 var Clientset *kubernetes.Clientset
 
-//const sourceCommand = `pgbackrest stanza-create --no-online && `
-const sourceCommand = ` `
 const backrestCommand = "pgbackrest"
 
 const backrestBackupCommand = `backup`
@@ -55,6 +53,9 @@ func main() {
 	COMMAND_OPTS := os.Getenv("COMMAND_OPTS")
 	log.Debugf("setting COMMAND_OPTS to %s", COMMAND_OPTS)
 
+	PITR_TARGET := os.Getenv("PITR_TARGET")
+	log.Debugf("setting PITR_TARGET to %s", PITR_TARGET)
+
 	PODNAME := os.Getenv("PODNAME")
 	log.Debugf("setting PODNAME to %s", PODNAME)
 	if PODNAME == "" {
@@ -75,21 +76,19 @@ func main() {
 
 	bashcmd := make([]string, 1)
 	bashcmd[0] = "bash"
-	cmd := make([]string, 0)
+	cmdStrs := make([]string, 0)
 
 	switch COMMAND {
 	case crv1.PgtaskBackrestInfo:
 		log.Info("backrest info command requested")
-		cmd = append(cmd, sourceCommand)
-		cmd = append(cmd, backrestCommand)
-		cmd = append(cmd, backrestBackupCommand)
-		cmd = append(cmd, COMMAND_OPTS)
+		cmdStrs = append(cmdStrs, backrestCommand)
+		cmdStrs = append(cmdStrs, backrestBackupCommand)
+		cmdStrs = append(cmdStrs, COMMAND_OPTS)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
-		cmd = append(cmd, sourceCommand)
-		cmd = append(cmd, backrestCommand)
-		cmd = append(cmd, backrestBackupCommand)
-		cmd = append(cmd, COMMAND_OPTS)
+		cmdStrs = append(cmdStrs, backrestCommand)
+		cmdStrs = append(cmdStrs, backrestBackupCommand)
+		cmdStrs = append(cmdStrs, COMMAND_OPTS)
 	case crv1.PgtaskBackrestRestore:
 		err := os.Mkdir(os.Getenv("PGBACKREST_DB_PATH"), 0770)
 		if err != nil {
@@ -97,27 +96,41 @@ func main() {
 			os.Exit(2)
 		}
 		log.Info("backrest Restore command requested")
-		cmd = append(cmd, sourceCommand)
-		cmd = append(cmd, backrestCommand)
-		cmd = append(cmd, backrestRestoreCommand)
-		cmd = append(cmd, COMMAND_OPTS)
+		cmdStrs = append(cmdStrs, backrestCommand)
+		cmdStrs = append(cmdStrs, backrestRestoreCommand)
+		cmdStrs = append(cmdStrs, COMMAND_OPTS)
+		if PITR_TARGET != "" {
+			//cmdStrs = append(cmdStrs, "--target='"+PITR_TARGET+"'")
+			cmdStrs = append(cmdStrs, "--target="+PITR_TARGET)
+		}
 	default:
 		log.Error("unsupported backup command specified " + COMMAND)
 		os.Exit(2)
 	}
 
+	log.Infof("command to execute is [%s]", strings.Join(cmdStrs, " "))
+
 	if COMMAND == crv1.PgtaskBackrestRestore {
-		cmd := exec.Command(backrestCommand, backrestRestoreCommand, COMMAND_OPTS)
-		var out bytes.Buffer
-		cmd.Stdout = &out
+		var cmd *exec.Cmd
+		if PITR_TARGET != "" {
+			//PITR_OPTS := "--target='" + PITR_TARGET + "'"
+			PITR_OPTS := "--target=" + PITR_TARGET
+			cmd = exec.Command(backrestCommand, backrestRestoreCommand, COMMAND_OPTS, PITR_OPTS)
+		} else {
+			cmd = exec.Command(backrestCommand, backrestRestoreCommand, COMMAND_OPTS)
+		}
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
 		err := cmd.Run()
+		log.Infof("stdout=[%s]", stdout.String())
+		log.Infof("stderr=[%s]", stderr.String())
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Infof("output=[%s]", out.String())
 	} else {
-		log.Infof("command is %s ", strings.Join(cmd, " "))
-		reader := strings.NewReader(strings.Join(cmd, " "))
+		log.Infof("command is %s ", strings.Join(cmdStrs, " "))
+		reader := strings.NewReader(strings.Join(cmdStrs, " "))
 		output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
 		if err != nil {
 			log.Error(err)

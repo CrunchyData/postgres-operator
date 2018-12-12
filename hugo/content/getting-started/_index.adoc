@@ -324,6 +324,11 @@ pgo restore mycluster --to-pvc=restored
 pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest
 ....
 
+To do restore based on a point in time:
+....
+pgo restore mycluster --to-pvc=restored --backup-opts="--type=time" --pitr-target="2018-12-12 14:45:58 EST"
+....
+
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
 Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file
@@ -332,17 +337,9 @@ attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
 has to attach the same pgbackrest repo used by the original cluster the restore
 was based off of.
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=== Update Cluster
-
-The `update cluster` command will let users set the autofail flag on
-=======
 === Update Cluster
 
 The `update cluster` command will let users set the autofail flag on 
->>>>>>> 86fdd20972f5040c5865dd90d6535272823b9c14
 a set of clusters.  This can be handy to prevent autofailover logic
 in certain scenarios like when you want to do a minor upgrade on a
 primary deployment.
@@ -360,10 +357,6 @@ $ pgo update cluster NAME|all [FLAGS]
 |`--autofail` |-b |N/A |
 Sets to true or false the autofail flag on the pgcluster CRD
 for this cluster.
-<<<<<<< HEAD
-|=========================================================
-=======
->>>>>>> 86fdd20972f5040c5865dd90d6535272823b9c14
 
 ==== Examples
 
@@ -382,11 +375,7 @@ Shutdown the primary pod:
 kubectl scale deployment/one --replicas=0
 ....
 
-<<<<<<< HEAD
-Do something to the primary such as copy its pvc or
-=======
 Do something to the primary such as copy its pvc or 
->>>>>>> 86fdd20972f5040c5865dd90d6535272823b9c14
 patch the primary deployment.
 
 Bring the primary pod back:
@@ -399,10 +388,6 @@ Set autofail flag back to true:
 pgo update cluster mycluster --autofail=true
 ....
 
-<<<<<<< HEAD
->>>>>>> 88bc2e1... Update crunchy-hugo-theme & related style updates
-=======
->>>>>>> 86fdd20972f5040c5865dd90d6535272823b9c14
 === Delete Cluster
 
 The `delete cluster` command will by default delete all associated components of
