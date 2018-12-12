@@ -4,7 +4,6 @@ languageCode = "en-us"
 DefaultContentLanguage = "en"
 title = "Crunchy Data PostgreSQL Operator Documentation"
 theme = "crunchy-hugo-theme"
-#themesdir = "themes/"
 pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
 publishDir = ""
@@ -13,15 +12,6 @@ canonifyurls = true
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
-
-
-# [Languages]
-# [Languages.en]
-# title = "Crunchy Data PostgreSQL Operator Documentation"
-# weight = 1
-# languageName = "English"
-
-
 
 [params]
 editURL = "https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/"
@@ -40,34 +30,22 @@ enableGitInfo = true
 home = [ "HTML", "RSS", "JSON"]
 
 [[menu.shortcuts]]
-pre = "<h3>More</h3>"
 name = "<i class='fab fa-github'></i> <label>Source</label>"
-identifier = "ds"
 url = "https://github.com/CrunchyData/postgres-operator"
 weight = 10
 
 [[menu.shortcuts]]
-name = "<i class='fa fa-bookmark'></i> <label>Kubernetes</label>"
+name = "<i class='fas fa-bookmark'></i> <label>Kubernetes</label>"
 identifier = "kubedoc"
 url = "https://kubernetes.io/docs/"
 weight = 20
 
 [[menu.shortcuts]]
-name = "<i class='fas fa-file-pdf'></i> <label>PDF</label>"
-url = "/pdf/postgres-operator.pdf"
-weight = 30
-
-#[[menu.shortcuts]]
-#name = "<i class='fas fa-book'></i> <label>EPUB</label>"
-#url = "/pdf/patroni.epub"
-#weight = 40
-
-[[menu.shortcuts]]
 name = "<i class='fas fa-file-contract'></i> <label>License</label>"
 url = "https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"
-weight = 50
+weight = 30
 
-[[menu.shortcuts]]
-name = "<i class='fas fa-copy'></i> <label>View All Documentation</label>"
-url = "https://access.crunchydata.com/documentation"
-weight = 60
+[[menu.downloads]]
+name = "<i class='fas fa-file-pdf'></i> <label>PDF</label>"
+url = "/pdf/postgres-operator.pdf"
+weight = 20

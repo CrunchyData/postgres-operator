@@ -1,13 +1,46 @@
-@import url('https://fonts.googleapis.com/css?family=Open+Sans');
 @import url('https://fonts.googleapis.com/css?family=Roboto+Mono:400');
+
+@font-face {
+  font-family: 'Fort';
+  src: url('../fonts/Fort-Light.eot');
+  src: url('../fonts/Fort-Light.eot?#iefix') format('embedded-opentype'), url('../fonts/Fort-Light.woff2') format('woff2'), url('../fonts/Fort-Light.woff') format('woff'), url('../fonts/Fort-Light.ttf') format('truetype'), url('../fonts/Fort-Light.svg#Fort-Light') format('svg');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Fort';
+  src: url('../fonts/Fort-Extrabold.eot');
+  src: url('../fonts/Fort-Extrabold.eot?#iefix') format('embedded-opentype'), url('../fonts/Fort-Extrabold.woff2') format('woff2'), url('../fonts/Fort-Extrabold.woff') format('woff'), url('../fonts/Fort-Extrabold.ttf') format('truetype'), url('../fonts/Fort-Extrabold.svg#Fort-Extrabold') format('svg');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Fort';
+  src: url('../fonts/Fort-Black.eot');
+  src: url('../fonts/Fort-Black.eot?#iefix') format('embedded-opentype'), url('../fonts/Fort-Black.woff2') format('woff2'), url('../fonts/Fort-Black.woff') format('woff'), url('../fonts/Fort-Black.ttf') format('truetype'), url('../fonts/Fort-Black.svg#Fort-Black') format('svg');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Fort';
+  src: url('/fonts/Fort-Medium.eot');
+  src: url('/fonts/Fort-Medium.eot?#iefix') format('embedded-opentype'), url('/fonts/Fort-Medium.woff2') format('woff2'), url('/fonts/Fort-Medium.woff') format('woff'), url('/fonts/Fort-Medium.ttf') format('truetype'), url('/fonts/Fort-Medium.svg#Fort-Medium') format('svg');
+  font-weight: 500;
+  font-style: normal;
+}
 
 body, h1, h2, h3, h4, h5, h6, article section.page h1:first-of-type {
     color: rgba(0,0,0,0.87);
-    font-family: 'Open Sans', sans-serif;
+    font-family: Fort, sans-serif;
+    font-weight: 300;
 }
 
 h1, h2, h3, h4, h5, h6 {
     margin: 1.9rem 0 !important;
+    font-weight: 500;
 }
 
 h2 {
@@ -36,6 +69,12 @@ dd {
     padding: 0.5rem 0 0.5rem 2rem;
 }
 
+a.baselink {
+    font-size: 15px;
+    font-weight: 500;
+    color: #0167B3;
+}
+
 /* Article & Section */
 
 article {
@@ -50,20 +89,45 @@ article > aside {
     width: 25rem !important;
 }
 
+ul.menu b {
+    font-weight: 500;
+}
+
 article > aside .menu {
     line-height: 2rem;
     list-style-type: none;
-    margin-top: 2rem !important;
+    margin: 2rem auto !important;
+    font-size: 13px;
+    width: 80%;
+}
+
+article > aside .menu .dd-item {
+    padding-left: 0;
+    margin: 0.5rem 0;
+}
+
+article > aside .menu .dd-item.active > div {
+    background-color: transparent;
 }
 
 article > aside .menu .dd-item.active > div * {
+    font-weight: 300;
     border-bottom: none;
+}
+
+article > aside .menu .dd-item div a:hover,
+article > aside .menu .dd-item div a:focus,
+article > aside .menu .dd-item div a:active,
+.dropdown-menu li:hover,
+.dropdown-menu li:focus,
+.dropdown-menu li:active {
+    background-color: transparent;
+    padding: 0 0rem;
 }
 
 article section.page h1:first-of-type {
     text-transform: none;
     color: #0167B3;
-    font-weight: 600;
     margin: 2.5rem 0 !important;
     font-size: 2.5rem;
     line-height: 3rem;
@@ -94,7 +158,7 @@ article section.page table td.content {
 .admonitionblock.note table .title:before {
     font-family: FontAwesome;
     font-weight: normal;
-    content: "\f0f6";
+    content: "\f249";
     margin: 5px;
 }
 
@@ -126,6 +190,7 @@ header {
 header .logo * {
     font-size: 1.4rem;
     font-weight: 600;
+    height: 3rem !important;
 }
 
 header .logo a {
@@ -299,9 +364,6 @@ a.github-link {
 }
 
 @media only all and (max-width: 860px) {
-    a.baselink {
-        display: none;
-    }
 
     article > aside {
         display: none;
@@ -332,9 +394,13 @@ a.github-link {
 
 /* Navigation Components */
 
+.searchbox {
+    padding: 0;
+}
+
 .searchbox input {
     border-radius: 3px;
-    margin: 1.25rem 0 0 0;
+    width: 100%;
 }
 
 select {
@@ -369,21 +435,24 @@ nav.pagination {
 
 aside b {
     margin-bottom: 0;
+    color: #0167B3;
+    font-size: 1.1rem;
 }
 
-aside hr {
-    margin: 0 2rem 1.5rem 2rem;
+nav.downloads * {
+    display: inline-block;
+    margin: 0 0.5rem 0 0 !important;
+    cursor: pointer;
 }
 
-nav#TableOfContents, aside b {
-    font-size: 13px;
-    padding-right: 1.5rem;
+nav.downloads *:hover {
+    text-decoration: underline;
 }
 
 nav#TableOfContents div.h2, aside b {
     list-style: none;
-    margin: 0.5rem 0px 0.5rem 20px;
-    padding-left: 1rem;
+    margin: 0.5rem 0px;
+    display: block;
 }
 
 nav#TableOfContents div.h1,

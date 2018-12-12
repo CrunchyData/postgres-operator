@@ -3,7 +3,6 @@
 {{ .Hugo.Generator }}
 <title>{{ .Title }} :: {{ .Site.Title }}</title>
 <link rel="shortcut icon" href="{{"favicon.png" | relURL}}" type="image/x-icon" />
-<link href="{{"css/font-awesome.min.css" | relURL}}" rel="stylesheet">
 <link href="{{"css/nucleus.css" | relURL}}" rel="stylesheet">
 <link href="{{(printf "theme-%s/style.css" (.Site.Params.themeStyle| default "flex")  ) | relURL}}" rel="stylesheet">
 {{with .Site.Params.themeVariant}}

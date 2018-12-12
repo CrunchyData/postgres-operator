@@ -160,7 +160,7 @@ Enables a pgBackRest volume for the database pod.
 |`--pgbackrest-restore-from` |N/A |N/A |
 Only applies when creating a cluster from a pgbackrest restored PVC.  This
 is the name of the cluster from which the restored PVC was created from and
-which the new cluster credentials will be based.  This setting is required in the scenario.  
+which the new cluster credentials will be based.  This setting is required in the scenario.
 
 |`--pgbadger` |N/A |N/A |
 Adds the crunchy-pgbadger container to the database pod.
@@ -327,6 +327,61 @@ attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
 has to attach the same pgbackrest repo used by the original cluster the restore
 was based off of.
 
+<<<<<<< HEAD
+=======
+=== Update Cluster
+
+The `update cluster` command will let users set the autofail flag on
+a set of clusters.  This can be handy to prevent autofailover logic
+in certain scenarios like when you want to do a minor upgrade on a
+primary deployment.
+
+==== Syntax
+
+$ pgo update cluster NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--autofail` |-b |N/A |
+Sets to true or false the autofail flag on the pgcluster CRD
+for this cluster.
+|=========================================================
+
+==== Examples
+
+Create a cluster:
+....
+pgo create cluster mycluster --autofail --replica-count=1
+....
+
+Disable autofail:
+....
+pgo update cluster mycluster --autofail=false
+....
+
+Shutdown the primary pod:
+....
+kubectl scale deployment/one --replicas=0
+....
+
+Do something to the primary such as copy its pvc or
+patch the primary deployment.
+
+Bring the primary pod back:
+....
+kubectl scale deployment/one --replicas=1
+....
+
+Set autofail flag back to true:
+....
+pgo update cluster mycluster --autofail=true
+....
+
+>>>>>>> 88bc2e1... Update crunchy-hugo-theme & related style updates
 === Delete Cluster
 
 The `delete cluster` command will by default delete all associated components of
@@ -343,7 +398,7 @@ $ pgo delete cluster NAME|all [FLAGS]
 |Name |Shorthand |Input |Usage
 
 |`--delete-backups` |-b |N/A |
-Causes the backups for this cluster to be removed permanently.  This only 
+Causes the backups for this cluster to be removed permanently.  This only
 is applicable with pgbasebackup backup volumes and does not remove
 pgbackrest repo volumes.
 
@@ -606,7 +661,7 @@ NOTE:  'pgo show pvc' can run into file permission issues if
 you are trying to view a PVC that is on a RWO (read write once) file
 system (e.g. cloud storage, ceph, storageos, etc.).  If another
 pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
-command in the current 3.4.0 release.  
+command in the current 3.4.0 release.
 
 View the PVC folder and the backups contained therein:
 
@@ -665,8 +720,8 @@ configuration maps with the label `crunchy-scheduler=true` in a specific namespa
 After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
 create pgBaseBackup jobs for the configured schedule.
 
-NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a 
-pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be 
+NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be
 a requirement in the 3.5.0 version of the Operator.
 
 ==== Syntax
@@ -1514,5 +1569,5 @@ to check the status of the cluster creation.
 ==== Syntax
 
 ....
-pgo show workflow ID 
+pgo show workflow ID
 ....
