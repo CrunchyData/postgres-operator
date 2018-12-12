@@ -332,6 +332,57 @@ attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
 has to attach the same pgbackrest repo used by the original cluster the restore
 was based off of.
 
+=== Update Cluster
+
+The `update cluster` command will let users set the autofail flag on 
+a set of clusters.  This can be handy to prevent autofailover logic
+in certain scenarios like when you want to do a minor upgrade on a
+primary deployment.
+
+==== Syntax
+
+$ pgo update cluster NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--autofail` |-b |N/A |
+Sets to true or false the autofail flag on the pgcluster CRD
+for this cluster.
+
+==== Examples
+
+Create a cluster:
+....
+pgo create cluster mycluster --autofail --replica-count=1
+....
+
+Disable autofail:
+....
+pgo update cluster mycluster --autofail=false
+....
+
+Shutdown the primary pod:
+....
+kubectl scale deployment/one --replicas=0
+....
+
+Do something to the primary such as copy its pvc or 
+patch the primary deployment.
+
+Bring the primary pod back:
+....
+kubectl scale deployment/one --replicas=1
+....
+
+Set autofail flag back to true:
+....
+pgo update cluster mycluster --autofail=true
+....
+
 === Delete Cluster
 
 The `delete cluster` command will by default delete all associated components of

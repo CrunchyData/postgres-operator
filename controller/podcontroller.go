@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
@@ -112,11 +113,11 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//eventually pg-failover == true then...
 	//loop thru status.containerStatuses, find the container with name='database'
 	//print out the 'ready' bool
-	//if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" &&
+	autofailEnabled := c.checkAutofailLabel(newpod)
+
 	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
-		clusterName != "" &&
-		newpod.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+		clusterName != "" && autofailEnabled {
 		log.Infof("an autofail pg-cluster %s!", clusterName)
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
@@ -126,7 +127,6 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	}
 
 	//handle applying policies after a database is made Ready
-	//if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
@@ -190,5 +190,24 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
 		}
 
 	}
+
+}
+
+//check for the autofail flag on the pgcluster CRD
+func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod) bool {
+	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+
+	pgcluster := crv1.Pgcluster{}
+	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, c.Namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return false
+	}
+
+	if pgcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+		log.Debugf("autofail is on for this pod %s", newpod.Name)
+		return true
+	}
+	return false
 
 }

@@ -60,16 +60,41 @@ const FAILOVER_EVENT_READY = "Ready"
 type AutoFailoverTask struct {
 }
 
-func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) {
+//at operator startup, add a state machine for each primary pod that
+//has autofail enabled
+func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) error {
+	var err error
 	aftask := AutoFailoverTask{}
 
 	log.Infoln("autofailover Initialize ")
 
-	pods, _ := kubeapi.GetPods(clientset, util.LABEL_AUTOFAIL, ns)
-	log.Infof("%d autofail pods found\n", len(pods.Items))
+	selector := util.LABEL_AUTOFAIL + "=true"
+	clusterList := crv1.PgclusterList{}
 
-	for _, p := range pods.Items {
-		clusterName := p.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+	err = kubeapi.GetpgclustersBySelector(restclient, &clusterList, selector, ns)
+	if err != nil {
+		log.Error(err)
+		log.Error("could not InitializeAutoFailover")
+		return err
+	}
+	log.Debugf("InitializeAutoFailover %d is the pgcluster len", len(clusterList.Items))
+
+	for i := 0; i < len(clusterList.Items); i++ {
+		cl := clusterList.Items[i]
+		clusterName := cl.Name
+		selector := "service-name=" + clusterName
+		pods, err := kubeapi.GetPods(clientset, selector, "demo")
+		if err != nil {
+			log.Error(err)
+			log.Error("could not InitializeAutoFailover")
+			return err
+		}
+		if len(pods.Items) == 0 {
+			log.Errorf("could not InitializeAutoFailover: zero primary pods were found for cluster %s", cl.Name)
+			return err
+		}
+
+		p := pods.Items[0]
 		for _, c := range p.Status.ContainerStatuses {
 			if c.Name == "database" {
 				if c.Ready {
@@ -77,6 +102,7 @@ func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RE
 				} else {
 					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
 					secs, _ := strconv.Atoi(operator.Pgo.Pgo.AutofailSleepSeconds)
+					log.Debugf("InitializeAutoFailover: started state machine for cluster %s", clusterName)
 					sm := StateMachine{
 						Clientset:    clientset,
 						RESTClient:   restclient,
@@ -93,6 +119,7 @@ func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RE
 	}
 
 	aftask.Print(restclient, ns)
+	return err
 }
 
 func (s *StateMachine) Print() {
@@ -233,7 +260,7 @@ func (*AutoFailoverTask) Print(restclient *rest.RESTClient, namespace string) {
 
 	}
 	for k, v := range tasklist.Items {
-		log.Infof("k=%s v=%v tasktype=%s\n", k, v.Name, v.Spec.TaskType)
+		log.Infof("k=%d v=%v tasktype=%s", k, v.Name, v.Spec.TaskType)
 		for x, y := range v.Spec.Parameters {
 			log.Infof("parameter %s %s\n", x, y)
 		}
