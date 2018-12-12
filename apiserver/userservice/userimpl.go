@@ -73,7 +73,8 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		sel = request.Selector + "," + util.LABEL_PG_CLUSTER + "," + util.LABEL_PRIMARY + "=true"
+		//sel = request.Selector + "," + util.LABEL_PG_CLUSTER + "," + util.LABEL_PRIMARY + "=true"
+		sel = request.Selector + "," + util.LABEL_PG_CLUSTER
 	} else {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector is required"
@@ -106,7 +107,8 @@ func User(request *msgs.UserRequest) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+		//selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+		selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -728,7 +730,8 @@ func ShowUser(name, selector, expired string) msgs.ShowUserResponse {
 		detail.ExpiredMsgs = make([]string, 0)
 
 		if expired != "" {
-			selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+			//selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+			selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 			if err != nil {
 				response.Status.Code = msgs.Error

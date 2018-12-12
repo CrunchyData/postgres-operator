@@ -17,9 +17,11 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   Autofail:  false
+  AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: nfsstorage
+ArchiveStorage: archivestorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
 Storage:
@@ -30,6 +32,17 @@ Storage:
   nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
+  nfsstoragered:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    MatchLabels: crunchyzone=red
+    StorageType:  create
+    SupplementalGroups:  65534
+  archivestorage:
+    AccessMode:  ReadWriteMany
+    Size:  800M
     StorageType:  create
     SupplementalGroups:  65534
   storageos:
@@ -62,4 +75,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.4.0
+  COImageTag:  centos7-3.5.0

@@ -1,5 +1,4 @@
-#!/bin/bash 
-
+#!/bin/bash
 # Copyright 2017-2018 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,8 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$CO_CMD delete svc --selector=pg-cluster
-$CO_CMD delete secret --selector=pg-database
-$CO_CMD delete pvc --selector=pgremove
-$CO_CMD delete crd pgbackups.cr.client-go.k8s.io  pgclusters.cr.client-go.k8s.io  pgpolicies.cr.client-go.k8s.io  pgreplicas.cr.client-go.k8s.io
-$CO_CMD delete crd pgtasks.cr.client-go.k8s.io pgupgrades.cr.client-go.k8s.io
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+echo "create the test PV and PVC using the NFS dir"
+for i in {161..180}
+do
+   	echo "creating PV crunchy-pv$i"
+	export COUNTER=$i
+	$CO_CMD --namespace=$CO_NAMESPACE delete pv crunchy-pv$i
+	expenv -f $DIR/crunchy-pv-nfs-label.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+done

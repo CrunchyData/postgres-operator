@@ -1,7 +1,7 @@
 package kubeapi
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	jsonpatch "github.com/evanphx/json-patch"
-
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -184,5 +183,36 @@ func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 		log.Error("error merge patching Deployment " + newname)
 	}
 	log.Info("merge patch deployment " + newname)
+	return err
+}
+
+func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1beta1.Deployment, key, value, namespace string) error {
+	var newData, patchBytes []byte
+	var err error
+
+	//get the original data before we change it
+	origData, err := json.Marshal(origDeployment)
+	if err != nil {
+		return err
+	}
+
+	origDeployment.ObjectMeta.Labels[key] = value
+
+	newData, err = json.Marshal(origDeployment)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	if err != nil {
+		return err
+	}
+
+	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
+	if err != nil {
+		log.Error(err)
+		log.Errorf("error add label to Deployment %s=%s", key, value)
+	}
+	log.Infof("add label to deployment %s=%v", key, value)
 	return err
 }

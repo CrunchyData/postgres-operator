@@ -1,1 +1,1 @@
-"selector": { "matchLabels": { "name": "{{.Name}}" } },
+"selector": { "matchLabels": { "{{.Key}}": "{{.Value}}" } },

@@ -234,7 +234,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 		log.Infof("after getPVCName call")
 
 		d.Primary = false
-		d.Type = getType(&p)
+		d.Type = getType(&p, cluster.Spec.Name)
 		if d.Type == msgs.PodTypePrimary {
 			d.Primary = true
 		}
@@ -540,9 +540,9 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 		if request.BadgerFlag {
 			userLabelsMap[util.LABEL_BADGER] = "true"
 		}
-		if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
-			userLabelsMap[util.LABEL_AUTOFAIL] = "true"
-		}
+		//if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
+		//userLabelsMap[util.LABEL_AUTOFAIL] = "true"
+		//}
 		if request.ServiceType != "" {
 			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
 				resp.Status.Code = msgs.Error
@@ -875,7 +875,10 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.CustomConfig = request.CustomConfig
 
 	labels := make(map[string]string)
-	labels["name"] = name
+	labels[util.LABEL_NAME] = name
+	if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
+		labels[util.LABEL_AUTOFAIL] = "true"
+	}
 
 	newInstance := &crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -1079,14 +1082,14 @@ func createWorkflowTask(clusterName string) (string, error) {
 	return spec.Parameters[crv1.PgtaskWorkflowID], err
 }
 
-func getType(pod *v1.Pod) string {
+func getType(pod *v1.Pod, clusterName string) string {
 
 	log.Infof("%v\n", pod.ObjectMeta.Labels)
 	//map[string]string
 	if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
 		log.Infoln("this is a backup pod")
 		return msgs.PodTypeBackup
-	} else if pod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	} else if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		log.Infoln("this is a primary pod")
 		return msgs.PodTypePrimary
 	} else {
@@ -1256,4 +1259,57 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName string) (erro
 	}
 
 	return err, RootSecretName, PrimarySecretName, UserSecretName
+}
+
+// UpdateCluster ...
+func UpdateCluster(name, selector, autofail string) msgs.UpdateClusterResponse {
+	var err error
+
+	response := msgs.UpdateClusterResponse{}
+	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	response.Results = make([]string, 0)
+
+	if name != "all" {
+		if selector == "" {
+			selector = "name=" + name
+		}
+	}
+	log.Debugf("autofail is [%v]\n", autofail)
+
+	clusterList := crv1.PgclusterList{}
+
+	//get the clusters list
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, selector,
+		apiserver.Namespace)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	if len(clusterList.Items) == 0 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no clusters found"
+		return response
+	}
+
+	for _, cluster := range clusterList.Items {
+
+		//set autofail=true or false on each pgcluster CRD
+		cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = autofail
+
+		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
+			&cluster, cluster.Spec.Name, apiserver.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		} else {
+			response.Results = append(response.Results, "updated pgcluster "+cluster.Spec.Name)
+		}
+	}
+
+	return response
+
 }

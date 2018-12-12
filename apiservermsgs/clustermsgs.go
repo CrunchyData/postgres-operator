@@ -116,6 +116,12 @@ type DeleteClusterResponse struct {
 	Status
 }
 
+// UpdateClusterResponse ...
+type UpdateClusterResponse struct {
+	Results []string
+	Status
+}
+
 // ClusterTestDetail ...
 type ClusterTestDetail struct {
 	PsqlString string

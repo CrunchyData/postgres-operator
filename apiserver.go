@@ -31,7 +31,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/configservice"
 	"github.com/crunchydata/postgres-operator/apiserver/dfservice"
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
-	"github.com/crunchydata/postgres-operator/apiserver/ingestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
@@ -89,10 +88,6 @@ func main() {
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
 	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
-	r.HandleFunc("/ingest", ingestservice.CreateIngestHandler).Methods("POST")
-	r.HandleFunc("/ingest/{name}", ingestservice.ShowIngestHandler).Methods("GET")
-	//here
-	r.HandleFunc("/ingestdelete/{name}", ingestservice.DeleteIngestHandler).Methods("GET")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
@@ -109,6 +104,7 @@ func main() {
 	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET")
 	//here
 	r.HandleFunc("/clustersdelete/{name}", clusterservice.DeleteClusterHandler).Methods("GET")
+	r.HandleFunc("/clustersupdate/{name}", clusterservice.UpdateClusterHandler).Methods("GET")
 	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/scale/{name}", clusterservice.ScaleQueryHandler).Methods("GET")
