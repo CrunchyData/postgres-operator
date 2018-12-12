@@ -30,6 +30,8 @@ CRD to support autofail toggling
 for NFS storage, this will allow users to have more than a single NFS backend,
 when set, this label (key=value) will be used to match the labels on PVs
 when a PVC is created.
+ * the UpdateCluster permission was added to the sample pgorole file to support the
+new pgo update CLI command, and also added to the pgoperm file
 
 
 {{% expand "Upgrading to v3.4" %}}
