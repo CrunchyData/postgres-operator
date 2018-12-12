@@ -218,3 +218,32 @@ func createCluster(args []string) {
 	}
 
 }
+
+// updateCluster ...
+func updateCluster(args []string) {
+	log.Debugf("updateCluster called %v", args)
+
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
+	for _, arg := range args {
+		response, err := api.UpdateCluster(httpclient, arg, Selector, &SessionCredentials, AutofailStringFlag)
+
+		if err != nil {
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
+		}
+
+		if response.Status.Code == msgs.Ok {
+			for _, result := range response.Results {
+				fmt.Println(result)
+			}
+		} else {
+			fmt.Println("Error: " + response.Status.Msg)
+		}
+
+	}
+
+}

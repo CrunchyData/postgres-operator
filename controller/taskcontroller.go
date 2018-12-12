@@ -158,7 +158,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskAutoFailover:
 		log.Infof("autofailover task added %s", task.ObjectMeta.Name)
 	default:
-		log.Info("unknown task type on pgtask added")
+		log.Infof("unknown task type on pgtask added %s", task.Spec.TaskType)
 	}
 
 }

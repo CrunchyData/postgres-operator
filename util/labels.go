@@ -24,6 +24,7 @@ const LABEL_OPERATOR = "postgres-operator"
 const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_PG_DATABASE = "pg-database"
 const LABEL_PGBACKUP = "pgbackup"
+
 const LABEL_AUTOFAIL = "autofail"
 const LABEL_AUTOFAIL_REPLACE_REPLICA = "autofail-replace-replica"
 const LABEL_FAILOVER = "failover"

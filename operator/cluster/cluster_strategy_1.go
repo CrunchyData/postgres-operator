@@ -316,77 +316,6 @@ func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterNa
 
 }
 
-// CreateReplica ...
-/**
-func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clientset, cl *crv1.Pgcluster, depName, pvcName, namespace string) error {
-	var replicaDoc bytes.Buffer
-	var err error
-
-	clusterName := cl.Spec.ClusterName
-
-	replicaLabels := getPrimaryLabels(serviceName, clusterName, true, cl.Spec.UserLabels)
-
-	replicaLabels[util.LABEL_DEPLOYMENT_NAME] = depName
-
-	//create the replica deployment
-	replicaDeploymentFields := DeploymentTemplateFields{
-		Name:                    depName,
-		ClusterName:             clusterName,
-		PgMode:                  "replica",
-		Port:                    cl.Spec.Port,
-		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
-		LogStatement:            operator.Pgo.Cluster.LogStatement,
-		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
-		CCPImageTag:             cl.Spec.CCPImageTag,
-		PVCName:                 util.CreatePVCSnippet(cl.Spec.ReplicaStorage.StorageType, pvcName),
-		BackupPVCName:           util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
-		DataPathOverride:        depName,
-		PrimaryHost:             cl.Spec.PrimaryHost,
-		BackupPath:              "",
-		Database:                cl.Spec.Database,
-		Replicas:                "1",
-		ConfVolume:              GetConfVolume(clientset, cl, namespace),
-		DeploymentLabels:        GetLabelsFromMap(replicaLabels),
-		PodLabels:               GetLabelsFromMap(replicaLabels),
-		SecurityContext:         util.CreateSecContext(cl.Spec.ReplicaStorage.Fsgroup, cl.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:          cl.Spec.RootSecretName,
-		PrimarySecretName:       cl.Spec.PrimarySecretName,
-		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
-		UserSecretName:          cl.Spec.UserSecretName,
-		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
-		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+depName, "/backrestrepo/"+depName+"-backups"),
-	}
-
-	switch cl.Spec.ReplicaStorage.StorageType {
-	case "", "emptydir":
-		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
-	case "existing", "create", "dynamic":
-		log.Debug("using the shared replica template ")
-		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
-	}
-
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
-	}
-
-	replicaDeployment := v1beta1.Deployment{}
-	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
-	if err != nil {
-		log.Error("error unmarshalling replica json into Deployment " + err.Error())
-		return err
-	}
-
-	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
-	return err
-}
-*/
-
 // getPrimaryLabels ...
 func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
@@ -399,8 +328,9 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
-		if key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
+		if key == util.LABEL_AUTOFAIL || key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
 			//dont add these since they can break label expression checks
+			//or autofail toggling
 		} else {
 			primaryLabels[key] = value
 		}
@@ -512,18 +442,6 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	} else {
 		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
 	}
-
-	//check for pgbackrest global config
-	/**
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] != "" {
-		_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP, namespace)
-		if !found {
-			log.Debug(util.GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
-		} else {
-			return "\"configMap\": { \"name\": \"pgo-pgbackrest-config\" }"
-		}
-	}
-	*/
 
 	//the default situation
 	return "\"emptyDir\": { \"medium\": \"Memory\" }"
