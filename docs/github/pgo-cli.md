@@ -28,22 +28,10 @@ And *name* is the name of the resource type like:
 
 ## Operations
 
-
-| Header1 | Header2 | Header3 |
-|:--------|:-------:|--------:|
-| cell1   | cell2   | cell3   |
-| cell4   | cell5   | cell6   |
-|----
-| cell1   | cell2   | cell3   |
-| cell4   | cell5   | cell6   |
-|=====
-| Foot1   | Foot2   | Foot3
-{: rules="groups"}
-
 The following table shows the *pgo* operations currently implemented: 
 
 | Operation   |      Syntax      |  Description |
-|----------|:-------------:|------:|
+|:----------|:-------------|:------|
 | apply |`pgo apply mypolicy  --selector=name=mycluster`  | Apply a SQL policy on a Postgres cluster(s)|
 | backup |`pgo backup mycluster`  |Perform a backup on a Postgres cluster(s) |
 | create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, user) |
@@ -232,7 +220,7 @@ The following table shows the *pgo* operations currently implemented:
 
 | Flag | Description |
 |:--|:--|
-| apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
+|apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
 |debug |enable debug messages |
 |pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
 |pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
