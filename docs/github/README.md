@@ -1,4 +1,3 @@
-
 <h1 align="center">Crunchy Data PostgreSQL Operator</h1>
 <p align="center">
   <img width="150" src="crunchy_logo.png?raw=true"/>
@@ -28,18 +27,18 @@ The Operator is developed and tested on CentOS and RHEL linux platforms but is k
 
 ## Documentation
 The following documentation is provided:
-[pgo CLI Syntax and Examples](pgo-cli)
-[Installation](installation)
-[Configuration](configuration)
-[pgo.yaml Description](pgo-yaml-configuration)
-[Security](security)
-[Design Overview](design)
-[Developing](developing)
-[Upgrading the Operator](upgrading)
 
+ - [pgo CLI Syntax and Examples](pgo-cli) 
+ - [Installation](installation)
+ - [Configuration](configuration) 
+ - [pgo.yaml Description](pgo-yaml-configuration) 
+ - [Security](security) 
+ - [Design Overview](design) 
+ - [Developing](developing) 
+ - [Upgrading the Operator](upgrading)
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjAwMTM0ODg5MSwyODg2NTg1NjUsLTIxMT
-AwMjE5NzgsLTIxMzg3NzMwNDgsOTY5NzkyOTgwLDc3NDMwMzk4
-OCwxNTI5NDA0MzcxLDgxMTA4NTg0MV19
+eyJoaXN0b3J5IjpbLTEyNTIzNzQ4NjksMjAwMTM0ODg5MSwyOD
+g2NTg1NjUsLTIxMTAwMjE5NzgsLTIxMzg3NzMwNDgsOTY5Nzky
+OTgwLDc3NDMwMzk4OCwxNTI5NDA0MzcxLDgxMTA4NTg0MV19
 -->
