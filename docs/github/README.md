@@ -28,14 +28,14 @@ The Operator is developed and tested on CentOS and RHEL linux platforms but is k
 ## Documentation
 The following documentation is provided:
 
- - [pgo CLI Syntax and Examples](pgo-cli) 
- - [Installation](installation)
- - [Configuration](configuration) 
- - [pgo.yaml Description](pgo-yaml-configuration) 
- - [Security](security) 
- - [Design Overview](design) 
- - [Developing](developing) 
- - [Upgrading the Operator](upgrading)
+ - [pgo CLI Syntax and Examples](pgo-cli.md) 
+ - [Installation](installation.md)
+ - [Configuration](configuration.md) 
+ - [pgo.yaml Description](pgo-yaml-configuration.md) 
+ - [Security](security.md) 
+ - [Design Overview](design.md) 
+ - [Developing](developing.md) 
+ - [Upgrading the Operator](upgrading.md)
 
 <!--stackedit_data:
 eyJoaXN0b3J5IjpbLTEyNTIzNzQ4NjksMjAwMTM0ODg5MSwyOD
