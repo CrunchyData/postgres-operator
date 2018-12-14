@@ -1,15 +1,3 @@
-| Tables   |      Are      |  Cool |
-|----------|:-------------:|------:|
-| col 1 is |  left-aligned | $1600 |
-| col 2 is |    centered   |   $12 |
-| col 3 is | right-aligned |    $1 |
-
-
-First Header | Second Header
------------- | -------------
-Content from cell 1 | Content from cell 2
-Content in the first column | Content in the second column
-
 # pgo CLI
 The command line tool, pgo, is used to interact with the Postgres Operator.
 
@@ -53,10 +41,10 @@ And *name* is the name of the resource type like:
 {: rules="groups"}
 
 The following table shows the *pgo* operations currently implemented: 
-| Operation |Syntax  | Description |
-|--|--|--|
-| apply |`pgo apply mypolicy  --selector=name=mycluster`  | Apply a SQL policy on a Postgres cluster(s)|
 
+| Operation   |      Syntax      |  Description |
+|----------|:-------------:|------:|
+| apply |`pgo apply mypolicy  --selector=name=mycluster`  | Apply a SQL policy on a Postgres cluster(s)|
 | backup |`pgo backup mycluster`  |Perform a backup on a Postgres cluster(s) |
 | create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, user) |
 | delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user) |
