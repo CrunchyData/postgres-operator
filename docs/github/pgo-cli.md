@@ -1,5 +1,14 @@
+| Tables   |      Are      |  Cool |
+|----------|:-------------:|------:|
+| col 1 is |  left-aligned | $1600 |
+| col 2 is |    centered   |   $12 |
+| col 3 is | right-aligned |    $1 |
 
 
+First Header | Second Header
+------------ | -------------
+Content from cell 1 | Content from cell 2
+Content in the first column | Content in the second column
 
 # pgo CLI
 The command line tool, pgo, is used to interact with the Postgres Operator.
@@ -30,10 +39,24 @@ And *name* is the name of the resource type like:
  - john
 
 ## Operations
-The following table shows the *pgo* operations currently implemented:
+
+
+| Header1 | Header2 | Header3 |
+|:--------|:-------:|--------:|
+| cell1   | cell2   | cell3   |
+| cell4   | cell5   | cell6   |
+|----
+| cell1   | cell2   | cell3   |
+| cell4   | cell5   | cell6   |
+|=====
+| Foot1   | Foot2   | Foot3
+{: rules="groups"}
+
+The following table shows the *pgo* operations currently implemented: 
 | Operation |Syntax  | Description |
 |--|--|--|
 | apply |`pgo apply mypolicy  --selector=name=mycluster`  | Apply a SQL policy on a Postgres cluster(s)|
+
 | backup |`pgo backup mycluster`  |Perform a backup on a Postgres cluster(s) |
 | create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, user) |
 | delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user) |
@@ -218,51 +241,14 @@ The following table shows the *pgo* operations currently implemented:
     pgo create cluster mycluster --service-type=LoadBalancer
 ## Flags
 *pgo* command flags include:
-|Flag|Description  |
-|--|--|
-| --apiserver-url |URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
-| --debug |enable debug messages 
-| --pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
-  | --pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
-  | --pgo-client-key |The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_KEY environment variable|
+
+| Flag | Description |
+|:--|:--|
+| apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
+|debug |enable debug messages |
+|pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
+|pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
+|pgo-client-key |The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_KEY environment variable|
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbLTExMzg5MzQxNDcsLTE4OTEyMTgwNzUsLT
-E5NjQxNDAxNDQsLTE3OTU0ODc1NCwtMzcyNTgwMTMsLTg0MzI5
-NDc1MV19
--->
