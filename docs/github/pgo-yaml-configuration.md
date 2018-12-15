@@ -50,9 +50,15 @@ The *pgo.yaml* file is broken into major sections as described below:
 In *pgo.yaml*, you will need to configure your storage configurations
 depending on which storage you are wanting to use for
 Operator provisioning of Persistent Volume Claims.  The examples
-below are provided as a sample.
+below are provided as a sample.  In all the examples you are
+free to change the *Size* to meet your requirements of Persistent
+Volume Claim size.
 
 ### HostPath Example
+
+HostPath is provided for simple testing and use
+cases where you only intend to run on a single
+Linux host for your Kubernetes cluster.
 
 ```
   hostpathstorage:
@@ -63,6 +69,13 @@ below are provided as a sample.
 
 ### NFS Example
 
+In the following NFS example, notice that the
+*SupplementalGroups* setting is set, this can
+be whatever GID you have your NFS mount set
+to, typically we set this *nfsnobody* as below.
+NFS file systems offer a *ReadWriteMany* access
+mode.
+
 ```
   nfsstorage:
     AccessMode:  ReadWriteMany
@@ -72,6 +85,14 @@ below are provided as a sample.
 ```
 
 ### Storage Class Example
+
+In the following example, the important attribute to
+set for a typical Storage Class is the  *Fsgroup* setting.
+This value is almost always set to *26* which represents
+the Postgres user ID that the Crunchy Postgres container
+runs as.  Most Storage Class providers offer *ReadWriteOnce*
+access modes, but refer to your provider documentation
+for other access modes it might support.
 
 ```
   storageos:
