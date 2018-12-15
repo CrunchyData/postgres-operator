@@ -49,6 +49,7 @@ The *conf/postgresql-operator/pgouser* file is read at start up time also and co
     readonlyuser:testpass:pgoreader
 
 The following list shows the current complete list of possible pgo permissions:
+
 |Permission|Description  |
 |--|--|
 |ApplyPolicy | allow *pgo apply*|
@@ -106,11 +107,3 @@ The Operator REST API is secured with keys stored in the *pgo-auth-secret* Secre
 
     make deployoperator
 
-
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEyMjcxMzczOTEsMTI2OTAxNzA1NiwtND
-AwOTAwNDkxLDE5MzAzOTg2NjYsLTgyNTExMTY1NCwtMTU1NTMw
-MzcwNV19
--->
