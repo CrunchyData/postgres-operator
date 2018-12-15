@@ -48,15 +48,34 @@ This will compile the Mac and Windows versions of *pgo*.
 Now that you have built the Operator images, you can push them to your Kubernetes cluster if that cluster is remote to your development host.
 
 You would then run:
-
-    make deployoperator
+```
+make deployoperator
+```
 
 To deploy the Operator on your Kubernetes cluster.  If your Kubernetes cluster is not local to your development host, you will need to specify a Kube config file that will connect you to your Kubernetes cluster, see the Kube docs for details.
 
 
+### Debug
 
+Debug level logging in turned on by default when deploying the Operator.
 
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbNTY1MDAxMzIsLTEwMDk0NzIwMDMsLTEzOD
-A5MTcxNTBdfQ==
--->
+You can view the REST API logs with the following alias:
+```
+alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver'
+```
+
+You can view the Operator core logic logs with the following alias:
+```
+alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'
+```
+
+You can enable the *pgo* CLI debugging with the following flag:
+```
+pgo version --debug
+```
+
+You can set the REST API URL as follows after a deployment if you are 
+developing on your local host:
+```
+alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
+```
