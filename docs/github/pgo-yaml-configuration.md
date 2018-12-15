@@ -46,6 +46,43 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |Storage.storage1.MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
 
+## Storage Configuration Examples
+In *pgo.yaml*, you will need to configure your storage configurations
+depending on which storage you are wanting to use for
+Operator provisioning of Persistent Volume Claims.  The examples
+below are provided as a sample.
+
+### HostPath Example
+
+```
+  hostpathstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+```
+
+### NFS Example
+
+```
+  nfsstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
+```
+
+### Storage Class Example
+
+```
+  storageos:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  fast
+    Fsgroup:  26
+```
+
+
 ## Container Resources
 | Setting |Definition  |
 |--|--|
