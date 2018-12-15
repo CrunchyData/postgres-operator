@@ -9,8 +9,10 @@ Install the requisite Operator RBAC resources, *as a Kubernetes cluster admin us
 
     make installrbac
 
+
 This script creates the following RBAC resources on your Kubernetes cluster:
-|Resource Type|Name  |
+
+| Setting |Definition  |
 |--|--|
 | Custom Resource Definitions | pgbackups|
 |  | pgclusters|
