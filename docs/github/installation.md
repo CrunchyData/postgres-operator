@@ -86,6 +86,12 @@ For NFS Storage, it is assumed that there are sufficient Persistent Volumes (PV)
 
     ./pv/create-nfs-pv.sh
 
+A similar script is provided for HostPath persistent volume creation if
+you wanted to use HostPath for testing:
+```
+./pv/create-pv.sh
+```
+
 Other settings in *pgo.yaml* are described in the *pgo.yaml Configuration" section of the documentation.
 
  ## Operator Security
@@ -93,8 +99,10 @@ Other settings in *pgo.yaml* are described in the *pgo.yaml Configuration" secti
 
 There is a default set of Roles and Users defined respectively in the following files:
 
-    ./conf/postgres-operator/pgouser
-    ./conf/postgres-operator/pgorole
+```
+./conf/postgres-operator/pgouser
+./conf/postgres-operator/pgorole
+```
 
 Adjust these settings to meet your local requirements.
 
@@ -133,19 +141,23 @@ The *pgo* client is provided in Mac, Windows, and Linux binary formats, download
 Prior to using *pgo*, users will need to specify the
 *postgres-operator* URL as follows:
 
+```
     $ kubectl get service postgres-operator
     NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
     postgres-operator   10.104.47.110   <none>        8443/TCP   7m
     $ export CO_APISERVER_URL=https://10.104.47.110:8443
     pgo version
+```
 
 That URL address needs to be reachable from your local *pgo* client host.  Your Kubernetes administrator will likely need to create a network route, ingress, or LoadBalancer service to expose the Operator's REST API to applications outside of the Kubernetes cluster.  Your Kubernetes administrator might also allow you to run the Kubernetes port-forward command, contact your adminstrator for details.
 
 Next, the *pgo* client needs to reference the keys used to secure the Operator REST API:
 
+```
     export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
     export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
     export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
+```
 
 You can also specify these keys on the command line as follows:
 
