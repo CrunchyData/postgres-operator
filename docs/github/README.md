@@ -21,6 +21,10 @@ Use the postgres-operator to:
 
 ## Deployment Requirements
 
+<p align="center">
+  <img width="150" src="./images/Operator-Architecture.png?raw=true"/>
+</p>
+
 The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage is required, NFS, hostPath, and Storage Classes are currently supported.
 
 The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.

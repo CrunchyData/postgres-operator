@@ -3,7 +3,7 @@
 
 # Operator Installation
 
-A full manual installation of the Operator includes the following steps:
+A full installation of the Operator includes the following steps:
 
  - create a project structure 
  - configure your environment variables 
@@ -14,7 +14,7 @@ A full manual installation of the Operator includes the following steps:
 
 Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.
 
-The Operator can also be deployed with a sample Helm chart and also a *quickstart* script.  Those installation methods don't provide the same level of customization that the manual installation provides but are alternatives.  Crunchy also provides an Ansible playbook for Crunchy customers.
+The Operator can also be deployed with a sample Helm chart and also a *quickstart* script.  Those installation methods don't provide the same level of customization that the installation provides but are alternatives.  Crunchy also provides an Ansible playbook for Crunchy customers.
 
 See below for details on the Helm and quickstart installation methods.
 
@@ -132,7 +132,6 @@ This will cause any existing Operator to be removed first, then the configuratio
 
 This will create a postgres-operator Deployment along with a crunchy-scheduler Deployment, and a postgres-operator Service.
 
-This concludes what we call a *manual* Operator deployment.
 
 ## pgo CLI Installation
 Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the Github Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).

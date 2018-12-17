@@ -9,26 +9,26 @@ The *pgo.yaml* file is broken into major sections as described below:
 | Setting |Definition  |
 |--|--|
 |BasicAuth        | if set to *true* will enable Basic Authentication
-|Cluster.PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
-|Cluster.ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
-|Cluster.CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the --ccp-image-tag command line flag
-|Cluster.Port        | the PostgreSQL port to use for new containers (e.g. 5432)
-|Cluster.LogStatement        | postgresql.conf log_statement value (required field) (works with crunchy-postgres >= 2.2.0)
-|Cluster.LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field) (works with crunchy-postgres >= 2.2.0)
-|Cluster.User        | the PostgreSQL normal user name
-|Cluster.Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
-|Cluster.Replicas        | the number of cluster replicas to create for newly created clusters
-|Cluster.Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
-|Cluster.Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger
-|Cluster.Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
-|Cluster.PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
-|Cluster.PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|Cluster.ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
-|Cluster.ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
-|Cluster.ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
-|Cluster.Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
-|Cluster.Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
-|Cluster.AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
+|PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
+|ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the --ccp-image-tag command line flag
+|Port        | the PostgreSQL port to use for new containers (e.g. 5432)
+|LogStatement        | postgresql.conf log_statement value (required field) (works with crunchy-postgres >= 2.2.0)
+|LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field) (works with crunchy-postgres >= 2.2.0)
+|User        | the PostgreSQL normal user name
+|Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
+|Replicas        | the number of cluster replicas to create for newly created clusters
+|Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
+|Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger
+|Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
+|PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
+|PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
+|ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
+|ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
+|ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
+|Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
+|Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
+|AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
 
 ## Storage
 | Setting|Definition  |
@@ -38,13 +38,13 @@ The *pgo.yaml* file is broken into major sections as described below:
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
-|Storage.storage1.StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
-|Storage.storage1.AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
-|Storage.storage1.Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
-|Storage.storage1.Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
-|Storage.storage1.SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|Storage.storage1.MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
+|Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
+|SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
 
 ## Storage Configuration Examples
 In *pgo.yaml*, you will need to configure your storage configurations
@@ -114,23 +114,19 @@ for other access modes it might support.
 |DefaultBackupResource    |optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container
 |DefaultPgbouncerResource    |optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container
 |DefaultPgpoolResource    |optional, the value of the container resources configuration to use for crunchy-pgpool containers, if not set, no resource limits or requests are added on the database container
-|ContainerResources.small.RequestsMemory        | request size of memory in bytes
-|ContainerResources.small.RequestsCPU        | request size of CPU cores
-|ContainerResources.small.LimitsMemory        | request size of memory in bytes
-|ContainerResources.small.LimitsCPU        | request size of CPU cores
-|ContainerResources.large.RequestsMemory        | request size of memory in bytes
-|ContainerResources.large.RequestsCPU        | request size of CPU cores
-|ContainerResources.large.LimitsMemory        | request size of memory in bytes
-|ContainerResources.large.LimitsCPU        | request size of CPU cores
+|RequestsMemory        | request size of memory in bytes
+|RequestsCPU        | request size of CPU cores
+|LimitsMemory        | request size of memory in bytes
+|LimitsCPU        | request size of CPU cores
 
-## Miscellaneous
+## Miscellaneous (Pgo)
 | Setting |Definition  |
 |--|--|
-|Pgo.LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
-|Pgo.LoadTemplate        | the load template file used for load jobs
-|Pgo.COImagePrefix        | image tag prefix to use for the Operator containers
-|Pgo.COImageTag        | image tag to use for the Operator containers
-|Pgo.Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
+|LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
+|LoadTemplate        | the load template file used for load jobs
+|COImagePrefix        | image tag prefix to use for the Operator containers
+|COImageTag        | image tag to use for the Operator containers
+|Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
 
 ## Storage Configuration Details
 
