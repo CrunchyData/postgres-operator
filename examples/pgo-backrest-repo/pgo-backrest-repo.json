@@ -1,0 +1,105 @@
+{
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "pgo-backrest-repo",
+            "labels": {
+                "name": "pgo-backrest-repo"
+            }
+        },
+        "spec": {
+            "ports": [{
+                "protocol": "TCP",
+                "port": 22,
+                "targetPort": 22,
+                "nodePort": 0
+            }],
+            "selector": {
+                "name": "pgo-backrest-repo"
+            },
+            "type": "ClusterIP",
+            "sessionAffinity": "None"
+        }
+}
+
+{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "pgo-backrest-repo",
+        "namespace": "$CO_NAMESPACE",
+        "labels": {
+            "name": "pgo-backrest-repo"
+        }
+    },
+    "spec": {
+        "securityContext": {
+        },
+        "containers": [
+            {
+                "name": "pgo-backrest-repo",
+                "image": "$CO_IMAGE_PREFIX/pgo-backrest-repo:$CO_IMAGE_TAG",
+                "ports": [
+                    {
+                        "containerPort": 22,
+                        "protocol": "TCP"
+                    }
+                ],
+                "env": [
+                    {
+                        "name": "PG_PRIMARY_USER",
+                        "value": "pgo-backrest-repouser"
+                    },
+                    {
+                        "name": "PG_PRIMARY_PORT",
+                        "value": "5432"
+                    },
+                    {
+                        "name": "PG_MODE",
+                        "value": "pgo-backrest-repo"
+                    },
+                    {
+                        "name": "PG_PRIMARY_PASSWORD",
+                        "value": "password"
+                    },
+                    {
+                        "name": "PG_USER",
+                        "value": "testuser"
+                    },
+                    {
+                        "name": "PG_PASSWORD",
+                        "value": "password"
+                    }
+                ],
+                "volumeMounts": [
+                    {
+                        "mountPath": "/config",
+                        "name": "config",
+                        "readOnly": true
+                    },
+                    {
+                        "mountPath": "/backrestrepo",
+                        "name": "backrestrepo",
+                        "readOnly": false
+                    }
+                ]
+            }
+        ],
+        "volumes": [
+            {
+                "name": "backrestrepo",
+                "persistentVolumeClaim": {
+                    "claimName": "pgo-backrest-repo"
+                }
+            },
+            {
+                "name": "config",
+		 "secret": {
+			"secretName": "pgo-backrest-repo-config",
+			"defaultMode": 511
+		}
+
+            }
+        ]
+    }
+}
