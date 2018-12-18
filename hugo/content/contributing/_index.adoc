@@ -5,7 +5,7 @@ draft: false
 weight: 40
 ---
 
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == Getting Started
 
@@ -17,19 +17,20 @@ in addition to any existing open pull requests.
 == Documentation
 
 The documentation website (located at https://crunchydata.github.io/postgres-operator/) is generated using link:https://gohugo.io/[Hugo] and
-link:https://pages.github.com/[GitHub Pages]. If you would like to build the documentation locally, view the
+link:https://pages.github.com/[GitHub Pages].
+
+== Hosting Hugo Locally (Optional)
+
+If you would like to build the documentation locally, view the
 link:https://gohugo.io/getting-started/installing/[official Installing Hugo] guide to set up Hugo locally. You can then start the server by
 running the following commands -
 
 ....
-cd $COROOT/hugo/
+cd $CCPROOT/hugo/
 vi config.toml
 hugo server
 ....
 
-When you edit *config.toml*, you'll set `baseURL = "/"`. This will make the local version of the Hugo server accessible by default from
+The local version of the Hugo server is accessible by default from
 `localhost:1313`. Once you've run `hugo server`, that will let you interactively make changes to the documentation as desired and view the updates
 in real-time.
-
-*When you're ready to commit a change*, please view and run the script located at `$COROOT/generate-docs.sh` which will automatically generate a new
-set of webpages using Hugo that will update the live website after the change has been committed to the repository.

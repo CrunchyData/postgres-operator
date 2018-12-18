@@ -194,7 +194,8 @@ func removeBackupJob(clusterName string) {
 func getDeployName(cluster *crv1.Pgcluster) (string, error) {
 	var depName string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	//selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -214,7 +215,8 @@ func getDeployName(cluster *crv1.Pgcluster) (string, error) {
 func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	var podname string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	//selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
+	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -222,7 +224,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	}
 
 	for _, p := range pods.Items {
-		if isPrimary(&p) && isReady(&p) {
+		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
 			return p.Name, err
 		}
 	}
@@ -230,8 +232,8 @@ func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	return podname, errors.New("primary pod is not in Ready state")
 }
 
-func isPrimary(pod *v1.Pod) bool {
-	if pod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+func isPrimary(pod *v1.Pod, clusterName string) bool {
+	if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		return true
 	}
 	return false
@@ -394,7 +396,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts)
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
 
 	return resp
 }
@@ -409,6 +411,7 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
 	spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
+	spec.Parameters[util.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
 	spec.Parameters[util.LABEL_PGBACKREST_STANZA] = "db"
 	spec.Parameters[util.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
 	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backups"

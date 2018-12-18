@@ -6,7 +6,7 @@ weight: 20
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 == First Steps
 
@@ -127,6 +127,11 @@ Enables archive logging for the database cluster.
 |`--autofail` |N/A |N/A |
 If set, will cause autofailover to be enabled on this cluster.
 
+|`--autofail-replace-replica` |N/A |N/A |
+If set, will allow you to override the AutofailReplaceReplica setting as
+specified in the pgo.yaml, this setting lets you control whether a replica
+is created as part of a failover to replace the promoted replica
+
 |`--backup-pvc` |N/A |String |
 The backup archive PVC to restore from.
 
@@ -160,7 +165,7 @@ Enables a pgBackRest volume for the database pod.
 |`--pgbackrest-restore-from` |N/A |N/A |
 Only applies when creating a cluster from a pgbackrest restored PVC.  This
 is the name of the cluster from which the restored PVC was created from and
-which the new cluster credentials will be based.  This setting is required in the scenario.  
+which the new cluster credentials will be based.  This setting is required in the scenario.
 
 |`--pgbadger` |N/A |N/A |
 Adds the crunchy-pgbadger container to the database pod.
@@ -272,7 +277,7 @@ or watch for NotReady events on this cluster. When those occur, it will
  create a failover state machine which acts as a timer for the cluster.
 If the timer expires, then a failover is triggered on the cluster turning
 one of the cluster replica pods into the replacement primary pod. See the
-link:https://crunchydata.github.io/postgres-operator/stable/how-it-works/#_auto_failover[How It Works]
+link:/how-it-works/#_auto_failover[How It Works]
 documentation for more details on auto failover.
 
 ===== pgBackRest
@@ -319,6 +324,11 @@ pgo restore mycluster --to-pvc=restored
 pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest
 ....
 
+To do restore based on a point in time:
+....
+pgo restore mycluster --to-pvc=restored --backup-opts="--type=time" --pitr-target="2018-12-12 14:45:58 EST"
+....
+
 The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
 Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
 created without having write access and a backup and restore will fail. The RWX file
@@ -326,6 +336,57 @@ system setup will allow you to restore from this PVC without having to shutdown 
 attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
 has to attach the same pgbackrest repo used by the original cluster the restore
 was based off of.
+
+=== Update Cluster
+
+The `update cluster` command will let users set the autofail flag on 
+a set of clusters.  This can be handy to prevent autofailover logic
+in certain scenarios like when you want to do a minor upgrade on a
+primary deployment.
+
+==== Syntax
+
+$ pgo update cluster NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--autofail` |-b |N/A |
+Sets to true or false the autofail flag on the pgcluster CRD
+for this cluster.
+
+==== Examples
+
+Create a cluster:
+....
+pgo create cluster mycluster --autofail --replica-count=1
+....
+
+Disable autofail:
+....
+pgo update cluster mycluster --autofail=false
+....
+
+Shutdown the primary pod:
+....
+kubectl scale deployment/one --replicas=0
+....
+
+Do something to the primary such as copy its pvc or 
+patch the primary deployment.
+
+Bring the primary pod back:
+....
+kubectl scale deployment/one --replicas=1
+....
+
+Set autofail flag back to true:
+....
+pgo update cluster mycluster --autofail=true
+....
 
 === Delete Cluster
 
@@ -343,7 +404,7 @@ $ pgo delete cluster NAME|all [FLAGS]
 |Name |Shorthand |Input |Usage
 
 |`--delete-backups` |-b |N/A |
-Causes the backups for this cluster to be removed permanently.  This only 
+Causes the backups for this cluster to be removed permanently.  This only
 is applicable with pgbasebackup backup volumes and does not remove
 pgbackrest repo volumes.
 
@@ -606,7 +667,7 @@ NOTE:  'pgo show pvc' can run into file permission issues if
 you are trying to view a PVC that is on a RWO (read write once) file
 system (e.g. cloud storage, ceph, storageos, etc.).  If another
 pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
-command in the current 3.4.0 release.  
+command in the current 3.4.0 release.
 
 View the PVC folder and the backups contained therein:
 
@@ -665,8 +726,8 @@ configuration maps with the label `crunchy-scheduler=true` in a specific namespa
 After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
 create pgBaseBackup jobs for the configured schedule.
 
-NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a 
-pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be 
+NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be
 a requirement in the 3.5.0 version of the Operator.
 
 ==== Syntax
@@ -1514,5 +1575,5 @@ to check the status of the cluster creation.
 ==== Syntax
 
 ....
-pgo show workflow ID 
+pgo show workflow ID
 ....

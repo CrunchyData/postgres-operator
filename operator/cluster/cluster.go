@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -38,7 +38,6 @@ type Strategy interface {
 	Scale(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgreplica, string, string, *crv1.Pgcluster) error
 	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
 	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
-	CreateReplica(string, *kubernetes.Clientset, *crv1.Pgcluster, string, string, string) error
 	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
 	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
 
@@ -51,6 +50,7 @@ type Strategy interface {
 // ServiceTemplateFields ...
 type ServiceTemplateFields struct {
 	Name        string
+	ServiceName string
 	ClusterName string
 	Port        string
 	ServiceType string
@@ -67,7 +67,8 @@ type DeploymentTemplateFields struct {
 	CCPImagePrefix          string
 	CCPImageTag             string
 	Database                string
-	OperatorLabels          string
+	DeploymentLabels        string
+	PodLabels               string
 	DataPathOverride        string
 	ArchiveMode             string
 	ArchivePVCName          string
@@ -132,13 +133,22 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
-	if cl.Spec.UserLabels["archive"] == "true" {
+	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
 		pvcName := cl.Spec.Name + "-xlog"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
 			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
 		} else {
-			_, err := pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, pvcName, cl.Spec.Name, namespace)
+			storage := crv1.PgStorageSpec{}
+			pgoStorage := operator.Pgo.Storage[operator.Pgo.ArchiveStorage]
+			storage.StorageClass = pgoStorage.StorageClass
+			storage.AccessMode = pgoStorage.AccessMode
+			storage.Size = pgoStorage.Size
+			storage.StorageType = pgoStorage.StorageType
+			storage.MatchLabels = pgoStorage.MatchLabels
+			storage.SupplementalGroups = pgoStorage.SupplementalGroups
+			storage.Fsgroup = pgoStorage.Fsgroup
+			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
 			if err != nil {
 				log.Error(err)
 				return
@@ -157,6 +167,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			storage.AccessMode = pgoStorage.AccessMode
 			storage.Size = pgoStorage.Size
 			storage.StorageType = pgoStorage.StorageType
+			storage.MatchLabels = pgoStorage.MatchLabels
 			storage.SupplementalGroups = pgoStorage.SupplementalGroups
 			storage.Fsgroup = pgoStorage.Fsgroup
 
@@ -167,8 +178,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			}
 		}
 	}
-
-	//var RootPassword, Password, PrimaryPassword string
 
 	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
 	//allows user to override with their own passwords
@@ -187,7 +196,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	//replaced with ccpimagetag instead of pg version
-	//setFullVersion(client, cl, namespace)
 
 	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
 
@@ -415,6 +423,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	serviceName := replica.Spec.ClusterName + "-replica"
 	serviceFields := ServiceTemplateFields{
 		Name:        serviceName,
+		ServiceName: serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
 		ServiceType: st,
@@ -466,95 +475,3 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 	strategy.DeleteReplica(clientset, replica, namespace)
 
 }
-
-/**
-import (
-	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/kubeapi"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-	//"k8s.io/client-go/rest"
-	"math/rand"
-	"strings"
-	"time"
-)
-
-*/
-/**
-// createDatabaseSecrets create pgroot, pgprimary, and pguser secrets
-func createDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace, RootPassword, Password, PrimaryPassword string) (string, string, string, error) {
-
-	//pgroot
-	username := "postgres"
-	suffix := crv1.RootSecretSuffix
-
-	var secretName string
-	var err error
-
-	secretName = cl.Spec.Name + suffix
-	pgPassword := util.GeneratePassword(10)
-	if RootPassword != "" {
-		log.Debugf("using user specified password for secret %s", secretName)
-		pgPassword = RootPassword
-	}
-
-	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, pgPassword, namespace)
-	if err != nil {
-		log.Error("error creating secret" + err.Error())
-	}
-
-	cl.Spec.RootSecretName = secretName
-	err = util.Patch(restclient, "/spec/rootsecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error patching cluster" + err.Error())
-	}
-
-	///primary
-	username = "primaryuser"
-	suffix = crv1.PrimarySecretSuffix
-
-	secretName = cl.Spec.Name + suffix
-	primaryPassword := util.GeneratePassword(10)
-	if PrimaryPassword != "" {
-		log.Debugf("using user specified password for secret %s", secretName)
-		primaryPassword = PrimaryPassword
-	}
-
-	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, primaryPassword, namespace)
-	if err != nil {
-		log.Error("error creating secret2" + err.Error())
-	}
-
-	cl.Spec.PrimarySecretName = secretName
-	err = util.Patch(restclient, "/spec/primarysecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error patching cluster " + err.Error())
-	}
-
-	///pguser
-	username = "testuser"
-	suffix = crv1.UserSecretSuffix
-
-	secretName = cl.Spec.Name + suffix
-	testPassword := util.GeneratePassword(10)
-	if Password != "" {
-		log.Debugf("using user specified password for secret %s", secretName)
-		testPassword = Password
-	}
-
-	err = util.CreateSecret(clientset, cl.Spec.Name, secretName, username, testPassword, namespace)
-	if err != nil {
-		log.Error("error creating secret " + err.Error())
-	}
-
-	cl.Spec.UserSecretName = secretName
-	err = util.Patch(restclient, "/spec/usersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
-	if err != nil {
-		log.Error("error patching cluster " + err.Error())
-	}
-
-	return pgPassword, primaryPassword, testPassword, err
-}
-*/

@@ -1,7 +1,7 @@
 package api
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -28,6 +28,7 @@ import (
 const (
 	createClusterURL = "%s/clusters"
 	deleteClusterURL = "%s/clustersdelete/%s?selector=%s&delete-data=%t&delete-backups=%t&delete-configs=%t&version=%s"
+	updateClusterURL = "%s/clustersupdate/%s?selector=%s&autofail=%s&version=%s"
 	showClusterURL   = "%s/clusters/%s?selector=%s&version=%s&ccpimagetag=%s"
 )
 
@@ -146,4 +147,43 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	}
 
 	return response, err
+}
+
+func UpdateCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, autofailFlag string) (msgs.UpdateClusterResponse, error) {
+
+	var response msgs.UpdateClusterResponse
+
+	url := fmt.Sprintf(updateClusterURL, SessionCredentials.APIServerURL, arg, selector, autofailFlag, msgs.PGO_VERSION)
+
+	log.Debugf("update cluster called %s", url)
+
+	action := "GET"
+	req, err := http.NewRequest(action, url, nil)
+	if err != nil {
+		return response, err
+	}
+
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		fmt.Println("Error: Do: ", err)
+		return response, err
+	}
+	defer resp.Body.Close()
+	log.Debugf("%v", resp)
+	err = StatusCheck(resp)
+	if err != nil {
+		return response, err
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		fmt.Println("Error: ", err)
+		log.Println(err)
+		return response, err
+	}
+
+	return response, err
+
 }

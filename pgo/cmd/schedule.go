@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -48,7 +48,9 @@ func createSchedule(args []string) {
 	}
 
 	var clusterName string
-	if len(args) > 0 {
+	if Selector != "" {
+		clusterName = ""
+	} else if len(args) > 0 {
 		clusterName = args[0]
 	}
 
@@ -137,7 +139,9 @@ func showSchedule(args []string) {
 	}
 
 	var clusterName string
-	if len(args) > 0 {
+	if Selector != "" {
+		clusterName = ""
+	} else if len(args) > 0 {
 		clusterName = args[0]
 	}
 

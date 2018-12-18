@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -52,7 +52,7 @@ func showVersion() {
 	fmt.Println("pgo client version " + msgs.PGO_VERSION)
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("apiserver version " + response.Version)
+		fmt.Println("pgo-apiserver version " + response.Version)
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)

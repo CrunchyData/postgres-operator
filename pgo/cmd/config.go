@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -61,6 +61,7 @@ func showConfig(args []string) {
 	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Cluster.Metrics)
 	fmt.Printf("%s%t\n", "  Backrest:  ", pgo.Cluster.Backrest)
 	fmt.Printf("%s%t\n", "  Autofail:  ", pgo.Cluster.Autofail)
+	fmt.Printf("%s%t\n", "  AutofailReplaceReplica:  ", pgo.Cluster.AutofailReplaceReplica)
 	fmt.Printf("%s%t\n", "  Badger:  ", pgo.Cluster.Badger)
 	fmt.Printf("%s%s\n", "  Policies:  ", pgo.Cluster.Policies)
 	fmt.Printf("%s%s\n", "  Port:  ", pgo.Cluster.Port)
@@ -74,6 +75,7 @@ func showConfig(args []string) {
 	fmt.Printf("%s%s\n", "  Replicas:  ", pgo.Cluster.Replicas)
 
 	fmt.Printf("%s%s\n", "PrimaryStorage:  ", pgo.PrimaryStorage)
+	fmt.Printf("%s%s\n", "ArchiveStorage:  ", pgo.ArchiveStorage)
 	fmt.Printf("%s%s\n", "BackupStorage:  ", pgo.BackupStorage)
 	fmt.Printf("%s%s\n", "ReplicaStorage:  ", pgo.ReplicaStorage)
 	fmt.Printf("%s\n", "Storage:")
@@ -81,6 +83,9 @@ func showConfig(args []string) {
 		fmt.Printf("  %s:\n", k)
 		fmt.Printf("%s%s\n", "    AccessMode:  ", v.AccessMode)
 		fmt.Printf("%s%s\n", "    Size:  ", v.Size)
+		if v.MatchLabels != "" {
+			fmt.Printf("%s%s\n", "    MatchLabels:  ", v.MatchLabels)
+		}
 		fmt.Printf("%s%s\n", "    StorageType:  ", v.StorageType)
 		if v.StorageClass != "" {
 			fmt.Printf("%s%s\n", "    StorageClass:  ", v.StorageClass)

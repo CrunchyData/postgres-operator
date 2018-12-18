@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -112,10 +112,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if job.Status.Succeeded == 0 {
 			status = crv1.JobErrorStatus
 		}
-		err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
-		if err != nil {
-			log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
+
+		if labels[util.LABEL_BACKUP_TYPE_BACKREST] != "true" {
+			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
+			if err != nil {
+				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
+			}
 		}
+
 	} else if labels[util.LABEL_BACKREST] != "" {
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		log.Debugf("update the status to completed here for backrest %s", labels[util.LABEL_PG_DATABASE])

@@ -1,7 +1,7 @@
 package operator
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -40,7 +40,6 @@ const PgbouncerHBATemplatePath = "/pgo-config/pgbouncer_hba.conf"
 const ServiceTemplate1Path = "/pgo-config/cluster-service-1.json"
 
 const jobPath = "/pgo-config/backup-job.json"
-const ingestPath = "/pgo-config/pgo-ingest-watch-job.json"
 const rmdatajobPath = "/pgo-config/rmdata-job.json"
 const backrestjobPath = "/pgo-config/backrest-job.json"
 const backrestRestorejobPath = "/pgo-config/backrest-restore-job.json"
@@ -125,7 +124,6 @@ func Initialize() {
 	PgbouncerHBATemplate = util.LoadTemplate(PgbouncerHBATemplatePath)
 	ServiceTemplate1 = util.LoadTemplate(ServiceTemplate1Path)
 
-	IngestjobTemplate = util.LoadTemplate(ingestPath)
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
 	BackrestRestoreVolumesTemplate = util.LoadTemplate(backrestRestoreVolumesPath)

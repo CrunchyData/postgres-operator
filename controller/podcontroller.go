@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,10 +18,13 @@ limitations under the License.
 import (
 	"context"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -80,6 +83,9 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 
 // onAdd is called when a pgcluster is added
 func (c *PodController) onAdd(obj interface{}) {
+	newpod := obj.(*apiv1.Pod)
+	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
+	c.checkPostgresPods(newpod)
 }
 
 // onUpdate is called when a pgcluster is updated
@@ -97,30 +103,38 @@ func (c *PodController) onDelete(obj interface{}) {
 }
 
 func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
+	//handle the case of a service-name re-label
+	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] !=
+		oldpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] {
+		log.Debug("the pod was updated and the service names were changed in this pod update, not going to check the ReadyStatus")
+		return
+	}
 	//if the pod has a metadata label of  pg-cluster and
 	//eventually pg-failover == true then...
 	//loop thru status.containerStatuses, find the container with name='database'
 	//print out the 'ready' bool
-	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" &&
-		newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] != "" &&
-		newpod.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
-		log.Infof("an autofail pg-cluster %s!", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+	autofailEnabled := c.checkAutofailLabel(newpod)
+
+	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
+		clusterName != "" && autofailEnabled {
+		log.Infof("an autofail pg-cluster %s!", clusterName)
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
-				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], newpod.ObjectMeta.Namespace)
+				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 			}
 		}
 	}
 
 	//handle applying policies after a database is made Ready
-	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
 				if v.Ready {
-					log.Debugf("%s went to Ready, apply policies...", newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
-					taskoperator.ApplyPolicies(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
-					taskoperator.CompleteCreateClusterWorkflow(newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.PodClientset, c.PodClient)
+					log.Debugf("%s went to Ready, apply policies...", clusterName)
+					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
+					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
 				}
 			}
 		}
@@ -128,26 +142,72 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 
 }
 
-/**
-func checkReadyStatus(oldpod, newpod *apiv1.Pod) {
-	//if the pod has a metadata label of  pg-cluster and
-	//eventually pg-failover == true then...
-	//loop thru status.containerStatuses, find the container with name='database'
-	//print out the 'ready' bool
-	log.Infof("%v is the ObjectMeta  Labels\n", newpod.ObjectMeta.Labels)
-	if newpod.ObjectMeta.Labels["pg-cluster"] != "" {
-		log.Infoln("we have a pg-cluster!")
-		for _, v := range newpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				log.Infof("%s is the containerstatus Name\n", v.Name)
-				if v.Ready {
-					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
-				} else {
-					log.Infof("%v is the Ready status for cluster %s container %s container\n", v.Ready, newpod.ObjectMeta.Name, v.Name)
-				}
-			}
+// checkPostgresPods
+// see if this is a primary or replica being created
+// update service-name label on the pod for each case
+// to match the correct Service selector for the PG cluster
+func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
+
+	var dep *v1beta1.Deployment
+	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME], c.Namespace)
+	if err != nil {
+		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
+		return
+	}
+
+	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" || newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
+
+		serviceName := ""
+
+		if dep.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] != "" {
+			log.Info("this means the deployment was already labeled")
+			log.Info("which means its pod was restarted for some reason")
+			log.Info("we will use the service name on the deployment")
+			serviceName = dep.ObjectMeta.Labels[util.LABEL_SERVICE_NAME]
+		} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
+			log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+			//add label onto pod "service-name=clustername"
+			serviceName = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+		} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
+			log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]+"-replica")
+			//add label onto pod "service-name=clustername-replica"
+			serviceName = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "-replica"
 		}
+
+		err = kubeapi.AddLabelToPod(c.PodClientset, newpod, util.LABEL_SERVICE_NAME, serviceName, c.Namespace)
+		if err != nil {
+			log.Error(err)
+			log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
+			return
+		}
+
+		//add the service name label to the Deployment
+		err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, util.LABEL_SERVICE_NAME, serviceName, c.Namespace)
+
+		if err != nil {
+			log.Error("could not add label to deployment on pod add")
+			return
+		}
+
 	}
 
 }
-*/
+
+//check for the autofail flag on the pgcluster CRD
+func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod) bool {
+	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+
+	pgcluster := crv1.Pgcluster{}
+	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, c.Namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return false
+	}
+
+	if pgcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+		log.Debugf("autofail is on for this pod %s", newpod.Name)
+		return true
+	}
+	return false
+
+}

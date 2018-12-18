@@ -10,7 +10,7 @@ Latest Release: 3.4.0 {docdate}
 
 == Documentation
 
-Please view the official Crunchy Data PostgreSQL Operator documentation link:https://crunchydata.github.io/postgres-operator/stable/[here]. If you are
+Please view the official Crunchy Data PostgreSQL Operator documentation link:/[here]. If you are
 interested in contributing or making an update to the documentation, please view the link:/contributing/[Contributing Guidelines].
 
 == What is the Operator?

@@ -6,7 +6,7 @@ weight: 50
 ---
 
 :toc:
-Latest Release: 3.4.0 {docdate}
+Latest Release: 3.5.0 {docdate}
 
 This document details verifying the installation of the PostgreSQL Operator
 is successful, in addition to detailing some different storage configurations
@@ -40,7 +40,6 @@ kubectl get crd
 NAME                             AGE
 pgbackups.cr.client-go.k8s.io    2d
 pgclusters.cr.client-go.k8s.io   2d
-pgingests.cr.client-go.k8s.io    2d
 pgpolicies.cr.client-go.k8s.io   2d
 pgreplicas.cr.client-go.k8s.io   2d
 pgtasks.cr.client-go.k8s.io      2d

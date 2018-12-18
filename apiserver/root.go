@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,12 +17,11 @@ limitations under the License.
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	//crdclient "github.com/crunchydata/postgres-operator/client"
-	"bytes"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -38,7 +37,6 @@ import (
 	"text/template"
 )
 
-const loadTemplatePath = "/pgo-config/pgo.load-template.json"
 const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
 const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
 

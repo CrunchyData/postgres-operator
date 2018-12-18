@@ -1,0 +1,135 @@
+<header>
+  <div class="logo">
+    {{ partial "header.html" . }}
+  </div>
+  <div class="burger"><a href="javascript:void(0);" style="font-size:15px;">&#9776;</a></div>
+  {{- with .Site.Menus.shortcuts}}
+    <nav class="shortcuts">
+        {{- range sort . "Weight"}}
+            <li class="" role="">
+                <a href="{{.URL}}" {{if eq $.Site.Params.menushortcutsnewtab true}}target="_blank"{{end}} rel="noopener">
+                  {{safeHTML .Name}}
+                </a>
+            </li>
+        {{- end}}
+    </nav>
+  {{- end}}
+</header>
+<article>
+  <aside>
+
+    <ul class="menu">
+
+      {{- if not .Site.Params.disableSearch}}
+      <div>
+        <div class="searchbox">
+          <input data-search-input id="search-by" type="text" placeholder="{{T "Search-placeholder"}}">
+        </div>
+        <script type="text/javascript" src="{{"js/lunr.min.js" | relURL}}"></script>
+        <script type="text/javascript" src="{{"js/auto-complete.js" | relURL}}"></script>
+        <link href="{{"css/auto-complete.css" | relURL}}" rel="stylesheet">
+        <script type="text/javascript">
+          {{ if .Site.IsMultiLingual }}
+              var baseurl = "{{.Site.BaseURL}}{{.Site.LanguagePrefix}}";
+          {{ else }}
+              var baseurl = "{{.Site.BaseURL}}";
+          {{ end }}
+        </script>
+        <script type="text/javascript" src="{{"js/search.js" | relURL}}"></script>
+      </div>
+      {{- end}}
+
+      <hr>
+      <a class="baselink" href="/">{{.Site.Title}}</a>
+      <hr>
+
+      {{- with .Site.Menus.downloads}}
+        <b>Available Formats</b>
+        <nav class="downloads">
+            {{- range sort . "Weight"}}
+                <li class="" role="">
+                    <a href="{{.URL}}" {{if eq $.Site.Params.menushortcutsnewtab true}}target="_blank"{{end}} rel="noopener">
+                      {{safeHTML .Name}}
+                    </a>
+                </li>
+            {{- end}}
+        </nav>
+        <hr>
+      {{- end}}
+
+      <b>Navigation</b>
+      {{- if not .Site.Params.disableHomeIcon}}
+          <li data-nav-id="{{"/" | relLangURL}}" class="dd-item">
+          <a href="{{"/" | relLangURL}}">
+            Home
+          </a>
+          </li>
+      {{- end}}
+
+      {{- partial "menu.html" . }}
+
+      <hr>
+
+      {{- partial "toc.html" . -}}
+
+      {{- partial "language-selector.html" . }}
+
+      <section>
+          {{- partial "menu-footer.html" . }}
+      </section>
+    </ul>
+  </aside>
+  <section class="page">
+
+    <div class="nav-select">
+      <center>Navigation :
+        <select onchange="javascript:location.href = this.value;">
+          {{partial "flex/selectnavigation.html" .}}
+        </select>
+      </center>
+    </div>
+
+    {{if not .IsHome}}
+      <div id="top-bar">
+        {{ if and (or .IsPage .IsSection) .Site.Params.editURL }}
+          {{ $File := .File }}
+          {{ $Site := .Site }}
+          {{with $File.Path }}
+        <div id="top-github-link">
+          <a class="github-link" href="/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            {{T "Contributing-guidelines"}}
+          </a>
+          <a class="github-link" href="{{ $Site.Params.editURL }}{{ replace $File.Dir "\\" "/" }}{{ $File.LogicalName }}" target="blank">
+            <i class="fa fa-code-fork"></i>
+            {{T "Edit-this-page"}}
+          </a>
+        </div>
+          {{- end }}
+        {{- end -}}
+
+        <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+            <span id="sidebar-toggle-span">
+              <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                <i class="fa fa-bars"></i>
+              </a>
+            </span>
+            <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+            <span class="links">
+            {{ template "breadcrumb" dict "page" . "value" .Title }}
+            </span>
+        </div>
+
+      </div>
+    {{end}}
+
+    {{if .Params.tags }}
+      <div id="tags">
+        {{ range $index, $tag := .Params.tags }}
+          <a class="label label-default" href="{{$.Site.BaseURL}}tags/{{ $tag | urlize }}">{{ $tag }}</a>
+        {{ end }}
+      </div>
+    {{end}}
+    <div id="body-inner">
+
+    {{if not .IsHome}}<h1>{{.Title}}</h1>{{end}}

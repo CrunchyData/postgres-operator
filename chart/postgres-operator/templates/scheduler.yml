@@ -1,0 +1,32 @@
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: crunchy-scheduler
+  labels:
+    name: crunchy-scheduler
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: crunchy-scheduler
+    spec:
+      serviceAccountName: scheduler-sa
+      containers:
+      - name: scheduler
+        image: "{{ .Values.env.ccp_image_prefix }}/crunchy-scheduler:{{ .Values.env.ccp_image_tag }}"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: TIMEOUT
+          value: '3600'
+        volumeMounts: []
+        resources: {}
+        imagePullPolicy: IfNotPresent
+      volumes: []
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst

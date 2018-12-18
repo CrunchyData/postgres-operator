@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -51,7 +51,6 @@ type JobTemplateFields struct {
 // MinorUpgrade ..
 func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
 	var err error
-	//var primaryDoc bytes.Buffer
 
 	log.Info("minor cluster upgrade using Strategy 1 in namespace " + namespace)
 
@@ -155,7 +154,8 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, upgrade.Spec.NewPVCName),
-		OperatorLabels:    util.GetLabelsFromMap(primaryLabels),
+		DeploymentLabels:  GetLabelsFromMap(primaryLabels),
+		PodLabels:         GetLabelsFromMap(primaryLabels),
 		BackupPVCName:     util.CreateBackupPVCSnippet(upgrade.Spec.BackupPVCName),
 		DataPathOverride:  upgrade.Spec.NewDatabaseName,
 		Database:          cl.Spec.Database,

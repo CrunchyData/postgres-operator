@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -24,12 +24,15 @@ const LABEL_OPERATOR = "postgres-operator"
 const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_PG_DATABASE = "pg-database"
 const LABEL_PGBACKUP = "pgbackup"
+
 const LABEL_AUTOFAIL = "autofail"
+const LABEL_AUTOFAIL_REPLACE_REPLICA = "autofail-replace-replica"
 const LABEL_FAILOVER = "failover"
 const LABEL_PRIMARY = "primary"
 const LABEL_TARGET = "target"
 const LABEL_RMDATA = "pgrmdata"
 
+const LABEL_PGPOLICY = "pgpolicy"
 const LABEL_INGEST = "ingest"
 const LABEL_PGREMOVE = "pgremove"
 const LABEL_PVCNAME = "pvcname"
@@ -61,6 +64,7 @@ const LABEL_BACKREST_RESTORE_TO_PVC = "backrest-restore-to-pvc"
 const LABEL_BACKREST_RESTORE_OPTS = "backrest-restore-opts"
 const LABEL_BACKREST_BACKUP_OPTS = "backrest-backup-opts"
 const LABEL_BACKREST_OPTS = "backrest-opts"
+const LABEL_BACKREST_PITR_TARGET = "backrest-pitr-target"
 const LABEL_BADGER = "crunchy-pgbadger"
 const LABEL_BACKUP_TYPE_BASEBACKUP = "pgbasebackup"
 const LABEL_BACKUP_TYPE_BACKREST = "pgbackrest"
@@ -89,3 +93,10 @@ const LABEL_PGBOUNCER_TASK_RECONFIGURE = "pgbouncer-reconfigure"
 const LABEL_PGBACKREST_STANZA = "pgbackrest-stanza"
 const LABEL_PGBACKREST_DB_PATH = "pgbackrest-db-path"
 const LABEL_PGBACKREST_REPO_PATH = "pgbackrest-repo-path"
+
+const LABEL_DEPLOYMENT_NAME = "deployment-name"
+const LABEL_SERVICE_NAME = "service-name"
+const LABEL_CURRENT_PRIMARY = "current-primary"
+
+const LABEL_TRUE = "true"
+const LABEL_FALSE = "false"
