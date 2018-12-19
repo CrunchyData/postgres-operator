@@ -15,16 +15,17 @@ trap 'trap_sigterm' SIGINT SIGTERM
 CONFIG=/sshd
 REPO=/backrestrepo
 
+mkdir ~/.ssh
+cp $CONFIG/config ~/.ssh/
+cp $CONFIG/id_rsa /tmp
+chmod 400 /tmp/id_rsa ~/.ssh/config
+
+
 echo "CONFIG is.."
 ls $CONFIG
 echo "REPO is ..."
 ls $REPO
 
-mkdir ~/.ssh/
-cp $CONFIG/config ~/.ssh/
-cp $CONFIG/id_rsa /tmp
-chmod 400 /tmp/id_rsa ~/.ssh/config
-
 # start sshd which is used by pgbackrest for remote connections
-/usr/sbin/sshd -D -f $CONFIG/sshd_config 
+/usr/sbin/sshd -D -f $CONFIG/sshd_config
 

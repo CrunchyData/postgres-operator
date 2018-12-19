@@ -13,8 +13,7 @@
 # limitations under the License.
 
 
-$CO_CMD delete --namespace=$CO_NAMESPACE service pgo-backrest-repo
-$CO_CMD delete --namespace=$CO_NAMESPACE secret pgo-backrest-repo-config
-$CO_CMD delete --namespace=$CO_NAMESPACE pod pgo-backrest-repo
-$CO_CMD delete --namespace=$CO_NAMESPACE pvc pgo-backrest-repo
+$CO_CMD delete --namespace=$CO_NAMESPACE service repo-client
+$CO_CMD delete --namespace=$CO_NAMESPACE pod repo-client
+$CO_CMD delete --namespace=$CO_NAMESPACE pvc repo-client
 

@@ -2,9 +2,9 @@
         "kind": "Service",
         "apiVersion": "v1",
         "metadata": {
-            "name": "pgo-backrest-repo",
+            "name": "repo-client",
             "labels": {
-                "name": "pgo-backrest-repo"
+                "name": "repo-client"
             }
         },
         "spec": {
@@ -15,7 +15,7 @@
                 "nodePort": 0
             }],
             "selector": {
-                "name": "pgo-backrest-repo"
+                "name": "repo-client"
             },
             "type": "ClusterIP",
             "sessionAffinity": "None"
@@ -26,10 +26,10 @@
     "kind": "Pod",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pgo-backrest-repo",
+        "name": "repo-client",
         "namespace": "$CO_NAMESPACE",
         "labels": {
-            "name": "pgo-backrest-repo"
+            "name": "repo-client"
         }
     },
     "spec": {
@@ -37,8 +37,8 @@
         },
         "containers": [
             {
-                "name": "pgo-backrest-repo",
-                "image": "$CO_IMAGE_PREFIX/pgo-backrest-repo:$CO_IMAGE_TAG",
+                "name": "repo-client",
+                "image": "$CO_IMAGE_PREFIX/repo-client:$CO_IMAGE_TAG",
                 "ports": [
                     {
                         "containerPort": 2022,
@@ -48,7 +48,7 @@
                 "env": [
                     {
                         "name": "PG_PRIMARY_USER",
-                        "value": "pgo-backrest-repouser"
+                        "value": "repo-clientuser"
                     },
                     {
                         "name": "PG_PRIMARY_PORT",
@@ -56,7 +56,7 @@
                     },
                     {
                         "name": "PG_MODE",
-                        "value": "pgo-backrest-repo"
+                        "value": "repo-client"
                     },
                     {
                         "name": "PG_PRIMARY_PASSWORD",
@@ -89,7 +89,7 @@
             {
                 "name": "backrestrepo",
                 "persistentVolumeClaim": {
-                    "claimName": "pgo-backrest-repo"
+                    "claimName": "repo-client"
                 }
             },
             {

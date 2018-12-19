@@ -20,11 +20,11 @@ yum -y install openssh-server openssh-clients pgbackrest hostname pgocps-ng && \
 yum -y clean all
 
 RUN useradd pgbackrest
-ADD bin/pgo-backrest-repo/pgo-backrest-repo.sh /usr/local/bin
-RUN chmod +x /usr/local/bin/pgo-backrest-repo.sh
+ADD bin/repo-client/repo-client.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/repo-client.sh
 
 VOLUME ["/sshd", "/backrestrepo" ]
 
 USER pgbackrest
 
-CMD ["pgo-backrest-repo.sh"]
+CMD ["repo-client.sh"]
