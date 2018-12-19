@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Helm Chart :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title> :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/installation/helm-chart/">
+  <body data-url="/configuration/">
     
       <header>
   <div class="logo">
@@ -94,79 +94,6 @@
             Home
           </a>
           </li>
-    <li data-nav-id="/installation/" class="dd-item parent haschildren
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a>
-            <i class="fas fa-angle-down fa-lg category-icon"></i>
-
-      </div>
-        <ul>
-      <li data-nav-id="/installation/quick-installation/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/quick-installation/">
-            Quick Installation
-          </a>
-        </div>
-    </li>
-      <li data-nav-id="/installation/manual-installation/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/manual-installation/">
-            Manual Installation
-          </a>
-        </div>
-    </li>
-      <li data-nav-id="/installation/helm-chart/" class="dd-item active">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/helm-chart/">
-            Helm Chart
-          </a>
-        </div>
-    </li>
-      <li data-nav-id="/installation/configuration/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/configuration/">
-            Configuration
-          </a>
-        </div>
-    </li>
-      <li data-nav-id="/installation/deployment/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/deployment/">
-            Deployment
-          </a>
-        </div>
-    </li>
-      <li data-nav-id="/installation/upgrading-the-operator/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/upgrading-the-operator/">
-            Upgrading the Operator
-          </a>
-        </div>
-    </li>
-        </ul>
-    </li>
-    <li data-nav-id="/getting-started/" class="dd-item
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/getting-started/">Getting Started</a>
-
-      </div>
-    </li>
-    <li data-nav-id="/how-it-works/" class="dd-item
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/how-it-works/">How it Works</a>
-
-      </div>
-    </li>
-    <li data-nav-id="/contributing/" class="dd-item
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/">Contributing</a>
-
-      </div>
-    </li>
 
 
 
@@ -186,21 +113,6 @@
       <center>Navigation :
         <select onchange="javascript:location.href = this.value;">
           
-    <option value="/installation/" >
-   Installation</option> 
-      <option value="/installation/quick-installation/" >- Quick Installation</option>
-      <option value="/installation/manual-installation/" >- Manual Installation</option>
-      <option value="/installation/helm-chart/"  selected>- Helm Chart</option>
-      <option value="/installation/configuration/" >- Configuration</option>
-      <option value="/installation/deployment/" >- Deployment</option>
-      <option value="/installation/upgrading-the-operator/" >- Upgrading the Operator</option>
-  
-    <option value="/getting-started/" >
-   Getting Started</option>
-    <option value="/how-it-works/" >
-   How it Works</option>
-    <option value="/contributing/" >
-   Contributing</option>
 
 
 
@@ -219,7 +131,7 @@
             <i class="fa fa-info-circle"></i>
             
           </a>
-          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/installation/helm-chart.adoc" target="blank">
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/configuration.md" target="blank">
             <i class="fa fa-code-fork"></i>
             
           </a>
@@ -236,12 +148,7 @@
 
 
 
-
-
-
- <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data PostgreSQL Operator</a> > <a href='https://crunchydata.github.io/postgres-operator/latest/installation/'>Installation</a> > Helm Chart
-
- 
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data PostgreSQL Operator Documentation</a> > 
 
  
 
@@ -255,57 +162,58 @@
     
     <div id="body-inner">
 
-    <h1>Helm Chart</h1>
+    <h1></h1>
 
     
     
     
-    <div class="paragraph">
-<p>Latest Release: 3.5.0 2018-12-14</p>
-</div>
-<div class="sect1">
-<h2 id="_helm_chart">Helm Chart</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>First, pull prebuilt versions from Dockerhub of the <strong>postgres-operator</strong> containers,
-specify the image versions, and execute the following Makefile target -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>export CO_IMAGE_PREFIX=crunchydata
-export CO_IMAGE_TAG=centos7-3.5.0
-make pull</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Then, build and deploy the operator using the provided Helm chart -</p>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>cd $COROOT/chart
-helm install ./postgres-operator
-helm ls</pre>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_next_steps">Next Steps</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Next, visit the <a href="https://crunchydata.github.io/postgres-operator/latest/installation/deployment/">Deployment</a> page to deploy the
-Operator, verify the installation, and view various storage configurations.</p>
-</div>
-</div>
-</div>
+    
+
+<h1 id="configuration">Configuration</h1>
+
+<p>The operator is template-driven; this makes it simple to configure both the client and the operator.</p>
+
+<h2 id="conf-directory">conf Directory</h2>
+
+<p>The Operator is configured with a collection of files found in the <em>conf</em> directory.  These configuration files are deployed to your Kubernetes cluster when the Operator is deployed.  Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.</p>
+
+<p>The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.</p>
+
+<h2 id="conf-postgres-operator-pgo-yaml">conf/postgres-operator/pgo.yaml</h2>
+
+<p>The *pgo.yaml&rdquo; file sets many different Operator configuration settings and is described in the <a href="https://crunchydata.github.io/postgres-operator/latest/pgo-yaml-configuration/">pgo.yaml description</a> documentation section.</p>
+
+<p>The <em>pgo.yaml</em> file is deployed along with the other Operator configuration files when you run:</p>
+
+<pre><code>make deployoperator
+</code></pre>
+
+<h2 id="conf-postgres-operator-directory">conf/postgres-operator Directory</h2>
+
+<p>Files withiin the <em>conf/postgres-operator</em> directory contain various templates that are used by the Operator when creating Kubernetes resources.  In an advanced Operator deployment, administrators can modify these templates to add their own custom meta-data or make other changes to influence the Resources that get created on your Kubernetes cluster by the Operator.</p>
+
+<h2 id="conf-postgres-operator-cluster">conf/postgres-operator/cluster</h2>
+
+<p>Files within this director are used specifically when creating Postgres Cluster resources and also sidecar components such as pgbouncer and pgpool templates are located within this directory.</p>
+
+<p>As with the other Operator templates, adminstrators can make custom changes to this set of templates to add custom features or metadata into the Resources created by the Operator.</p>
+
+<h2 id="security">Security</h2>
+
+<p>Security configuration is described in the <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a> section of this documentation.</p>
+
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTQ1NDE1MTIzOSwtNTMzNjE2NDQsLTE5OT
+czNjEyNDcsLTEwODY5Nzc3MjMsLTE2NjU5OTY1MjYsMTExNTEw
+NDc4Niw5MTg1MDMzMDFdfQ==
+-->
 
 
     
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/installation/manual-installation/" title="Manual Installation"> <i class="fa fa-chevron-left"></i><label>Manual Installation</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/installation/configuration/" title="Configuration" style="margin-right: 0px;"><label>Configuration</label><i class="fa fa-chevron-right"></i></a></div>
+</div>
   </div>
 
   </section>
@@ -319,10 +227,6 @@ Operator, verify the installation, and view various storage configurations.</p>
     
 
   
-    <div class="date">
-        <i class='fa fa-calendar'></i>  26/04/2018
-    </div>
-    
 
   </div>
 

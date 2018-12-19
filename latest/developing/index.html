@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Categories :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title> :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/categories/">
+  <body data-url="/developing/">
     
       <header>
   <div class="logo">
@@ -122,7 +122,20 @@
 
     
       <div id="top-bar">
-        <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+        
+          
+          
+          
+        <div id="top-github-link">
+          <a class="github-link" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            
+          </a>
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/developing.md" target="blank">
+            <i class="fa fa-code-fork"></i>
+            
+          </a>
+        </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
             <span id="sidebar-toggle-span">
               <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
                 <i class="fa fa-bars"></i>
@@ -132,7 +145,12 @@
             <span class="links">
             
 
- Categories
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data PostgreSQL Operator Documentation</a> > 
+
+ 
 
 
             </span>
@@ -144,34 +162,99 @@
     
     <div id="body-inner">
 
-    <h1>Categories</h1>
+    <h1></h1>
 
     
     
     
+    
 
+<h1 id="developing">Developing</h1>
 
+<p>The Operator is an open source project hosted on github (<a href="https://github.com/crunchydata/postgres-operator">https://github.com/crunchydata/postgres-operator</a>)</p>
 
-<div class="extra-pagination inner">
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  0</span>
-	
-</nav>
+<p>Developers that wish to build the Operator from source or contribute to the project via pull requests would set up a development environment as follows:</p>
 
-</div>
+<h2 id="create-kubernetes-cluster">Create Kubernetes Cluster</h2>
 
+<p>We use either Openshift Container Platform or kubeadm to install our development clusters,  we currently develop and test on CentOS and RHEL hosts.  Each of those installation methods are documented on the respective project&rsquo;s sites.</p>
 
+<h2 id="create-a-local-development-host">Create a Local Development Host</h2>
 
-<div style="margin-bottom:2rem"></div>
+<p>We currently build on RHEL variants like CentoOS or RHEL, but others are possible but we don&rsquo;t support other Linux variants currently.</p>
 
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  0</span>
-	
-</nav>
+<h2 id="perform-manual-install">Perform Manual Install</h2>
 
+<p>You can follow the manual installation method described in this documentation to make sure you can deploy from your local development host to your Kubernetes cluster.</p>
 
+<h2 id="build-locally">Build Locally</h2>
+
+<p>You can now build from source the Operator locally on your development host.  Here are some steps to follow:</p>
+
+<h3 id="get-build-dependencies">Get Build Dependencies</h3>
+
+<pre><code>make setup
+</code></pre>
+
+<p>That target should install a golang compiler, and any other build dependencies.</p>
+
+<h3 id="compile">Compile</h3>
+
+<p>You can build all the Operator binaries and Docker images by running:</p>
+
+<pre><code>make all
+</code></pre>
+
+<p>This assumes you have Docker installed and running on your development host.</p>
+
+<p>The project uses the golang dep package manager to vendor all the golang source dependencies into the <em>vendor</em> directory.  You typically don&rsquo;t need to run any <em>dep</em> commands unless you are adding new golang package dependencies into the project outside of what is within the project for a given release.</p>
+
+<p>After a full compile, you will have a <em>pgo</em> binary in $HOME/odev/bin and the Operator images in your local Docker registry.</p>
+
+<h3 id="release">Release</h3>
+
+<p>You can perform a release build by running:</p>
+
+<pre><code>make release
+</code></pre>
+
+<p>This will compile the Mac and Windows versions of <em>pgo</em>.</p>
+
+<h3 id="deploy">Deploy</h3>
+
+<p>Now that you have built the Operator images, you can push them to your Kubernetes cluster if that cluster is remote to your development host.</p>
+
+<p>You would then run:</p>
+
+<pre><code>make deployoperator
+</code></pre>
+
+<p>To deploy the Operator on your Kubernetes cluster.  If your Kubernetes cluster is not local to your development host, you will need to specify a Kube config file that will connect you to your Kubernetes cluster, see the Kube docs for details.</p>
+
+<h3 id="debug">Debug</h3>
+
+<p>Debug level logging in turned on by default when deploying the Operator.</p>
+
+<p>You can view the REST API logs with the following alias:</p>
+
+<pre><code>alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c apiserver'
+</code></pre>
+
+<p>You can view the Operator core logic logs with the following alias:</p>
+
+<pre><code>alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c operator'
+</code></pre>
+
+<p>You can enable the <em>pgo</em> CLI debugging with the following flag:</p>
+
+<pre><code>pgo version --debug
+</code></pre>
+
+<p>You can set the REST API URL as follows after a deployment if you are
+developing on your local host:</p>
+
+<pre><code>alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath=&quot;{.spec.clusterIP}&quot;`:8443'
+</code></pre>
 
 
     

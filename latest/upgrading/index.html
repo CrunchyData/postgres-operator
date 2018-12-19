@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Crunchy Data PostgreSQL Operator Documentation :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title> :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/">
+  <body data-url="/upgrading/">
     
       <header>
   <div class="logo">
@@ -121,31 +121,73 @@
     </div>
 
     
+      <div id="top-bar">
+        
+          
+          
+          
+        <div id="top-github-link">
+          <a class="github-link" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            
+          </a>
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/upgrading.md" target="blank">
+            <i class="fa fa-code-fork"></i>
+            
+          </a>
+        </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+            <span id="sidebar-toggle-span">
+              <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                <i class="fa fa-bars"></i>
+              </a>
+            </span>
+            <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+            <span class="links">
+            
+
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data PostgreSQL Operator Documentation</a> > 
+
+ 
+
+
+            </span>
+        </div>
+
+      </div>
+    
 
     
     <div id="body-inner">
 
-    
+    <h1></h1>
 
     
     
     
-<span id="sidebar-toggle-span">
-<a href="#" id="sidebar-toggle" data-sidebar-toggle=""><i class="fa fa-bars"></i> navigation</a>
-</span>
-           
-	
-		<h1>Customize your own home page</h1>
-		<p>
-		  The site is working. Don't forget to customize this homepage with your own. You typically have 2 choices :
-		</p>
-		<ul>
-		  <li><b>1. </b> Create an _index.md document in the content folder</li>
-		  <li><b>2. </b> Configure your server to automatically redirect this home page to one of your documentation pages</li>
-		</ul>
-	
-	<p><i class="fa fa-heart fa-4x"></i></p>
+    
 
+<h2 id="upgrading-the-operator">Upgrading the Operator</h2>
+
+<p>Various Operator releases will require action by the Operator administrator of your organization in order to upgrade to the next release of the Operator.  Some upgrade steps are automated within the Operator but not all are possible at this time.</p>
+
+<p>This section of the documentation shows specific steps required to the
+latest version from the previous version.</p>
+
+<h3 id="upgrading-to-version-3-5-0-from-previous-versions">Upgrading to Version 3.5.0 From Previous Versions</h3>
+
+<ul>
+<li>the pgingest CRD is removed, you will need to manually remove it from any deployments of the operator after upgrading to this version, this includes removing ingest related permissions from the pgorole file, the API server also
+removes the ingest related API endpoints</li>
+<li>primary and replica labels are only applicable at cluster creation and not updated after a cluster has executed a failover, a new service-name label is applied to PG cluster components to indidate whether a deployment/pod is a primary or replica, service-name is also the label now used by the cluster services to route with.  This scheme allows for an almost immediate failover promotion and avoids the pod having to be bounced as part of a failover.  Any existing
+PG clusters will need to be updated to specify them as a primary or replica using the new service-name labeling scheme.  A sample upgrade script is included in the bin directory name upgrade-to-35.sh, you would run this script
+to upgrade any existing clusters to the new labeling scheme whereby you can run a failover on existing PG clusters deployed prior to 3.5.0.</li>
+<li>the autofail label was moved from deployments and pods to just the pgcluster CRD to support autofail toggling</li>
+<li>the storage configurations in pgo.yaml support the MatchLabels attribute for NFS storage, this will allow users to have more than a single NFS backend, when set, this label (key=value) will be used to match the labels on PVs when a PVC is created.</li>
+<li>the UpdateCluster permission was added to the sample pgorole file to support the new pgo update CLI command, and also added to the pgoperm file</li>
+</ul>
 
 
     

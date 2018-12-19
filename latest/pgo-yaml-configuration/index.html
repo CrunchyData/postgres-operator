@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Crunchy Data PostgreSQL Operator Documentation</title>
+    
+      <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="generator" content="Hugo 0.48" />
+<title> :: Crunchy Data PostgreSQL Operator Documentation</title>
+<link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
+<link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
+<link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
+
+<link rel="stylesheet" href="https://crunchydata.github.io/postgres-operator/latest/css/bootstrap.min.css">
+<link href="https://crunchydata.github.io/postgres-operator/latest/css/custom.css" rel="stylesheet">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+<script src="https://crunchydata.github.io/postgres-operator/latest/js/jquery-2.x.min.js"></script>
+<script src="https://crunchydata.github.io/postgres-operator/latest/js/toc.js"></script>
+<script type="text/javascript">
+      var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/latest\/";
+</script>
+<meta name="description" content="">
+
+
+
+    
+  </head>
+  <body data-url="/pgo-yaml-configuration/">
+    
+      <header>
+  <div class="logo">
+    
+	
+  
+    <img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg">
+  
+
+
+  </div>
+  <div class="burger"><a href="javascript:void(0);" style="font-size:15px;">&#9776;</a></div>
+    <nav class="shortcuts">
+            <li class="" role="">
+                <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
+                  <i class='fab fa-github'></i> <label>Source</label>
+                </a>
+            </li>
+            <li class="" role="">
+                <a href="https://kubernetes.io/docs/"  rel="noopener">
+                  <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
+                </a>
+            </li>
+            <li class="" role="">
+                <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
+                  <i class='fas fa-file-contract'></i> <label>License</label>
+                </a>
+            </li>
+    </nav>
+</header>
+<article>
+  <aside>
+
+    <ul class="menu">
+      <div>
+        <div class="searchbox">
+          <input data-search-input id="search-by" type="text" placeholder="">
+        </div>
+        <script type="text/javascript" src="https://crunchydata.github.io/postgres-operator/latest/js/lunr.min.js"></script>
+        <script type="text/javascript" src="https://crunchydata.github.io/postgres-operator/latest/js/auto-complete.js"></script>
+        <link href="https://crunchydata.github.io/postgres-operator/latest/css/auto-complete.css" rel="stylesheet">
+        <script type="text/javascript">
+          
+              var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/latest\/";
+          
+        </script>
+        <script type="text/javascript" src="https://crunchydata.github.io/postgres-operator/latest/js/search.js"></script>
+      </div>
+
+      <hr>
+      <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
+      <hr>
+        <b>Available Formats</b>
+        <nav class="downloads">
+                <li class="" role="">
+                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
+                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
+                    </a>
+                </li>
+        </nav>
+        <hr>
+
+      <b>Navigation</b>
+          <li data-nav-id="/" class="dd-item">
+          <a href="https://crunchydata.github.io/postgres-operator/latest/">
+            Home
+          </a>
+          </li>
+
+
+
+
+      <hr><b>Table of Contents</b>
+<nav id="TableOfContents"></nav>
+
+
+
+      <section>
+      </section>
+    </ul>
+  </aside>
+  <section class="page">
+
+    <div class="nav-select">
+      <center>Navigation :
+        <select onchange="javascript:location.href = this.value;">
+          
+
+
+
+        </select>
+      </center>
+    </div>
+
+    
+      <div id="top-bar">
+        
+          
+          
+          
+        <div id="top-github-link">
+          <a class="github-link" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            
+          </a>
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/pgo-yaml-configuration.md" target="blank">
+            <i class="fa fa-code-fork"></i>
+            
+          </a>
+        </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+            <span id="sidebar-toggle-span">
+              <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                <i class="fa fa-bars"></i>
+              </a>
+            </span>
+            <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+            <span class="links">
+            
+
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data PostgreSQL Operator Documentation</a> > 
+
+ 
+
+
+            </span>
+        </div>
+
+      </div>
+    
+
+    
+    <div id="body-inner">
+
+    <h1></h1>
+
+    
+    
+    
+    
+
+<h1 id="pgo-yaml-configuration">pgo.yaml Configuration</h1>
+
+<p>The <em>pgo.yaml</em> file contains many different configuration settings as described in this section of the documentation.</p>
+
+<p>The <em>pgo.yaml</em> file is broken into major sections as described below:</p>
+
+<h2 id="cluster">Cluster</h2>
+
+<p>| Setting |Definition  |
+|&ndash;|&ndash;|
+|BasicAuth        | if set to <em>true</em> will enable Basic Authentication
+|PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the &ndash;node-label command line flag, if not set, no node label is specifed
+|ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the &ndash;node-label command line flag, if not set, no node label is specifed
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the &ndash;ccp-image-tag command line flag
+|Port        | the PostgreSQL port to use for new containers (e.g. 5432)
+|LogStatement        | postgresql.conf log_statement value (required field) (works with crunchy-postgres &gt;= 2.2.0)
+|LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field) (works with crunchy-postgres &gt;= 2.2.0)
+|User        | the PostgreSQL normal user name
+|Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy <em>1</em>
+|Replicas        | the number of cluster replicas to create for newly created clusters
+|Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag &ndash;metrics
+|Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag &ndash;pgbadger
+|Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
+|PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
+|PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
+|ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
+|ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
+|ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
+|Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
+|Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
+|AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.</p>
+
+<h2 id="storage">Storage</h2>
+
+<p>| Setting|Definition  |
+|&ndash;|&ndash;|
+|PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
+|ArchiveStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
+|BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
+|ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
+|ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
+|StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
+|Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
+|Storage.storage1.StorageType        |supported values are either <em>dynamic</em>,  <em>create</em>,  if not supplied, <em>create</em> is used
+|Fsgroup        | optional, if set, will cause a <em>SecurityContext</em> and <em>fsGroup</em> attributes to be added to generated Pod and Deployment definitions
+|SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
+|MatchLabels        | optional, if set, will cause the PVC to add a <em>matchlabels</em> selector in order to match a PV, only useful when the StorageType is <em>create</em>, when specified a label of <em>key=value</em> is added to the PVC as a match criteria</p>
+
+<h2 id="storage-configuration-examples">Storage Configuration Examples</h2>
+
+<p>In <em>pgo.yaml</em>, you will need to configure your storage configurations
+depending on which storage you are wanting to use for
+Operator provisioning of Persistent Volume Claims.  The examples
+below are provided as a sample.  In all the examples you are
+free to change the <em>Size</em> to meet your requirements of Persistent
+Volume Claim size.</p>
+
+<h3 id="hostpath-example">HostPath Example</h3>
+
+<p>HostPath is provided for simple testing and use
+cases where you only intend to run on a single
+Linux host for your Kubernetes cluster.</p>
+
+<pre><code>  hostpathstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+</code></pre>
+
+<h3 id="nfs-example">NFS Example</h3>
+
+<p>In the following NFS example, notice that the
+<em>SupplementalGroups</em> setting is set, this can
+be whatever GID you have your NFS mount set
+to, typically we set this <em>nfsnobody</em> as below.
+NFS file systems offer a <em>ReadWriteMany</em> access
+mode.</p>
+
+<pre><code>  nfsstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
+</code></pre>
+
+<h3 id="storage-class-example">Storage Class Example</h3>
+
+<p>In the following example, the important attribute to
+set for a typical Storage Class is the  <em>Fsgroup</em> setting.
+This value is almost always set to <em>26</em> which represents
+the Postgres user ID that the Crunchy Postgres container
+runs as.  Most Storage Class providers offer <em>ReadWriteOnce</em>
+access modes, but refer to your provider documentation
+for other access modes it might support.</p>
+
+<pre><code>  storageos:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  fast
+    Fsgroup:  26
+</code></pre>
+
+<h2 id="container-resources">Container Resources</h2>
+
+<p>| Setting |Definition  |
+|&ndash;|&ndash;|
+|DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
+|DefaultLoadResource    |optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container
+|DefaultLspvcResource    |optional, the value of the container resources configuration to use for pgo-lspvc containers, if not set, no resource limits or requests are added on the database container
+|DefaultRmdataResource    |optional, the value of the container resources configuration to use for pgo-rmdata containers, if not set, no resource limits or requests are added on the database container
+|DefaultBackupResource    |optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container
+|DefaultPgbouncerResource    |optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container
+|DefaultPgpoolResource    |optional, the value of the container resources configuration to use for crunchy-pgpool containers, if not set, no resource limits or requests are added on the database container
+|RequestsMemory        | request size of memory in bytes
+|RequestsCPU        | request size of CPU cores
+|LimitsMemory        | request size of memory in bytes
+|LimitsCPU        | request size of CPU cores</p>
+
+<h2 id="miscellaneous-pgo">Miscellaneous (Pgo)</h2>
+
+<p>| Setting |Definition  |
+|&ndash;|&ndash;|
+|LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
+|LoadTemplate        | the load template file used for load jobs
+|COImagePrefix        | image tag prefix to use for the Operator containers
+|COImageTag        | image tag to use for the Operator containers
+|Audit        | boolean, if set to true will cause each apiserver call to be logged with an <em>audit</em> marking</p>
+
+<h2 id="storage-configuration-details">Storage Configuration Details</h2>
+
+<p>You can define n-number of Storage configurations within the <em>pgo.yaml</em> file. Those Storage configurations follow these conventions -</p>
+
+<ul>
+<li>they must have lowercase name (e.g. storage1)</li>
+<li>they must be unique names (e.g. mydrstorage, faststorage, slowstorage)</li>
+</ul>
+
+<p>These Storage configurations are referenced in the BackupStorage, ReplicaStorage, and PrimaryStorage configuration values. However, there are command line
+options in the <em>pgo</em> client that will let a user override these default global values to offer you the user a way to specify very targeted storage configurations when needed (e.g. disaster recovery storage for certain backups).</p>
+
+<p>You can set the storage AccessMode values to the following:</p>
+
+<ul>
+<li><em>ReadWriteMany</em> - mounts the volume as read-write by many nodes</li>
+<li><em>ReadWriteOnce</em> - mounts the PVC as read-write by a single node</li>
+<li><em>ReadOnlyMany</em> - mounts the PVC as read-only by many nodes</li>
+</ul>
+
+<p>These Storage configurations are validated when the <em>pgo-apiserver</em> starts, if a
+non-valid configuration is found, the apiserver will abort.  These Storage values are only read at <em>apiserver</em> start time.</p>
+
+<p>The following StorageType values are possible -</p>
+
+<ul>
+<li><em>dynamic</em> - this will allow for dynamic provisioning of storage using a StorageClass.</li>
+<li><em>create</em> - This setting allows for the creation of a new PVC for each PostgreSQL cluster using a naming convention of <em>clustername</em>.  When set, the <em>Size</em>, <em>AccessMode</em> settings are used in constructing the new PVC.</li>
+</ul>
+
+<p>The operator will create new PVCs using this naming convention: <em>dbname</em> where <em>dbname</em> is the database name you have specified.  For example, if you run:</p>
+
+<pre><code>pgo create cluster example1
+</code></pre>
+
+<p>It will result in a PVC being created named <em>example1</em> and in the case of a backup job, the pvc is named <em>example1-backup</em></p>
+
+<p>There are currently 3 sample pgo configuration files provided for users to use as a starting configuration -</p>
+
+<ul>
+<li><code>pgo.yaml.nfs</code> - this configuration specifies <em>create</em> storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database</li>
+<li><code>pgo.yaml.storageclass</code> - this configuration specifies <em>dynamic</em> storage to be used, namely a <em>storageclass</em> that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.</li>
+</ul>
+
+<p>Note, when Storage Type is <em>create</em>, you can specify a storage configuration setting of <em>MatchLabels</em>, when set, this will cause a <em>selector</em> of <em>key=value</em> to be added into the PVC, this will let you target specific PV(s) to be matched for this cluster. Note, if a PV does not match the claim request, then the cluster will not start.  Users
+that want to use this feature have to place labels on their PV resources as part of PG cluster creation before creating the PG cluster.  For example, users would add a label like this to their PV before they create the PG cluster:</p>
+
+<pre><code>kubectl label pv somepv myzone=somezone
+</code></pre>
+
+<p>If you do not specify <em>MatchLabels</em> in the storage configuration, then no match filter is added and any available PV will be used to satisfy the PVC request.  This option does not apply to <em>dynamic</em> storage types.</p>
+
+<p>Example PV creation scripts are provided that add labels to a set of PVs and can be used for testing:  <code>$COROOT/pv/create-pv-nfs-labels.sh</code>
+ in that example, a label of <strong>crunchyzone=red</strong> is set on a set of PVs to test with.</p>
+
+<p>The pgo.yaml includes a storage config named <strong>nfsstoragered</strong> that when used will demonstrate the label matching.  This feature allows you to support
+n-number of NFS storage configurations and supports spreading a PG cluster across different NFS storage configurations.</p>
+
+<h2 id="container-resources-details">Container Resources Details</h2>
+
+<p>In the <em>pgo.yaml</em> configuration file you have the option to configure a default container resources configuration that when set will add CPU and memory resource limits and requests values into each database container when the container is created.</p>
+
+<p>You can also override the default value using the <code>--resources-config</code> command flag when creating a new cluster:</p>
+
+<pre><code>pgo create cluster testcluster --resources-config=large
+</code></pre>
+
+<p>Note, if you try to allocate more resources than your
+host or Kube cluster has available then you will see your
+pods wait in a <em>Pending</em> status. The output from a <code>kubectl describe pod</code>
+command will show output like this in this event:
+Events:</p>
+
+<pre><code>  Type     Reason            Age               From               Message
+  ----     ------            ----              ----               -------
+  Warning  FailedScheduling  49s (x8 over 1m)  default-scheduler  No nodes are available that match all of the predicates: Insufficient memory (1).
+</code></pre>
+
+<h2 id="overriding-storage-configuration-defaults">Overriding Storage Configuration Defaults</h2>
+
+<pre><code>pgo create cluster testcluster --storage-config=bigdisk
+</code></pre>
+
+<p>That example will create a cluster and specify a storage configuration of <em>bigdisk</em> to be used for the primary database storage. The replica storage will default to the value of ReplicaStorage as specified in <em>pgo.yaml</em>.</p>
+
+<pre><code>pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk
+</code></pre>
+
+<p>That example will create a cluster and specify a storage configuration of <em>fastdisk</em> to be used for the primary database storage, while the replica storage will use the storage configuration <em>slowdisk</em>.</p>
+
+<pre><code>pgo backup testcluster --storage-config=offsitestorage
+</code></pre>
+
+<p>That example will create a backup and use the <em>offsitestorage</em> storage configuration for persisting the backup.</p>
+
+<h2 id="using-storage-configurations-for-disaster-recovery">Using Storage Configurations for Disaster Recovery</h2>
+
+<p>A simple mechanism for partial disaster recovery can be obtained by leveraging network storage, Kubernetes storage classes, and the storage configuration options within the Operator.</p>
+
+<p>For example, if you define a Kubernetes storage class that refers to a storage backend that is running within your disaster recovery site, and then use that storage class as
+a storage configuration for your backups, you essentially have moved your backup files automatically to your disaster recovery site thanks to network storage.</p>
+
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbMzE0NTE2OTE1LC0yMTI3ODQzODUyLDEzMj
+IwMDgwNTgsLTE4NzE0NjI3MjRdfQ==
+-->
+
+
+    
+    
+        <div class="chevrons">
+    <div id="navigation">
+</div>
+  </div>
+
+  </section>
+</article>
+
+<footer>
+
+<div class="footline">
+    
+
+    
+
+  
+
+  </div>
+
+
+	<div>
+
+
+  
+
+
+
+	</div>
+</footer>
+
+<link href="https://crunchydata.github.io/postgres-operator/latest/css/featherlight.min.css" rel="stylesheet">
+<script src="https://crunchydata.github.io/postgres-operator/latest/js/featherlight.min.js"></script>
+
+
+
+<script src="https://crunchydata.github.io/postgres-operator/latest/theme-flex/script.js"></script>
+
+
+    
+
+    
+    
+
+    
+  </body>
+</html>

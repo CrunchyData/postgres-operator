@@ -1,83 +1,102 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Crunchy Data PostgreSQL Operator on Crunchy Data PostgreSQL Operator Documentation</title>
+    <title>Crunchy Data PostgreSQL Operator Documentation</title>
     <link>https://crunchydata.github.io/postgres-operator/latest/</link>
-    <description>Recent content in Crunchy Data PostgreSQL Operator on Crunchy Data PostgreSQL Operator Documentation</description>
+    <description>Recent content on Crunchy Data PostgreSQL Operator Documentation</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 23 Apr 2018 14:52:09 -0700</lastBuildDate>
     
 	<atom:link href="https://crunchydata.github.io/postgres-operator/latest/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
-      <title>Quick Installation</title>
-      <link>https://crunchydata.github.io/postgres-operator/latest/installation/quick-installation/</link>
-      <pubDate>Thu, 26 Apr 2018 15:22:14 -0700</pubDate>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/configuration/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/quick-installation/</guid>
-      <description>Table of Contents Overview Quickstart GKE/PKS Openshift Container Platform   Next Steps   Latest Release: 3.5.0 2018-12-14
- Overview There are currently quickstart script that seek to automate the deployment to popular Kubernetes environments -
-   quickstart.sh
-   The quickstart script will deploy the operator to a GKE Kube cluster or an Openshift Container Platform cluster. The quickstart script is intended to get you up and running quickly, for a typical more custom installation, the manual installation is recommended.</description>
+      <guid>https://crunchydata.github.io/postgres-operator/latest/configuration/</guid>
+      <description>Configuration The operator is template-driven; this makes it simple to configure both the client and the operator.
+conf Directory The Operator is configured with a collection of files found in the conf directory. These configuration files are deployed to your Kubernetes cluster when the Operator is deployed. Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
+The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.</description>
     </item>
     
     <item>
-      <title>Manual Installation</title>
-      <link>https://crunchydata.github.io/postgres-operator/latest/installation/manual-installation/</link>
-      <pubDate>Thu, 26 Apr 2018 15:22:21 -0700</pubDate>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/design/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/manual-installation/</guid>
-      <description>Table of Contents Project Structure Installation Prerequsites Basic Installation HostPath Persistent Volumes NFS Persistent Volumes   Build Images &amp;amp; Deploy Makefile Targets Next Steps   Latest Release: 3.5.0 2018-12-14
- Project Structure First, define the following environment variables in .bashrc:
- export GOPATH=$HOME/odev export GOBIN=$GOPATH/bin export PATH=$PATH:$GOBIN export CO_NAMESPACE=demo export CO_CMD=kubectl export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator export CO_IMAGE_PREFIX=crunchydata export CO_BASEOS=centos7 export CO_VERSION=3.5.0 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION # for the pgo CLI auth export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.</description>
+      <guid>https://crunchydata.github.io/postgres-operator/latest/design/</guid>
+      <description>Design Provisioning So, what does the Postgres Operator actually deploy when you create a cluster?
+On this diagram, objects with dashed lines are components that are optionally deployed as part of a PostgreSQL Cluster by the operator. Objects with solid lines are the fundamental and required components.
+For example, within the Primary Deployment, the metrics container is completely optional. That component can be deployed using either the operator configuration or command line arguments if you want to cause metrics to be collected from the Postgres container.</description>
     </item>
     
     <item>
-      <title>Helm Chart</title>
-      <link>https://crunchydata.github.io/postgres-operator/latest/installation/helm-chart/</link>
-      <pubDate>Thu, 26 Apr 2018 15:24:16 -0700</pubDate>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/developing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/helm-chart/</guid>
-      <description>Latest Release: 3.5.0 2018-12-14
- Helm Chart First, pull prebuilt versions from Dockerhub of the postgres-operator containers, specify the image versions, and execute the following Makefile target -
- export CO_IMAGE_PREFIX=crunchydata export CO_IMAGE_TAG=centos7-3.5.0 make pull   Then, build and deploy the operator using the provided Helm chart -
- cd $COROOT/chart helm install ./postgres-operator helm ls     Next Steps Next, visit the Deployment page to deploy the Operator, verify the installation, and view various storage configurations.</description>
+      <guid>https://crunchydata.github.io/postgres-operator/latest/developing/</guid>
+      <description>Developing The Operator is an open source project hosted on github (https://github.com/crunchydata/postgres-operator)
+Developers that wish to build the Operator from source or contribute to the project via pull requests would set up a development environment as follows:
+Create Kubernetes Cluster We use either Openshift Container Platform or kubeadm to install our development clusters, we currently develop and test on CentOS and RHEL hosts. Each of those installation methods are documented on the respective project&amp;rsquo;s sites.</description>
     </item>
     
     <item>
-      <title>Configuration</title>
-      <link>https://crunchydata.github.io/postgres-operator/latest/installation/configuration/</link>
-      <pubDate>Tue, 24 Apr 2018 18:26:56 -0700</pubDate>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/installation/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/configuration/</guid>
-      <description>Table of Contents Overview Openshift Container Platform Security Configuration Kube RBAC Basic Authentication Configure TLS pgo RBAC REST API Configuration PostgreSQL Operator Container Configuration   Bash Completion REST API Deploying pgPool Storage Configuration   Latest Release: 3.5.0 2018-12-14
- Overview This document describes how to configure the operator beyond the default configurations in addition to detailing what the configuration settings mean.
-   Openshift Container Platform To run the Operator on Openshift Container Platform note the following requirements -</description>
+      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/</guid>
+      <description>Operator Installation A full installation of the Operator includes the following steps:
+ create a project structure configure your environment variables configure Operator templates create security resources deploy the operator install pgo CLI (end user command tool)  Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.
+The Operator can also be deployed with a sample Helm chart and also a quickstart script.</description>
     </item>
     
     <item>
-      <title>Deployment</title>
-      <link>https://crunchydata.github.io/postgres-operator/latest/installation/deployment/</link>
-      <pubDate>Thu, 26 Apr 2018 15:26:40 -0700</pubDate>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/pgo-cli/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/deployment/</guid>
-      <description>Table of Contents Verify Operator Status Configure pgo Client Verify pgo Client Next Steps   Latest Release: 3.5.0 2018-12-14
- This document details verifying the installation of the PostgreSQL Operator is successful, in addition to detailing some different storage configurations that can be made.
- Verify Operator Status To verify that the operator is deployed and running, run the following:
- kubectl get pod --selector=name=postgres-operator   You should see output similar to this:</description>
+      <guid>https://crunchydata.github.io/postgres-operator/latest/pgo-cli/</guid>
+      <description>pgo CLI The command line tool, pgo, is used to interact with the Postgres Operator.
+Most users will work with the Operator using the pgo CLI tool. That tool is downloaded from the Github Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
+The pgo client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
+Syntax Use the following syntax to run pgo commands from your terminal window:</description>
     </item>
     
     <item>
-      <title>Upgrading the Operator</title>
-      <link>https://crunchydata.github.io/postgres-operator/latest/installation/upgrading-the-operator/</link>
-      <pubDate>Tue, 24 Apr 2018 18:27:30 -0700</pubDate>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/pgo-yaml-configuration/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/upgrading-the-operator/</guid>
-      <description>Latest Release: 3.5.0 2018-12-14
-   Upgrading to v3.5     the pgingest CRD is removed, you will need to manually remove it from any deployments of the operator after upgrading to this version, this includes removing ingest related permissions from the pgorole file, the API server also removes the ingest related API endpoints
-  primary and replica labels are only applicable at cluster creation and not updated after a cluster has executed a failover, a new service-name label is applied to PG cluster components to indidate whether a deployment/pod is a primary or replica, service-name is also the label now used by the cluster services to route with.</description>
+      <guid>https://crunchydata.github.io/postgres-operator/latest/pgo-yaml-configuration/</guid>
+      <description>pgo.yaml Configuration The pgo.yaml file contains many different configuration settings as described in this section of the documentation.
+The pgo.yaml file is broken into major sections as described below:
+Cluster | Setting |Definition | |&amp;ndash;|&amp;ndash;| |BasicAuth | if set to true will enable Basic Authentication |PrimaryNodeLabel |newly created primary deployments will specify this node label if specified, unless you override it using the &amp;ndash;node-label command line flag, if not set, no node label is specifed |ReplicaNodeLabel |newly created replica deployments will specify this node label if specified, unless you override it using the &amp;ndash;node-label command line flag, if not set, no node label is specifed |CCPImageTag |newly created containers will be based on this image version (e.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/latest/security/</guid>
+      <description>Security Kubernetes RBAC Install the requisite Operator RBAC resources, as a Kubernetes cluster admin user, by running a Makefile target:
+make installrbac  This script creates the following RBAC resources on your Kubernetes cluster:
+| Setting |Definition | |&amp;ndash;|&amp;ndash;| | Custom Resource Definitions | pgbackups| | | pgclusters| | | pgpolicies| | | pgreplicas| | | pgtasks| | | pgupgrades| | Cluster Roles | pgopclusterrole| | | pgopclusterrolecrd| | | scheduler-sa| | Cluster Role Bindings | pgopclusterbinding| | | pgopclusterbindingcrd| | | scheduler-sa| | Service Account | scheduler-sa| | | postgres-operator| | | pgo-backrest| | | scheduler-sa| | Roles| pgo-role| | | pgo-backrest-role| |Role Bindings | pgo-backrest-role-binding|</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/upgrading/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/latest/upgrading/</guid>
+      <description>Upgrading the Operator Various Operator releases will require action by the Operator administrator of your organization in order to upgrade to the next release of the Operator. Some upgrade steps are automated within the Operator but not all are possible at this time.
+This section of the documentation shows specific steps required to the latest version from the previous version.
+Upgrading to Version 3.5.0 From Previous Versions  the pgingest CRD is removed, you will need to manually remove it from any deployments of the operator after upgrading to this version, this includes removing ingest related permissions from the pgorole file, the API server also removes the ingest related API endpoints primary and replica labels are only applicable at cluster creation and not updated after a cluster has executed a failover, a new service-name label is applied to PG cluster components to indidate whether a deployment/pod is a primary or replica, service-name is also the label now used by the cluster services to route with.</description>
     </item>
     
   </channel>
