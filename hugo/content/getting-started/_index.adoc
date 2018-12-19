@@ -1,0 +1,1579 @@
+---
+title: "Getting Started"
+date: 2018-04-24T18:26:43-07:00
+draft: false
+weight: 20
+---
+
+:toc:
+Latest Release: 3.5.0 {docdate}
+
+== First Steps
+
+Prior to using *pgo*, users will need to specify the
+*postgres-operator* URL as follows:
+....
+kubectl get service postgres-operator
+NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+postgres-operator   10.104.47.110   <none>        8443/TCP   7m
+export CO_APISERVER_URL=https://10.104.47.110:8443
+pgo version
+....
+
+== Cluster Names
+
+Many of the pgo commands take in a cluster name, in some cases
+the special name of *all* is accepted which will cause the
+command to be applied to all PostgreSQL clusters.  For
+example:
+....
+pgo df all
+....
+
+== General
+
+=== Operator Version
+
+This command makes it possible to see what version of the pgo client and
+postgres-operator you are running.
+
+==== Syntax
+
+$ pgo version
+
+=== Operator Status
+
+You can use the *pgo status* command to see overall pgo status. Selective
+metrics are displayed to provide some insights to the pgo user and administrator
+as to what is running currently in this namespace related to pgo.
+
+==== Syntax
+
+$ pgo status [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--output=json` |-o json|String |
+The output format. Currently, *json* is the only supported value.
+|=========================================================
+
+=== Operator Configuration
+
+The `pgo show config` command displays the running operator configuration
+parameters that dictate the setup and user defined configuration of the
+operator.  This command can be useful for sharing your configuration or
+verifying the setup is as expected.
+
+==== Syntax
+
+$ pgo show config
+
+=== Disk Capacity
+
+The *pgo df* command will let you see the disk capacity of a cluster's PVC
+versus that of the PostgreSQL data that has been written to disk. If the capacity
+is less than 50%, then the output is printed in red in order to alert the user.
+The listing is broken out by the cluster's Pods.
+
+==== Syntax
+
+$ pgo df NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Cluster Selectors
+
+The `pgo df` command can either be run against a single cluster or against all
+clusters matching a selector:
+....
+pgo df mycluster
+pgo df --selector=project=xrayapp
+....
+
+== Cluster Basics
+
+=== Create Cluster
+
+The *create cluster* command will automatically provision a PostgreSQL cluster within
+Kubernetes or OpenShift using a Deployment.
+
+==== Syntax
+
+$ pgo create cluster NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--archive` |N/A |N/A |
+Enables archive logging for the database cluster.
+
+|`--autofail` |N/A |N/A |
+If set, will cause autofailover to be enabled on this cluster.
+
+|`--autofail-replace-replica` |N/A |N/A |
+If set, will allow you to override the AutofailReplaceReplica setting as
+specified in the pgo.yaml, this setting lets you control whether a replica
+is created as part of a failover to replace the promoted replica
+
+|`--backup-pvc` |N/A |String |
+The backup archive PVC to restore from.
+
+|`--backup-path` |N/A |String |
+The backup archive path to restore from.
+
+|`--ccp-image-tag` |N/A |String |
+The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
+
+|`--custom-config` |N/A |String |
+The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
+
+|`--labels` |N/A |String |
+The labels to apply to this cluster.
+
+|`--metrics` |N/A |N/A |
+Adds the crunchy-collect container to the database pod.
+
+|`--node-label` |N/A |String |
+The node label (key) to use in placing the primary database. If not set, any node is used.
+
+|`--password` |N/A |String |
+The password to use for initial database users.
+
+|`--service-type` |N/A |String |
+The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
+
+|`--pgbackrest` |N/A |N/A |
+Enables a pgBackRest volume for the database pod.
+
+|`--pgbackrest-restore-from` |N/A |N/A |
+Only applies when creating a cluster from a pgbackrest restored PVC.  This
+is the name of the cluster from which the restored PVC was created from and
+which the new cluster credentials will be based.  This setting is required in the scenario.
+
+|`--pgbadger` |N/A |N/A |
+Adds the crunchy-pgbadger container to the database pod.
+
+|`--pgpool` |N/A |N/A |
+Adds the crunchy-pgpool container to the database pod.
+
+|`--pgpool-secret` |N/A |String |
+The name of a pgpool secret to use for the pgpool configuration.
+
+|`--policies` |N/A |String |
+The policies to apply when creating a cluster, comma separated.
+
+|`--replica-count` |N/A |Int |
+The number of replicas to create as part of this cluster.  After a cluster is created, you can also add replicas using the scale command.
+
+|`--replica-storage-config` |N/A |String |
+The name of a Storage config in pgo.yaml to use for the cluster replica storage.
+
+|`--resources-config` |N/A |String |
+The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
+
+|`--secret-from` |N/A |String |
+The cluster name to use when restoring secrets.
+
+|`--series` |N/A |Int |
+The number of clusters to create in a series (default 1).
+
+|`--storage-config` |N/A |String |
+The name of a Storage config in pgo.yaml to use for the cluster storage.
+|=========================================================
+
+==== Examples
+
+===== Simple Creation
+
+Create a single cluster:
+....
+pgo create cluster mycluster
+....
+
+Create a single cluster with a single replica:
+....
+pgo create cluster mycluster --replica-count=1
+....
+
+===== Complex Creation
+
+Create a series of clusters, specifying it as the xray project, with the xrayapp and
+rlspolicy policies added:
+....
+pgo create cluster mycluster --series=3 --labels=project=xray --policies=xrayapp,rlspolicy
+....
+
+===== Image Version
+
+New clusters typically pick up the container image version to use
+based on the pgo configuration file's `CcpImageTag` setting.  You
+can override this value using the `--ccp-image-tag` command line
+flag:
+....
+pgo create cluster mycluster --ccp-image-tag=centos7-9.6.5-1.6.0
+....
+
+===== Metrics
+
+Add the
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-collect/[crunchy-collect]
+container from the Crunchy Container Suite to the database cluster pod and enable metrics collection
+on the database:
+....
+pgo create cluster mycluster --metrics
+....
+
+You can connect these containers to a metrics pipeline using link:https://grafana.com[Grafana]
+and link:https://prometheus.io[Prometheus] by following the example found in the
+link:https://crunchydata.github.io/crunchy-containers/stable/getting-started/kubernetes-and-openshift/#_metrics_collection[Crunchy Container Suite documentation].
+
+===== pgBadger
+
+Add a link:https://github.com/dalibo/pgbadger[pgBadger] sidecar into the Postgres pod:
+....
+pgo create cluster mycluster --pgbadger
+....
+
+This command flag adds the link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgbadger/[crunchy-pgbadger]
+container into the database pod. pgBadger reports can then be accessed through port 10000 at `/api/badgergenerate`.
+
+===== pgPool II
+
+By appending the `--pgpool` command line flag, you can add
+link:http://www.pgpool.net/mediawiki/index.php/Main_Page[pgPool II] to the database cluster.
+The container used for this functionality is the
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-pgpool/[crunchy-pgpool]
+container image from the Crunchy Container Suite.
+....
+pgo create cluster mycluster --pgpool
+....
+
+===== Auto Failover
+
+To enable auto failover on this cluster, use the following flag:
+....
+pgo create cluster mycluster --autofail
+....
+
+This flag, when set on the cluster, informs the operator to look
+or watch for NotReady events on this cluster. When those occur, it will
+ create a failover state machine which acts as a timer for the cluster.
+If the timer expires, then a failover is triggered on the cluster turning
+one of the cluster replica pods into the replacement primary pod. See the
+link:/how-it-works/#_auto_failover[How It Works]
+documentation for more details on auto failover.
+
+===== pgBackRest
+
+pgbackrest beta integration was implemented in version 3.4.0 of the
+Operator.   NOTE:  pgbackrest integration is still subject to change in
+upcoming releases.
+
+The backrestrepo PVC, used by pgBackRest, has to be created on a RWX file system type in this
+release. pgBackRest is a more advanced backup and restore capability exposed by the Operator.
+
+The pgBackRest support is enabled in a PG cluster by a user specifying the `--pgbackrest` command
+flag. To enable this feature for all PG clusters when created, you can specify a `pgbackrest` setting
+within the pgo.yaml configuration.
+
+Create a PG cluster that enables pgBackRest specifically for that cluster:
+....
+pgo create cluster mycluster --pgbackrest
+....
+
+Setting this value will cause the Operator to create a PVC specifically dedicated for holding pgBackRest backups.
+
+Create a pgBackRest backup:
+....
+pgo backup mycluster --backup-type=pgbackrest
+....
+
+You can also pass in pgbackrest backup command options:
+....
+pgo backup mycluster --backup-type=pgbackrest --pgbackrest-opts="--type=incr"
+....
+
+Note, you can not specify *--storage-config* flag when specifying
+a pgbackrest backup.
+
+List pgBackRest information:
+....
+pgo show backup mycluster --backup-type=pgbackrest
+....
+
+Restore from an existing cluster into a newly created PVC:
+....
+pgo restore mycluster --to-pvc=restored
+pgo create cluster restored --pgbackrest-restore-from=mycluster --pgbackrest
+....
+
+To do restore based on a point in time:
+....
+pgo restore mycluster --to-pvc=restored --backup-opts="--type=time" --pitr-target="2018-12-12 14:45:58 EST"
+....
+
+The pgBackRest backrestrepo PVCs are created using the pgo.yaml `BackupStorage` setting.
+Typically, this will be a RWX file system but if the file system is RWO the PVCs will be
+created without having write access and a backup and restore will fail. The RWX file
+system setup will allow you to restore from this PVC without having to shutdown the currently
+attached PostgreSQL cluster.  Note that a cluster based off of the restored PVC
+has to attach the same pgbackrest repo used by the original cluster the restore
+was based off of.
+
+=== Update Cluster
+
+The `update cluster` command will let users set the autofail flag on 
+a set of clusters.  This can be handy to prevent autofailover logic
+in certain scenarios like when you want to do a minor upgrade on a
+primary deployment.
+
+==== Syntax
+
+$ pgo update cluster NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--autofail` |-b |N/A |
+Sets to true or false the autofail flag on the pgcluster CRD
+for this cluster.
+
+==== Examples
+
+Create a cluster:
+....
+pgo create cluster mycluster --autofail --replica-count=1
+....
+
+Disable autofail:
+....
+pgo update cluster mycluster --autofail=false
+....
+
+Shutdown the primary pod:
+....
+kubectl scale deployment/one --replicas=0
+....
+
+Do something to the primary such as copy its pvc or 
+patch the primary deployment.
+
+Bring the primary pod back:
+....
+kubectl scale deployment/one --replicas=1
+....
+
+Set autofail flag back to true:
+....
+pgo update cluster mycluster --autofail=true
+....
+
+=== Delete Cluster
+
+The `delete cluster` command will by default delete all associated components of
+the selected cluster, but will not delete the data or the backups unless specified.
+
+==== Syntax
+
+$ pgo delete cluster NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--delete-backups` |-b |N/A |
+Causes the backups for this cluster to be removed permanently.  This only
+is applicable with pgbasebackup backup volumes and does not remove
+pgbackrest repo volumes.
+
+|`--delete-configs` |-b |N/A |
+Causes the configuration maps for this cluster to be removed permanently.
+
+|`--delete-data` |-d |N/A |
+Causes the data for this cluster to be removed permanently.
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Deletion
+
+Delete a single cluster:
+....
+pgo delete cluster mycluster
+....
+
+Note that this command will not remove the PVC associated with
+this cluster.
+
+===== Complex Deletion
+
+Selectors also apply to the delete command as follows:
+....
+pgo delete cluster  --selector=project=xray
+....
+
+This command will cause any cluster matching the selector
+to be removed.
+
+===== Delete Components, Data, & Backups
+
+You can remove a cluster, it's data files, and all backups by running:
+....
+pgo delete cluster restoredb --delete-data --delete-backups --delete-configs
+....
+
+When you specify a destructive delete like above, you will be prompted
+to make sure this is what you want to do.  If you don't want to
+be prompted you can enter the `--no-prompt` command line flag.
+
+=== Show Cluster
+
+The `show cluster` command allows you to view all the associated created
+components of a specific cluster or selection of clusters.
+
+By default, you will be able to view the status of the created pod, the
+PVC, Deployment, Service, and Labels associated with the cluster, and
+any and all specified options (such as whether crunchy_collect is enabled).
+
+==== Syntax
+
+$ pgo show cluster NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--output=json` |-o json |String |
+The output format. Currently, *json* is the only supported value.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+
+|`--ccp-image-tag` |N/A |String |
+Filter the results based on the PostgreSQL version of the cluster.
+|=========================================================
+
+==== Examples
+
+===== Simple Display
+
+Show a single cluster:
+....
+pgo show cluster mycluster
+....
+
+===== Show All
+
+Show all clusters available:
+....
+pgo show cluster all
+....
+
+===== Show Secrets
+
+User credentials are generated through Kubernetes Secrets automatically for the
+*testuser*, *primaryuser* and *postgres* accounts. The generated passwords can be viewed
+by running the `pgo show user` command. More details
+are available on user management below.
+
+....
+pgo show user mycluster
+....
+
+
+===== Viewing Users With Passwords Set to Expire
+
+To see user passwords that have expired past a certain number
+of days in the *mycluster* cluster:
+....
+pgo show user --expired=7 --selector=name=mycluster
+....
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+|`--expired` |N/A |String |
+|=========================================================
+
+===== PostgreSQL Version
+
+Filter the results based on the PostgeSQL version of the cluster with the `--ccp-image-tag` flag:
+....
+pgo show cluster all --ccp-image-tag=centos7-10.5-2.1.0
+....
+
+=== Test Connection
+
+This command will test each service defined for the cluster using
+the postgres, primary, and normal user accounts defined for the
+cluster.  The cluster credentials are accessed and used to test
+the database connections.  The equivalent *psql* command is printed
+out as connections are tried, along with the connection status.
+
+==== Syntax
+
+$ pgo test NAME|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--output=json` |-o json |String |
+The output format. Currently, *json* is the only supported value.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Test
+
+Test the database connections to a cluster:
+....
+pgo test mycluster
+....
+
+===== Complex Test
+
+Like other commands, you can use the selector to test a series
+of clusters or to test all available clusters:
+....
+pgo test --selector=env=research
+pgo test all
+....
+
+== Administration
+
+=== Reload
+
+The *reload* command will perform a reload on the specified PostgreSQL cluster.
+
+==== Syntax
+
+$ pgo reload NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Reload
+
+Reload a single cluster:
+....
+pgo reload mycluster
+....
+
+=== Backups
+
+The `backup` command will utilize the link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-backup/[crunchy-backup]
+container to execute a full backup against another database container
+using the standard pg_basebackup utility that is included with PostgreSQL.
+
+When you request a backup, *pgo* will prompt you if you want
+to proceed because this action will delete any existing backup job
+for this cluster that might exist. The backup files will still
+be left intact but the actual Kubernetes Job will be removed prior
+to creating a new Job with the same name.
+
+==== Syntax
+
+$ pgo backup NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+
+|`--pvc-name` |N/A |String |
+The PVC name to use for the backup instead of the default.
+
+|`--backup-type` |N/A |String |
+The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.
+
+|`--backup-opts` |N/A |String |
+The options to pass to pgbasebackup or pgbackrest, use appropriate command options depending on which type of backup you are performing.
+
+|`--storage-config` |N/A |String |
+The name of a Storage config in pgo.yaml to use for the cluster storage.
+|=========================================================
+
+==== Examples
+
+===== Simple Backup
+
+You can start a backup job for a cluster as follows:
+....
+pgo backup mycluster
+....
+
+===== Show Backup
+
+View the backup and backup status:
+....
+pgo show backup mycluster
+....
+
+===== Backup PVC Management
+
+NOTE:  'pgo show pvc' can run into file permission issues if
+you are trying to view a PVC that is on a RWO (read write once) file
+system (e.g. cloud storage, ceph, storageos, etc.).  If another
+pod has the PVC mounted you will get timeout errors from the 'pgo lspvc'
+command in the current 3.4.0 release.
+
+View the PVC folder and the backups contained therein:
+
+....
+pgo show pvc mycluster-backup
+pgo show pvc mycluster-backup --pvc-root=mycluster-backups
+....
+
+The output from this command is important in that it can let you
+copy/paste a backup snapshot path and use it for restoring a database
+or essentially cloning a database with an existing backup archive.
+
+For example, to restore a database from a backup archive:
+....
+pgo create cluster restoredb --backup-path=mycluster-backups/2017-03-27-13-56-49 --backup-pvc=mycluster-backup --secret-from=mycluster
+....
+
+This will create a new database called *restoredb* based on the
+backup found in *mycluster-backups/2017-03-27-13-56-49* and the
+secrets of the *mycluster* cluster.
+
+===== Override PVC
+
+You can override the PVC used by the backup job with the following:
+....
+pgo backup mycluster --pvc-name=myremotepvc
+....
+
+This might be useful for special backup cases such as creating
+a backup on a disaster recovery PVC.
+
+===== Delete Backup
+
+To delete a backup enter the following:
+....
+pgo delete backup mycluster
+....
+
+When run, this command removes the PVC used for the backups, and
+runs the *rmdata* Job to physically perform data removal of that PVC's
+contents.  It also removes the pgbackup CRD for this cluster that holds
+the last pg_basebackup results.
+
+=== Scheduling
+
+The `schedule` command will generate schedule configuration maps that are utitlized by the
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-scheduler/[crunchy-scheduler]
+container.  This allows users to create automated, scheduled backups for their PostgreSQL clusters.
+
+Currently only two types of backups are supported with the schedule command:
+ * pgBackRest
+ * pgBaseBackup
+
+Crunchy Scheduler is a cron-like microservice that periodically queries Kubernetes for
+configuration maps with the label `crunchy-scheduler=true` in a specific namespace.
+After finding the schedule configs, the scheduler service will either exec into the container (pgBackRest) or
+create pgBaseBackup jobs for the configured schedule.
+
+NOTE:  in operator version 3.4.0, you are REQUIRED, a single time,  to run a
+pgbackrest backup PRIOR to creating a pgbackrest schedule.  This will not be
+a requirement in the 3.5.0 version of the Operator.
+
+==== Syntax
+
+$ pgo create schedule NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--ccp-image-tag` |-n |N/A |
+Image version to use for pgBaseBackup backup jobs.  Defaults to what PGO is configured to use.
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--pgbackrest-backup-type` |N/A |String |
+The type of pgBackRest backup to perform.  There is no default and the following are valid: `full`, `diff`, `incr`
+
+|`--pvc-name` |N/A |String |
+The PVC name to use for the backup.  Only used for pgBaseBackup schedule types and must be created prior to using.
+
+|`--schedule` |N/A |String |
+The schedule assigned to the cron task.
+
+|`--schedule-type` |N/A |String |
+The schedule type to perform. There is no default and both pgbasebackup and pgbackrest are valid schedule types.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+
+|=========================================================
+
+==== Examples
+
+===== Creating pgBackRest Schedules
+
+Create a pgBackRest `full` backup on Sunday at 1 a.m:
+
+....
+pgo create schedule --schedule="0 1 * * 7" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster
+....
+
+Create a pgBackRest `diff` backup on Monday-Saturday at 1 a.m:
+
+....
+pgo create schedule --schedule="0 1 * * 1-6" --schedule-type=pgbackrest --pgbackrest-backup-type=diff mycluster
+....
+
+===== Creating pgBaseBackup Schedules
+
+Create a pgBaseBackup backup every day at 1 a.m:
+
+....
+pgo create schedule --schedule="0 1 * * *" --schedule-type=pgbasebackup --pvc-name=mycluster-backups mycluster
+....
+
+==== Creating Schedules Using Selectors
+
+Using the `selector` flag, we can create schedules for all clusters that match a label:
+
+....
+pgo create schedule --schedule="0 1 * * *" --schedule-type=pgbasebackup --pvc-name=mycluster-backups --selector=env=test
+....
+
+===== Show Schedules
+
+View the schedules for cluster named `mycluster`:
+
+....
+pgo show schedule mycluster
+....
+
+View the schedules for all clusters with the label `env=test`:
+
+....
+pgo show schedule --selector=env=test
+....
+
+or for a particular cluster:
+....
+pgo show schedule --selector=pg-cluster=mycluster
+....
+
+===== Delete Schedules
+
+To delete schedules for a specific cluster:
+
+....
+pgo delete schedule mycluster
+....
+
+To delete a schedule by name:
+
+....
+pgo delete schedule --schedule-name=mycluster-pgbackrest-full
+....
+
+To delete schedules for all clusters with the label `env=test`:
+
+....
+pgo delete schedule --selector=env=test
+....
+
+=== Scaling Replicas
+
+When you create a Cluster, you will see in the output a variety of Kubernetes
+objects were created including:
+
+ * a Deployment holding the primary PostgreSQL database
+ * a Deployment holding the replica PostgreSQL database
+ * a service for the primary database
+ * a service for the replica databases
+
+Since PostgreSQL is a single-primary database by design, the primary
+Deployment is set to a replica count of 1 and it can not scale beyond that.
+
+With PostgreSQL, you can create any n-number of replicas each of which
+connect to the primary. This forms a streaming replication PostgreSQL cluster.
+The PostgreSQL replicas are read-only whereas the primary is read-write.
+
+==== Syntax
+
+$ pgo scale NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--service-type` |N/A |String |
+The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.  Possible values include LoadBalancer, ClusterIP, and NodePort.
+
+|`--ccp-image-tag` |N/A |String |
+The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--node-label` |N/A |String |
+The node label (key) to use in placing the primary database. If not set, any node is used.
+
+|`--replica-count` |N/A |String |
+The replica count to apply to the clusters (default 1).
+
+|`--resources-config` |N/A |String |
+The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
+
+|`--storage-config` |N/A |String |
+The name of a Storage config in pgo.yaml to use for the cluster storage.
+|=========================================================
+
+==== Examples
+
+
+===== Scaling Up
+
+Create a Postgres replica:
+....
+pgo scale mycluster
+....
+
+Scale a Postgres replica to a certain number of replicas:
+....
+pgo scale mycluster --replica-count=3
+....
+
+The pgo scale command is additive, in that each time you execute
+it, another replica is created which is added to the Postgres
+cluster.
+
+===== Scaling Down
+
+You can cause a replica to be removed from a Postgres cluster by
+scaling down the replicas.
+
+==== Syntax
+
+$ pgo scaledown NAME [FLAGS]
+
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+|`--query` |N/A |N/A |
+Prints the list of targetable replica candidates.
+
+|`--delete-data` |-d |N/A |
+Causes the data for the scaled down replica to be removed permanently.
+
+|`--target` |N/A |String |
+The name of a replica to delete.
+|=========================================================
+
+
+List the targetable replicas for a given cluster:
+....
+pgo scaledown mycluster --query
+....
+
+You can scale down a cluster as follows:
+....
+pgo scaledown mycluster --target=mycluster-replica-xxxx
+....
+
+Delete the PVC and associated data for the scaled down replica
+by using the `--delete-data` command flag:
+....
+pgo scaledown mycluster --target=mycluster-replica-xxxx --delete-data
+....
+
+===== Testing Replication
+
+There are 2 service connections available to the PostgreSQL cluster. One is
+to the primary database which allows read-write SQL processing, and
+the other is to the set of read-only replica databases.  The replica
+service performs round-robin load balancing to the replica databases.
+
+You can connect to the primary database and verify that it is replicating
+to the replica databases as follows:
+....
+psql -h 10.107.180.159 -U postgres postgres -c 'table pg_stat_replication'
+....
+
+===== Specifying Nodes
+
+The scale command will let you specify a `--node-label` flag which
+can be used to influence what Kube node the replica will be scheduled
+upon.
+
+....
+pgo scale mycluster --node-label=speed=fast
+....
+
+If you don't specify a `--node-label` flag, a node affinity
+rule of *NotIn* will be specified to *prefer* that the replica
+be schedule on a node that the primary is not running on.
+
+===== Overriding Storage Defaults
+
+You can also dictate what container resource and storage configurations
+will be used for a replica by passing in extra command flags:
+....
+pgo scale mycluster --storage-config=storage1 --resources-config=small
+....
+
+=== Manual Failover
+
+Starting with Release 2.6, there is a manual failover command which
+can be used to promote a replica to a primary role in a PostgreSQL
+cluster.
+
+This process includes the following actions:
+
+ * pick a target replica to become the new primary
+ * delete the current primary deployment to avoid user requests from
+   going to multiple primary databases (split brain)
+ * promote the targeted replica using *pg_ctl promote*, this will
+   cause PostgreSQL to go into read-write mode
+ * re-label the targeted replica to use the primary labels, this
+   will match the primary service selector and cause new requests
+   to the primary to be routed to the new primary (targeted replica)
+
+==== Syntax
+
+$ pgo failover NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--no-prompt` |-n |N/A |
+No command line confirmation.
+
+|`--query` |N/A |N/A |
+Prints the list of failover candidates.
+
+|`--target` |N/A |String |
+The replica target which the failover will occur on.
+|=========================================================
+
+==== Examples
+
+===== Manual Failover
+
+The command works like this:
+....
+pgo failover mycluster --query
+....
+
+That command will show you a list of replica targets you can choose
+to failover to.  You will select one of those for the following
+command:
+....
+pgo failover mycluster --target=mycluster-abxq
+....
+
+There is a CRD called *pgtask* that will hold the failover request
+and also the status of that request.  You can view the status
+by viewing it:
+....
+kubectl get pgtasks mycluster-failover -o yaml
+....
+
+Once completed, you will see a new replica has been started to replace
+the promoted replica, which happens automatically due to the re-label. The
+Deployment will recreate its pod because of this.  The failover typically
+takes only a few seconds, however, the creation of the replacement
+replica can take longer depending on how much data is being replicated.
+
+=== Upgrading PostgreSQL
+
+The *upgrade* command will allow you to upgrade the PostgreSQL version of
+your cluster with the pg_upgrade utility. Minor or major upgrades are
+supported. The Crunchy Container Suite
+link:https://crunchydata.github.io/crunchy-containers/stable/container-specifications/crunchy-upgrade/[crunchy-upgrade]
+container is responsible for performing this task.
+
+By default, it will request confirmation for the command as the operator
+deletes the existing contaniers of the database or cluster and recreates
+them using the currently defined PostgreSQL contaner image specified in the
+pgo.yaml configuration file or with a defined `--ccp-image-tag` flag.
+The database data files remain untouched throughout the upgrade.
+
+Once the upgrade job is completed, the operator will create the original
+database or cluster container mounted with the new PVC which contains the
+upgraded database files.
+
+As the upgrade is processed, the status of the *pgupgrade* CRD is updated to
+give the user some insight into how the upgrade is proceeding. Upgrades like
+this can take a long time if your database is large. The operator creates a
+watch on the upgrade job to know when and how to proceed.
+
+==== Syntax
+
+$ pgo upgrade NAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--ccp-image-tag` |N/A |String |
+The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
+
+|=========================================================
+
+==== Examples
+
+===== Minor Upgrade
+
+Perform a minor PostgreSQL version upgrade:
+....
+pgo upgrade mycluster
+....
+
+===== Overriding Version
+
+Override the `CcpImageTag` variable defined in the pgo.yaml configuration file:
+....
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
+pgo upgrade mycluster --ccp-image-tag=centos7-9.6.9-1.8.3
+....
+
+===== Delete Upgrade
+
+To remove an upgrade CRD, issue the following:
+....
+pgo delete upgrade
+....
+
+=== Labels
+
+Labels can be applied to clusters and nested according to their type, with any string
+input being valid.
+
+==== Syntax
+
+$ pgo label [NAME]|all [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--dry-run` |N/A |N/A |
+Shows the clusters that the label would be applied to, without labelling them.
+
+|`--label` |N/A |String |
+The new label to apply for any selected or specified clusters.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Applying Labels
+
+You can apply a user defined label to a cluster as follows:
+....
+pgo label mycluster --label=env=research
+....
+
+Or if you wanted to apply if to a selection of clusters:
+....
+pgo label --label=env=research  --selector=project=xray
+pgo label all --label=env=research
+....
+
+In the first example, a label of *env=research* is applied to the cluster
+*mycluster*. The second example will apply the label to any clusters that
+have an existing label of *project=xray* applied or to all clusters.
+
+===== Removing Labels
+
+You can delete a user defined label from a cluster as follows:
+....
+pgo delete label mycluster --label=env=research
+....
+
+=== Creating SQL Policies
+
+Policies are SQL files that can be applied to a single cluster, a selection
+of clusters, or to all newly created clusters by default.
+
+They are automatically applied to any cluster you create if
+you define in your *pgo.yaml* configuration a CLUSTER.POLICIES
+value.
+
+{{% notice warning %}}
+Policies are executed as the superuser or *postgres* user in
+PostgreSQL. These should therefore be exercised with caution.
+{{% /notice %}}
+
+==== Syntax
+
+$ pgo create policy [NAME] [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--in-file` |N/A |String |
+The policy file path to use for adding a policy.
+
+|`--url` |N/A |N/A |
+The url to use for adding a policy.
+|=========================================================
+
+==== Examples
+
+===== Creating Policies
+
+To create a policy use the following syntax:
+....
+pgo create policy policy1 --in-file=/tmp/policy1.sql
+pgo create policy policy1 --url=https://someurl/policy1.sql
+....
+
+When you execute this command, it will create a policy named *policy1*
+using the input file */tmp/policy1.sql* as input.  It will create
+on the server a PgPolicy CRD with the name *policy1* that you can
+examine as follows:
+....
+kubectl get pgpolicies policy1 -o json
+....
+
+===== Apply Policies
+
+To apply an existing policy to a set of clusters, issue
+a command like this:
+....
+pgo apply policy1 --selector=name=mycluster
+....
+
+When you execute this command, it will look up clusters that
+have a label value of `name=mycluster` and then it will apply
+the *policy1* label to that cluster and execute the policy
+SQL against that cluster using the *postgres* user account.
+
+===== Testing Policy Application
+
+You can apply policies with a `--dry-run` flag applied to test
+which clusters the policy would be applied to without actually
+executing the SQL:
+....
+pgo apply policy1 --dry-run --selector=name=mycluster
+....
+
+===== Show Policies
+
+To view policies, either all of them or a specific one:
+....
+pgo show policy all
+pgo show policy somepolicy
+....
+
+===== Show Clusters with a Specific Policy
+
+If you want to view the clusters than have a specific policy applied
+to them, you can use the `--selector` flag as follows to filter on a
+policy name (e.g. policy1):
+....
+pgo show cluster --selector=policy1=pgpolicy
+....
+
+===== Delete Policies
+
+To delete a policy use the following form:
+....
+pgo delete policy policy1
+pgo delete policy all
+....
+
+=== Loading Data
+
+A CSV file loading capability is supported. This can be tested through
+creating a SQL Policy which will create a database table that will be
+loaded with the CSV data. The loading is based on a load definition found
+in the `sample-load-config.yaml` file. In that file, the data to be loaded
+is specified. When the `pgo load` command is executed, Jobs will be created
+to perform the loading for each cluster that matches the selector filter.
+
+The load configuration file has the following YAML attributes:
+
+[width="100%",cols="m,2",frame="topbot",options="header"]
+|======================
+|Attribute | Description
+|COImagePrefix|  the pgo-load image prefix to use for the load job
+|COImageTag|  the pgo-load image tag to use for the load job
+|DbDatabase|  the database schema to use for loading the data
+|DbUser|  the database user to use for loading the data
+|DbPort|  the database port of the database to load
+|TableToLoad|  the PostgreSQL table to load
+|FilePath|  the name of the file to be loaded
+|FileType|  either csv or json, determines the type of data to be loaded
+|PVCName|  the name of the PVC that holds the data file to be loaded
+|SecurityContext| either fsGroup or SupplementalGroup values
+|======================
+
+For running the *pgo load* examples, you can create the *csv-pvc* PVC
+by running:
+....
+kubectl create -f examples/csv-pvc.json
+....
+
+Then you can copy sample load files as referenced by the examples
+into that PVC location (e.g. /data or /nfsfileshare).
+
+==== Syntax
+
+$ pgo load [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--load-config` |N/A |String |
+The load configuration to use that defines the load job.
+
+|`--policies` |N/A |String |
+The policies to apply before loading a file, comma separated.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Loading CSV Files
+
+Load a sample CSV file into a database as follows:
+....
+pgo load --load-config=$COROOT/examples/sample-load-config.yaml  --selector=name=mycluster
+....
+
+===== Including Policies
+
+If you include the *--policies* flag, any specified policies will be applied prior to the data being loaded.  For
+example:
+....
+pgo load --policies="rlspolicy,xrayapp" --load-config=$COROOT/examples/sample-load-config.yaml --selector=name=mycluster
+....
+
+== Authentication
+
+=== Credential Management
+
+The `pgo user`, `pgo create user`, and `pgo delete user` commands are used to manage
+credentials for the PostgreSQL clusters.
+
+==== Syntax
+
+$ pgo user [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--change-password` |N/A |String |
+Updates the password for a user on selective clusters.
+
+|`--db` |N/A |String |
+Grants the user access to a database.
+
+|`--expired` |N/A |String |
+Specifies number of days to check for expiring passwords when
+using --update-passwords flag to update passwords.
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+
+|`--update-passwords` |N/A |N/A |
+Performs password updating on expired passwords.
+
+|`--password` |N/A |N/A |
+Allows user to specify a password instead of using a generated password.
+
+|`--valid-days` |N/A |Int |
+Sets passwords for new users to X days (default 30).
+
+|`--password-length` |N/A |Int |
+When no password is provided, generates a password with this number of characters (default 12).
+|=========================================================
+
+==== Examples
+
+===== Basic User Creation
+
+To create a new Postgres user assigned to the *mycluster* cluster, execute (password will be auto generated and 12 characters long):
+....
+pgo create user sally --selector=name=mycluster
+....
+
+===== Managed User Creation
+
+To create a new Postgres user to the *mycluster* cluster that has credentials created with Kubernetes Secrets, use the *--managed* flag:
+....
+pgo create user sally --managed --selector=name=mycluster --password=somepass
+....
+
+A *managed* account is one that the Operator can manipulate as well; when you run `pgo test mycluster` the account is tested with
+the other default accounts, etc.
+
+When you create a managed user, if pgpool is part of your cluster,
+then pgpool is reconfigured to pick up the new user.
+
+===== Complex User Creation
+
+In this example, a user named *user1* is created with a *valid until* password date
+set to expire in 30 days.  That user will be granted access to the *userdb* database.
+This user account also will have an associated *Secret* created to hold the password
+that was generated for this user. Any clusters that match the selector value will
+have this user created on it.
+....
+pgo create user user1 --valid-days=30 --db=userdb --selector=name=xraydb1
+....
+
+===== Deleting Users
+
+To delete a Postgres user in the *mycluster* cluster, execute:
+....
+pgo delete user sally --selector=name=mycluster
+....
+
+If pgpool is part of your cluster, deletion of a managed user
+will cause pgpool to be reconfigured to pick up the user deletion.
+
+===== Change Password
+
+To change the password for a user in the *mycluster* cluster (password will be auto generated and 12 characters long):
+....
+pgo user --change-password=sally --selector=name=mycluster
+....
+
+Or to change the password and set an expiration date:
+....
+pgo user --change-password=user1 --valid-days=10 --selector=name=xray1
+....
+
+In this example, a user named *user1* has its password changed to a generated
+value and the *valid until* expiration date set to 10 days from now. This
+command will take effect across all clusters that match the selector. If you
+specify *valid-days=-1* it will mean the password will not expire (e.g. infinity).
+
+If pgpool is part of your cluster, changing a managed user password
+will cause pgpool to be reconfigured to pick up the password change.
+
+
+
+===== Updating Expired Passwords
+
+To update expired passwords in a cluster:
+....
+pgo user --update-passwords --selector=name=mycluster --expired=5
+....
+
+== pgbouncer Basics
+
+When a pgbouncer deployment is added into your cluster, it
+will cause the creation of a Secret that holds the pgbouncer
+configuration files:
+ * pg_hba.conf
+ * pgbouncer.ini
+ * users.txt
+
+Each user that is defined for your cluster is used to define
+the pgbouncer credentials, using the same password.
+
+The pgbouncer configuration includes a connection to a
+database with the name of your cluster (e.g. mycluster) and
+also a database that connects to the cluster's replicas (e.g. mycluster-replica).
+
+When you add a new user, it will cause the pgbouncer to be reconfigured
+and a new secret to be generated, the pgbouncer is restarted to
+pick up the new configuration file.
+
+Adding a pgbouncer deployment into your PG cluster follows
+a sequence similar to this:
+
+....
+pgo create cluster mycluster --pgbouncer
+....
+
+You can also add pgbouncer after a cluster has been created:
+....
+pgo create pgbouncer mycluster
+....
+
+NOTE:  currently you are required to have a replica in your PG
+cluster for the pgbouncer sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+
+== pgpool Basics
+
+Adding a pgpool deployment into your PG cluster follows
+a sequence similar to this:
+
+....
+pgo create cluster mycluster
+....
+
+Then you will scale it up:
+....
+pgo scale mycluster
+....
+
+Then you will add managed users of your choice:
+....
+pgo create user somenewuser mycluster --managed
+....
+
+Then you will create a pgpool for the new cluster:
+....
+pgo create pgpool mycluster
+....
+
+This will create a pgpool user credential for each pgo
+managed user you have created.
+
+=== Create pgpool
+
+The `create pgpool` command will create a pgpool deployment that
+is part of a cluster.
+
+==== Syntax
+
+$ pgo create pgpool CLUSTERNAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Creation
+
+Create a pgpool:
+....
+pgo create pgpool mycluster
+....
+
+NOTE:  currently you are required to have a replica in your PG
+cluster for the pgpool sidecar to effectively work, a replica
+is currently not automatically created when you create a PG cluster.
+
+=== Delete pgpool
+
+The `delete pgpool` command will by delete the pgpool deployment that
+is part of a cluster.
+
+==== Syntax
+
+$ pgo delete pgpool CLUSTERNAME [FLAGS]
+
+==== Flags
+
+[width="100%",cols="5,^1,^1, 13",options="header"]
+|=========================================================
+|Name |Shorthand |Input |Usage
+
+|`--selector` |-s |String |
+The selector to use for cluster filtering.
+|=========================================================
+
+==== Examples
+
+===== Simple Deletion
+
+Delete a pgpool:
+....
+pgo delete pgpool mycluster
+....
+
+=== Workflow
+
+Starting with Release 3.4, there is a workflow concept that
+you can use to check the status of a cluster creation.  When
+you create a cluster (e.g. pgo create cluster), you will
+see in the response a workflow ID.  You can use that ID
+to check the status of the cluster creation.
+
+==== Syntax
+
+....
+pgo show workflow ID
+....
