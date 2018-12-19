@@ -25,7 +25,7 @@ The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed
-in the [Design](design.md).
+in the [Design](./docs/github/design.md).
 
 ![Reference](./docs/github/images/Operator-Architecture.png)
 
