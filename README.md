@@ -1,6 +1,6 @@
 <h1 align="center">Crunchy Data PostgreSQL Operator</h1>
 <p align="center">
-  <img width="150" src="./images/crunchy_logo.png?raw=true"/>
+  <img width="150" src="./docs/github/images/crunchy_logo.png?raw=true"/>
 </p>
 
 
@@ -34,17 +34,12 @@ The Operator is developed and tested on CentOS and RHEL linux platforms but is k
 ## Documentation
 The following documentation is provided:
 
- - [pgo CLI Syntax and Examples](pgo-cli.md) 
- - [Installation](installation.md)
- - [Configuration](configuration.md) 
- - [pgo.yaml Description](pgo-yaml-configuration.md) 
- - [Security](security.md) 
- - [Design Overview](design.md) 
- - [Developing](developing.md) 
- - [Upgrading the Operator](upgrading.md)
+ - [pgo CLI Syntax and Examples](./docs/github/pgo-cli.md) 
+ - [Installation](./docs/github/installation.md)
+ - [Configuration](./docs/github/configuration.md) 
+ - [pgo.yaml Description](./docs/github/pgo-yaml-configuration.md) 
+ - [Security](./docs/github/security.md) 
+ - [Design Overview](./docs/github/design.md) 
+ - [Developing](./docs/github/developing.md) 
+ - [Upgrading the Operator](./docs/github/upgrading.md)
 
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEyNTIzNzQ4NjksMjAwMTM0ODg5MSwyOD
-g2NTg1NjUsLTIxMTAwMjE5NzgsLTIxMzg3NzMwNDgsOTY5Nzky
-OTgwLDc3NDMwMzk4OCwxNTI5NDA0MzcxLDgxMTA4NTg0MV19
--->
