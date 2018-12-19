@@ -502,7 +502,7 @@ body {
   line-height: 1.7; }
 
 h1, h2, h3, h4, h5, h6 {
-  margin: 0.85rem 0 1.7rem 0;
+  margin: 0.85rem 0 1.2rem 0;
   text-rendering: optimizeLegibility; }
 
 h1 {
@@ -518,13 +518,13 @@ h4 {
   font-size: 1.8rem; }
 
 h5 {
-  font-size: 1.4rem; }
+  font-size: 1.2rem; }
 
 h6 {
   font-size: 0.9rem; }
 
 p {
-  margin: 1.7rem 0; }
+  margin: 1.2rem 0; }
 
 p.tableblock {
   margin: 0; }
@@ -536,7 +536,7 @@ ul, ol {
     margin-bottom: 0; }
 
 blockquote {
-  margin: 1.7rem 0;
+  margin: 1.2rem 0;
   padding-left: 0.85rem; }
 
 cite {
@@ -559,12 +559,12 @@ hr {
   border-left: none;
   border-right: none;
   border-top: none;
-  margin: 1.7rem 0; }
+  margin: 1.2rem 0; }
 
 fieldset {
   border: 0;
   padding: 0.938rem;
-  margin: 0 0 1.7rem 0; }
+  margin: 0 0 1.2rem 0; }
 
 input,
 label,
@@ -602,7 +602,7 @@ input[type="file"] {
 select {
   width: auto;
   max-width: 100%;
-  margin-bottom: 1.7rem; }
+  margin-bottom: 1.2rem; }
 
 button,
 input[type="submit"] {
