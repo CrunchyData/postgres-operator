@@ -205,12 +205,27 @@ fi
 echo ""
 echo "Installing pgo client..." | tee -a $LOG
 
-mv pgo $GOBIN
-mv pgo-mac $GOBIN
-mv pgo.exe $GOBIN
-mv expenv.exe $GOBIN
-mv expenv-mac $GOBIN
-mv expenv $GOBIN
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)
+        cp -a pgo $GOBIN/pgo
+        cp -a expenv $GOBIN/expenv
+        ;;
+    Darwin*)
+        cp -a pgo-mac $GOBIN/pgo
+        cp -a expenv-mac $GOBIN/expenv
+        ;;
+    CYGWIN*)
+        cp -a pgo.exe $GOBIN/pgo
+        cp -a expenv.exe $GOBIN/expenv
+        ;;
+    MINGW*)
+        cp -a pgo.exe $GOBIN/pgo
+        cp -a expenv.exe $GOBIN/expenv
+        ;;
+    *)
+        machine="UNKNOWN:${unameOut}"
+esac
 
 echo "The available storage classes on your system:"
 $CO_CMD get sc
@@ -220,13 +235,13 @@ read STORAGE_CLASS
 
 echo ""
 echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
-sed --in-place=.bak 's/Storage: nfsstorage/'"Storage: storageos"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/fast/'"$STORAGE_CLASS"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/COImagePrefix:  crunchydata/'"COImagePrefix:  $CO_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/CCPImagePrefix:  crunchydata/'"CCPImagePrefix:  $CCP_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
-sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/rbac.yaml
+sed -i'.bak' -e 's/Storage: nfsstorage/'"Storage: storageos"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed -i'.bak' -e 's/fast/'"$STORAGE_CLASS"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed -i'.bak' -e 's/COImagePrefix:  crunchydata/'"COImagePrefix:  $CO_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed -i'.bak' -e 's/CCPImagePrefix:  crunchydata/'"CCPImagePrefix:  $CCP_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed -i'.bak' -e 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/postgres-operator/pgo.yaml
+sed -i'.bak' -e 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
+sed -i'.bak' -e 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/rbac.yaml
 
 echo ""
 echo "Setting up pgo client authentication..." | tee -a $LOG
