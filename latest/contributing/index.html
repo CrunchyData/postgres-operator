@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Configurations :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Contributing :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/configuration/">
+  <body data-url="/contributing/">
     
       <header>
   <div class="logo">
@@ -98,11 +98,10 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/configuration/" class="dd-item parent active haschildren
+    <li data-nav-id="/configuration/" class="dd-item haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configurations</a>
-            <i class="fas fa-angle-down fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configurations</a><i class="fas fa-angle-right fa-lg category-icon"></i>
 
       </div>
         <ul>
@@ -233,11 +232,8 @@
           
     <option value="/cli-and-example/" >
    CLI and Examples</option>
-    <option value="/configuration/"  selected>
-   Configurations</option> 
-      <option value="/configuration/configuration/" >- Configuration</option>
-      <option value="/configuration/pgo-yaml-configuration/" >- PGO YAML</option>
-  
+    <option value="/configuration/" >
+   Configurations</option>
     <option value="/design/" >
    Designs</option>
     <option value="/developer-setup/" >
@@ -260,7 +256,17 @@
         
           
           
-          <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+          
+        <div id="top-github-link">
+          <a class="github-link" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            
+          </a>
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/contributing.md" target="blank">
+            <i class="fa fa-code-fork"></i>
+            
+          </a>
+        </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
             <span id="sidebar-toggle-span">
               <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
                 <i class="fa fa-bars"></i>
@@ -273,7 +279,7 @@
 
 
 
- <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > Configurations
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > Contributing
 
  
 
@@ -287,80 +293,43 @@
     
     <div id="body-inner">
 
-    <h1>Configurations</h1>
+    <h1>Contributing</h1>
 
     
     
     
+    
 
+<h2 id="getting-started">Getting Started</h2>
 
+<p>Welcome! Thank you for your interest in contributing. Before submitting a new <a href="https://github.com/CrunchyData/postgres-operator/issues/new">issue</a>
+or <a href="https://github.com/CrunchyData/postgres-operator/pulls">pull request</a> to the <a href="https://github.com/CrunchyData/postgres-operator/">Crunchy Data
+PostgreSQL Operator</a> project on GitHub, <em>please review any open or closed issues</em> <a href="https://github.com/crunchydata/postgres-operator/issues">here</a>
+in addition to any existing open pull requests.</p>
 
-<div class="extra-pagination inner">
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  1</span>
-	
-</nav>
+<h2 id="documentation">Documentation</h2>
 
-</div>
+<p>The documentation website (located at <a href="https://crunchydata.github.io/postgres-operator/">https://crunchydata.github.io/postgres-operator/</a>) is generated using <a href="https://gohugo.io/">Hugo</a> and
+<a href="https://pages.github.com/">GitHub Pages</a>. If you would like to build the documentation locally, view the
+<a href="https://gohugo.io/getting-started/installing/">official Installing Hugo</a> guide to set up Hugo locally. You can then start the server by
+running the following commands -</p>
 
+<p>cd $COROOT/hugo/<br>
+vi config.toml<br>
+hugo server<br></p>
 
-   <article class="post Configuration">
-    <header class="post-header">
-        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/">Configuration</a></h2>
-    </header>
-    <section class="post-excerpt">
-        <p>Configuration The operator is template-driven; this makes it simple to configure both the client and the operator.
-conf Directory The Operator is configured with a collection of files found in the conf directory. These configuration files are deployed to your Kubernetes cluster when the Operator is deployed. Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
-The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/">&raquo;</a></p>
-    </section>
-    <footer class=" footline" >
-         
-        
+<p>When you edit <em>config.toml</em>, you&rsquo;ll set <code>baseURL = &quot;/&quot;</code>. This will make the local version of the Hugo server accessible by default from
+<code>localhost:1313</code>. Once you&rsquo;ve run <code>hugo server</code>, that will let you interactively make changes to the documentation as desired and view the updates
+in real-time.</p>
 
-        
-        
-
-    </footer>
-</article>
-
-   <article class="post Configuration">
-    <header class="post-header">
-        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/">PGO YAML</a></h2>
-    </header>
-    <section class="post-excerpt">
-        <p>pgo.yaml Configuration The pgo.yaml file contains many different configuration settings as described in this section of the documentation.
-The pgo.yaml file is broken into major sections as described below:
-Cluster    Setting Definition     BasicAuth if set to true will enable Basic Authentication   PrimaryNodeLabel newly created primary deployments will specify this node label if specified, unless you override it using the &ndash;node-label command line flag, if not set, no node label is specifed   ReplicaNodeLabel newly created replica deployments will specify this node label if specified, unless you override it using the &ndash;node-label command line flag, if not set, no node label is specifed   CCPImageTag newly created containers will be based on this image version (e. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/">&raquo;</a></p>
-    </section>
-    <footer class=" footline" >
-         
-        
-
-        
-        
-
-    </footer>
-</article>
-
-
-<div style="margin-bottom:2rem"></div>
-
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  1</span>
-	
-</nav>
-
-
+<p><em>When you&rsquo;re ready to commit a change</em>, you only need to check in the files in the hugo folder.</p>
 
 
     
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/" title="PGO-CLI"> <i class="fa fa-chevron-left"></i><label>PGO-CLI</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/" title="Configuration" style="margin-right: 0px;"><label>Configuration</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/" title="CLI and Examples" style="margin-right: 0px;"><label>CLI and Examples</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>

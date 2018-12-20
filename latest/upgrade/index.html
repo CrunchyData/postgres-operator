@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Configurations :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Upgrades :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/configuration/">
+  <body data-url="/upgrade/">
     
       <header>
   <div class="logo">
@@ -98,11 +98,10 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/configuration/" class="dd-item parent active haschildren
+    <li data-nav-id="/configuration/" class="dd-item haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configurations</a>
-            <i class="fas fa-angle-down fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configurations</a><i class="fas fa-angle-right fa-lg category-icon"></i>
 
       </div>
         <ul>
@@ -186,10 +185,11 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/upgrade/" class="dd-item haschildren
+    <li data-nav-id="/upgrade/" class="dd-item parent active haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrades</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrades</a>
+            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
         <ul>
@@ -233,11 +233,8 @@
           
     <option value="/cli-and-example/" >
    CLI and Examples</option>
-    <option value="/configuration/"  selected>
-   Configurations</option> 
-      <option value="/configuration/configuration/" >- Configuration</option>
-      <option value="/configuration/pgo-yaml-configuration/" >- PGO YAML</option>
-  
+    <option value="/configuration/" >
+   Configurations</option>
     <option value="/design/" >
    Designs</option>
     <option value="/developer-setup/" >
@@ -246,8 +243,10 @@
    Installations</option>
     <option value="/security/" >
    Securities</option>
-    <option value="/upgrade/" >
-   Upgrades</option>
+    <option value="/upgrade/"  selected>
+   Upgrades</option> 
+      <option value="/upgrade/upgrading/" >- Upgrading</option>
+  
 
 
 
@@ -273,7 +272,7 @@
 
 
 
- <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > Configurations
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > Upgrades
 
  
 
@@ -287,7 +286,7 @@
     
     <div id="body-inner">
 
-    <h1>Configurations</h1>
+    <h1>Upgrades</h1>
 
     
     
@@ -305,33 +304,14 @@
 </div>
 
 
-   <article class="post Configuration">
+   <article class="post Upgrade">
     <header class="post-header">
-        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/">Configuration</a></h2>
+        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/">Upgrading</a></h2>
     </header>
     <section class="post-excerpt">
-        <p>Configuration The operator is template-driven; this makes it simple to configure both the client and the operator.
-conf Directory The Operator is configured with a collection of files found in the conf directory. These configuration files are deployed to your Kubernetes cluster when the Operator is deployed. Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
-The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/">&raquo;</a></p>
-    </section>
-    <footer class=" footline" >
-         
-        
-
-        
-        
-
-    </footer>
-</article>
-
-   <article class="post Configuration">
-    <header class="post-header">
-        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/">PGO YAML</a></h2>
-    </header>
-    <section class="post-excerpt">
-        <p>pgo.yaml Configuration The pgo.yaml file contains many different configuration settings as described in this section of the documentation.
-The pgo.yaml file is broken into major sections as described below:
-Cluster    Setting Definition     BasicAuth if set to true will enable Basic Authentication   PrimaryNodeLabel newly created primary deployments will specify this node label if specified, unless you override it using the &ndash;node-label command line flag, if not set, no node label is specifed   ReplicaNodeLabel newly created replica deployments will specify this node label if specified, unless you override it using the &ndash;node-label command line flag, if not set, no node label is specifed   CCPImageTag newly created containers will be based on this image version (e. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/">&raquo;</a></p>
+        <p>Upgrading the Operator Various Operator releases will require action by the Operator administrator of your organization in order to upgrade to the next release of the Operator. Some upgrade steps are automated within the Operator but not all are possible at this time.
+This section of the documentation shows specific steps required to the latest version from the previous version.
+Upgrading to Version 3.5.0 From Previous Versions  the pgingest CRD is removed, you will need to manually remove it from any deployments of the operator after upgrading to this version, this includes removing ingest related permissions from the pgorole file, the API server also removes the ingest related API endpoints primary and replica labels are only applicable at cluster creation and not updated after a cluster has executed a failover, a new service-name label is applied to PG cluster components to indidate whether a deployment/pod is a primary or replica, service-name is also the label now used by the cluster services to route with. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/">&raquo;</a></p>
     </section>
     <footer class=" footline" >
          
@@ -359,8 +339,8 @@ Cluster    Setting Definition     BasicAuth if set to true will enable Basic Aut
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/" title="PGO-CLI"> <i class="fa fa-chevron-left"></i><label>PGO-CLI</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/" title="Configuration" style="margin-right: 0px;"><label>Configuration</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/security/security/" title="Security"> <i class="fa fa-chevron-left"></i><label>Security</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/" title="Upgrading" style="margin-right: 0px;"><label>Upgrading</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>

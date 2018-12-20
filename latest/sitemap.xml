@@ -3,35 +3,40 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/configuration/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/design/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/installation/installation/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/developing/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/installation/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/pgo-cli/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/security/security/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/pgo-yaml-configuration/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/design/design/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/security/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/</loc>
   </url>
   
   <url>
-    <loc>https://crunchydata.github.io/postgres-operator/latest/upgrading/</loc>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/</loc>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/cli-and-example/</loc>
+    <priority>0</priority>
   </url>
   
   <url>
@@ -40,12 +45,45 @@
   </url>
   
   <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/configuration/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/contributing/</loc>
+  </url>
+  
+  <url>
     <loc>https://crunchydata.github.io/postgres-operator/latest/</loc>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/design/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/developer-setup/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/installation/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/security/</loc>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>https://crunchydata.github.io/postgres-operator/latest/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://crunchydata.github.io/postgres-operator/latest/upgrade/</loc>
     <priority>0</priority>
   </url>
   
