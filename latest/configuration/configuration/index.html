@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Crunchy Data Postgres Operator :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Configuration :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/">
+  <body data-url="/configuration/configuration/">
     
       <header>
   <div class="logo">
@@ -98,14 +98,15 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/configuration/" class="dd-item haschildren
+    <li data-nav-id="/configuration/" class="dd-item parent haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configurations</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configurations</a>
+            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/configuration/configuration/" class="dd-item">
+      <li data-nav-id="/configuration/configuration/" class="dd-item active">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/">
             Configuration
@@ -233,7 +234,10 @@
     <option value="/cli-and-example/" >
    CLI and Examples</option>
     <option value="/configuration/" >
-   Configurations</option>
+   Configurations</option> 
+      <option value="/configuration/configuration/"  selected>- Configuration</option>
+      <option value="/configuration/pgo-yaml-configuration/" >- PGO YAML</option>
+  
     <option value="/design/" >
    Designs</option>
     <option value="/developer-setup/" >
@@ -252,76 +256,105 @@
     </div>
 
     
+      <div id="top-bar">
+        
+          
+          
+          
+        <div id="top-github-link">
+          <a class="github-link" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            
+          </a>
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/Configuration/configuration.md" target="blank">
+            <i class="fa fa-code-fork"></i>
+            
+          </a>
+        </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+            <span id="sidebar-toggle-span">
+              <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                <i class="fa fa-bars"></i>
+              </a>
+            </span>
+            <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+            <span class="links">
+            
+
+
+
+
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > <a href='https://crunchydata.github.io/postgres-operator/latest/configuration/'>Configurations</a> > Configuration
+
+ 
+
+ 
+
+
+            </span>
+        </div>
+
+      </div>
+    
 
     
     <div id="body-inner">
 
-    
+    <h1>Configuration</h1>
 
     
     
     
-<span id="sidebar-toggle-span">
-<a href="#" id="sidebar-toggle" data-sidebar-toggle=""><i class="fa fa-bars"></i> navigation</a>
-</span>
- 
+    
 
+<h1 id="configuration">Configuration</h1>
 
-<p><img width="25%" src="crunchy_logo.png"/></p>
+<p>The operator is template-driven; this makes it simple to configure both the client and the operator.</p>
 
-<p>Latest Release: 3.5.0</p>
+<h2 id="conf-directory">conf Directory</h2>
 
-<p>The <em>postgres-operator</em> is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.</p>
+<p>The Operator is configured with a collection of files found in the <em>conf</em> directory.  These configuration files are deployed to your Kubernetes cluster when the Operator is deployed.  Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.</p>
 
-<p>Use the postgres-operator to:</p>
+<p>The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.</p>
 
-<ul>
-<li>deploy PostgreSQL containers including streaming replication clusters</li>
-<li>scale up PostgreSQL clusters with extra replicas</li>
-<li>add pgpool, pgbouncer, and metrics sidecars to PostgreSQL clusters</li>
-<li>apply SQL policies to PostgreSQL clusters</li>
-<li>assign metadata tags to PostgreSQL clusters</li>
-<li>maintain PostgreSQL users and passwords</li>
-<li>perform minor upgrades to PostgreSQL clusters</li>
-<li>load simple CSV and JSON files into PostgreSQL clusters</li>
-<li>perform database backups</li>
-</ul>
+<h2 id="conf-postgres-operator-pgo-yaml">conf/postgres-operator/pgo.yaml</h2>
 
-<h2 id="deployment-requirements">Deployment Requirements</h2>
+<p>The *pgo.yaml&rdquo; file sets many different Operator configuration settings and is described in the <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/">pgo.yaml description</a> documentation section.</p>
 
-<p>The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage is required, NFS, hostPath, and Storage Classes are currently supported.</p>
+<p>The <em>pgo.yaml</em> file is deployed along with the other Operator configuration files when you run:</p>
 
-<p>The Operator includes various components that get deployed to your
-Kubernetes cluster as shown in the following diagram and detailed
-in the <a href="https://crunchydata.github.io/postgres-operator/latest/design">Design</a>.</p>
+<pre><code>make deployoperator
+</code></pre>
 
-<p><img  src="Operator-Architecture.png"/></p>
+<h2 id="conf-postgres-operator-directory">conf/postgres-operator Directory</h2>
 
-<p>The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.</p>
+<p>Files withiin the <em>conf/postgres-operator</em> directory contain various templates that are used by the Operator when creating Kubernetes resources.  In an advanced Operator deployment, administrators can modify these templates to add their own custom meta-data or make other changes to influence the Resources that get created on your Kubernetes cluster by the Operator.</p>
 
-<h2 id="documentation">Documentation</h2>
+<h2 id="conf-postgres-operator-cluster">conf/postgres-operator/cluster</h2>
 
-<p>The following documentation is provided:</p>
+<p>Files within this director are used specifically when creating Postgres Cluster resources and also sidecar components such as pgbouncer and pgpool templates are located within this directory.</p>
 
-<ul>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli">pgo CLI Syntax and Examples</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/installation/installation">Installation</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration">Configuration</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration">pgo.yaml Description</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/security/security">Security</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/design/design">Design Overview</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/develop/developing">Developing</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading">Upgrading the Operator</a></li>
-</ul>
+<p>As with the other Operator templates, adminstrators can make custom changes to this set of templates to add custom features or metadata into the Resources created by the Operator.</p>
 
+<h2 id="security">Security</h2>
 
+<p>Security configuration is described in the <a href="https://crunchydata.github.io/postgres-operator/latest/security/security/">Security</a> section of this documentation.</p>
+
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbLTQ1NDE1MTIzOSwtNTMzNjE2NDQsLTE5OT
+czNjEyNDcsLTEwODY5Nzc3MjMsLTE2NjU5OTY1MjYsMTExNTEw
+NDc4Niw5MTg1MDMzMDFdfQ==
+-->
 
 
     
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/" title="CLI and Examples" style="margin-right: 0px;"><label>CLI and Examples</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/configuration/" title="Configurations"> <i class="fa fa-chevron-left"></i><label>Configurations</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/" title="PGO YAML" style="margin-right: 0px;"><label>PGO YAML</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>

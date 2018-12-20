@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Crunchy Data Postgres Operator :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Securities :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/">
+  <body data-url="/security/">
     
       <header>
   <div class="logo">
@@ -169,10 +169,11 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/security/" class="dd-item haschildren
+    <li data-nav-id="/security/" class="dd-item parent active haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Securities</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Securities</a>
+            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
         <ul>
@@ -240,8 +241,10 @@
    Developer Setups</option>
     <option value="/installation/" >
    Installations</option>
-    <option value="/security/" >
-   Securities</option>
+    <option value="/security/"  selected>
+   Securities</option> 
+      <option value="/security/security/" >- Security</option>
+  
     <option value="/upgrade/" >
    Upgrades</option>
 
@@ -252,67 +255,82 @@
     </div>
 
     
+      <div id="top-bar">
+        
+          
+          
+          <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+            <span id="sidebar-toggle-span">
+              <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                <i class="fa fa-bars"></i>
+              </a>
+            </span>
+            <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+            <span class="links">
+            
+
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > Securities
+
+ 
+
+
+            </span>
+        </div>
+
+      </div>
+    
 
     
     <div id="body-inner">
 
-    
+    <h1>Securities</h1>
 
     
     
     
-<span id="sidebar-toggle-span">
-<a href="#" id="sidebar-toggle" data-sidebar-toggle=""><i class="fa fa-bars"></i> navigation</a>
-</span>
- 
 
 
-<p><img width="25%" src="crunchy_logo.png"/></p>
 
-<p>Latest Release: 3.5.0</p>
+<div class="extra-pagination inner">
+<nav class="pagination" role="navigation">
+	
+	<span class="page-number"> 1  1</span>
+	
+</nav>
 
-<p>The <em>postgres-operator</em> is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.</p>
+</div>
 
-<p>Use the postgres-operator to:</p>
 
-<ul>
-<li>deploy PostgreSQL containers including streaming replication clusters</li>
-<li>scale up PostgreSQL clusters with extra replicas</li>
-<li>add pgpool, pgbouncer, and metrics sidecars to PostgreSQL clusters</li>
-<li>apply SQL policies to PostgreSQL clusters</li>
-<li>assign metadata tags to PostgreSQL clusters</li>
-<li>maintain PostgreSQL users and passwords</li>
-<li>perform minor upgrades to PostgreSQL clusters</li>
-<li>load simple CSV and JSON files into PostgreSQL clusters</li>
-<li>perform database backups</li>
-</ul>
+   <article class="post Security">
+    <header class="post-header">
+        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/security/security/">Security</a></h2>
+    </header>
+    <section class="post-excerpt">
+        <p>Security Kubernetes RBAC Install the requisite Operator RBAC resources, as a Kubernetes cluster admin user, by running a Makefile target:
+make installrbac  This script creates the following RBAC resources on your Kubernetes cluster:
+   Setting Definition     Custom Resource Definitions pgbackups    pgclusters    pgpolicies    pgreplicas    pgtasks    pgupgrades   Cluster Roles pgopclusterrole    pgopclusterrolecrd    scheduler-sa   Cluster Role Bindings pgopclusterbinding    pgopclusterbindingcrd    scheduler-sa   Service Account scheduler-sa    postgres-operator    pgo-backrest    scheduler-sa   Roles pgo-role    pgo-backrest-role   Role Bindings pgo-backrest-role-binding    Operator RBAC The conf/postgresql-operator/pgorole file is read at start up time when the operator is deployed to the Kubernetes cluster. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/security/security/">&raquo;</a></p>
+    </section>
+    <footer class=" footline" >
+         
+        
 
-<h2 id="deployment-requirements">Deployment Requirements</h2>
+        
+        
 
-<p>The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage is required, NFS, hostPath, and Storage Classes are currently supported.</p>
+    </footer>
+</article>
 
-<p>The Operator includes various components that get deployed to your
-Kubernetes cluster as shown in the following diagram and detailed
-in the <a href="https://crunchydata.github.io/postgres-operator/latest/design">Design</a>.</p>
 
-<p><img  src="Operator-Architecture.png"/></p>
+<div style="margin-bottom:2rem"></div>
 
-<p>The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.</p>
-
-<h2 id="documentation">Documentation</h2>
-
-<p>The following documentation is provided:</p>
-
-<ul>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli">pgo CLI Syntax and Examples</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/installation/installation">Installation</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration">Configuration</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration">pgo.yaml Description</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/security/security">Security</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/design/design">Design Overview</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/develop/developing">Developing</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading">Upgrading the Operator</a></li>
-</ul>
+<nav class="pagination" role="navigation">
+	
+	<span class="page-number"> 1  1</span>
+	
+</nav>
 
 
 
@@ -321,7 +339,8 @@ in the <a href="https://crunchydata.github.io/postgres-operator/latest/design">D
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/" title="CLI and Examples" style="margin-right: 0px;"><label>CLI and Examples</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/installation/installation/" title="Install"> <i class="fa fa-chevron-left"></i><label>Install</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/security/security/" title="Security" style="margin-right: 0px;"><label>Security</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>

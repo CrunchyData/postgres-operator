@@ -6,7 +6,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.48" />
-<title>Crunchy Data Postgres Operator :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Upgrading :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
 
     
   </head>
-  <body data-url="/">
+  <body data-url="/upgrade/upgrading/">
     
       <header>
   <div class="logo">
@@ -185,14 +185,15 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/upgrade/" class="dd-item haschildren
+    <li data-nav-id="/upgrade/" class="dd-item parent haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrades</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrades</a>
+            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/upgrade/upgrading/" class="dd-item">
+      <li data-nav-id="/upgrade/upgrading/" class="dd-item active">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/">
             Upgrading
@@ -243,7 +244,9 @@
     <option value="/security/" >
    Securities</option>
     <option value="/upgrade/" >
-   Upgrades</option>
+   Upgrades</option> 
+      <option value="/upgrade/upgrading/"  selected>- Upgrading</option>
+  
 
 
 
@@ -252,76 +255,86 @@
     </div>
 
     
+      <div id="top-bar">
+        
+          
+          
+          
+        <div id="top-github-link">
+          <a class="github-link" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" target="blank">
+            <i class="fa fa-info-circle"></i>
+            
+          </a>
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/Upgrade/upgrading.md" target="blank">
+            <i class="fa fa-code-fork"></i>
+            
+          </a>
+        </div><div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+            <span id="sidebar-toggle-span">
+              <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                <i class="fa fa-bars"></i>
+              </a>
+            </span>
+            <span id="toc-menu"><i class="fa fa-list-alt"></i></span>
+            <span class="links">
+            
+
+
+
+
+
+
+
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > <a href='https://crunchydata.github.io/postgres-operator/latest/upgrade/'>Upgrades</a> > Upgrading
+
+ 
+
+ 
+
+
+            </span>
+        </div>
+
+      </div>
+    
 
     
     <div id="body-inner">
 
-    
+    <h1>Upgrading</h1>
 
     
     
     
-<span id="sidebar-toggle-span">
-<a href="#" id="sidebar-toggle" data-sidebar-toggle=""><i class="fa fa-bars"></i> navigation</a>
-</span>
- 
+    
 
+<h2 id="upgrading-the-operator">Upgrading the Operator</h2>
 
-<p><img width="25%" src="crunchy_logo.png"/></p>
+<p>Various Operator releases will require action by the Operator administrator of your organization in order to upgrade to the next release of the Operator.  Some upgrade steps are automated within the Operator but not all are possible at this time.</p>
 
-<p>Latest Release: 3.5.0</p>
+<p>This section of the documentation shows specific steps required to the
+latest version from the previous version.</p>
 
-<p>The <em>postgres-operator</em> is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.</p>
-
-<p>Use the postgres-operator to:</p>
+<h3 id="upgrading-to-version-3-5-0-from-previous-versions">Upgrading to Version 3.5.0 From Previous Versions</h3>
 
 <ul>
-<li>deploy PostgreSQL containers including streaming replication clusters</li>
-<li>scale up PostgreSQL clusters with extra replicas</li>
-<li>add pgpool, pgbouncer, and metrics sidecars to PostgreSQL clusters</li>
-<li>apply SQL policies to PostgreSQL clusters</li>
-<li>assign metadata tags to PostgreSQL clusters</li>
-<li>maintain PostgreSQL users and passwords</li>
-<li>perform minor upgrades to PostgreSQL clusters</li>
-<li>load simple CSV and JSON files into PostgreSQL clusters</li>
-<li>perform database backups</li>
+<li>the pgingest CRD is removed, you will need to manually remove it from any deployments of the operator after upgrading to this version, this includes removing ingest related permissions from the pgorole file, the API server also
+removes the ingest related API endpoints</li>
+<li>primary and replica labels are only applicable at cluster creation and not updated after a cluster has executed a failover, a new service-name label is applied to PG cluster components to indidate whether a deployment/pod is a primary or replica, service-name is also the label now used by the cluster services to route with.  This scheme allows for an almost immediate failover promotion and avoids the pod having to be bounced as part of a failover.  Any existing
+PG clusters will need to be updated to specify them as a primary or replica using the new service-name labeling scheme.  A sample upgrade script is included in the bin directory name upgrade-to-35.sh, you would run this script
+to upgrade any existing clusters to the new labeling scheme whereby you can run a failover on existing PG clusters deployed prior to 3.5.0.</li>
+<li>the autofail label was moved from deployments and pods to just the pgcluster CRD to support autofail toggling</li>
+<li>the storage configurations in pgo.yaml support the MatchLabels attribute for NFS storage, this will allow users to have more than a single NFS backend, when set, this label (key=value) will be used to match the labels on PVs when a PVC is created.</li>
+<li>the UpdateCluster permission was added to the sample pgorole file to support the new pgo update CLI command, and also added to the pgoperm file</li>
 </ul>
-
-<h2 id="deployment-requirements">Deployment Requirements</h2>
-
-<p>The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage is required, NFS, hostPath, and Storage Classes are currently supported.</p>
-
-<p>The Operator includes various components that get deployed to your
-Kubernetes cluster as shown in the following diagram and detailed
-in the <a href="https://crunchydata.github.io/postgres-operator/latest/design">Design</a>.</p>
-
-<p><img  src="Operator-Architecture.png"/></p>
-
-<p>The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.</p>
-
-<h2 id="documentation">Documentation</h2>
-
-<p>The following documentation is provided:</p>
-
-<ul>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli">pgo CLI Syntax and Examples</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/installation/installation">Installation</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration">Configuration</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration">pgo.yaml Description</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/security/security">Security</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/design/design">Design Overview</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/develop/developing">Developing</a></li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading">Upgrading the Operator</a></li>
-</ul>
-
-
 
 
     
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/" title="CLI and Examples" style="margin-right: 0px;"><label>CLI and Examples</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/upgrade/" title="Upgrades"> <i class="fa fa-chevron-left"></i><label>Upgrades</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/" title="CLI and Examples" style="margin-right: 0px;"><label>CLI and Examples</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>
