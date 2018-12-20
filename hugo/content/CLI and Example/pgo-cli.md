@@ -1,3 +1,10 @@
+---
+title: "PGO-CLI"
+date: {docdate}
+draft: false
+weight: 10
+---
+
 # pgo CLI
 The command line tool, pgo, is used to interact with the Postgres Operator.
 

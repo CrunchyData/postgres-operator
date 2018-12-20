@@ -1,5 +1,10 @@
 
-
+---
+title: "Install"
+date: {docdate}
+draft: false
+weight: 20
+---
 
 # Operator Installation
 

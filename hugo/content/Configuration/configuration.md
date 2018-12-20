@@ -1,4 +1,10 @@
 
+---
+title: "Configuration"
+date: {docdate}
+draft: false
+weight: 30
+---
 
 
 # Configuration

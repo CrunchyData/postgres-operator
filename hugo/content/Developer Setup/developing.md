@@ -1,5 +1,11 @@
 
+---
+title: "Develop"
+date: {docdate}
+draft: false
 
+weight: 60
+---
 
 # Developing
 

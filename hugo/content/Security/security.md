@@ -1,5 +1,10 @@
 
-
+---
+title: "Security"
+date: {docdate}
+draft: false
+weight: 40
+---
 
 # Security
 
@@ -13,7 +18,7 @@ Install the requisite Operator RBAC resources, *as a Kubernetes cluster admin us
 This script creates the following RBAC resources on your Kubernetes cluster:
 
 | Setting |Definition  |
-|--|--|
+|---|---|
 | Custom Resource Definitions | pgbackups|
 |  | pgclusters|
 |  | pgpolicies|
@@ -51,7 +56,7 @@ The *conf/postgresql-operator/pgouser* file is read at start up time also and co
 The following list shows the current complete list of possible pgo permissions:
 
 |Permission|Description  |
-|--|--|
+|---|---|
 |ApplyPolicy | allow *pgo apply*|
 |CreateBackup | allow *pgo backup*|
 |CreateCluster | allow *pgo create cluster*|

@@ -1,4 +1,10 @@
 
+---
+title: "PGO YAML"
+date: {docdate}
+draft: false
+weight: 30
+---
 
 # pgo.yaml Configuration
 The *pgo.yaml* file contains many different configuration settings as described in this section of the documentation.
@@ -7,7 +13,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 ## Cluster 
 
 | Setting |Definition  |
-|--|--|
+|---|---|
 |BasicAuth        | if set to *true* will enable Basic Authentication
 |PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
@@ -32,7 +38,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 
 ## Storage
 | Setting|Definition  |
-|--|--|
+|---|---|
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |ArchiveStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
@@ -106,7 +112,7 @@ for other access modes it might support.
 
 ## Container Resources
 | Setting |Definition  |
-|--|--|
+|---|---|
 |DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
 |DefaultLoadResource    |optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container
 |DefaultLspvcResource    |optional, the value of the container resources configuration to use for pgo-lspvc containers, if not set, no resource limits or requests are added on the database container
@@ -121,7 +127,7 @@ for other access modes it might support.
 
 ## Miscellaneous (Pgo)
 | Setting |Definition  |
-|--|--|
+|---|---|
 |LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
 |LoadTemplate        | the load template file used for load jobs
 |COImagePrefix        | image tag prefix to use for the Operator containers
@@ -216,13 +222,3 @@ A simple mechanism for partial disaster recovery can be obtained by leveraging n
 For example, if you define a Kubernetes storage class that refers to a storage backend that is running within your disaster recovery site, and then use that storage class as
 a storage configuration for your backups, you essentially have moved your backup files automatically to your disaster recovery site thanks to network storage.
 
-
-
-
-
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbMzE0NTE2OTE1LC0yMTI3ODQzODUyLDEzMj
-IwMDgwNTgsLTE4NzE0NjI3MjRdfQ==
--->
