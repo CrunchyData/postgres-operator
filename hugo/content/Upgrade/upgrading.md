@@ -1,4 +1,12 @@
 
+---
+title: "Upgrading"
+date: {docdate}
+draft: false
+
+weight: 70
+---
+
 
 ## Upgrading the Operator
 Various Operator releases will require action by the Operator administrator of your organization in order to upgrade to the next release of the Operator.  Some upgrade steps are automated within the Operator but not all are possible at this time.
