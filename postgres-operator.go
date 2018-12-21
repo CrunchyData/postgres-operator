@@ -145,8 +145,6 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
-
 	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
 
 	operatorupgrade.OperatorUpgrade(Clientset, crdClient, Namespace)

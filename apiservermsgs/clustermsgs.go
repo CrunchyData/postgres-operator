@@ -59,12 +59,13 @@ type CreateClusterResponse struct {
 
 // ShowClusterService
 type ShowClusterService struct {
-	Name        string
-	Data        string
-	ClusterIP   string
-	ExternalIP  string
-	ClusterName string
-	Pgbouncer   bool
+	Name         string
+	Data         string
+	ClusterIP    string
+	ExternalIP   string
+	ClusterName  string
+	Pgbouncer    bool
+	BackrestRepo bool
 }
 
 const PodTypePrimary = "primary"

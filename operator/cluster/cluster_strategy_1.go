@@ -26,6 +26,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/extensions/v1beta1"
@@ -115,6 +116,12 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
 			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 			backrestPVCName = backrestRepoTarget + "-backrestrepo"
+		} else {
+			err = backrest.CreateRepoDeployment(clientset, namespace, cl)
+			if err != nil {
+				log.Error("could not create backrest repo deployment")
+				return err
+			}
 		}
 	}
 

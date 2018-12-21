@@ -28,6 +28,8 @@ import (
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
+const pgoBackrestRepoTemplatePath = "/pgo-config/pgo-backrest-repo-template.json"
+const pgoBackrestRepoServiceTemplatePath = "/pgo-config/pgo-backrest-repo-service-template.json"
 const pgbackrestEnvVarsPath = "/pgo-config/pgbackrest-env-vars.json"
 const PgpoolTemplatePath = "/pgo-config/pgpool-template.json"
 const PgpoolConfTemplatePath = "/pgo-config/pgpool.conf"
@@ -57,6 +59,8 @@ const BadgerTemplate1Path = "/pgo-config/pgbadger.json"
 const AffinityTemplate1Path = "/pgo-config/affinity.json"
 const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
 
+var PgoBackrestRepoServiceTemplate *template.Template
+var PgoBackrestRepoTemplate *template.Template
 var PgbackrestEnvVarsTemplate *template.Template
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
@@ -112,6 +116,8 @@ func Initialize() {
 		panic("NAMESPACE env var not set")
 	}
 
+	PgoBackrestRepoTemplate = util.LoadTemplate(pgoBackrestRepoTemplatePath)
+	PgoBackrestRepoServiceTemplate = util.LoadTemplate(pgoBackrestRepoServiceTemplatePath)
 	PgbackrestEnvVarsTemplate = util.LoadTemplate(pgbackrestEnvVarsPath)
 	JobTemplate = util.LoadTemplate(jobPath)
 	PgpoolTemplate = util.LoadTemplate(PgpoolTemplatePath)
