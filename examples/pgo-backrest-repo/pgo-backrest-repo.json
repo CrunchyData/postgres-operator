@@ -1,28 +1,4 @@
 {
-        "kind": "Service",
-        "apiVersion": "v1",
-        "metadata": {
-            "name": "pgo-backrest-repo",
-            "labels": {
-                "name": "pgo-backrest-repo"
-            }
-        },
-        "spec": {
-            "ports": [{
-                "protocol": "TCP",
-                "port": 2022,
-                "targetPort": 2022,
-                "nodePort": 0
-            }],
-            "selector": {
-                "name": "pgo-backrest-repo"
-            },
-            "type": "ClusterIP",
-            "sessionAffinity": "None"
-        }
-}
-
-{
     "kind": "Pod",
     "apiVersion": "v1",
     "metadata": {
@@ -47,28 +23,28 @@
                 ],
                 "env": [
                     {
-                        "name": "PG_PRIMARY_USER",
-                        "value": "pgo-backrest-repouser"
+                        "name": "PGBACKREST_STANZA",
+                        "value": "db"
                     },
                     {
-                        "name": "PG_PRIMARY_PORT",
-                        "value": "5432"
+                        "name": "SSHD_PORT",
+                        "value": "2022"
                     },
                     {
-                        "name": "PG_MODE",
-                        "value": "pgo-backrest-repo"
+                        "name": "PGBACKREST_DB_PATH",
+                        "value": "/pgdata/primary"
                     },
                     {
-                        "name": "PG_PRIMARY_PASSWORD",
-                        "value": "password"
+                        "name": "PGBACKREST_DB_HOST",
+                        "value": "primary"
                     },
                     {
-                        "name": "PG_USER",
-                        "value": "testuser"
+                        "name": "PGBACKREST_REPO_PATH",
+                        "value": "/backrestrepo/pgo-backrest-repo"
                     },
                     {
-                        "name": "PG_PASSWORD",
-                        "value": "password"
+                        "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
                     }
                 ],
                 "volumeMounts": [

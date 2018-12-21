@@ -32,4 +32,5 @@ then
     exit 1
 fi
 
+expenv -f $DIR/service.json | $CO_CMD create --namespace=$NS -f -
 expenv -f $DIR/pgo-backrest-repo.json | $CO_CMD create --namespace=$NS -f -
