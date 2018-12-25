@@ -234,6 +234,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
 	}
 
+	//delete the backrest repo deployment if necessary
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
+	}
+
 	//delete the pgreplicas if necessary
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
 
@@ -653,4 +658,20 @@ func GetLabelsFromMap(labels map[string]string) string {
 		i++
 	}
 	return output
+}
+
+//delete the backrest repo deployment best effort
+func deleteBackrestRepo(clientset *kubernetes.Clientset, clusterName, namespace string) error {
+	var err error
+
+	depName := clusterName + "-backrest-repo"
+	log.Debugf("deleting the backrest repo deployment and service %s", depName)
+
+	err = kubeapi.DeleteDeployment(clientset, depName, namespace)
+
+	//delete the service for the backrest repo
+	err = kubeapi.DeleteService(clientset, depName, namespace)
+
+	return err
+
 }
