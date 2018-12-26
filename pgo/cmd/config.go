@@ -78,6 +78,7 @@ func showConfig(args []string) {
 	fmt.Printf("%s%s\n", "ArchiveStorage:  ", pgo.ArchiveStorage)
 	fmt.Printf("%s%s\n", "BackupStorage:  ", pgo.BackupStorage)
 	fmt.Printf("%s%s\n", "ReplicaStorage:  ", pgo.ReplicaStorage)
+	fmt.Printf("%s%s\n", "BackrestStorage:  ", pgo.BackrestStorage)
 	fmt.Printf("%s\n", "Storage:")
 	for k, v := range pgo.Storage {
 		fmt.Printf("  %s:\n", k)

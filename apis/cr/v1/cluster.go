@@ -42,6 +42,7 @@ type PgclusterSpec struct {
 	PrimaryStorage     PgStorageSpec        `json:primarystorage`
 	ArchiveStorage     PgStorageSpec        `json:archivestorage`
 	ReplicaStorage     PgStorageSpec        `json:replicastorage`
+	BackrestStorage    PgStorageSpec        `json:backreststorage`
 	ContainerResources PgContainerResources `json:containerresources`
 	PrimaryHost        string               `json:"primaryhost"`
 	User               string               `json:"user"`

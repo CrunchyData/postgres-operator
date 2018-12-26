@@ -24,6 +24,7 @@ PrimaryStorage: nfsstorage
 ArchiveStorage: archivestorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
+BackrestStorage: backreststorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -32,6 +33,11 @@ Storage:
   nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
+  backreststorage:
+    AccessMode:  ReadWriteMany
+    Size:  600M
     StorageType:  create
     SupplementalGroups:  65534
   nfsstoragered:

@@ -162,7 +162,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
 		} else {
 			storage := crv1.PgStorageSpec{}
-			pgoStorage := operator.Pgo.Storage[operator.Pgo.BackupStorage]
+			pgoStorage := operator.Pgo.Storage[operator.Pgo.BackrestStorage]
 			storage.StorageClass = pgoStorage.StorageClass
 			storage.AccessMode = pgoStorage.AccessMode
 			storage.Size = pgoStorage.Size
@@ -381,7 +381,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
+		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return

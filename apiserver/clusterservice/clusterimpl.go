@@ -809,6 +809,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		log.Debugf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
+	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
+
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
 	log.Debugf("Pgo.Cluster.CCPImageTag %s", apiserver.Pgo.Cluster.CCPImageTag)
 	if request.CCPImageTag != "" {

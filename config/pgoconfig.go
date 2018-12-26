@@ -85,6 +85,7 @@ type PgoConfig struct {
 	ArchiveStorage            string                              `yaml:"ArchiveStorage"`
 	BackupStorage             string                              `yaml:"BackupStorage"`
 	ReplicaStorage            string                              `yaml:"ReplicaStorage"`
+	BackrestStorage           string                              `yaml:"BackrestStorage"`
 	Storage                   map[string]StorageStruct            `yaml:"Storage"`
 	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
 	DefaultLoadResources      string                              `yaml:"DefaultLoadResources"`
@@ -173,6 +174,11 @@ func (c *PgoConfig) Validate() error {
 	if !ok {
 		log.Warning("ArchiveStorage setting not set, will use PrimaryStorage setting")
 		c.Storage[c.ArchiveStorage] = c.Storage[c.PrimaryStorage]
+	}
+	_, ok = c.Storage[c.BackrestStorage]
+	if !ok {
+		log.Warning("BackrestStorage setting not set, will use PrimaryStorage setting")
+		c.Storage[c.BackrestStorage] = c.Storage[c.PrimaryStorage]
 	}
 
 	_, ok = c.Storage[c.ReplicaStorage]
