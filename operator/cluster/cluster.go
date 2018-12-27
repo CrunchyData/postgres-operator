@@ -74,20 +74,20 @@ type DeploymentTemplateFields struct {
 	ArchivePVCName          string
 	ArchiveTimeout          string
 	XLOGDir                 string
-	BackrestPVCName         string
-	PVCName                 string
-	BackupPVCName           string
-	BackupPath              string
-	RootSecretName          string
-	UserSecretName          string
-	PrimarySecretName       string
-	SecurityContext         string
-	ContainerResources      string
-	NodeSelector            string
-	ConfVolume              string
-	CollectAddon            string
-	BadgerAddon             string
-	PgbackrestEnvVars       string
+	//BackrestPVCName         string
+	PVCName            string
+	BackupPVCName      string
+	BackupPath         string
+	RootSecretName     string
+	UserSecretName     string
+	PrimarySecretName  string
+	SecurityContext    string
+	ContainerResources string
+	NodeSelector       string
+	ConfVolume         string
+	CollectAddon       string
+	BadgerAddon        string
+	PgbackrestEnvVars  string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
@@ -156,6 +156,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			}
 		}
 	}
+	/**
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		pvcName := cl.Spec.Name + "-backrestrepo"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
@@ -179,6 +180,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			}
 		}
 	}
+	*/
 
 	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
 	//allows user to override with their own passwords

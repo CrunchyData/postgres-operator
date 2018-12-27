@@ -116,9 +116,6 @@
                         }, {
                             "mountPath": "/recover",
                             "name": "recover-volume"
-                        }, {
-                            "mountPath": "/backrestrepo",
-                            "name": "backrestrepo-volume"
                         }
 
                     ],
@@ -166,9 +163,6 @@
                     }, {
                         "name": "pgwal-volume",
             {{.ArchivePVCName}}
-                    }, {
-                        "name": "backrestrepo-volume",
-            {{.BackrestPVCName}}
                     }, {
                         "name": "recover-volume",
             "emptyDir": { "medium": "Memory" }
