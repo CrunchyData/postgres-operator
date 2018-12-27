@@ -33,7 +33,7 @@
 		{{.SecurityContext}}
 
                 "containers": [{
-                    "name": "pgo-backrest-repo",
+                    "name": "database",
                     "image": "{{.COImagePrefix}}/pgo-backrest-repo:{{.COImageTag}}",
                     "ports": [{
                         "containerPort": {{.SshdPort}},

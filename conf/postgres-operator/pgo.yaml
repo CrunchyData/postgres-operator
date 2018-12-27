@@ -16,6 +16,7 @@ Cluster:
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
   Backrest:  false
+  BackrestPort:  2022
   Autofail:  false
   AutofailReplaceReplica:  false
   LogStatement:  none

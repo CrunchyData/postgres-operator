@@ -60,6 +60,7 @@ func showConfig(args []string) {
 	fmt.Printf("%s%s\n", "  ServiceType:  ", pgo.Cluster.ServiceType)
 	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Cluster.Metrics)
 	fmt.Printf("%s%t\n", "  Backrest:  ", pgo.Cluster.Backrest)
+	fmt.Printf("%s%d\n", "  BackrestPort:  ", pgo.Cluster.BackrestPort)
 	fmt.Printf("%s%t\n", "  Autofail:  ", pgo.Cluster.Autofail)
 	fmt.Printf("%s%t\n", "  AutofailReplaceReplica:  ", pgo.Cluster.AutofailReplaceReplica)
 	fmt.Printf("%s%t\n", "  Badger:  ", pgo.Cluster.Badger)

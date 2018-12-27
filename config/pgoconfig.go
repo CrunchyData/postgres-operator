@@ -45,6 +45,7 @@ type ClusterStruct struct {
 	Strategy                string `yaml:"Strategy"`
 	Replicas                string `yaml:"Replicas"`
 	ServiceType             string `yaml:"ServiceType"`
+	BackrestPort            int    `yaml:"BackrestPort"`
 	Backrest                bool   `yaml:"Backrest"`
 	Autofail                bool   `yaml:"Autofail"`
 	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
@@ -103,24 +104,19 @@ const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
 const CONFIG_PATH = "/pgo-config/pgo.yaml"
 
-//const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
-
-//var ContainerResourcesTemplate1 *template.Template
-
-/**
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
-}
-*/
-
 var log_statement_values = []string{"ddl", "none", "mod", "all"}
 
 const DEFAULT_LOG_STATEMENT = "none"
 const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
+const DEFAULT_BACKREST_PORT = 2022
 
 func (c *PgoConfig) Validate() error {
 	var err error
+
+	if c.Cluster.BackrestPort == 0 {
+		c.Cluster.BackrestPort = DEFAULT_BACKREST_PORT
+		log.Infof("setting BackrestPort to default %d", c.Cluster.BackrestPort)
+	}
 
 	if c.Cluster.LogStatement != "" {
 		found := false

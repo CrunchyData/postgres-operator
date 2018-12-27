@@ -107,6 +107,10 @@
                             "mountPath": "/pgwal",
                             "name": "pgwal-volume"
                         }, {
+                            "mountPath": "/sshd",
+                            "name": "sshd",
+                            "readOnly": true
+                        }, {
                             "mountPath": "/pgconf",
                             "name": "pgconf-volume"
                         }, {
@@ -147,6 +151,12 @@
                         "name": "primary-volume",
                         "secret": {
                             "secretName": "{{.PrimarySecretName}}"
+                        }
+                    }, {
+                        "name": "sshd",
+                        "secret": {
+                            "secretName": "pgo-backrest-repo-config",
+			    "defaultMode": 511
                         }
                     }, {
                         "name": "root-volume",

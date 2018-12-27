@@ -160,9 +160,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ConfVolume:              GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestEnvVars: GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db",
-			"/pgdata/"+cl.Spec.Name,
-			"/backrestrepo/"+backrestRepoTarget+"-backups"),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -542,8 +540,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars: GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+replica.Spec.Name,
-			"/backrestrepo/"+replica.Spec.Name+"-backups"),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -623,12 +620,13 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 	return ""
 }
 
-func GetPgbackrestEnvVars(backrestEnabled, stanza, dbpath, repopath string) string {
+func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:   stanza,
-			PgbackrestDBPath:   dbpath,
-			PgbackrestRepoPath: repopath,
+			PgbackrestStanza:    "db",
+			PgbackrestRepo1Host: clusterName + "-backrest-repo",
+			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-repo",
+			PgbackrestDBPath:    "/pgdata/" + depName,
 		}
 
 		var doc bytes.Buffer

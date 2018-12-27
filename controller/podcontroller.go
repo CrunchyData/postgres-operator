@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
@@ -135,6 +136,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					log.Debugf("%s went to Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
+					backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)
 				}
 			}
 		}

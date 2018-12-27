@@ -94,9 +94,10 @@ type DeploymentTemplateFields struct {
 }
 
 type PgbackrestEnvVarsTemplateFields struct {
-	PgbackrestStanza   string
-	PgbackrestDBPath   string
-	PgbackrestRepoPath string
+	PgbackrestStanza    string
+	PgbackrestDBPath    string
+	PgbackrestRepo1Path string
+	PgbackrestRepo1Host string
 }
 
 // ReplicaSuffix ...
