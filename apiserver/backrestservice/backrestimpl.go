@@ -434,7 +434,7 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	spec.Parameters[util.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
 	spec.Parameters[util.LABEL_PGBACKREST_STANZA] = "db"
 	spec.Parameters[util.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backups"
+	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-repo"
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

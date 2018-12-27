@@ -123,7 +123,7 @@ func getRestoreVolumes(task *crv1.Pgtask) string {
 	var doc2 bytes.Buffer
 
 	fields := backrestRestoreVolumesFields{
-		FromClusterPVCName: task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
+		FromClusterPVCName: task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrest-repo",
 		ToClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
 	}
 
