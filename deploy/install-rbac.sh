@@ -38,3 +38,6 @@ expenv -f $DIR/scheduler-sa.json | $CO_CMD $NS create -f -
 
 # create the sshd keys for pgbackrest repo functionality
 source $DIR/gen-sshd-keys.sh
+
+# create the keys used for pgo API
+source $DIR/gen-api-keys.sh
