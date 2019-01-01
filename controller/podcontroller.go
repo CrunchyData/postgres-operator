@@ -82,10 +82,17 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 	return controller, nil
 }
 
-// onAdd is called when a pgcluster is added
+// onAdd is called when a pgcluster is added or
+// if a pgo-backrest-repo pod is added
 func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
+
+	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
+		log.Debugf("pgo-backrest-repo pod added " + newpod.Name)
+		return
+	}
+
 	c.checkPostgresPods(newpod)
 }
 

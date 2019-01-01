@@ -230,3 +230,16 @@ func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 	log.Infof("add label to deployment %s=%v", key, value)
 	return err
 }
+
+func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, namespace string) error {
+	var err error
+
+	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Update(deployment)
+	if err != nil {
+		log.Error(err)
+		log.Errorf("error updating deployment %s", deployment.Name)
+		return err
+	}
+	return err
+
+}
