@@ -36,3 +36,5 @@ expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
 # create the rbac for the scheduler
 expenv -f $DIR/scheduler-sa.json | $CO_CMD $NS create -f -
 
+# create the sshd keys for pgbackrest repo functionality
+source $DIR/gen-sshd-keys.sh
