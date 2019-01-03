@@ -1,7 +1,7 @@
 package config
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,16 +16,13 @@ limitations under the License.
 */
 
 import (
-	//"bytes"
 	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	//"os"
 	"strconv"
 	"strings"
-	//"text/template"
 )
 
 type ClusterStruct struct {
@@ -48,8 +45,10 @@ type ClusterStruct struct {
 	Strategy                string `yaml:"Strategy"`
 	Replicas                string `yaml:"Replicas"`
 	ServiceType             string `yaml:"ServiceType"`
+	BackrestPort            int    `yaml:"BackrestPort"`
 	Backrest                bool   `yaml:"Backrest"`
 	Autofail                bool   `yaml:"Autofail"`
+	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
 }
 
 type StorageStruct struct {
@@ -84,8 +83,10 @@ type PgoConfig struct {
 	Pgo                       PgoStruct                           `yaml:"Pgo"`
 	ContainerResources        map[string]ContainerResourcesStruct `yaml:"ContainerResources"`
 	PrimaryStorage            string                              `yaml:"PrimaryStorage"`
+	ArchiveStorage            string                              `yaml:"ArchiveStorage"`
 	BackupStorage             string                              `yaml:"BackupStorage"`
 	ReplicaStorage            string                              `yaml:"ReplicaStorage"`
+	BackrestStorage           string                              `yaml:"BackrestStorage"`
 	Storage                   map[string]StorageStruct            `yaml:"Storage"`
 	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
 	DefaultLoadResources      string                              `yaml:"DefaultLoadResources"`
@@ -103,24 +104,19 @@ const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
 const CONFIG_PATH = "/pgo-config/pgo.yaml"
 
-//const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
-
-//var ContainerResourcesTemplate1 *template.Template
-
-/**
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
-}
-*/
-
 var log_statement_values = []string{"ddl", "none", "mod", "all"}
 
 const DEFAULT_LOG_STATEMENT = "none"
 const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
+const DEFAULT_BACKREST_PORT = 2022
 
 func (c *PgoConfig) Validate() error {
 	var err error
+
+	if c.Cluster.BackrestPort == 0 {
+		c.Cluster.BackrestPort = DEFAULT_BACKREST_PORT
+		log.Infof("setting BackrestPort to default %d", c.Cluster.BackrestPort)
+	}
 
 	if c.Cluster.LogStatement != "" {
 		found := false
@@ -170,6 +166,17 @@ func (c *PgoConfig) Validate() error {
 	if !ok {
 		return errors.New("BackupStorage setting required")
 	}
+	_, ok = c.Storage[c.ArchiveStorage]
+	if !ok {
+		log.Warning("ArchiveStorage setting not set, will use PrimaryStorage setting")
+		c.Storage[c.ArchiveStorage] = c.Storage[c.PrimaryStorage]
+	}
+	_, ok = c.Storage[c.BackrestStorage]
+	if !ok {
+		log.Warning("BackrestStorage setting not set, will use PrimaryStorage setting")
+		c.Storage[c.BackrestStorage] = c.Storage[c.PrimaryStorage]
+	}
+
 	_, ok = c.Storage[c.ReplicaStorage]
 	if !ok {
 		return errors.New("ReplicaStorage setting required")
@@ -326,6 +333,15 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 		err = errors.New("invalid Storage config " + name + " can not have both fsgroup and supplementalGroups specified in the same config, choose one.")
 		log.Error(err)
 		return storage, err
+	}
+
+	if storage.MatchLabels != "" {
+		test := strings.Split(storage.MatchLabels, "=")
+		if len(test) != 2 {
+			err = errors.New("invalid Storage config " + name + " MatchLabels needs to be in key=value format.")
+			log.Error(err)
+			return storage, err
+		}
 	}
 
 	return storage, err

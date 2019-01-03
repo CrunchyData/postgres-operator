@@ -51,8 +51,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PgupgradeList{},
 		&Pgbackup{},
 		&PgbackupList{},
-		&Pgingest{},
-		&PgingestList{},
 		&Pgpolicy{},
 		&PgpolicyList{},
 		&Pgtask{},

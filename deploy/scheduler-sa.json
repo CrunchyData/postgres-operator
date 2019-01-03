@@ -1,8 +1,9 @@
 {
     "apiVersion": "rbac.authorization.k8s.io/v1beta1",
-    "kind": "ClusterRole",
+    "kind": "Role",
     "metadata": {
-        "name": "scheduler-sa"
+        "name": "scheduler-sa",
+        "namespace": "$CO_NAMESPACE"
     },
     "rules": [
         {
@@ -10,7 +11,6 @@
                 ""
             ],
             "resources": [
-                "namespaces",
                 "pods",
                 "configmaps",
                 "deployments",
@@ -35,8 +35,6 @@
                 "list",
                 "watch",
                 "create",
-                "update",
-                "patch",
                 "delete"
             ]
         },
@@ -47,16 +45,6 @@
             ],
             "resources": [
                 "deployments"
-            ],
-            "verbs": [
-                "get",
-                "list",
-                "watch"
-            ]
-        },
-        {
-            "nonResourceURLs": [
-                "/apis"
             ],
             "verbs": [
                 "get",
@@ -89,13 +77,13 @@
 
 {
     "apiVersion": "rbac.authorization.k8s.io/v1beta1",
-    "kind": "ClusterRoleBinding",
+    "kind": "RoleBinding",
     "metadata": {
         "name": "scheduler-sa"
     },
     "roleRef": {
         "apiGroup": "rbac.authorization.k8s.io",
-        "kind": "ClusterRole",
+        "kind": "Role",
         "name": "scheduler-sa"
     },
     "subjects": [

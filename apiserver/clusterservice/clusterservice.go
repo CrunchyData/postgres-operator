@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -216,4 +216,64 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(resp)
+}
+
+// UpdateClusterHandler ...
+// pgo update cluster mycluster --autofail=true
+// pgo update cluster --selector=env=research --autofail=false
+// returns a UpdateClusterResponse
+func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var err error
+	vars := mux.Vars(r)
+	log.Debugf("clusterservice.UpdateClusterHandler %v\n", vars)
+
+	clustername := vars["name"]
+
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debugf("selector parameter is [%s]", selector)
+	}
+	clientVersion := r.URL.Query().Get("version")
+	if clientVersion != "" {
+		log.Debugf("version parameter is [%s]", clientVersion)
+	}
+
+	autofailStr := r.URL.Query().Get("autofail")
+
+	err = apiserver.Authn(apiserver.UPDATE_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+
+	log.Debug("clusterservice.UpdateClusterHandler called")
+
+	var resp msgs.UpdateClusterResponse
+
+	if clientVersion != msgs.PGO_VERSION {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		resp.Results = make([]string, 0)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	if autofailStr != "" {
+		log.Debugf("autofail parameter is [%s]", autofailStr)
+		if autofailStr == "true" || autofailStr == "false" {
+		} else {
+			resp.Status = msgs.Status{
+				Code: msgs.Error,
+				Msg:  "autofail parameter is not true or false, boolean is required"}
+			resp.Results = make([]string, 0)
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
+	}
+
+	resp = UpdateCluster(clustername, selector, autofailStr)
+	json.NewEncoder(w).Encode(resp)
+
 }

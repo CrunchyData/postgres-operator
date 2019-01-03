@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -158,7 +158,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskAutoFailover:
 		log.Infof("autofailover task added %s", task.ObjectMeta.Name)
 	default:
-		log.Info("unknown task type on pgtask added")
+		log.Infof("unknown task type on pgtask added %s", task.Spec.TaskType)
 	}
 
 }

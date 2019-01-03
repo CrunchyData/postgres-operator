@@ -1,0 +1,28 @@
+FROM registry.access.redhat.com/rhel7
+
+LABEL Vendor="Crunchy Data Solutions" \
+	PostgresVersion="11" \
+	PostgresFullVersion="11.1" \
+	Version="7.6" \
+	Release="3.5.0" \
+	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-repo" \
+	description="Crunchy Data PostgreSQL Operator - pgo-backrest-repo"
+
+ENV PGVERSION="11" 
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
+
+RUN yum -y update && \
+yum -y install psmisc openssh-server openssh-clients pgbackrest hostname pgocps-ng && \
+yum -y clean all
+
+RUN useradd pgbackrest
+ADD bin/pgo-backrest-repo/pgo-backrest-repo.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/pgo-backrest-repo.sh
+
+VOLUME ["/sshd", "/backrestrepo" ]
+
+USER pgbackrest
+
+CMD ["pgo-backrest-repo.sh"]

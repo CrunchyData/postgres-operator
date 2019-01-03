@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -71,6 +71,9 @@ const SHOW_SCHEDULE_PERM = "ShowSchedule"
 const SHOW_SECRETS_PERM = "ShowSecrets"
 const SHOW_UPGRADE_PERM = "ShowUpgrade"
 
+// UPDATE
+const UPDATE_CLUSTER_PERM = "UpdateCluster"
+
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
@@ -123,6 +126,9 @@ func InitializePerms() {
 	PermMap[SHOW_SCHEDULE_PERM] = "yes"
 	PermMap[SHOW_SECRETS_PERM] = "yes"
 	PermMap[SHOW_UPGRADE_PERM] = "yes"
+
+	// Update
+	PermMap[UPDATE_CLUSTER_PERM] = "yes"
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
 	readRoles()

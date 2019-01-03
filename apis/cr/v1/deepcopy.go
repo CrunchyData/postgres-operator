@@ -148,25 +148,23 @@ func (in *Pgcluster) DeepCopyInto(out *Pgcluster) {
 		NodeName:           in.Spec.NodeName,
 		PrimaryStorage:     in.Spec.PrimaryStorage,
 		ReplicaStorage:     in.Spec.ReplicaStorage,
+		BackrestStorage:    in.Spec.BackrestStorage,
 		ContainerResources: in.Spec.ContainerResources,
 		PrimaryHost:        in.Spec.PrimaryHost,
-		//PrimaryPassword:    in.Spec.PrimaryPassword,
-		User: in.Spec.User,
-		//Password:           in.Spec.Password,
-		Database: in.Spec.Database,
-		//RootPassword:       in.Spec.RootPassword,
-		Replicas:          in.Spec.Replicas,
-		Strategy:          in.Spec.Strategy,
-		SecretFrom:        in.Spec.SecretFrom,
-		BackupPVCName:     in.Spec.BackupPVCName,
-		BackupPath:        in.Spec.BackupPath,
-		UserSecretName:    in.Spec.UserSecretName,
-		RootSecretName:    in.Spec.RootSecretName,
-		PrimarySecretName: in.Spec.PrimarySecretName,
-		Status:            in.Spec.Status,
-		PswLastUpdate:     in.Spec.PswLastUpdate,
-		CustomConfig:      in.Spec.CustomConfig,
-		UserLabels:        in.Spec.UserLabels,
+		User:               in.Spec.User,
+		Database:           in.Spec.Database,
+		Replicas:           in.Spec.Replicas,
+		Strategy:           in.Spec.Strategy,
+		SecretFrom:         in.Spec.SecretFrom,
+		BackupPVCName:      in.Spec.BackupPVCName,
+		BackupPath:         in.Spec.BackupPath,
+		UserSecretName:     in.Spec.UserSecretName,
+		RootSecretName:     in.Spec.RootSecretName,
+		PrimarySecretName:  in.Spec.PrimarySecretName,
+		Status:             in.Spec.Status,
+		PswLastUpdate:      in.Spec.PswLastUpdate,
+		CustomConfig:       in.Spec.CustomConfig,
+		UserLabels:         in.Spec.UserLabels,
 	}
 }
 
@@ -186,52 +184,6 @@ func (in *PgclusterList) DeepCopyObject() runtime.Object {
 
 	if in.Items != nil {
 		out.Items = make([]Pgcluster, len(in.Items))
-		for i := range in.Items {
-			in.Items[i].DeepCopyInto(&out.Items[i])
-		}
-	}
-
-	return &out
-}
-
-// DeepCopyInto copies all properties of this object into another object of the
-// same type that is provided as a pointer.
-func (in *Pgingest) DeepCopyInto(out *Pgingest) {
-	out.TypeMeta = in.TypeMeta
-	out.ObjectMeta = in.ObjectMeta
-	out.Status = in.Status
-	out.Spec = PgingestSpec{
-		Name:            in.Spec.Name,
-		WatchDir:        in.Spec.WatchDir,
-		DBHost:          in.Spec.DBHost,
-		DBPort:          in.Spec.DBPort,
-		DBName:          in.Spec.DBName,
-		DBSecret:        in.Spec.DBSecret,
-		DBTable:         in.Spec.DBTable,
-		DBColumn:        in.Spec.DBColumn,
-		MaxJobs:         in.Spec.MaxJobs,
-		PVCName:         in.Spec.PVCName,
-		SecurityContext: in.Spec.SecurityContext,
-		Status:          in.Spec.Status,
-	}
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *Pgingest) DeepCopyObject() runtime.Object {
-	out := Pgingest{}
-	in.DeepCopyInto(&out)
-
-	return &out
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *PgingestList) DeepCopyObject() runtime.Object {
-	out := PgingestList{}
-	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
-
-	if in.Items != nil {
-		out.Items = make([]Pgingest, len(in.Items))
 		for i := range in.Items {
 			in.Items[i].DeepCopyInto(&out.Items[i])
 		}

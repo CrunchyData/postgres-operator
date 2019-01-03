@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -25,8 +25,8 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a backup, cluster, ingest, pgbouncer, pgpool, label, policy, upgrade, or user",
-	Long: `The delete command allows you to delete a backup, cluster, label, ingest, pgbouncer, pgpool, policy, upgrade, or user. For example:
+	Short: "Delete a backup, cluster, pgbouncer, pgpool, label, policy, upgrade, or user",
+	Long: `The delete command allows you to delete a backup, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
 
 	pgo delete user testuser --selector=name=mycluster
 	pgo delete policy mypolicy
@@ -47,7 +47,6 @@ var deleteCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
 	* cluster
-	* ingest
 	* pgbouncer
 	* pgpool
 	* label
@@ -58,7 +57,6 @@ var deleteCmd = &cobra.Command{
 			switch args[0] {
 			case "backup":
 			case "cluster":
-			case "ingest":
 			case "pgbouncer":
 			case "label":
 			case "pgpool":
@@ -71,7 +69,6 @@ var deleteCmd = &cobra.Command{
 				fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
 	* cluster
-	* ingest
 	* pgbouncer
 	* label
 	* pgpool
@@ -92,7 +89,6 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
-	deleteCmd.AddCommand(deleteIngestCmd)
 	deleteCmd.AddCommand(deletePgbouncerCmd)
 	deleteCmd.AddCommand(deletePgpoolCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
@@ -115,25 +111,6 @@ func init() {
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-}
-
-var deleteIngestCmd = &cobra.Command{
-	Use:   "ingest",
-	Short: "Delete an ingest",
-	Long: `Delete an ingest. For example:
-    
-    pgo delete ingest myingest`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: A ingest name is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deleteIngest(args)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-	},
 }
 
 var deleteUpgradeCmd = &cobra.Command{

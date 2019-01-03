@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -215,6 +215,35 @@ func createCluster(args []string) {
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
+	}
+
+}
+
+// updateCluster ...
+func updateCluster(args []string) {
+	log.Debugf("updateCluster called %v", args)
+
+	if len(args) == 0 && Selector != "" {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
+	for _, arg := range args {
+		response, err := api.UpdateCluster(httpclient, arg, Selector, &SessionCredentials, AutofailStringFlag)
+
+		if err != nil {
+			fmt.Println("Error: " + err.Error())
+			os.Exit(2)
+		}
+
+		if response.Status.Code == msgs.Ok {
+			for _, result := range response.Results {
+				fmt.Println(result)
+			}
+		} else {
+			fmt.Println("Error: " + response.Status.Msg)
+		}
+
 	}
 
 }

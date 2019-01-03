@@ -30,26 +30,19 @@ import (
 	"time"
 )
 
-type backrestRestoreVolumesFields struct {
-	ToClusterPVCName   string
-	FromClusterPVCName string
-}
-
-type backrestRestoreVolumeMountsFields struct {
-}
-
-type backrestRestoreJobTemplateFields struct {
-	RestoreName          string
-	SecurityContext      string
-	ToClusterName        string
-	RestoreConfigMapName string
-	FromClusterPVCName   string
-	ToClusterPVCName     string
-	BackrestRestoreOpts  string
-	DeltaEnvVar          string
-	PITRTargetEnvVar     string
-	CCPImagePrefix       string
-	CCPImageTag          string
+type restorejobTemplateFields struct {
+	JobName             string
+	ClusterName         string
+	ToClusterPVCName    string
+	SecurityContext     string
+	COImagePrefix       string
+	COImageTag          string
+	CommandOpts         string
+	PITRTarget          string
+	PgbackrestStanza    string
+	PgbackrestDBPath    string
+	PgbackrestRepo1Path string
+	PgbackrestRepo1Host string
 }
 
 // Restore ...
@@ -86,17 +79,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
 	}
 
-	//delete the configmap if it exists from a prior run
-	//kubeapi.DeleteConfigMap(clientset, task.Spec.Name, namespace)
-
-	//create the backrest-restore configmap
-
-	//err = createRestoreJobConfigMap(clientset, task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC], task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER], task.Spec.Name, namespace)
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	return
-	//}
-
 	//delete the job if it exists from a prior run
 	kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
 	//add a small sleep, this is due to race condition in delete propagation
@@ -104,54 +86,30 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	//create the Job to run the backrest restore container
 
-	/**
-	jobFields := backrestRestoreJobTemplateFields{
-		RestoreName:          task.Spec.Name,
-		ToClusterName:        task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
-		RestoreConfigMapName: task.Spec.Name,
-		FromClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
-		ToClusterPVCName:     task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
-		BackrestRestoreOpts:  task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
-
-		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    operator.Pgo.Cluster.CCPImageTag,
-	}
-	*/
-
-	//cmd := task.Spec.Parameters[util.LABEL_BACKREST_COMMAND]
-
-	jobFields := backrestJobTemplateFields{
-		JobName:                       "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
-		ClusterName:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		PodName:                       "na",
-		Command:                       crv1.PgtaskBackrestRestore,
-		SecurityContext:               util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
-		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:                    operator.Pgo.Pgo.COImageTag,
-		PgbackrestStanza:              task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:              task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepoPath:            task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
-		PgbackrestRestoreVolumes:      getRestoreVolumes(task),
-		PgbackrestRestoreVolumeMounts: getRestoreVolumeMounts(),
+	jobFields := restorejobTemplateFields{
+		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		ToClusterPVCName:    pvcName,
+		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
+		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:          operator.Pgo.Pgo.COImageTag,
+		PgbackrestStanza:    task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
 	}
 
 	var doc2 bytes.Buffer
-	//	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
-	//	if err != nil {
-	//		log.Error(err.Error())
-	//		return
-	//	}
-
-	err = operator.BackrestjobTemplate.Execute(&doc2, jobFields)
+	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		//		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
-		operator.BackrestjobTemplate.Execute(os.Stdout, jobFields)
+		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 
 	}
 
@@ -164,60 +122,4 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
 
-}
-
-/**
-func getDeltaEnvVar(restoretype string) string {
-	if restoretype == util.LABEL_BACKREST_RESTORE_DELTA {
-		return "{ \"name\": \"DELTA\"" + "},"
-	}
-	return ""
-}
-func getPITREnvVar(restoretype, pitrtarget string) string {
-	if restoretype == util.LABEL_BACKREST_RESTORE_PITR {
-		tmp := "{"
-		tmp = tmp + "\"name\":" + " \"PITR_TARGET\","
-		tmp = tmp + "\"value\":" + " \"" + pitrtarget + "\""
-		tmp = tmp + "},"
-		return tmp
-	}
-	return ""
-}
-*/
-
-func getRestoreVolumes(task *crv1.Pgtask) string {
-	var doc2 bytes.Buffer
-
-	fields := backrestRestoreVolumesFields{
-		FromClusterPVCName: task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
-		ToClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
-	}
-
-	err := operator.BackrestRestoreVolumesTemplate.Execute(&doc2, fields)
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreVolumesTemplate.Execute(os.Stdout, fields)
-	}
-	if err != nil {
-		log.Error(err)
-		return ""
-	}
-
-	return doc2.String()
-}
-
-func getRestoreVolumeMounts() string {
-	var doc2 bytes.Buffer
-
-	fields := backrestRestoreVolumeMountsFields{}
-
-	err := operator.BackrestRestoreVolumeMountsTemplate.Execute(&doc2, fields)
-	if err != nil {
-		log.Error(err)
-		return ""
-	}
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreVolumeMountsTemplate.Execute(os.Stdout, fields)
-	}
-
-	return doc2.String()
 }

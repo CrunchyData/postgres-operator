@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -37,7 +37,6 @@ var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var NodeLabel string
 var UserLabels string
-var IngestConfig string
 var ServiceType string
 var Schedule string
 var ScheduleOptions string
@@ -49,11 +48,10 @@ var Series int
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Cluster, Ingest, PGBouncer, PGPool, Policy, Schedule, or User",
-	Long: `CREATE allows you to create a new Cluster, Ingest, PGBouncer, PGPool, Policy, Schedule or User. For example: 
+	Short: "Create a Cluster, PGBouncer, PGPool, Policy, Schedule, or User",
+	Long: `CREATE allows you to create a new Cluster, PGBouncer, PGPool, Policy, Schedule or User. For example: 
 
     pgo create cluster
-    pgo create ingest
     pgo create pgbouncer
     pgo create pgpool
     pgo create policy
@@ -63,7 +61,6 @@ var CreateCmd = &cobra.Command{
 		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") && args[0] != "user" {
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
-    * ingest
     * pgbouncer
     * pgpool
     * policy
@@ -155,28 +152,6 @@ var createPgpoolCmd = &cobra.Command{
 	},
 }
 
-// createIngestCmd ...
-var createIngestCmd = &cobra.Command{
-	Use:   "ingest",
-	Short: "Create an ingest",
-	Long: `Create an ingest. For example:
-
-    pgo create ingest myingest --ingest-config=./ingest.json`,
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("create ingest called ")
-
-		if len(args) == 0 {
-			fmt.Println(`Error: An ingest name is required for this command.`)
-		} else {
-			if IngestConfig == "" {
-				fmt.Println("Error: You must specify the ingest-config flag.")
-				return
-			}
-			createIngest(args)
-		}
-	},
-}
-
 // createScheduleCmd ...
 var createScheduleCmd = &cobra.Command{
 	Use:   "schedule",
@@ -220,7 +195,6 @@ var createUserCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
-	CreateCmd.AddCommand(createIngestCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
@@ -252,7 +226,6 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
 	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 
-	createIngestCmd.Flags().StringVarP(&IngestConfig, "ingest-config", "i", "", "Defines the path of an ingest configuration file.")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
 

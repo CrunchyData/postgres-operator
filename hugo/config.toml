@@ -1,36 +1,25 @@
-baseURL = "https://crunchydata.github.io/postgres-operator/"
-#baseURL= "/"
+baseURL= ""
 
 languageCode = "en-us"
 DefaultContentLanguage = "en"
 title = "Crunchy Data PostgreSQL Operator Documentation"
-theme = "docdock"
-#themesdir = "themes/"
+theme = "crunchy-hugo-theme"
 pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
-publishDir = "../public"
+publishDir = ""
 canonifyurls = true
 
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
 
-
-# [Languages]
-# [Languages.en]
-# title = "Crunchy Data PostgreSQL Operator Documentation"
-# weight = 1
-# languageName = "English"
-
-
-
 [params]
-editURL = "https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/"
+editURL = "https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/"
 showVisitedLinks = false # default is false
-themeStyle = "original" # "original" or "flex" # default "flex"
+themeStyle = "flex" # "original" or "flex" # default "flex"
 themeVariant = "" # choose theme variant "green", "gold" , "gray", "blue" (default)
 ordersectionsby = "weight" # ordersectionsby = "title"
-disableHomeIcon = false # default is false
+disableHomeIcon = true # default is false
 disableSearch = false # default is false
 disableNavChevron = false # set true to hide next/prev chevron, default is false
 highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
@@ -41,24 +30,22 @@ enableGitInfo = true
 home = [ "HTML", "RSS", "JSON"]
 
 [[menu.shortcuts]]
-pre = "<h3>More</h3>"
-name = "<i class='fa fa-github'></i> <label>Github repo</label>"
-identifier = "ds"
+name = "<i class='fab fa-github'></i> <label>Source</label>"
 url = "https://github.com/CrunchyData/postgres-operator"
 weight = 10
 
 [[menu.shortcuts]]
-name = "<i class='fa fa-cloud-download'></i> <label>Download</label>"
-url = "https://github.com/CrunchyData/postgres-operator/releases/download/2.6/postgres-operator.2.6.tar.gz"
-weight = 11
-
-[[menu.shortcuts]]
-name = "<i class='fa fa-bookmark'></i> <label>Kubernetes Documentation</label>"
+name = "<i class='fas fa-bookmark'></i> <label>Kubernetes</label>"
 identifier = "kubedoc"
 url = "https://kubernetes.io/docs/"
 weight = 20
 
 [[menu.shortcuts]]
-name = "<i class='fa fa-file'></i> <label>License</label>"
+name = "<i class='fas fa-file-contract'></i> <label>License</label>"
 url = "https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"
-weight = 22
+weight = 30
+
+[[menu.downloads]]
+name = "<i class='fas fa-file-pdf'></i> <label>PDF</label>"
+url = "/pdf/postgres-operator.pdf"
+weight = 20

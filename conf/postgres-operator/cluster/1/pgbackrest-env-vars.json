@@ -1,11 +1,17 @@
                         "name": "PGBACKREST_STANZA",
                         "value": "{{.PgbackrestStanza}}"
                     }, {
+                        "name": "PGBACKREST_REPO1_HOST",
+                        "value": "{{.PgbackrestRepo1Host}}"
+                    }, {
+                        "name": "PGBACKREST_REPO1_PATH",
+                        "value": "{{.PgbackrestRepo1Path}}"
+                    }, {
                         "name": "PGBACKREST_DB_PATH",
                         "value": "{{.PgbackrestDBPath}}"
                     }, {
-                        "name": "PGBACKREST_REPO_PATH",
-                        "value": "{{.PgbackrestRepoPath}}"
+                        "name": "ENABLE_SSHD",
+                        "value": "true"
                     }, {
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"

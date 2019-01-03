@@ -1,8 +1,7 @@
 package main
 
 /*
-Copyright 2017-2018 The Kubernetes Authors.
-
+Copyright 2017 Crunchy Data
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -94,13 +93,6 @@ func main() {
 		Namespace:       Namespace,
 	}
 
-	pgIngestcontroller := controller.PgingestController{
-		PgingestClient:    crdClient,
-		PgingestScheme:    crdScheme,
-		PgingestClientset: Clientset,
-		Namespace:         Namespace,
-	}
-
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
@@ -145,7 +137,6 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go pgTaskcontroller.Run(ctx)
-	go pgIngestcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
 	go pgReplicacontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)
@@ -153,8 +144,6 @@ func main() {
 	go pgPolicycontroller.Run(ctx)
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
-
-	go cluster.MajorUpgradeProcess(Clientset, crdClient, Namespace)
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
 

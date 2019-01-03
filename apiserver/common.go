@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -78,7 +78,7 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 	pvcList := make(map[string]string)
 
 	for _, v := range pod.Spec.Volumes {
-		if v.Name == "backrestrepo-volume" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
+		if v.Name == "backrestrepo" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
 			if v.VolumeSource.PersistentVolumeClaim != nil {
 				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
 			}

@@ -29,7 +29,15 @@ then
 	exit
 fi
 
-#$CO_CMD create configmap pgo-pgbackrest-config --from-file=$DIR/pgbackrest.conf
+$CO_CMD $NS create secret generic pgo-backrest-repo-config \
+	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
+	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
+	--from-file=authorized_keys=$COROOT/conf/pgo-backrest-repo/authorized_keys \
+	--from-file=id_rsa=$COROOT/conf/pgo-backrest-repo/id_rsa \
+	--from-file=ssh_host_ecdsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ecdsa_key \
+	--from-file=ssh_host_ed25519_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ed25519_key \
+	--from-file=sshd_config=$COROOT/conf/pgo-backrest-repo/sshd_config
+
 
 $CO_CMD $NS create secret generic pgo-auth-secret \
         --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
@@ -42,15 +50,11 @@ $CO_CMD $NS create configmap pgo-config \
         --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
         --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgo-ingest-watch-job.json \
 	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
 	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-restore-volumes.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-restore-volume-mounts.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-restore-configmap.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 

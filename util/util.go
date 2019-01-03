@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2017 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -231,23 +231,6 @@ func GetLabels(name, clustername string, replica bool) string {
 	}
 	output += fmt.Sprintf("\"name\": \"%s\",\n", name)
 	output += fmt.Sprintf("\"pg-cluster\": \"%s\"\n", clustername)
-	return output
-}
-
-// GetLabelsFromMap ...
-func GetLabelsFromMap(labels map[string]string) string {
-	var output string
-
-	mapLen := len(labels)
-	i := 1
-	for key, value := range labels {
-		if i < mapLen {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
-		} else {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\"")
-		}
-		i++
-	}
 	return output
 }
 

@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -222,9 +222,10 @@ func ScaleQuery(name string) msgs.ScaleQueryResponse {
 	}
 
 	//get replicas for this cluster
-	//deployments with --selector=primary=false,pg-cluster=ClusterName
+	//deployments with --selector=service-name=ClusterName-replica,pg-cluster=ClusterName
 
-	selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
+	//selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
+	selector := util.LABEL_SERVICE_NAME + "=" + name + "-replica" + "," + util.LABEL_PG_CLUSTER + "=" + name
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if kerrors.IsNotFound(err) {
@@ -290,7 +291,8 @@ func ScaleDown(deleteData bool, clusterName, replicaName string) msgs.ScaleDownR
 
 	//if this was the last replica then remove the replica service
 	var replicaList *v1beta1.DeploymentList
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PRIMARY + "=false"
+	//selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PRIMARY + "=false"
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
 		response.Status.Code = msgs.Error

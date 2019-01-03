@@ -1,7 +1,7 @@
 package dfservice
 
 /*
-Copyright 2017-2018 Crunchy Data Solutions, Inc.
+Copyright 2017 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -63,7 +63,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 
 	for _, c := range clusterList.Items {
 
-		selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
+		selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
 			util.LABEL_PGBACKUP + "!=true"
 
 		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
