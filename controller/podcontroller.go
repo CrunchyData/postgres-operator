@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
@@ -81,10 +82,17 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 	return controller, nil
 }
 
-// onAdd is called when a pgcluster is added
+// onAdd is called when a pgcluster is added or
+// if a pgo-backrest-repo pod is added
 func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
+
+	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
+		log.Debugf("pgo-backrest-repo pod added " + newpod.Name)
+		return
+	}
+
 	c.checkPostgresPods(newpod)
 }
 
@@ -135,6 +143,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					log.Debugf("%s went to Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
+					backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)
 				}
 			}
 		}

@@ -18,13 +18,13 @@
 #
 
 openssl req \
-	    -x509 \
-	        -nodes \
-		    -newkey rsa:2048 \
-		        -keyout $COROOT/conf/apiserver/server.key \
-			    -out $COROOT/conf/apiserver/server.crt \
-			        -days 3650 \
-				    -subj "/C=GB/ST=London/L=London/O=Global Security/OU=IT Department/CN=*"
+-x509 \
+-nodes \
+-newkey rsa:2048 \
+-keyout $COROOT/conf/postgres-operator/server.key \
+-out $COROOT/conf/postgres-operator/server.crt \
+-days 3650 \
+-subj "/C=US/ST=Texas/L=Austin/O=TestOrg/OU=TestDepartment/CN=*"
 exit
 
 # generate CA

@@ -107,14 +107,15 @@
                             "mountPath": "/pgwal",
                             "name": "pgwal-volume"
                         }, {
+                            "mountPath": "/sshd",
+                            "name": "sshd",
+                            "readOnly": true
+                        }, {
                             "mountPath": "/pgconf",
                             "name": "pgconf-volume"
                         }, {
                             "mountPath": "/recover",
                             "name": "recover-volume"
-                        }, {
-                            "mountPath": "/backrestrepo",
-                            "name": "backrestrepo-volume"
                         }
 
                     ],
@@ -149,6 +150,12 @@
                             "secretName": "{{.PrimarySecretName}}"
                         }
                     }, {
+                        "name": "sshd",
+                        "secret": {
+                            "secretName": "pgo-backrest-repo-config",
+			    "defaultMode": 511
+                        }
+                    }, {
                         "name": "root-volume",
                         "secret": {
                             "secretName": "{{.RootSecretName}}"
@@ -156,9 +163,6 @@
                     }, {
                         "name": "pgwal-volume",
             {{.ArchivePVCName}}
-                    }, {
-                        "name": "backrestrepo-volume",
-            {{.BackrestPVCName}}
                     }, {
                         "name": "recover-volume",
             "emptyDir": { "medium": "Memory" }

@@ -2,83 +2,84 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "{{.RestoreName}}",
-        "labels": {
-        	"pgo-backrest-restore": "true",
-        	"vendor": "crunchydata"
-        }
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgo-backrest": "true",
+		    "pgbackup": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
     },
     "spec": {
 	"backoffLimit": 0,
         "template": {
             "metadata": {
-                "name": "{{.RestoreName}}",
+                "name": "{{.JobName}}",
                 "labels": {
-                    "pgo-backrest-restore": "true",
-        	"vendor": "crunchydata"
+                    "vendor": "crunchydata",
+                    "pgo-backrest": "true",
+		    "pgbackup": "true",
+                    "pg-cluster": "{{.ClusterName}}"
                 }
             },
             "spec": {
-            
-                    {{.SecurityContext}}
-           
-                "containers": [
-                    {
-                        "name": "backrest-restore",
-                        "image": "{{.CCPImagePrefix}}/crunchy-backrest-restore:{{.CCPImageTag}}",
-                        "env": [
-                            {
-                                "name": "STANZA",
-                                "value": "db"
-                            },
-                            {
-                                "name": "BACKREST_CUSTOM_OPTS",
-                                "value": "{{.BackrestRestoreOpts}}"
-                            },
-                            {
-                                "name": "PG_HOSTNAME",
-				"value": "{{.ToClusterName}}"
+                "volumes": [ {
+			"name": "pgdata",
+			"persistentVolumeClaim": {
+				"claimName": "{{.ToClusterPVCName}}"
+			}
+		}, {
+			"name": "sshd",
+			"secret": {
+				"secretName": "pgo-backrest-repo-config",
+				"defaultMode": 511
+			}
+		} ],
+
+		{{.SecurityContext}}
+                "serviceAccountName": "pgo-backrest",
+                "containers": [{
+                    "name": "backrest",
+                    "image": "{{.COImagePrefix}}/pgo-backrest-restore:{{.COImageTag}}",
+                    "volumeMounts": [ {
+			"mountPath": "/pgdata",
+			"name": "pgdata",
+			"readOnly": false
+		    }, {
+			"mountPath": "/sshd",
+			"name": "sshd",
+			"readOnly": true
+		    } ],
+                    "env": [{
+                        "name": "COMMAND_OPTS",
+                        "value": "{{.CommandOpts}}"
+                    }, {
+                        "name": "PITR_TARGET",
+                        "value": "{{.PITRTarget}}"
+                    }, {
+                        "name": "PGBACKREST_STANZA",
+                        "value": "{{.PgbackrestStanza}}"
+                    }, {
+                        "name": "PGBACKREST_DB_PATH",
+                        "value": "{{.PgbackrestDBPath}}"
+                    }, {
+                        "name": "PGBACKREST_REPO1_PATH",
+                        "value": "{{.PgbackrestRepo1Path}}"
+                    }, {
+                        "name": "PGBACKREST_REPO1_HOST",
+                        "value": "{{.PgbackrestRepo1Host}}"
+                    }, {
+                        "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
+                    }, {
+                        "name": "NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
                             }
-                        ],
-                        "volumeMounts": [
-                            {
-                                "mountPath": "/pgdata",
-                                "name": "pgdata",
-                                "readOnly": false
-                            },
-                            {
-                                "mountPath": "/pgconf",
-                                "name": "pgconf",
-                                "readOnly": true
-                            },
-                            {
-                                "mountPath": "/backrestrepo",
-                                "name": "backrestrepo",
-                                "readOnly": true
-                            }
-                        ]
-                    }
-                ],
-                "volumes": [
-                    {
-                        "name": "pgconf",
-                        "configMap": {
-                            "name": "{{.RestoreConfigMapName}}"
                         }
-                    },
-                    {
-                        "name": "backrestrepo",
-                        "persistentVolumeClaim": {
-                            "claimName": "{{.FromClusterPVCName}}"
-                        }
-                    },
-                    {
-                        "name": "pgdata",
-                        "persistentVolumeClaim": {
-                            "claimName": "{{.ToClusterPVCName}}"
-                        }
-                    }
-                ],
+                    }]
+                }],
                 "restartPolicy": "Never"
             }
         }

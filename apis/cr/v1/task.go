@@ -44,6 +44,7 @@ const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"
 const PgtaskBackrestInfo = "info"
 const PgtaskBackrestRestore = "restore"
+const PgtaskBackrestStanzaCreate = "stanza-create"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {
