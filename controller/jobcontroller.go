@@ -110,6 +110,9 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		status := crv1.JobCompletedStatus
 		log.Debugf("got a pgbackup job status=%d for %s", job.Status.Succeeded, dbname)
 		if job.Status.Succeeded == 0 {
+			status = crv1.JobSubmittedStatus
+		}
+		if job.Status.Failed > 0 {
 			status = crv1.JobErrorStatus
 		}
 
