@@ -19,14 +19,17 @@ package cluster
 */
 
 import (
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 // FailoverBase ...
@@ -104,6 +107,12 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		}
 	}
 
+	//if a backrest-repo exists, bounce it with the new
+	//DB_PATH set to the new primary deployment name
+	if cluster.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
+		updateDBPath(clientset, &cluster, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
+	}
+
 }
 
 func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster) {
@@ -144,4 +153,91 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster) {
 
 	kubeapi.Createpgreplica(client, newInstance, operator.NAMESPACE)
 
+}
+
+//update the PGBACKREST_DB_PATH env var of the backrest-repo
+//deployment for a given cluster, the deployment is bounced as
+//part of this process
+func updateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, target, namespace string) error {
+	var err error
+	newPath := "/pgdata/" + target
+	depName := cluster.Name + "-backrest-repo"
+
+	var deployment *v1beta1.Deployment
+	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		log.Error("error getting deployment in updateDBPath using name " + depName)
+		return err
+	}
+
+	log.Debugf("replicas %d", *deployment.Spec.Replicas)
+
+	//drain deployment to 0 pods
+	*deployment.Spec.Replicas = 0
+
+	containerIndex := -1
+	envIndex := -1
+	//update the env var Value
+	//template->spec->containers->env["PGBACKREST_DB_PATH"]
+	for kc, c := range deployment.Spec.Template.Spec.Containers {
+		if c.Name == "database" {
+			log.Debugf(" %s is the container name at %d", c.Name, kc)
+			containerIndex = kc
+			for ke, e := range c.Env {
+				if e.Name == "PGBACKREST_DB_PATH" {
+					log.Debugf("PGBACKREST_DB_PATH is %s", e.Value)
+					envIndex = ke
+				}
+			}
+		}
+	}
+
+	if containerIndex == -1 || envIndex == -1 {
+		return errors.New("error in getting container with PGBACRKEST_DB_PATH for cluster " + cluster.Name)
+	}
+
+	deployment.Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = newPath
+
+	//update the deployment (drain and update the env var)
+	err = kubeapi.UpdateDeployment(clientset, deployment, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	//wait till deployment goes to 0
+	var zero bool
+	for i := 0; i < 8; i++ {
+		deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+		if err != nil {
+			log.Error("could not get deployment updateDBPath " + err.Error())
+			return err
+		}
+
+		log.Debugf("status replicas %d\n", deployment.Status.Replicas)
+		if deployment.Status.Replicas == 0 {
+			log.Debugf("deployment %s replicas is now 0", deployment.Name)
+			zero = true
+			break
+		} else {
+			log.Debug("updateDBPath: sleeping till deployment goes to 0")
+			time.Sleep(time.Second * time.Duration(2))
+		}
+	}
+	if !zero {
+		return errors.New("deployment replicas never went to 0")
+	}
+
+	//update the deployment back to replicas 1
+	*deployment.Spec.Replicas = 1
+	err = kubeapi.UpdateDeployment(clientset, deployment, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	log.Debugf("updated PGBACKREST_DB_PATH to %s on deployment %s", newPath, cluster.Name)
+
+	return err
 }

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	jsonpatch "github.com/evanphx/json-patch"
+	"k8s.io/api/apps/v1"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,6 +46,19 @@ func DeleteDeployment(clientset *kubernetes.Clientset, name, namespace string) e
 // CreateDeployment creates a deployment
 func CreateDeployment(clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, namespace string) error {
 	deploymentResult, err := clientset.ExtensionsV1beta1().Deployments(namespace).Create(deployment)
+	if err != nil {
+		log.Error("error creating Deployment " + err.Error())
+		return err
+	}
+
+	log.Info("created deployment " + deploymentResult.Name)
+	return err
+
+}
+
+// CreateDeployment creates a deployment
+func CreateDeploymentV1(clientset *kubernetes.Clientset, deployment *v1.Deployment, namespace string) error {
+	deploymentResult, err := clientset.AppsV1().Deployments(namespace).Create(deployment)
 	if err != nil {
 		log.Error("error creating Deployment " + err.Error())
 		return err
@@ -215,4 +229,17 @@ func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 	}
 	log.Infof("add label to deployment %s=%v", key, value)
 	return err
+}
+
+func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, namespace string) error {
+	var err error
+
+	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Update(deployment)
+	if err != nil {
+		log.Error(err)
+		log.Errorf("error updating deployment %s", deployment.Name)
+		return err
+	}
+	return err
+
 }

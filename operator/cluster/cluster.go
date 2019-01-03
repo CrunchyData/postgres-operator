@@ -74,29 +74,30 @@ type DeploymentTemplateFields struct {
 	ArchivePVCName          string
 	ArchiveTimeout          string
 	XLOGDir                 string
-	BackrestPVCName         string
-	PVCName                 string
-	BackupPVCName           string
-	BackupPath              string
-	RootSecretName          string
-	UserSecretName          string
-	PrimarySecretName       string
-	SecurityContext         string
-	ContainerResources      string
-	NodeSelector            string
-	ConfVolume              string
-	CollectAddon            string
-	BadgerAddon             string
-	PgbackrestEnvVars       string
+	//BackrestPVCName         string
+	PVCName            string
+	BackupPVCName      string
+	BackupPath         string
+	RootSecretName     string
+	UserSecretName     string
+	PrimarySecretName  string
+	SecurityContext    string
+	ContainerResources string
+	NodeSelector       string
+	ConfVolume         string
+	CollectAddon       string
+	BadgerAddon        string
+	PgbackrestEnvVars  string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
 }
 
 type PgbackrestEnvVarsTemplateFields struct {
-	PgbackrestStanza   string
-	PgbackrestDBPath   string
-	PgbackrestRepoPath string
+	PgbackrestStanza    string
+	PgbackrestDBPath    string
+	PgbackrestRepo1Path string
+	PgbackrestRepo1Host string
 }
 
 // ReplicaSuffix ...
@@ -148,29 +149,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			storage.MatchLabels = pgoStorage.MatchLabels
 			storage.SupplementalGroups = pgoStorage.SupplementalGroups
 			storage.Fsgroup = pgoStorage.Fsgroup
-			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
-	}
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		pvcName := cl.Spec.Name + "-backrestrepo"
-		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
-		if found {
-			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
-		} else {
-			storage := crv1.PgStorageSpec{}
-			pgoStorage := operator.Pgo.Storage[operator.Pgo.BackupStorage]
-			storage.StorageClass = pgoStorage.StorageClass
-			storage.AccessMode = pgoStorage.AccessMode
-			storage.Size = pgoStorage.Size
-			storage.StorageType = pgoStorage.StorageType
-			storage.MatchLabels = pgoStorage.MatchLabels
-			storage.SupplementalGroups = pgoStorage.SupplementalGroups
-			storage.Fsgroup = pgoStorage.Fsgroup
-
 			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
 			if err != nil {
 				log.Error(err)
@@ -381,7 +359,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
+		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return

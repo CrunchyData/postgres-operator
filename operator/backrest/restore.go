@@ -30,12 +30,19 @@ import (
 	"time"
 )
 
-type backrestRestoreVolumesFields struct {
-	ToClusterPVCName   string
-	FromClusterPVCName string
-}
-
-type backrestRestoreVolumeMountsFields struct {
+type restorejobTemplateFields struct {
+	JobName             string
+	ClusterName         string
+	ToClusterPVCName    string
+	SecurityContext     string
+	COImagePrefix       string
+	COImageTag          string
+	CommandOpts         string
+	PITRTarget          string
+	PgbackrestStanza    string
+	PgbackrestDBPath    string
+	PgbackrestRepo1Path string
+	PgbackrestRepo1Host string
 }
 
 // Restore ...
@@ -79,32 +86,30 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	//create the Job to run the backrest restore container
 
-	jobFields := backrestJobTemplateFields{
-		JobName:                       "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
-		ClusterName:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		PodName:                       "na",
-		Command:                       crv1.PgtaskBackrestRestore,
-		SecurityContext:               util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
-		PITRTarget:                    task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
-		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:                    operator.Pgo.Pgo.COImageTag,
-		PgbackrestStanza:              task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:              task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepoPath:            task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
-		PgbackrestRestoreVolumes:      getRestoreVolumes(task),
-		PgbackrestRestoreVolumeMounts: getRestoreVolumeMounts(),
+	jobFields := restorejobTemplateFields{
+		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		ToClusterPVCName:    pvcName,
+		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
+		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:          operator.Pgo.Pgo.COImageTag,
+		PgbackrestStanza:    task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.BackrestjobTemplate.Execute(&doc2, jobFields)
+	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.BackrestjobTemplate.Execute(os.Stdout, jobFields)
+		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 
 	}
 
@@ -117,41 +122,4 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
 
-}
-
-func getRestoreVolumes(task *crv1.Pgtask) string {
-	var doc2 bytes.Buffer
-
-	fields := backrestRestoreVolumesFields{
-		FromClusterPVCName: task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
-		ToClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
-	}
-
-	err := operator.BackrestRestoreVolumesTemplate.Execute(&doc2, fields)
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreVolumesTemplate.Execute(os.Stdout, fields)
-	}
-	if err != nil {
-		log.Error(err)
-		return ""
-	}
-
-	return doc2.String()
-}
-
-func getRestoreVolumeMounts() string {
-	var doc2 bytes.Buffer
-
-	fields := backrestRestoreVolumeMountsFields{}
-
-	err := operator.BackrestRestoreVolumeMountsTemplate.Execute(&doc2, fields)
-	if err != nil {
-		log.Error(err)
-		return ""
-	}
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreVolumeMountsTemplate.Execute(os.Stdout, fields)
-	}
-
-	return doc2.String()
 }

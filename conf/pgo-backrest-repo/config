@@ -1,0 +1,5 @@
+Host *
+	StrictHostKeyChecking no
+	IdentityFile /tmp/id_rsa
+	Port 2022
+	User pgbackrest

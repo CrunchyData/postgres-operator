@@ -28,6 +28,8 @@ import (
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
+const pgoBackrestRepoTemplatePath = "/pgo-config/pgo-backrest-repo-template.json"
+const pgoBackrestRepoServiceTemplatePath = "/pgo-config/pgo-backrest-repo-service-template.json"
 const pgbackrestEnvVarsPath = "/pgo-config/pgbackrest-env-vars.json"
 const PgpoolTemplatePath = "/pgo-config/pgpool-template.json"
 const PgpoolConfTemplatePath = "/pgo-config/pgpool.conf"
@@ -43,9 +45,6 @@ const jobPath = "/pgo-config/backup-job.json"
 const rmdatajobPath = "/pgo-config/rmdata-job.json"
 const backrestjobPath = "/pgo-config/backrest-job.json"
 const backrestRestorejobPath = "/pgo-config/backrest-restore-job.json"
-const backrestRestoreConfigMapPath = "/pgo-config/backrest-restore-configmap.json"
-const backrestRestoreVolumesPath = "/pgo-config/backrest-restore-volumes.json"
-const backrestRestoreVolumeMountsPath = "/pgo-config/backrest-restore-volume-mounts.json"
 const PVCPath = "/pgo-config/pvc.json"
 const PVCMatchLabelsPath = "/pgo-config/pvc-matchlabels.json"
 const PVCSCPath = "/pgo-config/pvc-storageclass.json"
@@ -57,6 +56,8 @@ const BadgerTemplate1Path = "/pgo-config/pgbadger.json"
 const AffinityTemplate1Path = "/pgo-config/affinity.json"
 const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
 
+var PgoBackrestRepoServiceTemplate *template.Template
+var PgoBackrestRepoTemplate *template.Template
 var PgbackrestEnvVarsTemplate *template.Template
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
@@ -72,8 +73,6 @@ var ServiceTemplate1 *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
 var BackrestjobTemplate *template.Template
-var BackrestRestoreVolumesTemplate *template.Template
-var BackrestRestoreVolumeMountsTemplate *template.Template
 var BackrestRestorejobTemplate *template.Template
 var BackrestRestoreConfigMapTemplate *template.Template
 var PVCTemplate *template.Template
@@ -112,6 +111,8 @@ func Initialize() {
 		panic("NAMESPACE env var not set")
 	}
 
+	PgoBackrestRepoTemplate = util.LoadTemplate(pgoBackrestRepoTemplatePath)
+	PgoBackrestRepoServiceTemplate = util.LoadTemplate(pgoBackrestRepoServiceTemplatePath)
 	PgbackrestEnvVarsTemplate = util.LoadTemplate(pgbackrestEnvVarsPath)
 	JobTemplate = util.LoadTemplate(jobPath)
 	PgpoolTemplate = util.LoadTemplate(PgpoolTemplatePath)
@@ -126,10 +127,7 @@ func Initialize() {
 
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
-	BackrestRestoreVolumesTemplate = util.LoadTemplate(backrestRestoreVolumesPath)
-	BackrestRestoreVolumeMountsTemplate = util.LoadTemplate(backrestRestoreVolumeMountsPath)
 	BackrestRestorejobTemplate = util.LoadTemplate(backrestRestorejobPath)
-	BackrestRestoreConfigMapTemplate = util.LoadTemplate(backrestRestoreConfigMapPath)
 	PVCTemplate = util.LoadTemplate(PVCPath)
 	PVCMatchLabelsTemplate = util.LoadTemplate(PVCMatchLabelsPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)

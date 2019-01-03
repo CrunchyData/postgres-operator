@@ -26,6 +26,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/extensions/v1beta1"
@@ -103,18 +104,24 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		//xlogdir = "true"
 	}
 
-	backrestRepoTarget := cl.Spec.Name
-	backrestPVCName := ""
+	//backrestRepoTarget := cl.Spec.Name
+	//backrestPVCName := ""
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		backrestPVCName = cl.Spec.Name + "-backrestrepo"
+		//	backrestPVCName = cl.Spec.Name + "-backrestrepo"
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
 		xlogdir = "false"
 		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
-			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
-			backrestPVCName = backrestRepoTarget + "-backrestrepo"
+			//backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+			//backrestPVCName = backrestRepoTarget + "-backrestrepo"
+		} else {
+			err = backrest.CreateRepoDeployment(clientset, namespace, cl)
+			if err != nil {
+				log.Error("could not create backrest repo deployment")
+				return err
+			}
 		}
 	}
 
@@ -142,20 +149,18 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ArchiveMode:             archiveMode,
 		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
 		XLOGDir:                 xlogdir,
-		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:          archiveTimeout,
-		SecurityContext:         util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
-		RootSecretName:          cl.Spec.RootSecretName,
-		PrimarySecretName:       cl.Spec.PrimarySecretName,
-		UserSecretName:          cl.Spec.UserSecretName,
-		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
-		ConfVolume:              GetConfVolume(clientset, cl, namespace),
-		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
-		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestEnvVars: GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db",
-			"/pgdata/"+cl.Spec.Name,
-			"/backrestrepo/"+backrestRepoTarget+"-backups"),
+		//BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:     archiveTimeout,
+		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:     cl.Spec.RootSecretName,
+		PrimarySecretName:  cl.Spec.PrimarySecretName,
+		UserSecretName:     cl.Spec.UserSecretName,
+		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		ContainerResources: operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ConfVolume:         GetConfVolume(clientset, cl, namespace),
+		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
+		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cl.Spec),
+		PgbackrestEnvVars:  GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -225,6 +230,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	//delete the pgpool deployment if necessary
 	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
+	}
+
+	//delete the backrest repo deployment if necessary
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
 	}
 
 	//delete the pgreplicas if necessary
@@ -473,9 +483,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		//	xlogdir = "true"
 	}
 
-	backrestPVCName := ""
+	//backrestPVCName := ""
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		backrestPVCName = replica.Spec.Name + "-backrestrepo"
+		//backrestPVCName = replica.Spec.Name + "-backrestrepo"
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
@@ -516,22 +526,21 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		ArchiveMode:             archiveMode,
 		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
 		XLOGDir:                 xlogdir,
-		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:          archiveTimeout,
-		Replicas:                "1",
-		ConfVolume:              GetConfVolume(clientset, cluster, namespace),
-		DeploymentLabels:        GetLabelsFromMap(replicaLabels),
-		PodLabels:               GetLabelsFromMap(replicaLabels),
-		SecurityContext:         util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:          cluster.Spec.RootSecretName,
-		PrimarySecretName:       cluster.Spec.PrimarySecretName,
-		UserSecretName:          cluster.Spec.UserSecretName,
-		ContainerResources:      operator.GetContainerResourcesJSON(&cs),
-		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
-		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars: GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+replica.Spec.Name,
-			"/backrestrepo/"+replica.Spec.Name+"-backups"),
+		//BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:     archiveTimeout,
+		Replicas:           "1",
+		ConfVolume:         GetConfVolume(clientset, cluster, namespace),
+		DeploymentLabels:   GetLabelsFromMap(replicaLabels),
+		PodLabels:          GetLabelsFromMap(replicaLabels),
+		SecurityContext:    util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:     cluster.Spec.RootSecretName,
+		PrimarySecretName:  cluster.Spec.PrimarySecretName,
+		UserSecretName:     cluster.Spec.UserSecretName,
+		ContainerResources: operator.GetContainerResourcesJSON(&cs),
+		NodeSelector:       GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:       GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		PgbackrestEnvVars:  GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -611,12 +620,13 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 	return ""
 }
 
-func GetPgbackrestEnvVars(backrestEnabled, stanza, dbpath, repopath string) string {
+func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:   stanza,
-			PgbackrestDBPath:   dbpath,
-			PgbackrestRepoPath: repopath,
+			PgbackrestStanza:    "db",
+			PgbackrestRepo1Host: clusterName + "-backrest-repo",
+			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-repo",
+			PgbackrestDBPath:    "/pgdata/" + depName,
 		}
 
 		var doc bytes.Buffer
@@ -646,4 +656,20 @@ func GetLabelsFromMap(labels map[string]string) string {
 		i++
 	}
 	return output
+}
+
+//delete the backrest repo deployment best effort
+func deleteBackrestRepo(clientset *kubernetes.Clientset, clusterName, namespace string) error {
+	var err error
+
+	depName := clusterName + "-backrest-repo"
+	log.Debugf("deleting the backrest repo deployment and service %s", depName)
+
+	err = kubeapi.DeleteDeployment(clientset, depName, namespace)
+
+	//delete the service for the backrest repo
+	err = kubeapi.DeleteService(clientset, depName, namespace)
+
+	return err
+
 }
