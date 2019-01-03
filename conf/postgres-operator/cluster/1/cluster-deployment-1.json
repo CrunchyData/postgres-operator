@@ -47,6 +47,9 @@
                         "name": "PG_MODE",
                         "value": "{{.PgMode}}"
                     }, {
+                        "name": "PG_USER",
+                        "value": "postgres"
+                    }, {
                         "name": "PG_PRIMARY_HOST",
                         "value": "{{.PrimaryHost}}"
                     }, {
