@@ -156,31 +156,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			}
 		}
 	}
-	/**
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		pvcName := cl.Spec.Name + "-backrestrepo"
-		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
-		if found {
-			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
-		} else {
-			storage := crv1.PgStorageSpec{}
-			pgoStorage := operator.Pgo.Storage[operator.Pgo.BackrestStorage]
-			storage.StorageClass = pgoStorage.StorageClass
-			storage.AccessMode = pgoStorage.AccessMode
-			storage.Size = pgoStorage.Size
-			storage.StorageType = pgoStorage.StorageType
-			storage.MatchLabels = pgoStorage.MatchLabels
-			storage.SupplementalGroups = pgoStorage.SupplementalGroups
-			storage.Fsgroup = pgoStorage.Fsgroup
-
-			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
-	}
-	*/
 
 	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
 	//allows user to override with their own passwords
