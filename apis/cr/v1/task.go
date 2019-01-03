@@ -45,6 +45,11 @@ const PgtaskBackrestBackup = "backup"
 const PgtaskBackrestInfo = "info"
 const PgtaskBackrestRestore = "restore"
 
+const PgtaskpgDump = "pgdump"
+const PgtaskpgDumpBackup = "pgdumpbackup"
+const PgtaskpgDumpInfo = "pgdumpinfo"
+const PgtaskpgDumpRestore = "pgdumprestore"
+
 // PgtaskSpec ...
 type PgtaskSpec struct {
 	Name        string        `json:"name"`

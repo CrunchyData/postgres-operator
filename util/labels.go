@@ -68,6 +68,10 @@ const LABEL_BACKREST_PITR_TARGET = "backrest-pitr-target"
 const LABEL_BADGER = "crunchy-pgbadger"
 const LABEL_BACKUP_TYPE_BASEBACKUP = "pgbasebackup"
 const LABEL_BACKUP_TYPE_BACKREST = "pgbackrest"
+const LABEL_BACKUP_TYPE_PGDUMP = "pgdump"
+
+const LABEL_PGDUMP_COMMAND = "pgdump-command"
+const LABEL_PGDUMP_OPTS = "pgdump-opts"
 
 const LABEL_DATA_ROOT = "data-root"
 const LABEL_PVC_NAME = "pvc-name"
