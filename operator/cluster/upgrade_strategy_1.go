@@ -119,7 +119,7 @@ func (r Strategy1) MajorUpgrade(clientset *kubernetes.Clientset, restclient *res
 		return err
 	}
 
-	err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {
 		return err
 	}

@@ -72,15 +72,15 @@ func DeleteJob(clientset *kubernetes.Clientset, jobName, namespace string) error
 }
 
 // CreateJob deletes a backup job
-func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace string) error {
+func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace string) (string, error) {
 	result, err := clientset.Batch().Jobs(namespace).Create(job)
 	if err != nil {
 		log.Error("error creating Job " + job.Name + err.Error())
-		return err
+		return job.Name, err
 	}
 
 	log.Info("created Job " + result.Name)
-	return err
+	return result.Name, err
 }
 
 // DeleteJobs deletes all jobs that match a selector

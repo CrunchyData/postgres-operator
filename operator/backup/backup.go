@@ -115,7 +115,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 		return
 	}
 
-	err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {
 		return
 	}

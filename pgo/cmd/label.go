@@ -89,7 +89,7 @@ func labelClusters(clusters []string) {
 
 	if response.Status.Code == msgs.Ok {
 		for k := range response.Results {
-			fmt.Println(response.Results[k])
+			fmt.Println("Label applied on " + response.Results[k])
 		}
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
