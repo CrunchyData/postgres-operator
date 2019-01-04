@@ -1093,16 +1093,18 @@ func createWorkflowTask(clusterName string) (string, error) {
 
 func getType(pod *v1.Pod, clusterName string) string {
 
-	log.Infof("%v\n", pod.ObjectMeta.Labels)
-	//map[string]string
-	if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
-		log.Infoln("this is a backup pod")
+	//log.Debugf("%v\n", pod.ObjectMeta.Labels)
+	if pod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] != "" {
+		return msgs.PodTypePgbackrest
+	} else if pod.ObjectMeta.Labels[util.LABEL_PGBOUNCER] != "" {
+		return msgs.PodTypePgbouncer
+	} else if pod.ObjectMeta.Labels[util.LABEL_PGPOOL] != "" {
+		return msgs.PodTypePgpool
+	} else if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
 	} else if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
-		log.Infoln("this is a primary pod")
 		return msgs.PodTypePrimary
 	} else {
-		log.Infoln("this is a replica pod")
 		return msgs.PodTypeReplica
 	}
 	return msgs.PodTypeUnknown
