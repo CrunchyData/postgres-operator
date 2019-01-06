@@ -25,7 +25,9 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os"
 	"time"
 )
@@ -33,6 +35,7 @@ import (
 type restorejobTemplateFields struct {
 	JobName             string
 	ClusterName         string
+	WorkflowID          string
 	ToClusterPVCName    string
 	SecurityContext     string
 	COImagePrefix       string
@@ -91,6 +94,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterPVCName:    pvcName,
+		WorkflowID:          task.Spec.Parameters[crv1.PgtaskWorkflowID],
 		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
 		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
 		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
@@ -121,5 +125,82 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 	}
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
+
+}
+
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace, workflowID, restoreToName string) {
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	log.Debugf("restore workflow: taskName is %s", taskName)
+
+	cluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Errorf("restore workflow error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
+		return
+	}
+
+	//turn off autofail if its on
+	if cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+		cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = "false"
+		log.Debugf("restore workflow: turning off autofail on %s", clusterName)
+		err = kubeapi.Updatepgcluster(restclient, &cluster, clusterName, namespace)
+		if err != nil {
+			log.Errorf("restore workflow error: could not turn off autofail on %s", clusterName)
+			return
+		}
+	}
+
+	//delete current primary deployment
+	selector := util.LABEL_SERVICE_NAME + clusterName
+	var depList *v1beta1.DeploymentList
+	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not get depList using %s", selector)
+		return
+	}
+	if len(depList.Items) != 1 {
+		log.Errorf("restore workflow error: depList not equal to 1 %s", selector)
+		return
+	}
+
+	depToDelete := depList.Items[0]
+	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
+		return
+	}
+	log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
+
+	//create new deployment based on restored pvc
+	log.Debugf("restore workflow: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
+	cluster.Spec.Name = restoreToName
+	err = kubeapi.Createpgcluster(restclient, &cluster, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not create primary %s", cluster.Name)
+		return
+	}
+
+	//update workflow
+	log.Debugf("restore workflow: update workflow %s", workflowID)
+	selector = crv1.PgtaskWorkflowID + "=" + workflowID
+	taskList := crv1.PgtaskList{}
+	err = kubeapi.GetpgtasksBySelector(restclient, &taskList, selector, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not get workflow %s", workflowID)
+		return
+	}
+	if len(taskList.Items) != 1 {
+		log.Errorf("restore workflow error: workflow %s not found", workflowID)
+		return
+	}
+
+	task := taskList.Items[0]
+	task.Spec.Parameters[crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	err = kubeapi.Updatepgtask(restclient, &task, task.Name, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not update workflow %s", workflowID)
+		return
+	}
 
 }

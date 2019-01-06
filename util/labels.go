@@ -56,6 +56,7 @@ const LABEL_UPGRADE_DATE = "operator-upgrade-date"
 const LABEL_DELETE_DATA = "delete-data"
 
 const LABEL_BACKREST = "pgo-backrest"
+const LABEL_BACKREST_RESTORE = "pgo-backrest-restore"
 const LABEL_CONTAINER_NAME = "containername"
 const LABEL_POD_NAME = "podname"
 const LABEL_BACKREST_COMMAND = "backrest-command"

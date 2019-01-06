@@ -20,6 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/batch/v1"
@@ -121,6 +122,19 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			if err != nil {
 				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
 			}
+		}
+
+	} else if labels[util.LABEL_BACKREST_RESTORE] == "true" {
+		log.Debugf("got a backrest restore job status=%d", job.Status.Succeeded)
+		if job.Status.Succeeded == 1 {
+			log.Debugf("set status to restore job completed  for %s", labels[util.LABEL_PG_DATABASE])
+			log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
+			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+			if err != nil {
+				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+			}
+
+			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_DATABASE], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, c.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
 		}
 
 	} else if labels[util.LABEL_BACKREST] != "" {

@@ -23,6 +23,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	"io/ioutil"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
@@ -406,6 +407,15 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		}
 	}
 
+	var id string
+	id, err = createRestoreWorkflowTask(cluster.Name)
+	if err != nil {
+		resp.Results = append(resp.Results, err.Error())
+		return resp
+	}
+
+	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
+
 	//create a pgtask for the restore workflow
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
 		pgtask,
@@ -417,6 +427,8 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 	}
 
 	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
+
+	resp.Results = append(resp.Results, "workflow id "+id)
 
 	return resp
 }
@@ -444,4 +456,41 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 		Spec: spec,
 	}
 	return newInstance
+}
+
+func createRestoreWorkflowTask(clusterName string) (string, error) {
+
+	//create pgtask CRD
+	spec := crv1.PgtaskSpec{}
+	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	spec.TaskType = crv1.PgtaskWorkflow
+
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+
+	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
+
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+		},
+		Spec: spec,
+	}
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
+
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	return spec.Parameters[crv1.PgtaskWorkflowID], err
 }
