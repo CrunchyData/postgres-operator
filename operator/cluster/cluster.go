@@ -141,7 +141,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
 		} else {
 			storage := crv1.PgStorageSpec{}
-			pgoStorage := operator.Pgo.Storage[operator.Pgo.ArchiveStorage]
+			pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
 			storage.StorageClass = pgoStorage.StorageClass
 			storage.AccessMode = pgoStorage.AccessMode
 			storage.Size = pgoStorage.Size
