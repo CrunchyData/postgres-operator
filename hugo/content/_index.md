@@ -32,7 +32,7 @@ The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed
 in the [Design](/design). 
 
-<img  src="Operator-Architecture.png"/>
+![Architecture](/Operator-Architecture.png)
 
 The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.
 

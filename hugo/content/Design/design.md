@@ -1,19 +1,17 @@
 ---
-title: "Design"
+title: "Key Features"
 date: {docdate}
 draft: false
 
 weight: 50
 ---
 
-# Design 
-
 ## Provisioning
 
 So, what does the Postgres Operator actually deploy
 when you create a cluster?
 
-![alt text](../../static/OperatorReferenceDiagram.png "Logo Title Text 1")
+![Reference](/OperatorReferenceDiagram.png)
 
 On this diagram, objects with dashed lines are components
 that are optionally deployed as part of a PostgreSQL Cluster

@@ -1,12 +1,10 @@
 
 ---
-title: "Install"
+title: "Operator Installation"
 date: {docdate}
 draft: false
 weight: 20
 ---
-
-# Operator Installation
 
 A full installation of the Operator includes the following steps:
 

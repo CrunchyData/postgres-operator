@@ -6,8 +6,6 @@ draft: false
 weight: 40
 ---
 
-# Security
-
 ## Kubernetes RBAC 
 
 Install the requisite Operator RBAC resources, *as a Kubernetes cluster admin user*,  by running a Makefile target:

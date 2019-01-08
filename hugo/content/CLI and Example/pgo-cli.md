@@ -1,11 +1,10 @@
 ---
-title: "PGO-CLI"
+title: "PGO CLI"
 date: {docdate}
 draft: false
 weight: 10
 ---
 
-# pgo CLI
 The command line tool, pgo, is used to interact with the Postgres Operator.
 
 Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the Github Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
