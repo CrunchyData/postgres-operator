@@ -155,7 +155,9 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			return resp
 		}
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(deployName, clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
+		err = kubeapi.Createpgtask(apiserver.RESTClient,
+			getDumpParams(deployName, clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request.BackupOpts),
+			apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -168,7 +170,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 	return resp
 }
 
-func getBackupParams(deployName, clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
+func getDumpParams(deployName, clusterName, taskName, action, podName, containerName, dumpOpts string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -179,7 +181,10 @@ func getBackupParams(deployName, clusterName, taskName, action, podName, contain
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
 	spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
-	spec.Parameters[util.LABEL_PGDUMP_OPTS] = backupOpts
+	spec.Parameters[util.LABEL_PGDUMP_OPTS] = dumpOpts
+	spec.Parameters[util.LABEL_PGDUMP_USER] = "primaryuser"
+	spec.Parameters[util.LABEL_PGDUMP_PORT] = "5432"
+	spec.Parameters[util.LABEL_PGDUMP_ALL] = "false"
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

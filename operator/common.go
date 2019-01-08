@@ -49,6 +49,8 @@ const PVCPath = "/pgo-config/pvc.json"
 const PVCMatchLabelsPath = "/pgo-config/pvc-matchlabels.json"
 const PVCSCPath = "/pgo-config/pvc-storageclass.json"
 const UpgradeJobPath = "/pgo-config/cluster-upgrade-job-1.json"
+const pgDumpJobPath = "/pgo-config/pgdump-job.json"
+const pgDumpRestoreJobPath = "/pgo-config/pgrestore-job.json"
 
 const DeploymentTemplate1Path = "/pgo-config/cluster-deployment-1.json"
 const CollectTemplate1Path = "/pgo-config/collect.json"
@@ -75,6 +77,10 @@ var RmdatajobTemplate *template.Template
 var BackrestjobTemplate *template.Template
 var BackrestRestorejobTemplate *template.Template
 var BackrestRestoreConfigMapTemplate *template.Template
+
+var PgDumpjobTemplate *template.Template
+var PgDumpRestoreTemplate *template.Template
+
 var PVCTemplate *template.Template
 var PVCMatchLabelsTemplate *template.Template
 var PVCStorageClassTemplate *template.Template
