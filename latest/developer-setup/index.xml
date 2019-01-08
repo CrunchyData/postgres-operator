@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Developer Setups on Crunchy Data PostgreSQL Operator Documentation</title>
+    <title>Developer Setup on Crunchy Data PostgreSQL Operator Documentation</title>
     <link>https://crunchydata.github.io/postgres-operator/latest/developer-setup/</link>
-    <description>Recent content in Developer Setups on Crunchy Data PostgreSQL Operator Documentation</description>
+    <description>Recent content in Developer Setup on Crunchy Data PostgreSQL Operator Documentation</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     

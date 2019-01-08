@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Configurations on Crunchy Data PostgreSQL Operator Documentation</title>
+    <title>Configuration on Crunchy Data PostgreSQL Operator Documentation</title>
     <link>https://crunchydata.github.io/postgres-operator/latest/configuration/</link>
-    <description>Recent content in Configurations on Crunchy Data PostgreSQL Operator Documentation</description>
+    <description>Recent content in Configuration on Crunchy Data PostgreSQL Operator Documentation</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
@@ -11,12 +11,12 @@
     
     
     <item>
-      <title>Configuration</title>
+      <title>Configuration Resources</title>
       <link>https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/</guid>
-      <description>Configuration The operator is template-driven; this makes it simple to configure both the client and the operator.
+      <description>The operator is template-driven; this makes it simple to configure both the client and the operator.
 conf Directory The Operator is configured with a collection of files found in the conf directory. These configuration files are deployed to your Kubernetes cluster when the Operator is deployed. Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
 The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.</description>
     </item>

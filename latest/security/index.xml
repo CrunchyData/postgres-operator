@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Securities on Crunchy Data PostgreSQL Operator Documentation</title>
+    <title>Security on Crunchy Data PostgreSQL Operator Documentation</title>
     <link>https://crunchydata.github.io/postgres-operator/latest/security/</link>
-    <description>Recent content in Securities on Crunchy Data PostgreSQL Operator Documentation</description>
+    <description>Recent content in Security on Crunchy Data PostgreSQL Operator Documentation</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
@@ -16,7 +16,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/latest/security/security/</guid>
-      <description>Security Kubernetes RBAC Install the requisite Operator RBAC resources, as a Kubernetes cluster admin user, by running a Makefile target:
+      <description>Kubernetes RBAC Install the requisite Operator RBAC resources, as a Kubernetes cluster admin user, by running a Makefile target:
 make installrbac  This script creates the following RBAC resources on your Kubernetes cluster:
    Setting Definition     Custom Resource Definitions pgbackups    pgclusters    pgpolicies    pgreplicas    pgtasks    pgupgrades   Cluster Roles pgopclusterrole    pgopclusterrolecrd    scheduler-sa   Cluster Role Bindings pgopclusterbinding    pgopclusterbindingcrd    scheduler-sa   Service Account scheduler-sa    postgres-operator    pgo-backrest    scheduler-sa   Roles pgo-role    pgo-backrest-role   Role Bindings pgo-backrest-role-binding    Operator RBAC The conf/postgresql-operator/pgorole file is read at start up time when the operator is deployed to the Kubernetes cluster.</description>
     </item>
