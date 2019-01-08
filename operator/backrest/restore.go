@@ -25,17 +25,27 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os"
 	"time"
 )
 
-type backrestRestoreVolumesFields struct {
-	ToClusterPVCName   string
-	FromClusterPVCName string
-}
-
-type backrestRestoreVolumeMountsFields struct {
+type restorejobTemplateFields struct {
+	JobName             string
+	ClusterName         string
+	WorkflowID          string
+	ToClusterPVCName    string
+	SecurityContext     string
+	COImagePrefix       string
+	COImageTag          string
+	CommandOpts         string
+	PITRTarget          string
+	PgbackrestStanza    string
+	PgbackrestDBPath    string
+	PgbackrestRepo1Path string
+	PgbackrestRepo1Host string
 }
 
 // Restore ...
@@ -79,32 +89,31 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 	//create the Job to run the backrest restore container
 
-	jobFields := backrestJobTemplateFields{
-		JobName:                       "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
-		ClusterName:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		PodName:                       "na",
-		Command:                       crv1.PgtaskBackrestRestore,
-		SecurityContext:               util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
-		PITRTarget:                    task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
-		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:                    operator.Pgo.Pgo.COImageTag,
-		PgbackrestStanza:              task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:              task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepoPath:            task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
-		PgbackrestRestoreVolumes:      getRestoreVolumes(task),
-		PgbackrestRestoreVolumeMounts: getRestoreVolumeMounts(),
+	jobFields := restorejobTemplateFields{
+		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		ToClusterPVCName:    pvcName,
+		WorkflowID:          task.Spec.Parameters[crv1.PgtaskWorkflowID],
+		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
+		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:          operator.Pgo.Pgo.COImageTag,
+		PgbackrestStanza:    task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.BackrestjobTemplate.Execute(&doc2, jobFields)
+	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.BackrestjobTemplate.Execute(os.Stdout, jobFields)
+		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 
 	}
 
@@ -119,39 +128,96 @@ func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtas
 
 }
 
-func getRestoreVolumes(task *crv1.Pgtask) string {
-	var doc2 bytes.Buffer
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace, workflowID, restoreToName string) {
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	log.Debugf("restore workflow: taskName is %s", taskName)
 
-	fields := backrestRestoreVolumesFields{
-		FromClusterPVCName: task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-backrestrepo",
-		ToClusterPVCName:   task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC],
+	cluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Errorf("restore workflow error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
+		return
 	}
 
-	err := operator.BackrestRestoreVolumesTemplate.Execute(&doc2, fields)
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreVolumesTemplate.Execute(os.Stdout, fields)
+	//turn off autofail if its on
+	if cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+		cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = "false"
+		log.Debugf("restore workflow: turning off autofail on %s", clusterName)
+		err = kubeapi.Updatepgcluster(restclient, &cluster, clusterName, namespace)
+		if err != nil {
+			log.Errorf("restore workflow error: could not turn off autofail on %s", clusterName)
+			return
+		}
 	}
+
+	//delete current primary deployment
+	selector := util.LABEL_SERVICE_NAME + clusterName
+	var depList *v1beta1.DeploymentList
+	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if err != nil {
-		log.Error(err)
-		return ""
+		log.Errorf("restore workflow error: could not get depList using %s", selector)
+		return
+	}
+	if len(depList.Items) != 1 {
+		log.Errorf("restore workflow error: depList not equal to 1 %s", selector)
+		return
 	}
 
-	return doc2.String()
-}
+	depToDelete := depList.Items[0]
 
-func getRestoreVolumeMounts() string {
-	var doc2 bytes.Buffer
+	//delete the primary service as it will be recreated when
+	//the new primary is created
 
-	fields := backrestRestoreVolumeMountsFields{}
-
-	err := operator.BackrestRestoreVolumeMountsTemplate.Execute(&doc2, fields)
+	err = kubeapi.DeleteService(clientset, clusterName, namespace)
 	if err != nil {
-		log.Error(err)
-		return ""
-	}
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestoreVolumeMountsTemplate.Execute(os.Stdout, fields)
+		log.Errorf("restore workflow error: could not delete primary service %s", clusterName)
+		return
 	}
 
-	return doc2.String()
+	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
+		return
+	}
+	log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
+
+	//create new deployment based on restored pvc
+	//and include the workflowID in that new pgcluster as
+	//a breakcrumb to keep the workflow going after the
+	//new primary pod is Ready
+	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
+
+	log.Debugf("restore workflow: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
+	cluster.Spec.Name = restoreToName
+	err = kubeapi.Createpgcluster(restclient, &cluster, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not create primary %s", cluster.Name)
+		return
+	}
+
+	//update workflow
+	log.Debugf("restore workflow: update workflow %s", workflowID)
+	selector = crv1.PgtaskWorkflowID + "=" + workflowID
+	taskList := crv1.PgtaskList{}
+	err = kubeapi.GetpgtasksBySelector(restclient, &taskList, selector, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not get workflow %s", workflowID)
+		return
+	}
+	if len(taskList.Items) != 1 {
+		log.Errorf("restore workflow error: workflow %s not found", workflowID)
+		return
+	}
+
+	task := taskList.Items[0]
+	task.Spec.Parameters[crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	err = kubeapi.Updatepgtask(restclient, &task, task.Name, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not update workflow %s", workflowID)
+		return
+	}
+
+	//update backrest repo with new data path
+
 }

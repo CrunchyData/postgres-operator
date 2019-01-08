@@ -78,7 +78,7 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 	pvcList := make(map[string]string)
 
 	for _, v := range pod.Spec.Volumes {
-		if v.Name == "backrestrepo-volume" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
+		if v.Name == "backrestrepo" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
 			if v.VolumeSource.PersistentVolumeClaim != nil {
 				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
 			}

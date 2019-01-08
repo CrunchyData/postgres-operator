@@ -21,36 +21,31 @@ import (
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
+	otherutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
 	"os"
 )
 
-var ToPVC string
 var PITRTarget string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: "Perform a pgBackRest restore",
-	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. For example:
+	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  For example:
 
-	pgo restore withbr --to-pvc=restored
-	pgo create cluster restored --pgbackrest-restore-from=withbr --pgbackrest`,
+	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("restore called")
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
-			if ToPVC == "" {
-				fmt.Println("Error: You must specify the --to-pvc flag.")
-				os.Exit(2)
+			fmt.Println("Warning:  stopping this database and creating a new primary is part of the restore workflow!")
+			if util.AskForConfirmation(NoPrompt, "") {
+				restore(args)
+			} else {
+				fmt.Println("Aborting...")
 			}
-			/**
-			if RestoreOpts == "" {
-				fmt.Println("Error: You must specify the --restore-opts flag.")
-				os.Exit(2)
-			}
-			*/
-			restore(args)
 		}
 
 	},
@@ -59,9 +54,9 @@ var restoreCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&ToPVC, "to-pvc", "", "", "The name of the new PVC to restore to.")
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
+	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 
 }
 
@@ -71,7 +66,7 @@ func restore(args []string) {
 
 	request := new(msgs.RestoreRequest)
 	request.FromCluster = args[0]
-	request.ToPVC = ToPVC
+	request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
 	request.RestoreOpts = BackupOpts
 	request.PITRTarget = PITRTarget
 

@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-10.6-2.2.0
+  CCPImageTag:  centos7-11.1-2.3.0-rc1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -16,6 +16,7 @@ Cluster:
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
   Backrest:  false
+  BackrestPort:  2022
   Autofail:  false
   AutofailReplaceReplica:  false
   LogStatement:  none
@@ -24,6 +25,7 @@ PrimaryStorage: nfsstorage
 ArchiveStorage: archivestorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
+BackrestStorage: backreststorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -32,6 +34,11 @@ Storage:
   nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
+  backreststorage:
+    AccessMode:  ReadWriteMany
+    Size:  600M
     StorageType:  create
     SupplementalGroups:  65534
   nfsstoragered:
@@ -75,4 +82,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0-rc1
+  COImageTag:  centos7-3.5.0-rc3

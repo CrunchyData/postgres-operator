@@ -1,6 +1,5 @@
 package main
 
-
 /*
  Copyright 2018 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +15,6 @@ package main
  limitations under the License.
 */
 
-
 import (
 	"bytes"
 	"flag"
@@ -29,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 var Clientset *kubernetes.Clientset
@@ -37,6 +36,7 @@ const backrestCommand = "pgbackrest"
 
 const backrestBackupCommand = `backup`
 const backrestInfoCommand = `info`
+const backrestStanzaCreateCommand = `stanza-create`
 const backrestRestoreCommand = `restore`
 const containername = "database"
 
@@ -96,10 +96,17 @@ func main() {
 	cmdStrs := make([]string, 0)
 
 	switch COMMAND {
+	case crv1.PgtaskBackrestStanzaCreate:
+		log.Info("backrest stanza-create command requested")
+		time.Sleep(time.Second * time.Duration(30))
+		log.Info("sleeping 30 seconds to avoid race with PG during startup")
+		cmdStrs = append(cmdStrs, backrestCommand)
+		cmdStrs = append(cmdStrs, backrestStanzaCreateCommand)
+		cmdStrs = append(cmdStrs, COMMAND_OPTS)
 	case crv1.PgtaskBackrestInfo:
 		log.Info("backrest info command requested")
 		cmdStrs = append(cmdStrs, backrestCommand)
-		cmdStrs = append(cmdStrs, backrestBackupCommand)
+		cmdStrs = append(cmdStrs, backrestInfoCommand)
 		cmdStrs = append(cmdStrs, COMMAND_OPTS)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")

@@ -40,7 +40,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 | Setting|Definition  |
 |---|---|
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
-|ArchiveStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
+|XlogStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments

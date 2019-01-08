@@ -127,5 +127,28 @@ The fail-over logic includes:
  * label change of the targeted Replica to match the primary Service
  * execute Postgres promote command on the targeted replica
 
+## pgbackrest Integration
 
+The Operator integrates various features of the pgbackrest (https://pgbackrest.org) backup and restore project.  A key component added to the Operator
+is the *pgo-backrest-repo* container, this container acts as a pgbackrest
+remote repository for the Postgres cluster to use for storing archive
+files and backups.
+
+The following diagrams depicts some of the integration features:
+
+![alt text](../../static/operator-backrest-integration.png "Logo Title Text 1")
+
+In this diagram, starting from left to right we see the following:
+
+ * a user when they enter *pgo backup mycluster --backup-type=pgbackrest* will cause a pgo-backrest container to be run as a Job, that container will execute a   *pgbackrest backup* command in the pgbackrest repository container to perform the backup function.
+
+ * a user when they enter *pgo show backup mycluster --backup-type=pgbackrest* will cause a *pgbackrest info* command to be executed on the pgbackrest repository container, the *info* output is sent directly back to the user to view
+
+ * the Postgres container itself will use an archive command, *pgbackrest archive-push* to send archives to the pgbackrest repository container
+
+ * the user entering *pgo create cluster mycluster --pgbackrest* will cause
+a pgbackrest repository container deployment to be created, that repository
+is exclusively used for this Postgres cluster
+
+ * lastly, a user entering *pgo restore mycluster* will cause a *pgo-backrest-restore* container to be created as a Job, that container executes the *pgbackrest restore* command
 

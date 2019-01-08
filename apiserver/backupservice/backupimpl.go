@@ -209,7 +209,7 @@ func CreateBackup(request *msgs.CreateBackupRequest) msgs.CreateBackupResponse {
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		resp.Results = append(resp.Results, "created Pgbackup "+arg)
+		resp.Results = append(resp.Results, "created backup Job for "+arg)
 
 	}
 

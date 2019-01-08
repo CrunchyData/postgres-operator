@@ -217,8 +217,10 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	//get pods, but exclude pgpool and backup pods
+	//get pods, but exclude pgpool and backup pods and backrest repo
+	//selector := "pgo-backrest-repo!=true," + "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	selector := "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -249,7 +251,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
-	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -260,7 +262,10 @@ func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 	for _, p := range services.Items {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
-		if strings.Contains(p.Name, "-pgbouncer") {
+		if strings.Contains(p.Name, "-backrest-repo") {
+			d.BackrestRepo = true
+			d.ClusterName = cluster.Name
+		} else if strings.Contains(p.Name, "-pgbouncer") {
 			d.Pgbouncer = true
 			d.ClusterName = cluster.Name
 		}
@@ -307,7 +312,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 
 	//loop thru each cluster
 
-	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		result := msgs.ClusterTestResult{}
@@ -365,7 +370,9 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 		for _, service := range detail.Services {
 
 			databases := make([]string, 0)
-			if service.Pgbouncer {
+			if service.BackrestRepo {
+				//dont include backrest repo service
+			} else if service.Pgbouncer {
 				databases = append(databases, service.ClusterName)
 				databases = append(databases, service.ClusterName+"-replica")
 			} else {
@@ -803,6 +810,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		log.Debugf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
+	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
+
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
 	log.Debugf("Pgo.Cluster.CCPImageTag %s", apiserver.Pgo.Cluster.CCPImageTag)
 	if request.CCPImageTag != "" {
@@ -1084,16 +1093,18 @@ func createWorkflowTask(clusterName string) (string, error) {
 
 func getType(pod *v1.Pod, clusterName string) string {
 
-	log.Infof("%v\n", pod.ObjectMeta.Labels)
-	//map[string]string
-	if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
-		log.Infoln("this is a backup pod")
+	//log.Debugf("%v\n", pod.ObjectMeta.Labels)
+	if pod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] != "" {
+		return msgs.PodTypePgbackrest
+	} else if pod.ObjectMeta.Labels[util.LABEL_PGBOUNCER] != "" {
+		return msgs.PodTypePgbouncer
+	} else if pod.ObjectMeta.Labels[util.LABEL_PGPOOL] != "" {
+		return msgs.PodTypePgpool
+	} else if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
 	} else if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
-		log.Infoln("this is a primary pod")
 		return msgs.PodTypePrimary
 	} else {
-		log.Infoln("this is a replica pod")
 		return msgs.PodTypeReplica
 	}
 	return msgs.PodTypeUnknown

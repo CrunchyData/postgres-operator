@@ -71,6 +71,18 @@ pgo-backrest:	check-go-vars
 pgo-backrest-image:	check-go-vars pgo-backrest
 	docker build -t pgo-backrest -f $(CO_BASEOS)/Dockerfile.pgo-backrest.$(CO_BASEOS) .
 	docker tag pgo-backrest $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
+pgo-backrest-restore:	check-go-vars
+	go install pgo-backrest-restore/pgo-backrest-restore.go
+	mv $(GOBIN)/pgo-backrest-restore ./bin/pgo-backrest-restore/
+pgo-backrest-restore-image:	check-go-vars pgo-backrest-restore
+	docker build -t pgo-backrest-restore -f $(CO_BASEOS)/Dockerfile.pgo-backrest-restore.$(CO_BASEOS) .
+	docker tag pgo-backrest-restore $(CO_IMAGE_PREFIX)/pgo-backrest-restore:$(CO_IMAGE_TAG)
+pgo-backrest-repo-image:	check-go-vars 
+	docker build -t pgo-backrest-repo -f $(CO_BASEOS)/Dockerfile.pgo-backrest-repo.$(CO_BASEOS) .
+	docker tag pgo-backrest-repo $(CO_IMAGE_PREFIX)/pgo-backrest-repo:$(CO_IMAGE_TAG)
+repo-client-image:	check-go-vars 
+	docker build -t repo-client -f $(CO_BASEOS)/Dockerfile.repo-client.$(CO_BASEOS) .
+	docker tag repo-client $(CO_IMAGE_PREFIX)/repo-client:$(CO_IMAGE_TAG)
 foo:	check-go-vars
 	go install foo/foo.go
 	mv $(GOBIN)/foo ./bin/foo/
@@ -107,11 +119,13 @@ rmdataimage:
 all:
 	make operatorimage
 	make apiserverimage
+	make pgo-backrest-repo-image
+	make pgo-backrest-image
+	make pgo-backrest-restore-image
+	make pgo
 	make lsimage
 	make loadimage
-	make pgo
 	make rmdataimage
-	make pgo-backrest-image
 push:
 	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)

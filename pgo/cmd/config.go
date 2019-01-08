@@ -60,6 +60,7 @@ func showConfig(args []string) {
 	fmt.Printf("%s%s\n", "  ServiceType:  ", pgo.Cluster.ServiceType)
 	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Cluster.Metrics)
 	fmt.Printf("%s%t\n", "  Backrest:  ", pgo.Cluster.Backrest)
+	fmt.Printf("%s%d\n", "  BackrestPort:  ", pgo.Cluster.BackrestPort)
 	fmt.Printf("%s%t\n", "  Autofail:  ", pgo.Cluster.Autofail)
 	fmt.Printf("%s%t\n", "  AutofailReplaceReplica:  ", pgo.Cluster.AutofailReplaceReplica)
 	fmt.Printf("%s%t\n", "  Badger:  ", pgo.Cluster.Badger)
@@ -75,9 +76,10 @@ func showConfig(args []string) {
 	fmt.Printf("%s%s\n", "  Replicas:  ", pgo.Cluster.Replicas)
 
 	fmt.Printf("%s%s\n", "PrimaryStorage:  ", pgo.PrimaryStorage)
-	fmt.Printf("%s%s\n", "ArchiveStorage:  ", pgo.ArchiveStorage)
+	fmt.Printf("%s%s\n", "XlogStorage:  ", pgo.XlogStorage)
 	fmt.Printf("%s%s\n", "BackupStorage:  ", pgo.BackupStorage)
 	fmt.Printf("%s%s\n", "ReplicaStorage:  ", pgo.ReplicaStorage)
+	fmt.Printf("%s%s\n", "BackrestStorage:  ", pgo.BackrestStorage)
 	fmt.Printf("%s\n", "Storage:")
 	for k, v := range pgo.Storage {
 		fmt.Printf("  %s:\n", k)

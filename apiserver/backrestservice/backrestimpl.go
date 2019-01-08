@@ -23,6 +23,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	"io/ioutil"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
@@ -133,7 +134,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 		}
 
 		//get pod name from cluster
-		var podname, deployName string
+		var podname string
 		podname, err = getPrimaryPodName(&cluster)
 
 		if err != nil {
@@ -144,6 +145,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 		}
 
 		//get deployment name for this cluster
+		/**
 		deployName, err = getDeployName(&cluster)
 		if err != nil {
 			log.Error(err)
@@ -151,8 +153,12 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 			resp.Status.Msg = err.Error()
 			return resp
 		}
+		*/
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(deployName, clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
+		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
+		log.Debugf("setting jobName to %s", jobName)
+
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, jobName), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -165,13 +171,14 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	return resp
 }
 
-func getBackupParams(deployName, clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, jobName string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
+	spec.Parameters[util.LABEL_JOB_NAME] = jobName
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
@@ -213,23 +220,41 @@ func getDeployName(cluster *crv1.Pgcluster) (string, error) {
 }
 
 func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
-	var podname string
 
-	//selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	//look up the backrest-repo pod name
+	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
+	repopods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+	if len(repopods.Items) != 1 {
+		log.Errorf("pods len != 1 for cluster %s", cluster.Spec.Name)
+		return "", errors.New("backrestrepo pod not found for cluster " + cluster.Spec.Name)
+	}
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+
+	repopodName := repopods.Items[0].Name
+
+	primaryReady := false
+
+	//make sure the primary pod is in the ready state
+	selector = util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
-		return podname, err
+		return "", err
 	}
-
 	for _, p := range pods.Items {
 		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
-			return p.Name, err
+			primaryReady = true
 		}
 	}
 
-	return podname, errors.New("primary pod is not in Ready state")
+	if primaryReady == false {
+		return "", errors.New("primary pod is not in Ready state")
+	}
+
+	return repopodName, err
 }
 
 func isPrimary(pod *v1.Pod, clusterName string) bool {
@@ -386,6 +411,15 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		}
 	}
 
+	var id string
+	id, err = createRestoreWorkflowTask(cluster.Name)
+	if err != nil {
+		resp.Results = append(resp.Results, err.Error())
+		return resp
+	}
+
+	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
+
 	//create a pgtask for the restore workflow
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
 		pgtask,
@@ -397,6 +431,8 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 	}
 
 	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
+
+	resp.Results = append(resp.Results, "workflow id "+id)
 
 	return resp
 }
@@ -414,7 +450,8 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	spec.Parameters[util.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
 	spec.Parameters[util.LABEL_PGBACKREST_STANZA] = "db"
 	spec.Parameters[util.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backups"
+	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-repo"
+	spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-repo"
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -423,4 +460,41 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 		Spec: spec,
 	}
 	return newInstance
+}
+
+func createRestoreWorkflowTask(clusterName string) (string, error) {
+
+	//create pgtask CRD
+	spec := crv1.PgtaskSpec{}
+	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	spec.TaskType = crv1.PgtaskWorkflow
+
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+
+	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
+
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+		},
+		Spec: spec,
+	}
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
+
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		newInstance, apiserver.Namespace)
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	return spec.Parameters[crv1.PgtaskWorkflowID], err
 }

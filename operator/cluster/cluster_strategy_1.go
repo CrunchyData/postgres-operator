@@ -26,6 +26,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/extensions/v1beta1"
@@ -115,6 +116,12 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
 			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 			backrestPVCName = backrestRepoTarget + "-backrestrepo"
+		} else {
+			err = backrest.CreateRepoDeployment(clientset, namespace, cl)
+			if err != nil {
+				log.Error("could not create backrest repo deployment")
+				return err
+			}
 		}
 	}
 
@@ -153,9 +160,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ConfVolume:              GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestEnvVars: GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], "db",
-			"/pgdata/"+cl.Spec.Name,
-			"/backrestrepo/"+backrestRepoTarget+"-backups"),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -225,6 +230,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	//delete the pgpool deployment if necessary
 	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
+	}
+
+	//delete the backrest repo deployment if necessary
+	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
 	}
 
 	//delete the pgreplicas if necessary
@@ -530,8 +540,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars: GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], "db", "/pgdata/"+replica.Spec.Name,
-			"/backrestrepo/"+replica.Spec.Name+"-backups"),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -611,12 +620,13 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 	return ""
 }
 
-func GetPgbackrestEnvVars(backrestEnabled, stanza, dbpath, repopath string) string {
+func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:   stanza,
-			PgbackrestDBPath:   dbpath,
-			PgbackrestRepoPath: repopath,
+			PgbackrestStanza:    "db",
+			PgbackrestRepo1Host: clusterName + "-backrest-shared-repo",
+			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-shared-repo",
+			PgbackrestDBPath:    "/pgdata/" + depName,
 		}
 
 		var doc bytes.Buffer
@@ -646,4 +656,20 @@ func GetLabelsFromMap(labels map[string]string) string {
 		i++
 	}
 	return output
+}
+
+//delete the backrest repo deployment best effort
+func deleteBackrestRepo(clientset *kubernetes.Clientset, clusterName, namespace string) error {
+	var err error
+
+	depName := clusterName + "-backrest-repo"
+	log.Debugf("deleting the backrest repo deployment and service %s", depName)
+
+	err = kubeapi.DeleteDeployment(clientset, depName, namespace)
+
+	//delete the service for the backrest repo
+	err = kubeapi.DeleteService(clientset, depName, namespace)
+
+	return err
+
 }
