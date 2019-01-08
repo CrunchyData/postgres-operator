@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Installations on Crunchy Data PostgreSQL Operator Documentation</title>
+    <title>Installation on Crunchy Data PostgreSQL Operator Documentation</title>
     <link>https://crunchydata.github.io/postgres-operator/latest/installation/</link>
-    <description>Recent content in Installations on Crunchy Data PostgreSQL Operator Documentation</description>
+    <description>Recent content in Installation on Crunchy Data PostgreSQL Operator Documentation</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     
@@ -11,12 +11,12 @@
     
     
     <item>
-      <title>Install</title>
+      <title>Operator Installation</title>
       <link>https://crunchydata.github.io/postgres-operator/latest/installation/installation/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/latest/installation/installation/</guid>
-      <description>Operator Installation A full installation of the Operator includes the following steps:
+      <description>A full installation of the Operator includes the following steps:
  create a project structure configure your environment variables configure Operator templates create security resources deploy the operator install pgo CLI (end user command tool)  Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.
 The Operator can also be deployed with a sample Helm chart and also a quickstart script.</description>
     </item>
