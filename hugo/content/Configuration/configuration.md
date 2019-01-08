@@ -1,13 +1,11 @@
 
 ---
-title: "Configuration"
+title: "Configuration Resources"
 date: {docdate}
 draft: false
 weight: 30
 ---
 
-
-# Configuration
 
 The operator is template-driven; this makes it simple to configure both the client and the operator.
 
