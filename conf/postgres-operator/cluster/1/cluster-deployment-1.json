@@ -98,6 +98,9 @@
                             "name": "backup",
                             "readOnly": true
                         }, {
+                            "mountPath": "/backuprestrepo",
+                            "name": "backrestrepo"
+                        }, {
                             "mountPath": "/pguser",
                             "name": "user-volume"
                         }, {
@@ -172,6 +175,9 @@
                     }, {
                         "name": "report",
             "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "backrestrepo",
+			{{.BackrestPVCName}}
                     }, {
                         "name": "pgconf-volume",
             {{.ConfVolume}}

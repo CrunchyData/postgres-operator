@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 var Clientset *kubernetes.Clientset
@@ -97,6 +98,8 @@ func main() {
 	switch COMMAND {
 	case crv1.PgtaskBackrestStanzaCreate:
 		log.Info("backrest stanza-create command requested")
+		time.Sleep(time.Second * time.Duration(30))
+		log.Info("sleeping 30 seconds to avoid race with PG during startup")
 		cmdStrs = append(cmdStrs, backrestCommand)
 		cmdStrs = append(cmdStrs, backrestStanzaCreateCommand)
 		cmdStrs = append(cmdStrs, COMMAND_OPTS)

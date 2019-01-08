@@ -56,7 +56,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 
 	var b bytes.Buffer
 
-	repoName := cluster.Name + "-backrest-repo"
+	repoName := cluster.Name + "-backrest-shared-repo"
 
 	//create backrest repo service
 	serviceFields := RepoServiceTemplateFields{

@@ -155,7 +155,10 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 		}
 		*/
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts), apiserver.Namespace)
+		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
+		log.Debugf("setting jobName to %s", jobName)
+
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, jobName), apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -168,13 +171,14 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest) msgs.CreateBackrest
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, jobName string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
+	spec.Parameters[util.LABEL_JOB_NAME] = jobName
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName

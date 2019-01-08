@@ -46,8 +46,11 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
 
+	jobName := "backrest-" + crv1.PgtaskBackrestStanzaCreate + "-" + clusterName
+
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
+	spec.Parameters[util.LABEL_JOB_NAME] = jobName
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
 	spec.Parameters[util.LABEL_POD_NAME] = podName
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = "pgo-backrest-repo"
