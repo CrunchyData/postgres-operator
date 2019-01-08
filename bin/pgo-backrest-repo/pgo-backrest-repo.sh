@@ -20,11 +20,12 @@ ls $REPO
 
 if [ ! -d $PGBACKREST_REPO_PATH ]; then
 	echo "creating " $PGBACKREST_REPO_PATH
-	mkdir $PGBACKREST_REPO_PATH
+	mkdir -p $PGBACKREST_REPO_PATH
 fi
 
 mkdir ~/.ssh/
 cp $CONFIG/config ~/.ssh/
+#cp $CONFIG/authorized_keys ~/.ssh/
 cp $CONFIG/id_rsa /tmp
 chmod 400 /tmp/id_rsa ~/.ssh/config
 

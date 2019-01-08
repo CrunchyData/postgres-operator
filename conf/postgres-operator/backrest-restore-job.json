@@ -5,9 +5,11 @@
                 "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
-                    "pgo-backrest": "true",
+                    "pgo-backrest-restore": "true",
 		    "pgbackup": "true",
-                    "pg-cluster": "{{.ClusterName}}"
+                    "pg-cluster": "{{.ClusterName}}",
+                    "backrest-restore-to-pvc": "{{.ToClusterPVCName}}",
+                    "workflowid": "{{.WorkflowID}}"
                 }
     },
     "spec": {

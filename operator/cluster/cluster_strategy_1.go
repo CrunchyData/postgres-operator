@@ -104,18 +104,18 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		//xlogdir = "true"
 	}
 
-	//backrestRepoTarget := cl.Spec.Name
-	//backrestPVCName := ""
+	backrestRepoTarget := cl.Spec.Name
+	backrestPVCName := ""
 	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		//	backrestPVCName = cl.Spec.Name + "-backrestrepo"
+		backrestPVCName = cl.Spec.Name + "-backrestrepo"
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
 		xlogdir = "false"
 		if cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] != "" {
-			//backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
-			//backrestPVCName = backrestRepoTarget + "-backrestrepo"
+			backrestRepoTarget = cl.Spec.UserLabels[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+			backrestPVCName = backrestRepoTarget + "-backrestrepo"
 		} else {
 			err = backrest.CreateRepoDeployment(clientset, namespace, cl)
 			if err != nil {
@@ -149,18 +149,18 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		ArchiveMode:             archiveMode,
 		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
 		XLOGDir:                 xlogdir,
-		//BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:     archiveTimeout,
-		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
-		RootSecretName:     cl.Spec.RootSecretName,
-		PrimarySecretName:  cl.Spec.PrimarySecretName,
-		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ContainerResources: operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
-		ConfVolume:         GetConfVolume(clientset, cl, namespace),
-		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
-		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestEnvVars:  GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name),
+		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:          archiveTimeout,
+		SecurityContext:         util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:          cl.Spec.RootSecretName,
+		PrimarySecretName:       cl.Spec.PrimarySecretName,
+		UserSecretName:          cl.Spec.UserSecretName,
+		NodeSelector:            GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ConfVolume:              GetConfVolume(clientset, cl, namespace),
+		CollectAddon:            GetCollectAddon(clientset, namespace, &cl.Spec),
+		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cl.Spec),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -483,9 +483,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		//	xlogdir = "true"
 	}
 
-	//backrestPVCName := ""
+	backrestPVCName := ""
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		//backrestPVCName = replica.Spec.Name + "-backrestrepo"
+		backrestPVCName = replica.Spec.Name + "-backrestrepo"
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
@@ -526,21 +526,21 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		ArchiveMode:             archiveMode,
 		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
 		XLOGDir:                 xlogdir,
-		//BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
-		ArchiveTimeout:     archiveTimeout,
-		Replicas:           "1",
-		ConfVolume:         GetConfVolume(clientset, cluster, namespace),
-		DeploymentLabels:   GetLabelsFromMap(replicaLabels),
-		PodLabels:          GetLabelsFromMap(replicaLabels),
-		SecurityContext:    util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:     cluster.Spec.RootSecretName,
-		PrimarySecretName:  cluster.Spec.PrimarySecretName,
-		UserSecretName:     cluster.Spec.UserSecretName,
-		ContainerResources: operator.GetContainerResourcesJSON(&cs),
-		NodeSelector:       GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
-		CollectAddon:       GetCollectAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:        GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:  GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name),
+		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:          archiveTimeout,
+		Replicas:                "1",
+		ConfVolume:              GetConfVolume(clientset, cluster, namespace),
+		DeploymentLabels:        GetLabelsFromMap(replicaLabels),
+		PodLabels:               GetLabelsFromMap(replicaLabels),
+		SecurityContext:         util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:          cluster.Spec.RootSecretName,
+		PrimarySecretName:       cluster.Spec.PrimarySecretName,
+		UserSecretName:          cluster.Spec.UserSecretName,
+		ContainerResources:      operator.GetContainerResourcesJSON(&cs),
+		NodeSelector:            GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		PgbackrestEnvVars:       GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -624,8 +624,8 @@ func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
 			PgbackrestStanza:    "db",
-			PgbackrestRepo1Host: clusterName + "-backrest-repo",
-			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-repo",
+			PgbackrestRepo1Host: clusterName + "-backrest-shared-repo",
+			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-shared-repo",
 			PgbackrestDBPath:    "/pgdata/" + depName,
 		}
 

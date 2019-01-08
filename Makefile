@@ -119,13 +119,13 @@ rmdataimage:
 all:
 	make operatorimage
 	make apiserverimage
-	make lsimage
-	make loadimage
-	make pgo
-	make rmdataimage
+	make pgo-backrest-repo-image
 	make pgo-backrest-image
 	make pgo-backrest-restore-image
-	make pgo-backrest-repo-image
+	make pgo
+	make lsimage
+	make loadimage
+	make rmdataimage
 push:
 	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)

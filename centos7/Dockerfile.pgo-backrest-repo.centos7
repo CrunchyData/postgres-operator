@@ -19,9 +19,11 @@ RUN yum -y update && \
 yum -y install psmisc openssh-server openssh-clients pgbackrest hostname pgocps-ng && \
 yum -y clean all
 
-RUN useradd pgbackrest
+RUN groupadd pgbackrest -g 2000 && useradd pgbackrest -u 2000 -g 2000
 ADD bin/pgo-backrest-repo/pgo-backrest-repo.sh /usr/local/bin
-RUN chmod +x /usr/local/bin/pgo-backrest-repo.sh
+RUN chmod +x /usr/local/bin/pgo-backrest-repo.sh && mkdir -p /opt/cpm/bin && chown -R pgbackrest:pgbackrest /opt/cpm
+
+ADD bin/uid_pgbackrest.sh /opt/cpm/bin
 
 VOLUME ["/sshd", "/backrestrepo" ]
 
