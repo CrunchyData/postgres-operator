@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.1-2.3.0-rc1
+  CCPImageTag:  rhel7-11.1-2.3.0-rc2
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -22,7 +22,7 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: nfsstorage
-ArchiveStorage: archivestorage
+XlogStorage: xlogstorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
 BackrestStorage: backreststorage
@@ -47,7 +47,7 @@ Storage:
     MatchLabels: crunchyzone=red
     StorageType:  create
     SupplementalGroups:  65534
-  archivestorage:
+  xlogstorage:
     AccessMode:  ReadWriteMany
     Size:  800M
     StorageType:  create
@@ -82,4 +82,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0-rc3
+  COImageTag:  rhel7-3.5.0-rc3
