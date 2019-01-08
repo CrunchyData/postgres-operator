@@ -18,13 +18,11 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	//"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	//"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
@@ -64,6 +62,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	var err error
 	resp := msgs.LoadResponse{}
 	resp.Status.Code = msgs.Ok
+	resp.Results = make([]string, 0)
 	resp.Status.Msg = ""
 
 	LoadConfigTemplate := loadJobTemplateFields{}
@@ -142,6 +141,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	}
 	log.Debugf("policies to apply before loading are %v len=%d", request.Policies, len(policies))
 
+	var jobName string
 	for _, arg := range args {
 		for _, p := range policies {
 			log.Debugf("applying policy %s to %s", p, arg)
@@ -161,21 +161,23 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 		}
 
 		//create the load job for this cluster
-		log.Debugf("created load for %s", arg)
-		err = createJob(arg, &LoadConfigTemplate)
+		log.Debugf("creating load job for %s", arg)
+		jobName, err = createJob(arg, &LoadConfigTemplate)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
+		resp.Results = append(resp.Results, "created Job "+jobName)
 
 	}
 
+	log.Debugf("on return load results is %v", resp.Results)
 	return resp
 
 }
 
-func createJob(clusterName string, template *loadJobTemplateFields) error {
+func createJob(clusterName string, template *loadJobTemplateFields) (string, error) {
 	var err error
 
 	randStr := operutil.GenerateRandString(3)
@@ -184,14 +186,14 @@ func createJob(clusterName string, template *loadJobTemplateFields) error {
 	template.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
 	if err != nil {
 		log.Error(err)
-		return err
+		return "", err
 	}
 
 	var doc2 bytes.Buffer
 	err = apiserver.JobTemplate.Execute(&doc2, template)
 	if err != nil {
 		log.Error(err.Error())
-		return err
+		return "", err
 	}
 	jobDocString := doc2.String()
 	log.Debug(jobDocString)
@@ -200,11 +202,12 @@ func createJob(clusterName string, template *loadJobTemplateFields) error {
 	err = json.Unmarshal(doc2.Bytes(), &newjob)
 	if err != nil {
 		log.Error("error unmarshalling json into Job " + err.Error())
-		return err
+		return "", err
 	}
 
-	err = kubeapi.CreateJob(apiserver.Clientset, &newjob, apiserver.Namespace)
+	var jobName string
+	jobName, err = kubeapi.CreateJob(apiserver.Clientset, &newjob, apiserver.Namespace)
 
-	return err
+	return jobName, err
 
 }

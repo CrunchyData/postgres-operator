@@ -71,4 +71,4 @@ else
 	$CO_CMD $NS create -f $DIR/service.json
 fi
 
-expenv -f $DIR/scheduler.json | $CO_CMD $NS create -f -
+#expenv -f $DIR/scheduler.json | $CO_CMD $NS create -f -

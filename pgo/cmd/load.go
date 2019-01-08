@@ -100,8 +100,8 @@ func createLoad(args []string) {
 		os.Exit(2)
 	}
 
-	for value := range response.Results {
-		fmt.Println(value)
+	for i := 0; i < len(response.Results); i++ {
+		fmt.Println(response.Results[0])
 	}
 
 }
