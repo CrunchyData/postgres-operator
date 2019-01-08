@@ -165,6 +165,16 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	}
 
 	depToDelete := depList.Items[0]
+
+	//delete the primary service as it will be recreated when
+	//the new primary is created
+
+	err = kubeapi.DeleteService(clientset, clusterName, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not delete primary service %s", clusterName)
+		return
+	}
+
 	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
 	if err != nil {
 		log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
@@ -173,6 +183,11 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
 
 	//create new deployment based on restored pvc
+	//and include the workflowID in that new pgcluster as
+	//a breakcrumb to keep the workflow going after the
+	//new primary pod is Ready
+	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
+
 	log.Debugf("restore workflow: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 	cluster.Spec.Name = restoreToName
 	err = kubeapi.Createpgcluster(restclient, &cluster, namespace)
@@ -202,5 +217,7 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 		log.Errorf("restore workflow error: could not update workflow %s", workflowID)
 		return
 	}
+
+	//update backrest repo with new data path
 
 }
