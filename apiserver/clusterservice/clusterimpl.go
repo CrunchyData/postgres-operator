@@ -251,7 +251,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 func getServices(cluster *crv1.Pgcluster) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
-	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
