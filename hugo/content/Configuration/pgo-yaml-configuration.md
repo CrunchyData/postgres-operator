@@ -3,7 +3,7 @@
 title: "PGO YAML"
 date: {docdate}
 draft: false
-weight: 30
+weight: 31
 ---
 
 # pgo.yaml Configuration
