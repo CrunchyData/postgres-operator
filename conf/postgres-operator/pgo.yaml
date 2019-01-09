@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  rhel7-11.1-2.3.0-rc2
+  CCPImageTag:  rhel7-11.1-2.3.0-rc3
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -78,9 +78,9 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   AutofailSleepSeconds:  9
-  PreferredFailoverNode:  speed=fast
+  PreferredFailoverNode:  
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  rhel7-3.5.0-rc3
+  COImageTag:  rhel7-3.5.0-rc4
