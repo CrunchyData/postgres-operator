@@ -128,6 +128,21 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 
 	log.Debugf("query failover called for %s", name)
 
+	var nodes []string
+
+	if apiserver.Pgo.Pgo.PreferredFailoverNode != "" {
+		log.Debug("PreferredFailoverNode is set to %s", apiserver.Pgo.Pgo.PreferredFailoverNode)
+		nodes, err = util.GetPreferredNodes(apiserver.Clientset, apiserver.Pgo.Pgo.PreferredFailoverNode, apiserver.Namespace)
+		if err != nil {
+			log.Error("error getting preferred nodes " + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	} else {
+		log.Debug("PreferredFailoverNode is not set ")
+	}
+
 	//get pods using selector service-name=clusterName-replica
 
 	selector := util.LABEL_SERVICE_NAME + "=" + name + "-replica"
@@ -174,9 +189,12 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 		target := msgs.FailoverTargetSpec{}
 		target.Name = dep.Name
 
-		target.ReceiveLocation, target.ReplayLocation = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace)
+		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace, apiserver.Pgo.Cluster.Port)
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
+		if preferredNode(nodes, target.Node) {
+			target.PreferredNode = true
+		}
 		//get the rep status
 		resp.Targets = append(resp.Targets, target)
 	}
@@ -209,4 +227,12 @@ func validateDeploymentName(deployName, clusterName string) (*v1beta1.Deployment
 
 	return deployment, err
 
+}
+func preferredNode(nodes []string, targetNode string) bool {
+	for _, n := range nodes {
+		if n == targetNode {
+			return true
+		}
+	}
+	return false
 }

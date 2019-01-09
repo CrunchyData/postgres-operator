@@ -78,6 +78,7 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   AutofailSleepSeconds:  9
+  PreferredFailoverNode:  speed=fast
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json

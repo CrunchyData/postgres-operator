@@ -22,12 +22,27 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// GetNodes gets a list of Nodes
-func GetNodes(clientset *kubernetes.Clientset) (*v1.NodeList, error) {
+// GetNodes gets a list of all Nodes
+func GetAllNodes(clientset *kubernetes.Clientset) (*v1.NodeList, error) {
 	nodes, err := clientset.CoreV1().Nodes().List(meta_v1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 	}
 	return nodes, err
 
+}
+
+// GetNodes gets a list of Nodes by selector
+func GetNodes(clientset *kubernetes.Clientset, selector, namespace string) (*v1.NodeList, error) {
+
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	nodes, err := clientset.CoreV1().Nodes().List(lo)
+	if err != nil {
+		log.Error(err)
+		log.Error("error getting nodes selector=[" + selector + "]")
+		return nodes, err
+	}
+
+	return nodes, err
 }
