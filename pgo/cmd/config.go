@@ -112,6 +112,7 @@ func showConfig(args []string) {
 
 	fmt.Printf("%s\n", "Pgo:")
 	fmt.Printf("%s%s\n", "  AutofailSleepSeconds:  ", pgo.Pgo.AutofailSleepSeconds)
+	fmt.Printf("%s%s\n", "  PreferredFailoverNode:  ", pgo.Pgo.PreferredFailoverNode)
 	fmt.Printf("%s%t\n", "  Audit:  ", pgo.Pgo.Audit)
 	fmt.Printf("%s%s\n", "  LSPVCTemplate:  ", pgo.Pgo.LSPVCTemplate)
 	fmt.Printf("%s%s\n", "  LoadTemplate:  ", pgo.Pgo.LoadTemplate)

@@ -218,7 +218,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		ClusterName:        clusterName,
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
-		Port:               "5432",
+		Port:               operator.Pgo.Cluster.Port,
 		SecretsName:        secretName,
 		ContainerResources: "",
 	}
@@ -262,7 +262,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		svcFields.Name = pgbouncerName
 		svcFields.ServiceName = pgbouncerName
 		svcFields.ClusterName = clusterName
-		svcFields.Port = "5432"
+		svcFields.Port = operator.Pgo.Cluster.Port
 
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {

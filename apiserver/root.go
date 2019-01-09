@@ -413,7 +413,7 @@ func IsValidNodeLabel(key, value string) (bool, bool, error) {
 	keyValid := false
 	valueValid := false
 
-	nodes, err := kubeapi.GetNodes(Clientset)
+	nodes, err := kubeapi.GetAllNodes(Clientset)
 	if err != nil {
 		return false, false, err
 	}

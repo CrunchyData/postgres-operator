@@ -83,7 +83,7 @@ func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RE
 		cl := clusterList.Items[i]
 		clusterName := cl.Name
 		selector := "service-name=" + clusterName
-		pods, err := kubeapi.GetPods(clientset, selector, "demo")
+		pods, err := kubeapi.GetPods(clientset, selector, ns)
 		if err != nil {
 			log.Error(err)
 			log.Error("could not InitializeAutoFailover")
@@ -325,23 +325,68 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	//at this point readyDeps should hold all the Ready deployments
 	//we look for the most up to date and return that name
 
-	var value uint64
-	value = 0
-	var selectedDeployment v1beta1.Deployment
-
+	//next get the ready deployments replication status
+	readyTargets := make([]util.ReplicationInfo, 0)
 	for _, d := range readyDeps {
 		target := util.ReplicationInfo{}
-		target.ReceiveLocation, target.ReplayLocation = util.GetRepStatus(restclient, clientset, &d, ns)
+		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(restclient, clientset, &d, ns, operator.Pgo.Cluster.Port)
+		target.DeploymentName = d.Name
+		readyTargets = append(readyTargets, target)
 		log.Debug("autofail receive=%d replay=%d dep=%s\n", target.ReceiveLocation, target.ReplayLocation, d.Name)
-		if target.ReceiveLocation > value {
-			value = target.ReceiveLocation
-			selectedDeployment = d
-		}
-
 	}
 
-	log.Debugf("autofail logic selected deployment is %s receive=%d\n", selectedDeployment.Name, value)
-	return selectedDeployment.Name, err
+	//next see which one is the most up to date, this is the case
+	//when pgo.yaml PreferredFailoverNode is not specified or no nodes
+	//are found that satisfy that selector
+	var value uint64
+	value = 0
+	var selectedDeploymentName string
+	for _, t := range readyTargets {
+		if t.ReceiveLocation > value {
+			value = t.ReceiveLocation
+			selectedDeploymentName = t.DeploymentName
+		}
+	}
+
+	//this is the case when PreferredFailoverNode is specified
+	//we use that selector to match targets to preferred nodes if
+	//a match is found and all other target selection criteria is met
+	//that being (pod is ready) and (rep status is the greatest value)
+	var nodes []string
+	if operator.Pgo.Pgo.PreferredFailoverNode != "" {
+		log.Debug("autofail PreferredFailoverNode is set to %s", operator.Pgo.Pgo.PreferredFailoverNode)
+		nodes, err = util.GetPreferredNodes(clientset, operator.Pgo.Pgo.PreferredFailoverNode, ns)
+		if err != nil {
+			log.Errorf("autofail error: ", err.Error())
+			return "", err
+		}
+		log.Debugf("autofail nodes len is %d", len(nodes))
+		if len(nodes) == 0 {
+			log.Debugf("autofail no nodes were found to match the PreferredFailoverNode selector so using default target selection")
+		} else {
+			//get a list of targets that equal the greatest value
+			//this is the case when multiple replicas are at the
+			//same replication status
+			equalTargets := make([]util.ReplicationInfo, 0)
+			for _, t := range readyTargets {
+				if t.ReceiveLocation == value {
+					equalTargets = append(equalTargets, t)
+				}
+			}
+			for _, e := range equalTargets {
+				for _, n := range nodes {
+					if n == e.Node {
+						selectedDeploymentName = e.DeploymentName
+						log.Debugf("autofail %s deployment on node %s matched the preferred node label %s", e.DeploymentName, e.Node, operator.Pgo.Pgo.PreferredFailoverNode)
+					}
+				}
+
+			}
+		}
+	}
+
+	log.Debugf("autofail logic selected deployment is %s receive=%d\n", selectedDeploymentName, value)
+	return selectedDeploymentName, err
 
 }
 

@@ -21,6 +21,7 @@ type FailoverTargetSpec struct {
 	Name            string
 	ReadyStatus     string
 	Node            string
+	PreferredNode   bool
 	RepStatus       string
 	ReceiveLocation uint64
 	ReplayLocation  uint64
