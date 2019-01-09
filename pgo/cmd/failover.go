@@ -129,5 +129,10 @@ func queryFailover(args []string) {
 }
 
 func printTarget(target msgs.FailoverTargetSpec) {
-	fmt.Printf("\t%s (%s) (%s) ReceiveLoc (%d) ReplayLoc (%d)\n", target.Name, target.ReadyStatus, target.Node, target.ReceiveLocation, target.ReplayLocation)
+	var preferredNode string
+
+	if target.PreferredNode {
+		preferredNode = "(preferred node)"
+	}
+	fmt.Printf("\t%s (%s) (%s) %s ReceiveLoc (%d) ReplayLoc (%d)\n", target.Name, target.ReadyStatus, target.Node, preferredNode, target.ReceiveLocation, target.ReplayLocation)
 }

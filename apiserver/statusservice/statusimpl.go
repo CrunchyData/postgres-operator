@@ -171,7 +171,7 @@ func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeC
 func getNodes() []msgs.NodeInfo {
 	result := make([]msgs.NodeInfo, 0)
 
-	nodes, err := kubeapi.GetNodes(apiserver.Clientset)
+	nodes, err := kubeapi.GetAllNodes(apiserver.Clientset)
 	if err != nil {
 		log.Error(err)
 		return result

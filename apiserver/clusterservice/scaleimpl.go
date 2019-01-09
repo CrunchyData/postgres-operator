@@ -251,7 +251,7 @@ func ScaleQuery(name string) msgs.ScaleQueryResponse {
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
 		//get the rep status
-		receiveLocation, replayLocation := util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace)
+		receiveLocation, replayLocation, _ := util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace, apiserver.Pgo.Cluster.Port)
 
 		target.RepStatus = fmt.Sprintf("receive %d replay %d", receiveLocation, replayLocation)
 		response.Targets = append(response.Targets, target)

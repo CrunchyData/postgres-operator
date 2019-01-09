@@ -821,7 +821,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec.Name = name
 	spec.ClusterName = name
-	spec.Port = "5432"
+	spec.Port = apiserver.Pgo.Cluster.Port
 	spec.SecretFrom = ""
 	spec.BackupPath = ""
 	spec.BackupPVCName = ""

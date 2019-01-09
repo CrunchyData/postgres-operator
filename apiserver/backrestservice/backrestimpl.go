@@ -238,7 +238,8 @@ func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
 	primaryReady := false
 
 	//make sure the primary pod is in the ready state
-	selector = util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	//selector = util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
