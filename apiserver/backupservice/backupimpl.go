@@ -231,7 +231,7 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest) (*crv1.Pgba
 	spec.BackupStatus = "initial"
 	spec.BackupHost = "basic"
 	spec.BackupUserSecret = "primaryuser"
-	spec.BackupPort = "5432"
+	spec.BackupPort = apiserver.Pgo.Cluster.Port
 	spec.BackupOpts = request.BackupOpts
 
 	cluster := crv1.Pgcluster{}
