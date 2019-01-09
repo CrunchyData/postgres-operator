@@ -9,7 +9,7 @@ weight: 60
 
 # Developing
 
-The Operator is an open source project hosted on github (https://github.com/crunchydata/postgres-operator)
+The [Postgres-Operator](https://github.com/crunchydata/postgres-operator) is an open source project hosted on github.
 
 Developers that wish to build the Operator from source or contribute to the project via pull requests would set up a development environment as follows:
 
@@ -17,22 +17,22 @@ Developers that wish to build the Operator from source or contribute to the proj
 We use either Openshift Container Platform or kubeadm to install our development clusters,  we currently develop and test on CentOS and RHEL hosts.  Each of those installation methods are documented on the respective project's sites.
 
 ## Create a Local Development Host
-We currently build on RHEL variants like CentoOS or RHEL, but others are possible but we don't support other Linux variants currently.
+We currently build on CentoOS and RHEL, others are possible however we don't support other Linux variants currently.
 
 ## Perform Manual Install
 You can follow the manual installation method described in this documentation to make sure you can deploy from your local development host to your Kubernetes cluster.
 
 ## Build Locally
-You can now build from source the Operator locally on your development host.  Here are some steps to follow:
+You can now build the Operator from source on local on your development host.  Here are some steps to follow:
 
 ### Get Build Dependencies
 
     make setup
 
-That target should install a golang compiler, and any other build dependencies.
+That target will install a golang compiler, and any other build dependencies.
 
 ### Compile
-You can build all the Operator binaries and Docker images by running:
+You will build all the Operator binaries and Docker images by running:
 
     make all
 

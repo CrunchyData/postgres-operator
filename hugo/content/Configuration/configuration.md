@@ -15,7 +15,7 @@ The Operator is configured with a collection of files found in the *conf* direct
 The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.
 
 ## conf/postgres-operator/pgo.yaml
-The *pgo.yaml" file sets many different Operator configuration settings and is described in the [pgo.yaml description]({{< ref "pgo-yaml-configuration.md" >}}) documentation section.
+The *pgo.yaml* file sets many different Operator configuration settings and is described in the [pgo.yaml configuration]({{< ref "pgo-yaml-configuration.md" >}}) documentation section.
 
 
 The *pgo.yaml* file is deployed along with the other Operator configuration files when you run:
@@ -34,10 +34,3 @@ As with the other Operator templates, adminstrators can make custom changes to t
 Security configuration is described in the [Security]({{< ref "security.md" >}}) section of this documentation.
 
 
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbLTQ1NDE1MTIzOSwtNTMzNjE2NDQsLTE5OT
-czNjEyNDcsLTEwODY5Nzc3MjMsLTE2NjU5OTY1MjYsMTExNTEw
-NDc4Niw5MTg1MDMzMDFdfQ==
--->
