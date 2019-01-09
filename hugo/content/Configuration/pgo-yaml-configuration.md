@@ -34,7 +34,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
-|AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.
+|AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in *pgo.yaml* is overrode with this command line flag if specified by a user.
 
 ## Storage
 | Setting|Definition  |
@@ -180,7 +180,7 @@ If you do not specify *MatchLabels* in the storage configuration, then no match 
 Example PV creation scripts are provided that add labels to a set of PVs and can be used for testing:  `$COROOT/pv/create-pv-nfs-labels.sh`
  in that example, a label of **crunchyzone=red** is set on a set of PVs to test with.
 
-The pgo.yaml includes a storage config named **nfsstoragered** that when used will demonstrate the label matching.  This feature allows you to support
+The *pgo.yaml* includes a storage config named **nfsstoragered** that when used will demonstrate the label matching.  This feature allows you to support
 n-number of NFS storage configurations and supports spreading a PG cluster across different NFS storage configurations.
 
 ## Container Resources Details

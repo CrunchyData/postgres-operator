@@ -122,6 +122,7 @@ Users can configure the Operator to replace a failed primary with
 a new replica if they want that behavior.
 
 The fail-over logic includes:
+
  * deletion of the failed primary Deployment
  * pick the best replica to become the new primary
  * label change of the targeted Replica to match the primary Service
@@ -129,14 +130,14 @@ The fail-over logic includes:
 
 ## pgbackrest Integration
 
-The Operator integrates various features of the pgbackrest (https://pgbackrest.org) backup and restore project.  A key component added to the Operator
+The Operator integrates various features of the [pgbackrest backup and restore project](https://pgbackrest.org).  A key component added to the Operator
 is the *pgo-backrest-repo* container, this container acts as a pgbackrest
 remote repository for the Postgres cluster to use for storing archive
 files and backups.
 
 The following diagrams depicts some of the integration features:
 
-![alt text](../../static/operator-backrest-integration.png "Logo Title Text 1")
+![alt text](/operator-backrest-integration.png "Operator Backrest Integration")
 
 In this diagram, starting from left to right we see the following:
 

@@ -56,7 +56,7 @@ When you install the Operator you must make choices as to what kind of storage t
 Here are some common examples of configuration changes most installers would make:
 
 ### Storage
-Inside *conf/postgresql-operator/pgo.yaml" there are various storage configurations defined.  
+Inside `conf/postgresql-operator/pgo.yaml` there are various storage configurations defined.  
 
     PrimaryStorage: nfsstorage
     ArchiveStorage: nfsstorage
@@ -95,9 +95,9 @@ you wanted to use HostPath for testing:
 ./pv/create-pv.sh
 ```
 
-Other settings in *pgo.yaml* are described in the *pgo.yaml Configuration" section of the documentation.
+Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
 
- ## Operator Security
+## Operator Security
  The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator's REST API.
 
 There is a default set of Roles and Users defined respectively in the following files:
@@ -210,14 +210,3 @@ There is a *quickstart* script found in the following location which seeks to au
 This script is a bash script and is intended to run on Linux hosts.  The script will ask you questions related to your configuration and the proceed to execute commands to cause the Operator to be deployed.  The quickstart script is meant for very simple deployments and to test the Operator and would not be typically used to maintain an Operator deployment.
 
 
-
-
-
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEzMTM0MTYzMzIsMTE3MDQ2NDA5MCwxND
-E5MDE5NzU4LC0xOTI5MjU4MDEzLDcyNDc0MDcwMiwtNDUzMjU0
-OTUxLC04Mzc1MjM0NTIsMTM1ODY0ODc4OSwxNzI5MTE4MDUsND
-U0ODEyNjAxXX0=
--->

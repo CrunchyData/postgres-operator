@@ -21,6 +21,6 @@ removes the ingest related API endpoints
 PG clusters will need to be updated to specify them as a primary or replica using the new service-name labeling scheme.  A sample upgrade script is included in the bin directory name upgrade-to-35.sh, you would run this script
 to upgrade any existing clusters to the new labeling scheme whereby you can run a failover on existing PG clusters deployed prior to 3.5.0.
  * the autofail label was moved from deployments and pods to just the pgcluster CRD to support autofail toggling
- * the storage configurations in pgo.yaml support the MatchLabels attribute for NFS storage, this will allow users to have more than a single NFS backend, when set, this label (key=value) will be used to match the labels on PVs when a PVC is created.
+ * the storage configurations in *pgo.yaml* support the MatchLabels attribute for NFS storage, this will allow users to have more than a single NFS backend, when set, this label (key=value) will be used to match the labels on PVs when a PVC is created.
  * the UpdateCluster permission was added to the sample pgorole file to support the new pgo update CLI command, and also added to the pgoperm file
 
