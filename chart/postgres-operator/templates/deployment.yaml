@@ -70,3 +70,4 @@ spec:
         - name: pgo-auth-secret
           secret:
             secretName: {{ template "postgres-operator.fullname" . }}-apiserver
+            defaultMode: 511

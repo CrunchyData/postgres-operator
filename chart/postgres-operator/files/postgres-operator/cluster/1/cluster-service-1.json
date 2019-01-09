@@ -30,6 +30,12 @@
     "targetPort": 10000,
     "nodePort": 0
     }, {
+    "name": "sshd",
+    "protocol": "TCP",
+    "port": 2022,
+    "targetPort": 2022,
+    "nodePort": 0
+    }, {
     "name": "postgres-exporter",
     "protocol": "TCP",
     "port": 9187,
@@ -38,7 +44,7 @@
     }
     ],
         "selector": {
-            "name": "{{.Name}}"
+            "service-name": "{{.ServiceName}}"
         },
         "type": "{{.ServiceType}}",
         "sessionAffinity": "None"

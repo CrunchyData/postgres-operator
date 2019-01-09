@@ -19,3 +19,4 @@ spec:
   selector:
     app: {{ template "postgres-operator.name" . }}
     release: {{ .Release.Name }}
+  sessionAffinity: None

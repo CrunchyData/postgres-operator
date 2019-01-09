@@ -202,6 +202,12 @@ The Operator Helm chart is located in the following location:
 
 Modify the Helm templates to suit your requirements.  The Operator templates in the *conf* directory are essentially the same as found in the Helm chart folder.  Adjust as mentioned above to customize the installation.
 
+Also, a pre-installation step is currently required prior to installing the Operator Helm chart.  Specifically, the following script must be executed prior to installing the chart:
+
+    ./postgres-operator/chart/gen-pgo-keys.sh
+
+This script will generate any keys and certificates required to deploy the Operator, and will then place them in the proper directory within the Helm chart.
+
 ## Quickstart Script
 There is a *quickstart* script found in the following location which seeks to automate a simple Operator deployment onto an existing Kubernetes installation:
 

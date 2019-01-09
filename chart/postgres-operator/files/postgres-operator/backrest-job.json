@@ -41,6 +41,9 @@
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
                     }, {
+                        "name": "PITR_TARGET",
+                        "value": "{{.PITRTarget}}"
+                    }, {
                         "name": "PODNAME",
                         "value": "{{.PodName}}"
                     }, {
