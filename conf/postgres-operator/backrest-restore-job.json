@@ -6,8 +6,8 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest-restore": "true",
-		    "pgbackup": "true",
                     "pg-cluster": "{{.ClusterName}}",
+		    "pgo-backrest-restore": "true",
                     "backrest-restore-to-pvc": "{{.ToClusterPVCName}}",
                     "workflowid": "{{.WorkflowID}}"
                 }
@@ -20,7 +20,7 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
-		    "pgbackup": "true",
+		    "pgo-backrest-restore": "true",
                     "pg-cluster": "{{.ClusterName}}"
                 }
             },

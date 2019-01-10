@@ -5,6 +5,8 @@ set -e -u
 REGISTRY='us.gcr.io/container-suite'
 VERSION=$CO_IMAGE_TAG
 IMAGES=(
+    pgo-backrest-repo
+    pgo-backrest-restore
     postgres-operator
     pgo-apiserver
     pgo-lspvc

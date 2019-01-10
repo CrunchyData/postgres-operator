@@ -18,14 +18,17 @@ package backrest
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	//"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/extensions/v1beta1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
@@ -49,94 +52,17 @@ type restorejobTemplateFields struct {
 }
 
 // Restore ...
-func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
-	//use the storage config from pgo.yaml for Primary
-	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
-
-	//create the "to-cluster" PVC to hold the new data
-	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
-	pgstoragespec := crv1.PgStorageSpec{}
-	pgstoragespec.AccessMode = storage.AccessMode
-	pgstoragespec.Size = storage.Size
-	pgstoragespec.StorageType = storage.StorageType
-	pgstoragespec.StorageClass = storage.StorageClass
-	pgstoragespec.Fsgroup = storage.Fsgroup
-	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
-	pgstoragespec.MatchLabels = storage.MatchLabels
-	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
-
-	_, found, err := kubeapi.GetPVC(clientset, pvcName, namespace)
-	if !found {
-		log.Debugf("pvc %s not found, will create as part of restore", pvcName)
-		//delete the pvc if it already exists
-		//kubeapi.DeletePVC(clientset, pvcName, namespace)
-
-		//create the pvc
-		err := pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
-		if err != nil {
-			log.Error(err.Error())
-			return
-		}
-	} else {
-		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
-	}
-
-	//delete the job if it exists from a prior run
-	kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
-	//add a small sleep, this is due to race condition in delete propagation
-	time.Sleep(time.Second * 3)
-
-	//create the Job to run the backrest restore container
-
-	jobFields := restorejobTemplateFields{
-		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
-		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		ToClusterPVCName:    pvcName,
-		WorkflowID:          task.Spec.Parameters[crv1.PgtaskWorkflowID],
-		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
-		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
-		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:          operator.Pgo.Pgo.COImageTag,
-		PgbackrestStanza:    task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
-		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
-	}
-
-	var doc2 bytes.Buffer
-	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
-
-	}
-
-	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
-		log.Error("error unmarshalling json into Job " + err.Error())
-		return
-	}
-
-	kubeapi.CreateJob(clientset, &newjob, namespace)
-
-}
-
-func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace, workflowID, restoreToName string) {
-	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
-	log.Debugf("restore workflow: taskName is %s", taskName)
+	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+	log.Debugf("restore workflow: started for cluster %s", clusterName)
+	//pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
 
 	cluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
 	if !found || err != nil {
-		log.Errorf("restore workflow error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
+		log.Errorf("restore workflow error: could not find a pgcluster in Restore Workflow for %s", clusterName)
 		return
 	}
 
@@ -151,8 +77,20 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 		}
 	}
 
+	//use the storage config from pgo.yaml for Primary
+	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+
+	//create the "to-cluster" PVC to hold the new data
+	var pvcName string
+	pvcName, err = createPVC(restclient, namespace, clientset, task)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Debugf("restore workflow: created pvc %s for cluster %s", pvcName, clusterName)
 	//delete current primary deployment
-	selector := util.LABEL_SERVICE_NAME + clusterName
+	selector := util.LABEL_SERVICE_NAME + "=" + clusterName
 	var depList *v1beta1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if err != nil {
@@ -182,42 +120,257 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	}
 	log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
 
+	//update backrest repo with new data path
+	targetDepName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+	err = UpdateDBPath(clientset, &cluster, targetDepName, namespace)
+	if err != nil {
+		log.Errorf("restore workflow error: could not bounce repo with new db path")
+		return
+	}
+	log.Debugf("restore workflow: bounced backrest-repo with new db path")
+
+	//since the restore 'to' name is dynamically generated we shouldn't
+	//need to delete the previous job
+
+	//delete the job if it exists from a prior run
+	//kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
+	//add a small sleep, this is due to race condition in delete propagation
+	//time.Sleep(time.Second * 3)
+
+	//create the Job to run the backrest restore container
+
+	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
+	jobFields := restorejobTemplateFields{
+		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		ToClusterPVCName:    pvcName,
+		WorkflowID:          workflowID,
+		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
+		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
+		COImageTag:          operator.Pgo.Pgo.COImageTag,
+		PgbackrestStanza:    task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
+	}
+
+	var doc2 bytes.Buffer
+	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
+	if err != nil {
+		log.Error(err.Error())
+		log.Error("restore workflow: error executing job template")
+		return
+	}
+
+	if operator.CRUNCHY_DEBUG {
+		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
+	}
+
+	newjob := v1batch.Job{}
+	err = json.Unmarshal(doc2.Bytes(), &newjob)
+	if err != nil {
+		log.Error("restore workflow: error unmarshalling json into Job " + err.Error())
+		return
+	}
+
+	var jobName string
+	jobName, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	if err != nil {
+		log.Error(err)
+		log.Error("restore workflow: error in creating restore job")
+		return
+	}
+	log.Debugf("restore workflow: restore job %s created", jobName)
+
+	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
+	if err != nil {
+		log.Error(err)
+		log.Error("restore workflow: error in updating workflow status")
+	}
+
+}
+
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace, workflowID, restoreToName string) {
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
+
+	cluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Errorf("restore workflow phase 2 error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
+		return
+	}
+
 	//create new deployment based on restored pvc
 	//and include the workflowID in that new pgcluster as
 	//a breakcrumb to keep the workflow going after the
 	//new primary pod is Ready
 	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
 
-	log.Debugf("restore workflow: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
+	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 	cluster.Spec.Name = restoreToName
 	err = kubeapi.Createpgcluster(restclient, &cluster, namespace)
 	if err != nil {
-		log.Errorf("restore workflow error: could not create primary %s", cluster.Name)
+		log.Errorf("restore workflow phase 2 error: could not create primary %s", cluster.Name)
 		return
 	}
 
 	//update workflow
+	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus)
+
+}
+
+func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status string) error {
+	//update workflow
 	log.Debugf("restore workflow: update workflow %s", workflowID)
-	selector = crv1.PgtaskWorkflowID + "=" + workflowID
+	selector := crv1.PgtaskWorkflowID + "=" + workflowID
 	taskList := crv1.PgtaskList{}
-	err = kubeapi.GetpgtasksBySelector(restclient, &taskList, selector, namespace)
+	err := kubeapi.GetpgtasksBySelector(restclient, &taskList, selector, namespace)
 	if err != nil {
 		log.Errorf("restore workflow error: could not get workflow %s", workflowID)
-		return
+		return err
 	}
 	if len(taskList.Items) != 1 {
 		log.Errorf("restore workflow error: workflow %s not found", workflowID)
-		return
+		return errors.New("restore workflow error: workflow not found")
 	}
 
 	task := taskList.Items[0]
-	task.Spec.Parameters[crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	task.Spec.Parameters[status] = time.Now().Format("2006-01-02.15.04.05")
 	err = kubeapi.Updatepgtask(restclient, &task, task.Name, namespace)
 	if err != nil {
-		log.Errorf("restore workflow error: could not update workflow %s", workflowID)
-		return
+		log.Errorf("restore workflow error: could not update workflow %s to status %s", workflowID, status)
+		return err
+	}
+	return err
+}
+
+func createPVC(restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
+	var err error
+	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+
+	//use the storage config from pgo.yaml for Primary
+	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+
+	//create the "to-cluster" PVC to hold the new data
+	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+	pgstoragespec := crv1.PgStorageSpec{}
+	pgstoragespec.AccessMode = storage.AccessMode
+	pgstoragespec.Size = storage.Size
+	pgstoragespec.StorageType = storage.StorageType
+	pgstoragespec.StorageClass = storage.StorageClass
+	pgstoragespec.Fsgroup = storage.Fsgroup
+	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
+	pgstoragespec.MatchLabels = storage.MatchLabels
+
+	var found bool
+	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
+	if !found {
+		log.Debugf("pvc %s not found, will create as part of restore", pvcName)
+		//delete the pvc if it already exists
+		//kubeapi.DeletePVC(clientset, pvcName, namespace)
+
+		//create the pvc
+		err = pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
+		if err != nil {
+			log.Error(err.Error())
+			return "", err
+		}
+	} else if err != nil {
+		log.Error(err.Error())
+		return "", err
+	} else {
+		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
+	}
+	return pvcName, err
+
+}
+
+//update the PGBACKREST_DB_PATH env var of the backrest-repo
+//deployment for a given cluster, the deployment is bounced as
+//part of this process
+func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, target, namespace string) error {
+	var err error
+	newPath := "/pgdata/" + target
+	depName := cluster.Name + "-backrest-repo"
+
+	var deployment *v1beta1.Deployment
+	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		log.Error("error getting deployment in UpdateDBPath using name " + depName)
+		return err
 	}
 
-	//update backrest repo with new data path
+	log.Debugf("replicas %d", *deployment.Spec.Replicas)
 
+	//drain deployment to 0 pods
+	*deployment.Spec.Replicas = 0
+
+	containerIndex := -1
+	envIndex := -1
+	//update the env var Value
+	//template->spec->containers->env["PGBACKREST_DB_PATH"]
+	for kc, c := range deployment.Spec.Template.Spec.Containers {
+		if c.Name == "database" {
+			log.Debugf(" %s is the container name at %d", c.Name, kc)
+			containerIndex = kc
+			for ke, e := range c.Env {
+				if e.Name == "PGBACKREST_DB_PATH" {
+					log.Debugf("PGBACKREST_DB_PATH is %s", e.Value)
+					envIndex = ke
+				}
+			}
+		}
+	}
+
+	if containerIndex == -1 || envIndex == -1 {
+		return errors.New("error in getting container with PGBACRKEST_DB_PATH for cluster " + cluster.Name)
+	}
+
+	deployment.Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = newPath
+
+	//update the deployment (drain and update the env var)
+	err = kubeapi.UpdateDeployment(clientset, deployment, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	//wait till deployment goes to 0
+	var zero bool
+	for i := 0; i < 8; i++ {
+		deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+		if err != nil {
+			log.Error("could not get deployment UpdateDBPath " + err.Error())
+			return err
+		}
+
+		log.Debugf("status replicas %d\n", deployment.Status.Replicas)
+		if deployment.Status.Replicas == 0 {
+			log.Debugf("deployment %s replicas is now 0", deployment.Name)
+			zero = true
+			break
+		} else {
+			log.Debug("UpdateDBPath: sleeping till deployment goes to 0")
+			time.Sleep(time.Second * time.Duration(2))
+		}
+	}
+	if !zero {
+		return errors.New("deployment replicas never went to 0")
+	}
+	//update the deployment back to replicas 1
+	*deployment.Spec.Replicas = 1
+	err = kubeapi.UpdateDeployment(clientset, deployment, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	log.Debugf("updated PGBACKREST_DB_PATH to %s on deployment %s", newPath, cluster.Name)
+
+	return err
 }

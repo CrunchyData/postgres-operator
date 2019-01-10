@@ -80,11 +80,9 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 	return controller, nil
 }
 
-// onAdd is called when a pgcluster is added
 func (c *JobController) onAdd(obj interface{}) {
 }
 
-// onUpdate is called when a pgcluster is updated
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
 	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)

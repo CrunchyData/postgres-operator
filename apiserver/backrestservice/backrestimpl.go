@@ -392,26 +392,6 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
-	pgtask := getRestoreParams(request)
-	existingTask := crv1.Pgtask{}
-
-	//delete any existing pgtask with the same name
-	found, err = kubeapi.Getpgtask(apiserver.RESTClient,
-		&existingTask,
-		pgtask.Name,
-		apiserver.Namespace)
-	if found {
-		log.Debugf("deleting prior pgtask %s", pgtask.Name)
-		err = kubeapi.Deletepgtask(apiserver.RESTClient,
-			pgtask.Name,
-			apiserver.Namespace)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	}
-
 	var id string
 	id, err = createRestoreWorkflowTask(cluster.Name)
 	if err != nil {
@@ -419,6 +399,7 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 		return resp
 	}
 
+	pgtask := getRestoreParams(request)
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 
 	//create a pgtask for the restore workflow
@@ -464,6 +445,25 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 }
 
 func createRestoreWorkflowTask(clusterName string) (string, error) {
+
+	existingTask := crv1.Pgtask{}
+
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+
+	//delete any existing pgtask with the same name
+	found, err := kubeapi.Getpgtask(apiserver.RESTClient,
+		&existingTask,
+		taskName,
+		apiserver.Namespace)
+	if found {
+		log.Debugf("deleting prior pgtask %s", taskName)
+		err = kubeapi.Deletepgtask(apiserver.RESTClient,
+			taskName,
+			apiserver.Namespace)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
