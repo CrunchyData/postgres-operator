@@ -88,12 +88,9 @@ func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
 
-	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
-		log.Debugf("pgo-backrest-repo pod added " + newpod.Name)
-		return
+	if isPostgresPod(newpod) {
+		c.checkPostgresPods(newpod)
 	}
-
-	c.checkPostgresPods(newpod)
 }
 
 // onUpdate is called when a pgcluster is updated
@@ -101,7 +98,10 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	oldpod := oldObj.(*apiv1.Pod)
 	newpod := newObj.(*apiv1.Pod)
 	log.Debugf("[PodCONTROLLER] OnUpdate %s", newpod.ObjectMeta.SelfLink)
-	c.checkReadyStatus(oldpod, newpod)
+
+	if isPostgresPod(newpod) {
+		c.checkReadyStatus(oldpod, newpod)
+	}
 }
 
 // onDelete is called when a pgcluster is deleted
@@ -135,12 +135,19 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	}
 
 	//handle applying policies after a database is made Ready
+
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+		var oldDatabaseStatus bool
+		for _, v := range oldpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				oldDatabaseStatus = v.Ready
+			}
+		}
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
-				if v.Ready {
-					log.Debugf("%s went to Ready, apply policies...", clusterName)
+				if oldDatabaseStatus == false && v.Ready {
+					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
 					backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)
@@ -219,4 +226,24 @@ func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod) bool {
 	}
 	return false
 
+}
+
+func isPostgresPod(newpod *apiv1.Pod) bool {
+	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
+		log.Debugf("pgo-backrest-repo found %s", newpod.Name)
+		return false
+	}
+	if newpod.ObjectMeta.Labels["job-name"] != "" {
+		log.Debugf("job pod found [%s]", newpod.Name)
+		return false
+	}
+	if newpod.ObjectMeta.Labels[util.LABEL_NAME] == "postgres-operator" {
+		log.Debugf("postgres-operator-pod added [%s]", newpod.Name)
+		return false
+	}
+	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
+		log.Debugf("pgo-backrest-repo pod added [%s]", newpod.Name)
+		return false
+	}
+	return true
 }

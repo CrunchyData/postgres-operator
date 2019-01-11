@@ -30,7 +30,7 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
 	//look up the backrest-repo pod name
-	selector := "pg-cluster=" + clusterName + ",pgo-backrest-repo=true"
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGO_BACKREST_REPO + "=true"
 	pods, err := kubeapi.GetPods(clientset, selector, namespace)
 	if len(pods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", clusterName)
@@ -63,6 +63,9 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 		},
 		Spec: spec,
 	}
+
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
 
 	err = kubeapi.Createpgtask(RESTClient,
 		newInstance,
