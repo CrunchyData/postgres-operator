@@ -135,12 +135,19 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	}
 
 	//handle applying policies after a database is made Ready
+
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+		var oldDatabaseStatus bool
+		for _, v := range oldpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				oldDatabaseStatus = v.Ready
+			}
+		}
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
-				if v.Ready {
-					log.Debugf("%s went to Ready, apply policies...", clusterName)
+				if oldDatabaseStatus == false && v.Ready {
+					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
 					backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)

@@ -106,12 +106,11 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	//delete the primary service as it will be recreated when
 	//the new primary is created
-
-	err = kubeapi.DeleteService(clientset, clusterName, namespace)
-	if err != nil {
-		log.Errorf("restore workflow error: could not delete primary service %s", clusterName)
-		return
-	}
+	//err = kubeapi.DeleteService(clientset, clusterName, namespace)
+	//if err != nil {
+	//log.Errorf("restore workflow error: could not delete primary service %s", clusterName)
+	//return
+	//}
 
 	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
 	if err != nil {
@@ -128,6 +127,10 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		return
 	}
 	log.Debugf("restore workflow: bounced backrest-repo with new db path")
+
+	//sleep for a bit to give the bounce time to take effect and let
+	//the backrest repo container come back and be able to service requests
+	time.Sleep(time.Second * time.Duration(30))
 
 	//since the restore 'to' name is dynamically generated we shouldn't
 	//need to delete the previous job
@@ -295,7 +298,7 @@ func createPVC(restclient *rest.RESTClient, namespace string, clientset *kuberne
 func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, target, namespace string) error {
 	var err error
 	newPath := "/pgdata/" + target
-	depName := cluster.Name + "-backrest-repo"
+	depName := cluster.Name + "-backrest-shared-repo"
 
 	var deployment *v1beta1.Deployment
 	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
@@ -305,7 +308,7 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 		return err
 	}
 
-	log.Debugf("replicas %d", *deployment.Spec.Replicas)
+	//log.Debugf("replicas %d", *deployment.Spec.Replicas)
 
 	//drain deployment to 0 pods
 	*deployment.Spec.Replicas = 0
@@ -341,6 +344,7 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 	}
 
 	//wait till deployment goes to 0
+	//TODO fix this loop to be a proper wait
 	var zero bool
 	for i := 0; i < 8; i++ {
 		deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})

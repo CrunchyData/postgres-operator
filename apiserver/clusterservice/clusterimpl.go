@@ -98,13 +98,23 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 			}
 		}
 
-		err := kubeapi.Deletepgtask(apiserver.RESTClient,
-			cluster.Spec.Name+"-createcluster", apiserver.Namespace)
+		delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+		err := kubeapi.Deletepgtasks(apiserver.RESTClient, delTaskSelector, apiserver.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
+
+		//delete any jobs with pg-cluster=mycluster label
+		delJobSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+		err = kubeapi.DeleteJobs(apiserver.Clientset, delJobSelector, apiserver.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
 			cluster.Spec.Name, apiserver.Namespace)
 		if err != nil {
@@ -114,6 +124,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 		} else {
 			response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 		}
+
 	}
 
 	return response

@@ -176,6 +176,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
+
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_JOB_NAME] = jobName
@@ -191,6 +192,8 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 		},
 		Spec: spec,
 	}
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
 	return newInstance
 }
 
@@ -432,8 +435,8 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 	spec.Parameters[util.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
 	spec.Parameters[util.LABEL_PGBACKREST_STANZA] = "db"
 	spec.Parameters[util.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-repo"
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-repo"
+	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
+	spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

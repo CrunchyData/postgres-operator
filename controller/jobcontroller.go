@@ -115,7 +115,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			status = crv1.JobErrorStatus
 		}
 
-		if labels[util.LABEL_BACKUP_TYPE_BACKREST] != "true" {
+		if labels[util.LABEL_BACKREST] != "true" {
 			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
 			if err != nil {
 				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
