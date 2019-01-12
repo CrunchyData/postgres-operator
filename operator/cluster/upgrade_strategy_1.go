@@ -144,7 +144,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 
 	log.Info("major cluster upgrade finalize using Strategy 1 in namespace " + namespace)
 
-	primaryLabels := getPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
+	primaryLabels := operator.GetPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
 	//start the primary deployment
 	deploymentFields := DeploymentTemplateFields{
@@ -154,8 +154,8 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		CCPImagePrefix:    operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:       upgrade.Spec.CCPImageTag,
 		PVCName:           util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, upgrade.Spec.NewPVCName),
-		DeploymentLabels:  GetLabelsFromMap(primaryLabels),
-		PodLabels:         GetLabelsFromMap(primaryLabels),
+		DeploymentLabels:  operator.GetLabelsFromMap(primaryLabels),
+		PodLabels:         operator.GetLabelsFromMap(primaryLabels),
 		BackupPVCName:     util.CreateBackupPVCSnippet(upgrade.Spec.BackupPVCName),
 		DataPathOverride:  upgrade.Spec.NewDatabaseName,
 		Database:          cl.Spec.Database,
@@ -164,8 +164,8 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		PrimarySecretName: cl.Spec.PrimarySecretName,
 		UserSecretName:    cl.Spec.UserSecretName,
 		NodeSelector:      cl.Spec.NodeName,
-		ConfVolume:        GetConfVolume(clientset, cl, namespace),
-		CollectAddon:      GetCollectAddon(clientset, namespace, &cl.Spec),
+		ConfVolume:        operator.GetConfVolume(clientset, cl, namespace),
+		CollectAddon:      operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 	}
 
 	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)

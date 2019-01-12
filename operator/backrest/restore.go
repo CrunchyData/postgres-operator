@@ -19,12 +19,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	//"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
@@ -35,79 +33,6 @@ import (
 	"os"
 	"time"
 )
-
-// consolidate with cluster.PgbackrestEnvVarsTemplateFields
-type PgbackrestEnvVarsTemplateFields struct {
-	PgbackrestStanza    string
-	PgbackrestDBPath    string
-	PgbackrestRepo1Path string
-	PgbackrestRepo1Host string
-}
-
-// consolidate with cluster.affinityTemplateFields
-const AffinityInOperator = "In"
-const AFFINITY_NOTINOperator = "NotIn"
-
-type affinityTemplateFields struct {
-	NodeLabelKey   string
-	NodeLabelValue string
-	OperatorValue  string
-}
-
-// consolidate
-type collectTemplateFields struct {
-	Name            string
-	JobName         string
-	PrimaryPassword string
-	CCPImageTag     string
-	CCPImagePrefix  string
-}
-
-//consolidate
-type badgerTemplateFields struct {
-	CCPImageTag        string
-	CCPImagePrefix     string
-	BadgerTarget       string
-	ContainerResources string
-}
-
-// needs to be consolidated with cluster.DeploymentTemplateFields
-// DeploymentTemplateFields ...
-type DeploymentTemplateFields struct {
-	Name                    string
-	ClusterName             string
-	Port                    string
-	PgMode                  string
-	LogStatement            string
-	LogMinDurationStatement string
-	CCPImagePrefix          string
-	CCPImageTag             string
-	Database                string
-	DeploymentLabels        string
-	PodLabels               string
-	DataPathOverride        string
-	ArchiveMode             string
-	ArchivePVCName          string
-	ArchiveTimeout          string
-	XLOGDir                 string
-	BackrestPVCName         string
-	PVCName                 string
-	BackupPVCName           string
-	BackupPath              string
-	RootSecretName          string
-	UserSecretName          string
-	PrimarySecretName       string
-	SecurityContext         string
-	ContainerResources      string
-	NodeSelector            string
-	ConfVolume              string
-	CollectAddon            string
-	BadgerAddon             string
-	PgbackrestEnvVars       string
-	//next 2 are for the replica deployment only
-	Replicas    string
-	PrimaryHost string
-}
 
 type restorejobTemplateFields struct {
 	JobName             string
@@ -442,7 +367,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	var err error
 
-	primaryLabels := getPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
+	primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
 
 	primaryLabels[util.LABEL_DEPLOYMENT_NAME] = restoreToName
 
@@ -452,7 +377,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	archivePVCName := cluster.Spec.Name + "-xlog"
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 
-	deploymentFields := DeploymentTemplateFields{
+	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
 		Replicas:                "1",
 		PgMode:                  "primary",
@@ -464,8 +389,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:             cluster.Spec.CCPImageTag,
 		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
-		DeploymentLabels:        GetLabelsFromMap(primaryLabels),
-		PodLabels:               GetLabelsFromMap(primaryLabels),
+		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),
+		PodLabels:               operator.GetLabelsFromMap(primaryLabels),
 		BackupPVCName:           util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
 		BackupPath:              cluster.Spec.BackupPath,
 		DataPathOverride:        restoreToName,
@@ -479,12 +404,12 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		RootSecretName:          cluster.Spec.RootSecretName,
 		PrimarySecretName:       cluster.Spec.PrimarySecretName,
 		UserSecretName:          cluster.Spec.UserSecretName,
-		NodeSelector:            GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In"),
+		NodeSelector:            operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In"),
 		ContainerResources:      operator.GetContainerResourcesJSON(&cluster.Spec.ContainerResources),
-		ConfVolume:              GetConfVolume(clientset, cluster, namespace),
-		CollectAddon:            GetCollectAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:             GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:       GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName),
+		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
+		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -520,193 +445,5 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		return err
 	}
 	return err
-
-}
-
-//needs to be consolidated with cluster.GetAffinity
-// GetAffinity ...
-func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {
-	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, affoperator)
-	output := ""
-	if nodeLabelKey == "" {
-		return output
-	}
-
-	affinityTemplateFields := affinityTemplateFields{}
-	affinityTemplateFields.NodeLabelKey = nodeLabelKey
-	affinityTemplateFields.NodeLabelValue = nodeLabelValue
-	affinityTemplateFields.OperatorValue = affoperator
-
-	var affinityDoc bytes.Buffer
-	err := operator.AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
-	if err != nil {
-		log.Error(err.Error())
-		return output
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		operator.AffinityTemplate1.Execute(os.Stdout, affinityTemplateFields)
-	}
-
-	return affinityDoc.String()
-}
-
-//neds to be consolidated with cluster.getPrimaryLabels
-// getPrimaryLabels ...
-func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
-	primaryLabels := make(map[string]string)
-	primaryLabels[util.LABEL_PRIMARY] = "true"
-	if replicaFlag {
-		primaryLabels[util.LABEL_PRIMARY] = "false"
-	}
-
-	primaryLabels["name"] = Name
-	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
-
-	for key, value := range userLabels {
-		if key == util.LABEL_AUTOFAIL || key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
-			//dont add these since they can break label expression checks
-			//or autofail toggling
-		} else {
-			primaryLabels[key] = value
-		}
-	}
-	return primaryLabels
-}
-
-// needs to be consolidated with cluster.GetLabelsFromMap
-// GetLabelsFromMap ...
-func GetLabelsFromMap(labels map[string]string) string {
-	var output string
-
-	mapLen := len(labels)
-	i := 1
-	for key, value := range labels {
-		if i < mapLen {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
-		} else {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\"")
-		}
-		i++
-	}
-	return output
-}
-
-//consolidate with cluster.GetConfVolume
-func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
-	var found bool
-
-	//check for user provided configmap
-	if cl.Spec.CustomConfig != "" {
-		_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
-		if !found {
-			//you should NOT get this error because of apiserver validation of this value!
-			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
-		} else {
-			log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
-			return "\"configMap\": { \"name\": \"" + cl.Spec.CustomConfig + "\" }"
-		}
-
-	}
-
-	//check for global custom configmap "pgo-custom-pg-config"
-	_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_CUSTOM_CONFIGMAP, namespace)
-	if !found {
-		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
-	} else {
-		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
-	}
-
-	//the default situation
-	return "\"emptyDir\": { \"medium\": \"Memory\" }"
-}
-
-//consolidate with cluster.GetCollectAddon
-func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
-
-	if spec.UserLabels[util.LABEL_COLLECT] == "true" {
-		log.Debug("crunchy_collect was found as a label on cluster create")
-		_, PrimaryPassword, err3 := util.GetPasswordFromSecret(clientset, namespace, spec.PrimarySecretName)
-		if err3 != nil {
-			log.Error(err3)
-		}
-
-		collectTemplateFields := collectTemplateFields{}
-		collectTemplateFields.Name = spec.Name
-		collectTemplateFields.JobName = spec.Name
-		collectTemplateFields.PrimaryPassword = PrimaryPassword
-		collectTemplateFields.CCPImageTag = spec.CCPImageTag
-		collectTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
-
-		var collectDoc bytes.Buffer
-		err := operator.CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-
-		if operator.CRUNCHY_DEBUG {
-			operator.CollectTemplate1.Execute(os.Stdout, collectTemplateFields)
-		}
-		return collectDoc.String()
-	}
-	return ""
-}
-
-//consolidate with cluster.GetBadgerAddon
-func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
-
-	if spec.UserLabels[util.LABEL_BADGER] == "true" {
-		log.Debug("crunchy_badger was found as a label on cluster create")
-		badgerTemplateFields := badgerTemplateFields{}
-		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
-		badgerTemplateFields.BadgerTarget = spec.Name
-		badgerTemplateFields.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
-		badgerTemplateFields.ContainerResources = ""
-
-		if operator.Pgo.DefaultBadgerResources != "" {
-			tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBadgerResources)
-			if err != nil {
-				log.Error(err)
-				return ""
-			}
-			badgerTemplateFields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
-
-		}
-
-		var badgerDoc bytes.Buffer
-		err := operator.BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-
-		if operator.CRUNCHY_DEBUG {
-			operator.BadgerTemplate1.Execute(os.Stdout, badgerTemplateFields)
-		}
-		return badgerDoc.String()
-	}
-	return ""
-}
-
-//consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName string) string {
-	if backrestEnabled == "true" {
-		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:    "db",
-			PgbackrestRepo1Host: clusterName + "-backrest-shared-repo",
-			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-shared-repo",
-			PgbackrestDBPath:    "/pgdata/" + depName,
-		}
-
-		var doc bytes.Buffer
-		err := operator.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-		return doc.String()
-	}
-	return ""
 
 }
