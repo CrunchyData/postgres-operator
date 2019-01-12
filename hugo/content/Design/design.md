@@ -153,3 +153,17 @@ is exclusively used for this Postgres cluster
 
  * lastly, a user entering *pgo restore mycluster* will cause a *pgo-backrest-restore* container to be created as a Job, that container executes the *pgbackrest restore* command
 
+### pgbackrest Restore
+
+The pgbackrest restore command is implemented as the *pgo restore* command.  This command is destructive in the sense that it is meant to *restore* a PG cluster meaning it will revert the PG cluster to a restore point that is kept in the pgbackrest repository.   The prior primary data is not deleted but left in a PVC to be manually cleaned up by a DBA.  The restored PG cluster will work against a new PVC created from the restore workflow.  
+
+When doing a *pgo restore*, here is the workflow the Operator executes:
+
+ * turn off autofail if it is enabled for this PG cluster
+ * allocate a new PVC to hold the restored PG data
+ * delete the the current primary database deployment
+ * update the pgbackrest repo for this PG cluster with a new data path of the new PVC
+ * create a pgo-backrest-restore job, this job executes the *pgbackrest restore* command from the pgo-backrest-restore container, this Job mounts the newly created PVC
+ * once the restore job completes, a new primary Deployment is created which mounts the restored PVC volume
+
+At this point the PG database is back in a working state.  DBAs are still responsibile to re-enable autofail using *pgo update cluster* and also perform a pgbackrest backup after the new primary is ready.  This version of the Operator also does not handle any errors in the PG replicas after a restore, that is left for the DBA to handle.
