@@ -51,9 +51,20 @@ The *conf/postgresql-operator/pgouser* file is read at start up time also and co
     testuser:testpass:pgoadmin
     readonlyuser:testpass:pgoreader
 
+A user creates a *.pgouser* file in their $HOME directory to identify
+themselves to the Operator.  An entry in .pgouser will need to match
+entries in the *conf/postgresql-operator/pgouser* file.  A sample
+*.pgouser* file contains the following:
+
+    username:password
+
+The users pgouser file can also be located at:
+*/etc/pgo/pgouser* or it can be found at a path specified by the
+PGOUSER environment variable.
+
 The following list shows the current complete list of possible pgo permissions:
 
-|Permission|Description  |
+|Permission|Description  | 
 |---|---|
 |ApplyPolicy | allow *pgo apply*|
 |CreateBackup | allow *pgo backup*|
