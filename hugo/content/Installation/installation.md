@@ -118,7 +118,7 @@ As part of the installation, have your cluster administrator run the following O
 
     make installrbac
 
-That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.
+That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.  Note that when you run *make installrbac* the set of keys used by the Operator REST API and also the pgbackrest ssh keys are generated.  These keys are stored in the ConfigMap used by the Operator for securing connections.
 
 Verify the Operator Custom Resource Definitions are created as follows:
 
@@ -163,14 +163,18 @@ Next, the *pgo* client needs to reference the keys used to secure the Operator R
 
 You can also specify these keys on the command line as follows:
 
-    pgo version --pgo-ca-cert=/tmp/server.crt --pgo-client-cert=/tmp/server.crt --pgo-client-key=/tmp/server.key
+    pgo version --pgo-ca-cert=$COROOT/conf/postgres-operator/server.crt --pgo-client-cert=$COROOT/conf/postgres-operator/server.crt --pgo-client-key=$COROOT/conf/postgres-operator/server.key
 
 Lastly, create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
 
     username:password
+
 You can create this file as follows:
 
     echo "username:password" > $HOME/.pgouser
+
+Note, you can also store the pgouser file in alternate locations, see the
+Security documentation for details.
     
 At this point, you can test connectivity between your laptop or workstation and the Postgres Operator deployed on a Kubernetes cluster as follows:
 
