@@ -21,7 +21,9 @@
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
 		    "pgo-backrest-restore": "true",
+
                     "backrest-restore-to-pvc": "{{.ToClusterPVCName}}",
+
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.ClusterName}}"
                 }
