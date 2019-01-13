@@ -25,11 +25,13 @@ type CreatepgDumpBackupResponse struct {
 }
 
 type CreatepgDumpBackupRequest struct {
-	Namespace  string
-	Args       []string
-	Selector   string
-	DumpAll    bool
-	BackupOpts string
+	Namespace     string
+	Args          []string
+	Selector      string
+	PVCName       string
+	StorageConfig string
+	DumpAll       bool
+	BackupOpts    string
 }
 
 type ShowpgDumpDetail struct {
@@ -37,10 +39,11 @@ type ShowpgDumpDetail struct {
 	Info string
 }
 
-type ShowpgDumpDetailResponse struct {
-	Items []ShowpgDumpDetail
-	Status
-}
+// uses ShowBackupResponse for return messages.
+// type ShowpgDumpResponse struct {
+// 	Items []ShowpgDumpDetail
+// 	Status
+// }
 
 type pgDumpRestoreResponse struct {
 	Results []string

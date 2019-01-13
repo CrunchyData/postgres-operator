@@ -1,6 +1,5 @@
 package api
 
-
 /*
  Copyright 2017-2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,12 +25,12 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 )
 
-func ShowpgDump(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackrestResponse, error) {
+func ShowpgDump(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackupResponse, error) {
 
-	var response msgs.ShowBackrestResponse
+	var response msgs.ShowBackupResponse
 	url := SessionCredentials.APIServerURL + "/pgdump/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector
 
-	log.Debugf("show backrest called [%s]", url)
+	log.Debugf("show pgdump called [%s]", url)
 
 	action := "GET"
 	req, err := http.NewRequest(action, url, nil)

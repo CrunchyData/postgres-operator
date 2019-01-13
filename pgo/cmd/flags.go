@@ -29,7 +29,7 @@ var ScheduleName string
 
 var BackupType string
 var BackupOpts string
-var DumpAll string
+var DumpAll bool
 
 var RED func(a ...interface{}) string
 var GREEN func(a ...interface{}) string

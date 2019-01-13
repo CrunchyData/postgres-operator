@@ -28,7 +28,7 @@ import (
 // BackupHandler ...
 // pgo backup --backup-type=pgdump mycluster
 func BackupHandler(w http.ResponseWriter, r *http.Request) {
-	log.Debug("pgdumpservice.CreatepgDumpHandler called")
+	log.Debug("pgdumpservice.CreatepgDumpHandlerBackupHandler called")
 
 	var request msgs.CreatepgDumpBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -48,11 +48,11 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 
 // ShowpgDumpHandler ...
 // returns a ShowpgDumpResponse
-func ShowpgDumpHandler(w http.ResponseWriter, r *http.Request) {
+func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("pgdumpservice.ShowpgDumpHandler %v\n", vars)
+	log.Debugf("pgdumpservice.ShowDumpHandler %v\n", vars)
 
-	dumpname := vars[util.LABEL_NAME]
+	clustername := vars[util.LABEL_NAME]
 
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
 	if clientVersion != "" {
@@ -72,13 +72,13 @@ func ShowpgDumpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	log.Debug("pgdumpservice.pgdumpHandler GET called")
-	var resp msgs.ShowpgDumpDetailResponse
+	var resp msgs.ShowBackupResponse
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowpgDumpDetailResponse{}
+		resp = msgs.ShowBackupResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 
 	} else {
-		resp = ShowpgDump(dumpname, selector)
+		resp = ShowpgDump(clustername, selector)
 	}
 	json.NewEncoder(w).Encode(resp)
 

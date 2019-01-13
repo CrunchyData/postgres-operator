@@ -42,48 +42,50 @@ var backupCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
 
-
 			exitNow := false // used in switch for early exit.
 
 			switch buSelected := BackupType; buSelected {
 
-				case labelutil.LABEL_BACKUP_TYPE_BACKREST:
+			case labelutil.LABEL_BACKUP_TYPE_BACKREST:
 
-					// storage config flag invalid for backrest
-					if StorageConfig != "" {
-						fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
-						exitNow = true
-					}
+				// storage config flag invalid for backrest
+				if StorageConfig != "" {
+					fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
+					exitNow = true
+				}
 
-					// pgdump flag invalid for backrest
-					if DumpAll != "" {
-						fmt.Println("Error: --dump-all is only allowed when performing a pgdump backup.")
-						exitNow = true
-					}
+				// pgdump flag invalid for backrest
+				if DumpAll == true {
+					fmt.Println("Error: --dump-all is only allowed when performing a pgdump backup.")
+					exitNow = true
+				}
 
-					if exitNow {return}
+				if exitNow {
+					return
+				}
 
-					createBackrestBackup(args)
+				createBackrestBackup(args)
 
-				case labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
+			case labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
 
-					// --dump-all flag invalid for base backup
-					if DumpAll != "" {
-						fmt.Println("Error: --dump-all is only allowed when performing a pgdump backup.")
-						exitNow = true
-					}
+				// --dump-all flag invalid for base backup
+				if DumpAll == true {
+					fmt.Println("Error: --dump-all is only allowed when performing a pgdump backup.")
+					exitNow = true
+				}
 
-					if exitNow {return}
+				if exitNow {
+					return
+				}
 
-					createBackup(args)
+				createBackup(args)
 
-				case labelutil.LABEL_BACKUP_TYPE_PGDUMP:
+			case labelutil.LABEL_BACKUP_TYPE_PGDUMP:
 
-					createpgDumpBackup(args)
+				createpgDumpBackup(args)
 
-				default:
-					fmt.Println("Error: You must specify either pgbasebackup, pgbackrest, or pgdump for the --backup-type.")
-
+			default:
+				fmt.Println("Error: You must specify either pgbasebackup, pgbackrest, or pgdump for the --backup-type.")
 
 			}
 
@@ -100,7 +102,7 @@ func init() {
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
-	backupCmd.Flags().StringVarP(&DumpAll, "dump-all", "", "", "Indicates all databases should be dumped. Only valid when backup-type is pgdump.")
+	backupCmd.Flags().BoolVarP(&DumpAll, "dump-all", "", false, "Indicates all databases should be dumped. Only valid when backup-type is pgdump.")
 
 }
 

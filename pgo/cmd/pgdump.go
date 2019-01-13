@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"os"
@@ -31,7 +32,10 @@ func createpgDumpBackup(args []string) {
 	request := new(msgs.CreatepgDumpBackupRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.PVCName = PVCName
+	request.StorageConfig = StorageConfig
 	request.BackupOpts = BackupOpts
+	request.DumpAll = DumpAll
 
 	response, err := api.CreatepgDumpBackup(httpclient, &SessionCredentials, request)
 	if err != nil {
@@ -55,7 +59,6 @@ func createpgDumpBackup(args []string) {
 
 }
 
-
 // pgDump ....
 func showpgDump(args []string) {
 	log.Debugf("showpgDump called %v", args)
@@ -72,25 +75,41 @@ func showpgDump(args []string) {
 			os.Exit(2)
 		}
 
-		if len(response.Items) == 0 {
-			fmt.Println("No pgBackRest found.")
+		if len(response.BackupList.Items) == 0 {
+			fmt.Println("No pgDumps found for " + v + ".")
 			return
 		}
 
 		log.Debugf("response = %v", response)
-		log.Debugf("len of items = %d", len(response.Items))
+		log.Debugf("len of items = %d", len(response.BackupList.Items))
 
-		for _, backup := range response.Items {
-			printBackrest(&backup)
+		for _, backup := range response.BackupList.Items {
+			printDumpCRD(&backup)
 		}
 	}
 }
 
-
 // printBackrest
 func printpgDump(result *msgs.ShowpgDumpDetail) {
 	fmt.Printf("%s%s\n", "", "")
-	fmt.Printf("%s%s\n", "", "backrest : "+result.Name)
+	fmt.Printf("%s%s\n", "", "pgDump : "+result.Name)
 	fmt.Printf("%s%s\n", "", result.Info)
+
+}
+
+// printBackupCRD ...
+func printDumpCRD(result *crv1.Pgbackup) {
+	fmt.Printf("%s%s\n", "", "")
+	fmt.Printf("%s%s\n", "", "pgdump : "+result.Spec.Name)
+
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
+	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Creation:\t"+result.ObjectMeta.CreationTimestamp.String())
+	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.Spec.BackupUserSecret)
+	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }
