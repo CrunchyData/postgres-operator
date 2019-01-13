@@ -80,11 +80,9 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 	return controller, nil
 }
 
-// onAdd is called when a pgcluster is added
 func (c *JobController) onAdd(obj interface{}) {
 }
 
-// onUpdate is called when a pgcluster is updated
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
 	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
@@ -117,7 +115,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			status = crv1.JobErrorStatus
 		}
 
-		if labels[util.LABEL_BACKUP_TYPE_BACKREST] != "true" {
+		if labels[util.LABEL_BACKREST] != "true" {
 			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
 			if err != nil {
 				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
@@ -127,14 +125,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	} else if labels[util.LABEL_BACKREST_RESTORE] == "true" {
 		log.Debugf("got a backrest restore job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
-			log.Debugf("set status to restore job completed  for %s", labels[util.LABEL_PG_DATABASE])
+			log.Debugf("set status to restore job completed  for %s", labels[util.LABEL_PG_CLUSTER])
 			log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
-			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", labels[util.LABEL_JOB_NAME], c.Namespace)
 			if err != nil {
-				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+				log.Error("error in patching pgtask " + labels[util.LABEL_JOB_NAME] + err.Error())
 			}
 
-			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_DATABASE], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, c.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
+			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, c.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
 		}
 
 	} else if labels[util.LABEL_BACKREST] != "" {

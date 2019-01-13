@@ -150,10 +150,10 @@ var ShowPVCCmd = &cobra.Command{
 	Short: "Show PVC information",
 	Long: `Show PVC information. For example:
 
-	pgo show pvc all
+	pgo show pvc mycluster
 	pgo show pvc mycluster-backup
 	pgo show pvc mycluster-xlog
-	pgo show pvc mycluster`,
+	pgo show pvc a2-backup --pvc-root=a2-backups/2019-01-12-17-09-42`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println("Error: PVC name(s) required for this command.")

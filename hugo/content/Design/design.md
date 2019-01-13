@@ -1,19 +1,17 @@
 ---
-title: "Design"
+title: "Key Features"
 date: {docdate}
 draft: false
 
 weight: 50
 ---
 
-# Design 
-
 ## Provisioning
 
 So, what does the Postgres Operator actually deploy
 when you create a cluster?
 
-![alt text](../../static/OperatorReferenceDiagram.png "Logo Title Text 1")
+![Reference](/OperatorReferenceDiagram.png)
 
 On this diagram, objects with dashed lines are components
 that are optionally deployed as part of a PostgreSQL Cluster
@@ -124,6 +122,7 @@ Users can configure the Operator to replace a failed primary with
 a new replica if they want that behavior.
 
 The fail-over logic includes:
+
  * deletion of the failed primary Deployment
  * pick the best replica to become the new primary
  * label change of the targeted Replica to match the primary Service
@@ -131,14 +130,14 @@ The fail-over logic includes:
 
 ## pgbackrest Integration
 
-The Operator integrates various features of the pgbackrest (https://pgbackrest.org) backup and restore project.  A key component added to the Operator
+The Operator integrates various features of the [pgbackrest backup and restore project](https://pgbackrest.org).  A key component added to the Operator
 is the *pgo-backrest-repo* container, this container acts as a pgbackrest
 remote repository for the Postgres cluster to use for storing archive
 files and backups.
 
 The following diagrams depicts some of the integration features:
 
-![alt text](../../static/operator-backrest-integration.png "Logo Title Text 1")
+![alt text](/operator-backrest-integration.png "Operator Backrest Integration")
 
 In this diagram, starting from left to right we see the following:
 
@@ -154,3 +153,17 @@ is exclusively used for this Postgres cluster
 
  * lastly, a user entering *pgo restore mycluster* will cause a *pgo-backrest-restore* container to be created as a Job, that container executes the *pgbackrest restore* command
 
+### pgbackrest Restore
+
+The pgbackrest restore command is implemented as the *pgo restore* command.  This command is destructive in the sense that it is meant to *restore* a PG cluster meaning it will revert the PG cluster to a restore point that is kept in the pgbackrest repository.   The prior primary data is not deleted but left in a PVC to be manually cleaned up by a DBA.  The restored PG cluster will work against a new PVC created from the restore workflow.  
+
+When doing a *pgo restore*, here is the workflow the Operator executes:
+
+ * turn off autofail if it is enabled for this PG cluster
+ * allocate a new PVC to hold the restored PG data
+ * delete the the current primary database deployment
+ * update the pgbackrest repo for this PG cluster with a new data path of the new PVC
+ * create a pgo-backrest-restore job, this job executes the *pgbackrest restore* command from the pgo-backrest-restore container, this Job mounts the newly created PVC
+ * once the restore job completes, a new primary Deployment is created which mounts the restored PVC volume
+
+At this point the PG database is back in a working state.  DBAs are still responsibile to re-enable autofail using *pgo update cluster* and also perform a pgbackrest backup after the new primary is ready.  This version of the Operator also does not handle any errors in the PG replicas after a restore, that is left for the DBA to handle.

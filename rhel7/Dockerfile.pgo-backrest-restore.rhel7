@@ -16,6 +16,8 @@ RUN rpm --import RPM-GPG-KEY-crunchydata
 
 RUN yum -y update && yum -y install psmisc openssh-server openssh-clients crunchy-backrest postgresql11-server procps-ng && yum -y clean all
 
+VOLUME ["/sshd", "/pgdata"]
+
 RUN mkdir -p /opt/cpm/bin /pgdata && chown -R 26:26 /opt/cpm
 ADD bin/pgo-backrest-restore/ /opt/cpm/bin
 ADD bin/uid_postgres.sh /opt/cpm/bin
@@ -23,9 +25,10 @@ ADD bin/uid_postgres.sh /opt/cpm/bin
 RUN chmod g=u /etc/passwd && \
         chmod g=u /etc/group
 
-USER 26
+RUN mkdir /.ssh && chown 26:26 /.ssh && chmod o+rwx /.ssh
 
 ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
-VOLUME ["/sshd", "/pgdata"]
+
+USER 26
 
 CMD ["/opt/cpm/bin/pgo-backrest-restore.sh"]

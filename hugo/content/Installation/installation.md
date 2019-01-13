@@ -1,12 +1,10 @@
 
 ---
-title: "Install"
+title: "Operator Installation"
 date: {docdate}
 draft: false
 weight: 20
 ---
-
-# Operator Installation
 
 A full installation of the Operator includes the following steps:
 
@@ -58,7 +56,7 @@ When you install the Operator you must make choices as to what kind of storage t
 Here are some common examples of configuration changes most installers would make:
 
 ### Storage
-Inside *conf/postgresql-operator/pgo.yaml" there are various storage configurations defined.  
+Inside `conf/postgresql-operator/pgo.yaml` there are various storage configurations defined.  
 
     PrimaryStorage: nfsstorage
     ArchiveStorage: nfsstorage
@@ -97,9 +95,9 @@ you wanted to use HostPath for testing:
 ./pv/create-pv.sh
 ```
 
-Other settings in *pgo.yaml* are described in the *pgo.yaml Configuration" section of the documentation.
+Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
 
- ## Operator Security
+## Operator Security
  The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator's REST API.
 
 There is a default set of Roles and Users defined respectively in the following files:
@@ -120,7 +118,7 @@ As part of the installation, have your cluster administrator run the following O
 
     make installrbac
 
-That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.
+That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.  Note that when you run *make installrbac* the set of keys used by the Operator REST API and also the pgbackrest ssh keys are generated.  These keys are stored in the ConfigMap used by the Operator for securing connections.
 
 Verify the Operator Custom Resource Definitions are created as follows:
 
@@ -165,14 +163,18 @@ Next, the *pgo* client needs to reference the keys used to secure the Operator R
 
 You can also specify these keys on the command line as follows:
 
-    pgo version --pgo-ca-cert=/tmp/server.crt --pgo-client-cert=/tmp/server.crt --pgo-client-key=/tmp/server.key
+    pgo version --pgo-ca-cert=$COROOT/conf/postgres-operator/server.crt --pgo-client-cert=$COROOT/conf/postgres-operator/server.crt --pgo-client-key=$COROOT/conf/postgres-operator/server.key
 
 Lastly, create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
 
     username:password
+
 You can create this file as follows:
 
     echo "username:password" > $HOME/.pgouser
+
+Note, you can also store the pgouser file in alternate locations, see the
+Security documentation for details.
     
 At this point, you can test connectivity between your laptop or workstation and the Postgres Operator deployed on a Kubernetes cluster as follows:
 
@@ -204,6 +206,12 @@ The Operator Helm chart is located in the following location:
 
 Modify the Helm templates to suit your requirements.  The Operator templates in the *conf* directory are essentially the same as found in the Helm chart folder.  Adjust as mentioned above to customize the installation.
 
+Also, a pre-installation step is currently required prior to installing the Operator Helm chart.  Specifically, the following script must be executed prior to installing the chart:
+
+    ./postgres-operator/chart/gen-pgo-keys.sh
+
+This script will generate any keys and certificates required to deploy the Operator, and will then place them in the proper directory within the Helm chart.
+
 ## Quickstart Script
 There is a *quickstart* script found in the following location which seeks to automate a simple Operator deployment onto an existing Kubernetes installation:
 
@@ -212,14 +220,3 @@ There is a *quickstart* script found in the following location which seeks to au
 This script is a bash script and is intended to run on Linux hosts.  The script will ask you questions related to your configuration and the proceed to execute commands to cause the Operator to be deployed.  The quickstart script is meant for very simple deployments and to test the Operator and would not be typically used to maintain an Operator deployment.
 
 
-
-
-
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEzMTM0MTYzMzIsMTE3MDQ2NDA5MCwxND
-E5MDE5NzU4LC0xOTI5MjU4MDEzLDcyNDc0MDcwMiwtNDUzMjU0
-OTUxLC04Mzc1MjM0NTIsMTM1ODY0ODc4OSwxNzI5MTE4MDUsND
-U0ODEyNjAxXX0=
--->

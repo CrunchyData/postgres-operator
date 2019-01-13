@@ -43,6 +43,7 @@ const PgtaskWorkflowID = "workflowid"
 
 const PgtaskWorkflowBackrestRestorePVCCreatedStatus = "restored PVC created"
 const PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
+const PgtaskWorkflowBackrestRestoreJobCreatedStatus = "restore job created"
 
 const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"

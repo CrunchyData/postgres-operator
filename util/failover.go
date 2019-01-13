@@ -45,6 +45,8 @@ const (
 type ReplicationInfo struct {
 	ReceiveLocation uint64
 	ReplayLocation  uint64
+	Node            string
+	DeploymentName  string
 }
 
 // GetBestTarget
@@ -126,20 +128,22 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	return pod, err
 }
 
-func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *v1beta1.Deployment, namespace string) (uint64, uint64) {
+func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *v1beta1.Deployment, namespace, databasePort string) (uint64, uint64, string) {
 	var receiveLocation, replayLocation uint64
+
+	var nodeName string
 
 	//get the pods for this deployment
 	selector := "primary=false,replica-name=" + dep.Name
 	podList, err := kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err.Error())
-		return receiveLocation, replayLocation
+		return receiveLocation, replayLocation, nodeName
 	}
 
 	if len(podList.Items) != 1 {
 		log.Debugf("no replicas found for dep %s", dep.Name)
-		return receiveLocation, replayLocation
+		return receiveLocation, replayLocation, nodeName
 	}
 
 	pod := podList.Items[0]
@@ -150,7 +154,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	clusterfound, err = kubeapi.Getpgcluster(restclient, &cluster, dep.ObjectMeta.Labels[LABEL_PG_CLUSTER], namespace)
 	if err != nil || !clusterfound {
 		log.Error("Getpgcluster error: " + err.Error())
-		return receiveLocation, replayLocation
+		return receiveLocation, replayLocation, nodeName
 	}
 
 	//get the postgres secret for this dep
@@ -168,22 +172,26 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	if !found {
 		log.Error("postgres secret not found for " + dep.Name)
-		return receiveLocation, replayLocation
+		return receiveLocation, replayLocation, nodeName
 	}
 
-	port := "5432"
+	//port := operator.Pgo.Pgo.Cluster.Port
+	port := databasePort
 	databaseName := "postgres"
 	target := getSQLTarget(&pod, pgSecret.Username, pgSecret.Password, port, databaseName)
 	var repInfo *ReplicationInfo
 	repInfo, err = GetReplicationInfo(target)
 	if err != nil {
 		log.Error(err)
-		return receiveLocation, replayLocation
+		return receiveLocation, replayLocation, nodeName
 	}
 
 	receiveLocation = repInfo.ReceiveLocation
 	replayLocation = repInfo.ReplayLocation
-	return receiveLocation, replayLocation
+
+	nodeName = pod.Spec.NodeName
+
+	return receiveLocation, replayLocation, nodeName
 }
 
 func getSQLTarget(pod *v1.Pod, username, password, port, db string) string {
@@ -259,7 +267,12 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 		}
 	}
 
-	return &ReplicationInfo{recvLocation, replayLocation}, nil
+	return &ReplicationInfo{
+		ReceiveLocation: recvLocation,
+		ReplayLocation:  replayLocation,
+		Node:            "",
+		DeploymentName:  "",
+	}, nil
 }
 
 func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
@@ -283,4 +296,21 @@ func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namesp
 	}
 
 	return output, err
+}
+
+func GetPreferredNodes(clientset *kubernetes.Clientset, selector, namespace string) ([]string, error) {
+	nodes := make([]string, 0)
+
+	nodeList, err := kubeapi.GetNodes(clientset, selector, namespace)
+	if err != nil {
+		return nodes, err
+	}
+
+	log.Debugf("getPreferredNodes shows %d nodes", len(nodeList.Items))
+
+	for _, node := range nodeList.Items {
+		nodes = append(nodes, node.Name)
+	}
+
+	return nodes, err
 }

@@ -98,13 +98,23 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 			}
 		}
 
-		err := kubeapi.Deletepgtask(apiserver.RESTClient,
-			cluster.Spec.Name+"-createcluster", apiserver.Namespace)
+		delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+		err := kubeapi.Deletepgtasks(apiserver.RESTClient, delTaskSelector, apiserver.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
+
+		//delete any jobs with pg-cluster=mycluster label
+		delJobSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+		err = kubeapi.DeleteJobs(apiserver.Clientset, delJobSelector, apiserver.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
 			cluster.Spec.Name, apiserver.Namespace)
 		if err != nil {
@@ -114,6 +124,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 		} else {
 			response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 		}
+
 	}
 
 	return response
@@ -219,7 +230,7 @@ func GetPods(cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 
 	//get pods, but exclude pgpool and backup pods and backrest repo
 	//selector := "pgo-backrest-repo!=true," + "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-	selector := "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_NAME + "!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
@@ -821,7 +832,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec.Name = name
 	spec.ClusterName = name
-	spec.Port = "5432"
+	spec.Port = apiserver.Pgo.Cluster.Port
 	spec.SecretFrom = ""
 	spec.BackupPath = ""
 	spec.BackupPVCName = ""

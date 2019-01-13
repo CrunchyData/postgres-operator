@@ -1,11 +1,10 @@
 ---
-title: "PGO-CLI"
+title: "PGO CLI"
 date: {docdate}
 draft: false
 weight: 10
 ---
 
-# pgo CLI
 The command line tool, pgo, is used to interact with the Postgres Operator.
 
 Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the Github Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
@@ -39,8 +38,8 @@ The following table shows the *pgo* operations currently implemented:
 
 | Operation   |      Syntax      |  Description |
 |:----------|:-------------|:------|
-| apply |`pgo apply mypolicy  --selector=name=mycluster`  | Apply a SQL policy on a Postgres cluster(s)|
-| backup |`pgo backup mycluster`  |Perform a backup on a Postgres cluster(s) |
+| apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s)|
+| backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
 | create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, user) |
 | delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user) |
 | df |pgo df mycluster  |Display the disk status/capacity of a Postgres cluster. |

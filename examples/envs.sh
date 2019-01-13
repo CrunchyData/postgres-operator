@@ -16,7 +16,7 @@ export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
 
 # for crunchy-scheduler startup
 export CCP_IMAGE_PREFIX=crunchydata
-export CCP_IMAGE_TAG=centos7-10.6-2.2.0
+export CCP_IMAGE_TAG=centos7-11.1-2.3.0
 
 # useful aliases
 alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'

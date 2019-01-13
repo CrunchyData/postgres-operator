@@ -25,17 +25,16 @@ openssl req \
 -out $COROOT/conf/postgres-operator/server.crt \
 -days 3650 \
 -subj "/C=US/ST=Texas/L=Austin/O=TestOrg/OU=TestDepartment/CN=*"
-exit
 
 # generate CA
 #openssl genrsa -out $COROOT/conf/apiserver/rootCA.key 4096
 #openssl req -x509 -new -key $COROOT/conf/apiserver/rootCA.key -days 3650 -out $COROOT/conf/apiserver/rootCA.crt
 
 # generate cert for secure.domain.com signed with the created CA
-openssl genrsa -out $COROOT/conf/apiserver/secure.domain.com.key 2048
-openssl req -new -key $COROOT/conf/apiserver/secure.domain.com.key -out $COROOT/conf/apiserver/secure.domain.com.csr
+#openssl genrsa -out $COROOT/conf/apiserver/secure.domain.com.key 2048
+#openssl req -new -key $COROOT/conf/apiserver/secure.domain.com.key -out $COROOT/conf/apiserver/secure.domain.com.csr
 #In answer to question `Common Name (e.g. server FQDN or YOUR name) []:` you should set `secure.domain.com` (your real domain name)
-openssl x509 -req -in $COROOT/conf/apiserver/secure.domain.com.csr -CA $COROOT/conf/apiserver/rootCA.crt -CAkey $COROOT/conf/apiserver/rootCA.key -CAcreateserial -days 365 -out $COROOT/conf/apiserver/secure.domain.com.crt
+#openssl x509 -req -in $COROOT/conf/apiserver/secure.domain.com.csr -CA $COROOT/conf/apiserver/rootCA.crt -CAkey $COROOT/conf/apiserver/rootCA.key -CAcreateserial -days 365 -out $COROOT/conf/apiserver/secure.domain.com.crt
 
 #openssl genrsa 2048 > $COROOT/conf/apiserver/key.pem
 #openssl req -new -x509 -key $COROOT/conf/apiserver/key.pem -out $COROOT/conf/apiserver/cert.pem -days 1095
