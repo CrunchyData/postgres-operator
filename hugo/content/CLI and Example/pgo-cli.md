@@ -48,7 +48,7 @@ The following table shows the *pgo* operations currently implemented:
 | label |pgo label mycluster --label=environment=prod  |Create a metadata label for a Postgres cluster(s). |
 | load |pgo load --load-config=load.json --selector=name=mycluster  |Perform a data load into a Postgres cluster(s).|
 | reload |pgo reload mycluster  |Perform a pg_ctl reload command on a Postgres cluster(s). |
-| restore |pgo restore mycluster --to-pvc=restored  |Perform a pgbackrest restore on a Postgres cluster. |
+| restore |pgo restore mycluster |Perform a pgbackrest restore on a Postgres cluster. |
 | scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
 | scaledown |pgo scaledown  mycluster --query  |Delete a replica from a Postgres cluster. |
 | show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy). |
@@ -147,11 +147,18 @@ The following table shows the *pgo* operations currently implemented:
 #### Perform a pgbackrest backup
 
     pgo backup mycluster --backup-type=pgbackrest
+    pgo backup mycluster --backup-type=pgbackrest --backup-opts="--type=diff"
+
+The last example passes in pgbackrest flags to the backup command.  See
+pgbackrest.org for command flag descriptions.
 
 #### Perform a pgbackrest restore
 
-    pgo restore mycluster --to-pvc=restoredname
-    pgo create restoredname --pgbackrest --pgbackrest-restore-from=mycluster
+    pgo restore mycluster 
+
+Or perform a restore based on a point in time:
+
+    pgo restore mycluster --backup-opts="--type=time" --pitr-target='2019-01-13 20:18:30 EST'
 
 #### Restore from pgbasebackup
 
