@@ -31,13 +31,13 @@ import (
 
 // CreateService ...
 func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateFields, namespace string) error {
-	var replicaServiceDoc bytes.Buffer
+	var serviceDoc bytes.Buffer
 
-	//create the replica service if it doesn't exist
+	//create the service if it doesn't exist
 	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
 	if !found || err != nil {
 
-		err = operator.ServiceTemplate1.Execute(&replicaServiceDoc, fields)
+		err = operator.ServiceTemplate1.Execute(&serviceDoc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -47,14 +47,14 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 			operator.ServiceTemplate1.Execute(os.Stdout, fields)
 		}
 
-		replicaService := v1.Service{}
-		err = json.Unmarshal(replicaServiceDoc.Bytes(), &replicaService)
+		service := v1.Service{}
+		err = json.Unmarshal(serviceDoc.Bytes(), &service)
 		if err != nil {
-			log.Error("error unmarshalling json into replica Service " + err.Error())
+			log.Error("error unmarshalling json into Service " + err.Error())
 			return err
 		}
 
-		_, err = kubeapi.CreateService(clientset, &replicaService, namespace)
+		_, err = kubeapi.CreateService(clientset, &service, namespace)
 	}
 
 	return err

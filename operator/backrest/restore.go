@@ -104,14 +104,6 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	depToDelete := depList.Items[0]
 
-	//delete the primary service as it will be recreated when
-	//the new primary is created
-	//err = kubeapi.DeleteService(clientset, clusterName, namespace)
-	//if err != nil {
-	//log.Errorf("restore workflow error: could not delete primary service %s", clusterName)
-	//return
-	//}
-
 	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
 	if err != nil {
 		log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
@@ -207,19 +199,12 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 		return
 	}
 
-	//create new deployment based on restored pvc
-	//and include the workflowID in that new pgcluster as
-	//a breakcrumb to keep the workflow going after the
-	//new primary pod is Ready
-	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
+	//create the new primary deployment
+	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
-	cluster.Spec.Name = restoreToName
-	err = kubeapi.Createpgcluster(restclient, &cluster, namespace)
-	if err != nil {
-		log.Errorf("restore workflow phase 2 error: could not create primary %s", cluster.Name)
-		return
-	}
+	//cluster.Spec.Name = restoreToName
+	//cluster.ObjectMeta.Labels[util.LABEL_CURRENT_PRIMARY] = restoreToName
 
 	//update workflow
 	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus)
@@ -377,4 +362,89 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 	log.Debugf("updated PGBACKREST_DB_PATH to %s on deployment %s", newPath, cluster.Name)
 
 	return err
+}
+
+func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset, namespace, restoreToName, workflowID string) error {
+
+	var err error
+
+	primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
+
+	primaryLabels[util.LABEL_DEPLOYMENT_NAME] = restoreToName
+
+	archiveMode := "on"
+	xlogdir := "false"
+	archiveTimeout := cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+	archivePVCName := cluster.Spec.Name + "-xlog"
+	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
+
+	deploymentFields := operator.DeploymentTemplateFields{
+		Name:                    restoreToName,
+		Replicas:                "1",
+		PgMode:                  "primary",
+		ClusterName:             cluster.Spec.Name,
+		PrimaryHost:             restoreToName,
+		Port:                    cluster.Spec.Port,
+		LogStatement:            operator.Pgo.Cluster.LogStatement,
+		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
+		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:             cluster.Spec.CCPImageTag,
+		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
+		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),
+		PodLabels:               operator.GetLabelsFromMap(primaryLabels),
+		BackupPVCName:           util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
+		BackupPath:              cluster.Spec.BackupPath,
+		DataPathOverride:        restoreToName,
+		Database:                cluster.Spec.Database,
+		ArchiveMode:             archiveMode,
+		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:                 xlogdir,
+		BackrestPVCName:         util.CreateBackrestPVCSnippet(backrestPVCName),
+		ArchiveTimeout:          archiveTimeout,
+		SecurityContext:         util.CreateSecContext(cluster.Spec.PrimaryStorage.Fsgroup, cluster.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:          cluster.Spec.RootSecretName,
+		PrimarySecretName:       cluster.Spec.PrimarySecretName,
+		UserSecretName:          cluster.Spec.UserSecretName,
+		NodeSelector:            operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In"),
+		ContainerResources:      operator.GetContainerResourcesJSON(&cluster.Spec.ContainerResources),
+		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
+		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName),
+	}
+
+	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
+	var primaryDoc bytes.Buffer
+	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	//a form of debugging
+	if operator.CRUNCHY_DEBUG {
+		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+	}
+
+	deployment := v1beta1.Deployment{}
+	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
+	if err != nil {
+		log.Error("error unmarshalling primary json into Deployment " + err.Error())
+		return err
+	}
+	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
+	if err != nil {
+		return err
+	}
+
+	primaryLabels[util.LABEL_CURRENT_PRIMARY] = restoreToName
+
+	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
+
+	err = util.PatchClusterCRD(restclient, primaryLabels, cluster, namespace)
+	if err != nil {
+		log.Error("could not patch primary crv1 with labels")
+		return err
+	}
+	return err
+
 }
