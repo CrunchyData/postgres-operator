@@ -158,7 +158,19 @@ pgbackrest.org for command flag descriptions.
 
 Or perform a restore based on a point in time:
 
-    pgo restore mycluster --backup-opts="--type=time" --pitr-target='2019-01-13 20:18:30 EST'
+    pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time"
+
+Here are some steps to test PITR:
+
+ * pgo create cluster mycluster --pgbackrest
+ * create a table on the new cluster called *beforebackup*
+ * pgo backup mycluster --backup-type=pgbackrest
+ * create a table on the cluster called *afterbackup*
+ * execute *select now()* on the database to get the time, use this timestamp minus a couple of minutes when you perform the restore
+ * pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info"
+ * wait for the database to be restored
+ * execute *\d* in the database and you should see the database state prior to where the *afterbackup* table was created
+
 
 #### Restore from pgbasebackup
 

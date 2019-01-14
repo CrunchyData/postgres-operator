@@ -16,7 +16,6 @@ package main
 */
 
 import (
-	"bytes"
 	"flag"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -25,7 +24,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -37,7 +35,6 @@ const backrestCommand = "pgbackrest"
 const backrestBackupCommand = `backup`
 const backrestInfoCommand = `info`
 const backrestStanzaCreateCommand = `stanza-create`
-const backrestRestoreCommand = `restore`
 const containername = "database"
 
 func main() {
@@ -69,9 +66,6 @@ func main() {
 
 	COMMAND_OPTS := os.Getenv("COMMAND_OPTS")
 	log.Debugf("setting COMMAND_OPTS to %s", COMMAND_OPTS)
-
-	PITR_TARGET := os.Getenv("PITR_TARGET")
-	log.Debugf("setting PITR_TARGET to %s", PITR_TARGET)
 
 	PODNAME := os.Getenv("PODNAME")
 	log.Debugf("setting PODNAME to %s", PODNAME)
@@ -113,20 +107,6 @@ func main() {
 		cmdStrs = append(cmdStrs, backrestCommand)
 		cmdStrs = append(cmdStrs, backrestBackupCommand)
 		cmdStrs = append(cmdStrs, COMMAND_OPTS)
-	case crv1.PgtaskBackrestRestore:
-		err := os.Mkdir(os.Getenv("PGBACKREST_DB_PATH"), 0770)
-		if err != nil {
-			log.Error(err)
-			os.Exit(2)
-		}
-		log.Info("backrest Restore command requested")
-		cmdStrs = append(cmdStrs, backrestCommand)
-		cmdStrs = append(cmdStrs, backrestRestoreCommand)
-		cmdStrs = append(cmdStrs, COMMAND_OPTS)
-		if PITR_TARGET != "" {
-			//cmdStrs = append(cmdStrs, "--target='"+PITR_TARGET+"'")
-			cmdStrs = append(cmdStrs, "--target="+PITR_TARGET)
-		}
 	default:
 		log.Error("unsupported backup command specified " + COMMAND)
 		os.Exit(2)
@@ -134,34 +114,14 @@ func main() {
 
 	log.Infof("command to execute is [%s]", strings.Join(cmdStrs, " "))
 
-	if COMMAND == crv1.PgtaskBackrestRestore {
-		var cmd *exec.Cmd
-		if PITR_TARGET != "" {
-			//PITR_OPTS := "--target='" + PITR_TARGET + "'"
-			PITR_OPTS := "--target=" + PITR_TARGET
-			cmd = exec.Command(backrestCommand, backrestRestoreCommand, COMMAND_OPTS, PITR_OPTS)
-		} else {
-			cmd = exec.Command(backrestCommand, backrestRestoreCommand, COMMAND_OPTS)
-		}
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		err := cmd.Run()
-		log.Infof("stdout=[%s]", stdout.String())
-		log.Infof("stderr=[%s]", stderr.String())
-		if err != nil {
-			log.Fatal(err)
-		}
-	} else {
-		log.Infof("command is %s ", strings.Join(cmdStrs, " "))
-		reader := strings.NewReader(strings.Join(cmdStrs, " "))
-		output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
-		if err != nil {
-			log.Error(err)
-		}
-		log.Info("output=[" + output + "]")
-		log.Info("stderr=[" + stderr + "]")
+	log.Infof("command is %s ", strings.Join(cmdStrs, " "))
+	reader := strings.NewReader(strings.Join(cmdStrs, " "))
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
+	if err != nil {
+		log.Error(err)
 	}
+	log.Info("output=[" + output + "]")
+	log.Info("stderr=[" + stderr + "]")
 
 	log.Info("pgo-backrest ends")
 
