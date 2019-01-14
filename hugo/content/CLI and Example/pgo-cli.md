@@ -158,7 +158,7 @@ pgbackrest.org for command flag descriptions.
 
 Or perform a restore based on a point in time:
 
-    pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info"
+    pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time"
 
 Here are some steps to test PITR:
 
