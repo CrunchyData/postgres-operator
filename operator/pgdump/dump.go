@@ -55,7 +55,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 	cmd := task.Spec.Parameters[util.LABEL_PGDUMP_COMMAND]
 
 	jobFields := pgDumpJobTemplateFields{
-		JobName:         "pgdump-" + task.Spec.Parameters[util.LABEL_PGDUMP_COMMAND] + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER],
+		JobName:         task.Spec.Parameters[util.LABEL_PGDUMP_COMMAND] + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		ClusterName:     task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		PodName:         task.Spec.Parameters[util.LABEL_POD_NAME],
 		SecurityContext: util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
@@ -71,14 +71,14 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 	}
 
 	var doc2 bytes.Buffer
-	err := operator.PgDumpjobTemplate.Execute(&doc2, jobFields)
+	err := operator.PgDumpBackupJobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgDumpjobTemplate.Execute(os.Stdout, jobFields)
+		operator.PgDumpBackupJobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -88,6 +88,10 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 		return
 	}
 
-	kubeapi.CreateJob(clientset, &newjob, namespace)
+	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 }

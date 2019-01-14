@@ -49,7 +49,8 @@ const PVCPath = "/pgo-config/pvc.json"
 const PVCMatchLabelsPath = "/pgo-config/pvc-matchlabels.json"
 const PVCSCPath = "/pgo-config/pvc-storageclass.json"
 const UpgradeJobPath = "/pgo-config/cluster-upgrade-job-1.json"
-const pgDumpJobPath = "/pgo-config/pgdump-job.json"
+
+const pgDumpBackupJobPath = "/pgo-config/pgdump-job.json"
 const pgDumpRestoreJobPath = "/pgo-config/pgrestore-job.json"
 
 const DeploymentTemplate1Path = "/pgo-config/cluster-deployment-1.json"
@@ -78,8 +79,8 @@ var BackrestjobTemplate *template.Template
 var BackrestRestorejobTemplate *template.Template
 var BackrestRestoreConfigMapTemplate *template.Template
 
-var PgDumpjobTemplate *template.Template
-var PgDumpRestoreTemplate *template.Template
+var PgDumpBackupJobTemplate *template.Template
+var PgDumpRestoreJobTemplate *template.Template
 
 var PVCTemplate *template.Template
 var PVCMatchLabelsTemplate *template.Template
@@ -143,6 +144,9 @@ func Initialize() {
 	AffinityTemplate1 = util.LoadTemplate(AffinityTemplate1Path)
 	ContainerResourcesTemplate1 = util.LoadTemplate(ContainerResourcesTemplate1Path)
 	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
+
+	PgDumpBackupJobTemplate = util.LoadTemplate(pgDumpBackupJobPath)
+	PgDumpRestoreJobTemplate = util.LoadTemplate(pgDumpRestoreJobPath)
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
