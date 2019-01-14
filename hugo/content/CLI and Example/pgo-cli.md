@@ -234,6 +234,9 @@ Here are some steps to test PITR:
 
 #### Automated pgBaseBackup backups every day at 1 am
 
+In order to have a backup PVC created, users should run the `pgo backup` command 
+against the target cluster prior to creating this schedule.
+
     pgo create schedule mycluster --schedule="0 1 * * *" \
         --schedule-type=pgbasebackup --pvc-name=mycluster-backup
 
