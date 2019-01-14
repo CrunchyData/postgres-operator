@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 function trap_sigterm() {
 	echo "Signal trap triggered, beginning shutdown.." 
@@ -25,6 +25,21 @@ chmod 400 /tmp/id_rsa ~/.ssh/config
 # start sshd which is used by pgbackrest for remote connections
 /usr/sbin/sshd -D -f $CONFIG/sshd_config   &
 
-/opt/cpm/bin/pgo-backrest-restore
+# create the directory the restore will go into
+mkdir $PGBACKREST_DB_PATH
 
-echo "pgo-backrest-restore ending"
+echo "sleep 5 secs to let sshd come up before running pgbackrest command"
+sleep 5
+
+if [ "$PITR_TARGET" = "" ]
+then
+	echo "PITR_TARGET is  empty"
+	pgbackrest restore $COMMAND_OPTS
+else
+	echo PITR_TARGET is not empty [$PITR_TARGET]
+	pgbackrest restore $COMMAND_OPTS "--target=$PITR_TARGET"
+fi
+
+
+#/opt/cpm/bin/pgo-backrest-restore
+
