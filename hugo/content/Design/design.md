@@ -168,9 +168,18 @@ When doing a *pgo restore*, here is the workflow the Operator executes:
 
 At this point the PG database is back in a working state.  DBAs are still responsibile to re-enable autofail using *pgo update cluster* and also perform a pgbackrest backup after the new primary is ready.  This version of the Operator also does not handle any errors in the PG replicas after a restore, that is left for the DBA to handle.
 
+Other things to take into account before you do a restore:
+
+ * if a schedule has been created for this PG cluster, delete that schedule prior to performing a restore
+ * after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs
+ * a restore is destructive in the sense that it deletes the existing Deployment, not the existing primary PVC, that is left but will become unused when the primary Deployment is removed, be sure to create a pgbasebackup prior to restoring, make sure you can restore from that pgbasebackup to avoid any data loss
+ * there is currently no Operator validation of user entered pgbackrest command options, you will need to make sure to enter these correctly, if not the pgbackrest restore command can fail.
+ * the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.
+
+
 ## PGO Scheduler
 
-The Operator includes a cronlike scheduler application called `pgo-scheduler`.  It's purpose 
+The Operator includes a cronlike scheduler application called `pgo-scheduler`.  Its purpose 
 is to run automated tasks such as PostgreSQL backups or SQL policies against PostgreSQL clusters 
 created by the Operator.
 

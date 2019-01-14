@@ -171,7 +171,9 @@ Here are some steps to test PITR:
  * wait for the database to be restored
  * execute *\d* in the database and you should see the database state prior to where the *afterbackup* table was created
 
-
+See the Design section of the Operator documentation for things to consider
+before you do a restore.
+ 
 #### Restore from pgbasebackup
 
     pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc
