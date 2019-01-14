@@ -161,7 +161,7 @@ var createScheduleCmd = &cobra.Command{
 	Short: "Create a cron-like scheduled task",
 	Long: `Schedule creates a cron-like scheduled task.  For example:
 
-    pgo create schedule --schedule=”* * * * *” --selector=env=research --schedule-type=pgbackrest`,
+    pgo create schedule --schedule="* * * * *" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create schedule called ")
 		if len(args) == 0 && Selector == "" {
