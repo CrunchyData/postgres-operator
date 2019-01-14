@@ -113,6 +113,14 @@ loadimage:
 rmdataimage:
 	docker build -t pgo-rmdata -f $(CO_BASEOS)/Dockerfile.pgo-rmdata.$(CO_BASEOS) .
 	docker tag pgo-rmdata $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
+sqlrunnerimage:
+	docker build -t pgo-sqlrunner -f $(CO_BASEOS)/Dockerfile.pgo-sqlrunner.$(CO_BASEOS) .
+	docker tag pgo-sqlrunner $(CO_IMAGE_PREFIX)/pgo-sqlrunner:$(CO_IMAGE_TAG)
+pgo-scheduler-image: check-go-vars
+	go install pgo-scheduler/pgo-scheduler.go
+	mv $(GOBIN)/pgo-scheduler ./bin/pgo-scheduler/
+	docker build -t pgo-scheduler -f $(CO_BASEOS)/Dockerfile.pgo-scheduler.$(CO_BASEOS) .
+	docker tag pgo-scheduler $(CO_IMAGE_PREFIX)/pgo-scheduler:$(CO_IMAGE_TAG)
 all:
 	make operatorimage
 	make apiserverimage
@@ -123,19 +131,28 @@ all:
 	make lsimage
 	make loadimage
 	make rmdataimage
+	make sqlrunnerimage
+	make pgo-backrest-image
+	make pgo-backrest-restore-image
+	make pgo-backrest-repo-image
+	make pgo-scheduler-image
 push:
 	docker push $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-sqlrunner:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 	docker push $(CO_IMAGE_PREFIX)/pgo-backrest:$(CO_IMAGE_TAG)
+	docker push $(CO_IMAGE_PREFIX)/pgo-scheduler:$(CO_IMAGE_TAG)
 pull:
 	docker pull $(CO_IMAGE_PREFIX)/pgo-lspvc:$(CO_IMAGE_TAG)
 	docker pull $(CO_IMAGE_PREFIX)/pgo-rmdata:$(CO_IMAGE_TAG)
 	docker pull $(CO_IMAGE_PREFIX)/pgo-load:$(CO_IMAGE_TAG)
+	docker pull $(CO_IMAGE_PREFIX)/pgo-sqlrunner:$(CO_IMAGE_TAG)
 	docker pull $(CO_IMAGE_PREFIX)/postgres-operator:$(CO_IMAGE_TAG)
 	docker pull $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
+	docker pull $(CO_IMAGE_PREFIX)/pgo-scheduler:$(CO_IMAGE_TAG)
 release:	check-go-vars
 	make macpgo
 	make winpgo

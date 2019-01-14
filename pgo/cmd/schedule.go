@@ -19,50 +19,62 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+
 	"github.com/crunchydata/postgres-operator/pgo/api"
 )
+
+type schedule struct {
+	schedule     string
+	scheduleType string
+	pvcName      string
+	backrestType string
+	clusterName  string
+	selector     string
+	policy       string
+	database     string
+}
 
 func createSchedule(args []string) {
 	log.Debugf("createSchedule called %v", args)
 
-	if len(args) == 0 && Selector == "" {
-		fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
-		return
-	}
-
-	if ScheduleType == "pgbasebackup" {
-		if PVCName == "" {
-			fmt.Println("Error: The --pvc-name flag must be set when scheduling pgBaseBackup backups.")
-			return
-		}
-	}
-
-	if ScheduleType == "pgbackrest" {
-		if PGBackRestType == "" {
-			fmt.Println("Error: The --pgbackrest-backup-type flag must be set when scheduling pgBackRest backups.")
-			return
-		}
-	}
-
 	var clusterName string
-	if Selector != "" {
-		clusterName = ""
-	} else if len(args) > 0 {
+	if len(args) > 0 {
 		clusterName = args[0]
+	}
+
+	s := schedule{
+		clusterName:  clusterName,
+		backrestType: PGBackRestType,
+		pvcName:      PVCName,
+		schedule:     Schedule,
+		selector:     Selector,
+		scheduleType: ScheduleType,
+		policy:       SchedulePolicy,
+		database:     ScheduleDatabase,
+	}
+
+	err := s.validateSchedule()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
 	r := &msgs.CreateScheduleRequest{
 		ClusterName:     clusterName,
 		PGBackRestType:  PGBackRestType,
 		PVCName:         PVCName,
-		CCPImageTag:     CCPImageTag,
 		ScheduleOptions: ScheduleOptions,
 		Schedule:        Schedule,
 		Selector:        Selector,
-		ScheduleType:    ScheduleType,
+		ScheduleType:    strings.ToLower(ScheduleType),
+		PolicyName:      SchedulePolicy,
+		Database:        ScheduleDatabase,
+		Secret:          ScheduleSecret,
 	}
 
 	response, err := api.CreateSchedule(httpclient, &SessionCredentials, r)
@@ -171,4 +183,28 @@ func showSchedule(args []string) {
 		fmt.Println("No schedules found.")
 		return
 	}
+}
+
+func (s *schedule) validateSchedule() error {
+	if err := scheduler.ValidateSchedule(s.schedule); err != nil {
+		return err
+	}
+
+	if err := scheduler.ValidateScheduleType(s.scheduleType); err != nil {
+		return err
+	}
+
+	if err := scheduler.ValidateBaseBackupSchedule(s.scheduleType, s.pvcName); err != nil {
+		return err
+	}
+
+	if err := scheduler.ValidateBackRestSchedule(s.scheduleType, s.clusterName, s.selector, s.backrestType); err != nil {
+		return err
+	}
+
+	if err := scheduler.ValidatePolicySchedule(s.scheduleType, s.policy, s.database); err != nil {
+		return err
+	}
+
+	return nil
 }

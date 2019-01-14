@@ -19,13 +19,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 )
 
 const etcpath = "/etc/pgo/pgouser"
@@ -103,7 +104,7 @@ func GetCredentials() {
 			log.Debugf("%s not found", etcpath)
 		} else {
 			log.Debugf("%s found", fullPath)
-			log.Debugf("pgouser file found at %s contains ", fullPath, string(dat))
+			log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
 			SessionCredentials = parseCredentials(string(dat))
 			found = true
 		}
@@ -124,7 +125,7 @@ func GetCredentials() {
 			os.Exit(2)
 		}
 
-		log.Debugf("pgouser file found at %s contains ", fullPath, string(dat))
+		log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
 		SessionCredentials = parseCredentials(string(dat))
 	}
 

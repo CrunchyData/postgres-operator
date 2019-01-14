@@ -1,0 +1,54 @@
+.TH "pgo-scheduler " "1" " Container Image Pages" "Crunchy Data" "January 13, 2019"
+.nh
+.ad l
+
+
+.SH NAME
+.PP
+pgo-scheduler \- Lightweight cronservice for scheduling automated tasks such as backups and SQL 
+jobs.
+
+.SH DESCRIPTION
+.PP
+
+The pgo-scheduler image works in conjunction with Crunchy Data's PostgreSQL Operator to execute cron 
+based tasks such as PostgreSQL backups or SQL policies against PostgreSQL clusters.
+
+.PP
+The container itself consists of:
+    \- RHEL7 base image
+    \- Scheduler application
+
+.PP
+Files added to the container during Docker build include: /help.1.
+
+
+.SH USAGE
+.PP
+For more information on the PostgreSQL Operator, see the official Crunchy Postgres Operator repository on GitHub.
+
+
+.SH LABELS
+.PP
+The starter container includes the following LABEL settings:
+
+.PP
+That atomic command runs the Docker command set in this label:
+
+.PP
+\fB\fCName=\fR
+
+.PP
+The registry location and name of the image. For example, Name="crunchydata/pgo-scheduler".
+
+.PP
+\fB\fCVersion=\fR
+
+.PP
+The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.6"
+
+.PP
+\fB\fCRelease=\fR
+
+.PP
+The specific release number of the container. For example, Release="3.4.0"

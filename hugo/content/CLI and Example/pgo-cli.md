@@ -40,8 +40,8 @@ The following table shows the *pgo* operations currently implemented:
 |:----------|:-------------|:------|
 | apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s)|
 | backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
-| create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, user) |
-| delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user) |
+| create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, schedule, user) |
+| delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user, schedule) |
 | df |pgo df mycluster  |Display the disk status/capacity of a Postgres cluster. |
 | failover |pgo failover mycluster  |Perform a manual failover of a Postgres cluster. |
 | help |pgo help |Display general *pgo* help information. |
@@ -51,7 +51,7 @@ The following table shows the *pgo* operations currently implemented:
 | restore |pgo restore mycluster |Perform a pgbackrest restore on a Postgres cluster. |
 | scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
 | scaledown |pgo scaledown  mycluster --query  |Delete a replica from a Postgres cluster. |
-| show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy). |
+| show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy, schedule). |
 | status |pgo status  |Display Operator status. |
 | test |pgo test mycluster  |Perform a SQL test on a Postgres cluster(s). |
 | update |pgo update cluster --label=autofail=false  |Update a Postgres cluster(s). |
@@ -219,6 +219,29 @@ Here are some steps to test PITR:
 #### Create a Cluster with Metrics Collection
 
     pgo create cluster mycluster --metrics
+
+### Scheduled Tasks
+
+#### Automated full pgBackRest backups every Sunday at 1 am
+
+    pgo create schedule mycluster --schedule="0 1 * * 7" \
+        --schedule-type=pgbackrest --pgbackrest-backup-type=full
+
+#### Automated diff pgBackRest backups every Sunday at 1 am
+
+    pgo create schedule mycluster --schedule="0 1 * * 7" \
+        --schedule-type=pgbackrest --pgbackrest-backup-type=diff
+
+#### Automated pgBaseBackup backups every day at 1 am
+
+    pgo create schedule mycluster --schedule="0 1 * * *" \
+        --schedule-type=pgbasebackup --pvc-name=mycluster-backup
+
+#### Automated Policy every day at 1 am
+
+    pgo create schedule --selector=pg-cluster=mycluster --schedule="0 1 * * *" \
+         --schedule-type=policy --policy=mypolicy --database=userdb \
+         --secret=mycluster-testuser-secret
 
 ### Complex Deployments
 #### Create a Cluster using Specific Storage

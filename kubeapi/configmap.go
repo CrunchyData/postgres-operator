@@ -42,8 +42,8 @@ func CreateConfigMap(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, n
 func GetConfigMap(clientset *kubernetes.Clientset, name, namespace string) (*v1.ConfigMap, bool) {
 	cfg, err := clientset.CoreV1().ConfigMaps(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
-		log.Error(err)
-		log.Error(name + " configmap not found ")
+		log.Debug(err)
+		log.Debug(name + " configmap not found ")
 		return cfg, false
 	}
 	if err != nil {
@@ -60,8 +60,8 @@ func ListConfigMap(clientset *kubernetes.Clientset, label, namespace string) (*v
 		LabelSelector: label,
 	})
 	if kerrors.IsNotFound(err) {
-		log.Error(err)
-		log.Error("configmap not found with label " + label)
+		log.Debug(err)
+		log.Debug("configmap not found with label " + label)
 		return list, false
 	}
 	if err != nil {
@@ -80,7 +80,7 @@ func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) er
 		return err
 	}
 
-	log.Info("deleted ConfigMap " + name)
+	log.Debug("deleted ConfigMap " + name)
 
 	return err
 
