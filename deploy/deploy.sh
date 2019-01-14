@@ -56,6 +56,7 @@ $CO_CMD $NS create configmap pgo-config \
 	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
+	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster/1
 
 if [ "$CO_UI" = "true" ]; then
@@ -70,5 +71,3 @@ else
 	expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
 	$CO_CMD $NS create -f $DIR/service.json
 fi
-
-#expenv -f $DIR/scheduler.json | $CO_CMD $NS create -f -

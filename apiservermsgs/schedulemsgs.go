@@ -24,8 +24,11 @@ type CreateScheduleRequest struct {
 	Selector        string
 	PGBackRestType  string
 	PVCName         string
-	CCPImageTag     string
 	ScheduleOptions string
+	StorageConfig   string
+	PolicyName      string
+	Database        string
+	Secret          string
 }
 
 type CreateScheduleResponse struct {

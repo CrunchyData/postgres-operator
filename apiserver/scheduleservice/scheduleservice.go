@@ -34,6 +34,15 @@ type PgScheduleSpec struct {
 	Type         string `json:"type"`
 	PGBackRest   `json:"pgbackrest,omitempty"`
 	PGBaseBackup `json:"pgbasebackup,omitempty"`
+	Policy       `json:"policy,omitempty"`
+}
+
+type Policy struct {
+	Name        string `json:"name,omitempty"`
+	Database    string `json:"database,omitempty"`
+	Secret      string `json:"secret,omitempty"`
+	ImagePrefix string `json:"imagePrefix,omitempty"`
+	ImageTag    string `json:"imageTag,omitempty"`
 }
 
 type PGBackRest struct {

@@ -14,79 +14,128 @@
             },
             "spec": {
                 "serviceAccountName": "postgres-operator",
-                "containers": [{
-                    "name": "apiserver",
-                    "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",
-                    "imagePullPolicy": "IfNotPresent",
-                    "ports": [{
-                        "containerPort": 8443
-                    }],
-                    "env": [{
-                        "name": "CRUNCHY_DEBUG",
-                        "value": "true"
-                    }, {
-                        "name": "PORT",
-                        "value": "8443"
-                    }, {
-                        "name": "NAMESPACE",
-                        "valueFrom": {
-                            "fieldRef": {
-                                "fieldPath": "metadata.namespace"
+                "containers": [
+                    {
+                        "name": "apiserver",
+                        "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",
+                        "imagePullPolicy": "IfNotPresent",
+                        "ports": [
+                            {
+                                "containerPort": 8443
                             }
-                        }
-                    }, {
-                        "name": "TLS_NO_VERIFY",
-                        "value": "false"
-                    }],
-                    "volumeMounts": [{
-                        "mountPath": "/pgo-config",
+                        ],
+                        "env": [
+                            {
+                                "name": "CRUNCHY_DEBUG",
+                                "value": "true"
+                            },
+                            {
+                                "name": "PORT",
+                                "value": "8443"
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "TLS_NO_VERIFY",
+                                "value": "false"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgo-config",
+                                "name": "pgo-config",
+                                "readOnly": true
+                            },
+                            {
+                                "mountPath": "/pgo-auth-secret",
+                                "name": "pgo-auth-secret",
+                                "readOnly": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "operator",
+                        "image": "$CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG",
+                        "imagePullPolicy": "IfNotPresent",
+                        "env": [
+                            {
+                                "name": "CRUNCHY_DEBUG",
+                                "value": "true"
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MY_POD_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.name"
+                                    }
+                                }
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgo-config",
+                                "name": "pgo-config",
+                                "readOnly": true
+                            }
+                        ]
+                    },
+                    {
+                        "name": "scheduler",
+                        "image": "$CO_IMAGE_PREFIX/pgo-scheduler:$CO_IMAGE_TAG",
+                        "env": [
+                            {
+                                "name": "NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "TIMEOUT",
+                                "value": "3600"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgo-config",
+                                "name": "pgo-config",
+                                "readOnly": true
+                            }
+                        ],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }
+                ],
+                "volumes": [
+                    {
                         "name": "pgo-config",
-                        "readOnly": true
-                    },{
-                        "mountPath": "/pgo-auth-secret",
+                        "configMap": {
+                            "name": "pgo-config"
+                        }
+                    },
+                    {
                         "name": "pgo-auth-secret",
-                        "readOnly": true
-                    }]
-                }, {
-                    "name": "operator",
-                    "image": "$CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG",
-                    "imagePullPolicy": "IfNotPresent",
-                    "env": [{
-                        "name": "CRUNCHY_DEBUG",
-                        "value": "true"
-                    }, {
-                        "name": "NAMESPACE",
-                        "valueFrom": {
-                            "fieldRef": {
-                                "fieldPath": "metadata.namespace"
-                            }
+                        "secret": {
+                            "secretName": "pgo-auth-secret",
+                            "defaultMode": 511
                         }
-                    }, {
-                        "name": "MY_POD_NAME",
-                        "valueFrom": {
-                            "fieldRef": {
-                                "fieldPath": "metadata.name"
-                            }
-                        }
-                    }],
-                    "volumeMounts": [{
-                        "mountPath": "/pgo-config",
-                        "name": "pgo-config",
-                        "readOnly": true
-                    }]
-                }],
-                "volumes": [{
-                    "name": "pgo-config",
-                    "configMap": {
-                        "name": "pgo-config"
                     }
-                },{
-                    "name": "pgo-auth-secret",
-                    "secret": {
-                        "secretName": "pgo-auth-secret",
-                        "defaultMode": 511
-                    }
-                }]
+                ]
             }
         }
     }

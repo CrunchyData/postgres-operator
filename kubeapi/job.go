@@ -16,6 +16,10 @@ package kubeapi
 */
 
 import (
+	"errors"
+	"fmt"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -40,7 +44,7 @@ func GetJobs(clientset *kubernetes.Clientset, selector, namespace string) (*v1ba
 func GetJob(clientset *kubernetes.Clientset, name, namespace string) (*v1batch.Job, bool) {
 	job, err := clientset.Batch().Jobs(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
-		log.Error(err)
+		log.Debug(err)
 		return job, false
 	}
 	if err != nil {
@@ -79,7 +83,7 @@ func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace stri
 		return job.Name, err
 	}
 
-	log.Info("created Job " + result.Name)
+	log.Debug("created Job " + result.Name)
 	return result.Name, err
 }
 
@@ -102,4 +106,42 @@ func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) err
 	}
 
 	return err
+}
+
+func IsJobComplete(client *kubernetes.Clientset, namespace string, job *v1batch.Job, timeout time.Duration) error {
+	duration := time.After(timeout)
+	tick := time.Tick(500 * time.Millisecond)
+	for {
+		select {
+		case <-duration:
+			return fmt.Errorf("timed out waiting for job to complete: %s", job.Name)
+		case <-tick:
+			j, found := GetJob(client, job.Name, namespace)
+			if !found {
+				return errors.New("Job not found")
+			}
+			if j.Status.Failed != 0 {
+				return errors.New("job failed to run")
+			}
+			if j.Status.Succeeded != 0 {
+				return nil
+			}
+		}
+	}
+}
+
+func IsJobDeleted(client *kubernetes.Clientset, namespace string, job *v1batch.Job, timeout time.Duration) error {
+	duration := time.After(timeout)
+	tick := time.Tick(500 * time.Millisecond)
+	for {
+		select {
+		case <-duration:
+			return fmt.Errorf("timed out waiting for job to delete: %s", job.Name)
+		case <-tick:
+			_, found := GetJob(client, job.Name, namespace)
+			if !found {
+				return nil
+			}
+		}
+	}
 }

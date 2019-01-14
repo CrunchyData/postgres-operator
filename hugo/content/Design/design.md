@@ -167,3 +167,36 @@ When doing a *pgo restore*, here is the workflow the Operator executes:
  * once the restore job completes, a new primary Deployment is created which mounts the restored PVC volume
 
 At this point the PG database is back in a working state.  DBAs are still responsibile to re-enable autofail using *pgo update cluster* and also perform a pgbackrest backup after the new primary is ready.  This version of the Operator also does not handle any errors in the PG replicas after a restore, that is left for the DBA to handle.
+
+## PGO Scheduler
+
+The Operator includes a cronlike scheduler application called `pgo-scheduler`.  It's purpose 
+is to run automated tasks such as PostgreSQL backups or SQL policies against PostgreSQL clusters 
+created by the Operator.
+
+PGO Scheduler watches Kubernetes for configmaps with the label `crunchy-scheduler=true` in the 
+same namespace the Operator is deployed.  The configmaps are json objects that describe the schedule 
+such as:
+
+* Cron like schedule such as: * * * * *
+* Type of task: pgBackRest backup, pgBaseBackup backup or policy
+
+Schedules are removed automatically when the configmaps are deleted.
+
+### pgBackRest Schedules
+
+pgBackRest schedules require pgBackRest enabled on the cluster to backup.  The scheduler 
+will not do this on its own.
+
+### pgBaseBackup Schedules
+
+pgBaseBackup schedules require a backup PVC to already be created.  The operator will make 
+this PVC using the backup commands:
+
+    pgo backup mycluster
+
+### Policy Schedules
+
+Policy schedules require a SQL policy already created using the Operator.  Additionally users 
+can supply both the database in which the policy should run and a secret that contains the username 
+and password of the PostgreSQL role that will run the SQL.  If no user is specified the scheduler will default to the replication user provided during cluster creation.

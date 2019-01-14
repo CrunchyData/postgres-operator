@@ -403,6 +403,14 @@
   version = "v0.9.1"
 
 [[projects]]
+  branch = "v2"
+  digest = "1:92a9d3d81fc5b50d5ccf0c72b9888cd27acf277894f8aa18f4c9c41de8311555"
+  name = "gopkg.in/robfig/cron.v2"
+  packages = ["."]
+  pruneopts = ""
+  revision = "be2e0b0deed5a68ffee390b4583a13aff8321535"
+
+[[projects]]
   digest = "1:f0620375dd1f6251d9973b5f2596228cc8042e887cd7f827e4220bc1ce8c30e2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -577,11 +585,12 @@
     "github.com/gorilla/mux",
     "github.com/lib/pq",
     "github.com/spf13/cobra",
+    "gopkg.in/robfig/cron.v2",
     "gopkg.in/yaml.v2",
+    "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
-    "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/api/resource",
@@ -595,7 +604,6 @@
     "k8s.io/apimachinery/pkg/util/validation",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/kubernetes",
-    "k8s.io/client-go/kubernetes/typed/rbac/v1",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
