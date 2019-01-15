@@ -82,7 +82,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	//create the "to-cluster" PVC to hold the new data
 	var pvcName string
-	pvcName, err = createPVC(restclient, namespace, clientset, task)
+	pvcName, err = createPVC(clusterName, restclient, namespace, clientset, task)
 	if err != nil {
 		log.Error(err)
 		return
@@ -236,9 +236,8 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createPVC(restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
+func createPVC(clusterName string, restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
 	var err error
-	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
 
 	//use the storage config from pgo.yaml for Primary
 	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]

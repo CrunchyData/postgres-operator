@@ -32,8 +32,6 @@ $CO_CMD $NS delete service postgres-operator
 
 $CO_CMD $NS delete deployment postgres-operator 
 
-# TODO: Cleanup of old scheduler, remove in a few versions
-$CO_CMD $NS delete deployment crunchy-scheduler
 
 sleep 5
 
