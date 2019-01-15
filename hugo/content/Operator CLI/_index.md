@@ -1,13 +1,13 @@
 ---
-title: "PGO CLI"
-date: {docdate}
+title: "Operator CLI"
+date:
 draft: false
-weight: 10
+weight: 3
 ---
 
 The command line tool, pgo, is used to interact with the Postgres Operator.
 
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the Github Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
+Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
 
 The *pgo* client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
 
@@ -17,24 +17,24 @@ Use the following syntax to run  `pgo`  commands from your terminal window:
     pgo [command] ([TYPE] [NAME]) [flags]
 
 Where *command* is a verb like:
- - show 
- - get 
- - create 
+ - show
+ - get
+ - create
  - delete
 
 And *type* is a resource type like:
- - cluster 
- - policy 
+ - cluster
+ - policy
  - user
 
 And *name* is the name of the resource type like:
- - mycluster 
- - somesqlpolicy 
+ - mycluster
+ - somesqlpolicy
  - john
 
 ## Operations
 
-The following table shows the *pgo* operations currently implemented: 
+The following table shows the *pgo* operations currently implemented:
 
 | Operation   |      Syntax      |  Description |
 |:----------|:-------------|:------|
@@ -78,7 +78,7 @@ The following table shows the *pgo* operations currently implemented:
 
     pgo create cluster mycluster --pgbackrest
 
-#### Scaledown a Cluster 
+#### Scaledown a Cluster
 
     pgo scaledown cluster mycluster --query
     pgo scaledown cluster mycluster --target=sometarget
@@ -154,7 +154,7 @@ pgbackrest.org for command flag descriptions.
 
 #### Perform a pgbackrest restore
 
-    pgo restore mycluster 
+    pgo restore mycluster
 
 Or perform a restore based on a point in time:
 
@@ -173,7 +173,7 @@ Here are some steps to test PITR:
 
 See the Design section of the Operator documentation for things to consider
 before you do a restore.
- 
+
 #### Restore from pgbasebackup
 
     pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc
@@ -236,7 +236,7 @@ before you do a restore.
 
 #### Automated pgBaseBackup backups every day at 1 am
 
-In order to have a backup PVC created, users should run the `pgo backup` command 
+In order to have a backup PVC created, users should run the `pgo backup` command
 against the target cluster prior to creating this schedule.
 
     pgo create schedule mycluster --schedule="0 1 * * *" \
@@ -278,6 +278,3 @@ against the target cluster prior to creating this schedule.
 |pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
 |pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
 |pgo-client-key |The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_KEY environment variable|
-
-
-
