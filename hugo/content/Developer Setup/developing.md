@@ -74,6 +74,10 @@ You can view the Operator core logic logs with the following alias:
 ```
 alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'
 ```
+You can view the Scheduler logs with the following alias:
+```
+alias slog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c scheduler'
+```
 
 You can enable the *pgo* CLI debugging with the following flag:
 ```
