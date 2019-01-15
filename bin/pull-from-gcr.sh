@@ -7,6 +7,7 @@ VERSION=$CO_IMAGE_TAG
 IMAGES=(
     pgo-backrest-repo
     pgo-backrest-restore
+    pgo-scheduler
     postgres-operator
     pgo-apiserver
     pgo-lspvc

@@ -1,10 +1,10 @@
 Cluster:
   PrimaryNodeLabel:  
   ReplicaNodeLabel: 
-  CCPImagePrefix:  crunchydata
+  CCPImagePrefix: $CCP_IMAGE_PREFIX 
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.1-2.3.0-rc3
+  CCPImageTag:  $CCP_IMAGE_TAG
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -21,37 +21,18 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: nfsstorage
-XlogStorage: xlogstorage
-BackupStorage: nfsstorage
-ReplicaStorage: nfsstorage
-BackrestStorage: backreststorage
+PrimaryStorage: gkestorage
+XlogStorage: gkestorage
+BackupStorage: gkestorage
+ReplicaStorage: gkestorage
+BackrestStorage: gkestorage
 Storage:
-  hostpathstorage:
-    AccessMode:  ReadWriteMany
+  gkestorage:
+    AccessMode:  ReadWriteOnce
     Size:  1G
-    StorageType:  create
-  nfsstorage:
-    AccessMode:  ReadWriteMany
-    Size:  1G
-    StorageType:  create
-    SupplementalGroups:  65534
-  backreststorage:
-    AccessMode:  ReadWriteMany
-    Size:  600M
-    StorageType:  create
-    SupplementalGroups:  65534
-  nfsstoragered:
-    AccessMode:  ReadWriteMany
-    Size:  1G
-    MatchLabels: crunchyzone=red
-    StorageType:  create
-    SupplementalGroups:  65534
-  xlogstorage:
-    AccessMode:  ReadWriteMany
-    Size:  800M
-    StorageType:  create
-    SupplementalGroups:  65534
+    StorageType:  dynamic
+    StorageClass:  $STORAGE_CLASS
+    Fsgroup:  26
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
@@ -82,5 +63,5 @@ Pgo:
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
-  COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0-rc5
+  COImagePrefix:  $CO_IMAGE_PREFIX
+  COImageTag:  $CO_IMAGE_TAG

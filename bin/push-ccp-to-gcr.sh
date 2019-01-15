@@ -1,6 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2016 - 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,23 +15,24 @@
 
 GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
+CCP_IMAGE_PREFIX=crunchydata
+CCP_IMAGE_TAG=centos7-11.1-2.3.0-rc4
+
 IMAGES=(
-pgo-backrest-repo
-pgo-backrest-restore
-pgo-scheduler
-postgres-operator
-pgo-apiserver
-pgo-lspvc
-pgo-rmdata
-pgo-backrest
-pgo-load
+crunchy-prometheus
+crunchy-grafana
+crunchy-collect
+crunchy-pgbadger
+crunchy-pgpool
+crunchy-backup
+crunchy-postgres
+crunchy-pgbouncer
 )
 
 for image in "${IMAGES[@]}"
 do
-	docker tag $CO_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   \
-		$GCR_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
-	gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
+        docker tag $CCP_IMAGE_PREFIX/$image:$CCP_IMAGE_TAG   \
+                $GCR_IMAGE_PREFIX/$image:$CCP_IMAGE_TAG
+        gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$CCP_IMAGE_TAG
 done
-
 

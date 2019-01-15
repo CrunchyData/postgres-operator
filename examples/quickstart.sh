@@ -53,11 +53,12 @@ else
 	fi
 fi
 echo $CO_NAMESPACE is the namespace entered | tee -a $LOG
+export CO_NAMESPACE=$CO_NAMESPACE
 
 if [[ "$CCP_IMAGE_TAG" != "" ]]; then
 	echo "CCP_IMAGE_TAG is set to " $CCP_IMAGE_TAG
 else
-	export CCP_IMAGE_TAG=$CO_BASEOS-10.6-2.2.0
+	export CCP_IMAGE_TAG=$CO_BASEOS-11.1-2.3.0
 	echo -n "Which CCP image tag do you want to use? ["$CCP_IMAGE_TAG"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
@@ -112,22 +113,7 @@ fi
 echo ""
 echo "Testing "$CO_CMD" connection..." | tee -a $LOG
 echo ""
-case $CO_CMD in
-kubectl)
 $CO_CMD get namespaces
-
-export CO_CURRENT_CONTEXT=`$CO_CMD config current-context 2>/dev/null`
-echo ""
-echo "Using current context "$CO_CURRENT_CONTEXT | tee -a $LOG
-echo ""
-
-export CO_NAMESPACE=`$CO_CMD config view -o "jsonpath={.contexts[?(@.name==\"$CO_CURRENT_CONTEXT\")].context.namespace}"`
-	;;
-oc)
-$CO_CMD project
-export CO_NAMESPACE=`eval $CO_CMD project -q`
-	;;
-esac
 if [[ $? -ne 0 ]]; then
 	echo $CO_CMD  " is not connecting to your Cluster. A successful connection is required to proceed." | tee -a $LOG
 	exit 1
@@ -135,8 +121,6 @@ fi
 
 echo "Connected to cluster" | tee -a $LOG
 echo ""
-
-echo "The postgres-operator will be installed into the current namespace which is ["$CO_NAMESPACE"]."
 
 echo -n "Do you want to continue the installation? [Yn] "
 read REPLY
@@ -205,28 +189,44 @@ fi
 echo ""
 echo "Installing pgo client..." | tee -a $LOG
 
-mv pgo $GOBIN
-mv pgo-mac $GOBIN
-mv pgo.exe $GOBIN
-mv expenv.exe $GOBIN
-mv expenv-mac $GOBIN
-mv expenv $GOBIN
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)
+        cp -a pgo $GOBIN/pgo
+        cp -a expenv $GOBIN/expenv
+        ;;
+    Darwin*)
+        cp -a pgo-mac $GOBIN/pgo
+        cp -a expenv-mac $GOBIN/expenv
+        ;;
+    CYGWIN*)
+        cp -a pgo.exe $GOBIN/pgo
+        cp -a expenv.exe $GOBIN/expenv
+        ;;
+    MINGW*)
+        cp -a pgo.exe $GOBIN/pgo
+        cp -a expenv.exe $GOBIN/expenv
+        ;;
+    *)
+        machine="UNKNOWN:${unameOut}"
+esac
 
 echo "The available storage classes on your system:"
 $CO_CMD get sc
 echo ""
 echo -n "Enter the name of the storage class to use: "
-read STORAGE_CLASS
+read REPLY
+export STORAGE_CLASS=$REPLY
 
 echo ""
-echo "Setting up pgo storage configuration for the selected storageclass..." | tee -a $LOG
-sed --in-place=.bak 's/Storage: nfsstorage/'"Storage: storageos"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/fast/'"$STORAGE_CLASS"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/COImagePrefix:  crunchydata/'"COImagePrefix:  $CO_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/CCPImagePrefix:  crunchydata/'"CCPImagePrefix:  $CCP_IMAGE_PREFIX"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/centos7/'"$CO_BASEOS"'/' $COROOT/conf/postgres-operator/pgo.yaml
-sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/cluster-rbac.yaml
-sed --in-place=.bak 's/demo/'"$CO_NAMESPACE"'/' $COROOT/deploy/rbac.yaml
+echo "Configuring pgo.yaml file..."
+cp $COROOT/deploy/cluster-rbac.yaml $COROOT/deploy/cluster-rbac.yaml.bak
+expenv -f $COROOT/deploy/cluster-rbac.yaml > /tmp/cluster-rbac.yaml
+cp /tmp/cluster-rbac.yaml $COROOT/deploy/cluster-rbac.yaml
+cp $COROOT/deploy/rbac.yaml  $COROOT/deploy/rbac.yaml.bak
+expenv -f $COROOT/deploy/rbac.yaml > /tmp/rbac.yaml
+cp /tmp/rbac.yaml $COROOT/deploy/rbac.yaml
+expenv -f $COROOT/conf/postgres-operator/pgo.yaml.quickstart > $COROOT/conf/postgres-operator/pgo.yaml
 
 echo ""
 echo "Setting up pgo client authentication..." | tee -a $LOG
@@ -254,6 +254,7 @@ echo "execute the following command..." | tee -a $LOG
 echo ""
 echo "export CO_CMD="$CO_CMD | tee -a $LOG
 echo "export CO_NAMESPACE="$CO_NAMESPACE | tee -a $LOG
+echo "export COROOT="$COROOT | tee -a $LOG
 echo "export PATH=$PATH:$HOME/odev/bin" | tee -a $LOG
 echo "$COROOT/deploy/install-rbac.sh" | tee -a $LOG
 
