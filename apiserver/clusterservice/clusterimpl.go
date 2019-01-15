@@ -75,6 +75,16 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 
 	for _, cluster := range clusterList.Items {
 
+		//delete any existing tasks for the pg-cluster
+		delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+		log.Debugf("cluster delete delTaskSelector is " + delTaskSelector)
+		err := kubeapi.Deletepgtasks(apiserver.RESTClient, delTaskSelector, apiserver.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 		if deleteData {
 			err := deleteDatabaseSecrets(cluster.Spec.Name)
 			if err != nil {
@@ -82,12 +92,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 				response.Status.Msg = err.Error()
 				return response
 			}
-			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
+
+			//delete the pvc's for this cluster
+			delPVCsSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+			err = kubeapi.DeletePVCs(apiserver.Clientset, delPVCsSelector, apiserver.Namespace)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
 			}
+
+			/**
+			starting in 3.5 we are not going to manually run
+			an 'rm -rf' on volumes, instead we'll leave that for the
+			file system to take care of or administrators
+			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
+			*/
 		}
 
 		if deleteConfigs {
@@ -96,14 +116,6 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 				response.Status.Msg = err.Error()
 				return response
 			}
-		}
-
-		delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-		err := kubeapi.Deletepgtasks(apiserver.RESTClient, delTaskSelector, apiserver.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
 		}
 
 		//delete any jobs with pg-cluster=mycluster label
@@ -971,7 +983,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 	var err error
 
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
