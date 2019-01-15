@@ -19,6 +19,7 @@ IMAGES=(
 pgo-backrest-repo
 pgo-backrest-restore
 pgo-scheduler
+pgo-sqlrunner
 postgres-operator
 pgo-apiserver
 pgo-lspvc
