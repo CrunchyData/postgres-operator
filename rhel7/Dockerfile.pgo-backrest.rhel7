@@ -34,6 +34,6 @@ RUN chmod g=u /etc/passwd && \
         chmod g=u /etc/group
 
 USER 26
-ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
 VOLUME ["/pgdata","/backrestrepo"]
 CMD ["/opt/cpm/bin/pgo-backrest"]

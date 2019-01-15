@@ -213,10 +213,26 @@ Also, a pre-installation step is currently required prior to installing the Oper
 This script will generate any keys and certificates required to deploy the Operator, and will then place them in the proper directory within the Helm chart.
 
 ## Quickstart Script
-There is a *quickstart* script found in the following location which seeks to automate a simple Operator deployment onto an existing Kubernetes installation:
+There is a *quickstart* script found in the following Github repository location which seeks to automate a simple Operator deployment onto an existing Kubernetes installation:
 
     ./examples/quickstart.sh
 
 This script is a bash script and is intended to run on Linux hosts.  The script will ask you questions related to your configuration and the proceed to execute commands to cause the Operator to be deployed.  The quickstart script is meant for very simple deployments and to test the Operator and would not be typically used to maintain an Operator deployment.
+
+Get a copy of the script as follows:
+
+    wget https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/examples/quickstart.sh
+    chmod +x ./quickstart.sh
+
+There are some prerequisites for running this script:
+
+ * a running Kubernetes system
+ * access to a Kube user account that has cluster-admin priviledges, this is required to install the Operator RBAC rules
+ * a namespace created to hold the Operator
+ * a Storage Class used for dynamic storage provisioning
+ * a Mac, Ubuntu, or Centos host to install from, this host and your terminal session should be configured to access your Kube cluster
+
+    
+
 
 

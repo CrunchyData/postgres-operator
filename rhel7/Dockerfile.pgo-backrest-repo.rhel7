@@ -32,7 +32,7 @@ RUN mkdir /.ssh && chown pgbackrest:pgbackrest /.ssh && chmod o+rwx /.ssh
 
 USER pgbackrest
 
-ENTRYPOINT ["opt/cpm/bin/uid_pgbackrest.sh"]
+ENTRYPOINT ["/opt/cpm/bin/uid_pgbackrest.sh"]
 VOLUME ["/sshd", "/backrestrepo" ]
 
 CMD ["pgo-backrest-repo.sh"]

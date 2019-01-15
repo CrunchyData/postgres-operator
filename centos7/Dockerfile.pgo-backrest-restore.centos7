@@ -25,7 +25,7 @@ RUN chmod g=u /etc/passwd && \
 
 RUN mkdir /.ssh && chown 26:26 /.ssh && chmod o+rwx /.ssh
 
-ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
 
 USER 26
 
