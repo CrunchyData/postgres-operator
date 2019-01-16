@@ -1,40 +1,9 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto+Mono:400');
-
-@font-face {
-  font-family: 'Fort';
-  src: url('../fonts/Fort-Light.eot');
-  src: url('../fonts/Fort-Light.eot?#iefix') format('embedded-opentype'), url('../fonts/Fort-Light.woff2') format('woff2'), url('../fonts/Fort-Light.woff') format('woff'), url('../fonts/Fort-Light.ttf') format('truetype'), url('../fonts/Fort-Light.svg#Fort-Light') format('svg');
-  font-weight: 300;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Fort';
-  src: url('../fonts/Fort-Extrabold.eot');
-  src: url('../fonts/Fort-Extrabold.eot?#iefix') format('embedded-opentype'), url('../fonts/Fort-Extrabold.woff2') format('woff2'), url('../fonts/Fort-Extrabold.woff') format('woff'), url('../fonts/Fort-Extrabold.ttf') format('truetype'), url('../fonts/Fort-Extrabold.svg#Fort-Extrabold') format('svg');
-  font-weight: 800;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Fort';
-  src: url('../fonts/Fort-Black.eot');
-  src: url('../fonts/Fort-Black.eot?#iefix') format('embedded-opentype'), url('../fonts/Fort-Black.woff2') format('woff2'), url('../fonts/Fort-Black.woff') format('woff'), url('../fonts/Fort-Black.ttf') format('truetype'), url('../fonts/Fort-Black.svg#Fort-Black') format('svg');
-  font-weight: 900;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Fort';
-  src: url('/fonts/Fort-Medium.eot');
-  src: url('/fonts/Fort-Medium.eot?#iefix') format('embedded-opentype'), url('/fonts/Fort-Medium.woff2') format('woff2'), url('/fonts/Fort-Medium.woff') format('woff'), url('/fonts/Fort-Medium.ttf') format('truetype'), url('/fonts/Fort-Medium.svg#Fort-Medium') format('svg');
-  font-weight: 500;
-  font-style: normal;
-}
+@import url('https://fonts.googleapis.com/css?family=Open+Sans');
 
 body, h1, h2, h3, h4, h5, h6, article section.page h1:first-of-type {
     color: rgba(0,0,0,0.87);
-    font-family: Fort, sans-serif;
+    font-family: 'Open Sans', sans-serif;
     font-weight: 300;
 }
 
@@ -66,31 +35,45 @@ dt {
 }
 
 dd {
-    padding: 0.5rem 0 0.5rem 2rem;
+    margin-left: 2rem;
+}
+
+dd > dl > dd {
+    padding: 0;
+    margin-left: 2rem;
+}
+
+code {
+    font-size: 98%;
 }
 
 a.baselink {
     font-size: 15px;
     font-weight: 500;
-    color: #0167B3;
+    color: #0167B3 !important;
 }
 
-/* Article & Section */
-
-article {
-    margin-top: 0;
+ul.menu a {
+    color: #000;
 }
 
-article section.page {
-    padding: 1rem 12rem;
-}
-
-article > aside {
-    width: 25rem !important;
+nav.shortcuts a {
+    margin: 0 0.5rem;
 }
 
 ul.menu b {
     font-weight: 500;
+}
+
+/* Article & Section */
+
+article section.page {
+    padding: 1rem 12rem;
+    margin-top: 3rem;
+}
+
+article > aside {
+    width: 25rem !important;
 }
 
 article > aside .menu {
@@ -125,6 +108,16 @@ article > aside .menu .dd-item div a:active,
     padding: 0 0rem;
 }
 
+article > aside .menu .dd-item.haschildren > div a {
+    cursor: none;
+    pointer-events: none;
+}
+
+article > aside .menu .dd-item li {
+    list-style-type: circle;
+    margin-left: 1rem;
+}
+
 article section.page h1:first-of-type {
     text-transform: none;
     color: #0167B3;
@@ -156,7 +149,7 @@ article section.page table td.content {
 }
 
 .admonitionblock.note table .title:before {
-    font-family: FontAwesome;
+    font-family: "Font Awesome 5 Free";
     font-weight: normal;
     content: "\f249";
     margin: 5px;
@@ -180,30 +173,36 @@ section a {
 
 /* Header */
 
-header {
+nav.navbar.navbar-expand-lg.navbar-dark.bg-primary.fixed-top {
+    height: 70px;
+}
+
+.bg-primary {
     background-image: url("../images/home_bg.jpg");
     background-size: cover;
-    position: relative !important;
-    height: 90px !important;
 }
 
-header .logo * {
-    font-size: 1.4rem;
-    font-weight: 600;
-    height: 3rem !important;
+nav.navbar nav.shortcuts {
+    -webkit-box-flex: 1;
+    -ms-flex: 1;
+    flex: 1;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: end;
+    -ms-flex-pack: end;
+    justify-content: flex-end;
+    list-style-type: none;
+    font-weight: 400;
 }
 
-header .logo a {
-    margin-left: 1.5rem;
+nav.navbar nav.shortcuts *:hover {
+    text-decoration: none;
 }
 
-header nav.shortcuts li a:hover {
-    background-color: transparent;
-}
-
-header nav.shortcuts li a label {
-    margin-bottom: 0rem;
-    cursor: pointer;
+span.navbar-text .fab, span.navbar-text .fas {
+    text-decoration: none;
+    margin: 0 5px;
 }
 
 /* Post Listings */
@@ -331,13 +330,14 @@ a.github-link {
 }
 
 @media only all and (max-width: 1024px) {
+
     article > aside {
         width: 20rem !important;
         padding-right: 1.5rem;
     }
 
     article section.page {
-        padding: 1rem 8rem;
+        padding: 2rem;
     }
 
     article section.page h1:first-of-type, h1 {
@@ -361,9 +361,35 @@ a.github-link {
     h5 {
         font-size: 1.1rem;
     }
+
+    #top-bar {
+        display: none;
+    }
+}
+
+@media only all and (max-width: 992px) {
+
+    button.navbar-toggler {
+        display: none;
+    }
+
+    nav.shortcuts label {
+        display: none;
+    }
+
+    span.navbar-text .fab, span.navbar-text .fas {
+        display: block;
+        font-size: 1.5rem;
+        margin: 0 0.7rem;
+    }
 }
 
 @media only all and (max-width: 860px) {
+
+    div.toc > dl.toc > dd > dl > dt,
+    div.TOC > dl > dd > dl > dt {
+        margin: 1rem 0;
+    }
 
     article > aside {
         display: none;
@@ -373,7 +399,7 @@ a.github-link {
     }
 
     article section.page {
-        margin: 0 1rem !important;
+        margin: 2.5rem 1rem;
         padding: 0 1rem !important;
     }
 
@@ -450,8 +476,9 @@ nav.downloads *:hover {
 }
 
 nav#TableOfContents div.h2, aside b {
-    list-style: none;
     margin: 0.5rem 0px;
+    font-size: 13px;
+    font-weight: 300;
     display: block;
 }
 

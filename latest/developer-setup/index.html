@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    
     <title>Crunchy Data PostgreSQL Operator Documentation</title>
     
       <meta charset="utf-8">
@@ -11,10 +12,12 @@
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
 
-<link rel="stylesheet" href="https://crunchydata.github.io/postgres-operator/latest/css/bootstrap.min.css">
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+<link href="https://crunchydata.github.io/postgres-operator/latest/css/Fort-Fonts.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/custom.css" rel="stylesheet">
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
 <script src="https://crunchydata.github.io/postgres-operator/latest/js/jquery-2.x.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.bundle.min.js" integrity="sha384-zDnhMsjVZfS3hiP7oCBRmfjkQC4fzxVxFhBx8Hkz2aZX8gEvA/jsP3eXRCvzTofP" crossorigin="anonymous"></script>
 <script src="https://crunchydata.github.io/postgres-operator/latest/js/toc.js"></script>
 <script type="text/javascript">
       var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/latest\/";
@@ -27,35 +30,39 @@
   </head>
   <body data-url="/developer-setup/">
     
-      <header>
-  <div class="logo">
-    
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+  
 	
   
-    <img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg">
+    <a class="navbar-brand" href="https://www.crunchydata.com/"><img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg"></a>
   
 
 
-  </div>
-  <div class="burger"><a href="javascript:void(0);" style="font-size:15px;">&#9776;</a></div>
-    <nav class="shortcuts">
-            <li class="" role="">
-                <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
-                  <i class='fab fa-github'></i> <label>Source</label>
-                </a>
-            </li>
-            <li class="" role="">
-                <a href="https://kubernetes.io/docs/"  rel="noopener">
-                  <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
-                </a>
-            </li>
-            <li class="" role="">
-                <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
-                  <i class='fas fa-file-contract'></i> <label>License</label>
-                </a>
-            </li>
-    </nav>
-</header>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <ul class="navbar-nav mr-auto"></ul>
+  <span class="navbar-text">
+      <nav class="shortcuts">
+              <li class="" role="">
+                  <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
+                    <i class='fab fa-github'></i> <label>Source</label>
+                  </a>
+              </li>
+              <li class="" role="">
+                  <a href="https://kubernetes.io/docs/"  rel="noopener">
+                    <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
+                  </a>
+              </li>
+              <li class="" role="">
+                  <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
+                    <i class='fas fa-file-contract'></i> <label>License</label>
+                  </a>
+              </li>
+      </nav>
+  </span>
+</nav>
+
 <article>
   <aside>
 
@@ -78,25 +85,23 @@
       <hr>
       <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
       <hr>
-
-      
+        <b>Available Formats</b>
+        <nav class="downloads">
+                <li class="" role="">
+                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
+                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
+                    </a>
+                </li>
+        </nav>
+        <hr>
 
       <b>Navigation</b>
-    <li data-nav-id="/installation/" class="dd-item haschildren
+    <li data-nav-id="/installation/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/installation/installation/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/installation/">
-            Operator Installation
-          </a>
-        </div>
-    </li>
-        </ul>
     </li>
     <li data-nav-id="/configuration/" class="dd-item haschildren
         ">
@@ -121,82 +126,66 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/cli-and-example/" class="dd-item haschildren
+    <li data-nav-id="/operator-cli/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/">CLI and Examples</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/operator-cli/">Operator CLI</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/cli-and-example/pgo-cli/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/">
-            PGO CLI
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/design/" class="dd-item haschildren
+    <li data-nav-id="/design/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/design/">Design</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/design/">Design</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/design/design/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/design/design/">
-            Key Features
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/developer-setup/" class="dd-item parent active haschildren
+    <li data-nav-id="/developer-setup/" class="dd-item parent active
         ">
       <div>
       <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/">Developer Setup</a>
-            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
-        <ul>
-      <li data-nav-id="/developer-setup/developing/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/">
-            Develop
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/security/" class="dd-item haschildren
+    <li data-nav-id="/security/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/security/security/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/security/security/">
-            Security
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/upgrade/" class="dd-item haschildren
+    <li data-nav-id="/upgrade/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrade</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrade</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/contributing/" class="dd-item haschildren
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/">Contributing</a><i class="fas fa-angle-right fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/upgrade/upgrading/" class="dd-item">
+      <li data-nav-id="/contributing/documentation-updates/" class="dd-item">
         <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/">
-            Upgrading
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/documentation-updates/">
+            Updating Documentation
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/contributing/issues/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/issues/">
+            Submitting Issues
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/contributing/pull-requests/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/pull-requests/">
+            Submitting Pull Requests
           </a>
         </div>
     </li>
@@ -206,19 +195,8 @@
 
 
 
-      <hr><b>Table of Contents</b>
-<nav id="TableOfContents"></nav>
+      <hr><nav id="TableOfContents"></nav>
 
-      <hr>
-      <b>Available Formats</b>
-      <nav class="downloads">
-              <li class="" role="">
-                  <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
-                    <i class='fas fa-file-pdf'></i> <label>PDF</label>
-                  </a>
-              </li>
-      </nav>
-      <hr>
 
 
       <section>
@@ -235,18 +213,19 @@
    Installation</option>
     <option value="/configuration/" >
    Configuration</option>
-    <option value="/cli-and-example/" >
-   CLI and Examples</option>
+    <option value="/operator-cli/" >
+   Operator CLI</option>
     <option value="/design/" >
    Design</option>
     <option value="/developer-setup/"  selected>
    Developer Setup</option> 
-      <option value="/developer-setup/developing/" >- Develop</option>
   
     <option value="/security/" >
    Security</option>
     <option value="/upgrade/" >
    Upgrade</option>
+    <option value="/contributing/" >
+   Contributing</option>
 
 
 
@@ -299,58 +278,111 @@
     <h1>Developer Setup</h1>
 
     
-    
-    
-
-
-
-<div class="extra-pagination inner">
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  1</span>
-	
-</nav>
-
-</div>
-
-
-   <article class="post Developer Setup">
-    <header class="post-header">
-        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/">Develop</a></h2>
-    </header>
-    <section class="post-excerpt">
-        <p>Developing The Operator is an open source project hosted on github (https://github.com/crunchydata/postgres-operator)
-Developers that wish to build the Operator from source or contribute to the project via pull requests would set up a development environment as follows:
-Create Kubernetes Cluster We use either Openshift Container Platform or kubeadm to install our development clusters, we currently develop and test on CentOS and RHEL hosts. Each of those installation methods are documented on the respective project&rsquo;s sites. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/">&raquo;</a></p>
-    </section>
-    <footer class=" footline" >
-         
-        
-
-        
-        
-
-    </footer>
-</article>
-
-
-<div style="margin-bottom:2rem"></div>
-
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  1</span>
-	
-</nav>
-
-
-
 
     
+
+
+
+<h1 id="developing">Developing</h1>
+
+<p>The <a href="https://github.com/crunchydata/postgres-operator">Postgres-Operator</a> is an open source project hosted on GitHub.</p>
+
+<p>Developers that wish to build the Operator from source or contribute to the project via pull requests would set up a development environment through the following steps.</p>
+
+<h2 id="create-kubernetes-cluster">Create Kubernetes Cluster</h2>
+
+<p>We use either OpenShift Container Platform or kubeadm to install development clusters.</p>
+
+<h2 id="create-a-local-development-host">Create a Local Development Host</h2>
+
+<p>We currently build on CentOS and RHEL hosts. Others are possible, however we don&rsquo;t support or test other Linux variants at this time.</p>
+
+<h2 id="perform-manual-install">Perform Manual Install</h2>
+
+<p>You can follow the manual installation method described in this documentation to make sure you can deploy from your local development host to your Kubernetes cluster.</p>
+
+<h2 id="build-locally">Build Locally</h2>
+
+<p>You can now build the Operator from source on local on your development host.  Here are some steps to follow:</p>
+
+<h3 id="get-build-dependencies">Get Build Dependencies</h3>
+
+<p>Run the following target to install a golang compiler, and any other build dependencies:</p>
+
+<pre><code>make setup
+</code></pre>
+
+<h3 id="compile">Compile</h3>
+
+<p>You will build all the Operator binaries and Docker images by running:</p>
+
+<pre><code>make all
+</code></pre>
+
+<p>This assumes you have Docker installed and running on your development host.</p>
+
+<p>The project uses the golang dep package manager to vendor all the golang source dependencies into the <em>vendor</em> directory.  You typically don&rsquo;t need to run any <em>dep</em> commands unless you are adding new golang package dependencies into the project outside of what is within the project for a given release.</p>
+
+<p>After a full compile, you will have a <em>pgo</em> binary in <code>$HOME/odev/bin</code> and the Operator images in your local Docker registry.</p>
+
+<h3 id="release">Release</h3>
+
+<p>You can perform a release build by running:</p>
+
+<pre><code>make release
+</code></pre>
+
+<p>This will compile the Mac and Windows versions of <em>pgo</em>.</p>
+
+<h3 id="deploy">Deploy</h3>
+
+<p>Now that you have built the Operator images, you can push them to your Kubernetes cluster if that cluster is remote to your development host.</p>
+
+<p>You would then run:</p>
+
+<pre><code>make deployoperator
+</code></pre>
+
+<p>To deploy the Operator on your Kubernetes cluster.  If your Kubernetes cluster is not local to your development host, you will need to specify a config file that will connect you to your Kubernetes cluster. See the Kubernetes documentation for details.</p>
+
+<h3 id="debug">Debug</h3>
+
+<p>Debug level logging in turned on by default when deploying the Operator.</p>
+
+<p>You can view the REST API logs with the following alias:</p>
+
+<pre><code>alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c apiserver'
+</code></pre>
+
+<p>You can view the Operator core logic logs with the following alias:</p>
+
+<pre><code>alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c operator'
+</code></pre>
+
+<p>You can view the Scheduler logs with the following alias:</p>
+
+<pre><code>alias slog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c scheduler'
+</code></pre>
+
+<p>You can enable the <em>pgo</em> CLI debugging with the following flag:</p>
+
+<pre><code>pgo version --debug
+</code></pre>
+
+<p>You can set the REST API URL as follows after a deployment if you are
+developing on your local host:</p>
+
+<pre><code>alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath=&quot;{.spec.clusterIP}&quot;`:8443'
+</code></pre>
+
+
+
+
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/design/design/" title="Key Features"> <i class="fa fa-chevron-left"></i><label>Key Features</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/" title="Develop" style="margin-right: 0px;"><label>Develop</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/design/" title="Design"> <i class="fa fa-chevron-left"></i><label>Design</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/security/" title="Security" style="margin-right: 0px;"><label>Security</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>
