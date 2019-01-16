@@ -29,8 +29,9 @@ import (
 )
 
 // CreatePolicy ...
-func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile string) error {
+func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile string) (bool, error) {
 
+	var found bool
 	log.Debugf("create policy called for %s", policyName)
 	result := crv1.Pgpolicy{}
 
@@ -39,11 +40,11 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 		&result, policyName, apiserver.Namespace)
 	if err == nil {
 		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
-		return err
+		return true, err
 	} else if !found {
 		log.Debugf("pgpolicy %s was not found so we will create it", policyName)
 	} else {
-		return err
+		return false, err
 	}
 
 	// Create an instance of our CRD
@@ -63,10 +64,10 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 		newInstance, apiserver.Namespace)
 
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return err
+	return false, err
 
 }
 

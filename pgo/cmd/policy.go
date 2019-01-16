@@ -161,6 +161,7 @@ func createPolicy(args []string) {
 
 	response, err := api.CreatePolicy(httpclient, &SessionCredentials, r)
 
+	log.Debugf("response is %v", response)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
