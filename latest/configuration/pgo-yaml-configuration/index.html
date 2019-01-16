@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    
     <title>Crunchy Data PostgreSQL Operator Documentation</title>
     
       <meta charset="utf-8">
@@ -11,10 +12,12 @@
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
 
-<link rel="stylesheet" href="https://crunchydata.github.io/postgres-operator/latest/css/bootstrap.min.css">
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+<link href="https://crunchydata.github.io/postgres-operator/latest/css/Fort-Fonts.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/custom.css" rel="stylesheet">
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
 <script src="https://crunchydata.github.io/postgres-operator/latest/js/jquery-2.x.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.bundle.min.js" integrity="sha384-zDnhMsjVZfS3hiP7oCBRmfjkQC4fzxVxFhBx8Hkz2aZX8gEvA/jsP3eXRCvzTofP" crossorigin="anonymous"></script>
 <script src="https://crunchydata.github.io/postgres-operator/latest/js/toc.js"></script>
 <script type="text/javascript">
       var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/latest\/";
@@ -27,35 +30,39 @@
   </head>
   <body data-url="/configuration/pgo-yaml-configuration/">
     
-      <header>
-  <div class="logo">
-    
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+  
 	
   
-    <img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg">
+    <a class="navbar-brand" href="https://www.crunchydata.com/"><img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg"></a>
   
 
 
-  </div>
-  <div class="burger"><a href="javascript:void(0);" style="font-size:15px;">&#9776;</a></div>
-    <nav class="shortcuts">
-            <li class="" role="">
-                <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
-                  <i class='fab fa-github'></i> <label>Source</label>
-                </a>
-            </li>
-            <li class="" role="">
-                <a href="https://kubernetes.io/docs/"  rel="noopener">
-                  <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
-                </a>
-            </li>
-            <li class="" role="">
-                <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
-                  <i class='fas fa-file-contract'></i> <label>License</label>
-                </a>
-            </li>
-    </nav>
-</header>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <ul class="navbar-nav mr-auto"></ul>
+  <span class="navbar-text">
+      <nav class="shortcuts">
+              <li class="" role="">
+                  <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
+                    <i class='fab fa-github'></i> <label>Source</label>
+                  </a>
+              </li>
+              <li class="" role="">
+                  <a href="https://kubernetes.io/docs/"  rel="noopener">
+                    <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
+                  </a>
+              </li>
+              <li class="" role="">
+                  <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
+                    <i class='fas fa-file-contract'></i> <label>License</label>
+                  </a>
+              </li>
+      </nav>
+  </span>
+</nav>
+
 <article>
   <aside>
 
@@ -78,25 +85,23 @@
       <hr>
       <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
       <hr>
-
-      
+        <b>Available Formats</b>
+        <nav class="downloads">
+                <li class="" role="">
+                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
+                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
+                    </a>
+                </li>
+        </nav>
+        <hr>
 
       <b>Navigation</b>
-    <li data-nav-id="/installation/" class="dd-item haschildren
+    <li data-nav-id="/installation/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/installation/installation/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/installation/">
-            Operator Installation
-          </a>
-        </div>
-    </li>
-        </ul>
     </li>
     <li data-nav-id="/configuration/" class="dd-item parent haschildren
         ">
@@ -122,81 +127,66 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/cli-and-example/" class="dd-item haschildren
+    <li data-nav-id="/operator-cli/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/">CLI and Examples</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/operator-cli/">Operator CLI</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/design/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/design/">Design</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/developer-setup/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/">Developer Setup</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/security/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/upgrade/" class="dd-item
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrade</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/contributing/" class="dd-item haschildren
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/">Contributing</a><i class="fas fa-angle-right fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/cli-and-example/pgo-cli/" class="dd-item">
+      <li data-nav-id="/contributing/documentation-updates/" class="dd-item">
         <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/">
-            PGO CLI
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/documentation-updates/">
+            Updating Documentation
           </a>
         </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/design/" class="dd-item haschildren
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/design/">Design</a><i class="fas fa-angle-right fa-lg category-icon"></i>
-
-      </div>
-        <ul>
-      <li data-nav-id="/design/design/" class="dd-item">
+      <li data-nav-id="/contributing/issues/" class="dd-item">
         <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/design/design/">
-            Key Features
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/issues/">
+            Submitting Issues
           </a>
         </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/developer-setup/" class="dd-item haschildren
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/">Developer Setup</a><i class="fas fa-angle-right fa-lg category-icon"></i>
-
-      </div>
-        <ul>
-      <li data-nav-id="/developer-setup/developing/" class="dd-item">
+      <li data-nav-id="/contributing/pull-requests/" class="dd-item">
         <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/">
-            Develop
-          </a>
-        </div>
-    </li>
-        </ul>
-    </li>
-    <li data-nav-id="/security/" class="dd-item haschildren
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a><i class="fas fa-angle-right fa-lg category-icon"></i>
-
-      </div>
-        <ul>
-      <li data-nav-id="/security/security/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/security/security/">
-            Security
-          </a>
-        </div>
-    </li>
-        </ul>
-    </li>
-    <li data-nav-id="/upgrade/" class="dd-item haschildren
-        ">
-      <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrade</a><i class="fas fa-angle-right fa-lg category-icon"></i>
-
-      </div>
-        <ul>
-      <li data-nav-id="/upgrade/upgrading/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/">
-            Upgrading
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/pull-requests/">
+            Submitting Pull Requests
           </a>
         </div>
     </li>
@@ -206,19 +196,8 @@
 
 
 
-      <hr><b>Table of Contents</b>
-<nav id="TableOfContents"></nav>
+      <hr><nav id="TableOfContents"></nav>
 
-      <hr>
-      <b>Available Formats</b>
-      <nav class="downloads">
-              <li class="" role="">
-                  <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
-                    <i class='fas fa-file-pdf'></i> <label>PDF</label>
-                  </a>
-              </li>
-      </nav>
-      <hr>
 
 
       <section>
@@ -238,8 +217,8 @@
       <option value="/configuration/configuration/" >- Configuration Resources</option>
       <option value="/configuration/pgo-yaml-configuration/"  selected>- PGO YAML</option>
   
-    <option value="/cli-and-example/" >
-   CLI and Examples</option>
+    <option value="/operator-cli/" >
+   Operator CLI</option>
     <option value="/design/" >
    Design</option>
     <option value="/developer-setup/" >
@@ -248,6 +227,8 @@
    Security</option>
     <option value="/upgrade/" >
    Upgrade</option>
+    <option value="/contributing/" >
+   Contributing</option>
 
 
 
@@ -305,7 +286,7 @@
     <h1>PGO YAML</h1>
 
     
-    
+
     
     
 
@@ -428,7 +409,7 @@
 
 <tr>
 <td>AutofailReplaceReplica</td>
-<td>optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in pgo.yaml is overrode with this command line flag if specified by a user.</td>
+<td>optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in <em>pgo.yaml</em> is overrode with this command line flag if specified by a user.</td>
 </tr>
 </tbody>
 </table>
@@ -450,7 +431,7 @@
 </tr>
 
 <tr>
-<td>ArchiveStorage</td>
+<td>XlogStorage</td>
 <td>optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used</td>
 </tr>
 
@@ -641,6 +622,11 @@ for other access modes it might support.</p>
 
 <tbody>
 <tr>
+<td>PreferredFailoverNode</td>
+<td>optional, a label selector (e.g. hosttype=offsite) that if set, will be used to pick the failover target which is running on a host that matches this label if multiple targets are equal in replication status</td>
+</tr>
+
+<tr>
 <td>LSPVCTemplate</td>
 <td>the PVC lspvc template file that lists PVC contents</td>
 </tr>
@@ -722,7 +708,7 @@ that want to use this feature have to place labels on their PV resources as part
 <p>Example PV creation scripts are provided that add labels to a set of PVs and can be used for testing:  <code>$COROOT/pv/create-pv-nfs-labels.sh</code>
  in that example, a label of <strong>crunchyzone=red</strong> is set on a set of PVs to test with.</p>
 
-<p>The pgo.yaml includes a storage config named <strong>nfsstoragered</strong> that when used will demonstrate the label matching.  This feature allows you to support
+<p>The <em>pgo.yaml</em> includes a storage config named <strong>nfsstoragered</strong> that when used will demonstrate the label matching.  This feature allows you to support
 n-number of NFS storage configurations and supports spreading a PG cluster across different NFS storage configurations.</p>
 
 <h2 id="container-resources-details">Container Resources Details</h2>
@@ -770,12 +756,12 @@ Events:</p>
 a storage configuration for your backups, you essentially have moved your backup files automatically to your disaster recovery site thanks to network storage.</p>
 
 
-    
+
     
         <div class="chevrons">
     <div id="navigation">
 <a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/" title="Configuration Resources"> <i class="fa fa-chevron-left"></i><label>Configuration Resources</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/" title="CLI and Examples" style="margin-right: 0px;"><label>CLI and Examples</label><i class="fa fa-chevron-right"></i></a></div>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/operator-cli/" title="Operator CLI" style="margin-right: 0px;"><label>Operator CLI</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>

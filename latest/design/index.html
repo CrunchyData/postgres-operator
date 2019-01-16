@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    
     <title>Crunchy Data PostgreSQL Operator Documentation</title>
     
       <meta charset="utf-8">
@@ -11,10 +12,12 @@
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
 
-<link rel="stylesheet" href="https://crunchydata.github.io/postgres-operator/latest/css/bootstrap.min.css">
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+<link href="https://crunchydata.github.io/postgres-operator/latest/css/Fort-Fonts.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/custom.css" rel="stylesheet">
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
 <script src="https://crunchydata.github.io/postgres-operator/latest/js/jquery-2.x.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.bundle.min.js" integrity="sha384-zDnhMsjVZfS3hiP7oCBRmfjkQC4fzxVxFhBx8Hkz2aZX8gEvA/jsP3eXRCvzTofP" crossorigin="anonymous"></script>
 <script src="https://crunchydata.github.io/postgres-operator/latest/js/toc.js"></script>
 <script type="text/javascript">
       var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/latest\/";
@@ -27,35 +30,39 @@
   </head>
   <body data-url="/design/">
     
-      <header>
-  <div class="logo">
-    
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+  
 	
   
-    <img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg">
+    <a class="navbar-brand" href="https://www.crunchydata.com/"><img alt="Crunchy Data" src="https://crunchydata.github.io/postgres-operator/latest/images/logo.svg"></a>
   
 
 
-  </div>
-  <div class="burger"><a href="javascript:void(0);" style="font-size:15px;">&#9776;</a></div>
-    <nav class="shortcuts">
-            <li class="" role="">
-                <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
-                  <i class='fab fa-github'></i> <label>Source</label>
-                </a>
-            </li>
-            <li class="" role="">
-                <a href="https://kubernetes.io/docs/"  rel="noopener">
-                  <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
-                </a>
-            </li>
-            <li class="" role="">
-                <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
-                  <i class='fas fa-file-contract'></i> <label>License</label>
-                </a>
-            </li>
-    </nav>
-</header>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <ul class="navbar-nav mr-auto"></ul>
+  <span class="navbar-text">
+      <nav class="shortcuts">
+              <li class="" role="">
+                  <a href="https://github.com/CrunchyData/postgres-operator"  rel="noopener">
+                    <i class='fab fa-github'></i> <label>Source</label>
+                  </a>
+              </li>
+              <li class="" role="">
+                  <a href="https://kubernetes.io/docs/"  rel="noopener">
+                    <i class='fas fa-bookmark'></i> <label>Kubernetes</label>
+                  </a>
+              </li>
+              <li class="" role="">
+                  <a href="https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md"  rel="noopener">
+                    <i class='fas fa-file-contract'></i> <label>License</label>
+                  </a>
+              </li>
+      </nav>
+  </span>
+</nav>
+
 <article>
   <aside>
 
@@ -78,25 +85,23 @@
       <hr>
       <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
       <hr>
-
-      
+        <b>Available Formats</b>
+        <nav class="downloads">
+                <li class="" role="">
+                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
+                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
+                    </a>
+                </li>
+        </nav>
+        <hr>
 
       <b>Navigation</b>
-    <li data-nav-id="/installation/" class="dd-item haschildren
+    <li data-nav-id="/installation/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/installation/">Installation</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/installation/installation/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/installation/installation/">
-            Operator Installation
-          </a>
-        </div>
-    </li>
-        </ul>
     </li>
     <li data-nav-id="/configuration/" class="dd-item haschildren
         ">
@@ -121,82 +126,66 @@
     </li>
         </ul>
     </li>
-    <li data-nav-id="/cli-and-example/" class="dd-item haschildren
+    <li data-nav-id="/operator-cli/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/">CLI and Examples</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/operator-cli/">Operator CLI</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/cli-and-example/pgo-cli/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/">
-            PGO CLI
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/design/" class="dd-item parent active haschildren
+    <li data-nav-id="/design/" class="dd-item parent active
         ">
       <div>
       <a href="https://crunchydata.github.io/postgres-operator/latest/design/">Design</a>
-            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
-        <ul>
-      <li data-nav-id="/design/design/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/design/design/">
-            Key Features
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/developer-setup/" class="dd-item haschildren
+    <li data-nav-id="/developer-setup/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/">Developer Setup</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/">Developer Setup</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/developer-setup/developing/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/developing/">
-            Develop
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/security/" class="dd-item haschildren
+    <li data-nav-id="/security/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/security/">Security</a>
 
       </div>
-        <ul>
-      <li data-nav-id="/security/security/" class="dd-item">
-        <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/security/security/">
-            Security
-          </a>
-        </div>
     </li>
-        </ul>
-    </li>
-    <li data-nav-id="/upgrade/" class="dd-item haschildren
+    <li data-nav-id="/upgrade/" class="dd-item
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrade</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/">Upgrade</a>
+
+      </div>
+    </li>
+    <li data-nav-id="/contributing/" class="dd-item haschildren
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/">Contributing</a><i class="fas fa-angle-right fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/upgrade/upgrading/" class="dd-item">
+      <li data-nav-id="/contributing/documentation-updates/" class="dd-item">
         <div>
-          <a href="https://crunchydata.github.io/postgres-operator/latest/upgrade/upgrading/">
-            Upgrading
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/documentation-updates/">
+            Updating Documentation
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/contributing/issues/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/issues/">
+            Submitting Issues
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/contributing/pull-requests/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/pull-requests/">
+            Submitting Pull Requests
           </a>
         </div>
     </li>
@@ -206,19 +195,8 @@
 
 
 
-      <hr><b>Table of Contents</b>
-<nav id="TableOfContents"></nav>
+      <hr><nav id="TableOfContents"></nav>
 
-      <hr>
-      <b>Available Formats</b>
-      <nav class="downloads">
-              <li class="" role="">
-                  <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres-operator.pdf"  rel="noopener">
-                    <i class='fas fa-file-pdf'></i> <label>PDF</label>
-                  </a>
-              </li>
-      </nav>
-      <hr>
 
 
       <section>
@@ -235,11 +213,10 @@
    Installation</option>
     <option value="/configuration/" >
    Configuration</option>
-    <option value="/cli-and-example/" >
-   CLI and Examples</option>
+    <option value="/operator-cli/" >
+   Operator CLI</option>
     <option value="/design/"  selected>
    Design</option> 
-      <option value="/design/design/" >- Key Features</option>
   
     <option value="/developer-setup/" >
    Developer Setup</option>
@@ -247,6 +224,8 @@
    Security</option>
     <option value="/upgrade/" >
    Upgrade</option>
+    <option value="/contributing/" >
+   Contributing</option>
 
 
 
@@ -299,58 +278,234 @@
     <h1>Design</h1>
 
     
-    
-    
-
-
-
-<div class="extra-pagination inner">
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  1</span>
-	
-</nav>
-
-</div>
-
-
-   <article class="post Design">
-    <header class="post-header">
-        <h2 class="post-title"><a href="https://crunchydata.github.io/postgres-operator/latest/design/design/">Key Features</a></h2>
-    </header>
-    <section class="post-excerpt">
-        <p>Provisioning So, what does the Postgres Operator actually deploy when you create a cluster?
-On this diagram, objects with dashed lines are components that are optionally deployed as part of a PostgreSQL Cluster by the operator. Objects with solid lines are the fundamental and required components.
-For example, within the Primary Deployment, the metrics container is completely optional. That component can be deployed using either the operator configuration or command line arguments if you want to cause metrics to be collected from the Postgres container. <a class="read-more" href="https://crunchydata.github.io/postgres-operator/latest/design/design/">&raquo;</a></p>
-    </section>
-    <footer class=" footline" >
-         
-        
-
-        
-        
-
-    </footer>
-</article>
-
-
-<div style="margin-bottom:2rem"></div>
-
-<nav class="pagination" role="navigation">
-	
-	<span class="page-number"> 1  1</span>
-	
-</nav>
-
-
-
 
     
+
+
+
+<h2 id="provisioning">Provisioning</h2>
+
+<p>So, what does the Postgres Operator actually deploy
+when you create a cluster?</p>
+
+<p><img src="https://crunchydata.github.io/postgres-operator/latest/OperatorReferenceDiagram.png" alt="Reference" /></p>
+
+<p>On this diagram, objects with dashed lines are components
+that are optionally deployed as part of a PostgreSQL Cluster
+by the operator. Objects with solid lines are the fundamental and
+required components.</p>
+
+<p>For example, within the Primary Deployment, the <em>metrics</em> container
+is completely optional. That component can be deployed using
+either the operator configuration or command line arguments if you
+want to cause metrics to be collected from the Postgres container.</p>
+
+<p>Replica deployments are similar to the primary deployment but
+are optional. A replica is not required to be created unless the
+capability for one is necessary. As you scale up the Postgres
+cluster, the standard set of components gets deployed and
+replication to the primary is started.</p>
+
+<p>Notice that each cluster deployment gets its own unique
+Persistent Volumes. Each volume can use different storage
+configurations which provides fined grained placement of
+the database data files.</p>
+
+<h2 id="custom-resource-definitions">Custom Resource Definitions</h2>
+
+<p>Kubernetes Custom Resource Definitions are used in the design
+of the PostgreSQL Operator to define the following:</p>
+
+<ul>
+<li>Cluster - <em>pgclusters</em></li>
+<li>Backup - <em>pgbackups</em></li>
+<li>Upgrade - <em>pgupgrades</em></li>
+<li>Policy - <em>pgpolicies</em></li>
+<li>Tasks - <em>pgtasks</em></li>
+</ul>
+
+<p>Metadata about the Postgres cluster deployments are stored within
+these CRD resources which act as the source of truth for the
+Operator.</p>
+
+<p>The <em>postgres-operator</em> design incorporates the following concepts:</p>
+
+<h2 id="event-listeners">Event Listeners</h2>
+
+<p>Kubernetes events are created for the Operator&rsquo;s CRD resources when
+new resources are made, deleted, or updated.  These events are
+processed by the Operator to perform asynchronous actions.</p>
+
+<p>As events are captured, controller logic is executed within the Operator
+to perform the bulk of operator logic.</p>
+
+<h2 id="rest-api">REST API</h2>
+
+<p>A feature of the Operator is to provide a REST API upon which users
+or custom applications can inspect and cause actions within the Operator
+such as provisioning resources or viewing status of resources.</p>
+
+<p>This API is secured by a RBAC (role based access control) security
+model whereby each API call has a permission assigned to it.  API
+roles are defined to provide granular authorization to Operator
+services.</p>
+
+<h2 id="command-line-interface">Command Line Interface</h2>
+
+<p>One of the unique features of the Operator is
+the pgo command line interface (CLI).  This tool is used by a normal end-user
+to create databases or clusters, or make changes to existing databases.</p>
+
+<p>The CLI interacts with the REST API deployed within the <em>postgres-operator</em> deployment.</p>
+
+<h2 id="node-affinity">Node Affinity</h2>
+
+<p>You can have the Operator add an affinity section to
+a new Cluster Deployment if you want to cause Kubernetes to
+attempt to schedule a primary cluster to a specific Kubernetes node.</p>
+
+<p>You can see the nodes on your Kube cluster by running the following:</p>
+
+<pre><code>kubectl get nodes
+</code></pre>
+
+<p>You can then specify one of those names (e.g. kubeadm-node2)  when creating a cluster;</p>
+
+<pre><code>pgo create cluster thatcluster --node-name=kubeadm-node2
+</code></pre>
+
+<p>The affinity rule inserted in the Deployment use a <em>preferred</em>
+strategy so that if the node were down or not available, Kubernetes will
+go ahead and schedule the Pod on another node.</p>
+
+<p>When you scale up a Cluster and add a replica, the scaling will
+take into account the use of <code>--node-name</code>.  If it sees that a
+cluster was created with a specific node name, then the replica
+Deployment will add an affinity rule to attempt to schedule</p>
+
+<h2 id="fail-over">Fail-over</h2>
+
+<p>Manual and automated fail-over are supported in the Operator
+within a single Kubernetes cluster.</p>
+
+<p>Manual failover is performed by API actions involving a <em>query</em>
+and then a <em>target</em> being specified to pick the fail-over replica
+target.</p>
+
+<p>Automatic fail-over is performed by the Operator by evaluating
+the readiness of a primary.  Automated fail-over can be globally
+specified for all clusters or specific clusters.</p>
+
+<p>Users can configure the Operator to replace a failed primary with
+a new replica if they want that behavior.</p>
+
+<p>The fail-over logic includes:</p>
+
+<ul>
+<li>deletion of the failed primary Deployment</li>
+<li>pick the best replica to become the new primary</li>
+<li>label change of the targeted Replica to match the primary Service</li>
+<li>execute the PostgreSQL promote command on the targeted replica</li>
+</ul>
+
+<h2 id="pgbackrest-integration">pgbackrest Integration</h2>
+
+<p>The Operator integrates various features of the <a href="https://pgbackrest.org">pgbackrest backup and restore project</a>.  A key component added to the Operator
+is the <em>pgo-backrest-repo</em> container, this container acts as a pgBackRest
+remote repository for the Postgres cluster to use for storing archive
+files and backups.</p>
+
+<p>The following diagrams depicts some of the integration features:</p>
+
+<p><img src="https://crunchydata.github.io/postgres-operator/latest/operator-backrest-integration.png" alt="alt text" title="Operator Backrest Integration" /></p>
+
+<p>In this diagram, starting from left to right we see the following:</p>
+
+<ul>
+<li><p>a user when they enter <em>pgo backup mycluster &ndash;backup-type=pgbackrest</em> will cause a pgo-backrest container to be run as a Job, that container will execute a   <em>pgbackrest backup</em> command in the pgBackRest repository container to perform the backup function.</p></li>
+
+<li><p>a user when they enter <em>pgo show backup mycluster &ndash;backup-type=pgbackrest</em> will cause a <em>pgbackrest info</em> command to be executed on the pgBackRest repository container, the <em>info</em> output is sent directly back to the user to view</p></li>
+
+<li><p>the Postgres container itself will use an archive command, <em>pgbackrest archive-push</em> to send archives to the pgBackRest repository container</p></li>
+
+<li><p>the user entering <em>pgo create cluster mycluster &ndash;pgbackrest</em> will cause
+a pgBackRest repository container deployment to be created, that repository
+is exclusively used for this Postgres cluster</p></li>
+
+<li><p>lastly, a user entering <em>pgo restore mycluster</em> will cause a <em>pgo-backrest-restore</em> container to be created as a Job, that container executes the <em>pgbackrest restore</em> command</p></li>
+</ul>
+
+<h3 id="pgbackrest-restore">pgbackrest Restore</h3>
+
+<p>The pgbackrest restore command is implemented as the <em>pgo restore</em> command.  This command is destructive in the sense that it is meant to <em>restore</em> a PG cluster meaning it will revert the PG cluster to a restore point that is kept in the pgbackrest repository.   The prior primary data is not deleted but left in a PVC to be manually cleaned up by a DBA.  The restored PG cluster will work against a new PVC created from the restore workflow.</p>
+
+<p>When doing a <em>pgo restore</em>, here is the workflow the Operator executes:</p>
+
+<ul>
+<li>turn off autofail if it is enabled for this PG cluster</li>
+<li>allocate a new PVC to hold the restored PG data</li>
+<li>delete the the current primary database deployment</li>
+<li>update the pgbackrest repo for this PG cluster with a new data path of the new PVC</li>
+<li>create a pgo-backrest-restore job, this job executes the <em>pgbackrest restore</em> command from the pgo-backrest-restore container, this Job mounts the newly created PVC</li>
+<li>once the restore job completes, a new primary Deployment is created which mounts the restored PVC volume</li>
+</ul>
+
+<p>At this point the PG database is back in a working state.  DBAs are still responsible to re-enable autofail using <em>pgo update cluster</em> and also perform a pgBackRest backup after the new primary is ready.  This version of the Operator also does not handle any errors in the PG replicas after a restore, that is left for the DBA to handle.</p>
+
+<p>Other things to take into account before you do a restore:</p>
+
+<ul>
+<li>if a schedule has been created for this PG cluster, delete that schedule prior to performing a restore</li>
+<li>after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs</li>
+<li>a restore is destructive in the sense that it deletes the existing Deployment, not the existing primary PVC, that is left but will become unused when the primary Deployment is removed, be sure to create a pgbasebackup prior to restoring, make sure you can restore from that pgbasebackup to avoid any data loss</li>
+<li>there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.</li>
+<li>the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.</li>
+</ul>
+
+<h2 id="pgo-scheduler">PGO Scheduler</h2>
+
+<p>The Operator includes a cronlike scheduler application called <code>pgo-scheduler</code>.  Its purpose
+is to run automated tasks such as PostgreSQL backups or SQL policies against PostgreSQL clusters
+created by the Operator.</p>
+
+<p>PGO Scheduler watches Kubernetes for configmaps with the label <code>crunchy-scheduler=true</code> in the
+same namespace the Operator is deployed.  The configmaps are json objects that describe the schedule
+such as:</p>
+
+<ul>
+<li>Cron like schedule such as: * * * * *</li>
+<li>Type of task: pgBackRest backup, pgBaseBackup backup or policy</li>
+</ul>
+
+<p>Schedules are removed automatically when the configmaps are deleted.</p>
+
+<h3 id="pgbackrest-schedules">pgBackRest Schedules</h3>
+
+<p>pgBackRest schedules require pgBackRest enabled on the cluster to backup.  The scheduler
+will not do this on its own.</p>
+
+<h3 id="pgbasebackup-schedules">pgBaseBackup Schedules</h3>
+
+<p>pgBaseBackup schedules require a backup PVC to already be created.  The operator will make
+this PVC using the backup commands:</p>
+
+<pre><code>pgo backup mycluster
+</code></pre>
+
+<h3 id="policy-schedules">Policy Schedules</h3>
+
+<p>Policy schedules require a SQL policy already created using the Operator.  Additionally users
+can supply both the database in which the policy should run and a secret that contains the username
+and password of the PostgreSQL role that will run the SQL.  If no user is specified the scheduler will default to the replication user provided during cluster creation.</p>
+
+
+
+
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/cli-and-example/pgo-cli/" title="PGO CLI"> <i class="fa fa-chevron-left"></i><label>PGO CLI</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/design/design/" title="Key Features" style="margin-right: 0px;"><label>Key Features</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/operator-cli/" title="Operator CLI"> <i class="fa fa-chevron-left"></i><label>Operator CLI</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/developer-setup/" title="Developer Setup" style="margin-right: 0px;"><label>Developer Setup</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>

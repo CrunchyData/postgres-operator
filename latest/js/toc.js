@@ -8,6 +8,7 @@ function htmlTableOfContents( documentRef ) {
 //  Use headings inside <article> only:
 //  var headings = [].slice.call(documentRef.body.querySelectorAll('article h1, article h2, article h3, article h4, article h5, article h6'));
     var headings = [].slice.call(documentRef.body.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+
     headings.forEach(function (heading, index) {
         var ref = "TableOfContents" + index;
         if ( heading.hasAttribute( "id" ) )
@@ -24,6 +25,10 @@ function htmlTableOfContents( documentRef ) {
         div.appendChild( link );
         TableOfContents.appendChild( div );
     });
+
+    if ( $(".h2").parents("#TableOfContents").length == 1 ) {
+        $('#TableOfContents').prepend('<b>Table of Contents</b>');
+    }
 }
 
 try {

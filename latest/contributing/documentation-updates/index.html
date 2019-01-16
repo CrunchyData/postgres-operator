@@ -7,7 +7,7 @@
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="generator" content="Hugo 0.52" />
-<title>Configuration Resources :: Crunchy Data PostgreSQL Operator Documentation</title>
+<title>Updating Documentation :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/latest/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/latest/css/nucleus.css" rel="stylesheet">
 <link href="https://crunchydata.github.io/postgres-operator/latest/theme-flex/style.css" rel="stylesheet">
@@ -28,7 +28,7 @@
 
     
   </head>
-  <body data-url="/configuration/configuration/">
+  <body data-url="/contributing/documentation-updates/">
     
       <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
   
@@ -103,15 +103,14 @@
 
       </div>
     </li>
-    <li data-nav-id="/configuration/" class="dd-item parent haschildren
+    <li data-nav-id="/configuration/" class="dd-item haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configuration</a>
-            <i class="fas fa-angle-down fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/">Configuration</a><i class="fas fa-angle-right fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/configuration/configuration/" class="dd-item active">
+      <li data-nav-id="/configuration/configuration/" class="dd-item">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/">
             Configuration Resources
@@ -162,14 +161,15 @@
 
       </div>
     </li>
-    <li data-nav-id="/contributing/" class="dd-item haschildren
+    <li data-nav-id="/contributing/" class="dd-item parent haschildren
         ">
       <div>
-      <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/">Contributing</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+      <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/">Contributing</a>
+            <i class="fas fa-angle-down fa-lg category-icon"></i>
 
       </div>
         <ul>
-      <li data-nav-id="/contributing/documentation-updates/" class="dd-item">
+      <li data-nav-id="/contributing/documentation-updates/" class="dd-item active">
         <div>
           <a href="https://crunchydata.github.io/postgres-operator/latest/contributing/documentation-updates/">
             Updating Documentation
@@ -213,10 +213,7 @@
     <option value="/installation/" >
    Installation</option>
     <option value="/configuration/" >
-   Configuration</option> 
-      <option value="/configuration/configuration/"  selected>- Configuration Resources</option>
-      <option value="/configuration/pgo-yaml-configuration/" >- PGO YAML</option>
-  
+   Configuration</option>
     <option value="/operator-cli/" >
    Operator CLI</option>
     <option value="/design/" >
@@ -228,7 +225,11 @@
     <option value="/upgrade/" >
    Upgrade</option>
     <option value="/contributing/" >
-   Contributing</option>
+   Contributing</option> 
+      <option value="/contributing/documentation-updates/"  selected>- Updating Documentation</option>
+      <option value="/contributing/issues/" >- Submitting Issues</option>
+      <option value="/contributing/pull-requests/" >- Submitting Pull Requests</option>
+  
 
 
 
@@ -247,7 +248,7 @@
             <i class="fa fa-info-circle"></i>
             
           </a>
-          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/Configuration/configuration.md" target="blank">
+          <a class="github-link" href="https://github.com/CrunchyData/postgres-operator/edit/develop/hugo/content/contributing/documentation-updates.md" target="blank">
             <i class="fa fa-code-fork"></i>
             
           </a>
@@ -267,7 +268,7 @@
 
 
 
- <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > <a href='https://crunchydata.github.io/postgres-operator/latest/configuration/'>Configuration</a> > Configuration Resources
+ <a href='https://crunchydata.github.io/postgres-operator/latest/'>Crunchy Data Postgres Operator</a> > <a href='https://crunchydata.github.io/postgres-operator/latest/contributing/'>Contributing</a> > Updating Documentation
 
  
 
@@ -283,51 +284,48 @@
     
     <div id="body-inner">
 
-    <h1>Configuration Resources</h1>
+    <h1>Updating Documentation</h1>
 
     
 
     
     
 
-<p>The operator is template-driven; this makes it simple to configure both the client and the operator.</p>
+<h2 id="documentation">Documentation</h2>
 
-<h2 id="conf-directory">conf Directory</h2>
+<p>The <a href="https://crunchydata.github.io/postgres-operator/">documentation website</a> is generated using <a href="https://gohugo.io/">Hugo</a> and
+<a href="https://pages.github.com/)[GitHub">https://pages.github.com/)[GitHub</a> Pages]().</p>
 
-<p>The Operator is configured with a collection of files found in the <em>conf</em> directory.  These configuration files are deployed to your Kubernetes cluster when the Operator is deployed.  Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.</p>
+<h2 id="hosting-hugo-locally-optional">Hosting Hugo Locally (Optional)</h2>
 
-<p>The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.</p>
+<p>If you would like to build the documentation locally, view the
+<a href="https://gohugo.io/getting-started/installing/">official Installing Hugo</a> guide to set up Hugo locally.</p>
 
-<h2 id="conf-postgres-operator-pgo-yaml">conf/postgres-operator/pgo.yaml</h2>
+<p>You can then start the server by running the following commands -</p>
 
-<p>The <em>pgo.yaml</em> file sets many different Operator configuration settings and is described in the <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/">pgo.yaml configuration</a> documentation section.</p>
-
-<p>The <em>pgo.yaml</em> file is deployed along with the other Operator configuration files when you run:</p>
-
-<pre><code>make deployoperator
+<pre><code>cd $COROOT/hugo/
+hugo server
 </code></pre>
 
-<h2 id="conf-postgres-operator-directory">conf/postgres-operator Directory</h2>
+<p>The local version of the Hugo server is accessible by default from
+<em>localhost:1313</em>. Once you&rsquo;ve run <em>hugo server</em>, that will let you interactively make changes to the documentation as desired and view the updates
+in real-time.</p>
 
-<p>Files within the <em>conf/postgres-operator</em> directory contain various templates that are used by the Operator when creating Kubernetes resources.  In an advanced Operator deployment, administrators can modify these templates to add their own custom meta-data or make other changes to influence the Resources that get created on your Kubernetes cluster by the Operator.</p>
+<h2 id="contributing-to-the-documentation">Contributing to the Documentation</h2>
 
-<h2 id="conf-postgres-operator-cluster">conf/postgres-operator/cluster</h2>
+<p>All documentation is in Markdown format and uses Hugo weights for positioning of the pages.</p>
 
-<p>Files within this directory are used specifically when creating PostgreSQL Cluster resources. Sidecar components such as pgBouncer and pgPool II templates are also located within this directory.</p>
+<p>The current production release documentation is updated for every tagged major release.</p>
 
-<p>As with the other Operator templates, administrators can make custom changes to this set of templates to add custom features or metadata into the Resources created by the Operator.</p>
-
-<h2 id="security">Security</h2>
-
-<p>Security configuration is described in the <a href="https://crunchydata.github.io/postgres-operator/latest/security">Security</a> section of this documentation.</p>
+<p>When you&rsquo;re ready to commit a change, please verify that the documentation generates locally.</p>
 
 
 
     
         <div class="chevrons">
     <div id="navigation">
-<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/configuration/" title="Configuration"> <i class="fa fa-chevron-left"></i><label>Configuration</label></a>
-    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/" title="PGO YAML" style="margin-right: 0px;"><label>PGO YAML</label><i class="fa fa-chevron-right"></i></a></div>
+<a class="nav nav-prev" href="https://crunchydata.github.io/postgres-operator/latest/contributing/" title="Contributing"> <i class="fa fa-chevron-left"></i><label>Contributing</label></a>
+    <a class="nav nav-next" href="https://crunchydata.github.io/postgres-operator/latest/contributing/issues/" title="Submitting Issues" style="margin-right: 0px;"><label>Submitting Issues</label><i class="fa fa-chevron-right"></i></a></div>
   </div>
 
   </section>
