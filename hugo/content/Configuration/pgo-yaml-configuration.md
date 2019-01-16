@@ -165,11 +165,6 @@ The operator will create new PVCs using this naming convention: *dbname* where *
 
 It will result in a PVC being created named *example1* and in the case of a backup job, the pvc is named *example1-backup*
 
-There are currently 3 sample pgo configuration files provided for users to use as a starting configuration -
-
- * `pgo.yaml.nfs` - this configuration specifies *create* storage to be used, this is used for NFS storage for example where you want to have a unique PVC created for each database
- * `pgo.yaml.storageclass` - this configuration specifies *dynamic* storage to be used, namely a *storageclass* that refers to a dynamic provisioning strorage such as StorageOS or Portworx, or GCE.
-
 Note, when Storage Type is *create*, you can specify a storage configuration setting of *MatchLabels*, when set, this will cause a *selector* of *key=value* to be added into the PVC, this will let you target specific PV(s) to be matched for this cluster. Note, if a PV does not match the claim request, then the cluster will not start.  Users
 that want to use this feature have to place labels on their PV resources as part of PG cluster creation before creating the PG cluster.  For example, users would add a label like this to their PV before they create the PG cluster:
 
