@@ -153,6 +153,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskBackrest:
 		log.Info("backrest task added")
 		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskBackrestRestore:
+		log.Info("backrest restore task added")
+		backrestoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 
 	case crv1.PgtaskpgDump:
 		log.Info("pgDump task added")
@@ -161,9 +164,6 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Info("pgDump restore task added")
 		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 
-	case crv1.PgtaskBackrestRestore:
-		log.Info("backrest restore task added")
-		backrestoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	case crv1.PgtaskAutoFailover:
 		log.Infof("autofailover task added %s", task.ObjectMeta.Name)
 	case crv1.PgtaskWorkflow:

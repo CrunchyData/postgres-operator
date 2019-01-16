@@ -83,6 +83,8 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 
 	}
 
+	// log.Debugf("CreatepgDump Request.args: %s", request.Args
+
 	for _, clusterName := range request.Args {
 		log.Debugf("create pgdump called for %s", clusterName)
 		taskName := clusterName + pgDumpTaskExtension
@@ -135,18 +137,9 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			return resp
 		}
 
-		//get deployment name for this cluster
-		// deployName, err = getDeployName(&cluster)
-		// if err != nil {
-		// 	log.Error(err)
-		// 	resp.Status.Code = msgs.Error
-		// 	resp.Status.Msg = err.Error()
-		// 	return resp
-		// }
+		theTask := getDumpParams(clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request)
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient,
-			getDumpParams(clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request.BackupOpts),
-			apiserver.Namespace)
+		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, apiserver.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -223,21 +216,33 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 }
 
-func getDumpParams(clusterName, taskName, action, podName, containerName, dumpOpts string) *crv1.Pgtask {
+func getDumpParams(clusterName string, taskName string, action string, podName string,
+	containerName string, request *msgs.CreatepgDumpBackupRequest) *crv1.Pgtask {
+
 	var newInstance *crv1.Pgtask
+	var storageSpec crv1.PgStorageSpec
+
+	if request.StorageConfig != "" {
+		storageSpec, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
+	} else {
+		storageSpec, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackupStorage)
+	}
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
 	spec.TaskType = crv1.PgtaskpgDump
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
-	spec.Parameters[util.LABEL_POD_NAME] = podName
-	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
+	spec.Parameters[util.LABEL_PGDUMP_HOST] = podName
+	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName // ??
 	spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
-	spec.Parameters[util.LABEL_PGDUMP_OPTS] = dumpOpts
-	spec.Parameters[util.LABEL_PGDUMP_USER] = "primaryuser"
+	spec.Parameters[util.LABEL_PGDUMP_OPTS] = request.BackupOpts
+	spec.Parameters[util.LABEL_PGDUMP_DB] = "postgres"
+	spec.Parameters[util.LABEL_PGDUMP_USER] = clusterName + "-primaryuser-secret"
 	spec.Parameters[util.LABEL_PGDUMP_PORT] = "5432"
 	spec.Parameters[util.LABEL_PGDUMP_ALL] = "false"
+	spec.Parameters[util.LABEL_PGDUMP_PVC] = request.PVCName
+	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

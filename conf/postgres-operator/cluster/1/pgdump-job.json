@@ -2,12 +2,12 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-                "name": "{{.JobName}}",
-                "labels": {
-                    "vendor": "crunchydata",
-                    "pgdump": "true",
-                    "pg-cluster": "{{.ClusterName}}"
-                }
+        "name": "{{.JobName}}",
+        "labels": {
+                "vendor": "crunchydata",
+                "pgdump": "true",
+            "pg-cluster": "{{.ClusterName}}"
+	}
     },
     "spec": {
 	"backoffLimit": 0,
@@ -25,15 +25,14 @@
                     {
                         "name": "pgdata",
                         "persistentVolumeClaim": {
-                            "claimName": "{{.PvcName}}" 
+                            "claimName": "{{.PgDumpPVC}}" 
                         }
                     }
                 ],
-                "securityContext": {
-		    {{.SecurityContext}}
-                },
-                "containers": [
-                    {
+		
+                {{.SecurityContext}}
+
+                "containers": [{
                         "name": "pgdump",
                         "image": "{{.CCPImagePrefix}}/crunchy-pgdump:{{.CCPImageTag}}",
                         "volumeMounts": [
@@ -43,6 +42,7 @@
                                 "readOnly": false
                             }
                         ],
+		        {{.ContainerResources}}
                         "env": [
                             {
                                 "name": "PGDUMP_HOST",
