@@ -87,7 +87,7 @@ The following table shows the *pgo* operations currently implemented:
 
     pgo delete cluster mycluster
 
-#### Delete a Cluster and It's Data
+#### Delete a Cluster and It's Persistent Volume Claims
 
     pgo delete cluster mycluster --delete-data
 
