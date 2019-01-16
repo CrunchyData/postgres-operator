@@ -15,8 +15,8 @@
 
 docker login
 declare -a arr=(
-"postgres-operator" "pgo-apiserver" "pgo-lspvc"
-"pgo-rmdata" "pgo-backrest" "pgo-load"
+"postgres-operator" "pgo-apiserver" "pgo-lspvc" "pgo-sqlrunner"
+"pgo-rmdata" "pgo-backrest" "pgo-load" "pgo-scheduler"
 "pgo-backrest-repo" "pgo-backrest-restore" "postgres-operator")
 
 for image in "${arr[@]}"

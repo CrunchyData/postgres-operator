@@ -1,6 +1,26 @@
 ---
 title: "Upgrade"
-date:
+date: {docdate}
 draft: false
 weight: 7
 ---
+
+## Upgrading the Operator
+Various Operator releases will require action by the Operator administrator of your organization in order to upgrade to the next release of the Operator.  Some upgrade steps are automated within the Operator but not all are possible at this time.
+
+This section of the documentation shows specific steps required to the
+latest version from the previous version.
+
+### Upgrading to Version 3.5.0 From Previous Versions
+ * The pgingest CRD is removed. You will need to manually remove it from any deployments of the operator after upgrading to this version. This includes removing ingest related permissions from the pgorole file. Additionally, the API server now
+removes the ingest related API endpoints.
+ * Primary and replica labels are only applicable at cluster creation and are not updated after a cluster has executed a failover. A new *service-name* label is applied to PG cluster components to indicate whether a deployment/pod is a primary or replica. *service-name* is also the label now used by the cluster services to route with. This scheme allows for an almost immediate failover promotion and avoids the pod having to be bounced as part of a failover.  Any existing PostgreSQL clusters will need to be updated to specify them as a primary or replica using the new *service-name* labeling scheme.  
+ * The autofail label was moved from deployments and pods to just the pgcluster CRD to support autofail toggling.
+ * The storage configurations in *pgo.yaml* support the MatchLabels attribute for NFS storage. This will allow users to have more than a single NFS backend,. When set, this label (key=value) will be used to match the labels on PVs when a PVC is created.
+ * The UpdateCluster permission was added to the sample pgorole file to support the new pgo update CLI command. It was also added to the pgoperm file.
+ * The pgo.yaml adds the PreferredFailoverNode setting. This is a Kubernetes selector string (e.g. key=value).  This value if set, will cause fail-over targets to be preferred based on the node they run on if that node is in the set of *preferred*.
+ * The ability to select nodes based on a selector string was added.  For this to feature to be used, multiple replicas have to be in a ready state, and also at the same replication status.  If those conditions are not met, the default fail-over target selection is used.
+ * The pgo.yaml file now includes a new storage configuration, XlogStorage, which when set will cause the xlog volume to be allocated using this storage configuration. If not set, the PrimaryStorage configuration will be used.
+ * The pgo.yaml file now includes a setting, AutofailReplaceReplica, which will enable or disable whether a new replica is created as part of a fail-over. This is turned off by default.
+
+See the GitHub Release notes for the features and other notes about a specific release.

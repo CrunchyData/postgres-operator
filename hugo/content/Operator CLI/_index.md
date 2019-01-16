@@ -1,13 +1,13 @@
 ---
-title: "PGO CLI"
-date: {docdate}
+title: "Operator CLI"
+date:
 draft: false
-weight: 10
+weight: 3
 ---
 
 The command line tool, pgo, is used to interact with the Postgres Operator.
 
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the Github Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
+Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
 
 The *pgo* client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
 
@@ -17,41 +17,41 @@ Use the following syntax to run  `pgo`  commands from your terminal window:
     pgo [command] ([TYPE] [NAME]) [flags]
 
 Where *command* is a verb like:
- - show 
- - get 
- - create 
+ - show
+ - get
+ - create
  - delete
 
 And *type* is a resource type like:
- - cluster 
- - policy 
+ - cluster
+ - policy
  - user
 
 And *name* is the name of the resource type like:
- - mycluster 
- - somesqlpolicy 
+ - mycluster
+ - somesqlpolicy
  - john
 
 ## Operations
 
-The following table shows the *pgo* operations currently implemented: 
+The following table shows the *pgo* operations currently implemented:
 
 | Operation   |      Syntax      |  Description |
 |:----------|:-------------|:------|
 | apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s)|
 | backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
-| create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, user) |
-| delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user) |
+| create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, schedule, user) |
+| delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user, schedule) |
 | df |pgo df mycluster  |Display the disk status/capacity of a Postgres cluster. |
 | failover |pgo failover mycluster  |Perform a manual failover of a Postgres cluster. |
 | help |pgo help |Display general *pgo* help information. |
 | label |pgo label mycluster --label=environment=prod  |Create a metadata label for a Postgres cluster(s). |
 | load |pgo load --load-config=load.json --selector=name=mycluster  |Perform a data load into a Postgres cluster(s).|
 | reload |pgo reload mycluster  |Perform a pg_ctl reload command on a Postgres cluster(s). |
-| restore |pgo restore mycluster --to-pvc=restored  |Perform a pgbackrest restore on a Postgres cluster. |
+| restore |pgo restore mycluster |Perform a pgbackrest restore on a Postgres cluster. |
 | scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
 | scaledown |pgo scaledown  mycluster --query  |Delete a replica from a Postgres cluster. |
-| show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy). |
+| show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy, schedule). |
 | status |pgo status  |Display Operator status. |
 | test |pgo test mycluster  |Perform a SQL test on a Postgres cluster(s). |
 | update |pgo update cluster --label=autofail=false  |Update a Postgres cluster(s). |
@@ -78,7 +78,7 @@ The following table shows the *pgo* operations currently implemented:
 
     pgo create cluster mycluster --pgbackrest
 
-#### Scaledown a Cluster 
+#### Scaledown a Cluster
 
     pgo scaledown cluster mycluster --query
     pgo scaledown cluster mycluster --target=sometarget
@@ -147,11 +147,32 @@ The following table shows the *pgo* operations currently implemented:
 #### Perform a pgbackrest backup
 
     pgo backup mycluster --backup-type=pgbackrest
+    pgo backup mycluster --backup-type=pgbackrest --backup-opts="--type=diff"
+
+The last example passes in pgbackrest flags to the backup command.  See
+pgbackrest.org for command flag descriptions.
 
 #### Perform a pgbackrest restore
 
-    pgo restore mycluster --to-pvc=restoredname
-    pgo create restoredname --pgbackrest --pgbackrest-restore-from=mycluster
+    pgo restore mycluster
+
+Or perform a restore based on a point in time:
+
+    pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time"
+
+Here are some steps to test PITR:
+
+ * pgo create cluster mycluster --pgbackrest
+ * create a table on the new cluster called *beforebackup*
+ * pgo backup mycluster --backup-type=pgbackrest
+ * create a table on the cluster called *afterbackup*
+ * execute *select now()* on the database to get the time, use this timestamp minus a couple of minutes when you perform the restore
+ * pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info"
+ * wait for the database to be restored
+ * execute *\d* in the database and you should see the database state prior to where the *afterbackup* table was created
+
+See the Design section of the Operator documentation for things to consider
+before you do a restore.
 
 #### Restore from pgbasebackup
 
@@ -201,6 +222,32 @@ The following table shows the *pgo* operations currently implemented:
 
     pgo create cluster mycluster --metrics
 
+### Scheduled Tasks
+
+#### Automated full pgBackRest backups every Sunday at 1 am
+
+    pgo create schedule mycluster --schedule="0 1 * * 7" \
+        --schedule-type=pgbackrest --pgbackrest-backup-type=full
+
+#### Automated diff pgBackRest backups every Sunday at 1 am
+
+    pgo create schedule mycluster --schedule="0 1 * * 7" \
+        --schedule-type=pgbackrest --pgbackrest-backup-type=diff
+
+#### Automated pgBaseBackup backups every day at 1 am
+
+In order to have a backup PVC created, users should run the `pgo backup` command
+against the target cluster prior to creating this schedule.
+
+    pgo create schedule mycluster --schedule="0 1 * * *" \
+        --schedule-type=pgbasebackup --pvc-name=mycluster-backup
+
+#### Automated Policy every day at 1 am
+
+    pgo create schedule --selector=pg-cluster=mycluster --schedule="0 1 * * *" \
+         --schedule-type=policy --policy=mypolicy --database=userdb \
+         --secret=mycluster-testuser-secret
+
 ### Complex Deployments
 #### Create a Cluster using Specific Storage
 
@@ -231,6 +278,3 @@ The following table shows the *pgo* operations currently implemented:
 |pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
 |pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
 |pgo-client-key |The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_KEY environment variable|
-
-
-

@@ -1,0 +1,67 @@
+Cluster:
+  PrimaryNodeLabel:  
+  ReplicaNodeLabel: 
+  CCPImagePrefix: $CCP_IMAGE_PREFIX 
+  Metrics:  false
+  Badger:  false
+  CCPImageTag:  $CCP_IMAGE_TAG
+  Port:  5432
+  User:  testuser
+  Database:  userdb
+  PasswordAgeDays:  60
+  PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
+  ServiceType:  ClusterIP
+  Backrest:  false
+  BackrestPort:  2022
+  Autofail:  false
+  AutofailReplaceReplica:  false
+  LogStatement:  none
+  LogMinDurationStatement:  60000
+PrimaryStorage: gkestorage
+XlogStorage: gkestorage
+BackupStorage: gkestorage
+ReplicaStorage: gkestorage
+BackrestStorage: gkestorage
+Storage:
+  gkestorage:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  $STORAGE_CLASS
+    Fsgroup:  26
+  storageos:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  fast
+    Fsgroup:  26
+DefaultContainerResources: 
+DefaultLoadResources:  
+DefaultLspvcResources:  
+DefaultRmdataResources:  
+DefaultBackupResources:  
+DefaultPgbouncerResources:  
+DefaultPgpoolResources:   
+ContainerResources:
+  small:
+    RequestsMemory:  512Mi
+    RequestsCPU:  0.1
+    LimitsMemory:  512Mi
+    LimitsCPU:  0.1
+  large:
+    RequestsMemory:  2Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  2Gi
+    LimitsCPU:  4.0
+Pgo:
+  AutofailSleepSeconds:  9
+  PreferredFailoverNode:  
+  Audit:  false
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
+  COImagePrefix:  $CO_IMAGE_PREFIX
+  COImageTag:  $CO_IMAGE_TAG

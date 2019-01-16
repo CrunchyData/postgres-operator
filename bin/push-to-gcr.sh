@@ -15,22 +15,24 @@
 
 GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
-docker tag $CO_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG   \
-$GCR_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG   
-gcloud docker -- push $GCR_IMAGE_PREFIX/pgo-lspvc:$CO_IMAGE_TAG   
+IMAGES=(
+pgo-backrest-repo
+pgo-backrest-restore
+pgo-scheduler
+pgo-sqlrunner
+postgres-operator
+pgo-apiserver
+pgo-lspvc
+pgo-rmdata
+pgo-backrest
+pgo-load
+)
 
-docker tag $CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG   \
-$GCR_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG  
-gcloud docker -- push $GCR_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG  
+for image in "${IMAGES[@]}"
+do
+	docker tag $CO_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   \
+		$GCR_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
+	gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
+done
 
-docker tag $CO_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG   \
-$GCR_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG  
-gcloud docker -- push $GCR_IMAGE_PREFIX/pgo-load:$CO_IMAGE_TAG  
 
-docker tag $CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG  \
-$GCR_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG 
-gcloud docker -- push $GCR_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG 
-
-docker tag $CO_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG  \
-$GCR_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG 
-gcloud docker -- push $GCR_IMAGE_PREFIX/pgo-rmdata:$CO_IMAGE_TAG 

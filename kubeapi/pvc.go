@@ -91,3 +91,22 @@ func DeletePVC(clientset *kubernetes.Clientset, name, namespace string) error {
 	return err
 
 }
+
+// DeletePVCs deletes all PVCs by selector
+func DeletePVCs(clientset *kubernetes.Clientset, selector, namespace string) error {
+	delOptions := meta_v1.DeleteOptions{}
+	var delProp meta_v1.DeletionPropagation
+	delProp = meta_v1.DeletePropagationForeground
+	delOptions.PropagationPolicy = &delProp
+
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	err := clientset.CoreV1().PersistentVolumeClaims(namespace).DeleteCollection(&delOptions, lo)
+	if err != nil {
+		log.Error("error deleting pvcs " + err.Error() + " with selector " + selector)
+		return err
+	}
+
+	return err
+
+}

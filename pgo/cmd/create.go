@@ -41,6 +41,9 @@ var ServiceType string
 var Schedule string
 var ScheduleOptions string
 var ScheduleType string
+var SchedulePolicy string
+var ScheduleDatabase string
+var ScheduleSecret string
 var PGBackRestType string
 var Secret string
 
@@ -156,9 +159,9 @@ var createPgpoolCmd = &cobra.Command{
 var createScheduleCmd = &cobra.Command{
 	Use:   "schedule",
 	Short: "Create a cron-like scheduled task",
-	Long: `SCHEDULE creates a cron-like schedule task.  For example:
+	Long: `Schedule creates a cron-like scheduled task.  For example:
 
-    pgo create schedule --schedule=”* * * * *” --selector=env=research --schedule-type=pgbackrest`,
+    pgo create schedule --schedule="* * * * *" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create schedule called ")
 		if len(args) == 0 && Selector == "" {
@@ -230,13 +233,15 @@ func init() {
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
 
 	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
-	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest or pgbasebackup).")
+	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest, pgbasebackup or policy).")
 	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full or diff).")
 	createScheduleCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The name of the backup PVC to use (only used in pgbasebackup schedules).")
 	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")
 	createScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	createScheduleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	createScheduleCmd.Flags().StringVarP(&SchedulePolicy, "policy", "", "", "The policy to use for SQL schedules.")
+	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
+	createScheduleCmd.Flags().StringVarP(&ScheduleSecret, "secret", "", "", "The secret name for the username and password of the PostgreSQL role for SQL schedules.")
 
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
