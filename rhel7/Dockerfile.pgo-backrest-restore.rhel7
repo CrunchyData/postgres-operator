@@ -25,7 +25,7 @@ ADD bin/uid_postgres.sh /opt/cpm/bin
 RUN chmod g=u /etc/passwd && \
         chmod g=u /etc/group
 
-RUN mkdir /.ssh && chown 26:26 /.ssh && chmod g+rwx /.ssh
+RUN mkdir /.ssh && chown 26:0 /.ssh && chmod g+rwx /.ssh
 
 ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
 
