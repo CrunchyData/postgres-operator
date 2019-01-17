@@ -605,10 +605,10 @@ func CreateCluster(request *msgs.CreateClusterRequest) msgs.CreateClusterRespons
 			userLabelsMap[util.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
 		}
 
-		if request.BackrestRestoreFrom != "" {
-			log.Info("TODO validate the restore from value")
-			userLabelsMap[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.BackrestRestoreFrom
-		}
+		//if request.BackrestRestoreFrom != "" {
+		//	log.Info("TODO validate the restore from value")
+		//	userLabelsMap[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.BackrestRestoreFrom
+		//		}
 
 		//add archive if backrest is requested and figure out map
 		if userLabelsMap[util.LABEL_BACKREST] == "true" {
@@ -1226,10 +1226,10 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName string) (erro
 		PrimaryPassword = request.Password
 	}
 
-	if request.BackrestFlag && request.BackrestRestoreFrom != "" {
-		log.Debugf("setting secret-from to the pgbackrest restore from value %s", request.BackrestRestoreFrom)
-		request.SecretFrom = request.BackrestRestoreFrom
-	}
+	//	if request.BackrestFlag && request.BackrestRestoreFrom != "" {
+	//		log.Debugf("setting secret-from to the pgbackrest restore from value %s", request.BackrestRestoreFrom)
+	//		request.SecretFrom = request.BackrestRestoreFrom
+	//	}
 
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)

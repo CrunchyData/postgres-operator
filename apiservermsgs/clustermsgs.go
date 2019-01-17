@@ -21,25 +21,25 @@ import (
 
 // CreateClusterRequest ...
 type CreateClusterRequest struct {
-	Name                 string
-	Namespace            string
-	NodeLabel            string
-	Password             string
-	SecretFrom           string
-	BackupPVC            string
-	UserLabels           string
-	BackupPath           string
-	Policies             string
-	CCPImageTag          string
-	Series               int
-	ReplicaCount         int
-	ServiceType          string
-	MetricsFlag          bool
-	BadgerFlag           bool
-	AutofailFlag         bool
-	ArchiveFlag          bool
-	BackrestFlag         bool
-	BackrestRestoreFrom  string
+	Name         string
+	Namespace    string
+	NodeLabel    string
+	Password     string
+	SecretFrom   string
+	BackupPVC    string
+	UserLabels   string
+	BackupPath   string
+	Policies     string
+	CCPImageTag  string
+	Series       int
+	ReplicaCount int
+	ServiceType  string
+	MetricsFlag  bool
+	BadgerFlag   bool
+	AutofailFlag bool
+	ArchiveFlag  bool
+	BackrestFlag bool
+	//BackrestRestoreFrom  string
 	PgpoolFlag           bool
 	PgbouncerFlag        bool
 	PgpoolSecret         string
