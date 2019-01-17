@@ -205,7 +205,7 @@ func init() {
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
-	createClusterCmd.Flags().StringVarP(&BackrestRestoreFrom, "pgbackrest-restore-from", "", "", "specifies the cluster name from where the restore is from, used to restore from a pgbackrest restore")
+	//createClusterCmd.Flags().StringVarP(&BackrestRestoreFrom, "pgbackrest-restore-from", "", "", "specifies the cluster name from where the restore is from, used to restore from a pgbackrest restore")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
