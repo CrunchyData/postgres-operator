@@ -56,11 +56,15 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status.Msg = "invalid policy name format " + errs[0]
 	} else {
 
-		err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
+		found, err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
+		}
+		if found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "policy already exists with that name"
 		}
 	}
 

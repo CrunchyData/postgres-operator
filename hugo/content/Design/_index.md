@@ -81,7 +81,7 @@ The CLI interacts with the REST API deployed within the *postgres-operator* depl
 
 ## Node Affinity
 
-You can have the Operator add an affinity section to
+You can have the Operator add a node affinity section to
 a new Cluster Deployment if you want to cause Kubernetes to
 attempt to schedule a primary cluster to a specific Kubernetes node.
 
@@ -170,10 +170,11 @@ At this point the PG database is back in a working state.  DBAs are still respon
 Other things to take into account before you do a restore:
 
  * if a schedule has been created for this PG cluster, delete that schedule prior to performing a restore
- * after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs
+ * after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs, if not recovered, you might have to run psql command *select pg_wal_replay_resume()* to complete the recovery
  * a restore is destructive in the sense that it deletes the existing Deployment, not the existing primary PVC, that is left but will become unused when the primary Deployment is removed, be sure to create a pgbasebackup prior to restoring, make sure you can restore from that pgbasebackup to avoid any data loss
  * there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.
  * the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.
+ * pgbackrest.org suggests running a pgbackrest backup after a restore, this needs to be done by the DBA as part of a restore
 
 ## PGO Scheduler
 

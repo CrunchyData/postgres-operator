@@ -61,7 +61,8 @@ func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 }
 func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePolicyRequest) (msgs.CreatePolicyResponse, error) {
 
-	var response msgs.CreatePolicyResponse
+	var resp msgs.CreatePolicyResponse
+	resp.Status.Code = msgs.Ok
 
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/policies"
@@ -70,30 +71,35 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	action := "POST"
 	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		return response, err
+		resp.Status.Code = msgs.Error
+		return resp, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
-	resp, err := httpclient.Do(req)
+	r, err := httpclient.Do(req)
 	if err != nil {
-		return response, err
+		resp.Status.Code = msgs.Error
+		return resp, err
 	}
-	defer resp.Body.Close()
+	defer r.Body.Close()
 
-	log.Debugf("%v", resp)
-	err = StatusCheck(resp)
+	log.Debugf("%v", r)
+	err = StatusCheck(r)
 	if err != nil {
-		return response, err
+		resp.Status.Code = msgs.Error
+		return resp, err
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
+	if err := json.NewDecoder(r.Body).Decode(&resp); err != nil {
+		log.Printf("%v\n", r.Body)
 		log.Println(err)
-		return response, err
+		resp.Status.Code = msgs.Error
+		return resp, err
 	}
 
-	return response, err
+	log.Debugf("response back from apiserver was %v", resp)
+	return resp, err
 }
 
 func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeletePolicyResponse, error) {
