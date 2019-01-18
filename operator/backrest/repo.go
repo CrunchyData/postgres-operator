@@ -77,11 +77,11 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	if found {
 		log.Debugf("pvc [%s] already present, will not recreate", repoName)
 	} else {
-		_, err = pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, repoName, cluster.Name, namespace)
+		_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName, cluster.Name, namespace)
 		if err != nil {
 			return err
 		}
-		log.Debugf("created primary pvc [%s]", repoName)
+		log.Debugf("created backrest-shared-repo pvc [%s]", repoName)
 	}
 
 	//create backrest repo deployment
