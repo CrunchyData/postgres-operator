@@ -21,6 +21,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"text/template"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -30,11 +36,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"text/template"
 )
 
 const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
@@ -252,7 +253,7 @@ func getCredentials() {
 		creds := parseUserMap(v)
 		Credentials[creds.Username] = creds
 	}
-	log.Infof("pgouser has %v", Credentials)
+	log.Debugf("pgouser has %v", Credentials)
 
 }
 
