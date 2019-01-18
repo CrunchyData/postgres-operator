@@ -2,7 +2,7 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "backup-{{.Name}}",
+        "name": "{{.JobName}}",
        	"labels": {
        		"vendor": "crunchydata",
                	"pgbackup": "true",
@@ -13,7 +13,7 @@
         "backoffLimit": 0,
         "template": {
             "metadata": {
-                "name": "{{.Name}}",
+                "name": "{{.JobName}}",
                 "labels": {
        			"vendor": "crunchydata",
                		"pgbackup": "true",

@@ -33,6 +33,7 @@ import (
 
 type jobTemplateFields struct {
 	Name               string
+	JobName            string
 	PvcName            string
 	CCPImagePrefix     string
 	CCPImageTag        string
@@ -83,8 +84,12 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 
 	}
 
+	//generate a JobName
+	jobName := "backup-" + job.Spec.Name + "-" + util.RandStringBytesRmndr(4)
+
 	//create the job -
 	jobFields := jobTemplateFields{
+		JobName:            jobName,
 		Name:               job.Spec.Name,
 		PvcName:            util.CreatePVCSnippet(job.Spec.StorageSpec.StorageType, pvcName),
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
