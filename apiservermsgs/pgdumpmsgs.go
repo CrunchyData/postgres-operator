@@ -39,12 +39,6 @@ type ShowpgDumpDetail struct {
 	Info string
 }
 
-// uses ShowBackupResponse for return messages.
-// type ShowpgDumpResponse struct {
-// 	Items []ShowpgDumpDetail
-// 	Status
-// }
-
 type pgDumpRestoreResponse struct {
 	Results []string
 	Status

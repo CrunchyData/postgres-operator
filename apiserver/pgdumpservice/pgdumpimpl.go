@@ -83,8 +83,6 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 
 	}
 
-	// log.Debugf("CreatepgDump Request.args: %s", request.Args
-
 	for _, clusterName := range request.Args {
 		log.Debugf("create pgdump called for %s", clusterName)
 		taskName := clusterName + pgDumpTaskExtension
@@ -118,6 +116,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			log.Debugf("pgtask %s was found so we will recreate it", taskName)
 			//remove the existing pgtask
 			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, apiserver.Namespace)
+
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
@@ -137,7 +136,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			return resp
 		}
 
-		theTask := getDumpParams(clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request)
+		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request)
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, apiserver.Namespace)
 		if err != nil {
@@ -192,7 +191,7 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 		pgTaskName := c.Name + pgDumpTaskExtension
 
-		backupItem, error := getPgDumpInfo(c.Name, pgTaskName)
+		backupItem, error := getPgDumpForTask(c.Name, pgTaskName)
 
 		if backupItem != nil {
 			log.Debug("pgTask %s was found", pgTaskName)
@@ -216,11 +215,12 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 }
 
-func getDumpParams(clusterName string, taskName string, action string, podName string,
+func buildPgTaskForDump(clusterName string, taskName string, action string, podName string,
 	containerName string, request *msgs.CreatepgDumpBackupRequest) *crv1.Pgtask {
 
 	var newInstance *crv1.Pgtask
 	var storageSpec crv1.PgStorageSpec
+	var pvcName string
 
 	if request.StorageConfig != "" {
 		storageSpec, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
@@ -228,12 +228,22 @@ func getDumpParams(clusterName string, taskName string, action string, podName s
 		storageSpec, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackupStorage)
 	}
 
+	// specify PVC name if not set by user.
+	if len(request.PVCName) > 0 {
+		pvcName = request.PVCName
+	} else {
+		pvcName = taskName + "-pvc"
+	}
+
+	// storageSpec.Name =
+
 	spec := crv1.PgtaskSpec{}
+
 	spec.Name = taskName
 	spec.TaskType = crv1.PgtaskpgDump
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
-	spec.Parameters[util.LABEL_PGDUMP_HOST] = podName
+	spec.Parameters[util.LABEL_PGDUMP_HOST] = clusterName      // same name as service
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName // ??
 	spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
 	spec.Parameters[util.LABEL_PGDUMP_OPTS] = request.BackupOpts
@@ -241,7 +251,8 @@ func getDumpParams(clusterName string, taskName string, action string, podName s
 	spec.Parameters[util.LABEL_PGDUMP_USER] = clusterName + "-primaryuser-secret"
 	spec.Parameters[util.LABEL_PGDUMP_PORT] = "5432"
 	spec.Parameters[util.LABEL_PGDUMP_ALL] = "false"
-	spec.Parameters[util.LABEL_PGDUMP_PVC] = request.PVCName
+	spec.Parameters[util.LABEL_PVC_NAME] = pvcName
+	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
 	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
@@ -317,7 +328,7 @@ func isReady(pod *v1.Pod) bool {
 }
 
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
-func getPgDumpInfo(clusterName string, taskName string) (*crv1.Pgbackup, error) {
+func getPgDumpForTask(clusterName string, taskName string) (*crv1.Pgbackup, error) {
 
 	task := crv1.Pgtask{}
 
@@ -343,23 +354,26 @@ func convertDumpTaskToPgBackup(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 
 	backup := crv1.Pgbackup{}
 
+	backup.ObjectMeta.CreationTimestamp = dumpTask.ObjectMeta.CreationTimestamp
+
 	spec := dumpTask.Spec
 
 	backup.Spec.Name = spec.Name
-	backup.Spec.CCPImageTag = ""
-	backup.Spec.BackupHost = ""
+	backup.Spec.CCPImageTag = spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY]
+	backup.Spec.BackupHost = spec.Parameters[util.LABEL_PGDUMP_HOST]
 	backup.Spec.BackupUserSecret = spec.Parameters[util.LABEL_PGDUMP_USER]
 	backup.Spec.BackupPort = spec.Parameters[util.LABEL_PGDUMP_PORT]
 	backup.Spec.DumpAll = spec.Parameters[util.LABEL_PGDUMP_ALL]
+
 	if backup.Spec.DumpAll == "" {
 		backup.Spec.DumpAll = "false"
 	}
+
+	backup.Spec.BackupPVC = spec.Parameters[util.LABEL_PVC_NAME]
+	backup.Spec.StorageSpec.Size = dumpTask.Spec.StorageSpec.Size
+	backup.Spec.StorageSpec.AccessMode = dumpTask.Spec.StorageSpec.AccessMode
 	backup.Spec.BackupOpts = spec.Parameters[util.LABEL_PGDUMP_OPTS]
 
-	// spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
-	// spec.Parameters[util.LABEL_POD_NAME] = podName
-	// spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
-	// spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
 	return &backup
 
 }

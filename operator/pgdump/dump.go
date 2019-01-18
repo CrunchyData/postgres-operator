@@ -59,12 +59,17 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 
 	cmd := task.Spec.Parameters[util.LABEL_PGDUMP_COMMAND]
 
-	pvcName := task.Spec.Parameters[util.LABEL_PGDUMP_PVC]
+	pvcName := task.Spec.Parameters[util.LABEL_PVC_NAME]
 
 	// create the PVC if name is empty or it doesn't exist
 	if !(len(pvcName) > 0) || !pvc.Exists(clientset, pvcName, namespace) {
 
-		pvcName, err = pvc.CreatePVC(clientset, &task.Spec.StorageSpec, task.Spec.Name+"-backup",
+		// set pvcName if empty - should not be empty as apiserver code should have specified.
+		if !(len(pvcName) > 0) {
+			pvcName = task.Spec.Name + "-pvc"
+		}
+
+		pvcName, err = pvc.CreatePVC(clientset, &task.Spec.StorageSpec, pvcName,
 			task.Spec.Parameters[util.LABEL_PGDUMP_HOST], namespace)
 		if err != nil {
 			log.Error(err.Error())
