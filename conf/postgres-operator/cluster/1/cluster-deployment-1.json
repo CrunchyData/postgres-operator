@@ -177,7 +177,7 @@
             "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "backrestrepo",
-			{{.BackrestPVCName}}
+            "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "pgconf-volume",
             {{.ConfVolume}}

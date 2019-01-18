@@ -194,7 +194,7 @@ func createCluster(args []string) {
 	r.PgbouncerFlag = PgbouncerFlag
 	r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
-	r.BackrestRestoreFrom = BackrestRestoreFrom
+	//r.BackrestRestoreFrom = BackrestRestoreFrom
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.1-2.3.0-rc4
+  CCPImageTag:  centos7-11.1-2.3.0-rc8
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -21,11 +21,12 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storageos
-ArchiveStorage: archivestorage
-BackupStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: backreststorage
+PrimaryStorage: hostpathstorage
+XlogStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
+BackrestStorage: hostpathstorage
+BackrestStorage: storageosbig
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -58,6 +59,12 @@ Storage:
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
+  storageosbig:
+    AccessMode:  ReadWriteOnce
+    Size:  2G
+    StorageType:  dynamic
+    StorageClass:  fast
+    Fsgroup:  26
 DefaultContainerResources: 
 DefaultLoadResources:  
 DefaultLspvcResources:  
@@ -83,4 +90,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0-rc5
+  COImageTag:  centos7-3.5.0-rc7
