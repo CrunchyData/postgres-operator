@@ -76,6 +76,8 @@ must run crunchy-postgres 2.2.0 or greater which will require users
 to upgrade the pgo.yaml to use the 2.2.0 CCPImageTag.  pgbackrest commands
 will NOT work with clusters using older Postgres images.
 
+{{% /expand %}}
+
 {{% expand "Upgrading to v3.3" %}}
 
 The following changes are mandatory when upgrading to 3.3 from previous operator versions:
