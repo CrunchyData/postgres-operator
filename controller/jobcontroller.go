@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"time"
 )
 
 // JobController holds the connections for the controller
@@ -90,20 +91,10 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	//label is "pgrmdata" and Status of Succeeded
 	labels := job.GetObjectMeta().GetLabels()
 	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] != "" {
-		log.Debugf("rmdata job labels=[%v]", labels)
-		log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
-		//remove the pvc referenced by that job
-		log.Debugf("deleting pvc %s", labels["claimName"])
-		err = pvc.Delete(c.JobClientset, labels["claimName"], c.Namespace)
+		err = handleRmdata(job, c.JobClient, c.JobClientset, c.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
-
-		//delete the pgtask to cleanup
-		log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
-		kubeapi.Deletepgtasks(c.JobClient, util.LABEL_RMDATA+"=true", c.Namespace)
-		kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
-
 	} else if labels[util.LABEL_PGBACKUP] != "" {
 		dbname := job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 		status := crv1.JobCompletedStatus
@@ -154,4 +145,30 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 func (c *JobController) onDelete(obj interface{}) {
 	job := obj.(*apiv1.Job)
 	log.Debugf("[JobCONTROLLER] OnDelete %s", job.ObjectMeta.SelfLink)
+}
+
+func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubernetes.Clientset, namespace string) error {
+	var err error
+
+	log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
+	labels := job.GetObjectMeta().GetLabels()
+
+	//delete the pgtask to cleanup
+	log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
+	err = kubeapi.Deletepgtasks(restClient, util.LABEL_RMDATA+"=true", namespace)
+	if err != nil {
+		return err
+	}
+	//	kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
+
+	time.Sleep(time.Second * time.Duration(5))
+
+	//remove the pvc referenced by that job
+	log.Debugf("deleting pvc %s", labels[util.LABEL_CLAIM_NAME])
+	err = pvc.Delete(clientset, labels[util.LABEL_CLAIM_NAME], namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	return err
 }

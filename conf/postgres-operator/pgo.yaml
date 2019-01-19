@@ -26,7 +26,7 @@ XlogStorage: hostpathstorage
 BackupStorage: hostpathstorage
 ReplicaStorage: hostpathstorage
 BackrestStorage: hostpathstorage
-BackrestStorage: storageosbig
+BackrestStorage: hostpathstorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany

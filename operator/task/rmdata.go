@@ -29,6 +29,7 @@ import (
 )
 
 type rmdatajobTemplateFields struct {
+	JobName            string
 	Name               string
 	PvcName            string
 	ClusterName        string
@@ -59,6 +60,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	}
 
 	jobFields := rmdatajobTemplateFields{
+		JobName:            "rmdata-" + util.RandStringBytesRmndr(8),
 		Name:               task.Spec.Name + "-" + pvcName,
 		ClusterName:        task.Spec.Name,
 		PvcName:            pvcName,
