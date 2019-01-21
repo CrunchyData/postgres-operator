@@ -68,7 +68,12 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 	LoadConfigTemplate := loadJobTemplateFields{}
 
 	var LoadCfg LoadConfig
-	LoadCfg.getConf(bytes.NewBufferString(request.LoadConfig))
+	_, err = LoadCfg.getConf(bytes.NewBufferString(request.LoadConfig))
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
 
 	err = LoadCfg.validate()
 	if err != nil {

@@ -66,14 +66,15 @@ func (c *LoadConfig) validate() error {
 	return err
 }
 
-func (c *LoadConfig) getConf(yamlFile *bytes.Buffer) *LoadConfig {
+func (c *LoadConfig) getConf(yamlFile *bytes.Buffer) (*LoadConfig, error) {
 
 	err := yaml.Unmarshal(yamlFile.Bytes(), c)
 	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
+		log.Errorf("Unmarshal: %v", err)
+		return c, err
 	}
 
-	return c
+	return c, err
 }
 
 func (c *LoadConfig) print() {
