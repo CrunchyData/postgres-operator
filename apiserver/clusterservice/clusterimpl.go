@@ -1001,7 +1001,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 			} else if v.Name == "pgwal-volume" {
 				dataRoots = append(dataRoots, deploymentName+"-wal")
 			} else if v.Name == "backrestrepo" {
-				dataRoots = append(dataRoots, "{archive,backup}")
+				dataRoots = append(dataRoots, deploymentName+"-backrest-shared-repo")
 			}
 
 			if v.VolumeSource.PersistentVolumeClaim != nil {

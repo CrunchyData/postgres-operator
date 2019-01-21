@@ -118,7 +118,10 @@ func main() {
 	reader := strings.NewReader(strings.Join(cmdStrs, " "))
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
 	if err != nil {
+		log.Info("output=[" + output + "]")
+		log.Info("stderr=[" + stderr + "]")
 		log.Error(err)
+		os.Exit(2)
 	}
 	log.Info("output=[" + output + "]")
 	log.Info("stderr=[" + stderr + "]")

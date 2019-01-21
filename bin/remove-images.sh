@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-for CNAME in pgo-sqlrunner pgo-backrest-restore pgo-backrest-repo pgo-lspvc postgres-operator pgo-load pgo-apiserver pgo-rmdata pgo-backrest
+for CNAME in pgo-scheduler pgo-sqlrunner pgo-backrest-restore pgo-backrest-repo pgo-lspvc postgres-operator pgo-load pgo-apiserver pgo-rmdata pgo-backrest
 do
 	docker rmi -f $CNAME $CO_IMAGE_PREFIX/$CNAME:$CO_IMAGE_TAG 
 done

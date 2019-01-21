@@ -59,7 +59,7 @@ func GetPVC(clientset *kubernetes.Clientset, name, namespace string) (*v1.Persis
 	options := meta_v1.GetOptions{}
 	pvc, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
 	if kerrors.IsNotFound(err) {
-		log.Error("PVC " + name + " is not found")
+		log.Debugf("PVC %s is not found", name)
 		return pvc, false, err
 	}
 
@@ -79,7 +79,7 @@ func DeletePVC(clientset *kubernetes.Clientset, name, namespace string) error {
 	delProp = meta_v1.DeletePropagationForeground
 	delOptions.PropagationPolicy = &delProp
 
-	//err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	//err := clientset.CoreV1().PersistentVolumelaims(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(name, &delOptions)
 	if err != nil {
 		log.Error("error deleting pvc " + err.Error())

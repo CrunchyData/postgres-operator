@@ -192,7 +192,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
 
 	//delete the replica service
-	kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+	var found bool
+	_, found, err = kubeapi.GetService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+	if found {
+		kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+	}
 
 	//delete the pgpool deployment if necessary
 	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
@@ -208,7 +212,11 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
 
 	//delete the pgbackups if necessary
-	kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
+	pgback := crv1.Pgbackup{}
+	found, err = kubeapi.Getpgbackup(restclient, &pgback, cl.Spec.Name, namespace)
+	if found {
+		kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
+	}
 
 	return err
 

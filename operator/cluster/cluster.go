@@ -254,30 +254,36 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 
 	log.Debugf("deleteCluster called with strategy %s", cl.Spec.Strategy)
 
-	aftask := AutoFailoverTask{}
-	aftask.Clear(client, cl.Spec.Name, namespace)
+	pgtask := crv1.Pgtask{}
+	found, _ := kubeapi.Getpgtask(client, &pgtask, cl.Spec.Name+"-"+util.LABEL_AUTOFAIL, namespace)
+	if found {
+		aftask := AutoFailoverTask{}
+		aftask.Clear(client, cl.Spec.Name, namespace)
+	}
 
 	if cl.Spec.Strategy == "" {
 		cl.Spec.Strategy = "1"
 	}
 
 	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
+	if ok == false {
 		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
 		return
 	}
 
 	strategy.DeleteCluster(clientset, client, cl, namespace)
 
-	err := kubeapi.Deletepgupgrade(client, cl.Spec.Name, namespace)
-	if err == nil {
-		log.Info("deleted pgupgrade " + cl.Spec.Name)
-	} else if kerrors.IsNotFound(err) {
-		log.Info("will not delete pgupgrade, not found for " + cl.Spec.Name)
-	} else {
-		log.Error("error deleting pgupgrade " + cl.Spec.Name + err.Error())
+	upgrade := crv1.Pgupgrade{}
+	found, _ = kubeapi.Getpgupgrade(client, &upgrade, cl.Spec.Name, namespace)
+	if found {
+		err := kubeapi.Deletepgupgrade(client, cl.Spec.Name, namespace)
+		if err == nil {
+			log.Debug("deleted pgupgrade " + cl.Spec.Name)
+		} else if kerrors.IsNotFound(err) {
+			log.Debug("will not delete pgupgrade, not found for " + cl.Spec.Name)
+		} else {
+			log.Error("error deleting pgupgrade " + cl.Spec.Name + err.Error())
+		}
 	}
 
 }
@@ -294,7 +300,7 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 
 	strategy, ok := strategyMap[cl.Spec.Strategy]
 	if ok {
-		log.Info("strategy found")
+		log.Debug("strategy found")
 	} else {
 		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
 		return err
