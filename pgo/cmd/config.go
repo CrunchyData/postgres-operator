@@ -59,6 +59,7 @@ func showConfig(args []string) {
 	fmt.Printf("%s%s\n", "  CCPImageTag:  ", pgo.Cluster.CCPImageTag)
 	fmt.Printf("%s%s\n", "  ServiceType:  ", pgo.Cluster.ServiceType)
 	fmt.Printf("%s%t\n", "  Metrics:  ", pgo.Cluster.Metrics)
+	fmt.Printf("%s%s\n", "  PgmonitorPassword:  ", pgo.Cluster.PgmonitorPassword)
 	fmt.Printf("%s%t\n", "  Backrest:  ", pgo.Cluster.Backrest)
 	fmt.Printf("%s%d\n", "  BackrestPort:  ", pgo.Cluster.BackrestPort)
 	fmt.Printf("%s%t\n", "  Autofail:  ", pgo.Cluster.Autofail)

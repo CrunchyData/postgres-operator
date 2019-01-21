@@ -21,6 +21,7 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
+  PgmonitorPassword:  password
 PrimaryStorage: hostpathstorage
 XlogStorage: hostpathstorage
 BackupStorage: hostpathstorage

@@ -128,6 +128,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cl.Spec),
 		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name),
+		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[util.LABEL_COLLECT]),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -382,6 +383,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
 		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name),
+		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[util.LABEL_COLLECT]),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

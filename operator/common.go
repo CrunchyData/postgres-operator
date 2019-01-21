@@ -30,6 +30,7 @@ var NAMESPACE string
 
 const pgoBackrestRepoTemplatePath = "/pgo-config/pgo-backrest-repo-template.json"
 const pgoBackrestRepoServiceTemplatePath = "/pgo-config/pgo-backrest-repo-service-template.json"
+const pgmonitorEnvVarsPath = "/pgo-config/pgmonitor-env-vars.json"
 const pgbackrestEnvVarsPath = "/pgo-config/pgbackrest-env-vars.json"
 const PgpoolTemplatePath = "/pgo-config/pgpool-template.json"
 const PgpoolConfTemplatePath = "/pgo-config/pgpool.conf"
@@ -58,6 +59,7 @@ const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
 
 var PgoBackrestRepoServiceTemplate *template.Template
 var PgoBackrestRepoTemplate *template.Template
+var PgmonitorEnvVarsTemplate *template.Template
 var PgbackrestEnvVarsTemplate *template.Template
 var JobTemplate *template.Template
 var UpgradeJobTemplate1 *template.Template
@@ -113,6 +115,7 @@ func Initialize() {
 
 	PgoBackrestRepoTemplate = util.LoadTemplate(pgoBackrestRepoTemplatePath)
 	PgoBackrestRepoServiceTemplate = util.LoadTemplate(pgoBackrestRepoServiceTemplatePath)
+	PgmonitorEnvVarsTemplate = util.LoadTemplate(pgmonitorEnvVarsPath)
 	PgbackrestEnvVarsTemplate = util.LoadTemplate(pgbackrestEnvVarsPath)
 	JobTemplate = util.LoadTemplate(jobPath)
 	PgpoolTemplate = util.LoadTemplate(PgpoolTemplatePath)
@@ -161,6 +164,12 @@ func Initialize() {
 	} else {
 		log.Debugf("COImagePrefix set, using %s", Pgo.Pgo.COImagePrefix)
 	}
+
+	if Pgo.Cluster.PgmonitorPassword == "" {
+		log.Debug("pgo.yaml PgmonitorPassword not set, using default")
+		Pgo.Cluster.PgmonitorPassword = "password"
+	}
+
 	if Pgo.Pgo.COImageTag == "" {
 		log.Error("pgo.yaml COImageTag not set, required ")
 		panic("pgo.yaml COImageTag env var not set")
