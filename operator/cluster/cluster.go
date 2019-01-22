@@ -57,6 +57,7 @@ type ServiceTemplateFields struct {
 }
 
 // DeploymentTemplateFields ...
+/**
 type DeploymentTemplateFields struct {
 	Name                    string
 	ClusterName             string
@@ -92,6 +93,7 @@ type DeploymentTemplateFields struct {
 	Replicas    string
 	PrimaryHost string
 }
+*/
 
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"

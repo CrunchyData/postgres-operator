@@ -97,6 +97,7 @@ type DeploymentTemplateFields struct {
 	CollectAddon            string
 	BadgerAddon             string
 	PgbackrestEnvVars       string
+	PgmonitorEnvVars        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
