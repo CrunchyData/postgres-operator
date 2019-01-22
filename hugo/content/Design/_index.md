@@ -194,6 +194,21 @@ Schedules are removed automatically when the configmaps are deleted.
 
 PGO Scheduler uses the `UTC` timezone for all schedules.
 
+### Schedule Expression Format
+
+Schedules are expressed using the following rules:
+
+```
+Field name   | Mandatory? | Allowed values  | Allowed special characters
+----------   | ---------- | --------------  | --------------------------
+Seconds      | Yes        | 0-59            | * / , -
+Minutes      | Yes        | 0-59            | * / , -
+Hours        | Yes        | 0-23            | * / , -
+Day of month | Yes        | 1-31            | * / , - ?
+Month        | Yes        | 1-12 or JAN-DEC | * / , -
+Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
+```
+
 ### pgBackRest Schedules
 
 pgBackRest schedules require pgBackRest enabled on the cluster to backup.  The scheduler
