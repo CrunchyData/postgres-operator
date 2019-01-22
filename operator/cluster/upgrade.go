@@ -19,7 +19,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	//"github.com/crunchydata/postgres-operator/util"
 	//v1batch "k8s.io/api/batch/v1"
 	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"k8s.io/apimachinery/pkg/watch"
@@ -44,9 +44,11 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		log.Error("error adding upgrade" + err.Error())
 	} else {
 		//update the upgrade CRD status to submitted
-		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeSubmittedStatus, "pgupgrades", upgrade.Spec.Name, namespace)
+		upgrade.Spec.UpgradeStatus = crv1.UpgradeSubmittedStatus
+		kubeapi.Updatepgupgrade(restclient, upgrade, upgrade.Spec.Name, namespace)
+		//		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeSubmittedStatus, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
-			log.Error("error patching upgrade" + err.Error())
+			log.Error("error setting upgrade status " + err.Error())
 		}
 	}
 

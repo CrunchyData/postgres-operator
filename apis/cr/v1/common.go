@@ -59,10 +59,10 @@ type PgContainerResources struct {
 }
 
 // JobCompletedStatus ....
-const JobCompletedStatus = "completed"
+const JobCompletedStatus = "job completed"
 
 // JobSubmittedStatus ....
-const JobSubmittedStatus = "submitted"
+const JobSubmittedStatus = "job submitted"
 
 // JobErrorStatus ....
-const JobErrorStatus = "error"
+const JobErrorStatus = "job error"

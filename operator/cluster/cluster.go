@@ -304,7 +304,17 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 	if upgrade.Spec.UpgradeType == "minor" {
 		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
 		if err == nil {
+			/**
 			err = util.Patch(client, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
+			if err != nil {
+				log.Error(err)
+				log.Error("could not patch the ugpradestatus")
+			}
+			log.Debug("jeff updated pgupgrade to completed")
+			*/
+		} else {
+			log.Error(err)
+			log.Error("error in doing minor upgrade")
 		}
 	} else if upgrade.Spec.UpgradeType == "major" {
 		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
