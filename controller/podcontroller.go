@@ -150,7 +150,9 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
-					backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)
+					if newpod.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
+						backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)
+					}
 				}
 			}
 		}
@@ -215,7 +217,9 @@ func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod) bool {
 
 	pgcluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, c.Namespace)
-	if !found || err != nil {
+	if !found {
+		return false
+	} else if err != nil {
 		log.Error(err)
 		return false
 	}

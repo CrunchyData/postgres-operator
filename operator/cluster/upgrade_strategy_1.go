@@ -64,6 +64,7 @@ func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *res
 	err = util.Patch(restclient, "/spec/ccpimagetag", upgrade.Spec.CCPImageTag, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 
 	//update the upgrade CRD status to completed
+	log.Debug("jeff patch pgupgrade %s to %s here in upgrade_strategy", upgrade.Spec.Name, crv1.UpgradeCompletedStatus)
 	err = kubeapi.Patchpgupgrade(restclient, upgrade.Spec.Name, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, namespace)
 	if err != nil {
 		log.Error("error in upgradestatus patch " + err.Error())

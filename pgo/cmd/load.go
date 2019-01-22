@@ -77,6 +77,11 @@ func createLoad(args []string) {
 	}
 
 	buf, err := ioutil.ReadFile(LoadConfig)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
+	}
+
 	request := msgs.LoadRequest{}
 	request.LoadConfig = string(buf)
 	request.Selector = Selector

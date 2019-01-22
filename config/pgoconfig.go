@@ -49,6 +49,7 @@ type ClusterStruct struct {
 	Backrest                bool   `yaml:"Backrest"`
 	Autofail                bool   `yaml:"Autofail"`
 	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
+	PgmonitorPassword       string `yaml:"PgmonitorPassword"`
 }
 
 type StorageStruct struct {

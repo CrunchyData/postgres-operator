@@ -93,21 +93,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 				return response
 			}
 
-			//delete the pvc's for this cluster
-			delPVCsSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-			err = kubeapi.DeletePVCs(apiserver.Clientset, delPVCsSelector, apiserver.Namespace)
-			if err != nil {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-
-			/**
-			starting in 3.5 we are not going to manually run
-			an 'rm -rf' on volumes, instead we'll leave that for the
-			file system to take care of or administrators
 			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups)
-			*/
 		}
 
 		if deleteConfigs {
@@ -983,7 +969,8 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 	var err error
 
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true"
+	//selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true"
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
 	if err != nil {
@@ -1005,16 +992,16 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		//get the volumes for this pod
 		for _, v := range pod.Spec.Volumes {
 
-			log.Debugf("volume name in delete logic is %s", v.Name)
+			log.Debugf("createDeleteDataTasks pod name %s volume name %s", pod.Name, v.Name)
 			dataRoots := make([]string, 0)
 			if v.Name == "pgdata" {
 				dataRoots = append(dataRoots, deploymentName)
-			} else if v.Name == "backrestrepo-volume" {
-				dataRoots = append(dataRoots, deploymentName+"{-backups,-spool}")
 			} else if v.Name == "backup" {
 				dataRoots = append(dataRoots, deploymentName+"-backups")
 			} else if v.Name == "pgwal-volume" {
 				dataRoots = append(dataRoots, deploymentName+"-wal")
+			} else if v.Name == "backrestrepo" {
+				dataRoots = append(dataRoots, deploymentName+"-backrest-shared-repo")
 			}
 
 			if v.VolumeSource.PersistentVolumeClaim != nil {

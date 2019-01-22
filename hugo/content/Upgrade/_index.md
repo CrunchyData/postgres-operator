@@ -12,6 +12,13 @@ This section of the documentation shows specific steps required to the
 latest version from the previous version.
 
 ### Upgrading to Version 3.5.0 From Previous Versions
+ * For clusters created in prior versions that used pgbackrest, you
+will be required to first create a pgbasebackup for those clusters,
+and after upgrading to Operator 3.5, you will need to restore those clusters
+from the pgbasebackup into a new cluster with *--pgbackrest* enabled, this
+is due to the new pgbackrest shared repository being implemented in 3.5.  This
+is a breaking change for anyone that used pgbackrest in Operator versions
+prior to 3.5.
  * The pgingest CRD is removed. You will need to manually remove it from any deployments of the operator after upgrading to this version. This includes removing ingest related permissions from the pgorole file. Additionally, the API server now
 removes the ingest related API endpoints.
  * Primary and replica labels are only applicable at cluster creation and are not updated after a cluster has executed a failover. A new *service-name* label is applied to PG cluster components to indicate whether a deployment/pod is a primary or replica. *service-name* is also the label now used by the cluster services to route with. This scheme allows for an almost immediate failover promotion and avoids the pod having to be bounced as part of a failover.  Any existing PostgreSQL clusters will need to be updated to specify them as a primary or replica using the new *service-name* labeling scheme.  

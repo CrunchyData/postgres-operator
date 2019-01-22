@@ -113,5 +113,7 @@ const LABEL_DEPLOYMENT_NAME = "deployment-name"
 const LABEL_SERVICE_NAME = "service-name"
 const LABEL_CURRENT_PRIMARY = "current-primary"
 
+const LABEL_CLAIM_NAME = "claimName"
+
 const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"

@@ -53,12 +53,15 @@ type badgerTemplateFields struct {
 	ContainerResources string
 }
 
-// consolidate with cluster.PgbackrestEnvVarsTemplateFields
 type PgbackrestEnvVarsTemplateFields struct {
 	PgbackrestStanza    string
 	PgbackrestDBPath    string
 	PgbackrestRepo1Path string
 	PgbackrestRepo1Host string
+}
+
+type PgmonitorEnvVarsTemplateFields struct {
+	PgmonitorPassword string
 }
 
 // needs to be consolidated with cluster.DeploymentTemplateFields
@@ -303,4 +306,22 @@ func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 		value = clusterLabels[util.LABEL_NODE_LABEL_VALUE]
 	}
 	return GetAffinity(key, value, operator)
+}
+
+func GetPgmonitorEnvVars(metricsEnabled string) string {
+	if metricsEnabled == "true" {
+		fields := PgmonitorEnvVarsTemplateFields{
+			PgmonitorPassword: Pgo.Cluster.PgmonitorPassword,
+		}
+
+		var doc bytes.Buffer
+		err := PgmonitorEnvVarsTemplate.Execute(&doc, fields)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+		return doc.String()
+	}
+	return ""
+
 }

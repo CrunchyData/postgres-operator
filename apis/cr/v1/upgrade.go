@@ -20,10 +20,10 @@ import (
 )
 
 // UpgradeCompletedStatus ....
-const UpgradeCompletedStatus = "completed"
+const UpgradeCompletedStatus = "upgrade completed"
 
 // UpgradeSubmittedStatus ....
-const UpgradeSubmittedStatus = "submitted"
+const UpgradeSubmittedStatus = "upgrade submitted"
 
 // PgupgradeResourcePlural ...
 const PgupgradeResourcePlural = "pgupgrades"

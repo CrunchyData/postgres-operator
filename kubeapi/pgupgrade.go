@@ -174,3 +174,21 @@ func Createpgupgrade(client *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace
 
 	return err
 }
+
+// Updatepgupgrade updates a pgupgrade
+func Updatepgupgrade(client *rest.RESTClient, upgrade *crv1.Pgupgrade, name, namespace string) error {
+
+	err := client.Put().
+		Name(name).
+		Namespace(namespace).
+		Resource(crv1.PgupgradeResourcePlural).
+		Body(upgrade).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error updating pgupgrade " + err.Error())
+	}
+
+	log.Debugf("updated pgupgrade %s", upgrade.Name)
+	return err
+}

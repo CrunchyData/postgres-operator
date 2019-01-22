@@ -29,6 +29,7 @@ import (
 )
 
 type rmdatajobTemplateFields struct {
+	JobName            string
 	Name               string
 	PvcName            string
 	ClusterName        string
@@ -59,6 +60,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	}
 
 	jobFields := rmdatajobTemplateFields{
+		JobName:            task.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4),
 		Name:               task.Spec.Name + "-" + pvcName,
 		ClusterName:        task.Spec.Name,
 		PvcName:            pvcName,
@@ -68,7 +70,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		DataRoot:           task.Spec.Parameters[util.LABEL_DATA_ROOT],
 		ContainerResources: cr,
 	}
-	log.Debugf("creating rmdata job for pvc [%s]", pvcName)
+	log.Debugf("creating rmdata job for cluster %s pvc %s", task.Spec.Name, pvcName)
 
 	var doc2 bytes.Buffer
 	err := operator.RmdatajobTemplate.Execute(&doc2, jobFields)
@@ -88,6 +90,12 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		return
 	}
 
-	kubeapi.CreateJob(clientset, &newjob, namespace)
+	var jobname string
+	jobname, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	if err != nil {
+		log.Errorf("got error when creating rmdata job %s", jobname)
+		return
+	}
+	log.Debugf("successfully created rmdata job %s", jobname)
 
 }
