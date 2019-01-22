@@ -130,7 +130,7 @@ all:
 	make pgo
 	make lsimage
 	make loadimage
-	make rmdataimage
+	make pgo-rmdata-image
 	make sqlrunnerimage
 	make pgo-backrest-image
 	make pgo-backrest-restore-image

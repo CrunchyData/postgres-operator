@@ -25,8 +25,15 @@ RUN chmod +x /usr/local/bin/pgo-backrest-repo.sh && mkdir -p /opt/cpm/bin && cho
 
 ADD bin/uid_pgbackrest.sh /opt/cpm/bin
 
-VOLUME ["/sshd", "/backrestrepo" ]
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
+RUN mkdir /.ssh && chown pgbackrest:pgbackrest /.ssh && chmod o+rwx /.ssh
 
 USER pgbackrest
+
+ENTRYPOINT ["/opt/cpm/bin/uid_pgbackrest.sh"]
+
+VOLUME ["/sshd", "/backrestrepo" ]
 
 CMD ["pgo-backrest-repo.sh"]

@@ -188,9 +188,11 @@ same namespace the Operator is deployed.  The configmaps are json objects that d
 such as:
 
 * Cron like schedule such as: * * * * *
-* Type of task: pgBackRest backup, pgBaseBackup backup or policy
+* Type of task: `pgbackrest`, `pgbasebackup` or `policy`
 
 Schedules are removed automatically when the configmaps are deleted.
+
+PGO Scheduler uses the `UTC` timezone for all schedules.
 
 ### pgBackRest Schedules
 
