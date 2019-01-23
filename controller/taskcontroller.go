@@ -159,7 +159,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	case crv1.PgtaskpgDump:
 		log.Info("pgDump task added")
-		pgdumpoperator.Dump(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+		pgdumpoperator.Dump(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
 	case crv1.PgtaskpgDumpRestore:
 		log.Info("pgDump restore task added")
 		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)

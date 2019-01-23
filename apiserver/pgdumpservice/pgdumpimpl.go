@@ -30,7 +30,7 @@ import (
 
 const pgDumpCommand = "pgdump"
 const pgDumpInfoCommand = "info"
-const pgDumpTaskExtension = "-pgdump-backup"
+const pgDumpTaskExtension = "-pgdump"
 const pgDumpJobExtension = "-pgdump-job"
 
 // const containername = "database" //TODO: is this correct?
@@ -85,7 +85,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 
 	for _, clusterName := range request.Args {
 		log.Debugf("create pgdump called for %s", clusterName)
-		taskName := clusterName + pgDumpTaskExtension
+		taskName := "backup-" + clusterName + pgDumpTaskExtension
 
 		cluster := crv1.Pgcluster{}
 		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, clusterName, apiserver.Namespace)
@@ -136,7 +136,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			return resp
 		}
 
-		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDumpBackup, podname, "database", request)
+		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, podname, "database", request)
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, apiserver.Namespace)
 		if err != nil {
@@ -189,7 +189,7 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 			return response
 		}
 
-		pgTaskName := c.Name + pgDumpTaskExtension
+		pgTaskName := "backup-" + c.Name + pgDumpTaskExtension
 
 		backupItem, error := getPgDumpForTask(c.Name, pgTaskName)
 
@@ -359,6 +359,7 @@ func convertDumpTaskToPgBackup(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 	spec := dumpTask.Spec
 
 	backup.Spec.Name = spec.Name
+	backup.Spec.BackupStatus = spec.Status
 	backup.Spec.CCPImageTag = spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY]
 	backup.Spec.BackupHost = spec.Parameters[util.LABEL_PGDUMP_HOST]
 	backup.Spec.BackupUserSecret = spec.Parameters[util.LABEL_PGDUMP_USER]

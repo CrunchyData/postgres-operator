@@ -71,7 +71,7 @@ const LABEL_BACKUP_TYPE_BASEBACKUP = "pgbasebackup"
 const LABEL_BACKUP_TYPE_BACKREST = "pgbackrest"
 const LABEL_BACKUP_TYPE_PGDUMP = "pgdump"
 
-const LABEL_PGDUMP_COMMAND = "pgdump-command"
+const LABEL_PGDUMP_COMMAND = "pgdump"
 const LABEL_PGDUMP_OPTS = "pgdump-opts"
 const LABEL_PGDUMP_HOST = "pgdump-host"
 const LABEL_PGDUMP_DB = "pgdump-db"

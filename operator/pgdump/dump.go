@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os"
 )
 
@@ -52,7 +53,7 @@ type pgDumpJobTemplateFields struct {
 }
 
 // Dump ...
-func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask) {
 
 	var err error
 	//create the Job to run the pgdump command
@@ -78,6 +79,9 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 		}
 	}
 
+	//update the pvc name in the CRD
+	// err = util.Patch(client, "/spec/storagespec/name", pvcName, "pgbackups", job.Spec.Name, namespace)
+
 	cr := ""
 	if operator.Pgo.DefaultBackupResources != "" {
 		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBackupResources)
@@ -90,7 +94,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 	}
 
 	jobFields := pgDumpJobTemplateFields{
-		JobName:            task.Spec.Parameters[util.LABEL_PGDUMP_COMMAND] + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER],
+		JobName:            "backup" + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER] + "-" + task.Spec.Parameters[util.LABEL_BACKUP_TYPE_PGDUMP],
 		ClusterName:        task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		PodName:            task.Spec.Parameters[util.LABEL_POD_NAME],
 		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
@@ -127,6 +131,13 @@ func Dump(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) 
 	}
 
 	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+
+	if err != nil {
+		return
+	}
+
+	//update the pgdump task status to submitted - updates task, not the job.
+	err = util.Patch(client, "/spec/status", crv1.PgBackupJobSubmitted, "pgtasks", task.Spec.Name, namespace)
 
 	if err != nil {
 		log.Error(err.Error())
