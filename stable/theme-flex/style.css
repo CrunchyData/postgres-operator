@@ -40,18 +40,9 @@ header {
   line-height: 3.5rem;
   margin-bottom: .35rem;
   padding: 0 2rem;
-  position: fixed;
   right: 0;
   top: 0;
   z-index: 100; }
-  header:after {
-    background: url(ribbon.png) 0 0/100% no-repeat;
-    content: '';
-    height: .35rem;
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 100%; }
   header a {
     text-decoration: none; }
   header .logo {
@@ -72,7 +63,10 @@ header {
     -ms-flex-pack: end;
     justify-content: flex-end;
     list-style-type: none; }
-    header nav.shortcuts li .fa {
+    header nav.shortcuts li .fa,
+    header nav.shortcuts li .fab,
+    header nav.shortcuts li .far,
+    header nav.shortcuts li .fas {
       font-size: 1.5rem;
       margin-right: 0.5rem; }
     header nav.shortcuts li a:active,
@@ -142,7 +136,7 @@ article > aside {
       article > aside .menu .dd-item div {
         display: flex;
         flex-direction: row; }
-        article > aside .menu .dd-item div * {
+        article > aside .menu .dd-item div *, nav#TableOfContents div.h2 {
           line-height: inherit; }
         article > aside .menu .dd-item div i.read-icon {
           display: none; }
@@ -391,7 +385,7 @@ article section.page {
     color: #ddd; }
   article section.page pre.language-headers + pre {
     border-radius: 0 0 .2rem .2rem;
-    margin-top: -1.7rem;
+    margin-top: -1.4rem;
     padding-top: .52rem;
     position: relative; }
   article section.page code[class*="language-"],
@@ -593,14 +587,6 @@ div.notices p {
   font-size: 1rem;
   margin-top: 0rem;
   margin-bottom: 0rem; }
-
-div.notices p:first-child:before {
-  position: absolute;
-  top: -27px;
-  color: #fff;
-  font-family: FontAwesome;
-  content: '';
-  left: 10px; }
 
 div.notices p:first-child:after {
   position: absolute;
