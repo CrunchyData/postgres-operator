@@ -360,7 +360,7 @@ to create databases or clusters, or make changes to existing databases.</p>
 
 <h2 id="node-affinity">Node Affinity</h2>
 
-<p>You can have the Operator add an affinity section to
+<p>You can have the Operator add a node affinity section to
 a new Cluster Deployment if you want to cause Kubernetes to
 attempt to schedule a primary cluster to a specific Kubernetes node.</p>
 
@@ -456,10 +456,12 @@ is exclusively used for this Postgres cluster</p></li>
 
 <ul>
 <li>if a schedule has been created for this PG cluster, delete that schedule prior to performing a restore</li>
-<li>after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs</li>
+<li>after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs, if not recovered, you might have to run psql command <em>select pg_wal_replay_resume()</em> to complete the recovery, on PG 9.6
+systems, the command you will use is <em>select pg_xlog_replay_resume()</em>.</li>
 <li>a restore is destructive in the sense that it deletes the existing Deployment, not the existing primary PVC, that is left but will become unused when the primary Deployment is removed, be sure to create a pgbasebackup prior to restoring, make sure you can restore from that pgbasebackup to avoid any data loss</li>
 <li>there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.</li>
 <li>the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.</li>
+<li>pgbackrest.org suggests running a pgbackrest backup after a restore, this needs to be done by the DBA as part of a restore</li>
 </ul>
 
 <h2 id="pgo-scheduler">PGO Scheduler</h2>
@@ -474,10 +476,26 @@ such as:</p>
 
 <ul>
 <li>Cron like schedule such as: * * * * *</li>
-<li>Type of task: pgBackRest backup, pgBaseBackup backup or policy</li>
+<li>Type of task: <code>pgbackrest</code>, <code>pgbasebackup</code> or <code>policy</code></li>
 </ul>
 
 <p>Schedules are removed automatically when the configmaps are deleted.</p>
+
+<p>PGO Scheduler uses the <code>UTC</code> timezone for all schedules.</p>
+
+<h3 id="schedule-expression-format">Schedule Expression Format</h3>
+
+<p>Schedules are expressed using the following rules:</p>
+
+<pre><code>Field name   | Mandatory? | Allowed values  | Allowed special characters
+----------   | ---------- | --------------  | --------------------------
+Seconds      | Yes        | 0-59            | * / , -
+Minutes      | Yes        | 0-59            | * / , -
+Hours        | Yes        | 0-23            | * / , -
+Day of month | Yes        | 1-31            | * / , - ?
+Month        | Yes        | 1-12 or JAN-DEC | * / , -
+Day of week  | Yes        | 0-6 or SUN-SAT  | * / , - ?
+</code></pre>
 
 <h3 id="pgbackrest-schedules">pgBackRest Schedules</h3>
 
