@@ -56,43 +56,6 @@ type ServiceTemplateFields struct {
 	ServiceType string
 }
 
-// DeploymentTemplateFields ...
-type DeploymentTemplateFields struct {
-	Name                    string
-	ClusterName             string
-	Port                    string
-	PgMode                  string
-	LogStatement            string
-	LogMinDurationStatement string
-	CCPImagePrefix          string
-	CCPImageTag             string
-	Database                string
-	DeploymentLabels        string
-	PodLabels               string
-	DataPathOverride        string
-	ArchiveMode             string
-	ArchivePVCName          string
-	ArchiveTimeout          string
-	XLOGDir                 string
-	PVCName                 string
-	BackupPVCName           string
-	BackupPath              string
-	RootSecretName          string
-	UserSecretName          string
-	PrimarySecretName       string
-	SecurityContext         string
-	ContainerResources      string
-	NodeSelector            string
-	ConfVolume              string
-	CollectAddon            string
-	BadgerAddon             string
-	PgmonitorEnvVars        string
-	PgbackrestEnvVars       string
-	//next 2 are for the replica deployment only
-	Replicas    string
-	PrimaryHost string
-}
-
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
 

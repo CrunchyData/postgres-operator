@@ -226,12 +226,12 @@ before you do a restore.
 
 #### Automated full pgBackRest backups every Sunday at 1 am
 
-    pgo create schedule mycluster --schedule="0 1 * * 7" \
+    pgo create schedule mycluster --schedule="0 1 * * SUN" \
         --schedule-type=pgbackrest --pgbackrest-backup-type=full
 
-#### Automated diff pgBackRest backups every Sunday at 1 am
+#### Automated diff pgBackRest backups every Monday-Saturday at 1 am
 
-    pgo create schedule mycluster --schedule="0 1 * * 7" \
+    pgo create schedule mycluster --schedule="0 1 * * MON-SAT" \
         --schedule-type=pgbackrest --pgbackrest-backup-type=diff
 
 #### Automated pgBaseBackup backups every day at 1 am

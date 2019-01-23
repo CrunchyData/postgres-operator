@@ -96,7 +96,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	primaryLabels[util.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
 
 	//create the primary deployment
-	deploymentFields := DeploymentTemplateFields{
+	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    cl.Spec.Name,
 		Replicas:                "1",
 		PgMode:                  "primary",
@@ -351,7 +351,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	replicaLabels[util.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
 	//create the replica deployment
-	replicaDeploymentFields := DeploymentTemplateFields{
+	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:                    replica.Spec.Name,
 		ClusterName:             replica.Spec.ClusterName,
 		PgMode:                  "replica",

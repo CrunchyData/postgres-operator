@@ -148,7 +148,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 	primaryLabels := operator.GetPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 
 	//start the primary deployment
-	deploymentFields := DeploymentTemplateFields{
+	deploymentFields := operator.DeploymentTemplateFields{
 		Name:              cl.Spec.Name,
 		ClusterName:       cl.Spec.Name,
 		Port:              cl.Spec.Port,
