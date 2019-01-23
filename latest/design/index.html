@@ -456,8 +456,8 @@ is exclusively used for this Postgres cluster</p></li>
 
 <ul>
 <li>if a schedule has been created for this PG cluster, delete that schedule prior to performing a restore</li>
-<li>after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs, if not recovered, you might have to run psql command <em>select pg_wal_replay_resume()</em> to complete the recovery, on PG 9.6
-systems, the command you will use is <em>select pg_xlog_replay_resume()</em>.</li>
+<li>after a restore, exec into the PG primary and make sure the database has fully recovered by looking at the database logs, if not recovered, you might have to run psql command <em>select pg_wal_replay_resume()</em> to complete the recovery,
+on PG 9.<sup>6</sup>&frasl;<sub>9</sub>.5 systems, the command you will use is <em>select pg_xlog_replay_resume()</em>.</li>
 <li>a restore is destructive in the sense that it deletes the existing Deployment, not the existing primary PVC, that is left but will become unused when the primary Deployment is removed, be sure to create a pgbasebackup prior to restoring, make sure you can restore from that pgbasebackup to avoid any data loss</li>
 <li>there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.</li>
 <li>the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.</li>

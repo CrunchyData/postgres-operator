@@ -61,6 +61,10 @@ nav.shortcuts a {
     margin: 0 0.5rem;
 }
 
+nav.shortcuts li a label {
+    cursor: pointer;
+}
+
 ul.menu b {
     font-weight: 500;
 }
