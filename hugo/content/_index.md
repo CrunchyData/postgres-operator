@@ -45,7 +45,7 @@ The following documentation is provided:
  - [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) 
  - [Security](/security) 
  - [Design Overview](/design) 
- - [Developing](/develop) 
+ - [Developing](/developer-setup) 
  - [Upgrading the Operator](/upgrade)
  - [Contributing](/contributing/documentation-updates)
 
