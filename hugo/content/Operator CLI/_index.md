@@ -176,7 +176,7 @@ before you do a restore.
 
 #### Restore from pgbasebackup
 
-    pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc
+    pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc --secret-from=mycluster
 
 ### Fail-over Operations
 
