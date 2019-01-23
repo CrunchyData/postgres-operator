@@ -483,7 +483,7 @@ pgo scaledown cluster mycluster --target=sometarget
 <pre><code>pgo delete cluster mycluster
 </code></pre>
 
-<h4 id="delete-a-cluster-and-it-s-data">Delete a Cluster and It&rsquo;s Data</h4>
+<h4 id="delete-a-cluster-and-it-s-persistent-volume-claims">Delete a Cluster and It&rsquo;s Persistent Volume Claims</h4>
 
 <pre><code>pgo delete cluster mycluster --delete-data
 </code></pre>
@@ -656,13 +656,13 @@ pgo failover mycluster --target=sometarget
 
 <h4 id="automated-full-pgbackrest-backups-every-sunday-at-1-am">Automated full pgBackRest backups every Sunday at 1 am</h4>
 
-<pre><code>pgo create schedule mycluster --schedule=&quot;0 1 * * 7&quot; \
+<pre><code>pgo create schedule mycluster --schedule=&quot;0 1 * * SUN&quot; \
     --schedule-type=pgbackrest --pgbackrest-backup-type=full
 </code></pre>
 
-<h4 id="automated-diff-pgbackrest-backups-every-sunday-at-1-am">Automated diff pgBackRest backups every Sunday at 1 am</h4>
+<h4 id="automated-diff-pgbackrest-backups-every-monday-saturday-at-1-am">Automated diff pgBackRest backups every Monday-Saturday at 1 am</h4>
 
-<pre><code>pgo create schedule mycluster --schedule=&quot;0 1 * * 7&quot; \
+<pre><code>pgo create schedule mycluster --schedule=&quot;0 1 * * MON-SAT&quot; \
     --schedule-type=pgbackrest --pgbackrest-backup-type=diff
 </code></pre>
 
