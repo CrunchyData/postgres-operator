@@ -17,13 +17,14 @@ The *pgo.yaml* file is broken into major sections as described below:
 |BasicAuth        | if set to *true* will enable Basic Authentication
 |PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
-|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the --ccp-image-tag command line flag
+|CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-11.1-2.3.0), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
-|LogStatement        | postgresql.conf log_statement value (required field) (works with crunchy-postgres >= 2.2.0)
-|LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field) (works with crunchy-postgres >= 2.2.0)
+|LogStatement        | postgresql.conf log_statement value (required field)
+|LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field)
 |User        | the PostgreSQL normal user name
 |Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
-|Replicas        | the number of cluster replicas to create for newly created clusters
+|Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well
 |PgmonitorPassword        | the password to use for pgmonitor metrics collection if you specify --metrics when creating a PG cluster
 |Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
 |Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger
@@ -34,6 +35,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
 |ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
+|BackrestPort        | currently required to be port 2022
 |Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
 |AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in *pgo.yaml* is overrode with this command line flag if specified by a user.
 
@@ -45,6 +47,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
+|BackrestStorage    |required, the value of the storage configuration to use for the pgbackrest shared repository deployment created when a user specifies pgbackrest to be enabled on a cluster
 |StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
 |AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
 |Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)

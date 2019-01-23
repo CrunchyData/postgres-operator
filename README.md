@@ -25,21 +25,21 @@ The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed
-in the [Design](./docs/github/design.md).
+in the [Design](https://crunchydata.github.io/postgres-operator/latest/design/).
 
-![Reference](./docs/github/images/Operator-Architecture.png)
+![Reference](https://crunchydata.github.io/postgres-operator/latest/Operator-Architecture.png)
 
 The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.
 
 ## Documentation
 The following documentation is provided:
 
- - [pgo CLI Syntax and Examples](./docs/github/pgo-cli.md) 
- - [Installation](./docs/github/installation.md)
- - [Configuration](./docs/github/configuration.md) 
- - [pgo.yaml Description](./docs/github/pgo-yaml-configuration.md) 
- - [Security](./docs/github/security.md) 
- - [Design Overview](./docs/github/design.md) 
- - [Developing](./docs/github/developing.md) 
- - [Upgrading the Operator](./docs/github/upgrading.md)
+ - [pgo CLI Syntax and Examples](https://crunchydata.github.io/postgres-operator/latest/operator-cli/)
+ - [Installation](https://crunchydata.github.io/postgres-operator/latest/installation/)
+ - [Configuration](https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/)
+ - [pgo.yaml Description](https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/)
+ - [Security](https://crunchydata.github.io/postgres-operator/latest/security/)
+ - [Design Overview](https://crunchydata.github.io/postgres-operator/latest/design/)
+ - [Developing](https://crunchydata.github.io/postgres-operator/latest/developer-setup/)
+ - [Upgrading the Operator](https://crunchydata.github.io/postgres-operator/latest/upgrade/)
 

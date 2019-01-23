@@ -32,6 +32,10 @@ And *name* is the name of the resource type like:
  - somesqlpolicy
  - john
 
+To get detailed help information and command flag descriptions on each *pgo* command, enter:
+
+    pgo [command] -h
+ 
 ## Operations
 
 The following table shows the *pgo* operations currently implemented:
@@ -268,8 +272,8 @@ against the target cluster prior to creating this schedule.
 #### Create a Cluster with LoadBalancer ServiceType
 
     pgo create cluster mycluster --service-type=LoadBalancer
-## Flags
-*pgo* command flags include:
+## pgo Global Flags
+*pgo* global command flags include:
 
 | Flag | Description |
 |:--|:--|
