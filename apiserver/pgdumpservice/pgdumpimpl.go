@@ -390,22 +390,22 @@ func convertDumpTaskToPgBackup(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 	resp := msgs.RestoreResponse{}
 	resp.Status.Code = msgs.Ok
-	resp.Status.Msg = ""
+	resp.Status.Msg = "Restore Not Implemented"
 	resp.Results = make([]string, 0)
 
 	log.Debugf("Restore %v\n", request)
 
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, apiserver.Namespace)
-	if !found {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
-		return resp
-	} else if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
+	// cluster := crv1.Pgcluster{}
+	// found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, apiserver.Namespace)
+	// if !found {
+	// 	resp.Status.Code = msgs.Error
+	// 	resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
+	// 	return resp
+	// } else if err != nil {
+	// 	resp.Status.Code = msgs.Error
+	// 	resp.Status.Msg = err.Error()
+	// 	return resp
+	// }
 
 	//verify that the cluster we are restoring from has backrest enabled
 	// if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
@@ -414,37 +414,37 @@ func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
 	// 	return resp
 	// }
 
-	pgtask := getRestoreParams(request)
-	existingTask := crv1.Pgtask{}
+	// pgtask := getRestoreParams(request)
+	// existingTask := crv1.Pgtask{}
 
-	//delete any existing pgtask with the same name
-	found, err = kubeapi.Getpgtask(apiserver.RESTClient,
-		&existingTask,
-		pgtask.Name,
-		apiserver.Namespace)
-	if found {
-		log.Debugf("deleting prior pgtask %s", pgtask.Name)
-		err = kubeapi.Deletepgtask(apiserver.RESTClient,
-			pgtask.Name,
-			apiserver.Namespace)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	}
+	// //delete any existing pgtask with the same name
+	// found, err = kubeapi.Getpgtask(apiserver.RESTClient,
+	// 	&existingTask,
+	// 	pgtask.Name,
+	// 	apiserver.Namespace)
+	// if found {
+	// 	log.Debugf("deleting prior pgtask %s", pgtask.Name)
+	// 	err = kubeapi.Deletepgtask(apiserver.RESTClient,
+	// 		pgtask.Name,
+	// 		apiserver.Namespace)
+	// 	if err != nil {
+	// 		resp.Status.Code = msgs.Error
+	// 		resp.Status.Msg = err.Error()
+	// 		return resp
+	// 	}
+	// }
 
-	//create a pgtask for the restore workflow
-	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		pgtask,
-		apiserver.Namespace)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
+	// //create a pgtask for the restore workflow
+	// err = kubeapi.Createpgtask(apiserver.RESTClient,
+	// 	pgtask,
+	// 	apiserver.Namespace)
+	// if err != nil {
+	// 	resp.Status.Code = msgs.Error
+	// 	resp.Status.Msg = err.Error()
+	// 	return resp
+	// }
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
+	// resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
 
 	return resp
 }
