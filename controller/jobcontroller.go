@@ -130,7 +130,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	} else if labels[util.LABEL_BACKUP_TYPE_PGDUMP] == "true" {
 		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
 		log.Debugf("update the status to completed here for pgdump %s", labels[util.LABEL_PG_DATABASE])
-		status := crv1.JobCompletedStatus
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
 		if job.Status.Succeeded == 0 {
 			status = crv1.JobErrorStatus
 		}

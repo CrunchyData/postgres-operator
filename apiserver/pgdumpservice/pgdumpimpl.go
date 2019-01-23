@@ -27,6 +27,7 @@ import (
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
 )
 
 const pgDumpCommand = "pgdump"
@@ -223,6 +224,8 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	var storageSpec crv1.PgStorageSpec
 	var pvcName string
 
+	backupUser := clusterName + "-postgres-secret"
+
 	if request.StorageConfig != "" {
 		storageSpec, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	} else {
@@ -249,9 +252,9 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
 	spec.Parameters[util.LABEL_PGDUMP_OPTS] = request.BackupOpts
 	spec.Parameters[util.LABEL_PGDUMP_DB] = "postgres"
-	spec.Parameters[util.LABEL_PGDUMP_USER] = clusterName + "-primaryuser-secret"
+	spec.Parameters[util.LABEL_PGDUMP_USER] = backupUser
 	spec.Parameters[util.LABEL_PGDUMP_PORT] = "5432"
-	spec.Parameters[util.LABEL_PGDUMP_ALL] = "false"
+	spec.Parameters[util.LABEL_PGDUMP_ALL] = strconv.FormatBool(request.DumpAll)
 	spec.Parameters[util.LABEL_PVC_NAME] = pvcName
 	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
 	spec.StorageSpec = storageSpec
