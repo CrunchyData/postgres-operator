@@ -323,8 +323,13 @@
 </tr>
 
 <tr>
+<td>CCPImagePrefix</td>
+<td>newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix</td>
+</tr>
+
+<tr>
 <td>CCPImageTag</td>
-<td>newly created containers will be based on this image version (e.g. centos7-10.4-1.8.3), unless you override it using the &ndash;ccp-image-tag command line flag</td>
+<td>newly created containers will be based on this image version (e.g. centos7-11.1-2.3.0), unless you override it using the &ndash;ccp-image-tag command line flag</td>
 </tr>
 
 <tr>
@@ -334,12 +339,12 @@
 
 <tr>
 <td>LogStatement</td>
-<td>postgresql.conf log_statement value (required field) (works with crunchy-postgres &gt;= 2.2.0)</td>
+<td>postgresql.conf log_statement value (required field)</td>
 </tr>
 
 <tr>
 <td>LogMinDurationStatement</td>
-<td>postgresql.conf log_min_duration_statement value (required field) (works with crunchy-postgres &gt;= 2.2.0)</td>
+<td>postgresql.conf log_min_duration_statement value (required field)</td>
 </tr>
 
 <tr>
@@ -354,7 +359,7 @@
 
 <tr>
 <td>Replicas</td>
-<td>the number of cluster replicas to create for newly created clusters</td>
+<td>the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well</td>
 </tr>
 
 <tr>
@@ -408,6 +413,11 @@
 </tr>
 
 <tr>
+<td>BackrestPort</td>
+<td>currently required to be port 2022</td>
+</tr>
+
+<tr>
 <td>Autofail</td>
 <td>optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status</td>
 </tr>
@@ -453,6 +463,11 @@
 <tr>
 <td>ReplicaStorage</td>
 <td>required, the value of the storage configuration to use for the replica PostgreSQL deployments</td>
+</tr>
+
+<tr>
+<td>BackrestStorage</td>
+<td>required, the value of the storage configuration to use for the pgbackrest shared repository deployment created when a user specifies pgbackrest to be enabled on a cluster</td>
 </tr>
 
 <tr>

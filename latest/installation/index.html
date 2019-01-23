@@ -294,7 +294,8 @@
 <li>install pgo CLI (end user command tool)</li>
 </ul>
 
-<p>Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.</p>
+<p>Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.  pgo CLI clients are provided
+on the Github Releases page for Linux, Mac, and Windows clients.</p>
 
 <p>The Operator can also be deployed with a sample Helm chart and also a <em>quickstart</em> script.  Those installation methods don&rsquo;t provide the same level of customization that the installation provides but are alternatives.  Crunchy also provides an Ansible playbook for Crunchy customers.</p>
 
@@ -321,7 +322,9 @@ git checkout 3.5.0
 source $HOME/.bashrc
 </code></pre>
 
-<p>In this example set of environment variables, the CO_NAMESPACE environment variable is set to <em>demo</em> as an example namespace in which the Operator will be deployed.  Adjust to suit your needs.   There is a Makefile target you can run to create the <em>demo</em> namespace if you want:</p>
+<p>In this example set of environment variables, the CO_NAMESPACE environment variable is set to <em>demo</em> as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.</p>
+
+<p>Adjust the namespace value to suit your needs.   There is a Makefile target you can run to create the <em>demo</em> namespace if you want:</p>
 
 <pre><code>make setupnamespace
 </code></pre>
@@ -381,6 +384,10 @@ you wanted to use HostPath for testing:</p>
 <pre><code>./pv/create-pv.sh
 </code></pre>
 
+<p>Adjust the above PV creation scripts to suit your local requirements, the purpose
+of these scripts are solely to produce a test set of Volume to test the
+Operator.</p>
+
 <p>Other settings in <em>pgo.yaml</em> are described in the <a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration">pgo.yaml Configuration</a> section of the documentation.</p>
 
 <h2 id="operator-security">Operator Security</h2>
@@ -424,14 +431,16 @@ you wanted to use HostPath for testing:</p>
 
 <p>This will cause any existing Operator to be removed first, then the configuration to be bundled into a ConfigMap, then the Operator Deployment to be created.</p>
 
-<p>This will create a postgres-operator Deployment along with a crunchy-scheduler Deployment, and a postgres-operator Service.</p>
+<p>This will create a postgres-operator Deployment along with a crunchy-scheduler Deployment, and a postgres-operator Service.  So, Operator administrators needing
+to make changes to the Operator configuration would run this make target
+to pick up any changes to pgo.yaml or the Operator templates.</p>
 
 <h2 id="pgo-cli-installation">pgo CLI Installation</h2>
 
 <p>Most users will work with the Operator using the <em>pgo</em> CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (<a href="https://github.com/crunchydata/postgres-operator/releases">https://github.com/crunchydata/postgres-operator/releases</a>).</p>
 
 <p>The <em>pgo</em> client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
-Prior to using <em>pgo</em>, users will need to specify the
+Prior to using <em>pgo</em>, users testing the Operator on a single host can specify the
 <em>postgres-operator</em> URL as follows:</p>
 
 <pre><code>    $ kubectl get service postgres-operator
