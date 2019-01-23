@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -194,11 +195,11 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 		backupItem, error := getPgDumpForTask(c.Name, pgTaskName)
 
 		if backupItem != nil {
-			log.Debug("pgTask %s was found", pgTaskName)
+			log.Debugf("pgTask %s was found", pgTaskName)
 			response.BackupList.Items = append(response.BackupList.Items, *backupItem)
 
 		} else if error != nil {
-
+			log.Debugf("pgTask %s was not found, error", pgTaskName)
 			response.Status.Code = msgs.Error
 			response.Status.Msg = error.Error()
 
@@ -342,6 +343,8 @@ func getPgDumpForTask(clusterName string, taskName string) (*crv1.Pgbackup, erro
 
 	if found {
 		backup = convertDumpTaskToPgBackup(&task)
+	} else if kerrors.IsNotFound(err) {
+		err = nil // not found is not really an error.
 	} else if err == nil {
 		// It simply does not exist
 		log.Debugf("pgTask not found for requested pgdump %s", taskName)
