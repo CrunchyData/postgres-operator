@@ -28,6 +28,7 @@ removes the ingest related API endpoints.
  * The pgo.yaml adds the PreferredFailoverNode setting. This is a Kubernetes selector string (e.g. key=value).  This value if set, will cause fail-over targets to be preferred based on the node they run on if that node is in the set of *preferred*.
  * The ability to select nodes based on a selector string was added.  For this to feature to be used, multiple replicas have to be in a ready state, and also at the same replication status.  If those conditions are not met, the default fail-over target selection is used.
  * The pgo.yaml file now includes a new storage configuration, XlogStorage, which when set will cause the xlog volume to be allocated using this storage configuration. If not set, the PrimaryStorage configuration will be used.
+ * The pgo.yaml file now includes a new storage configuration, BackrestStorage, will cause the pgbackrest shared repository volume to be allocated using this storage configuration. 
  * The pgo.yaml file now includes a setting, AutofailReplaceReplica, which will enable or disable whether a new replica is created as part of a fail-over. This is turned off by default.
 
 See the GitHub Release notes for the features and other notes about a specific release.

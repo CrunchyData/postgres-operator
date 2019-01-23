@@ -21,11 +21,11 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storageos
-XlogStorage: storageos
-BackupStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: storageos
+PrimaryStorage: hostpathstorage
+XlogStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
+BackrestStorage: hostpathstorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -83,4 +83,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  rhel7-3.5.0-rc8
+  COImageTag:  centos7-3.5.0

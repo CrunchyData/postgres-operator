@@ -219,6 +219,7 @@ read REPLY
 export STORAGE_CLASS=$REPLY
 
 echo ""
+
 echo "Configuring pgo.yaml file..."
 cp $COROOT/deploy/cluster-rbac.yaml $COROOT/deploy/cluster-rbac.yaml.bak
 expenv -f $COROOT/deploy/cluster-rbac.yaml > /tmp/cluster-rbac.yaml

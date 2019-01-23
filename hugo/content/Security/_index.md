@@ -119,3 +119,7 @@ This will recreate the *pgo-auth-secret* Secret that stores these files and is m
 The Operator REST API is secured with keys stored in the *pgo-auth-secret* Secret.  Adjust the default keys to meet your security requirements using your own keys.  The *pgo-auth-secret* Secret is created when you run:
 
     make deployoperator
+
+The keys are generated when the RBAC script is executed by the cluster admin:
+
+    make installrbac

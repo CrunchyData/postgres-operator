@@ -14,9 +14,10 @@ A full installation of the Operator includes the following steps:
  - deploy the operator
  - install pgo CLI (end user command tool)
 
-Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.
+Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.  pgo CLI clients are provided
+on the Github Releases page for Linux, Mac, and Windows clients.
 
-The Operator can also be deployed with a sample Helm chart and also a *quickstart* script.  Those installation methods don't provide the same level of customization that the installation provides but are alternatives.  Crunchy also provides an Ansible playbook for Crunchy customers.
+The Operator can also be deployed with a sample Helm chart and also a *quickstart* script.  Those installation methods don't provide the same level of customization that the installation provides but are alternatives.  Crunchy also provides an Ansible playbook for Crunchy customers.  
 
 See below for details on the Helm and quickstart installation methods.
 
@@ -38,7 +39,9 @@ Environment variables control aspects of the Operator installation.  You can cop
     cat $HOME/odev/src/github.com/crunchydata/postgres-operator/examples/envs.sh >> $HOME/.bashrc
     source $HOME/.bashrc
 
-In this example set of environment variables, the CO_NAMESPACE environment variable is set to *demo* as an example namespace in which the Operator will be deployed.  Adjust to suit your needs.   There is a Makefile target you can run to create the *demo* namespace if you want:
+In this example set of environment variables, the CO_NAMESPACE environment variable is set to *demo* as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.  
+
+Adjust the namespace value to suit your needs.   There is a Makefile target you can run to create the *demo* namespace if you want:
 
     make setupnamespace
 
@@ -94,6 +97,10 @@ you wanted to use HostPath for testing:
 ./pv/create-pv.sh
 ```
 
+Adjust the above PV creation scripts to suit your local requirements, the purpose
+of these scripts are solely to produce a test set of Volume to test the 
+Operator.
+
 Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
 
 ## Operator Security
@@ -132,14 +139,16 @@ At this point, you as a normal Kubernetes user should be able to deploy the Oper
 
 This will cause any existing Operator to be removed first, then the configuration to be bundled into a ConfigMap, then the Operator Deployment to be created.
 
-This will create a postgres-operator Deployment along with a crunchy-scheduler Deployment, and a postgres-operator Service.
+This will create a postgres-operator Deployment along with a crunchy-scheduler Deployment, and a postgres-operator Service.  So, Operator administrators needing
+to make changes to the Operator configuration would run this make target
+to pick up any changes to pgo.yaml or the Operator templates.
 
 
 ## pgo CLI Installation
 Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
 
 The *pgo* client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
-Prior to using *pgo*, users will need to specify the
+Prior to using *pgo*, users testing the Operator on a single host can specify the
 *postgres-operator* URL as follows:
 
 ```

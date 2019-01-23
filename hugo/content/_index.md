@@ -30,22 +30,22 @@ The Operator deploys on Kubernetes and OpenShift clusters.  Some form of storage
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed
-in the [Design](/design/design). 
+in the [Design](/design). 
 
 ![Architecture](/Operator-Architecture.png)
 
-The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.
+The Operator is developed and tested on CentOS and RHEL Linux platforms but is known to run on other Linux variants.
 
 ## Documentation
 The following documentation is provided:
 
- - [pgo CLI Syntax and Examples](/cli-and-example/pgo-cli) 
- - [Installation](/installation/installation)
- - [Configuration](/configuration/configuration) 
+ - [pgo CLI Syntax and Examples](/operator-cli)
+ - [Installation](/installation)
+ - [Configuration](/configuration) 
  - [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) 
- - [Security](/security/security) 
- - [Design Overview](/design/design) 
- - [Developing](/develop/developing) 
- - [Upgrading the Operator](/upgrade/upgrading)
- - [Contributing](/contributing)
+ - [Security](/security) 
+ - [Design Overview](/design) 
+ - [Developing](/developer-setup) 
+ - [Upgrading the Operator](/upgrade)
+ - [Contributing](/contributing/documentation-updates)
 
