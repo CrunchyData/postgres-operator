@@ -32,6 +32,7 @@ import (
 
 type pgDumpJobTemplateFields struct {
 	JobName            string
+	TaskName           string
 	Name               string // ??
 	ClusterName        string
 	Command            string // ??
@@ -93,8 +94,14 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	}
 
+	// this task name should match
+	taskName := task.Name
+	// taskName := "backup" + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER] + "-" + task.Spec.Parameters[util.LABEL_BACKUP_TYPE_PGDUMP]
+	jobName := taskName + "-" + util.RandStringBytesRmndr(4)
+
 	jobFields := pgDumpJobTemplateFields{
-		JobName:            "backup" + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER] + "-" + task.Spec.Parameters[util.LABEL_BACKUP_TYPE_PGDUMP],
+		JobName:            jobName,
+		TaskName:           taskName,
 		ClusterName:        task.Spec.Parameters[util.LABEL_PG_CLUSTER],
 		PodName:            task.Spec.Parameters[util.LABEL_POD_NAME],
 		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
