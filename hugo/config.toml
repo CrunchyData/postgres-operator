@@ -47,5 +47,10 @@ weight = 30
 
 [[menu.downloads]]
 name = "<i class='fas fa-file-pdf'></i> <label>PDF</label>"
-url = "/pdf/postgres-operator.pdf"
+url = "/pdf/postgres_operator.pdf"
 weight = 20
+
+[[menu.downloads]]
+name = "<i class='fas fa-book'></i> <label>EPUB</label>"
+url = "/epub/postgres_operator.epub"
+weight = 30
