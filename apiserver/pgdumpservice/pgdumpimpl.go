@@ -253,7 +253,7 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	spec.Parameters[util.LABEL_PGDUMP_OPTS] = request.BackupOpts
 	spec.Parameters[util.LABEL_PGDUMP_DB] = "postgres"
 	spec.Parameters[util.LABEL_PGDUMP_USER] = backupUser
-	spec.Parameters[util.LABEL_PGDUMP_PORT] = "5432"
+	spec.Parameters[util.LABEL_PGDUMP_PORT] = apiserver.Pgo.Cluster.Port
 	spec.Parameters[util.LABEL_PGDUMP_ALL] = strconv.FormatBool(request.DumpAll)
 	spec.Parameters[util.LABEL_PVC_NAME] = pvcName
 	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag

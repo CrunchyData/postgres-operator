@@ -33,7 +33,7 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreatepgDumpBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
+	err := apiserver.Authn(apiserver.CREATE_DUMP_PERM, w, r)
 	if err != nil {
 		return
 	}
