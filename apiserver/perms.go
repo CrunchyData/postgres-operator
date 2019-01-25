@@ -78,6 +78,9 @@ const SHOW_UPGRADE_PERM = "ShowUpgrade"
 // UPDATE
 const UPDATE_CLUSTER_PERM = "UpdateCluster"
 
+// SCALE
+const SCALE_CLUSTER_PERM = "ScaleCluster"
+
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
@@ -133,6 +136,9 @@ func InitializePerms() {
 	PermMap[SHOW_SCHEDULE_PERM] = "yes"
 	PermMap[SHOW_SECRETS_PERM] = "yes"
 	PermMap[SHOW_UPGRADE_PERM] = "yes"
+
+	// Scale
+	PermMap[SCALE_CLUSTER_PERM] = "yes"
 
 	// Update
 	PermMap[UPDATE_CLUSTER_PERM] = "yes"

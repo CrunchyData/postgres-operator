@@ -46,13 +46,13 @@ type containerResourcesTemplateFields struct {
 }
 
 // ShowPVC ...
-func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
+func ShowPVC(pvcName, PVCRoot, ns string) ([]string, error) {
 	pvcList := make([]string, 1)
 
 	if pvcName == "all" {
 		selector := util.LABEL_PGREMOVE + "=true"
 
-		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, apiserver.Namespace)
+		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, ns)
 		if err != nil {
 			return pvcList, err
 		}
@@ -64,27 +64,27 @@ func ShowPVC(pvcName, PVCRoot string) ([]string, error) {
 		return pvcList, err
 	}
 
-	pvc, _, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, apiserver.Namespace)
+	pvc, _, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
 	if err != nil {
 		return pvcList, err
 	}
 
 	log.Debugf("PVC %s is found", pvc.Name)
-	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot)
+	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
 
 	return pvcList, err
 
 }
 
 // printPVCListing ...
-func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
+func printPVCListing(clusterName, pvcName, PVCRoot, ns string) ([]string, error) {
 	newlines := make([]string, 1)
 	var err error
 	var doc2 bytes.Buffer
 	var podName = "lspvc-" + pvcName
 
 	//delete lspvc pod if it was not deleted for any reason prior
-	_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, apiserver.Namespace)
+	_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, ns)
 	if !found {
 		//
 	} else if err != nil {
@@ -92,14 +92,14 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 		return newlines, err
 	} else {
 		log.Debugf("deleting prior pod %s", podName)
-		err = kubeapi.DeletePod(apiserver.Clientset, podName, apiserver.Namespace)
+		err = kubeapi.DeletePod(apiserver.Clientset, podName, ns)
 		if err != nil {
 			return newlines, err
 		}
 		//sleep a bit for the pod to be deleted
 		for i := 0; i < 9; i++ {
 			time.Sleep(2000 * time.Millisecond)
-			_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, apiserver.Namespace)
+			_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, ns)
 			if !found || err != nil {
 				break
 			}
@@ -152,7 +152,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 		return newlines, err
 	}
 
-	_, err = kubeapi.CreatePod(apiserver.Clientset, &newpod, apiserver.Namespace)
+	_, err = kubeapi.CreatePod(apiserver.Clientset, &newpod, ns)
 	if err != nil {
 		return newlines, err
 	}
@@ -160,7 +160,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	timeout := time.Duration(6 * time.Second)
 	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + util.LABEL_PVCNAME + "=" + pvcName}
 	podPhase := v1.PodSucceeded
-	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, apiserver.Namespace)
+	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, ns)
 	if err != nil {
 		log.Error("error waiting on lspvc pod to complete" + err.Error())
 	}
@@ -169,7 +169,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 
 	//get lspvc pod output
 	logOptions := v1.PodLogOptions{}
-	req := apiserver.Clientset.CoreV1().Pods(apiserver.Namespace).GetLogs(podName, &logOptions)
+	req := apiserver.Clientset.CoreV1().Pods(ns).GetLogs(podName, &logOptions)
 	if req == nil {
 		log.Debugf("error in get logs for %s", podName)
 	} else {
@@ -206,7 +206,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot string) ([]string, error) {
 	}
 
 	//delete lspvc pod
-	err = kubeapi.DeletePod(apiserver.Clientset, podName, apiserver.Namespace)
+	err = kubeapi.DeletePod(apiserver.Clientset, podName, ns)
 	return newlines, err
 
 }

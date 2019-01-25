@@ -29,6 +29,8 @@ import (
 // pgo create policy
 // parameters secretfrom
 func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	resp := msgs.CreatePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -37,7 +39,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreatePolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.CREATE_POLICY_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_POLICY_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -50,13 +52,21 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	errs := validation.IsDNS1035Label(request.Name)
 	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "invalid policy name format " + errs[0]
 	} else {
 
-		found, err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL)
+		found, err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL, ns)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -74,6 +84,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // DeletePolicyHandler ...
 // returns a DeletePolicyResponse
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("policyservice.DeletePolicyHandler %v", vars)
 
@@ -86,7 +97,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
-	err := apiserver.Authn(apiserver.DELETE_POLICY_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.DELETE_POLICY_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -94,12 +105,23 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
+
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp = DeletePolicy(apiserver.RESTClient, policyname)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = DeletePolicy(apiserver.RESTClient, policyname, ns)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -108,6 +130,8 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // ShowPolicyHandler ...
 // returns a ShowPolicyResponse
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	vars := mux.Vars(r)
 	log.Debugf("policyservice.ShowPolicyHandler %v", vars)
 
@@ -121,10 +145,11 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
-	err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
 	if err != nil {
 		return
 	}
+
 	log.Debug("policyservice.ShowPolicyHandler GET called")
 	resp := msgs.ShowPolicyResponse{}
 	resp.Status.Code = msgs.Ok
@@ -133,9 +158,19 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname, ns)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -145,12 +180,13 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
+	var ns string
 	log.Debug("policyservice.ApplyPolicyHandler called")
 
 	var request msgs.ApplyPolicyRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.APPLY_POLICY_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.APPLY_POLICY_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -158,7 +194,16 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ApplyPolicy(&request)
+	resp := msgs.ApplyPolicyResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ApplyPolicy(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }

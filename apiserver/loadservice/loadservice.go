@@ -28,12 +28,13 @@ import (
 // pgo load --selector=name=mycluster --load-config=./sample-load-config.json
 func LoadHandler(w http.ResponseWriter, r *http.Request) {
 
+	var ns string
 	log.Infoln("loadservice.LoadHandler called")
 
 	var request msgs.LoadRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.LOAD_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.LOAD_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -41,13 +42,22 @@ func LoadHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.LoadResponse
+	resp := msgs.LoadResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
-		resp = msgs.LoadResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = Load(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = Load(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }

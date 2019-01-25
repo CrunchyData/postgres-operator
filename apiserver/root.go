@@ -307,7 +307,16 @@ func BasicAuthzCheck(username, perm string) bool {
 
 }
 
-func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
+//GetNamespace determines if a user has permission for
+//a namespace they are requesting as well as looks up
+//a default namespace if the requestedNS is empty
+func GetNamespace(username, requestedNS string) (string, error) {
+	var err error
+
+	return Namespace, err
+}
+
+func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
 	var err error
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
@@ -319,23 +328,23 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
 	log.Debugf("Authentication Attempt %s username=[%s]", perm, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
-		return errors.New("Not Authorized")
+		return "", errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
 		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
-		return errors.New("Not Authenticated")
+		return "", errors.New("Not Authenticated")
 	}
 
 	if !BasicAuthzCheck(username, perm) {
 		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
 		http.Error(w, "Not authorized for this apiserver action", 401)
-		return errors.New("Not authorized for this apiserver action")
+		return "", errors.New("Not authorized for this apiserver action")
 	}
 
 	log.Debug("Authentication Success")
-	return err
+	return username, err
 
 }
 

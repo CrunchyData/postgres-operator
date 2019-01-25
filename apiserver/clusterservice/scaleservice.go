@@ -31,6 +31,8 @@ import (
 // parameters showsecrets
 // returns a ScaleResponse
 func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
+	//SCALE_CLUSTER_PERM
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("clusterservice.ScaleClusterHandler %v\n", vars)
 
@@ -71,16 +73,31 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("clusterservice.ScaleClusterHandler GET called")
 	}
 
+	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.ClusterScaleResponse
+	resp := msgs.ClusterScaleResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ClusterScaleResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -89,6 +106,8 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo scale mycluster --query
 // returns a ScaleQueryResponse
 func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
+	//SCALE_CLUSTER_PERM
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("clusterservice.ScaleQueryHandler %v\n", vars)
 
@@ -104,17 +123,31 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("clusterservice.ScaleQueryHandler GET called")
 	}
 
+	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.ScaleQueryResponse
+	resp := msgs.ScaleQueryResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ScaleQueryResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = ScaleQuery(clusterName)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ScaleQuery(clusterName, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -122,6 +155,8 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 // pgo scale mycluster --scale-down-target=somereplicaname
 // returns a ScaleDownResponse
 func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
+	//SCALE_CLUSTER_PERM
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("clusterservice.ScaleDownHandler %v\n", vars)
 
@@ -145,20 +180,37 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("clusterservice.ScaleDownHandler GET called")
 	}
 
+	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
+	if err != nil {
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.ScaleDownResponse
+	resp := msgs.ScaleDownResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	deleteData, err := strconv.ParseBool(tmp)
 	if err != nil {
-		resp = msgs.ScaleDownResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-	} else if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ScaleDownResponse{}
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = ScaleDown(deleteData, clusterName, replicaName)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	if clientVersion != msgs.PGO_VERSION {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ScaleDown(deleteData, clusterName, replicaName, ns)
 	json.NewEncoder(w).Encode(resp)
 }

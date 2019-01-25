@@ -57,7 +57,7 @@ type containerResourcesTemplateFields struct {
 
 // Load ...
 // pgo load  --policies=jsonload --selector=name=mycluster --load-config=./sample-load-config.json
-func Load(request *msgs.LoadRequest) msgs.LoadResponse {
+func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 
 	var err error
 	resp := msgs.LoadResponse{}
@@ -121,7 +121,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 		clusterList := crv1.PgclusterList{}
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
 			&clusterList, request.Selector,
-			apiserver.Namespace)
+			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -153,10 +153,10 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 			//apply policies to this cluster
 			applyReq := msgs.ApplyPolicyRequest{}
 			applyReq.Name = p
-			applyReq.Namespace = apiserver.Namespace
+			applyReq.Namespace = ns
 			applyReq.DryRun = false
 			applyReq.Selector = "name=" + arg
-			applyResp := policyservice.ApplyPolicy(&applyReq)
+			applyResp := policyservice.ApplyPolicy(&applyReq, ns)
 			if applyResp.Status.Code != msgs.Ok {
 				log.Error("error in applying policy " + applyResp.Status.Msg)
 				resp.Status.Code = msgs.Error
@@ -167,7 +167,7 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 		//create the load job for this cluster
 		log.Debugf("creating load job for %s", arg)
-		jobName, err = createJob(arg, &LoadConfigTemplate)
+		jobName, err = createJob(arg, &LoadConfigTemplate, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -182,13 +182,13 @@ func Load(request *msgs.LoadRequest) msgs.LoadResponse {
 
 }
 
-func createJob(clusterName string, template *loadJobTemplateFields) (string, error) {
+func createJob(clusterName string, template *loadJobTemplateFields, ns string) (string, error) {
 	var err error
 
 	randStr := operutil.GenerateRandString(3)
 	template.Name = "pgo-load-" + clusterName + "-" + randStr
 	template.DbHost = clusterName
-	template.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, apiserver.Namespace)
+	template.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, ns)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -211,7 +211,7 @@ func createJob(clusterName string, template *loadJobTemplateFields) (string, err
 	}
 
 	var jobName string
-	jobName, err = kubeapi.CreateJob(apiserver.Clientset, &newjob, apiserver.Namespace)
+	jobName, err = kubeapi.CreateJob(apiserver.Clientset, &newjob, ns)
 
 	return jobName, err
 

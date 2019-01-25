@@ -33,7 +33,7 @@ func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
-	err := apiserver.Authn(apiserver.SHOW_CONFIG_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_CONFIG_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -42,13 +42,22 @@ func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	var resp msgs.ShowConfigResponse
+	resp := msgs.ShowConfigResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowConfigResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = ShowConfig()
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	_, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowConfig()
 	json.NewEncoder(w).Encode(resp)
 }

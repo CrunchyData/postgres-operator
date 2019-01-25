@@ -26,7 +26,7 @@ import (
 )
 
 // ShowWorkflow ...
-func ShowWorkflow(id string) (msgs.ShowWorkflowDetail, error) {
+func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 
 	log.Debugf("ShowWorkflow called with id %s", id)
 	detail := msgs.ShowWorkflowDetail{}
@@ -37,7 +37,7 @@ func ShowWorkflow(id string) (msgs.ShowWorkflowDetail, error) {
 
 	taskList := crv1.PgtaskList{}
 
-	err := kubeapi.GetpgtasksBySelector(apiserver.RESTClient, &taskList, selector, apiserver.Namespace)
+	err := kubeapi.GetpgtasksBySelector(apiserver.RESTClient, &taskList, selector, ns)
 	if err != nil {
 		return detail, err
 	}

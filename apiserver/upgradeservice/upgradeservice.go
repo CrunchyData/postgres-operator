@@ -44,11 +44,13 @@ type ShowUpgradeResponse struct {
 // parameters --upgrade-type
 // parameters --ccp-image-tag
 func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	log.Debug("upgradeservice.CreateUpgradeHandler called")
 	var request msgs.CreateUpgradeRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.CREATE_UPGRADE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_UPGRADE_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -56,14 +58,23 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.CreateUpgradeResponse
+	resp := msgs.CreateUpgradeResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
-		resp = msgs.CreateUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = CreateUpgrade(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreateUpgrade(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -75,6 +86,7 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowUpgradeResponse
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("upgradeservice.ShowUpgradeHandler %v", vars)
 
@@ -89,19 +101,30 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("upgradeservice.ShowUpgradeHandler GET called")
 
-	err := apiserver.Authn(apiserver.SHOW_UPGRADE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_UPGRADE_PERM, w, r)
 	if err != nil {
 		return
 	}
 
 	var resp msgs.ShowUpgradeResponse
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.ShowUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-
-	} else {
-		resp = ShowUpgrade(upgradename)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp = msgs.ShowUpgradeResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowUpgrade(upgradename, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -110,6 +133,8 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 // pgo delete upgrade
 // returns a ShowUpgradeResponse
 func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	vars := mux.Vars(r)
 	log.Debugf("upgradeservice.DeleteUpgradeHandler %v", vars)
 
@@ -124,20 +149,29 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("upgradeservice.DeleteUpgradeHandler DELETE called")
 
-	err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	var resp msgs.DeleteUpgradeResponse
+	resp := msgs.DeleteUpgradeResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.DeleteUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
+		return
 
-	} else {
-
-		resp = DeleteUpgrade(upgradename)
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = DeleteUpgrade(upgradename, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }

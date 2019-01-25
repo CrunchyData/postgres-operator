@@ -28,6 +28,8 @@ import (
 // returns a ShowPVCResponse
 func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
+	var username, ns string
+
 	vars := mux.Vars(r)
 	log.Debugf("pvcervice.ShowPVCHandler %v", vars)
 
@@ -50,7 +52,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("pvcservice.ShowPVCHandler DELETE called")
 	}
 
-	err = apiserver.Authn(apiserver.SHOW_PVC_PERM, w, r)
+	username, err = apiserver.Authn(apiserver.SHOW_PVC_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -63,12 +65,22 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp.Results, err = ShowPVC(pvcname, pvcroot)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp.Results, err = ShowPVC(pvcname, pvcroot, ns)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 	}
 
 	json.NewEncoder(w).Encode(resp)

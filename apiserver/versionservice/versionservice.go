@@ -30,7 +30,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	err := apiserver.Authn(apiserver.VERSION_PERM, w, r)
+	_, err := apiserver.Authn(apiserver.VERSION_PERM, w, r)
 	if err != nil {
 		return
 	}
