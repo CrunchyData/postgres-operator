@@ -21,6 +21,9 @@ cluster used by the Operator:
 Those 3 Postgres credentials are referenced by the pgcluster CRD
 for this cluster.
 
+To use passwords other than the example default passwords, see
+the following link https://kubernetes.io/docs/tasks/inject-data-application/distribute-credentials-secure/#convert-your-secret-data-to-a-base-64-representation
+
 ## pgcluster CRD
 
 To cause the Operator to create a Postgres cluster, it is looking
