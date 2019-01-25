@@ -186,13 +186,14 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 	for _, d := range deployments.Items {
 		if d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] {
+			log.Debug("skipping apply policy on deployment %s", d.Name)
 			continue
 			//skip non primary deployments
 		}
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, ns, request.Name, d.ObjectMeta.Name)
+		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, ns, request.Name, d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME])
 		if err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
@@ -202,7 +203,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 		cl := crv1.Pgcluster{}
 		_, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-			&cl, d.ObjectMeta.Name, ns)
+			&cl, d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME], ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()

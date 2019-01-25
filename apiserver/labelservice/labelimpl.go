@@ -73,6 +73,8 @@ func Label(request *msgs.LabelRequest, ns string) msgs.LabelResponse {
 		}
 
 	} else if request.Selector != "" {
+		log.Debugf("label selector is %s and ns is %s", request.Selector, ns)
+
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
 			&clusterList, request.Selector, ns)
 		if err != nil {
