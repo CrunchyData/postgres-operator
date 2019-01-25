@@ -54,12 +54,6 @@ var backupCmd = &cobra.Command{
 					exitNow = true
 				}
 
-				// pgdump flag invalid for backrest
-				if DumpAll == true {
-					fmt.Println("Error: --dump-all is only allowed when performing a pgdump backup.")
-					exitNow = true
-				}
-
 				if exitNow {
 					return
 				}
@@ -102,7 +96,6 @@ func init() {
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
 	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
-	backupCmd.Flags().BoolVarP(&DumpAll, "dump-all", "", false, "Indicates all databases should be dumped. Only valid when backup-type is pgdump.")
 
 }
 

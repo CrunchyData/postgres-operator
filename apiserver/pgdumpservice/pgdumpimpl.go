@@ -28,14 +28,13 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
+	"strings"
 )
 
 const pgDumpCommand = "pgdump"
 const pgDumpInfoCommand = "info"
 const pgDumpTaskExtension = "-pgdump"
 const pgDumpJobExtension = "-pgdump-job"
-
-// const containername = "database" //TODO: is this correct?
 
 //  CreateBackup ...
 // pgo backup mycluster
@@ -138,6 +137,8 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			return resp
 		}
 
+		// where all the magic happens about the task.
+		// TODO: Needs error handling for invalid parameters in the request
 		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, podname, "database", request)
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, apiserver.Namespace)
@@ -193,7 +194,7 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 		pgTaskName := "backup-" + c.Name + pgDumpTaskExtension
 
-		backupItem, error := getPgDumpForTask(c.Name, pgTaskName)
+		backupItem, error := getPgBackupForTask(c.Name, pgTaskName)
 
 		if backupItem != nil {
 			log.Debugf("pgTask %s was found", pgTaskName)
@@ -217,6 +218,7 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 }
 
+// builds out a pgTask structure that can be handed to kube
 func buildPgTaskForDump(clusterName string, taskName string, action string, podName string,
 	containerName string, request *msgs.CreatepgDumpBackupRequest) *crv1.Pgtask {
 
@@ -239,7 +241,8 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 		pvcName = taskName + "-pvc"
 	}
 
-	// storageSpec.Name =
+	// get dumpall flag, separate from dumpOpts, validate options
+	dumpAllFlag, dumpOpts := parseOptionFlags(request.BackupOpts)
 
 	spec := crv1.PgtaskSpec{}
 
@@ -250,11 +253,11 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	spec.Parameters[util.LABEL_PGDUMP_HOST] = clusterName      // same name as service
 	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName // ??
 	spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
-	spec.Parameters[util.LABEL_PGDUMP_OPTS] = request.BackupOpts
+	spec.Parameters[util.LABEL_PGDUMP_OPTS] = dumpOpts
 	spec.Parameters[util.LABEL_PGDUMP_DB] = "postgres"
 	spec.Parameters[util.LABEL_PGDUMP_USER] = backupUser
 	spec.Parameters[util.LABEL_PGDUMP_PORT] = apiserver.Pgo.Cluster.Port
-	spec.Parameters[util.LABEL_PGDUMP_ALL] = strconv.FormatBool(request.DumpAll)
+	spec.Parameters[util.LABEL_PGDUMP_ALL] = strconv.FormatBool(dumpAllFlag)
 	spec.Parameters[util.LABEL_PVC_NAME] = pvcName
 	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
 	spec.StorageSpec = storageSpec
@@ -331,8 +334,39 @@ func isReady(pod *v1.Pod) bool {
 
 }
 
+// 	dumpAllFlag, dumpOpts = parseOptionFlags(request.BackupOpt)
+func parseOptionFlags(allFlags string) (bool, string) {
+	dumpFlag := false
+
+	// error =
+
+	parsedOptions := []string{}
+
+	options := strings.Split(allFlags, " ")
+
+	for _, token := range options {
+
+		// handle dump flag
+		if strings.Contains(token, "--dump-all") {
+			dumpFlag = true
+		} else {
+			parsedOptions = append(parsedOptions, token)
+		}
+
+	}
+
+	optionString := strings.Join(parsedOptions, " ")
+
+	log.Debugf("pgdump optionFlags: %s, dumpAll: %t", optionString, dumpFlag)
+
+	return dumpFlag, optionString
+
+}
+
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
-func getPgDumpForTask(clusterName string, taskName string) (*crv1.Pgbackup, error) {
+func getPgBackupForTask(clusterName string, taskName string) (*crv1.Pgbackup, error) {
+
+	var err error
 
 	task := crv1.Pgtask{}
 
@@ -345,7 +379,7 @@ func getPgDumpForTask(clusterName string, taskName string) (*crv1.Pgbackup, erro
 	found, err := kubeapi.Getpgtask(apiserver.RESTClient, &task, taskName, apiserver.Namespace)
 
 	if found {
-		backup = convertDumpTaskToPgBackup(&task)
+		backup = buildPgBackupFrompgTask(&task)
 	} else if kerrors.IsNotFound(err) {
 		err = nil // not found is not really an error.
 	} else if err == nil {
@@ -356,7 +390,8 @@ func getPgDumpForTask(clusterName string, taskName string) (*crv1.Pgbackup, erro
 	return backup, err
 }
 
-func convertDumpTaskToPgBackup(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
+// converts pgTask to a pgBackup structure
+func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 
 	backup := crv1.Pgbackup{}
 
@@ -370,16 +405,16 @@ func convertDumpTaskToPgBackup(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 	backup.Spec.BackupHost = spec.Parameters[util.LABEL_PGDUMP_HOST]
 	backup.Spec.BackupUserSecret = spec.Parameters[util.LABEL_PGDUMP_USER]
 	backup.Spec.BackupPort = spec.Parameters[util.LABEL_PGDUMP_PORT]
-	backup.Spec.DumpAll = spec.Parameters[util.LABEL_PGDUMP_ALL]
-
-	if backup.Spec.DumpAll == "" {
-		backup.Spec.DumpAll = "false"
-	}
-
 	backup.Spec.BackupPVC = spec.Parameters[util.LABEL_PVC_NAME]
 	backup.Spec.StorageSpec.Size = dumpTask.Spec.StorageSpec.Size
 	backup.Spec.StorageSpec.AccessMode = dumpTask.Spec.StorageSpec.AccessMode
-	backup.Spec.BackupOpts = spec.Parameters[util.LABEL_PGDUMP_OPTS]
+
+	// if dump-all flag is set, prepend it to options string since it was separated out before processing.
+	if spec.Parameters[util.LABEL_PGDUMP_ALL] == "true" {
+		backup.Spec.BackupOpts = "--dump-all " + spec.Parameters[util.LABEL_PGDUMP_OPTS]
+	} else {
+		backup.Spec.BackupOpts = spec.Parameters[util.LABEL_PGDUMP_OPTS]
+	}
 
 	return &backup
 

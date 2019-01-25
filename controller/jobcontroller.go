@@ -132,7 +132,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("update the status to completed here for pgdump %s", labels[util.LABEL_PG_DATABASE])
 		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
 		if job.Status.Succeeded == 0 {
-			status = crv1.JobErrorStatus
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
 		}
 		//update the pgdump task status to submitted - updates task, not the job.
 		dumpTask := labels[util.LABEL_PGTASK]

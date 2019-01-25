@@ -39,7 +39,6 @@ type PgbackupSpec struct {
 	BackupStatus     string        `json:"backupstatus"`
 	BackupPVC        string        `json:"backuppvc"`
 	BackupOpts       string        `json:"backupopts"`
-	DumpAll          string        `json:"dumpall,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
