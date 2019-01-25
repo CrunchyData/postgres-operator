@@ -27,13 +27,13 @@ import (
 	"sort"
 )
 
-func Status() msgs.StatusResponse {
+func Status(ns string) msgs.StatusResponse {
 	var err error
 
 	response := msgs.StatusResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	err = getStatus(&response.Result)
+	err = getStatus(&response.Result, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = "error getting status report"
@@ -42,23 +42,23 @@ func Status() msgs.StatusResponse {
 	return response
 }
 
-func getStatus(results *msgs.StatusDetail) error {
+func getStatus(results *msgs.StatusDetail, ns string) error {
 
 	var err error
-	results.OperatorStartTime = getOperatorStart()
-	results.NumBackups = getNumBackups()
-	results.NumClaims = getNumClaims()
-	results.NumDatabases = getNumDatabases()
-	results.VolumeCap = getVolumeCap()
-	results.DbTags = getDBTags()
-	results.NotReady = getNotReady()
+	results.OperatorStartTime = getOperatorStart(ns)
+	results.NumBackups = getNumBackups(ns)
+	results.NumClaims = getNumClaims(ns)
+	results.NumDatabases = getNumDatabases(ns)
+	results.VolumeCap = getVolumeCap(ns)
+	results.DbTags = getDBTags(ns)
+	results.NotReady = getNotReady(ns)
 	results.Nodes = getNodes()
-	results.Labels = getLabels()
+	results.Labels = getLabels(ns)
 	return err
 }
 
-func getOperatorStart() string {
-	pods, err := kubeapi.GetPods(apiserver.Clientset, "name="+util.LABEL_OPERATOR, apiserver.Namespace)
+func getOperatorStart(ns string) string {
+	pods, err := kubeapi.GetPods(apiserver.Clientset, "name="+util.LABEL_OPERATOR, ns)
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -74,9 +74,9 @@ func getOperatorStart() string {
 	return "error"
 }
 
-func getNumBackups() int {
+func getNumBackups(ns string) int {
 	//count the number of Jobs with pgbackup=true and completionTime not nil
-	jobs, err := kubeapi.GetJobs(apiserver.Clientset, util.LABEL_PGBACKUP, apiserver.Namespace)
+	jobs, err := kubeapi.GetJobs(apiserver.Clientset, util.LABEL_PGBACKUP, ns)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -84,9 +84,9 @@ func getNumBackups() int {
 	return len(jobs.Items)
 }
 
-func getNumClaims() int {
+func getNumClaims(ns string) int {
 	//count number of PVCs with pgremove=true
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, apiserver.Namespace)
+	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, ns)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -94,9 +94,9 @@ func getNumClaims() int {
 	return len(pvcs.Items)
 }
 
-func getNumDatabases() int {
+func getNumDatabases(ns string) int {
 	//count number of Deployments with pg-cluster
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, util.LABEL_PG_CLUSTER, apiserver.Namespace)
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, util.LABEL_PG_CLUSTER, ns)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -104,9 +104,9 @@ func getNumDatabases() int {
 	return len(deps.Items)
 }
 
-func getVolumeCap() string {
+func getVolumeCap(ns string) string {
 	//sum all PVCs storage capacity
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, apiserver.Namespace)
+	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, ns)
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -122,10 +122,10 @@ func getVolumeCap() string {
 	return q.String()
 }
 
-func getDBTags() map[string]int {
+func getDBTags(ns string) map[string]int {
 	results := make(map[string]int)
 	//count all pods with pg-cluster, sum by image tag value
-	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, ns)
 	if err != nil {
 		log.Error(err)
 		return results
@@ -139,11 +139,11 @@ func getDBTags() map[string]int {
 	return results
 }
 
-func getNotReady() []string {
+func getNotReady(ns string) []string {
 	//show all pods with pg-cluster that have status.Phase of not Running
 	agg := make([]string, 0)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, ns)
 	if err != nil {
 		log.Error(err)
 		return agg
@@ -192,11 +192,11 @@ func getNodes() []msgs.NodeInfo {
 	return result
 }
 
-func getLabels() []msgs.KeyValue {
+func getLabels(ns string) []msgs.KeyValue {
 	var ss []msgs.KeyValue
 	results := make(map[string]int)
 	// GetDeployments gets a list of deployments using a label selector
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "", apiserver.Namespace)
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "", ns)
 	if err != nil {
 		log.Error(err)
 		return ss

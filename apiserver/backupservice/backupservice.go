@@ -27,6 +27,8 @@ import (
 // ShowBackupHandler ...
 // returns a ShowBackupResponse
 func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	vars := mux.Vars(r)
 	log.Debugf("backupservice.ShowBackupHandler %v\n", vars)
 
@@ -37,23 +39,34 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
-	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 
 	log.Debug("backupservice.ShowBackupHandler GET called")
-	var resp msgs.ShowBackupResponse
-	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowBackupResponse{}
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	resp := msgs.ShowBackupResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	} else {
-		resp = ShowBackup(backupname)
+	if clientVersion != msgs.PGO_VERSION {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
+		return
+
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowBackup(backupname, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -61,6 +74,8 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteBackupHandler ...
 // returns a ShowBackupResponse
 func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	vars := mux.Vars(r)
 	log.Debugf("backupservice.DeleteBackupHandler %v\n", vars)
 
@@ -70,7 +85,7 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
-	err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -78,13 +93,24 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 	log.Debug("backupservice.DeleteBackupHandler called")
-	var resp msgs.DeleteBackupResponse
+
+	resp := msgs.DeleteBackupResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.DeleteBackupResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = DeleteBackup(backupname)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = DeleteBackup(backupname, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -94,19 +120,30 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 // pgo backup --selector=name=mycluster
 // pgo backup mycluster
 func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	log.Debug("backupservice.CreateBackupHandler called")
 
 	var request msgs.CreateBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := CreateBackup(&request)
+	resp := msgs.CreateBackupResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreateBackup(&request, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }

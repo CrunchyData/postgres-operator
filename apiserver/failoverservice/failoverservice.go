@@ -27,14 +27,14 @@ import (
 // CreateFailoverHandler ...
 // pgo failover mycluster
 func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
+	var ns string
 
 	log.Debug("failoverservice.CreateFailoverHandler called")
 
 	var request msgs.CreateFailoverRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.CREATE_FAILOVER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_FAILOVER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -42,13 +42,23 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.CreateFailoverResponse
+	resp := msgs.CreateFailoverResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
-		resp = msgs.CreateFailoverResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = CreateFailover(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreateFailover(&request, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -56,7 +66,7 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 // QueryFailoverHandler ...
 // pgo failover mycluster --query
 func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
+	var ns string
 
 	log.Debug("failoverservice.QueryFailoverHandler called")
 	vars := mux.Vars(r)
@@ -67,7 +77,7 @@ func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
-	err = apiserver.Authn(apiserver.CREATE_FAILOVER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_FAILOVER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -76,13 +86,22 @@ func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.QueryFailoverResponse
+	resp := msgs.QueryFailoverResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.QueryFailoverResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = QueryFailover(name)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = QueryFailover(name, ns)
 	json.NewEncoder(w).Encode(resp)
 }

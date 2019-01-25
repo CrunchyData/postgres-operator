@@ -42,7 +42,7 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
-	err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -51,13 +51,23 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	var resp msgs.DfResponse
+	resp := msgs.DfResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.DfResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = DfCluster(clustername, selector)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err := apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = DfCluster(clustername, selector, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }

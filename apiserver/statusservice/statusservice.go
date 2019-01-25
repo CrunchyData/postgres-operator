@@ -28,6 +28,8 @@ import (
 // pgo status mycluster
 // pgo status --selector=env=research
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
+	var username, ns string
+
 	vars := mux.Vars(r)
 	log.Debug("statusservice.StatusHandler %v", vars)
 
@@ -36,7 +38,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("version parameter is [%s]", clientVersion)
 	}
 
-	err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -49,9 +51,19 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.StatusResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = Status()
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp = msgs.StatusResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = Status(ns)
 
 	json.NewEncoder(w).Encode(resp)
 }

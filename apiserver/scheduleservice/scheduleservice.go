@@ -78,13 +78,14 @@ type SecurityContext struct {
 // CreateScheduleHandler ...
 func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
+	var username, ns string
 
 	log.Debug("scheduleservice.CreateScheduleHandler called")
 
 	var request msgs.CreateScheduleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.CREATE_SCHEDULE_PERM, w, r)
+	username, err = apiserver.Authn(apiserver.CREATE_SCHEDULE_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -92,19 +93,33 @@ func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := CreateSchedule(&request)
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp := msgs.CreateScheduleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+			Results: make([]string, 0),
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp := CreateSchedule(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
 func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
+	var username, ns string
 
 	log.Debug("scheduleservice.DeleteScheduleHandler called")
 
 	var request msgs.DeleteScheduleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.DELETE_SCHEDULE_PERM, w, r)
+	username, err = apiserver.Authn(apiserver.DELETE_SCHEDULE_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -112,19 +127,34 @@ func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := DeleteSchedule(&request)
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp := &msgs.DeleteScheduleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+			Results: make([]string, 0),
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+
+	}
+
+	resp := DeleteSchedule(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
 func ShowScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
+	var username, ns string
 
 	log.Debug("scheduleservice.ShowScheduleHandler called")
 
 	var request msgs.ShowScheduleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.SHOW_SCHEDULE_PERM, w, r)
+	username, err = apiserver.Authn(apiserver.SHOW_SCHEDULE_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -132,6 +162,20 @@ func ShowScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := ShowSchedule(&request)
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp := &msgs.ShowScheduleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+			Results: make([]string, 0),
+		}
+
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp := ShowSchedule(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }

@@ -35,7 +35,7 @@ import (
 // Label ... 2 forms ...
 // pgo label  myucluser yourcluster --label=env=prod
 // pgo label  --label=env=prod --selector=name=mycluster
-func Label(request *msgs.LabelRequest) msgs.LabelResponse {
+func Label(request *msgs.LabelRequest, ns string) msgs.LabelResponse {
 	var err error
 	var labelsMap map[string]string
 	resp := msgs.LabelResponse{}
@@ -49,7 +49,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 		return resp
 	}
 
-	labelsMap, err = validateLabel(request.LabelCmdLabel)
+	labelsMap, err = validateLabel(request.LabelCmdLabel, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "labels not formatted correctly"
@@ -59,7 +59,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) > 0 && request.Args[0] == "all" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, "", apiserver.Namespace)
+			&clusterList, "", ns)
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -74,7 +74,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 
 	} else if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -92,7 +92,7 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 		for _, cluster := range request.Args {
 			result := crv1.Pgcluster{}
 			_, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&result, cluster, apiserver.Namespace)
+				&result, cluster, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
@@ -108,19 +108,19 @@ func Label(request *msgs.LabelRequest) msgs.LabelResponse {
 		resp.Results = append(resp.Results, c.Spec.Name)
 	}
 
-	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap)
+	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, ns)
 
 	return resp
 
 }
 
-func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string) {
+func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns string) {
 	for i := 0; i < len(items); i++ {
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
 			log.Debugf("adding label to cluster %s", items[i].Spec.Name)
-			err := PatchPgcluster(LabelCmdLabel, items[i])
+			err := PatchPgcluster(LabelCmdLabel, items[i], ns)
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -130,7 +130,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
 		selector := util.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
-		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 		if err != nil {
 			return
 		}
@@ -139,7 +139,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 			//update Deployment with the label
 			if !DryRun {
 				//err := updateLabels(&d, items[i].Spec.Name, newLabels)
-				err := updateLabels(&d, d.Name, newLabels)
+				err := updateLabels(&d, d.Name, newLabels, ns)
 				if err != nil {
 					log.Error(err.Error())
 				}
@@ -149,7 +149,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 }
 
-func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string) error {
+func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string, ns string) error {
 
 	var err error
 
@@ -188,7 +188,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 		return err
 	}
 
-	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
+	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(ns).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debugf("error updating patching deployment %s", err.Error())
 	}
@@ -196,7 +196,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 
 }
 
-func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
+func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) error {
 
 	fields := strings.Split(newLabel, "=")
 	labelKey := fields[0]
@@ -221,7 +221,7 @@ func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
 
 	log.Debug(string(patchBytes))
 	_, err6 := apiserver.RESTClient.Patch(types.MergePatchType).
-		Namespace(apiserver.Namespace).
+		Namespace(ns).
 		Resource(crv1.PgclusterResourcePlural).
 		Name(oldCRD.Spec.Name).
 		Body(patchBytes).
@@ -232,7 +232,7 @@ func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
 
 }
 
-func validateLabel(LabelCmdLabel string) (map[string]string, error) {
+func validateLabel(LabelCmdLabel, ns string) (map[string]string, error) {
 	var err error
 	labelMap := make(map[string]string)
 	userValues := strings.Split(LabelCmdLabel, ",")
@@ -260,7 +260,7 @@ func validateLabel(LabelCmdLabel string) (map[string]string, error) {
 // DeleteLabel ...
 // pgo delete label  mycluster yourcluster --label=env=prod
 // pgo delete label  --label=env=prod --selector=group=somegroup
-func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
+func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse {
 	var err error
 	var labelsMap map[string]string
 	resp := msgs.LabelResponse{}
@@ -274,7 +274,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
 		return resp
 	}
 
-	labelsMap, err = validateLabel(request.LabelCmdLabel)
+	labelsMap, err = validateLabel(request.LabelCmdLabel, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "labels not formatted correctly"
@@ -284,7 +284,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) > 0 && request.Args[0] == "all" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, "", apiserver.Namespace)
+			&clusterList, "", ns)
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -299,7 +299,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
 
 	} else if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -317,7 +317,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
 		for _, cluster := range request.Args {
 			result := crv1.Pgcluster{}
 			_, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&result, cluster, apiserver.Namespace)
+				&result, cluster, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
@@ -333,7 +333,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
 		resp.Results = append(resp.Results, "deleting label from "+c.Spec.Name)
 	}
 
-	err = deleteLabels(clusterList.Items, request.LabelCmdLabel, labelsMap)
+	err = deleteLabels(clusterList.Items, request.LabelCmdLabel, labelsMap, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -344,12 +344,12 @@ func DeleteLabel(request *msgs.DeleteLabelRequest) msgs.LabelResponse {
 
 }
 
-func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[string]string) error {
+func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[string]string, ns string) error {
 	var err error
 
 	for i := 0; i < len(items); i++ {
 		log.Debugf("deleting label from %s", items[i].Spec.Name)
-		err = deletePatchPgcluster(LabelCmdLabel, items[i])
+		err = deletePatchPgcluster(LabelCmdLabel, items[i], ns)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -359,13 +359,13 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
 		selector := util.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
-		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 		if err != nil {
 			return err
 		}
 
 		for _, d := range deployments.Items {
-			err = deleteTheLabel(&d, items[i].Spec.Name, labelsMap)
+			err = deleteTheLabel(&d, items[i].Spec.Name, labelsMap, ns)
 			if err != nil {
 				log.Error(err.Error())
 				return err
@@ -376,7 +376,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 	return err
 }
 
-func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
+func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) error {
 
 	fields := strings.Split(newLabel, "=")
 	labelKey := fields[0]
@@ -402,7 +402,7 @@ func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
 
 	log.Debug(string(patchBytes))
 	_, err6 := apiserver.RESTClient.Patch(types.MergePatchType).
-		Namespace(apiserver.Namespace).
+		Namespace(ns).
 		Resource(crv1.PgclusterResourcePlural).
 		Name(oldCRD.Spec.Name).
 		Body(patchBytes).
@@ -413,7 +413,7 @@ func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster) error {
 
 }
 
-func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMap map[string]string) error {
+func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMap map[string]string, ns string) error {
 
 	var err error
 
@@ -451,7 +451,7 @@ func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMa
 		return err
 	}
 
-	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
+	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(ns).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debugf("error patching deployment ", err.Error())
 	}

@@ -36,7 +36,7 @@ type scheduleRequest struct {
 	Response *msgs.CreateScheduleResponse
 }
 
-func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster) *PgScheduleSpec {
+func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PGBackRestType)
 	schedule := &PgScheduleSpec{
 		Name:      name,
@@ -45,7 +45,7 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster) *PgSche
 		Created:   time.Now().Format(time.RFC3339),
 		Schedule:  s.Request.Schedule,
 		Type:      s.Request.ScheduleType,
-		Namespace: apiserver.Namespace,
+		Namespace: ns,
 		PGBackRest: PGBackRest{
 			Label:     fmt.Sprintf("pg-cluster=%s,service-name=%s", cluster.Name, cluster.Name),
 			Container: "database",
@@ -55,11 +55,11 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster) *PgSche
 	return schedule
 }
 
-func (s scheduleRequest) createBaseBackupSchedule(cluster *crv1.Pgcluster) *PgScheduleSpec {
+func (s scheduleRequest) createBaseBackupSchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("backup-%s", cluster.Name)
 
 	if s.Request.PVCName != "" {
-		_, exists, err := kubeapi.GetPVC(apiserver.Clientset, s.Request.PVCName, apiserver.Namespace)
+		_, exists, err := kubeapi.GetPVC(apiserver.Clientset, s.Request.PVCName, ns)
 		if err != nil {
 			s.Response.Status.Code = msgs.Error
 			s.Response.Status.Msg = err.Error()
@@ -78,7 +78,7 @@ func (s scheduleRequest) createBaseBackupSchedule(cluster *crv1.Pgcluster) *PgSc
 		Created:   time.Now().Format(time.RFC3339),
 		Schedule:  s.Request.Schedule,
 		Type:      s.Request.ScheduleType,
-		Namespace: apiserver.Namespace,
+		Namespace: ns,
 		PGBaseBackup: PGBaseBackup{
 			BackupVolume: s.Request.PVCName,
 			ImagePrefix:  apiserver.Pgo.Cluster.CCPImagePrefix,
@@ -89,10 +89,10 @@ func (s scheduleRequest) createBaseBackupSchedule(cluster *crv1.Pgcluster) *PgSc
 	return schedule
 }
 
-func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster) *PgScheduleSpec {
+func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PolicyName)
 
-	err := util.ValidatePolicy(apiserver.RESTClient, apiserver.Namespace, s.Request.PolicyName)
+	err := util.ValidatePolicy(apiserver.RESTClient, ns, s.Request.PolicyName)
 	if err != nil {
 		s.Response.Status.Code = msgs.Error
 		s.Response.Status.Msg = fmt.Sprintf("policy %s not found", s.Request.PolicyName)
@@ -109,7 +109,7 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster) *PgSchedu
 		Created:   time.Now().Format(time.RFC3339),
 		Schedule:  s.Request.Schedule,
 		Type:      s.Request.ScheduleType,
-		Namespace: apiserver.Namespace,
+		Namespace: ns,
 		Policy: Policy{
 			Name:        s.Request.PolicyName,
 			Database:    s.Request.Database,
@@ -122,7 +122,7 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster) *PgSchedu
 }
 
 //  CreateSchedule
-func CreateSchedule(request *msgs.CreateScheduleRequest) msgs.CreateScheduleResponse {
+func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateScheduleResponse {
 	log.Debugf("Create schedule called: %s", request.ClusterName)
 	sr := &scheduleRequest{
 		Request: request,
@@ -144,7 +144,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest) msgs.CreateScheduleResp
 	}
 
 	clusterList := crv1.PgclusterList{}
-	err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, apiserver.Namespace)
+	err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, ns)
 	if err != nil {
 		sr.Response.Status.Code = msgs.Error
 		sr.Response.Status.Msg = fmt.Sprintf("Could not get cluster via selector: %s", err)
@@ -156,13 +156,13 @@ func CreateSchedule(request *msgs.CreateScheduleRequest) msgs.CreateScheduleResp
 	for _, cluster := range clusterList.Items {
 		switch sr.Request.ScheduleType {
 		case "pgbackrest":
-			schedule := sr.createBackRestSchedule(&cluster)
+			schedule := sr.createBackRestSchedule(&cluster, ns)
 			schedules = append(schedules, schedule)
 		case "pgbasebackup":
-			schedule := sr.createBaseBackupSchedule(&cluster)
+			schedule := sr.createBaseBackupSchedule(&cluster, ns)
 			schedules = append(schedules, schedule)
 		case "policy":
-			schedule := sr.createPolicySchedule(&cluster)
+			schedule := sr.createPolicySchedule(&cluster, ns)
 			schedules = append(schedules, schedule)
 		default:
 			sr.Response.Status.Code = msgs.Error
@@ -222,7 +222,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest) msgs.CreateScheduleResp
 }
 
 //  DeleteSchedule ...
-func DeleteSchedule(request *msgs.DeleteScheduleRequest) msgs.DeleteScheduleResponse {
+func DeleteSchedule(request *msgs.DeleteScheduleRequest, ns string) msgs.DeleteScheduleResponse {
 	log.Debug("Deleted schedule called")
 
 	sr := &msgs.DeleteScheduleResponse{
@@ -244,7 +244,7 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest) msgs.DeleteScheduleResp
 	if request.ScheduleName != "" {
 		schedules = append(schedules, request.ScheduleName)
 	} else {
-		schedules, err = getSchedules(request.ClusterName, request.Selector)
+		schedules, err = getSchedules(request.ClusterName, request.Selector, ns)
 		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = err.Error()
@@ -254,7 +254,7 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest) msgs.DeleteScheduleResp
 
 	log.Debug("Deleting configMaps")
 	for _, schedule := range schedules {
-		err := kubeapi.DeleteConfigMap(apiserver.Clientset, schedule, apiserver.Namespace)
+		err := kubeapi.DeleteConfigMap(apiserver.Clientset, schedule, ns)
 		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = fmt.Sprintf("Could not delete ConfigMap %s: %s", schedule, err)
@@ -268,7 +268,7 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest) msgs.DeleteScheduleResp
 }
 
 //  ShowSchedule ...
-func ShowSchedule(request *msgs.ShowScheduleRequest) msgs.ShowScheduleResponse {
+func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowScheduleResponse {
 	log.Debug("Show schedule called")
 
 	sr := &msgs.ShowScheduleResponse{
@@ -290,7 +290,7 @@ func ShowSchedule(request *msgs.ShowScheduleRequest) msgs.ShowScheduleResponse {
 	if request.ScheduleName != "" {
 		schedules = append(schedules, request.ScheduleName)
 	} else {
-		schedules, err = getSchedules(request.ClusterName, request.Selector)
+		schedules, err = getSchedules(request.ClusterName, request.Selector, ns)
 		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = err.Error()
@@ -300,7 +300,7 @@ func ShowSchedule(request *msgs.ShowScheduleRequest) msgs.ShowScheduleResponse {
 
 	log.Debug("Parsing configMaps")
 	for _, schedule := range schedules {
-		cm, exists := kubeapi.GetConfigMap(apiserver.Clientset, schedule, apiserver.Namespace)
+		cm, exists := kubeapi.GetConfigMap(apiserver.Clientset, schedule, ns)
 		if !exists {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = fmt.Sprintf("Could not delete ConfigMap %s: %s", schedule, err)
@@ -326,7 +326,7 @@ func ShowSchedule(request *msgs.ShowScheduleRequest) msgs.ShowScheduleResponse {
 	return *sr
 }
 
-func getSchedules(clusterName, selector string) ([]string, error) {
+func getSchedules(clusterName, selector, ns string) ([]string, error) {
 	schedules := []string{}
 	label := "crunchy-scheduler=true"
 	if clusterName == "all" {
@@ -339,7 +339,7 @@ func getSchedules(clusterName, selector string) ([]string, error) {
 	}
 
 	log.Debugf("Finding configMaps with selector: %s", label)
-	list, ok := kubeapi.ListConfigMap(apiserver.Clientset, label, apiserver.Namespace)
+	list, ok := kubeapi.ListConfigMap(apiserver.Clientset, label, ns)
 	if !ok {
 		return nil, fmt.Errorf("No schedules found for selector: %s", label)
 	}

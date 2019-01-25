@@ -29,7 +29,7 @@ import (
 )
 
 // CreatePolicy ...
-func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile string) (bool, error) {
+func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile, ns string) (bool, error) {
 
 	var found bool
 	log.Debugf("create policy called for %s", policyName)
@@ -37,7 +37,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 
 	// error if it already exists
 	found, err := kubeapi.Getpgpolicy(RESTClient,
-		&result, policyName, apiserver.Namespace)
+		&result, policyName, ns)
 	if err == nil {
 		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
 		return true, err
@@ -61,7 +61,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 	}
 
 	err = kubeapi.Createpgpolicy(RESTClient,
-		newInstance, apiserver.Namespace)
+		newInstance, ns)
 
 	if err != nil {
 		return false, err
@@ -72,21 +72,21 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 }
 
 // ShowPolicy ...
-func ShowPolicy(RESTClient *rest.RESTClient, name string) crv1.PgpolicyList {
+func ShowPolicy(RESTClient *rest.RESTClient, name, ns string) crv1.PgpolicyList {
 	policyList := crv1.PgpolicyList{}
 
 	if name == "all" {
 		//get a list of all policies
 		err := kubeapi.Getpgpolicies(RESTClient,
 			&policyList,
-			apiserver.Namespace)
+			ns)
 		if err != nil {
 			return policyList
 		}
 	} else {
 		policy := crv1.Pgpolicy{}
 		_, err := kubeapi.Getpgpolicy(RESTClient,
-			&policy, name, apiserver.Namespace)
+			&policy, name, ns)
 		if err != nil {
 			return policyList
 		}
@@ -99,7 +99,7 @@ func ShowPolicy(RESTClient *rest.RESTClient, name string) crv1.PgpolicyList {
 }
 
 // DeletePolicy ...
-func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePolicyResponse {
+func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.DeletePolicyResponse {
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -108,7 +108,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 
 	policyList := crv1.PgpolicyList{}
 	err = kubeapi.Getpgpolicies(RESTClient,
-		&policyList, apiserver.Namespace)
+		&policyList, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -121,7 +121,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 		if policyName == "all" || policyName == policy.Spec.Name {
 			policyFound = true
 			err = kubeapi.Deletepgpolicy(RESTClient,
-				policy.Spec.Name, apiserver.Namespace)
+				policy.Spec.Name, ns)
 			if err == nil {
 				log.Debugf("deleted pgpolicy %s", policy.Spec.Name)
 			} else {
@@ -145,7 +145,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName string) msgs.DeletePol
 
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
-func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
+func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyResponse {
 	var err error
 
 	resp := msgs.ApplyPolicyResponse{}
@@ -154,7 +154,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	resp.Status.Code = msgs.Ok
 
 	//validate policy
-	err = util.ValidatePolicy(apiserver.RESTClient, apiserver.Namespace, request.Name)
+	err = util.ValidatePolicy(apiserver.RESTClient, ns, request.Name)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "policy " + request.Name + " is not found, cancelling request"
@@ -166,7 +166,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 	selector := request.Selector
 	log.Debugf("selector string=[%s]", selector)
 
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -192,7 +192,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.Namespace, request.Name, d.ObjectMeta.Name)
+		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, ns, request.Name, d.ObjectMeta.Name)
 		if err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
@@ -202,7 +202,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 
 		cl := crv1.Pgcluster{}
 		_, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-			&cl, d.ObjectMeta.Name, apiserver.Namespace)
+			&cl, d.ObjectMeta.Name, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -224,13 +224,13 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest) msgs.ApplyPolicyResponse {
 			return resp
 		}
 
-		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, apiserver.Namespace, labels)
+		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//update the pgcluster crd labels with the new policy
-		err = labelservice.PatchPgcluster(request.Name+"="+util.LABEL_PGPOLICY, cl)
+		err = labelservice.PatchPgcluster(request.Name+"="+util.LABEL_PGPOLICY, cl, ns)
 		if err != nil {
 			log.Error(err)
 		}

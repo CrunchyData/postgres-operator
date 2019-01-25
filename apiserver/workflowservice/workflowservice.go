@@ -28,6 +28,8 @@ import (
 // returns a ShowWorkflowResponse
 func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
+	var username, ns string
+
 	vars := mux.Vars(r)
 	log.Debugf("workflowservice.ShowWorkflowHandler %v", vars)
 
@@ -43,7 +45,7 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debug("workflowservice.ShowWorkflowHandler GET called")
 	}
 
-	err = apiserver.Authn(apiserver.SHOW_WORKFLOW_PERM, w, r)
+	username, err = apiserver.Authn(apiserver.SHOW_WORKFLOW_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -52,16 +54,27 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	resp := msgs.ShowWorkflowResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp.Results, err = ShowWorkflow(workflowID)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp.Results, err = ShowWorkflow(workflowID, ns)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 	}
 
 	json.NewEncoder(w).Encode(resp)
