@@ -126,6 +126,22 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, c.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
 		}
 
+		// pgdump updates
+	} else if labels[util.LABEL_BACKUP_TYPE_PGDUMP] == "true" {
+		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for pgdump %s", labels[util.LABEL_PG_DATABASE])
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+		//update the pgdump task status to submitted - updates task, not the job.
+		dumpTask := labels[util.LABEL_PGTASK]
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", dumpTask, c.Namespace)
+
+		if err != nil {
+			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+		}
+
 	} else if labels[util.LABEL_BACKREST] != "" {
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		log.Debugf("update the status to completed here for backrest %s", labels[util.LABEL_PG_DATABASE])

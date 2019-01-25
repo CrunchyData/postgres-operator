@@ -38,6 +38,7 @@ const VERSION_PERM = "Version"
 
 // CREATE
 const CREATE_BACKUP_PERM = "CreateBackup"
+const CREATE_DUMP_PERM = "CreateDump"
 const CREATE_CLUSTER_PERM = "CreateCluster"
 const CREATE_FAILOVER_PERM = "CreateFailover"
 const CREATE_INGEST_PERM = "CreateIngest"
@@ -47,6 +48,9 @@ const CREATE_POLICY_PERM = "CreatePolicy"
 const CREATE_SCHEDULE_PERM = "CreateSchedule"
 const CREATE_UPGRADE_PERM = "CreateUpgrade"
 const CREATE_USER_PERM = "CreateUser"
+
+// RESTORE
+const RESTORE_DUMP_PERM = "RestoreDump"
 
 // DELETE
 const DELETE_BACKUP_PERM = "DeleteBackup"
@@ -96,6 +100,7 @@ func InitializePerms() {
 	PermMap[VERSION_PERM] = "yes"
 	// Create
 	PermMap[CREATE_BACKUP_PERM] = "yes"
+	PermMap[CREATE_DUMP_PERM] = "yes"
 	PermMap[CREATE_CLUSTER_PERM] = "yes"
 	PermMap[CREATE_FAILOVER_PERM] = "yes"
 	PermMap[CREATE_INGEST_PERM] = "yes"
@@ -105,6 +110,8 @@ func InitializePerms() {
 	PermMap[CREATE_SCHEDULE_PERM] = "yes"
 	PermMap[CREATE_UPGRADE_PERM] = "yes"
 	PermMap[CREATE_USER_PERM] = "yes"
+	// RESTORE
+	PermMap[RESTORE_DUMP_PERM] = "yes"
 	// Delete
 	PermMap[DELETE_BACKUP_PERM] = "yes"
 	PermMap[DELETE_CLUSTER_PERM] = "yes"

@@ -190,12 +190,13 @@ var ShowBackupCmd = &cobra.Command{
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
 			if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
-
 				showBackrest(args)
 			} else if BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
 				showBackup(args)
+			} else if BackupType == util.LABEL_BACKUP_TYPE_PGDUMP {
+				showpgDump(args)
 			} else {
-				fmt.Println("Error: Valid backup-type values are pgbasebackup and pgbackrest. The default if not supplied is pgbasebackup.")
+				fmt.Println("Error: Valid backup-type values are pgbasebackup, pgbackrest and pgdump. The default if not supplied is pgbasebackup.")
 			}
 		}
 	},

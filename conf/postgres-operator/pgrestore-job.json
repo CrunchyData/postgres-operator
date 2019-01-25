@@ -1,0 +1,79 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+	"labels": {
+	    "vendor": "crunchydata",
+	    "pgrestore": "true",
+	    "pg-cluster": "{{.ClusterName}}"
+                }
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+		    "vendor": "crunchydata",
+		    "pgrestore": "true",
+		    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "pgdata",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.ToClusterPVCName}}"
+                        }
+                    }
+                ],
+                "securityContext": {
+                    {{.SecurityContext}}
+                },
+                "containers": [
+                    {
+                        "name": "pgrestore",
+                        "image": "{{.CCPImagePrefix}}/crunchy-pgrestore:{{.CCPImageTag}}",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgdata",
+                                "name": "pgdata",
+                                "readOnly": true
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "PGRESTORE_HOST",
+                                "value": "{{.PgRestoreHost}}"
+                            },
+                            {
+                                "name": "PGRESTORE_DB",
+                                "value": "{{.PgRestoreDB}}"
+                            },
+                            {
+                                "name": "PGRESTORE_USER",
+                                "valueFrom": {
+				    "secretKeyRef": {
+					"name": "{{.PgRestoreUserSecret}}",
+					"key": "username"
+				    }
+				}
+                            },
+                            {
+                                "name": "PGRESTORE_PASS",
+                                "valueFrom": {
+				   "secretKeyRef": {
+				       "name": "{{.PgRestoreUserSecret}}",
+				       "key": "password"
+				    }
+				}
+                            }
+                        ]
+                    }
+                ],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

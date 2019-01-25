@@ -22,6 +22,12 @@ import (
 // PgbackupResourcePlural ...
 const PgbackupResourcePlural = "pgbackups"
 
+// Backup job processing states - used by pgdump
+const PgBackupJobSubmitted = "Backup Job Submitted"
+const PgBackupJobInProgress = "Backup Job In Progress"
+const PgBackupJobCompleted = "Backup Job Completed"
+const PgBackupJobError = "Backup Job Error"
+
 // PgbackupSpec ...
 type PgbackupSpec struct {
 	Name             string        `json:"name"`

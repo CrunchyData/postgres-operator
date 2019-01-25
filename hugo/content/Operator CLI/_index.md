@@ -156,6 +156,14 @@ The following table shows the *pgo* operations currently implemented:
 The last example passes in pgbackrest flags to the backup command.  See
 pgbackrest.org for command flag descriptions.
 
+#### Perform a pgdump backup
+
+	pgo backup mycluster --backup-type=pgdump
+	pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose"
+	pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema"
+
+Note: To run pgdump_all instead of pgdump, pass '--dump-all' flag in --backup-opts as shown above. All --backup-opts should be space delimited.
+
 #### Perform a pgbackrest restore
 
     pgo restore mycluster
