@@ -27,6 +27,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
 
@@ -155,6 +156,14 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskBackrestRestore:
 		log.Info("backrest restore task added")
 		backrestoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+
+	case crv1.PgtaskpgDump:
+		log.Info("pgDump task added")
+		pgdumpoperator.Dump(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+	case crv1.PgtaskpgDumpRestore:
+		log.Info("pgDump restore task not added")
+		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+
 	case crv1.PgtaskAutoFailover:
 		log.Infof("autofailover task added %s", task.ObjectMeta.Name)
 	case crv1.PgtaskWorkflow:
