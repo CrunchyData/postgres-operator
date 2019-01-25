@@ -135,7 +135,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 
 		//get pod name from cluster
 		var podname string
-		podname, err = getPrimaryPodName(&cluster, apiserver.Namespace)
+		podname, err = getPrimaryPodName(&cluster, ns)
 
 		if err != nil {
 			log.Error(err)
@@ -316,7 +316,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 		detail := msgs.ShowBackrestDetail{}
 		detail.Name = c.Name
 
-		podname, err := getPrimaryPodName(&c, apiserver.Namespace)
+		podname, err := getPrimaryPodName(&c, ns)
 
 		if err != nil {
 			log.Error(err)
@@ -326,7 +326,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 		}
 
 		//here is where we would exec to get the backrest info
-		info, err := getInfo(c.Name, podname, apiserver.Namespace)
+		info, err := getInfo(c.Name, podname, ns)
 		if err != nil {
 			detail.Info = err.Error()
 		} else {
@@ -395,7 +395,7 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	}
 
 	var id string
-	id, err = createRestoreWorkflowTask(cluster.Name, apiserver.Namespace)
+	id, err = createRestoreWorkflowTask(cluster.Name, ns)
 	if err != nil {
 		resp.Results = append(resp.Results, err.Error())
 		return resp
