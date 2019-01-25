@@ -28,12 +28,13 @@ import (
 // BackupHandler ...
 // pgo backup --backup-type=pgdump mycluster
 func BackupHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	log.Debug("pgdumpservice.CreatepgDumpHandlerBackupHandler called")
 
 	var request msgs.CreatepgDumpBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.CREATE_DUMP_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_DUMP_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -41,14 +42,24 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := CreatepgDump(&request)
+	resp := msgs.CreatepgDumpBackupResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreatepgDump(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
 // ShowpgDumpHandler ...
 // returns a ShowpgDumpResponse
 func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("pgdumpservice.ShowDumpHandler %v\n", vars)
 
@@ -63,7 +74,7 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 		log.Debugf("selector parameter is [%s]", selector)
 	}
 
-	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -72,14 +83,24 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	log.Debug("pgdumpservice.pgdumpHandler GET called")
-	var resp msgs.ShowBackupResponse
-	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowBackupResponse{}
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	resp := msgs.ShowBackupResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	} else {
-		resp = ShowpgDump(clustername, selector)
+	if clientVersion != msgs.PGO_VERSION {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
+		return
+
 	}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowpgDump(clustername, selector, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -87,14 +108,14 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 // RestoreHandler ...
 // pgo restore mycluster --to-cluster=restored
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
+	var ns string
 
 	log.Debug("pgdumpservice.RestoreHandler called")
 
 	var request msgs.RestoreRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.RESTORE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.RESTORE_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -102,7 +123,18 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := Restore(&request)
+	resp := msgs.RestoreResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
+	ns, err = apiserver.GetNamespace(username, "")
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = Restore(&request, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

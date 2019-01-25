@@ -39,7 +39,7 @@ const pgDumpJobExtension = "-pgdump-job"
 //  CreateBackup ...
 // pgo backup mycluster
 // pgo backup --selector=name=mycluster
-func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBackupResponse {
+func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.CreatepgDumpBackupResponse {
 
 	resp := msgs.CreatepgDumpBackupResponse{}
 	resp.Status.Code = msgs.Ok
@@ -63,7 +63,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 
 		clusterList := crv1.PgclusterList{}
 
-		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, apiserver.Namespace)
+		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -89,7 +89,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 		taskName := "backup-" + clusterName + pgDumpTaskExtension
 
 		cluster := crv1.Pgcluster{}
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, clusterName, apiserver.Namespace)
+		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, clusterName, ns)
 		if !found {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " was not found, verify cluster name"
@@ -100,12 +100,12 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 			return resp
 		}
 
-		RemovePgDumpJob(clusterName + pgDumpJobExtension)
+		RemovePgDumpJob(clusterName+pgDumpJobExtension, ns)
 
 		result := crv1.Pgtask{}
 
 		// error if the task already exists
-		found, err = kubeapi.Getpgtask(apiserver.RESTClient, &result, taskName, apiserver.Namespace)
+		found, err = kubeapi.Getpgtask(apiserver.RESTClient, &result, taskName, ns)
 		if !found {
 			log.Debugf("pgdump pgtask %s was not found so we will create it", taskName)
 		} else if err != nil {
@@ -116,7 +116,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 
 			log.Debugf("pgtask %s was found so we will recreate it", taskName)
 			//remove the existing pgtask
-			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, apiserver.Namespace)
+			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns)
 
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -128,7 +128,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 		//get pod name from cluster
 		// var podname, deployName string
 		var podname string
-		podname, err = getPrimaryPodName(&cluster)
+		podname, err = getPrimaryPodName(&cluster, ns)
 
 		if err != nil {
 			log.Error(err)
@@ -141,7 +141,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 		// TODO: Needs error handling for invalid parameters in the request
 		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, podname, "database", request)
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, apiserver.Namespace)
+		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -155,7 +155,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest) msgs.CreatepgDumpBack
 }
 
 // ShowpgDump ...
-func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
+func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupResponse {
 	var err error
 
 	response := msgs.ShowBackupResponse{}
@@ -174,7 +174,7 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 	//get a list of all clusters
 	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, apiserver.Namespace)
+		&clusterList, selector, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -194,7 +194,7 @@ func ShowpgDump(clusterName string, selector string) msgs.ShowBackupResponse {
 
 		pgTaskName := "backup-" + c.Name + pgDumpTaskExtension
 
-		backupItem, error := getPgBackupForTask(c.Name, pgTaskName)
+		backupItem, error := getPgBackupForTask(c.Name, pgTaskName, ns)
 
 		if backupItem != nil {
 			log.Debugf("pgTask %s was found", pgTaskName)
@@ -271,12 +271,12 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	return newInstance
 }
 
-func getDeployName(cluster *crv1.Pgcluster) (string, error) {
+func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var depName string
 
 	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return depName, err
 	}
@@ -291,12 +291,12 @@ func getDeployName(cluster *crv1.Pgcluster) (string, error) {
 	return depName, errors.New("unknown error in pgdump backup")
 }
 
-func getPrimaryPodName(cluster *crv1.Pgcluster) (string, error) {
+func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var podname string
 
 	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return podname, err
 	}
@@ -364,7 +364,7 @@ func parseOptionFlags(allFlags string) (bool, string) {
 }
 
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
-func getPgBackupForTask(clusterName string, taskName string) (*crv1.Pgbackup, error) {
+func getPgBackupForTask(clusterName string, taskName string, ns string) (*crv1.Pgbackup, error) {
 
 	var err error
 
@@ -376,7 +376,7 @@ func getPgBackupForTask(clusterName string, taskName string) (*crv1.Pgbackup, er
 	// spec.Name = name
 	spec.TaskType = crv1.PgtaskpgDump
 
-	found, err := kubeapi.Getpgtask(apiserver.RESTClient, &task, taskName, apiserver.Namespace)
+	found, err := kubeapi.Getpgtask(apiserver.RESTClient, &task, taskName, ns)
 
 	if found {
 		backup = buildPgBackupFrompgTask(&task)
@@ -422,7 +422,7 @@ func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 
 //  Restore ...
 // pgo restore mycluster --to-cluster=restored
-func Restore(request *msgs.RestoreRequest) msgs.RestoreResponse {
+func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	resp := msgs.RestoreResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = "Restore Not Implemented"
@@ -510,14 +510,14 @@ func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
 }
 
 // TODO: Needed?
-func RemovePgDumpJob(name string) {
+func RemovePgDumpJob(name, ns string) {
 
-	_, found := kubeapi.GetJob(apiserver.Clientset, name, apiserver.Namespace)
+	_, found := kubeapi.GetJob(apiserver.Clientset, name, ns)
 	if !found {
 		return
 	}
 
 	log.Debugf("found backup job %s will remove\n", name)
 
-	kubeapi.DeleteJob(apiserver.Clientset, name, apiserver.Namespace)
+	kubeapi.DeleteJob(apiserver.Clientset, name, ns)
 }
