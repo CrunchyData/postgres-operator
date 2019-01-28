@@ -30,6 +30,7 @@ const PgupgradeResourcePlural = "pgupgrades"
 
 // PgupgradeSpec ...
 type PgupgradeSpec struct {
+	Namespace       string        `json:"namespace"`
 	Name            string        `json:"name"`
 	ResourceType    string        `json:"resourcetype"`
 	UpgradeType     string        `json:"upgradetype"`

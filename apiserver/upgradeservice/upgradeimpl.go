@@ -218,6 +218,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 	var existingMajorVersion float64
 
 	spec := crv1.PgupgradeSpec{
+		Namespace:       ns,
 		Name:            name,
 		ResourceType:    "cluster",
 		UpgradeType:     request.UpgradeType,

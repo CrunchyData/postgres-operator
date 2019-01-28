@@ -162,6 +162,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 
 		uniqueName := util.RandStringBytesRmndr(4)
 		labels[util.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
+		spec.Namespace = ns
 		spec.Name = labels[util.LABEL_NAME]
 
 		newInstance := &crv1.Pgreplica{
@@ -404,7 +405,7 @@ func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStor
 
 			if v.VolumeSource.PersistentVolumeClaim != nil {
 				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
-				err = apiserver.CreateRMDataTask(storageSpec, replicaName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				err = apiserver.CreateRMDataTask(storageSpec, replicaName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots, ns)
 				if err != nil {
 					return err
 				}

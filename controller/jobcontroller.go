@@ -82,16 +82,18 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 }
 
 func (c *JobController) onAdd(obj interface{}) {
+	job := obj.(*apiv1.Job)
+	log.Debugf("JobController: onAdd ns=%s jobName=%s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
-	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
+	log.Debugf("[JobController] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
 	var err error
 	//label is "pgrmdata" and Status of Succeeded
 	labels := job.GetObjectMeta().GetLabels()
 	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] != "" {
-		err = handleRmdata(job, c.JobClient, c.JobClientset, c.Namespace)
+		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
@@ -107,7 +109,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 
 		if labels[util.LABEL_BACKREST] != "true" {
-			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
+			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
 			}
@@ -118,12 +120,12 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if job.Status.Succeeded == 1 {
 			log.Debugf("set status to restore job completed  for %s", labels[util.LABEL_PG_CLUSTER])
 			log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
-			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", labels[util.LABEL_JOB_NAME], c.Namespace)
+			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", labels[util.LABEL_JOB_NAME], job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgtask " + labels[util.LABEL_JOB_NAME] + err.Error())
 			}
 
-			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, c.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
+			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
 		}
 
 		// pgdump updates
@@ -136,7 +138,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 		//update the pgdump task status to submitted - updates task, not the job.
 		dumpTask := labels[util.LABEL_PGTASK]
-		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", dumpTask, c.Namespace)
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", dumpTask, job.ObjectMeta.Namespace)
 
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
@@ -149,7 +151,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if job.Status.Succeeded == 0 {
 			status = crv1.JobErrorStatus
 		}
-		err = util.Patch(c.JobClient, "/spec/backreststatus", status, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+		err = util.Patch(c.JobClient, "/spec/backreststatus", status, "pgtasks", job.ObjectMeta.SelfLink, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}
@@ -160,7 +162,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *JobController) onDelete(obj interface{}) {
 	job := obj.(*apiv1.Job)
-	log.Debugf("[JobCONTROLLER] OnDelete %s", job.ObjectMeta.SelfLink)
+	log.Debugf("[JobController] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubernetes.Clientset, namespace string) error {

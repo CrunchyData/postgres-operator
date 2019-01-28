@@ -82,9 +82,9 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 // onAdd is called when a pgpolicy is added
 func (c *PgpolicyController) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	log.Debugf("[PgpolicyCONTROLLER] OnAdd %s", policy.ObjectMeta.SelfLink)
+	log.Debugf("[PgpolicyController] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 	if policy.Status.State == crv1.PgpolicyStateProcessed {
-		log.Info("pgpolicy " + policy.ObjectMeta.Name + " already processed")
+		log.Debug("pgpolicy " + policy.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -121,7 +121,7 @@ func (c *PgpolicyController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgpolicy is deleted
 func (c *PgpolicyController) onDelete(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	log.Debugf("[PgpolicyCONTROLLER] OnDelete %s", policy.ObjectMeta.SelfLink)
+	log.Debugf("[PgpolicyController] onDelete ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 	err := c.PgpolicyClient.Delete().
 		Resource(crv1.PgpolicyResourcePlural).
 		Namespace(policy.ObjectMeta.Namespace).

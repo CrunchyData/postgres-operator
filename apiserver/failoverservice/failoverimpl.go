@@ -61,6 +61,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateF
 
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = request.ClusterName + "-" + util.LABEL_FAILOVER
 
 	// previous failovers will leave a pgtask so remove it first

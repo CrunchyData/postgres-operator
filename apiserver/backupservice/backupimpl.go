@@ -90,7 +90,7 @@ func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
 	dataRoots := []string{backupName + "-backups"}
 
 	storageSpec := crv1.PgStorageSpec{}
-	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots)
+	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -221,6 +221,7 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 	var newInstance *crv1.Pgbackup
 
 	spec := crv1.PgbackupSpec{}
+	spec.Namespace = ns
 	spec.Name = name
 	if request.StorageConfig != "" {
 		spec.StorageSpec, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)

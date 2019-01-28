@@ -82,9 +82,9 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) (cache.Contro
 // onAdd is called when a pgreplica is added
 func (c *PgreplicaController) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaCONTROLLER] OnAdd %s", replica.ObjectMeta.SelfLink)
+	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 	if replica.Status.State == crv1.PgreplicaStateProcessed {
-		log.Info("pgreplica " + replica.ObjectMeta.Name + " already processed")
+		log.Debug("pgreplica " + replica.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -119,12 +119,12 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 // onUpdate is called when a pgreplica is updated
 func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
 	newExample := newObj.(*crv1.Pgreplica)
-	log.Info("pgreplica " + newExample.ObjectMeta.Name + " updated")
+	log.Debugf("[PgreplicaController] ns=%s %s ", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
 
 }
 
 // onDelete is called when a pgreplica is deleted
 func (c *PgreplicaController) onDelete(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaCONTROLLER] OnDelete %s", replica.ObjectMeta.SelfLink)
+	log.Debugf("[PgreplicaController] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 }
