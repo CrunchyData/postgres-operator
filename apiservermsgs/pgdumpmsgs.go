@@ -30,7 +30,6 @@ type CreatepgDumpBackupRequest struct {
 	Selector      string
 	PVCName       string
 	StorageConfig string
-	DumpAll       bool
 	BackupOpts    string
 }
 
