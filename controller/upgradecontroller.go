@@ -81,10 +81,10 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 // onAdd is called when pgupgrades are added
 func (c *PgupgradeController) onAdd(obj interface{}) {
 	upgrade := obj.(*crv1.Pgupgrade)
-	log.Debugf("[PgupgradeCONTROLLER] OnAdd %s", upgrade.ObjectMeta.SelfLink)
+	log.Debugf("[PgupgradeCONTROLLER] OnAdd ns=%s %s", upgrade.ObjectMeta.Namespace, upgrade.ObjectMeta.SelfLink)
 
 	if upgrade.Status.State == crv1.PgupgradeStateProcessed {
-		log.Info("pgupgrade " + upgrade.ObjectMeta.Name + " already processed")
+		log.Debug("pgupgrade " + upgrade.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -109,8 +109,6 @@ func (c *PgupgradeController) onAdd(obj interface{}) {
 
 	if err != nil {
 		log.Errorf("ERROR updating status: %v", err)
-	} else {
-		log.Debugf("UPDATED status: %#v", upgradeCopy)
 	}
 
 	upgradeoperator.AddUpgrade(c.PgupgradeClientset, c.PgupgradeClient, upgradeCopy, upgrade.ObjectMeta.Namespace)
@@ -123,6 +121,6 @@ func (c *PgupgradeController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgupgrade is deleted
 func (c *PgupgradeController) onDelete(obj interface{}) {
 	upgrade := obj.(*crv1.Pgupgrade)
-	log.Debugf("[PgupgradeCONTROLLER] OnDelete %s", upgrade.ObjectMeta.SelfLink)
+	log.Debugf("[PgupgradeController] onDelete ns=%s %s", upgrade.ObjectMeta.Namespace, upgrade.ObjectMeta.SelfLink)
 	upgradeoperator.DeleteUpgrade(c.PgupgradeClientset, c.PgupgradeClient, upgrade, upgrade.ObjectMeta.Namespace)
 }

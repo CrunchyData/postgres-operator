@@ -692,7 +692,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		}
 
 		// Create an instance of our CRD
-		newInstance := getClusterParams(request, clusterName, userLabelsMap)
+		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
 		validateConfigPolicies(clusterName, request.Policies, ns)
 
 		t := time.Now()
@@ -770,6 +770,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 		spec.Parameters[v] = v
 	}
 	spec.Name = clusterName + "-policies"
+	spec.Namespace = ns
 	labels := make(map[string]string)
 	labels[util.LABEL_PG_CLUSTER] = clusterName
 
@@ -786,7 +787,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 	return err
 }
 
-func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string) *crv1.Pgcluster {
+func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{}
 
@@ -827,6 +828,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		log.Debugf("using CCPImageTag from command line %s", request.CCPImageTag)
 	}
 
+	spec.Namespace = ns
 	spec.Name = name
 	spec.ClusterName = name
 	spec.Port = apiserver.Pgo.Cluster.Port
@@ -1008,7 +1010,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 				if clusterName == v.VolumeSource.PersistentVolumeClaim.ClaimName {
 					originalClusterPrimaryDeleted = true
 				}
-				err := apiserver.CreateRMDataTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
+				err := apiserver.CreateRMDataTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots, ns)
 				if err != nil {
 					return err
 				}
@@ -1020,7 +1022,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 		log.Debugf("for autofailover case, removing orignal primary PVC %s", clusterName)
 		dataRoots := make([]string, 0)
 		dataRoots = append(dataRoots, clusterName)
-		err := apiserver.CreateRMDataTask(storageSpec, clusterName, clusterName, dataRoots)
+		err := apiserver.CreateRMDataTask(storageSpec, clusterName, clusterName, dataRoots, ns)
 		if err != nil {
 			return err
 		}
@@ -1051,7 +1053,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 				//by convention, the root directory name
 				//created by the backup job is depName-backups
 				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots)
+				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, ns)
 				if err != nil {
 					log.Error(err)
 					return err
@@ -1067,6 +1069,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 	spec.TaskType = crv1.PgtaskWorkflow
 
@@ -1091,8 +1094,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		newInstance, ns)
+	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
 	if err != nil {
 		log.Error(err)
 		return "", err

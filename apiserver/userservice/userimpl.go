@@ -780,6 +780,7 @@ func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 func reconfigurePgbouncer(clusterName, ns string) error {
 	var err error
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = util.LABEL_PGBOUNCER_TASK_RECONFIGURE + "-" + clusterName
 	spec.TaskType = crv1.PgtaskReconfigurePgbouncer
 	spec.StorageSpec = crv1.PgStorageSpec{}
@@ -808,6 +809,7 @@ func reconfigurePgbouncer(clusterName, ns string) error {
 func reconfigurePgpool(clusterName, ns string) error {
 	var err error
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = util.LABEL_PGPOOL_TASK_RECONFIGURE + "-" + clusterName
 	spec.TaskType = crv1.PgtaskReconfigurePgpool
 	spec.StorageSpec = crv1.PgStorageSpec{}

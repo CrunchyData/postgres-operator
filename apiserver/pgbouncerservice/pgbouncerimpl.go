@@ -89,6 +89,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskAddPgbouncer
 		spec.StorageSpec = crv1.PgStorageSpec{}
@@ -187,6 +188,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGBOUNCER_TASK_DELETE + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskDeletePgbouncer
 		spec.StorageSpec = crv1.PgStorageSpec{}

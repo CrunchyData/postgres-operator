@@ -368,33 +368,3 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 	return r, err
 
 }
-
-/**
-// GetContainerResources ...
-func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
-	}
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
-
-	doc := bytes.Buffer{}
-	err := ContainerResourcesTemplate1.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	if log.GetLevel() == log.DebugLevel {
-		ContainerResourcesTemplate1.Execute(os.Stdout, fields)
-	}
-
-	return doc.String()
-}
-*/
