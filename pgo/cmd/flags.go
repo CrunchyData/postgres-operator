@@ -28,6 +28,7 @@ var DryRun bool
 var ScheduleName string
 
 var BackupType string
+var RestoreType string
 var BackupOpts string
 
 var RED func(a ...interface{}) string

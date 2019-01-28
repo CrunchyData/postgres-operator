@@ -115,7 +115,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.RestoreRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	username, err := apiserver.Authn(apiserver.RESTORE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.RESTORE_DUMP_PERM, w, r)
 	if err != nil {
 		return
 	}

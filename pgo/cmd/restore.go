@@ -31,8 +31,8 @@ var PITRTarget string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
-	Short: "Perform a pgBackRest restore",
-	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  For example:
+	Short: "Perform a restore from previous backup",
+	Long: `RESTORE performs a restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  Valid backup types to restore from are pgbackrest and pgdump. For example:
 
 	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -57,6 +57,7 @@ func init() {
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	restoreCmd.Flags().StringVarP(&RestoreType, "restore-type", "", "", "The type of backup to restore from. Default is pgBackrest. Valid restore types are pgbackrest and pgdump.")
 
 }
 
@@ -70,7 +71,15 @@ func restore(args []string) {
 	request.RestoreOpts = BackupOpts
 	request.PITRTarget = PITRTarget
 
-	response, err := api.Restore(httpclient, &SessionCredentials, request)
+	var response msgs.RestoreResponse
+	var err error
+
+	if RestoreType == "pgdump" {
+		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
+	} else {
+		response, err = api.Restore(httpclient, &SessionCredentials, request)
+	}
+
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
