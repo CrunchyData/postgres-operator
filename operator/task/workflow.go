@@ -19,7 +19,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"time"
@@ -27,7 +26,7 @@ import (
 
 // CompleteCreateClusterWorkflow ... update the pgtask for the
 // create cluster workflow for a given cluster
-func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient) {
+func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 
@@ -35,7 +34,7 @@ func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Cli
 	task.Spec = crv1.PgtaskSpec{}
 	task.Spec.Name = taskName
 
-	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, operator.NAMESPACE)
+	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
 	if found && err == nil {
 		//mark this workflow as completed
 		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
@@ -44,7 +43,7 @@ func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Cli
 		task.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format("2006-01-02.15.04.05")
 
 		//update pgtask
-		err = kubeapi.Updatepgtask(RESTClient, &task, taskName, operator.NAMESPACE)
+		err = kubeapi.Updatepgtask(RESTClient, &task, taskName, ns)
 		if err != nil {
 			log.Error(err)
 		}

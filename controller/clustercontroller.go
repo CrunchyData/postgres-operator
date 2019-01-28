@@ -38,7 +38,7 @@ type PgclusterController struct {
 
 // Run starts an pgcluster resource controller
 func (c *PgclusterController) Run(ctx context.Context) error {
-	log.Info("Watch Pgcluster objects")
+	log.Debug("Watch Pgcluster objects")
 
 	_, err := c.watchPgclusters(ctx)
 	if err != nil {
@@ -83,9 +83,9 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 // onAdd is called when a pgcluster is added
 func (c *PgclusterController) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	log.Infof("[PgclusterCONTROLLER] OnAdd %s", cluster.ObjectMeta.SelfLink)
+	log.Debugf("[PgclusterController] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 	if cluster.Status.State == crv1.PgclusterStateProcessed {
-		log.Info("pgcluster " + cluster.ObjectMeta.Name + " already processed")
+		log.Debug("pgcluster " + cluster.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -120,13 +120,13 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	newExample := newObj.(*crv1.Pgcluster)
-	log.Debugf("pgcluster %s updated", newExample.ObjectMeta.Name)
+	log.Debugf("pgcluster ns=%s %s onUpdate", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
 
 }
 
 // onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	log.Infof("[PgclusterCONTROLLER] OnDelete %s", cluster.ObjectMeta.SelfLink)
+	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }

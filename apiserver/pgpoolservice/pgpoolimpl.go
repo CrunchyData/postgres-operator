@@ -89,6 +89,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoo
 		log.Debugf("adding pgpool to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskAddPgpool
 		spec.StorageSpec = crv1.PgStorageSpec{}
@@ -191,6 +192,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest, ns string) msgs.DeletePgpoo
 		log.Debugf("deleting pgpool from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskDeletePgpool
 		spec.StorageSpec = crv1.PgStorageSpec{}

@@ -33,6 +33,7 @@ type Pgcluster struct {
 
 // PgclusterSpec ...
 type PgclusterSpec struct {
+	Namespace          string               `json:"namespace"`
 	Name               string               `json:"name"`
 	ClusterName        string               `json:"clustername"`
 	Policies           string               `json:"policies"`

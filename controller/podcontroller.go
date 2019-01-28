@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -86,10 +86,10 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 // if a pgo-backrest-repo pod is added
 func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
-	log.Debugf("[PodCONTROLLER] OnAdd %s", newpod.ObjectMeta.SelfLink)
+	log.Debugf("[PodController] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	if isPostgresPod(newpod) {
-		c.checkPostgresPods(newpod)
+		c.checkPostgresPods(newpod, newpod.ObjectMeta.Namespace)
 	}
 }
 
@@ -97,7 +97,7 @@ func (c *PodController) onAdd(obj interface{}) {
 func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	oldpod := oldObj.(*apiv1.Pod)
 	newpod := newObj.(*apiv1.Pod)
-	log.Debugf("[PodCONTROLLER] OnUpdate %s", newpod.ObjectMeta.SelfLink)
+	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	if isPostgresPod(newpod) {
 		c.checkReadyStatus(oldpod, newpod)
@@ -107,7 +107,7 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *PodController) onDelete(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
-	log.Debugf("[PodCONTROLLER] OnDelete %s", pod.ObjectMeta.SelfLink)
+	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
 func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
@@ -121,12 +121,12 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//eventually pg-failover == true then...
 	//loop thru status.containerStatuses, find the container with name='database'
 	//print out the 'ready' bool
-	autofailEnabled := c.checkAutofailLabel(newpod)
+	autofailEnabled := c.checkAutofailLabel(newpod, newpod.ObjectMeta.Namespace)
 
 	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
 		clusterName != "" && autofailEnabled {
-		log.Infof("an autofail pg-cluster %s!", clusterName)
+		log.Debugf("an autofail pg-cluster %s!", clusterName)
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
 				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
@@ -148,10 +148,10 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 				//see if there are pgtasks for adding a policy
 				if oldDatabaseStatus == false && v.Ready {
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
-					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient)
-					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient)
+					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					if newpod.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
-						backrestoperator.StanzaCreate(c.Namespace, clusterName, c.PodClientset, c.PodClient)
+						backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
 					}
 				}
 			}
@@ -164,10 +164,10 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 // see if this is a primary or replica being created
 // update service-name label on the pod for each case
 // to match the correct Service selector for the PG cluster
-func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
+func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 
 	var dep *v1beta1.Deployment
-	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME], c.Namespace)
+	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME], ns)
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return
@@ -178,9 +178,9 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
 		serviceName := ""
 
 		if dep.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] != "" {
-			log.Info("this means the deployment was already labeled")
-			log.Info("which means its pod was restarted for some reason")
-			log.Info("we will use the service name on the deployment")
+			log.Debug("this means the deployment was already labeled")
+			log.Debug("which means its pod was restarted for some reason")
+			log.Debug("we will use the service name on the deployment")
 			serviceName = dep.ObjectMeta.Labels[util.LABEL_SERVICE_NAME]
 		} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
 			log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
@@ -192,7 +192,7 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
 			serviceName = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "-replica"
 		}
 
-		err = kubeapi.AddLabelToPod(c.PodClientset, newpod, util.LABEL_SERVICE_NAME, serviceName, c.Namespace)
+		err = kubeapi.AddLabelToPod(c.PodClientset, newpod, util.LABEL_SERVICE_NAME, serviceName, ns)
 		if err != nil {
 			log.Error(err)
 			log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
@@ -200,7 +200,7 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
 		}
 
 		//add the service name label to the Deployment
-		err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, util.LABEL_SERVICE_NAME, serviceName, c.Namespace)
+		err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, util.LABEL_SERVICE_NAME, serviceName, ns)
 
 		if err != nil {
 			log.Error("could not add label to deployment on pod add")
@@ -212,11 +212,11 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod) {
 }
 
 //check for the autofail flag on the pgcluster CRD
-func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod) bool {
+func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
 	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 
 	pgcluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, c.Namespace)
+	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, ns)
 	if !found {
 		return false
 	} else if err != nil {

@@ -30,6 +30,7 @@ const PgBackupJobError = "Backup Job Error"
 
 // PgbackupSpec ...
 type PgbackupSpec struct {
+	Namespace        string        `json:"namespace"`
 	Name             string        `json:"name"`
 	StorageSpec      PgStorageSpec `json:"storagespec"`
 	CCPImageTag      string        `json:"ccpimagetag"`

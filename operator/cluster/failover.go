@@ -81,13 +81,13 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	userSelection := task.ObjectMeta.Labels[util.LABEL_AUTOFAIL_REPLACE_REPLICA]
 	if userSelection == "true" {
 		log.Debug("replacing replica based on user selection")
-		replaceReplica(client, &cluster)
+		replaceReplica(client, &cluster, namespace)
 		replaced = true
 	} else if userSelection == "false" {
 		log.Debug("not replacing replica based on user selection")
 	} else if operator.Pgo.Cluster.AutofailReplaceReplica {
 		log.Debug("replacing replica based on pgo.yaml setting")
-		replaceReplica(client, &cluster)
+		replaceReplica(client, &cluster, namespace)
 		replaced = true
 	} else {
 		log.Debug("not replacing replica")
@@ -118,12 +118,13 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 
 }
 
-func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster) {
+func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string) {
 
 	//generate new replica name
 	uniqueName := cluster.Spec.Name + "-" + util.RandStringBytesRmndr(4)
 
 	spec := crv1.PgreplicaSpec{}
+	spec.Namespace = ns
 	spec.Name = uniqueName
 	spec.ClusterName = cluster.Spec.Name
 	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
@@ -154,6 +155,6 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster) {
 	newInstance.ObjectMeta.Labels[util.LABEL_PRIMARY] = "false"
 	newInstance.ObjectMeta.Labels[util.LABEL_NAME] = uniqueName
 
-	kubeapi.Createpgreplica(client, newInstance, operator.NAMESPACE)
+	kubeapi.Createpgreplica(client, newInstance, ns)
 
 }

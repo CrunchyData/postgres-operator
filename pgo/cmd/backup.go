@@ -128,6 +128,7 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
+	fmt.Printf("%s%s\n", TreeBranch, "Namespace:\t"+result.Spec.Namespace)
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
 	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
@@ -135,7 +136,7 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.Spec.BackupUserSecret)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Secret:\t"+result.Spec.BackupUserSecret)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }

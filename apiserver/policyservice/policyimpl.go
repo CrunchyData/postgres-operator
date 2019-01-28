@@ -49,6 +49,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 
 	// Create an instance of our CRD
 	spec := crv1.PgpolicySpec{}
+	spec.Namespace = ns
 	spec.Name = policyName
 	spec.URL = policyURL
 	spec.SQL = policyFile

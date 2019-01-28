@@ -158,7 +158,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
 		log.Debugf("setting jobName to %s", jobName)
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, jobName), ns)
+		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, jobName, ns), ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -171,11 +171,12 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, jobName string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, jobName, ns string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
+	spec.Namespace = ns
 
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
@@ -401,7 +402,7 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 		return resp
 	}
 
-	pgtask := getRestoreParams(request)
+	pgtask := getRestoreParams(request, ns)
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 
 	//create a pgtask for the restore workflow
@@ -419,10 +420,11 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	return resp
 }
 
-func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
+func getRestoreParams(request *msgs.RestoreRequest, ns string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToPVC
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
@@ -463,6 +465,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	spec.TaskType = crv1.PgtaskWorkflow
 

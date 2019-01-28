@@ -226,6 +226,7 @@ func (*AutoFailoverTask) AddEvent(restclient *rest.RESTClient, clusterName, even
 	task := crv1.Pgtask{}
 	found, err = kubeapi.Getpgtask(restclient, &task, taskName, namespace)
 	if !found {
+		task.Namespace = namespace
 		task.Name = taskName
 		task.Spec.Status = eventType
 		task.Spec.Name = clusterName
@@ -421,6 +422,7 @@ func (s *StateMachine) triggerFailover() {
 	}
 
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = s.Namespace
 	spec.Name = s.ClusterName + "-" + util.LABEL_FAILOVER
 
 	//see if task is already present (e.g. a prior failover)
