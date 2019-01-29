@@ -154,7 +154,7 @@ func ShowCluster(name, selector, ccpimagetag, ns string) msgs.ShowClusterRespons
 		return response
 	}
 
-	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
+	log.Debugf("clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowClusterDetail{}
@@ -266,7 +266,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 		return output, err
 	}
 
-	log.Debugf("got %d services for %s\n", len(services.Items), cluster.Spec.Name)
+	log.Debugf("got %d services for %s", len(services.Items), cluster.Spec.Name)
 	for _, p := range services.Items {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name

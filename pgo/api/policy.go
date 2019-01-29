@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowPolicyResponse, error) {
+func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowPolicyResponse, error) {
 
 	var response msgs.ShowPolicyResponse
 
-	url := SessionCredentials.APIServerURL + "/policies/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/policies/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("showPolicy called...[%s]", url)
 
 	action := "GET"
@@ -102,11 +102,11 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	return resp, err
 }
 
-func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeletePolicyResponse, error) {
+func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeletePolicyResponse, error) {
 
 	var response msgs.DeletePolicyResponse
 
-	url := SessionCredentials.APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 
 	log.Debugf("delete policy called [%s]", url)
 

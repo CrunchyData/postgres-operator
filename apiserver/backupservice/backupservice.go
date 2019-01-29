@@ -30,14 +30,13 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("backupservice.ShowBackupHandler %v\n", vars)
 
 	backupname := vars["name"]
 
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("ShowBackupHandler parameters name [%s] version [%s] namespace [%s]", backupname, clientVersion, namespace)
 
 	username, err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
@@ -59,7 +58,7 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -77,13 +76,12 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("backupservice.DeleteBackupHandler %v\n", vars)
 
 	backupname := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("DeleteBackupHandler parameters name [%s] version [%s] namespace [%s]", backupname, clientVersion, namespace)
 
 	username, err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
 	if err != nil {
@@ -103,7 +101,7 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -136,7 +134,7 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreateBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

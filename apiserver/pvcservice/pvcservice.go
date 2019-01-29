@@ -31,19 +31,12 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	var username, ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("pvcervice.ShowPVCHandler %v", vars)
-
 	pvcname := vars["pvcname"]
-
 	pvcroot := r.URL.Query().Get("pvcroot")
-	if pvcroot != "" {
-		log.Debugf("pvcroot parameter is [%s]", pvcroot)
-	}
-
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("ShowPVCHandler parameters pvcroot [%s],  version [%s] namespace [%s] pvcname [%s]", pvcroot, clientVersion, namespace, pvcname)
 
 	switch r.Method {
 	case "GET":
@@ -69,7 +62,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

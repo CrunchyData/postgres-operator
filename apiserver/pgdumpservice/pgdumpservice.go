@@ -45,7 +45,7 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreatepgDumpBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -61,18 +61,14 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("pgdumpservice.ShowDumpHandler %v\n", vars)
 
 	clustername := vars[util.LABEL_NAME]
 
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
 	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+
+	log.Debugf("ShowDumpHandler parameters version [%s] namespace [%s] selector [%s] name [%s]", clientVersion, namespace, selector, clustername)
 
 	username, err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
@@ -93,7 +89,7 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -126,7 +122,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.RestoreResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

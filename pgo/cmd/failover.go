@@ -40,13 +40,13 @@ var failoverCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the cluster to failover.`)
 		} else {
 			if Query {
-				queryFailover(args)
+				queryFailover(args, Namespace)
 			} else if util.AskForConfirmation(NoPrompt, "") {
 				if Target == "" {
 					fmt.Println(`Error: The --target flag is required for failover.`)
 					return
 				}
-				createFailover(args)
+				createFailover(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -66,10 +66,11 @@ func init() {
 }
 
 // createFailover ....
-func createFailover(args []string) {
+func createFailover(args []string, ns string) {
 	log.Debugf("createFailover called %v", args)
 
 	request := new(msgs.CreateFailoverRequest)
+	request.Namespace = ns
 	request.ClusterName = args[0]
 	request.Target = Target
 	request.AutofailReplaceReplica = AutofailReplaceReplica
@@ -101,10 +102,10 @@ func createFailover(args []string) {
 }
 
 // queryFailover ....
-func queryFailover(args []string) {
+func queryFailover(args []string, ns string) {
 	log.Debugf("queryFailover called %v", args)
 
-	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials)
+	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials, ns)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

@@ -47,7 +47,7 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreateBackrestBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -64,18 +64,14 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("backrestservice.ShowBackrestHandler %v\n", vars)
 
 	backupname := vars[util.LABEL_NAME]
 
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
+
+	log.Debugf("ShowBackrestHandler parameters name [%s] version [%s] selector [%s] namespace [%s]", backupname, clientVersion, selector, namespace)
 
 	username, err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
@@ -94,7 +90,7 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -127,7 +123,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.RestoreResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

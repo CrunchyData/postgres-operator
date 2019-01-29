@@ -34,7 +34,7 @@ var statusCmd = &cobra.Command{
 	pgo status`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("status called")
-		showStatus(args)
+		showStatus(args, Namespace)
 	},
 }
 
@@ -47,7 +47,7 @@ func init() {
 
 }
 
-func showStatus(args []string) {
+func showStatus(args []string, ns string) {
 
 	log.Debugf("showStatus called %v", args)
 
@@ -56,7 +56,7 @@ func showStatus(args []string) {
 		os.Exit(2)
 	}
 
-	response, err := api.ShowStatus(httpclient, &SessionCredentials)
+	response, err := api.ShowStatus(httpclient, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

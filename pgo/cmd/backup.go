@@ -58,7 +58,7 @@ var backupCmd = &cobra.Command{
 					return
 				}
 
-				createBackrestBackup(args)
+				createBackrestBackup(args, Namespace)
 
 			case labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
 
@@ -72,11 +72,11 @@ var backupCmd = &cobra.Command{
 					return
 				}
 
-				createBackup(args)
+				createBackup(args, Namespace)
 
 			case labelutil.LABEL_BACKUP_TYPE_PGDUMP:
 
-				createpgDumpBackup(args)
+				createpgDumpBackup(args, Namespace)
 
 			default:
 				fmt.Println("Error: You must specify either pgbasebackup, pgbackrest, or pgdump for the --backup-type.")
@@ -100,12 +100,12 @@ func init() {
 }
 
 // showBackup ....
-func showBackup(args []string) {
+func showBackup(args []string, ns string) {
 	log.Debugf("showBackup called %v", args)
 
 	//show pod information for job
 	for _, v := range args {
-		response, err := api.ShowBackup(httpclient, v, &SessionCredentials)
+		response, err := api.ShowBackup(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -152,11 +152,11 @@ func printBackupCRD(result *crv1.Pgbackup) {
 }
 
 // deleteBackup ....
-func deleteBackup(args []string) {
+func deleteBackup(args []string, ns string) {
 	log.Debugf("deleteBackup called %v", args)
 
 	for _, v := range args {
-		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
+		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -181,11 +181,12 @@ func deleteBackup(args []string) {
 }
 
 // createBackup ....
-func createBackup(args []string) {
+func createBackup(args []string, ns string) {
 	log.Debugf("createBackup called %v", args)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
+	request.Namespace = ns
 	request.Selector = Selector
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig

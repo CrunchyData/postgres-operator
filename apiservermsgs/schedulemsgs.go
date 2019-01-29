@@ -19,6 +19,7 @@ limitations under the License.
 type CreateScheduleRequest struct {
 	ClusterName     string
 	Name            string
+	Namespace       string
 	Schedule        string
 	ScheduleType    string
 	Selector        string
@@ -37,12 +38,14 @@ type CreateScheduleResponse struct {
 }
 
 type DeleteScheduleRequest struct {
+	Namespace    string
 	ScheduleName string
 	ClusterName  string
 	Selector     string
 }
 
 type ShowScheduleRequest struct {
+	Namespace    string
 	ScheduleName string
 	ClusterName  string
 	Selector     string

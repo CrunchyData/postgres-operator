@@ -115,7 +115,7 @@ var ShowConfigCmd = &cobra.Command{
 
 	pgo show config`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showConfig(args)
+		showConfig(args, Namespace)
 	},
 }
 
@@ -126,7 +126,7 @@ var ShowWorkflowCmd = &cobra.Command{
 
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showWorkflow(args)
+		showWorkflow(args, Namespace)
 	},
 }
 
@@ -140,7 +140,7 @@ var ShowPolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: Policy name(s) required for this command.")
 		} else {
-			showPolicy(args)
+			showPolicy(args, Namespace)
 		}
 	},
 }
@@ -158,7 +158,7 @@ var ShowPVCCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: PVC name(s) required for this command.")
 		} else {
-			showPVC(args)
+			showPVC(args, Namespace)
 		}
 	},
 }
@@ -173,7 +173,7 @@ var ShowUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
-			showUpgrade(args)
+			showUpgrade(args, Namespace)
 		}
 	},
 }
@@ -190,11 +190,11 @@ var ShowBackupCmd = &cobra.Command{
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
 			if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
-				showBackrest(args)
+				showBackrest(args, Namespace)
 			} else if BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
-				showBackup(args)
+				showBackup(args, Namespace)
 			} else if BackupType == util.LABEL_BACKUP_TYPE_PGDUMP {
-				showpgDump(args)
+				showpgDump(args, Namespace)
 			} else {
 				fmt.Println("Error: Valid backup-type values are pgbasebackup, pgbackrest and pgdump. The default if not supplied is pgbasebackup.")
 			}
@@ -214,7 +214,7 @@ var ShowClusterCmd = &cobra.Command{
 		if Selector == "" && len(args) == 0 {
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
-			showCluster(args)
+			showCluster(args, Namespace)
 		}
 	},
 }
@@ -230,7 +230,7 @@ var ShowUserCmd = &cobra.Command{
 		if Selector == "" && len(args) == 0 {
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
-			showUser(args)
+			showUser(args, Namespace)
 		}
 	},
 }
@@ -249,6 +249,6 @@ var ShowScheduleCmd = &cobra.Command{
 			fmt.Println("Error: cluster name, schedule name or selector is required to show a schedule.")
 			return
 		}
-		showSchedule(args)
+		showSchedule(args, Namespace)
 	},
 }

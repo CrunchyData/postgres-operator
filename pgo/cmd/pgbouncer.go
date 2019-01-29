@@ -22,7 +22,7 @@ import (
 	"os"
 )
 
-func createPgbouncer(args []string) {
+func createPgbouncer(args []string, ns string) {
 
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag is required.")
@@ -31,6 +31,7 @@ func createPgbouncer(args []string) {
 
 	r := new(msgs.CreatePgbouncerRequest)
 	r.Args = args
+	r.Namespace = ns
 	r.Selector = Selector
 	r.ClientVersion = msgs.PGO_VERSION
 
@@ -54,7 +55,7 @@ func createPgbouncer(args []string) {
 
 }
 
-func deletePgbouncer(args []string) {
+func deletePgbouncer(args []string, ns string) {
 
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag or a cluster name is required.")
@@ -64,6 +65,7 @@ func deletePgbouncer(args []string) {
 	r := new(msgs.DeletePgbouncerRequest)
 	r.Args = args
 	r.Selector = Selector
+	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.DeletePgbouncer(httpclient, &SessionCredentials, r)

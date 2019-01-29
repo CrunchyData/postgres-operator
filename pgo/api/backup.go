@@ -21,14 +21,15 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/util"
 	"net/http"
 )
 
-func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackupResponse, error) {
+func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackupResponse, error) {
 
 	var response msgs.ShowBackupResponse
 
-	url := SessionCredentials.APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_NAMESPACE + "=" + ns
 
 	log.Debugf("show backup called [%s]", url)
 
@@ -60,10 +61,10 @@ func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 	return response, err
 
 }
-func DeleteBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteBackupResponse, error) {
+func DeleteBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeleteBackupResponse, error) {
 
 	var response msgs.DeleteBackupResponse
-	url := SessionCredentials.APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_NAMESPACE + "=" + ns
 
 	log.Debug("delete backup called [%s]", url)
 

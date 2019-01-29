@@ -52,7 +52,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -86,13 +86,12 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("policyservice.DeletePolicyHandler %v", vars)
 
 	policyname := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("DeletePolicyHandler parameters version [%s] name [%s] namespace [%s]", clientVersion, policyname, namespace)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
@@ -113,7 +112,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -133,14 +132,13 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("policyservice.ShowPolicyHandler %v", vars)
 
 	policyname := vars["name"]
 
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("ShowPolicyHandler parameters version [%s] namespace [%s] name [%s]", clientVersion, namespace, policyname)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
@@ -162,7 +160,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -197,7 +195,7 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.ApplyPolicyResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

@@ -22,7 +22,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	"net/http"
-	//"strconv"
 )
 
 // StatusHandler ...
@@ -30,17 +29,13 @@ import (
 // pgo df --selector=env=research
 func DfHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("dfservice.DfHandler %v", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+
+	log.Debugf("DfHandler parameters name [%s] namespace [%s] selector [%s] version [%s]", clustername, namespace, selector, clientVersion)
 
 	username, err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -60,7 +55,7 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err := apiserver.GetNamespace(username, "")
+	ns, err := apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

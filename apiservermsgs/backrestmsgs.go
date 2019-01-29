@@ -52,6 +52,7 @@ type RestoreResponse struct {
 
 // RestoreRequest ...
 type RestoreRequest struct {
+	Namespace   string
 	FromCluster string
 	ToPVC       string
 	RestoreOpts string
