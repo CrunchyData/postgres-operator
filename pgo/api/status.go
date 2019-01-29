@@ -23,10 +23,10 @@ import (
 	"net/http"
 )
 
-func ShowStatus(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials) (msgs.StatusResponse, error) {
+func ShowStatus(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.StatusResponse, error) {
 
 	var response msgs.StatusResponse
-	url := SessionCredentials.APIServerURL + "/status?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/status?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
 	action := "GET"

@@ -42,7 +42,7 @@ var restoreCmd = &cobra.Command{
 		} else {
 			fmt.Println("Warning:  stopping this database and creating a new primary is part of the restore workflow!")
 			if util.AskForConfirmation(NoPrompt, "") {
-				restore(args)
+				restore(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -61,10 +61,11 @@ func init() {
 }
 
 // restore ....
-func restore(args []string) {
+func restore(args []string, ns string) {
 	log.Debugf("restore called %v", args)
 
 	request := new(msgs.RestoreRequest)
+	request.Namespace = ns
 	request.FromCluster = args[0]
 	request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
 	request.RestoreOpts = BackupOpts

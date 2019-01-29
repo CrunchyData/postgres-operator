@@ -69,7 +69,7 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -96,17 +96,11 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
 	ccpimagetag := r.URL.Query().Get("ccpimagetag")
-	if ccpimagetag != "" {
-		log.Debugf("ccpimagetag parameter is [%s]", ccpimagetag)
-	}
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s]", clustername, selector, ccpimagetag, clientVersion, namespace)
 
 	username, err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -129,7 +123,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]msgs.ShowClusterDetail, 0)
@@ -156,33 +150,27 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
 
 	deleteData := false
 	deleteDataStr := r.URL.Query().Get("delete-data")
 	if deleteDataStr != "" {
-		log.Debugf("delete-data parameter is [%s]", deleteDataStr)
 		deleteData, _ = strconv.ParseBool(deleteDataStr)
 	}
 	deleteBackups := false
 	deleteBackupsStr := r.URL.Query().Get("delete-backups")
 	if deleteBackupsStr != "" {
-		log.Debugf("delete-backups parameter is [%s]", deleteBackupsStr)
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
 	deleteConfigs := false
 	deleteConfigsStr := r.URL.Query().Get("delete-configs")
 	if deleteDataStr != "" {
-		log.Debugf("delete-configs parameter is [%s]", deleteConfigsStr)
 		deleteConfigs, _ = strconv.ParseBool(deleteConfigsStr)
 	}
+
+	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%s] delete-backups [%s] delete-configs [%s]", namespace, selector, clientVersion, deleteDataStr, deleteBackupsStr, deleteConfigsStr)
 
 	username, err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -204,7 +192,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]string, 0)
@@ -221,17 +209,13 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+
+	log.Debugf("TestClusterHandler parameters name [%s] version [%s] namespace [%s] selector [%s]", clustername, clientVersion, namespace, selector)
 
 	username, err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -251,7 +235,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -269,20 +253,16 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.UpdateClusterHandler %v\n", vars)
 
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 
 	autofailStr := r.URL.Query().Get("autofail")
+
+	log.Debugf("UpdateClusterHandler parameters name [%s] version [%s] selector [%s] namespace [%s] autofail [%s]", clustername, clientVersion, selector, namespace, autofailStr)
 
 	username, err := apiserver.Authn(apiserver.UPDATE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -305,7 +285,7 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]string, 0)
@@ -314,7 +294,6 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if autofailStr != "" {
-		log.Debugf("autofail parameter is [%s]", autofailStr)
 		if autofailStr == "true" || autofailStr == "false" {
 		} else {
 			resp.Status = msgs.Status{

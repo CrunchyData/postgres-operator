@@ -39,7 +39,7 @@ type schedule struct {
 	database     string
 }
 
-func createSchedule(args []string) {
+func createSchedule(args []string, ns string) {
 	log.Debugf("createSchedule called %v", args)
 
 	var clusterName string
@@ -75,6 +75,7 @@ func createSchedule(args []string) {
 		PolicyName:      SchedulePolicy,
 		Database:        ScheduleDatabase,
 		Secret:          ScheduleSecret,
+		Namespace:       ns,
 	}
 
 	response, err := api.CreateSchedule(httpclient, &SessionCredentials, r)
@@ -100,7 +101,7 @@ func createSchedule(args []string) {
 
 }
 
-func deleteSchedule(args []string) {
+func deleteSchedule(args []string, ns string) {
 	log.Debugf("deleteSchedule called %v", args)
 
 	if len(args) == 0 && Selector == "" && ScheduleName == "" {
@@ -117,6 +118,7 @@ func deleteSchedule(args []string) {
 		ClusterName:  clusterName,
 		ScheduleName: ScheduleName,
 		Selector:     Selector,
+		Namespace:    ns,
 	}
 
 	response, err := api.DeleteSchedule(httpclient, &SessionCredentials, r)
@@ -142,7 +144,7 @@ func deleteSchedule(args []string) {
 
 }
 
-func showSchedule(args []string) {
+func showSchedule(args []string, ns string) {
 	log.Debugf("showSchedule called %v", args)
 
 	if len(args) == 0 && Selector == "" && ScheduleName == "" {
@@ -161,6 +163,7 @@ func showSchedule(args []string) {
 		ClusterName:  clusterName,
 		ScheduleName: ScheduleName,
 		Selector:     Selector,
+		Namespace:    ns,
 	}
 
 	response, err := api.ShowSchedule(httpclient, &SessionCredentials, r)

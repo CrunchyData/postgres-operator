@@ -48,7 +48,7 @@ var scaleCmd = &cobra.Command{
 				fmt.Println("Aborting...")
 				os.Exit(2)
 			}
-			scaleCluster(args)
+			scaleCluster(args, Namespace)
 		}
 	},
 }
@@ -66,11 +66,11 @@ func init() {
 
 }
 
-func scaleCluster(args []string) {
+func scaleCluster(args []string, ns string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d", arg, ReplicaCount)
-		response, err := api.ScaleCluster(httpclient, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, &SessionCredentials)
+		response, err := api.ScaleCluster(httpclient, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())

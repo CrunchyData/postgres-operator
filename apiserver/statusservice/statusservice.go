@@ -20,7 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
+	//"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -30,13 +30,11 @@ import (
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	var username, ns string
 
-	vars := mux.Vars(r)
-	log.Debug("statusservice.StatusHandler %v", vars)
-
+	//vars := mux.Vars(r)
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+
+	namespace := r.URL.Query().Get("namespace")
+	log.Debugf("StatusHandler parameters version [%s] namespace [%s]", clientVersion, namespace)
 
 	username, err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
 	if err != nil {
@@ -55,7 +53,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp = msgs.StatusResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}

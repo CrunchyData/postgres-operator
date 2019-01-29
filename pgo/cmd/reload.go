@@ -41,7 +41,7 @@ var reloadCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the cluster to reload or specify a selector flag.`)
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				reload(args)
+				reload(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -59,12 +59,13 @@ func init() {
 }
 
 // reload ....
-func reload(args []string) {
+func reload(args []string, ns string) {
 	log.Debugf("reload called %v", args)
 
 	request := new(msgs.ReloadRequest)
 	request.Args = args
 	request.Selector = Selector
+	request.Namespace = ns
 	response, err := api.Reload(httpclient, &SessionCredentials, request)
 
 	if err != nil {

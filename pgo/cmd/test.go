@@ -42,7 +42,7 @@ var testCmd = &cobra.Command{
 				fmt.Println("Error: Only 'json' is currently supported for the --output flag value.")
 				os.Exit(2)
 			}
-			showTest(args)
+			showTest(args, Namespace)
 		}
 	},
 }
@@ -53,7 +53,7 @@ func init() {
 	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 }
 
-func showTest(args []string) {
+func showTest(args []string, ns string) {
 
 	log.Debugf("showCluster called %v", args)
 
@@ -64,7 +64,7 @@ func showTest(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.ShowTest(httpclient, arg, Selector, &SessionCredentials)
+		response, err := api.ShowTest(httpclient, arg, Selector, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

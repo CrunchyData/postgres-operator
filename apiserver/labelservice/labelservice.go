@@ -50,7 +50,7 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
 		json.NewEncoder(w).Encode(resp)
@@ -89,7 +89,7 @@ func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
 		json.NewEncoder(w).Encode(resp)

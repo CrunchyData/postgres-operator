@@ -26,11 +26,12 @@ import (
 )
 
 // createpgDumpBackup
-func createpgDumpBackup(args []string) {
+func createpgDumpBackup(args []string, ns string) {
 	log.Debugf("createpgDumpBackup called %v %s", args, BackupOpts)
 
 	request := new(msgs.CreatepgDumpBackupRequest)
 	request.Args = args
+	request.Namespace = ns
 	request.Selector = Selector
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
@@ -60,11 +61,11 @@ func createpgDumpBackup(args []string) {
 }
 
 // pgDump ....
-func showpgDump(args []string) {
+func showpgDump(args []string, ns string) {
 	log.Debugf("showpgDump called %v", args)
 
 	for _, v := range args {
-		response, err := api.ShowpgDump(httpclient, v, Selector, &SessionCredentials)
+		response, err := api.ShowpgDump(httpclient, v, Selector, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

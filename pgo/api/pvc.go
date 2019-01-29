@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowPVCResponse, error) {
+func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowPVCResponse, error) {
 
 	var response msgs.ShowPVCResponse
 
-	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("ShowPVC called...[%s]", url)
 
 	action := "GET"

@@ -124,7 +124,8 @@ As part of the installation, have your cluster administrator run the following O
 
     make installrbac
 
-That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.  Note that when you run *make installrbac* the set of keys used by the Operator REST API and also the pgbackrest ssh keys are generated.  These keys are stored in the ConfigMap used by the Operator for securing connections.
+That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.  Note that when you run *make installrbac* the set of keys used by the Operator REST API and also the pgbackrest ssh keys are generated.  These keys are stored in the ConfigMap used by the Operator for securing connections.  That script requires the *expenv* utility which can
+be downloaded from the Github releases page.
 
 Verify the Operator Custom Resource Definitions are created as follows:
 

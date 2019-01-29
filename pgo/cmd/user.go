@@ -59,7 +59,7 @@ var userCmd = &cobra.Command{
 	pgo user --change-password=bob --selector=name=mycluster --password=newpass`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
-		userManager()
+		userManager(Namespace)
 	},
 }
 
@@ -78,9 +78,10 @@ func init() {
 }
 
 // userManager ...
-func userManager() {
+func userManager(ns string) {
 
 	request := msgs.UserRequest{}
+	request.Namespace = ns
 	request.Selector = Selector
 	request.Password = Password
 	request.PasswordAgeDays = PasswordAgeDays
@@ -112,7 +113,7 @@ func userManager() {
 
 }
 
-func createUser(args []string) {
+func createUser(args []string, ns string) {
 
 	if Selector == "" {
 		fmt.Println("Error: The --selector flag is required.")
@@ -133,6 +134,7 @@ func createUser(args []string) {
 	r.PasswordAgeDays = PasswordAgeDays
 	r.ClientVersion = msgs.PGO_VERSION
 	r.PasswordLength = PasswordLength
+	r.Namespace = ns
 
 	response, err := api.CreateUser(httpclient, &SessionCredentials, r)
 	if err != nil {
@@ -152,11 +154,11 @@ func createUser(args []string) {
 }
 
 // deleteUser ...
-func deleteUser(username string) {
+func deleteUser(username string, ns string) {
 	log.Debugf("deleteUser called %v", username)
 
 	log.Debugf("deleting user %s selector=%s", username, Selector)
-	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials)
+	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
@@ -174,7 +176,7 @@ func deleteUser(username string) {
 }
 
 // showUsers ...
-func showUser(args []string) {
+func showUser(args []string, ns string) {
 
 	log.Debugf("showUser called %v", args)
 
@@ -186,7 +188,7 @@ func showUser(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowUser(httpclient, v, Selector, Expired, &SessionCredentials)
+		response, err := api.ShowUser(httpclient, v, Selector, Expired, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)

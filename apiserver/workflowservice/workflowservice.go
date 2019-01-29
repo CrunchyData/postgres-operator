@@ -31,19 +31,12 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 	var username, ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("workflowservice.ShowWorkflowHandler %v", vars)
 
 	workflowID := vars["id"]
-
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
 
-	switch r.Method {
-	case "GET":
-		log.Debug("workflowservice.ShowWorkflowHandler GET called")
-	}
+	log.Debugf("ShowWorkflowHandler parameters version [%s] namespace [%s] id [%s]", clientVersion, namespace, workflowID)
 
 	username, err = apiserver.Authn(apiserver.SHOW_WORKFLOW_PERM, w, r)
 	if err != nil {
@@ -63,7 +56,7 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

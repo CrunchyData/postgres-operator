@@ -118,3 +118,5 @@ const LABEL_CLAIM_NAME = "claimName"
 
 const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"
+
+const LABEL_NAMESPACE = "namespace"

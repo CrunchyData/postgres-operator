@@ -45,7 +45,7 @@ var loadCmd = &cobra.Command{
 				return
 			}
 
-			createLoad(args)
+			createLoad(args, Namespace)
 		}
 
 	},
@@ -60,7 +60,7 @@ func init() {
 
 }
 
-func createLoad(args []string) {
+func createLoad(args []string, ns string) {
 	if PoliciesFlag != "" {
 		log.Debug("policies=" + PoliciesFlag)
 	} else {
@@ -85,6 +85,7 @@ func createLoad(args []string) {
 	request := msgs.LoadRequest{}
 	request.LoadConfig = string(buf)
 	request.Selector = Selector
+	request.Namespace = ns
 	request.Policies = PoliciesFlag
 	request.Args = args
 	request.ClientVersion = msgs.PGO_VERSION

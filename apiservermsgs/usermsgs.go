@@ -53,6 +53,7 @@ type UserResponse struct {
 // CreateUserRequest ...
 type CreateUserRequest struct {
 	Name            string
+	Namespace       string
 	Selector        string
 	Password        string
 	ManagedUser     bool
