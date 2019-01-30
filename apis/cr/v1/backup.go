@@ -72,7 +72,7 @@ type PgbackupState string
 
 const (
 	// PgbackupStateCreated ...
-	PgbackupStateCreated PgbackupState = "Created"
+	PgbackupStateCreated PgbackupState = "pgbackup Created"
 	// PgbackupStateProcessed ...
-	PgbackupStateProcessed PgbackupState = "Processed"
+	PgbackupStateProcessed PgbackupState = "pgbackup Processed"
 )

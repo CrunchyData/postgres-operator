@@ -75,7 +75,7 @@ type PgupgradeStatus struct {
 type PgupgradeState string
 
 // PgupgradeStateCreated  ...
-const PgupgradeStateCreated PgupgradeState = "Created"
+const PgupgradeStateCreated PgupgradeState = "pgupgrade Created"
 
 // PgupgradeStateProcessed ...
-const PgupgradeStateProcessed PgupgradeState = "Processed"
+const PgupgradeStateProcessed PgupgradeState = "pgupgrade Processed"

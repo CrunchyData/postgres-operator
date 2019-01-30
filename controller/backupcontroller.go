@@ -85,6 +85,9 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 func (c *PgbackupController) onAdd(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
 	log.Debugf("[PgbackupController] ns=%s onAdd %s", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
+
+	//the case when the operator starts up, we disregard any
+	//pgbackups that have already been processed
 	if backup.Status.State == crv1.PgbackupStateProcessed {
 		log.Debug("pgbackup " + backup.ObjectMeta.Name + " already processed")
 		return
@@ -110,9 +113,10 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
+		log.Errorf("ERROR updating pgbackup status: %s", err.Error())
 	}
 
+	//handle new pgbackups
 	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backupCopy, backup.ObjectMeta.Namespace)
 }
 

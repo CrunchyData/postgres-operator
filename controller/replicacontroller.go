@@ -83,6 +83,9 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) (cache.Contro
 func (c *PgreplicaController) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
 	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
+
+	//handle the case of pgreplicas being processed already and
+	//when the operator restarts
 	if replica.Status.State == crv1.PgreplicaStateProcessed {
 		log.Debug("pgreplica " + replica.ObjectMeta.Name + " already processed")
 		return
@@ -108,10 +111,11 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
+		log.Errorf("ERROR updating pgreplica status: %s", err.Error())
 	}
-	log.Debugf("UPDATED status: %#v", replicaCopy)
 
+	//handle the case of when a pgreplica is added which is
+	//scaling up a cluster
 	clusteroperator.ScaleBase(c.PgreplicaClientset, c.PgreplicaClient, replicaCopy, replicaCopy.ObjectMeta.Namespace)
 
 }

@@ -70,7 +70,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 
 	for _, clusterName := range request.Args {
 		log.Debugf("create backrestbackup called for %s", clusterName)
-		taskName := clusterName + "-backrest-backup"
+		taskName := "backrest-backup-" + clusterName
 
 		cluster := crv1.Pgcluster{}
 		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, clusterName, ns)
