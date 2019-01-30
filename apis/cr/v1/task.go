@@ -54,7 +54,7 @@ const PgtaskBackrestStanzaCreate = "stanza-create"
 const PgtaskpgDump = "pgdump"
 const PgtaskpgDumpBackup = "pgdumpbackup"
 const PgtaskpgDumpInfo = "pgdumpinfo"
-const PgtaskpgDumpRestore = "pgdumprestore"
+const PgtaskpgRestore = "pgrestore"
 
 // PgtaskSpec ...
 type PgtaskSpec struct {

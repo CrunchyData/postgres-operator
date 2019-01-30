@@ -38,14 +38,14 @@ type ShowpgDumpDetail struct {
 	Info string
 }
 
-type pgDumpRestoreResponse struct {
+type PgRestoreResponse struct {
 	Results []string
 	Status
 }
 
-type pgDumpRestoreRequest struct {
+type PgRestoreRequest struct {
 	FromCluster string
 	ToPVC       string
 	RestoreOpts string
-	PITRTarget  string // TODO: Needed?
+	PITRTarget  string
 }

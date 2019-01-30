@@ -40,4 +40,5 @@ type restorejobTemplateFields struct {
 func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
 	log.Infof(" PgDump Restore not implemented %s, %s", namespace, task.Name)
+
 }

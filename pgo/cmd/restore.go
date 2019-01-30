@@ -57,7 +57,7 @@ func init() {
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
-	restoreCmd.Flags().StringVarP(&RestoreType, "restore-type", "", "", "The type of backup to restore from. Default is pgBackrest. Valid restore types are pgbackrest and pgdump.")
+	restoreCmd.Flags().StringVarP(&RestoreType, "restore-type", "", "", "The type of backup to restore from. The default if unspecified is pgbackrest. Valid restore types are pgbackrest and pgdump.")
 
 }
 

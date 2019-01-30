@@ -422,87 +422,95 @@ func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 
 //  Restore ...
 // pgo restore mycluster --to-cluster=restored
-func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
-	resp := msgs.RestoreResponse{}
+func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
+	resp := msgs.PgRestoreResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = "Restore Not Implemented"
 	resp.Results = make([]string, 0)
 
+	taskName := "restore-" + request.FromCluster + pgDumpTaskExtension
+
 	log.Debugf("Restore %v\n", request)
 
-	// cluster := crv1.Pgcluster{}
-	// found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, apiserver.Namespace)
-	// if !found {
-	// 	resp.Status.Code = msgs.Error
-	// 	resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
-	// 	return resp
-	// } else if err != nil {
-	// 	resp.Status.Code = msgs.Error
-	// 	resp.Status.Msg = err.Error()
-	// 	return resp
-	// }
+	cluster := crv1.Pgcluster{}
+	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, ns)
+	if !found {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
+		return resp
+	} else if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
 
-	//verify that the cluster we are restoring from has backrest enabled
-	// if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
-	// 	resp.Status.Code = msgs.Error
-	// 	resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"
-	// 	return resp
-	// }
+	// pgtask := getRestoreParams(cluster)
 
-	// pgtask := getRestoreParams(request)
-	// existingTask := crv1.Pgtask{}
+	pgtask := buildPgTaskForRestore(taskName, crv1.PgtaskpgRestore, request)
+	existingTask := crv1.Pgtask{}
 
-	// //delete any existing pgtask with the same name
-	// found, err = kubeapi.Getpgtask(apiserver.RESTClient,
-	// 	&existingTask,
-	// 	pgtask.Name,
-	// 	apiserver.Namespace)
-	// if found {
-	// 	log.Debugf("deleting prior pgtask %s", pgtask.Name)
-	// 	err = kubeapi.Deletepgtask(apiserver.RESTClient,
-	// 		pgtask.Name,
-	// 		apiserver.Namespace)
-	// 	if err != nil {
-	// 		resp.Status.Code = msgs.Error
-	// 		resp.Status.Msg = err.Error()
-	// 		return resp
-	// 	}
-	// }
+	//delete any existing pgtask with the same name
+	found, err = kubeapi.Getpgtask(apiserver.RESTClient,
+		&existingTask,
+		pgtask.Name,
+		ns)
+	if found {
+		log.Debugf("deleting prior pgtask %s", pgtask.Name)
+		err = kubeapi.Deletepgtask(apiserver.RESTClient,
+			pgtask.Name,
+			apiserver.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
 
-	// //create a pgtask for the restore workflow
-	// err = kubeapi.Createpgtask(apiserver.RESTClient,
-	// 	pgtask,
-	// 	apiserver.Namespace)
-	// if err != nil {
-	// 	resp.Status.Code = msgs.Error
-	// 	resp.Status.Msg = err.Error()
-	// 	return resp
-	// }
+	//create a pgtask for the restore workflow
+	err = kubeapi.Createpgtask(apiserver.RESTClient,
+		pgtask,
+		apiserver.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
 
-	// resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
 
 	return resp
 }
 
-//TODO: Need to update this for pgdump
-func getRestoreParams(request *msgs.RestoreRequest) *crv1.Pgtask {
+// builds out a pgTask structure that can be handed to kube
+func buildPgTaskForRestore(taskName string, action string, request *msgs.PgRestoreRequest) *crv1.Pgtask {
+
 	var newInstance *crv1.Pgtask
+	var storageSpec crv1.PgStorageSpec
+
+	backupUser := request.FromCluster + "-postgres-secret"
 
 	spec := crv1.PgtaskSpec{}
-	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToPVC
-	spec.TaskType = crv1.PgtaskBackrestRestore
+
+	spec.Name = taskName
+	spec.TaskType = crv1.PgtaskpgRestore
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
-	spec.Parameters[util.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
-	spec.Parameters[util.LABEL_PGBACKREST_STANZA] = "db"
-	spec.Parameters[util.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backups"
+	spec.Parameters[util.LABEL_PGRESTORE_DB] = "postgres"
+	spec.Parameters[util.LABEL_PGRESTORE_HOST] = request.FromCluster
+
+	spec.Parameters[util.LABEL_PGRESTORE_TO_PVC] = request.ToPVC
+	spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
+	spec.Parameters[util.LABEL_PGRESTORE_OPTS] = request.RestoreOpts
+	spec.Parameters[util.LABEL_PGRESTORE_USER] = backupUser
+
+	spec.Parameters[util.LABEL_PGRESTORE_COMMAND] = action
+
+	spec.Parameters[util.LABEL_PGRESTORE_PORT] = apiserver.Pgo.Cluster.Port
+	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
+	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: spec.Name,
+			Name: taskName,
 		},
 		Spec: spec,
 	}
