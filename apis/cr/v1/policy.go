@@ -61,7 +61,7 @@ type PgpolicyState string
 
 const (
 	// PgpolicyStateCreated ...
-	PgpolicyStateCreated PgpolicyState = "Created"
+	PgpolicyStateCreated PgpolicyState = "pgpolicy Created"
 	// PgpolicyStateProcessed ...
-	PgpolicyStateProcessed PgpolicyState = "Processed"
+	PgpolicyStateProcessed PgpolicyState = "pgpolicy Processed"
 )

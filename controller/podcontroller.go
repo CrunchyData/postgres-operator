@@ -88,8 +88,10 @@ func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 	log.Debugf("[PodController] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
+	//handle the case when a pg database pod is added
 	if isPostgresPod(newpod) {
 		c.checkPostgresPods(newpod, newpod.ObjectMeta.Namespace)
+		return
 	}
 }
 
@@ -99,8 +101,10 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	newpod := newObj.(*apiv1.Pod)
 	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
+	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
 		c.checkReadyStatus(oldpod, newpod)
+		return
 	}
 }
 

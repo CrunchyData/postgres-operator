@@ -82,7 +82,7 @@ type PgclusterState string
 
 const (
 	// PgclusterStateCreated ...
-	PgclusterStateCreated PgclusterState = "Created"
+	PgclusterStateCreated PgclusterState = "pgcluster Created"
 	// PgclusterStateProcessed ...
-	PgclusterStateProcessed PgclusterState = "Processed"
+	PgclusterStateProcessed PgclusterState = "pgcluster Processed"
 )
