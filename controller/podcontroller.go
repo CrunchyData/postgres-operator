@@ -155,7 +155,11 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					if newpod.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
-						backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
+						tmptask := crv1.Pgtask{}
+						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
+						if !found && err != nil {
+							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
+						}
 					}
 				}
 			}

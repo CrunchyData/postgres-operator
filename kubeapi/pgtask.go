@@ -83,7 +83,7 @@ func Getpgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace strin
 	}
 	if err != nil {
 		log.Error("error getting task " + err.Error())
-		return true, err
+		return false, err
 	}
 
 	return true, err

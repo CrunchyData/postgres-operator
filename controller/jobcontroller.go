@@ -134,7 +134,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if job.Status.Succeeded == 1 {
 			log.Debugf("set status to restore job completed  for %s", labels[util.LABEL_PG_CLUSTER])
 			log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
-			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", labels[util.LABEL_JOB_NAME], job.ObjectMeta.Namespace)
+			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", job.Name, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgtask " + labels[util.LABEL_JOB_NAME] + err.Error())
 			}
