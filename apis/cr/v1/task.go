@@ -97,7 +97,7 @@ type PgtaskState string
 
 const (
 	// PgtaskStateCreated ...
-	PgtaskStateCreated PgtaskState = "Created"
+	PgtaskStateCreated PgtaskState = "pgtask Created"
 	// PgtaskStateProcessed ...
-	PgtaskStateProcessed PgtaskState = "Processed"
+	PgtaskStateProcessed PgtaskState = "pgtask Processed"
 )

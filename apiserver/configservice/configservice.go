@@ -26,12 +26,11 @@ import (
 // ShowConfigHandler ...
 // pgo show config
 func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
-	log.Debug("configservice.ShowConfigHandler")
 
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("ShowConfigHandler parameters version [%s] namespace [%s]", clientVersion, namespace)
 
 	username, err := apiserver.Authn(apiserver.SHOW_CONFIG_PERM, w, r)
 	if err != nil {
@@ -51,7 +50,7 @@ func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = apiserver.GetNamespace(username, "")
+	_, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

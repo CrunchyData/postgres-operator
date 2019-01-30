@@ -88,8 +88,10 @@ func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 	log.Debugf("[PodController] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
+	//handle the case when a pg database pod is added
 	if isPostgresPod(newpod) {
 		c.checkPostgresPods(newpod, newpod.ObjectMeta.Namespace)
+		return
 	}
 }
 
@@ -99,8 +101,10 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	newpod := newObj.(*apiv1.Pod)
 	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
+	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
 		c.checkReadyStatus(oldpod, newpod)
+		return
 	}
 }
 
@@ -151,7 +155,11 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					if newpod.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
-						backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
+						tmptask := crv1.Pgtask{}
+						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
+						if !found && err != nil {
+							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
+						}
 					}
 				}
 			}

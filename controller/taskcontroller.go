@@ -89,6 +89,9 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
 	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+
+	//handle the case of when the operator restarts, we do not want
+	//to process pgtasks already processed
 	if task.Status.State == crv1.PgtaskStateProcessed {
 		log.Debug("pgtask " + task.ObjectMeta.Name + " already processed")
 		return
@@ -115,9 +118,7 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
-	} else {
-		log.Debugf("UPDATED status: %#v", taskCopy)
+		log.Errorf("ERROR updating pgtask status: %s", err.Error())
 	}
 
 	//process the incoming task

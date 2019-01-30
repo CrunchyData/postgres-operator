@@ -42,7 +42,7 @@ var applyCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: You must specify the name of a policy to apply.")
 		} else {
-			applyPolicy(args)
+			applyPolicy(args, Namespace)
 		}
 	},
 }
@@ -55,7 +55,7 @@ func init() {
 
 }
 
-func applyPolicy(args []string) {
+func applyPolicy(args []string, ns string) {
 	var err error
 
 	if len(args) == 0 {
@@ -71,6 +71,7 @@ func applyPolicy(args []string) {
 	r := new(msgs.ApplyPolicyRequest)
 	r.Name = args[0]
 	r.Selector = Selector
+	r.Namespace = ns
 	r.DryRun = DryRun
 	r.ClientVersion = msgs.PGO_VERSION
 
@@ -99,10 +100,10 @@ func applyPolicy(args []string) {
 	}
 
 }
-func showPolicy(args []string) {
+func showPolicy(args []string, ns string) {
 
 	for _, v := range args {
-		response, err := api.ShowPolicy(httpclient, v, &SessionCredentials)
+		response, err := api.ShowPolicy(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -132,7 +133,7 @@ func showPolicy(args []string) {
 
 }
 
-func createPolicy(args []string) {
+func createPolicy(args []string, ns string) {
 
 	if len(args) == 0 {
 		fmt.Println("Error: A poliicy name argument is required.")
@@ -145,6 +146,7 @@ func createPolicy(args []string) {
 
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
+	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
 	if PolicyURL != "" {
@@ -187,14 +189,14 @@ func getPolicyString(filename string) (string, error) {
 	return string(buf), err
 }
 
-func deletePolicy(args []string) {
+func deletePolicy(args []string, ns string) {
 
 	log.Debugf("deletePolicy called %v", args)
 
 	for _, arg := range args {
 		log.Debugf("deleting policy %s", arg)
 
-		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials)
+		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 		}

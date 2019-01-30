@@ -91,7 +91,7 @@ var createClusterCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A cluster name is required for this command.`)
 		} else {
-			createCluster(args)
+			createCluster(args, Namespace)
 		}
 	},
 }
@@ -114,7 +114,7 @@ var createPolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A policy name is required for this command.`)
 		} else {
-			createPolicy(args)
+			createPolicy(args, Namespace)
 		}
 	},
 }
@@ -132,7 +132,7 @@ var createPgbouncerCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: A cluster name or selector is required for this command.`)
 		} else {
-			createPgbouncer(args)
+			createPgbouncer(args, Namespace)
 		}
 	},
 }
@@ -150,7 +150,7 @@ var createPgpoolCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: A cluster name or selector is required for this command.`)
 		} else {
-			createPgpool(args)
+			createPgpool(args, Namespace)
 		}
 	},
 }
@@ -168,7 +168,7 @@ var createScheduleCmd = &cobra.Command{
 			fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
 			return
 		}
-		createSchedule(args)
+		createSchedule(args, Namespace)
 	},
 }
 
@@ -190,7 +190,7 @@ var createUserCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A user name is required for this command.`)
 		} else {
-			createUser(args)
+			createUser(args, Namespace)
 		}
 	},
 }

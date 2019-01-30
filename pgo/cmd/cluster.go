@@ -26,7 +26,7 @@ import (
 )
 
 // deleteCluster ...
-func deleteCluster(args []string) {
+func deleteCluster(args []string, ns string) {
 	log.Debugf("deleteCluster called %v", args)
 
 	if len(args) == 0 && Selector != "" {
@@ -35,7 +35,7 @@ func deleteCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, DeleteConfigMaps)
+		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, DeleteConfigMaps, ns)
 		//var response msgs.DeleteClusterResponse
 
 		if err != nil {
@@ -56,7 +56,7 @@ func deleteCluster(args []string) {
 }
 
 // showCluster ...
-func showCluster(args []string) {
+func showCluster(args []string, ns string) {
 
 	log.Debugf("showCluster called %v", args)
 
@@ -75,7 +75,7 @@ func showCluster(args []string) {
 
 	for _, v := range args {
 
-		response, err := api.ShowCluster(httpclient, v, Selector, CCPImageTag, &SessionCredentials)
+		response, err := api.ShowCluster(httpclient, v, Selector, CCPImageTag, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
@@ -166,7 +166,7 @@ func printPolicies(d *msgs.ShowClusterDeployment) {
 }
 
 // createCluster ....
-func createCluster(args []string) {
+func createCluster(args []string, ns string) {
 	var err error
 
 	if len(args) == 0 {
@@ -176,6 +176,7 @@ func createCluster(args []string) {
 
 	r := new(msgs.CreateClusterRequest)
 	r.Name = args[0]
+	r.Namespace = ns
 	r.ReplicaCount = ClusterReplicaCount
 	r.NodeLabel = NodeLabel
 	r.Password = Password
@@ -220,7 +221,7 @@ func createCluster(args []string) {
 }
 
 // updateCluster ...
-func updateCluster(args []string) {
+func updateCluster(args []string, ns string) {
 	log.Debugf("updateCluster called %v", args)
 
 	if len(args) == 0 && Selector != "" {
@@ -229,7 +230,7 @@ func updateCluster(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.UpdateCluster(httpclient, arg, Selector, &SessionCredentials, AutofailStringFlag)
+		response, err := api.UpdateCluster(httpclient, arg, Selector, &SessionCredentials, AutofailStringFlag, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())

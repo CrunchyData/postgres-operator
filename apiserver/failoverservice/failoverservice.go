@@ -51,7 +51,7 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -68,14 +68,14 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
-	log.Debug("failoverservice.QueryFailoverHandler called")
 	vars := mux.Vars(r)
 	name := vars["name"]
 
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+
+	namespace := r.URL.Query().Get("namespace")
+
+	log.Debugf("QueryFailoverHandler parameters version[%s] namespace [%s] name [%s]", clientVersion, namespace, name)
 
 	username, err := apiserver.Authn(apiserver.CREATE_FAILOVER_PERM, w, r)
 	if err != nil {
@@ -95,7 +95,7 @@ func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

@@ -34,44 +34,19 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	//SCALE_CLUSTER_PERM
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.ScaleClusterHandler %v\n", vars)
 
 	clusterName := vars[util.LABEL_NAME]
-	log.Debugf("clusterName argument is %v\n", clusterName)
 
+	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
 	replicaCount := r.URL.Query().Get(util.LABEL_REPLICA_COUNT)
-	if replicaCount != "" {
-		log.Debugf("replica-count parameter is [%s]", replicaCount)
-	}
 	resourcesConfig := r.URL.Query().Get(util.LABEL_RESOURCES_CONFIG)
-	if resourcesConfig != "" {
-		log.Debugf("resources-config parameter is [%s]", resourcesConfig)
-	}
 	storageConfig := r.URL.Query().Get(util.LABEL_STORAGE_CONFIG)
-	if storageConfig != "" {
-		log.Debugf("storage-config parameter is [%s]", storageConfig)
-	}
 	nodeLabel := r.URL.Query().Get(util.LABEL_NODE_LABEL)
-	if nodeLabel != "" {
-		log.Debugf("node-label parameter is [%s]", nodeLabel)
-	}
 	serviceType := r.URL.Query().Get(util.LABEL_SERVICE_TYPE)
-	if serviceType != "" {
-		log.Debugf("service-type parameter is [%s]", serviceType)
-	}
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 	ccpImageTag := r.URL.Query().Get(util.LABEL_CCP_IMAGE_TAG_KEY)
-	if ccpImageTag != "" {
-		log.Debugf("ccp-image-tag parameter is [%s]", ccpImageTag)
-	}
 
-	switch r.Method {
-	case "GET":
-		log.Debug("clusterservice.ScaleClusterHandler GET called")
-	}
+	log.Debugf("ScaleClusterHandler parameters name [%s] namespace [%s] replica-count [%s] resources-config [%s] storage-config [%s] node-label [%s] service-type [%s] version [%s] ccp-image-tag [%s]", clusterName, namespace, replicaCount, resourcesConfig, storageConfig, nodeLabel, serviceType, clientVersion, ccpImageTag)
 
 	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -90,7 +65,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -109,19 +84,12 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 	//SCALE_CLUSTER_PERM
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.ScaleQueryHandler %v\n", vars)
 
 	clusterName := vars[util.LABEL_NAME]
-	log.Debugf(" clusterName argument is %v\n", clusterName)
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
 
-	switch r.Method {
-	case "GET":
-		log.Debug("clusterservice.ScaleQueryHandler GET called")
-	}
+	log.Debugf("ScaleQueryHandler parameters clusterName [%v] version [%s] namespace [%s]", clusterName, clientVersion, namespace)
 
 	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -140,7 +108,7 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -158,27 +126,14 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 	//SCALE_CLUSTER_PERM
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.ScaleDownHandler %v\n", vars)
 
 	clusterName := vars[util.LABEL_NAME]
-	log.Debugf("clusterName argument is %v\n", clusterName)
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
 	replicaName := r.URL.Query().Get(util.LABEL_REPLICA_NAME)
-	if replicaName != "" {
-		log.Debugf("replicaName parameter is [%s]", replicaName)
-	}
 	tmp := r.URL.Query().Get(util.LABEL_DELETE_DATA)
-	if tmp != "" {
-		log.Debugf("delete-data parameter is [%s]", tmp)
-	}
 
-	switch r.Method {
-	case "GET":
-		log.Debug("clusterservice.ScaleDownHandler GET called")
-	}
+	log.Debugf("ScaleDownHandler parameters clusterName [%s] version [%s] namespace [%s] replica-name [%s] delete-data [%s]", clusterName, clientVersion, namespace, replicaName, tmp)
 
 	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -204,7 +159,7 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

@@ -62,7 +62,7 @@ type PgreplicaState string
 
 const (
 	// PgreplicaStateCreated ...
-	PgreplicaStateCreated PgreplicaState = "Created"
+	PgreplicaStateCreated PgreplicaState = "pgreplica Created"
 	// PgreplicaStateProcessed ...
-	PgreplicaStateProcessed PgreplicaState = "Processed"
+	PgreplicaStateProcessed PgreplicaState = "pgreplica Processed"
 )

@@ -52,6 +52,7 @@ func init() {
 	GREEN = color.New(color.FgGreen).SprintFunc()
 	RED = color.New(color.FgRed).SprintFunc()
 
+	RootCmd.PersistentFlags().StringVar(&Namespace, "namespace", "", "The namespace to use for pgo requests.")
 	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "The URL for the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CA_CERT, "pgo-ca-cert", "", "The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_KEY, "pgo-client-key", "", "The Client Key file path for authenticating to the PostgreSQL Operator apiserver.")
@@ -74,6 +75,13 @@ func initConfig() {
 		}
 	}
 	log.Debugf("in initConfig with url=%s", APIServerURL)
+
+	tmp := os.Getenv("PGO_NAMESPACE")
+	if tmp != "" {
+		Namespace = tmp
+		log.Debug("using PGO_NAMESPACE env var %s", tmp)
+	}
+
 	GetCredentials()
 
 	//generateBashCompletion()

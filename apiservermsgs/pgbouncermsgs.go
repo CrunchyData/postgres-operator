@@ -21,6 +21,7 @@ import ()
 type CreatePgbouncerRequest struct {
 	Args          []string
 	Selector      string
+	Namespace     string
 	ClientVersion string
 }
 
@@ -34,6 +35,7 @@ type CreatePgbouncerResponse struct {
 type DeletePgbouncerRequest struct {
 	Args          []string
 	Selector      string
+	Namespace     string
 	ClientVersion string
 }
 

@@ -21,6 +21,7 @@ import ()
 type CreatePgpoolRequest struct {
 	Args          []string
 	Selector      string
+	Namespace     string
 	ClientVersion string
 }
 
@@ -34,6 +35,7 @@ type CreatePgpoolResponse struct {
 type DeletePgpoolRequest struct {
 	Args          []string
 	Selector      string
+	Namespace     string
 	ClientVersion string
 }
 

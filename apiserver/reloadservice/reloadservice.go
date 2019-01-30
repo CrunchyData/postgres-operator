@@ -45,7 +45,7 @@ func ReloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp := msgs.ReloadResponse{}
 		resp.Status.Code = msgs.Error

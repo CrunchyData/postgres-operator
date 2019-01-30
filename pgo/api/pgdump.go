@@ -25,10 +25,10 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 )
 
-func ShowpgDump(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackupResponse, error) {
+func ShowpgDump(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackupResponse, error) {
 
 	var response msgs.ShowBackupResponse
-	url := SessionCredentials.APIServerURL + "/pgdump/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector
+	url := SessionCredentials.APIServerURL + "/pgdump/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector + "&namespace=" + ns
 
 	log.Debugf("show pgdump called [%s]", url)
 

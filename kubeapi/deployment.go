@@ -227,7 +227,7 @@ func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 		log.Error(err)
 		log.Errorf("error add label to Deployment %s=%s", key, value)
 	}
-	log.Infof("add label to deployment %s=%v", key, value)
+	log.Debugf("add label to deployment %s=%v", key, value)
 	return err
 }
 

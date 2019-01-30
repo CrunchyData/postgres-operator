@@ -67,7 +67,7 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -88,13 +88,11 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("upgradeservice.ShowUpgradeHandler %v", vars)
 
 	upgradename := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+	log.Debugf("ShowUpgradeHandler parameters version [%s] namespace [%s]", clientVersion, namespace)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -116,7 +114,7 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp = msgs.ShowUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
@@ -136,18 +134,14 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	vars := mux.Vars(r)
-	log.Debugf("upgradeservice.DeleteUpgradeHandler %v", vars)
 
 	upgradename := vars["name"]
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
+	log.Debugf("DeleteUpgradeHandler parameters version [%s] namespace [%s] name [%s]", clientVersion, namespace, upgradename)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-
-	log.Debug("upgradeservice.DeleteUpgradeHandler DELETE called")
 
 	username, err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
 	if err != nil {
@@ -164,7 +158,7 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	ns, err = apiserver.GetNamespace(username, "")
+	ns, err = apiserver.GetNamespace(username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		json.NewEncoder(w).Encode(resp)

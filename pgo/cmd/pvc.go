@@ -23,26 +23,26 @@ import (
 	"os"
 )
 
-func showPVC(args []string) {
+func showPVC(args []string, ns string) {
 	log.Debugf("showPVC called %v", args)
 
 	if args[0] == "all" {
 		//special case to just list all the PVCs
-		printPVC(args[0], "")
+		printPVC(args[0], "", ns)
 	} else {
 		//args are a list of pvc names...for this case show details
 		for _, arg := range args {
 			log.Debugf("show pvc called for %s", arg)
-			printPVC(arg, PVCRoot)
+			printPVC(arg, PVCRoot, ns)
 
 		}
 	}
 
 }
 
-func printPVC(pvcName, pvcRoot string) {
+func printPVC(pvcName, pvcRoot, ns string) {
 
-	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials)
+	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

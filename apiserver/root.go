@@ -313,6 +313,8 @@ func BasicAuthzCheck(username, perm string) bool {
 func GetNamespace(username, requestedNS string) (string, error) {
 	var err error
 
+	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
+
 	return Namespace, err
 }
 

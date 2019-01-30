@@ -84,6 +84,9 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 func (c *PgclusterController) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
 	log.Debugf("[PgclusterController] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+
+	//handle the case when the operator restarts and don't
+	//process already processed pgclusters
 	if cluster.Status.State == crv1.PgclusterStateProcessed {
 		log.Debug("pgcluster " + cluster.ObjectMeta.Name + " already processed")
 		return
@@ -109,10 +112,10 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
+		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
 	}
 
-	log.Debugf("UPDATED status: %#v", clusterCopy)
+	log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
 
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
@@ -128,5 +131,7 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 func (c *PgclusterController) onDelete(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
 	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+
+	//handle pgcluster cleanup
 	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }

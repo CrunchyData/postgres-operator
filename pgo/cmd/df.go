@@ -41,7 +41,7 @@ var dfCmd = &cobra.Command{
 		if Selector == "" && len(args) == 0 {
 			fmt.Println(`Error: You must specify the name of the clusters to test.`)
 		} else {
-			showDf(args)
+			showDf(args, Namespace)
 		}
 	},
 }
@@ -53,7 +53,7 @@ func init() {
 
 }
 
-func showDf(args []string) {
+func showDf(args []string, ns string) {
 
 	log.Debugf("showDf called %v", args)
 
@@ -64,7 +64,7 @@ func showDf(args []string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.ShowDf(httpclient, arg, Selector, &SessionCredentials)
+		response, err := api.ShowDf(httpclient, arg, Selector, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

@@ -43,7 +43,7 @@ var upgradeCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to upgrade.`)
 		} else {
-			createUpgrade(args)
+			createUpgrade(args, Namespace)
 		}
 
 	},
@@ -56,12 +56,12 @@ func init() {
 
 }
 
-func showUpgrade(args []string) {
+func showUpgrade(args []string, ns string) {
 	log.Debugf("showUpgrade called %v", args)
 
 	for _, v := range args {
 
-		response, err := api.ShowUpgrade(httpclient, v, &SessionCredentials)
+		response, err := api.ShowUpgrade(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -107,12 +107,12 @@ func showUpgradeItem(upgrade *crv1.Pgupgrade) {
 
 }
 
-func deleteUpgrade(args []string) {
+func deleteUpgrade(args []string, ns string) {
 	log.Debugf("deleteUpgrade called %v", args)
 
 	for _, v := range args {
 
-		response, err := api.DeleteUpgrade(httpclient, v, &SessionCredentials)
+		response, err := api.DeleteUpgrade(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -136,7 +136,7 @@ func deleteUpgrade(args []string) {
 
 }
 
-func createUpgrade(args []string) {
+func createUpgrade(args []string, ns string) {
 	log.Debugf("createUpgrade called %v", args)
 
 	if len(args) == 0 && Selector == "" {
@@ -146,6 +146,7 @@ func createUpgrade(args []string) {
 
 	request := msgs.CreateUpgradeRequest{}
 	request.Args = args
+	request.Namespace = ns
 	request.Selector = Selector
 	request.CCPImageTag = CCPImageTag
 	request.UpgradeType = MinorUpgrade

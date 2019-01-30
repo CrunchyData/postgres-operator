@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowUser(httpclient *http.Client, arg, selector, expired string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowUserResponse, error) {
+func ShowUser(httpclient *http.Client, arg, selector, expired string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowUserResponse, error) {
 
 	var response msgs.ShowUserResponse
 
-	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&expired=" + expired
+	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&expired=" + expired + "&namespace=" + ns
 
 	log.Debugf("show users called [%s]", url)
 
@@ -97,11 +97,11 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	return response, err
 }
 
-func DeleteUser(httpclient *http.Client, username, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteClusterResponse, error) {
+func DeleteUser(httpclient *http.Client, username, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeleteClusterResponse, error) {
 
 	var response msgs.DeleteClusterResponse
 
-	url := SessionCredentials.APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
 
 	log.Debugf("delete users called [%s]", url)
 

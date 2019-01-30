@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowTest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ClusterTestResponse, error) {
+func ShowTest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterTestResponse, error) {
 
 	var response msgs.ClusterTestResponse
 
-	url := SessionCredentials.APIServerURL + "/clusters/test/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/clusters/test/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
 	action := "GET"
