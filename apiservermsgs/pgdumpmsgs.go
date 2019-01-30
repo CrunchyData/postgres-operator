@@ -44,6 +44,7 @@ type PgRestoreResponse struct {
 }
 
 type PgRestoreRequest struct {
+	Namespace   string
 	FromCluster string
 	ToPVC       string
 	RestoreOpts string
