@@ -38,7 +38,6 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 	response.Results = make([]msgs.DfDetail, 0)
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	log.Debugf("selector is %s", selector)
 	if selector == "" && name == "all" {
 		log.Debug("selector is empty and name is all")
 	} else {
@@ -46,6 +45,7 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 			selector = "name=" + name
 		}
 	}
+	log.Debugf("df selector is %s", selector)
 
 	//get a list of matching clusters
 	clusterList := crv1.PgclusterList{}
@@ -59,12 +59,12 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 
 	//loop thru each cluster
 
-	log.Debugf("clusters found len is %d", len(clusterList.Items))
+	log.Debugf("df clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 
-		selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
-			util.LABEL_PGBACKUP + "!=true"
+		//selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
+		selector := util.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 
 		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 		if err != nil {
