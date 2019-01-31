@@ -16,29 +16,107 @@ package pgdump
 */
 
 import (
+	"bytes"
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/util"
+	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"os"
 )
 
 type restorejobTemplateFields struct {
 	JobName             string
 	ClusterName         string
-	ToClusterPVCName    string
 	SecurityContext     string
-	COImagePrefix       string
-	COImageTag          string
+	ToClusterPVCName    string
+	PgRestoreHost       string
+	PgRestoreDB         string
+	PgRestoreUserSecret string
 	CommandOpts         string
 	PITRTarget          string
-	PgbackrestStanza    string
-	PgbackrestDBPath    string
-	PgbackrestRepo1Path string
-	PgbackrestRepo1Host string
+	CCPImagePrefix      string
+	CCPImageTag         string
 }
 
 // Restore ...
-func Restore(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask) {
 
 	log.Infof(" PgDump Restore not implemented %s, %s", namespace, task.Name)
+
+	clusterName := task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER]
+
+	pvcName := task.Spec.Parameters[util.LABEL_PGRESTORE_TO_PVC]
+
+	if !(len(pvcName) > 0) || !pvc.Exists(clientset, pvcName, namespace) {
+		log.Errorf("pgrestore: could not find pvc required for restore: %s", pvcName)
+		return
+	}
+
+	cluster := crv1.Pgcluster{}
+
+	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
+	if !found || err != nil {
+		log.Errorf("pgrestore: could not find a pgcluster in Restore Workflow for %s", clusterName)
+		return
+	}
+
+	//use the storage config from pgo.yaml for Primary
+	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+
+	// workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
+
+	jobFields := restorejobTemplateFields{
+		JobName:             "pgrestore-" + task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		ClusterName:         task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER],
+		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		ToClusterPVCName:    pvcName,
+		PgRestoreHost:       task.Spec.Parameters[util.LABEL_PGRESTORE_HOST],
+		PgRestoreDB:         task.Spec.Parameters[util.LABEL_PGRESTORE_DB],
+		PgRestoreUserSecret: task.Spec.Parameters[util.LABEL_PGRESTORE_USER],
+		CommandOpts:         task.Spec.Parameters[util.LABEL_PGRESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET],
+		CCPImagePrefix:      operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
+	}
+
+	var doc2 bytes.Buffer
+	err = operator.PgRestoreJobTemplate.Execute(&doc2, jobFields)
+	if err != nil {
+		log.Error(err.Error())
+		log.Error("restore workflow: error executing job template")
+		return
+	}
+
+	if operator.CRUNCHY_DEBUG {
+		operator.PgRestoreJobTemplate.Execute(os.Stdout, jobFields)
+	}
+
+	newjob := v1batch.Job{}
+	err = json.Unmarshal(doc2.Bytes(), &newjob)
+	if err != nil {
+		log.Error("restore workflow: error unmarshalling json into Job " + err.Error())
+		return
+	}
+
+	var jobName string
+	jobName, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	if err != nil {
+		log.Error(err)
+		log.Error("restore workflow: error in creating restore job")
+		return
+	}
+	log.Debugf("pgrestore job %s created", jobName)
+
+	// err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
+	// if err != nil {
+	// 	log.Error(err)
+	// 	log.Error("restore workflow: error in updating workflow status")
+	// }
 
 }

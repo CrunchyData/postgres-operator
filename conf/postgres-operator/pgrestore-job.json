@@ -28,9 +28,9 @@
                         }
                     }
                 ],
-                "securityContext": {
+		
                     {{.SecurityContext}}
-                },
+                
                 "containers": [
                     {
                         "name": "pgrestore",

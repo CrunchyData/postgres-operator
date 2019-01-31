@@ -57,7 +57,8 @@ func init() {
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
-	restoreCmd.Flags().StringVarP(&RestoreType, "restore-type", "", "", "The type of backup to restore from. The default if unspecified is pgbackrest. Valid restore types are pgbackrest and pgdump.")
+	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
+	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from. The default if unspecified is pgbackrest. Valid restore types are pgbackrest and pgdump.")
 
 }
 
@@ -75,7 +76,8 @@ func restore(args []string, ns string) {
 	var response msgs.RestoreResponse
 	var err error
 
-	if RestoreType == "pgdump" {
+	if BackupType == "pgdump" {
+		request.ToPVC = BackupPVC
 		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
 	} else {
 		response, err = api.Restore(httpclient, &SessionCredentials, request)
