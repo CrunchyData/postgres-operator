@@ -25,21 +25,20 @@ The Operator deploys on Kubernetes and Openshift clusters.  Some form of storage
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed
-in the [Design](https://crunchydata.github.io/postgres-operator/latest/design/).
+in the [Design](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/design/).
 
-![Reference](https://crunchydata.github.io/postgres-operator/latest/Operator-Architecture.png)
+![Reference](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/Operator-Architecture.png)
 
 The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.
 
 ## Documentation
 The following documentation is provided:
 
- - [pgo CLI Syntax and Examples](https://crunchydata.github.io/postgres-operator/latest/operator-cli/)
- - [Installation](https://crunchydata.github.io/postgres-operator/latest/installation/)
- - [Configuration](https://crunchydata.github.io/postgres-operator/latest/configuration/configuration/)
- - [pgo.yaml Description](https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration/)
- - [Security](https://crunchydata.github.io/postgres-operator/latest/security/)
- - [Design Overview](https://crunchydata.github.io/postgres-operator/latest/design/)
- - [Developing](https://crunchydata.github.io/postgres-operator/latest/developer-setup/)
- - [Upgrading the Operator](https://crunchydata.github.io/postgres-operator/latest/upgrade/)
-
+ - [pgo CLI Syntax and Examples](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/operator-cli/)
+ - [Installation](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/installation/)
+ - [Configuration](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/configuration/configuration/)
+ - [pgo.yaml Description](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/configuration/pgo-yaml-configuration/)
+ - [Security](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/security/)
+ - [Design Overview](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/design/)
+ - [Developing](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/developer-setup/)
+ - [Upgrading the Operator](https://access.crunchydata.com/documentation/postgres-operator/3.5.0/upgrade/)
