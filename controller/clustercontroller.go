@@ -26,6 +26,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/util"
 )
 
 // PgclusterController holds the connections for the controller
@@ -122,8 +123,14 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
-	newExample := newObj.(*crv1.Pgcluster)
-	log.Debugf("pgcluster ns=%s %s onUpdate", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
+	oldcluster := oldObj.(*crv1.Pgcluster)
+	newcluster := newObj.(*crv1.Pgcluster)
+	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
+
+	//handle the case for when the autofail lable is updated
+	if oldcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] != "" {
+		log.Debugf("pgcluster update %s autofail old %s new %s", oldcluster.Name, oldcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL], newcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL])
+	}
 
 }
 
