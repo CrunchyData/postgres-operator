@@ -44,9 +44,8 @@ type rmdatajobTemplateFields struct {
 func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
 	//create the Job to remove the data
-
-	var pvcName string
-	pvcName = task.Spec.Parameters[util.LABEL_PVC_NAME]
+	pvcName := task.Spec.Parameters[util.LABEL_PVC_NAME]
+	clusterName := task.Spec.Parameters[util.LABEL_PG_CLUSTER]
 
 	cr := ""
 	if operator.Pgo.DefaultRmdataResources != "" {
@@ -62,7 +61,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	jobFields := rmdatajobTemplateFields{
 		JobName:            task.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4),
 		Name:               task.Spec.Name + "-" + pvcName,
-		ClusterName:        task.Spec.Name,
+		ClusterName:        clusterName,
 		PvcName:            pvcName,
 		COImagePrefix:      operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:         operator.Pgo.Pgo.COImageTag,
