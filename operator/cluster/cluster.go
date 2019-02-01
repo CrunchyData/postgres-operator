@@ -323,7 +323,17 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		storage := crv1.PgStorageSpec{}
+		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
+		storage.StorageClass = pgoStorage.StorageClass
+		storage.AccessMode = pgoStorage.AccessMode
+		storage.Size = pgoStorage.Size
+		storage.StorageType = pgoStorage.StorageType
+		storage.MatchLabels = pgoStorage.MatchLabels
+		storage.SupplementalGroups = pgoStorage.SupplementalGroups
+		storage.Fsgroup = pgoStorage.Fsgroup
+		_, err := pvc.CreatePVC(clientset, &storage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return

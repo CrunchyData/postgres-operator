@@ -22,7 +22,7 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: hostpathstorage
-XlogStorage: hostpathstorage
+XlogStorage: xlogstorage
 BackupStorage: hostpathstorage
 ReplicaStorage: hostpathstorage
 BackrestStorage: hostpathstorage
@@ -51,7 +51,6 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  800M
     StorageType:  create
-    SupplementalGroups:  65534
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
