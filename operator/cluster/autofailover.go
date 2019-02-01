@@ -181,6 +181,7 @@ func (s *StateMachine) Run() {
 func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ready bool, clusterName, namespace string) {
 	log.Infof("AutofailBase ready=%v cluster=%s namespace=%s\n", ready, clusterName, namespace)
 
+	log.Debugf("autofail base with sleep secs = %d", operator.Pgo.Pgo.AutofailSleepSecondsValue)
 	aftask := AutoFailoverTask{}
 
 	exists := aftask.Exists(restclient, clusterName, namespace)
@@ -193,7 +194,7 @@ func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 				Clientset:    clientset,
 				RESTClient:   restclient,
 				Namespace:    namespace,
-				SleepSeconds: 9,
+				SleepSeconds: operator.Pgo.Pgo.AutofailSleepSecondsValue,
 				ClusterName:  clusterName,
 			}
 

@@ -70,13 +70,14 @@ type ContainerResourcesStruct struct {
 }
 
 type PgoStruct struct {
-	PreferredFailoverNode string `yaml:"PreferredFailoverNode"`
-	AutofailSleepSeconds  string `yaml:"AutofailSleepSeconds"`
-	Audit                 bool   `yaml:"Audit"`
-	LSPVCTemplate         string `yaml:"LSPVCTemplate"`
-	LoadTemplate          string `yaml:"LoadTemplate"`
-	COImagePrefix         string `yaml:"COImagePrefix"`
-	COImageTag            string `yaml:"COImageTag"`
+	PreferredFailoverNode     string `yaml:"PreferredFailoverNode"`
+	AutofailSleepSeconds      string `yaml:"AutofailSleepSeconds"`
+	AutofailSleepSecondsValue int
+	Audit                     bool   `yaml:"Audit"`
+	LSPVCTemplate             string `yaml:"LSPVCTemplate"`
+	LoadTemplate              string `yaml:"LoadTemplate"`
+	COImagePrefix             string `yaml:"COImagePrefix"`
+	COImageTag                string `yaml:"COImageTag"`
 }
 
 type PgoConfig struct {
@@ -205,7 +206,7 @@ func (c *PgoConfig) Validate() error {
 		log.Warn("Pgo.AutofailSleepSeconds not set, using default ")
 		c.Pgo.AutofailSleepSeconds = DEFAULT_AUTOFAIL_SLEEP_SECONDS
 	}
-	_, err = strconv.Atoi(c.Pgo.AutofailSleepSeconds)
+	c.Pgo.AutofailSleepSecondsValue, err = strconv.Atoi(c.Pgo.AutofailSleepSeconds)
 	if err != nil {
 		return errors.New("Pgo.AutofailSleepSeconds invalid int value found")
 	}
