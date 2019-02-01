@@ -340,6 +340,10 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		}
 	}
 
+	/**
+	//the -backrestrepo pvc is now an emptydir volume to be backward
+	//compatible with the postgres container only, it is not used
+	//with the shared backrest repo design
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
@@ -347,6 +351,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 			return
 		}
 	}
+	*/
 
 	log.Debugf("created replica pvc [%s]", pvcName)
 
