@@ -329,7 +329,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 		detail := msgs.ShowClusterDetail{}
 		detail.Cluster = c
 
-		pods, err := GetPods(&c, ns)
+		pods, err := GetPrimaryAndReplicaPods(&c, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -1333,5 +1333,60 @@ func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterRespon
 	}
 
 	return response
+
+}
+
+func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) {
+
+	output := make([]msgs.ShowClusterPod, 0)
+
+	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
+
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	if err != nil {
+		return output, err
+	}
+	for _, p := range pods.Items {
+		d := msgs.ShowClusterPod{}
+		d.Name = p.Name
+		d.Phase = string(p.Status.Phase)
+		d.NodeName = p.Spec.NodeName
+		d.ReadyStatus, d.Ready = getReadyStatus(&p)
+		d.PVCName = apiserver.GetPVCName(&p)
+
+		d.Primary = false
+		d.Type = getType(&p, cluster.Spec.Name)
+		if d.Type == msgs.PodTypePrimary {
+			d.Primary = true
+		}
+		output = append(output, d)
+
+	}
+	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica"
+	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
+
+	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	if err != nil {
+		return output, err
+	}
+	for _, p := range pods.Items {
+		d := msgs.ShowClusterPod{}
+		d.Name = p.Name
+		d.Phase = string(p.Status.Phase)
+		d.NodeName = p.Spec.NodeName
+		d.ReadyStatus, d.Ready = getReadyStatus(&p)
+		d.PVCName = apiserver.GetPVCName(&p)
+
+		d.Primary = false
+		d.Type = getType(&p, cluster.Spec.Name)
+		if d.Type == msgs.PodTypePrimary {
+			d.Primary = true
+		}
+		output = append(output, d)
+
+	}
+
+	return output, err
 
 }
