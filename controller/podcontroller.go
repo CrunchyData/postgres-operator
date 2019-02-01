@@ -128,18 +128,9 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
 		clusterName != "" && autofailEnabled {
 		log.Debugf("autofail pg-cluster %s updated!", clusterName)
-		var oldDatabaseStatus bool
-		for _, v := range oldpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				oldDatabaseStatus = v.Ready
-			}
-		}
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
-				if oldDatabaseStatus == false && v.Ready {
-					log.Debugf("autofail enabled pod went ready %s", clusterName)
-					clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
-				}
+				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 			}
 		}
 	}

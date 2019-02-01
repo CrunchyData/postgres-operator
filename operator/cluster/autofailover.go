@@ -161,6 +161,8 @@ func (s *StateMachine) Run() {
 			s.triggerFailover()
 			//clean up to not reprocess the failover event
 			aftask.Clear(s.RESTClient, s.ClusterName, s.Namespace)
+			//recreate a new autofail task to start anew (3.5.1)
+			aftask.AddEvent(s.RESTClient, s.ClusterName, FAILOVER_EVENT_NOT_READY, s.Namespace)
 		} else {
 			log.Infof("failoverRequired is false, no need to trigger failover\n")
 		}
