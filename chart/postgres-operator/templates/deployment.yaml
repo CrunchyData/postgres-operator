@@ -42,6 +42,25 @@ spec:
             - name: pgo-auth-secret
               mountPath: /pgo-auth-secret
               readOnly: true
+        - name: scheduler
+          image: "{{ .Values.env.co_image_prefix }}/pgo-scheduler:{{ .Values.env.co_image_tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {}
+          env:
+            - name: CRUNCHY_DEBUG
+              value: "{{ .Values.env.debug }}"
+            - name: TIMEOUT 
+              value: "3600"
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: TLS_NO_VERIFY
+              value: "{{ .Values.env.tls_no_verify }}"
+          volumeMounts:
+            - name: pgo-config
+              mountPath: /pgo-config
+              readOnly: true
         - name: operator
           image: "{{ .Values.env.co_image_prefix }}/postgres-operator:{{ .Values.env.co_image_tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
