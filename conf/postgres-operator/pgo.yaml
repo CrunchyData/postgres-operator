@@ -24,7 +24,7 @@ Cluster:
 PrimaryStorage: hostpathstorage
 XlogStorage: xlogstorage
 BackupStorage: hostpathstorage
-ReplicaStorage: replicastorage
+ReplicaStorage: hostpathstorage
 BackrestStorage: hostpathstorage
 Storage:
   hostpathstorage:
