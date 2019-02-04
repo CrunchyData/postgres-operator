@@ -17,16 +17,18 @@ limitations under the License.
 
 import (
 	"errors"
+	"io/ioutil"
+	"strings"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	"io/ioutil"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 const backrestCommand = "pgbackrest"
@@ -402,7 +404,13 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 		return resp
 	}
 
-	pgtask := getRestoreParams(request, ns)
+	pgtask, err := getRestoreParams(request, ns, cluster, &resp)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 
 	//create a pgtask for the restore workflow
@@ -420,7 +428,7 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	return resp
 }
 
-func getRestoreParams(request *msgs.RestoreRequest, ns string) *crv1.Pgtask {
+func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcluster, resp *msgs.RestoreResponse) (*crv1.Pgtask, error) {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -437,13 +445,39 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string) *crv1.Pgtask {
 	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
 
+	if request.NodeLabel != "" {
+		parts := strings.Split(request.NodeLabel, "=")
+		if len(parts) != 2 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.NodeLabel + " node label does not follow key=value format"
+			return nil, errors.New(request.NodeLabel + " node label does not follow key=value format")
+		}
+
+		keyValid, valueValid, err := apiserver.IsValidNodeLabel(parts[0], parts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		if !keyValid {
+			return nil, errors.New(request.NodeLabel + " key was not valid .. check node labels for correct values to specify")
+		}
+		if !valueValid {
+			return nil, errors.New(request.NodeLabel + " node label value was not valid .. check node labels for correct values to specify")
+		}
+
+		spec.Parameters[util.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.Parameters[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+
+		log.Debug("Restore node labels used from user entered flag")
+	}
+
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: spec.Name,
 		},
 		Spec: spec,
 	}
-	return newInstance
+	return newInstance, nil
 }
 
 func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
