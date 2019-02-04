@@ -602,6 +602,17 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		userLabelsMap[util.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
 
+		//validate --pgpool-secret
+		if request.PgpoolSecret != "" {
+			var found bool
+			_, found, err = kubeapi.GetSecret(apiserver.Clientset, request.PgpoolSecret, ns)
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "--pgpool-secret specified secret " + request.PgpoolSecret + " not found"
+				return resp
+			}
+		}
+
 		if request.PgpoolFlag {
 			userLabelsMap[util.LABEL_PGPOOL] = "true"
 			userLabelsMap[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret

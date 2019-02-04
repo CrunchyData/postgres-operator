@@ -43,6 +43,17 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoo
 		return resp
 	}
 
+	if request.PgpoolSecret != "" {
+		var found bool
+		_, found, err = kubeapi.GetSecret(apiserver.Clientset, request.PgpoolSecret, ns)
+		if !found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "--pgpool-secret specified secret " + request.PgpoolSecret + " not found"
+			return resp
+		}
+
+	}
+
 	clusterList := crv1.PgclusterList{}
 
 	//get a list of all clusters
@@ -95,6 +106,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoo
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{

@@ -21,6 +21,7 @@ import ()
 type CreatePgpoolRequest struct {
 	Args          []string
 	Selector      string
+	PgpoolSecret  string
 	Namespace     string
 	ClientVersion string
 }
