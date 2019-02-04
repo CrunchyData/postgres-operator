@@ -32,16 +32,19 @@ import (
 
 type restorejobTemplateFields struct {
 	JobName             string
+	TaskName            string
 	ClusterName         string
 	SecurityContext     string
-	ToClusterPVCName    string
+	FromClusterPVCName  string
 	PgRestoreHost       string
 	PgRestoreDB         string
 	PgRestoreUserSecret string
-	CommandOpts         string
+	PgPrimaryPort       string
+	PGRestoreOpts       string
 	PITRTarget          string
 	CCPImagePrefix      string
 	CCPImageTag         string
+	PgPort              string
 }
 
 // Restore ...
@@ -51,10 +54,10 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 
 	clusterName := task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER]
 
-	pvcName := task.Spec.Parameters[util.LABEL_PGRESTORE_TO_PVC]
+	fromPvcName := task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_PVC]
 
-	if !(len(pvcName) > 0) || !pvc.Exists(clientset, pvcName, namespace) {
-		log.Errorf("pgrestore: could not find pvc required for restore: %s", pvcName)
+	if !(len(fromPvcName) > 0) || !pvc.Exists(clientset, fromPvcName, namespace) {
+		log.Errorf("pgrestore: could not find source pvc required for restore: %s", fromPvcName)
 		return
 	}
 
@@ -69,17 +72,21 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 	//use the storage config from pgo.yaml for Primary
 	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
 
+	taskName := task.Name
+
 	// workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 
 	jobFields := restorejobTemplateFields{
-		JobName:             "pgrestore-" + task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER] + "-to-" + pvcName,
-		ClusterName:         task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER],
+		JobName:             "pgrestore-" + task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
+		TaskName:            taskName,
+		ClusterName:         clusterName,
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		ToClusterPVCName:    pvcName,
+		FromClusterPVCName:  fromPvcName,
 		PgRestoreHost:       task.Spec.Parameters[util.LABEL_PGRESTORE_HOST],
 		PgRestoreDB:         task.Spec.Parameters[util.LABEL_PGRESTORE_DB],
 		PgRestoreUserSecret: task.Spec.Parameters[util.LABEL_PGRESTORE_USER],
-		CommandOpts:         task.Spec.Parameters[util.LABEL_PGRESTORE_OPTS],
+		PgPrimaryPort:       operator.Pgo.Cluster.Port,
+		PGRestoreOpts:       task.Spec.Parameters[util.LABEL_PGRESTORE_OPTS],
 		PITRTarget:          task.Spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET],
 		CCPImagePrefix:      operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,

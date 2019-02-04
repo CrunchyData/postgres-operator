@@ -150,13 +150,47 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("jobController onUpdate pgdump job case")
 		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
 		log.Debugf("update the status to completed here for pgdump %s", labels[util.LABEL_PG_DATABASE])
+
 		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+
 		if job.Status.Succeeded == 0 {
+			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		if job.Status.Failed > 0 {
 			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
 		}
+
 		//update the pgdump task status to submitted - updates task, not the job.
 		dumpTask := labels[util.LABEL_PGTASK]
 		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", dumpTask, job.ObjectMeta.Namespace)
+
+		if err != nil {
+			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+		}
+
+		return
+	}
+
+	// handle the case of a pgrestore job being added
+	if labels[util.LABEL_RESTORE_TYPE_PGRESTORE] == "true" {
+		log.Debugf("jobController onUpdate pgrestore job case")
+		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for pgrestore %s", labels[util.LABEL_PG_DATABASE])
+
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		if job.Status.Failed > 0 {
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		//update the pgdump task status to submitted - updates task, not the job.
+		restoreTask := labels[util.LABEL_PGTASK]
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", restoreTask, job.ObjectMeta.Namespace)
 
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())

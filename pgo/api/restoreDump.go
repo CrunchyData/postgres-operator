@@ -23,7 +23,7 @@ import (
 	"net/http"
 )
 
-func RestoreDump(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.RestoreRequest) (msgs.RestoreResponse, error) {
+func RestoreDump(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.PgRestoreRequest) (msgs.RestoreResponse, error) {
 
 	var response msgs.RestoreResponse
 

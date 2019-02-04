@@ -54,11 +54,11 @@ var restoreCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
+	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The restore options for pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
-	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from. The default if unspecified is pgbackrest. Valid restore types are pgbackrest and pgdump.")
+	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
 
 }
 
@@ -66,20 +66,28 @@ func init() {
 func restore(args []string, ns string) {
 	log.Debugf("restore called %v", args)
 
-	request := new(msgs.RestoreRequest)
-	request.Namespace = ns
-	request.FromCluster = args[0]
-	request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
-	request.RestoreOpts = BackupOpts
-	request.PITRTarget = PITRTarget
-
 	var response msgs.RestoreResponse
 	var err error
 
+	// use different request message, depending on type.
 	if BackupType == "pgdump" {
-		request.ToPVC = BackupPVC
+
+		request := new(msgs.PgRestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+		request.RestoreOpts = BackupOpts
+		request.PITRTarget = PITRTarget
+		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
 		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
 	} else {
+
+		request := new(msgs.RestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+		request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
+		request.RestoreOpts = BackupOpts
+		request.PITRTarget = PITRTarget
+
 		response, err = api.Restore(httpclient, &SessionCredentials, request)
 	}
 

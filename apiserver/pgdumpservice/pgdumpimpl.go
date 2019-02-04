@@ -476,7 +476,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
+	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.FromPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
 
 	return resp
 }
@@ -498,10 +498,11 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 	spec.Parameters[util.LABEL_PGRESTORE_DB] = "postgres"
 	spec.Parameters[util.LABEL_PGRESTORE_HOST] = request.FromCluster
 	spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[util.LABEL_PGRESTORE_TO_PVC] = request.ToPVC
+	spec.Parameters[util.LABEL_PGRESTORE_FROM_PVC] = request.FromPVC
 	spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
 	spec.Parameters[util.LABEL_PGRESTORE_OPTS] = request.RestoreOpts
 	spec.Parameters[util.LABEL_PGRESTORE_USER] = backupUser
+	spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
 
 	spec.Parameters[util.LABEL_PGRESTORE_COMMAND] = action
 

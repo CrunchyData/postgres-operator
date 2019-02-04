@@ -6,7 +6,9 @@
 	"labels": {
 	    "vendor": "crunchydata",
 	    "pgrestore": "true",
-	    "pg-cluster": "{{.ClusterName}}"
+	    "pg-cluster": "{{.ClusterName}}",
+  	    "pg-task": "{{.TaskName}}"
+
                 }
     },
     "spec": {
@@ -24,7 +26,7 @@
                     {
                         "name": "pgdata",
                         "persistentVolumeClaim": {
-                            "claimName": "{{.ToClusterPVCName}}"
+                            "claimName": "{{.FromClusterPVCName}}"
                         }
                     }
                 ],
@@ -44,14 +46,6 @@
                         ],
                         "env": [
                             {
-                                "name": "PGRESTORE_HOST",
-                                "value": "{{.PgRestoreHost}}"
-                            },
-                            {
-                                "name": "PGRESTORE_DB",
-                                "value": "{{.PgRestoreDB}}"
-                            },
-                            {
                                 "name": "PGRESTORE_USER",
                                 "valueFrom": {
 				    "secretKeyRef": {
@@ -68,7 +62,27 @@
 				       "key": "password"
 				    }
 				}
-                            }
+                            },
+			    {
+                                "name": "PGRESTORE_HOST",
+                                "value": "{{.PgRestoreHost}}"
+                            },
+                            {
+                                "name": "PGRESTORE_DB",
+                                "value": "{{.PgRestoreDB}}"
+                            },
+			    {
+				"name": "PG_PRIMARY_PORT",
+				"value": "5432"
+			    },
+			    {
+				"name": "PGRESTORE_CUSTOM_OPTS",
+				"value": "{{.PGRestoreOpts}}"
+			    },
+			    {
+				"name": "PGRESTORE_BACKUP_TIMESTAMP",
+				"value": "{{.PITRTarget}}"
+			    }
                         ]
                     }
                 ],
