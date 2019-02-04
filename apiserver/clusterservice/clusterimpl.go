@@ -382,7 +382,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 				//dont include backrest repo service
 			} else if service.Pgbouncer {
 				databases = append(databases, service.ClusterName)
-				databases = append(databases, service.ClusterName+"-replica")
+				//databases = append(databases, service.ClusterName+"-replica")
 			} else {
 				databases = append(databases, "postgres")
 				databases = append(databases, c.Spec.Database)

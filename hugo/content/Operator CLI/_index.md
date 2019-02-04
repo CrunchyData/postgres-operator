@@ -214,6 +214,14 @@ before you do a restore.
 
     pgo create pgbouncer mycluster
 
+Note, the pgbouncer configuration defaults to specifying only
+a single entry for the primary database.  If you want it to
+have an entry for the replica service, add the following
+configuration to pgbouncer.ini:
+
+    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+
+
 #### Add pgpool to a Cluster
 
     pgo create pgpool mycluster
