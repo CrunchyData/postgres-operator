@@ -805,18 +805,14 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		}
 	}
 
+	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	if request.StorageConfig != "" {
 		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
-	} else {
-		log.Debugf("%v", apiserver.Pgo.PrimaryStorage)
-		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	}
 
+	spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
 	if request.ReplicaStorageConfig != "" {
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.ReplicaStorageConfig)
-	} else {
-		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
-		log.Debugf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
 	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)

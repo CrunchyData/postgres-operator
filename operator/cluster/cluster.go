@@ -169,7 +169,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			//get the resource config
 			spec.ContainerResources = cl.Spec.ContainerResources
 			//get the storage config
-			spec.ReplicaStorage, _ = operator.Pgo.GetStorageSpec(operator.Pgo.ReplicaStorage)
+			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
 			spec.UserLabels = cl.Spec.UserLabels
 			labels := make(map[string]string)
