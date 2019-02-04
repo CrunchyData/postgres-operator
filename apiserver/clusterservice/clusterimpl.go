@@ -607,6 +607,11 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			userLabelsMap[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 			log.Debug("userLabelsMap")
 			log.Debugf("%v", userLabelsMap)
+			if request.ReplicaCount < 1 {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "--pgpool requires replica-count be >= 1"
+				return resp
+			}
 		}
 
 		if request.PgbouncerFlag {
