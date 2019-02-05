@@ -102,16 +102,16 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // RestoreHandler ...
-// pgo restore mycluster --to-cluster=restored
+// pgo restore mycluster --restore-type=pgdump --to-cluster=restored
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	log.Debug("pgdumpservice.RestoreHandler called")
 
-	var request msgs.RestoreRequest
+	var request msgs.PgRestoreRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	username, err := apiserver.Authn(apiserver.RESTORE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.RESTORE_DUMP_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -119,7 +119,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := msgs.RestoreResponse{}
+	resp := msgs.PgRestoreResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	ns, err = apiserver.GetNamespace(username, request.Namespace)

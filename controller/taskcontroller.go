@@ -161,9 +161,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskpgDump:
 		log.Debug("pgDump task added")
 		pgdumpoperator.Dump(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
-	case crv1.PgtaskpgDumpRestore:
-		log.Debug("pgDump restore task not added")
-		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+	case crv1.PgtaskpgRestore:
+		log.Debug("pgDump restore task added")
+		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
 
 	case crv1.PgtaskAutoFailover:
 		log.Debugf("autofailover task added %s", task.ObjectMeta.Name)

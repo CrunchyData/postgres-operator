@@ -31,8 +31,8 @@ var PITRTarget string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
-	Short: "Perform a pgBackRest restore",
-	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  For example:
+	Short: "Perform a restore from previous backup",
+	Long: `RESTORE performs a restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  Valid backup types to restore from are pgbackrest and pgdump. For example:
 
 	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -54,9 +54,11 @@ var restoreCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
+	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The restore options for pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
+	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
 
 }
 
@@ -64,14 +66,31 @@ func init() {
 func restore(args []string, ns string) {
 	log.Debugf("restore called %v", args)
 
-	request := new(msgs.RestoreRequest)
-	request.Namespace = ns
-	request.FromCluster = args[0]
-	request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
-	request.RestoreOpts = BackupOpts
-	request.PITRTarget = PITRTarget
+	var response msgs.RestoreResponse
+	var err error
 
-	response, err := api.Restore(httpclient, &SessionCredentials, request)
+	// use different request message, depending on type.
+	if BackupType == "pgdump" {
+
+		request := new(msgs.PgRestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+		request.RestoreOpts = BackupOpts
+		request.PITRTarget = PITRTarget
+		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
+		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
+	} else {
+
+		request := new(msgs.RestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+		request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
+		request.RestoreOpts = BackupOpts
+		request.PITRTarget = PITRTarget
+
+		response, err = api.Restore(httpclient, &SessionCredentials, request)
+	}
+
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)

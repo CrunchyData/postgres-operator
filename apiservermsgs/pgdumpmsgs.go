@@ -30,7 +30,6 @@ type CreatepgDumpBackupRequest struct {
 	Selector      string
 	PVCName       string
 	StorageConfig string
-	DumpAll       bool
 	BackupOpts    string
 }
 
@@ -39,14 +38,15 @@ type ShowpgDumpDetail struct {
 	Info string
 }
 
-type pgDumpRestoreResponse struct {
+type PgRestoreResponse struct {
 	Results []string
 	Status
 }
 
-type pgDumpRestoreRequest struct {
+type PgRestoreRequest struct {
+	Namespace   string
 	FromCluster string
-	ToPVC       string
+	FromPVC     string
 	RestoreOpts string
-	PITRTarget  string // TODO: Needed?
+	PITRTarget  string
 }
