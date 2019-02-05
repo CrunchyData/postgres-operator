@@ -1,10 +1,10 @@
 Cluster:
   PrimaryNodeLabel:  
-  ReplicaNodeLabel: 
+  ReplicaNodeLabel:  
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.1-2.3.0-rc6
+  CCPImageTag:  centos7-11.1-2.3.0
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -22,7 +22,7 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: hostpathstorage
-XlogStorage: xlogstorage
+XlogStorage: hostpathstorage
 BackupStorage: hostpathstorage
 ReplicaStorage: hostpathstorage
 BackrestStorage: hostpathstorage

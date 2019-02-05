@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -28,9 +28,9 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
 	"k8s.io/client-go/rest"
 	"strconv"
+	"strings"
 )
 
 // Strategy ....
@@ -172,6 +172,15 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
 			spec.UserLabels = cl.Spec.UserLabels
+
+			//check for replica node label in pgo.yaml
+			if operator.Pgo.Cluster.ReplicaNodeLabel != "" {
+				parts := strings.Split(operator.Pgo.Cluster.ReplicaNodeLabel, "=")
+				spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
+				spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+				log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
+			}
+
 			labels := make(map[string]string)
 			labels[util.LABEL_PG_CLUSTER] = cl.Spec.Name
 
