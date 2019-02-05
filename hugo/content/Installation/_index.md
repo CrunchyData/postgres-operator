@@ -39,6 +39,9 @@ Environment variables control aspects of the Operator installation.  You can cop
     cat $HOME/odev/src/github.com/crunchydata/postgres-operator/examples/envs.sh >> $HOME/.bashrc
     source $HOME/.bashrc
 
+For various scripts used by the Operator, the *expenv* utility is required, download
+this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).
+
 In this example set of environment variables, the CO_NAMESPACE environment variable is set to *demo* as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.  
 
 Adjust the namespace value to suit your needs.   There is a Makefile target you can run to create the *demo* namespace if you want:
