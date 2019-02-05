@@ -173,6 +173,10 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 			spec.UserLabels = cl.Spec.UserLabels
 
+			//the replica should not use the same node labels as the primary
+			spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = ""
+			spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = ""
+
 			//check for replica node label in pgo.yaml
 			if operator.Pgo.Cluster.ReplicaNodeLabel != "" {
 				parts := strings.Split(operator.Pgo.Cluster.ReplicaNodeLabel, "=")
