@@ -169,7 +169,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			//get the resource config
 			spec.ContainerResources = cl.Spec.ContainerResources
 			//get the storage config
-			spec.ReplicaStorage, _ = operator.Pgo.GetStorageSpec(operator.Pgo.ReplicaStorage)
+			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
 			spec.UserLabels = cl.Spec.UserLabels
 			labels := make(map[string]string)
@@ -323,13 +323,27 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		storage := crv1.PgStorageSpec{}
+		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
+		storage.StorageClass = pgoStorage.StorageClass
+		storage.AccessMode = pgoStorage.AccessMode
+		storage.Size = pgoStorage.Size
+		storage.StorageType = pgoStorage.StorageType
+		storage.MatchLabels = pgoStorage.MatchLabels
+		storage.SupplementalGroups = pgoStorage.SupplementalGroups
+		storage.Fsgroup = pgoStorage.Fsgroup
+		_, err := pvc.CreatePVC(clientset, &storage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 	}
 
+	/**
+	//the -backrestrepo pvc is now an emptydir volume to be backward
+	//compatible with the postgres container only, it is not used
+	//with the shared backrest repo design
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
@@ -337,6 +351,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 			return
 		}
 	}
+	*/
 
 	log.Debugf("created replica pvc [%s]", pvcName)
 

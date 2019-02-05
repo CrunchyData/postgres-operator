@@ -161,6 +161,8 @@ func (s *StateMachine) Run() {
 			s.triggerFailover()
 			//clean up to not reprocess the failover event
 			aftask.Clear(s.RESTClient, s.ClusterName, s.Namespace)
+			//recreate a new autofail task to start anew (3.5.1)
+			aftask.AddEvent(s.RESTClient, s.ClusterName, FAILOVER_EVENT_NOT_READY, s.Namespace)
 		} else {
 			log.Infof("failoverRequired is false, no need to trigger failover\n")
 		}
@@ -179,6 +181,7 @@ func (s *StateMachine) Run() {
 func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ready bool, clusterName, namespace string) {
 	log.Infof("AutofailBase ready=%v cluster=%s namespace=%s\n", ready, clusterName, namespace)
 
+	log.Debugf("autofail base with sleep secs = %d", operator.Pgo.Pgo.AutofailSleepSecondsValue)
 	aftask := AutoFailoverTask{}
 
 	exists := aftask.Exists(restclient, clusterName, namespace)
@@ -191,7 +194,7 @@ func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 				Clientset:    clientset,
 				RESTClient:   restclient,
 				Namespace:    namespace,
-				SleepSeconds: 9,
+				SleepSeconds: operator.Pgo.Pgo.AutofailSleepSecondsValue,
 				ClusterName:  clusterName,
 			}
 

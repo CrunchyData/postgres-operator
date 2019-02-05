@@ -32,6 +32,7 @@ func createPgpool(args []string, ns string) {
 	r := new(msgs.CreatePgpoolRequest)
 	r.Args = args
 	r.Selector = Selector
+	r.PgpoolSecret = PgpoolSecret
 	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 

@@ -329,7 +329,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 		detail := msgs.ShowClusterDetail{}
 		detail.Cluster = c
 
-		pods, err := GetPods(&c, ns)
+		pods, err := GetPrimaryAndReplicaPods(&c, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -382,7 +382,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 				//dont include backrest repo service
 			} else if service.Pgbouncer {
 				databases = append(databases, service.ClusterName)
-				databases = append(databases, service.ClusterName+"-replica")
+				//databases = append(databases, service.ClusterName+"-replica")
 			} else {
 				databases = append(databases, "postgres")
 				databases = append(databases, c.Spec.Database)
@@ -602,11 +602,27 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		userLabelsMap[util.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
 
+		//validate --pgpool-secret
+		if request.PgpoolSecret != "" {
+			var found bool
+			_, found, err = kubeapi.GetSecret(apiserver.Clientset, request.PgpoolSecret, ns)
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "--pgpool-secret specified secret " + request.PgpoolSecret + " not found"
+				return resp
+			}
+		}
+
 		if request.PgpoolFlag {
 			userLabelsMap[util.LABEL_PGPOOL] = "true"
 			userLabelsMap[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 			log.Debug("userLabelsMap")
 			log.Debugf("%v", userLabelsMap)
+			if request.ReplicaCount < 1 {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "--pgpool requires replica-count be >= 1"
+				return resp
+			}
 		}
 
 		if request.PgbouncerFlag {
@@ -805,18 +821,14 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		}
 	}
 
+	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	if request.StorageConfig != "" {
 		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
-	} else {
-		log.Debugf("%v", apiserver.Pgo.PrimaryStorage)
-		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
 	}
 
+	spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
 	if request.ReplicaStorageConfig != "" {
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.ReplicaStorageConfig)
-	} else {
-		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
-		log.Debugf("%v", apiserver.Pgo.ReplicaStorage)
 	}
 
 	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
@@ -1333,5 +1345,60 @@ func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterRespon
 	}
 
 	return response
+
+}
+
+func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) {
+
+	output := make([]msgs.ShowClusterPod, 0)
+
+	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
+
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	if err != nil {
+		return output, err
+	}
+	for _, p := range pods.Items {
+		d := msgs.ShowClusterPod{}
+		d.Name = p.Name
+		d.Phase = string(p.Status.Phase)
+		d.NodeName = p.Spec.NodeName
+		d.ReadyStatus, d.Ready = getReadyStatus(&p)
+		d.PVCName = apiserver.GetPVCName(&p)
+
+		d.Primary = false
+		d.Type = getType(&p, cluster.Spec.Name)
+		if d.Type == msgs.PodTypePrimary {
+			d.Primary = true
+		}
+		output = append(output, d)
+
+	}
+	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica"
+	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
+
+	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	if err != nil {
+		return output, err
+	}
+	for _, p := range pods.Items {
+		d := msgs.ShowClusterPod{}
+		d.Name = p.Name
+		d.Phase = string(p.Status.Phase)
+		d.NodeName = p.Spec.NodeName
+		d.ReadyStatus, d.Ready = getReadyStatus(&p)
+		d.PVCName = apiserver.GetPVCName(&p)
+
+		d.Primary = false
+		d.Type = getType(&p, cluster.Spec.Name)
+		if d.Type == msgs.PodTypePrimary {
+			d.Primary = true
+		}
+		output = append(output, d)
+
+	}
+
+	return output, err
 
 }

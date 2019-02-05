@@ -234,7 +234,9 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	if err != nil {
 		return err
 	}
-	//	kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
+
+	selector := util.LABEL_PG_CLUSTER + "=" + job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "," + util.LABEL_RMDATA + "=true"
+	kubeapi.DeleteJobs(clientset, selector, namespace)
 
 	time.Sleep(time.Second * time.Duration(5))
 

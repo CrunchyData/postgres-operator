@@ -78,11 +78,12 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		}
 	}
 
-	//get the storage-config
+	//refer to the cluster's replica storage setting by default
+	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
+
+	//allow for user override
 	if storageConfig != "" {
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
-	} else {
-		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
 	}
 
 	//spec.UserLabels = make(map[string]string)

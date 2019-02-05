@@ -22,7 +22,7 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: hostpathstorage
-XlogStorage: hostpathstorage
+XlogStorage: xlogstorage
 BackupStorage: hostpathstorage
 ReplicaStorage: hostpathstorage
 BackrestStorage: hostpathstorage
@@ -30,6 +30,10 @@ Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
+    StorageType:  create
+  replicastorage:
+    AccessMode:  ReadWriteMany
+    Size:  700M
     StorageType:  create
   nfsstorage:
     AccessMode:  ReadWriteMany
@@ -51,7 +55,6 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  800M
     StorageType:  create
-    SupplementalGroups:  65534
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
@@ -83,4 +86,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0
+  COImageTag:  centos7-3.5.1
