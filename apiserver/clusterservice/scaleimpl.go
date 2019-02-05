@@ -105,6 +105,10 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 
 	var parts []string
 
+	//set replica node lables to blank to start with, then check for overrides
+	spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = ""
+	spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = ""
+
 	if apiserver.Pgo.Cluster.ReplicaNodeLabel != "" {
 		//should have been validated at apiserver startup
 		parts = strings.Split(apiserver.Pgo.Cluster.ReplicaNodeLabel, "=")
