@@ -125,7 +125,7 @@ func main() {
 	// pgdump
 	r.HandleFunc("/pgdumpbackup", pgdumpservice.BackupHandler).Methods("POST")
 	r.HandleFunc("/pgdump/{name}", pgdumpservice.ShowDumpHandler).Methods("GET")
-	r.HandleFunc("/pgdumprestore/", pgdumpservice.RestoreHandler).Methods("POST")
+	r.HandleFunc("/pgdumprestore", pgdumpservice.RestoreHandler).Methods("POST")
 
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")

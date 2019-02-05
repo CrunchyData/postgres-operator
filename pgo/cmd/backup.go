@@ -62,16 +62,6 @@ var backupCmd = &cobra.Command{
 
 			case labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
 
-				// --dump-all flag invalid for base backup
-				if DumpAll == true {
-					fmt.Println("Error: --dump-all is only allowed when performing a pgdump backup.")
-					exitNow = true
-				}
-
-				if exitNow {
-					return
-				}
-
 				createBackup(args, Namespace)
 
 			case labelutil.LABEL_BACKUP_TYPE_PGDUMP:

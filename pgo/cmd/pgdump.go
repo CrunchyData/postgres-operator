@@ -36,7 +36,6 @@ func createpgDumpBackup(args []string, ns string) {
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig
 	request.BackupOpts = BackupOpts
-	request.DumpAll = DumpAll
 
 	response, err := api.CreatepgDumpBackup(httpclient, &SessionCredentials, request)
 	if err != nil {
