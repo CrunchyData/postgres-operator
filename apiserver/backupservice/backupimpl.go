@@ -45,7 +45,7 @@ func ShowBackup(name, ns string) msgs.ShowBackupResponse {
 		found, err := kubeapi.Getpgbackup(apiserver.RESTClient, &backup, name, ns)
 		if !found {
 			response.Status.Code = msgs.Error
-			response.Status.Msg = "backup not found"
+			response.Status.Msg = "backup not found for " + name
 			return response
 		}
 		if err != nil {
