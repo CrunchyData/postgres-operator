@@ -176,6 +176,7 @@ on PG 9.6/9.5 systems, the command you will use is *select pg_xlog_replay_resume
  * there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.
  * the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.
  * pgbackrest.org suggests running a pgbackrest backup after a restore, this needs to be done by the DBA as part of a restore
+ * when performing a restore, the **node-label** option can be utilized to target a specific node for both the pgBackRest restore job and the new (i.e. restored) primary deployment that is then created for the cluster.  If a node label is not specified, the restore job will not target any specific node, and the restored primary deployment will inherit any node label's defined for the original primary deployment.
 
 ## PGO Scheduler
 

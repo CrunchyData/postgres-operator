@@ -8,13 +8,13 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
-ENV PGVERSION="11" 
+ENV PGVERSION="11" BACKREST_VERSION="2.08"
 
 ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN yum -y update && yum -y install psmisc openssh-server openssh-clients crunchy-backrest postgresql11-server procps-ng && yum -y clean all
+RUN yum -y update && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng && yum -y clean all
 
 VOLUME ["/sshd", "/pgdata"]
 
