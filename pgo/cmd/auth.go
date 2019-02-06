@@ -194,6 +194,7 @@ func GetCredentials() {
 				RootCAs:            caCertPool,
 				InsecureSkipVerify: true,
 				Certificates:       []tls.Certificate{cert},
+				MinVersion:         tls.VersionTLS11,
 			},
 		},
 	}
