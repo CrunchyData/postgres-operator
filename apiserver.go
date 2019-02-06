@@ -155,6 +155,7 @@ func main() {
 		ServerName:         "pgo-apiserver",
 		InsecureSkipVerify: tlsNoVerify,
 		ClientCAs:          caCertPool,
+		MinVersion:         tls.VersionTLS11,
 	}
 
 	log.Info("listening on port " + PORT)
