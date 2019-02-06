@@ -104,6 +104,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.Delet
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
 
 	var err error
 
@@ -124,7 +125,9 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.Delet
 			err = kubeapi.Deletepgpolicy(RESTClient,
 				policy.Spec.Name, ns)
 			if err == nil {
-				log.Debugf("deleted pgpolicy %s", policy.Spec.Name)
+				msg := "deleted policy " + policy.Spec.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
 			} else {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
@@ -140,6 +143,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.Delet
 		resp.Status.Msg = "policy " + policyName + " not found"
 		return resp
 	}
+
 	return resp
 
 }

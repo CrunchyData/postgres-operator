@@ -202,7 +202,10 @@ func deletePolicy(args []string, ns string) {
 		}
 
 		if response.Status.Code == msgs.Ok {
-			fmt.Println("Policy deleted.")
+			//fmt.Println("Policy deleted.")
+			for _, v := range response.Results {
+				fmt.Println(v)
+			}
 		} else {
 			fmt.Println("Error: " + response.Status.Msg)
 		}
