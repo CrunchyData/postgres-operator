@@ -259,6 +259,11 @@ configuration to pgbouncer.ini:
 
     pgo create cluster mycluster --metrics
 
+Note: backend metric storage such as Prometheus and front end 
+visualization software such as Grafana are not created automatically 
+by the PostgreSQL Operator.  For instructions on installing Grafana and 
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.3.0/examples/metrics/metrics/).
+
 ### Scheduled Tasks
 
 #### Automated full pgBackRest backups every Sunday at 1 am
