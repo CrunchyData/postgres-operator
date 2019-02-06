@@ -404,7 +404,7 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 		return resp
 	}
 
-	pgtask, err := getRestoreParams(request, ns, cluster, &resp)
+	pgtask, err := getRestoreParams(request, ns, cluster)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -428,7 +428,7 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	return resp
 }
 
-func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcluster, resp *msgs.RestoreResponse) (*crv1.Pgtask, error) {
+func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcluster) (*crv1.Pgtask, error) {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -448,8 +448,6 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 	if request.NodeLabel != "" {
 		parts := strings.Split(request.NodeLabel, "=")
 		if len(parts) != 2 {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = request.NodeLabel + " node label does not follow key=value format"
 			return nil, errors.New(request.NodeLabel + " node label does not follow key=value format")
 		}
 

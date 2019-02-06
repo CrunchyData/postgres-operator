@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -141,21 +140,9 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				log.Error("error in patching pgtask " + labels[util.LABEL_JOB_NAME] + err.Error())
 			}
 
-			affinity := job.Spec.Template.Spec.Affinity
-			var affinityJSON string
-			if affinity != nil {
-				log.Debugf("Affinity found on restore job, and will applied to the restored deployment")
-				affinityBytes, err := json.MarshalIndent(affinity, "", "  ")
-				if err != nil {
-					log.Error("unable to marshall affinity obtained from restore job spec")
-				}
-				affinityJSON = "\"affinity\":" + string(affinityBytes) + ","
-				log.Debug("Affinity string: " + affinityJSON)
-			}
-
 			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER],
 				crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
-				labels[util.LABEL_BACKREST_RESTORE_TO_PVC], affinityJSON)
+				labels[util.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
 		}
 
 		return
