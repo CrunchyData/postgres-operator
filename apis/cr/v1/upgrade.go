@@ -36,6 +36,7 @@ type PgupgradeSpec struct {
 	UpgradeType     string        `json:"upgradetype"`
 	UpgradeStatus   string        `json:"upgradestatus"`
 	StorageSpec     PgStorageSpec `json:"storagespec"`
+	CCPImage        string        `json:"ccpimage"`
 	CCPImageTag     string        `json:"ccpimagetag"`
 	OldDatabaseName string        `json:"olddatabasename"`
 	NewDatabaseName string        `json:"newdatabasename"`

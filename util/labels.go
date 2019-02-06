@@ -45,6 +45,7 @@ const LABEL_NODE_LABEL_KEY = "NodeLabelKey"
 const LABEL_NODE_LABEL_VALUE = "NodeLabelValue"
 const LABEL_REPLICA_NAME = "replica-name"
 const LABEL_CCP_IMAGE_TAG_KEY = "ccp-image-tag"
+const LABEL_CCP_IMAGE_KEY = "ccp-image"
 const LABEL_SERVICE_TYPE = "service-type"
 
 const LABEL_REPLICA_COUNT = "replica-count"

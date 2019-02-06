@@ -37,6 +37,7 @@ type PgclusterSpec struct {
 	Name               string               `json:"name"`
 	ClusterName        string               `json:"clustername"`
 	Policies           string               `json:"policies"`
+	CCPImage           string               `json:"ccpimage"`
 	CCPImageTag        string               `json:"ccpimagetag"`
 	Port               string               `json:"port"`
 	NodeName           string               `json:"nodename"`

@@ -42,8 +42,6 @@ type Strategy interface {
 	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
 	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
 }
 
@@ -292,8 +290,6 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 			log.Error(err)
 			log.Error("error in doing minor upgrade")
 		}
-	} else if upgrade.Spec.UpgradeType == "major" {
-		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
 	} else {
 		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UpgradeType)
 		return err

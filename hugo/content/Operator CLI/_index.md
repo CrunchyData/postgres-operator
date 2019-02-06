@@ -70,6 +70,10 @@ The following table shows the *pgo* operations currently implemented:
 
     pgo create cluster mycluster
 
+Create a cluster using the Crunchy Postgres + PostGIS container image:
+
+    pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis
+
 #### Create Cluster With a Primary and a Replica
 
     pgo create cluster mycluster --replica-count=1

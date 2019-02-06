@@ -186,7 +186,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 		}
 
 		// Create an instance of our CRD
-		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, request, ns)
+		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, cl.Spec.CCPImage, request, ns)
 		if err == nil {
 			err = kubeapi.Createpgupgrade(apiserver.RESTClient,
 				newInstance, ns)
@@ -210,7 +210,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 	return response
 }
 
-func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeRequest, ns string) (*crv1.Pgupgrade, error) {
+func getUpgradeParams(name, currentImageTag, currentImage string, request *msgs.CreateUpgradeRequest, ns string) (*crv1.Pgupgrade, error) {
 
 	var err error
 	var found bool
@@ -222,6 +222,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		Name:            name,
 		ResourceType:    "cluster",
 		UpgradeType:     request.UpgradeType,
+		CCPImage:        currentImage,
 		CCPImageTag:     apiserver.Pgo.Cluster.CCPImageTag,
 		StorageSpec:     crv1.PgStorageSpec{},
 		OldDatabaseName: "??",
@@ -298,20 +299,10 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		}
 	}
 
-	if request.UpgradeType == MajorUpgrade {
-		if requestedMajorVersion == existingMajorVersion {
-			log.Error("can't upgrade to the same major version")
-			return nil, errors.New("requested upgrade major version can not equal existing upgrade major version")
-		} else if requestedMajorVersion < existingMajorVersion {
-			log.Error("can't upgrade to a previous major version")
-			return nil, errors.New("requested upgrade major version can not be older than existing upgrade major version")
-		}
-	} else {
-		//minor upgrade
-		if requestedMajorVersion > existingMajorVersion {
-			log.Error("can't do minor upgrade to a newer major version")
-			return nil, errors.New("requested minor upgrade to major version is not allowed")
-		}
+	//minor upgrade
+	if requestedMajorVersion > existingMajorVersion {
+		log.Error("can't do minor upgrade to a newer major version")
+		return nil, errors.New("requested minor upgrade to major version is not allowed")
 	}
 
 	spec.NewVersion = strRep

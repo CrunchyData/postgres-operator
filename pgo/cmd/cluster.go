@@ -113,7 +113,7 @@ func showCluster(args []string, ns string) {
 // printCluster
 func printCluster(detail *msgs.ShowClusterDetail) {
 	fmt.Println("")
-	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImageTag + ")")
+	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImage + ":" + detail.Cluster.Spec.CCPImageTag + ")")
 
 	for _, pod := range detail.Pods {
 		podType := "(" + pod.Type + ")"
@@ -186,6 +186,7 @@ func createCluster(args []string, ns string) {
 	r.BackupPath = BackupPath
 	r.Policies = PoliciesFlag
 	r.CCPImageTag = CCPImageTag
+	r.CCPImage = CCPImage
 	r.Series = Series
 	r.MetricsFlag = MetricsFlag
 	r.BadgerFlag = BadgerFlag

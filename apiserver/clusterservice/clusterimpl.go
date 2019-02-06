@@ -834,12 +834,17 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
 
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
-	log.Debugf("Pgo.Cluster.CCPImageTag %s", apiserver.Pgo.Cluster.CCPImageTag)
 	if request.CCPImageTag != "" {
 		spec.CCPImageTag = request.CCPImageTag
 		log.Debugf("using CCPImageTag from command line %s", request.CCPImageTag)
 	}
 
+	if request.CCPImage != "" {
+		spec.CCPImage = request.CCPImage
+		log.Debugf("user is overriding CCPImage from command line %s", request.CCPImage)
+	} else {
+		spec.CCPImage = "crunchy-postgres"
+	}
 	spec.Namespace = ns
 	spec.Name = name
 	spec.ClusterName = name
