@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	otherutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var PITRTarget string
@@ -56,6 +57,7 @@ func init() {
 
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The restore options for pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
+	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling the pgBackRest restore job and the new (i.e. restored) primary deployment. If not set, any node is used.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
@@ -87,6 +89,7 @@ func restore(args []string, ns string) {
 		request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
+		request.NodeLabel = NodeLabel
 
 		response, err = api.Restore(httpclient, &SessionCredentials, request)
 	}

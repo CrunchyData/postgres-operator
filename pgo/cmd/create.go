@@ -36,7 +36,6 @@ var CCPImageTag string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
-var NodeLabel string
 var UserLabels string
 var ServiceType string
 var Schedule string

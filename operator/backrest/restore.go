@@ -19,20 +19,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+
 	//"github.com/crunchydata/postgres-operator/operator/cluster"
+	"os"
+	"time"
+
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type restorejobTemplateFields struct {
@@ -49,6 +53,7 @@ type restorejobTemplateFields struct {
 	PgbackrestDBPath    string
 	PgbackrestRepo1Path string
 	PgbackrestRepo1Host string
+	NodeSelector        string
 }
 
 // Restore ...
@@ -149,6 +154,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
 		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
+		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 	}
 
 	var doc2 bytes.Buffer
@@ -187,7 +193,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 }
 
-func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace, workflowID, restoreToName string) {
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace,
+	workflowID, restoreToName string, affinity *v1.Affinity) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
 
@@ -200,7 +207,7 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	}
 
 	//create the new primary deployment
-	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID)
+	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 	//cluster.Spec.Name = restoreToName
@@ -363,7 +370,8 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 	return err
 }
 
-func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset, namespace, restoreToName, workflowID string) error {
+func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
+	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
 	var err error
 
@@ -376,6 +384,18 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	archiveTimeout := cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
 	archivePVCName := cluster.Spec.Name + "-xlog"
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
+
+	var affinityStr string
+	if affinity != nil {
+		log.Debugf("Affinity found on restore job, and will applied to the restored deployment")
+		affinityBytes, err := json.MarshalIndent(affinity, "", "  ")
+		if err != nil {
+			log.Error("unable to marshall affinity obtained from restore job spec")
+		}
+		affinityStr = "\"affinity\":" + string(affinityBytes) + ","
+	} else {
+		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
+	}
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
@@ -404,7 +424,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		RootSecretName:          cluster.Spec.RootSecretName,
 		PrimarySecretName:       cluster.Spec.PrimarySecretName,
 		UserSecretName:          cluster.Spec.UserSecretName,
-		NodeSelector:            operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In"),
+		NodeSelector:            affinityStr,
 		ContainerResources:      operator.GetContainerResourcesJSON(&cluster.Spec.ContainerResources),
 		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),

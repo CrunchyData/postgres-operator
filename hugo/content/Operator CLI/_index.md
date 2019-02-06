@@ -176,6 +176,10 @@ Or perform a restore based on a point in time:
 
     pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time"
 
+You can also target specific nodes when performing a restore:
+
+    pgo restore mycluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a
+
 Here are some steps to test PITR:
 
  * pgo create cluster mycluster --pgbackrest
