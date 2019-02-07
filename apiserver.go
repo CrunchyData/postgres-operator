@@ -34,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
@@ -113,13 +114,19 @@ func main() {
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
 
+	// backups / backrest
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
-	//here
 	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrestbackup", backrestservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrest/{name}", backrestservice.ShowBackrestHandler).Methods("GET")
 	r.HandleFunc("/restore", backrestservice.RestoreHandler).Methods("POST")
+
+	// pgdump
+	r.HandleFunc("/pgdumpbackup", pgdumpservice.BackupHandler).Methods("POST")
+	r.HandleFunc("/pgdump/{name}", pgdumpservice.ShowDumpHandler).Methods("GET")
+	r.HandleFunc("/pgdumprestore", pgdumpservice.RestoreHandler).Methods("POST")
+
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")
@@ -148,6 +155,7 @@ func main() {
 		ServerName:         "pgo-apiserver",
 		InsecureSkipVerify: tlsNoVerify,
 		ClientCAs:          caCertPool,
+		MinVersion:         tls.VersionTLS11,
 	}
 
 	log.Info("listening on port " + PORT)

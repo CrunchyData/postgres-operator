@@ -62,11 +62,11 @@ func CreateFailover(httpclient *http.Client, SessionCredentials *msgs.BasicAuthC
 	return response, err
 }
 
-func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.QueryFailoverResponse, error) {
+func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.QueryFailoverResponse, error) {
 
 	var response msgs.QueryFailoverResponse
 
-	url := SessionCredentials.APIServerURL + "/failover/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/failover/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("query failover called [%s]", url)
 
 	action := "GET"

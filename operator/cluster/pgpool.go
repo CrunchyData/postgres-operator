@@ -125,6 +125,12 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 		return
 	}
+
+	userSpecifiedSecret := task.Spec.Parameters[util.LABEL_PGPOOL_SECRET]
+	if userSpecifiedSecret != "" {
+		pgcluster.Spec.UserLabels[util.LABEL_PGPOOL_SECRET] = userSpecifiedSecret
+		log.Debugf("user specified pgpool-secret %s is being used for this pgpool", userSpecifiedSecret)
+	}
 	AddPgpool(clientset, &pgcluster, namespace, true)
 
 	//remove task
@@ -197,16 +203,23 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 	var doc bytes.Buffer
 	var err error
 
-	//generate a secret for pgpool using the testuser credential
-	secretName := cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
+	//handle user specified pgpool secret
+	var secretName string
 	primaryName := cl.Spec.Name
 	replicaName := cl.Spec.Name + "-replica"
-	err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
-	if err != nil {
-		log.Error(err)
-		return
+	if cl.Spec.UserLabels[util.LABEL_PGPOOL_SECRET] != "" {
+		secretName = cl.Spec.UserLabels[util.LABEL_PGPOOL_SECRET]
+		log.Debugf("pgpool secret %s specifed by user", secretName)
+	} else {
+		//generate a secret for pgpool using the testuser credential
+		secretName = cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
+		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("pgpool secret created")
 	}
-	log.Debug("pgpool secret created")
 
 	clusterName := cl.Spec.Name
 	pgpoolName := clusterName + PGPOOL_SUFFIX

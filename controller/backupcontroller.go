@@ -39,7 +39,7 @@ type PgbackupController struct {
 
 // Run starts controller
 func (c *PgbackupController) Run(ctx context.Context) error {
-	log.Infof("Watch Pgbackup objects")
+	log.Debugf("Watch Pgbackup objects")
 
 	_, err := c.watchPgbackups(ctx)
 	if err != nil {
@@ -84,9 +84,12 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 // onAdd is called when a pgbackup is added
 func (c *PgbackupController) onAdd(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
-	log.Infof("[PgbackupCONTROLLER] OnAdd %s", backup.ObjectMeta.SelfLink)
+	log.Debugf("[PgbackupController] ns=%s onAdd %s", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
+
+	//the case when the operator starts up, we disregard any
+	//pgbackups that have already been processed
 	if backup.Status.State == crv1.PgbackupStateProcessed {
-		log.Info("pgbackup " + backup.ObjectMeta.Name + " already processed")
+		log.Debug("pgbackup " + backup.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -110,20 +113,21 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
+		log.Errorf("ERROR updating pgbackup status: %s", err.Error())
 	}
 
-	log.Debugf("UPDATED status: %#v", backupCopy)
-
+	//handle new pgbackups
 	backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backupCopy, backup.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgbackup is updated
 func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
+	backup := newObj.(*crv1.Pgbackup)
+	log.Debugf("[PgbackupController] ns=%s onUpdate %s", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
 }
 
 // onDelete is called when a pgbackup is deleted
 func (c *PgbackupController) onDelete(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
-	log.Infof("[PgbackupCONTROLLER] OnDelete %s", backup.ObjectMeta.SelfLink)
+	log.Debugf("[PgbackupController] ns=%s onDelete %s", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
 }

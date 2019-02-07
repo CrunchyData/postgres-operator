@@ -20,7 +20,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -31,27 +30,27 @@ import (
 )
 
 // RemoveBackups ...
-func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient) {
+func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
 
 	taskName := clusterName + "-policies"
 	task := crv1.Pgtask{}
 	task.Spec = crv1.PgtaskSpec{}
 	task.Spec.Name = taskName
 
-	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, operator.NAMESPACE)
+	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
 	if found && err == nil {
 		//apply those policies
 		for k, _ := range task.Spec.Parameters {
 			log.Debugf("applying policy %s to %s", k, clusterName)
-			applyPolicy(Clientset, RESTClient, k, clusterName)
+			applyPolicy(Clientset, RESTClient, k, clusterName, ns)
 		}
 		//delete the pgtask to not redo this again
-		kubeapi.Deletepgtask(RESTClient, taskName, operator.NAMESPACE)
+		kubeapi.Deletepgtask(RESTClient, taskName, ns)
 	}
 }
 
-func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, policyName, clusterName string) {
-	err := util.ExecPolicy(clientset, restclient, operator.NAMESPACE, policyName, clusterName)
+func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, policyName, clusterName, ns string) {
+	err := util.ExecPolicy(clientset, restclient, ns, policyName, clusterName)
 	if err != nil {
 		log.Error(err)
 		return
@@ -62,7 +61,7 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, p
 
 	//look up the cluster CRD to get the strategy
 	cl := crv1.Pgcluster{}
-	_, err = kubeapi.Getpgcluster(restclient, &cl, clusterName, operator.NAMESPACE)
+	_, err = kubeapi.Getpgcluster(restclient, &cl, clusterName, ns)
 	if err != nil {
 		log.Error(err)
 		return
@@ -79,20 +78,20 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, p
 		return
 	}
 
-	err = strategy.UpdatePolicyLabels(clientset, clusterName, operator.NAMESPACE, labels)
+	err = strategy.UpdatePolicyLabels(clientset, clusterName, ns, labels)
 	if err != nil {
 		log.Error(err)
 	}
 
 	//update the pgcluster crd labels with the new policy
-	err = PatchPgcluster(restclient, policyName+"=pgpolicy", cl)
+	err = PatchPgcluster(restclient, policyName+"=pgpolicy", cl, ns)
 	if err != nil {
 		log.Error(err)
 	}
 
 }
 
-func PatchPgcluster(restclient *rest.RESTClient, newLabel string, oldCRD crv1.Pgcluster) error {
+func PatchPgcluster(restclient *rest.RESTClient, newLabel string, oldCRD crv1.Pgcluster, ns string) error {
 
 	fields := strings.Split(newLabel, "=")
 	labelKey := fields[0]
@@ -117,7 +116,7 @@ func PatchPgcluster(restclient *rest.RESTClient, newLabel string, oldCRD crv1.Pg
 
 	log.Debug(string(patchBytes))
 	_, err6 := restclient.Patch(types.MergePatchType).
-		Namespace(operator.NAMESPACE).
+		Namespace(ns).
 		Resource(crv1.PgclusterResourcePlural).
 		Name(oldCRD.Spec.Name).
 		Body(patchBytes).

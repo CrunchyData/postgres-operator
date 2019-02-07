@@ -26,9 +26,11 @@ import (
 // CreatePgpoolHandler ...
 // pgo create pgpool
 func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	log.Debug("pgpoolservice.CreatePgpoolHandler called")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	err := apiserver.Authn(apiserver.CREATE_PGPOOL_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_PGPOOL_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -40,12 +42,24 @@ func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreatePgpoolResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp = CreatePgpool(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreatePgpool(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -53,9 +67,10 @@ func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 // DeletePgpoolHandler ...
 // pgo delete pgpool
 func DeletePgpoolHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	log.Debug("pgpoolservice.DeletePgpoolHandler called")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	err := apiserver.Authn(apiserver.DELETE_PGPOOL_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.DELETE_PGPOOL_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -67,12 +82,23 @@ func DeletePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.DeletePgpoolResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp = DeletePgpool(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	resp = DeletePgpool(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }

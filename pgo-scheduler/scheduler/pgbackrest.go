@@ -131,7 +131,7 @@ func (b BackRestBackupJob) Run() {
 		taskName:      taskName,
 		podName:       pods.Items[0].Name,
 		containerName: "database",
-		backupOptions: b.backupType,
+		backupOptions: fmt.Sprintf("--type=%s", b.backupType),
 		stanza:        b.stanza,
 	}
 

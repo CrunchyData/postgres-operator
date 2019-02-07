@@ -31,14 +31,13 @@ import (
 	"strings"
 )
 
-func DfCluster(name, selector string) msgs.DfResponse {
+func DfCluster(name, selector, ns string) msgs.DfResponse {
 	var err error
 
 	response := msgs.DfResponse{}
 	response.Results = make([]msgs.DfDetail, 0)
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	log.Debugf("selector is %s", selector)
 	if selector == "" && name == "all" {
 		log.Debug("selector is empty and name is all")
 	} else {
@@ -46,10 +45,11 @@ func DfCluster(name, selector string) msgs.DfResponse {
 			selector = "name=" + name
 		}
 	}
+	log.Debugf("df selector is %s", selector)
 
 	//get a list of matching clusters
 	clusterList := crv1.PgclusterList{}
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, apiserver.Namespace)
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, ns)
 
 	if err != nil {
 		response.Status.Code = msgs.Error
@@ -59,14 +59,14 @@ func DfCluster(name, selector string) msgs.DfResponse {
 
 	//loop thru each cluster
 
-	log.Debugf("clusters found len is %d", len(clusterList.Items))
+	log.Debugf("df clusters found len is %d", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
 
-		selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
-			util.LABEL_PGBACKUP + "!=true"
+		//selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
+		selector := util.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 
-		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -98,7 +98,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 			result.Name = p.Name
 			result.Working = true
 
-			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, p.Status.PodIP, "postgres", c.Spec.Name)
+			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, p.Status.PodIP, "postgres", c.Spec.Name, ns)
 			log.Infof("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty, c.Spec.Name)
 			if err != nil {
 				response.Status.Code = msgs.Error
@@ -106,7 +106,7 @@ func DfCluster(name, selector string) msgs.DfResponse {
 				return response
 			}
 			result.PGSize = pgSizePretty
-			result.ClaimSize, err = getClaimCapacity(apiserver.Clientset, pvcName)
+			result.ClaimSize, err = getClaimCapacity(apiserver.Clientset, pvcName, ns)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -127,11 +127,11 @@ func DfCluster(name, selector string) msgs.DfResponse {
 }
 
 // getPrimarySecret get only the primary postgres secret
-func getPrimarySecret(clusterName string) (string, string, error) {
+func getPrimarySecret(clusterName, ns string) (string, string, error) {
 
 	selector := "pgpool!=true,pg-database=" + clusterName
 
-	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, apiserver.Namespace)
+	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return "", "", err
 	}
@@ -150,12 +150,12 @@ func getPrimarySecret(clusterName string) (string, string, error) {
 }
 
 // getPrimaryService returns the service IP addresses
-func getServices(clusterName string) (map[string]string, error) {
+func getServices(clusterName, ns string) (map[string]string, error) {
 
 	output := make(map[string]string, 0)
 	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
 
-	services, err := kubeapi.GetServices(apiserver.Clientset, selector, apiserver.Namespace)
+	services, err := kubeapi.GetServices(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return output, err
 	}
@@ -168,12 +168,12 @@ func getServices(clusterName string) (map[string]string, error) {
 }
 
 // getPGSize clusterName returns sizestring, error
-func getPGSize(port, host, databaseName, clusterName string) (string, int, error) {
+func getPGSize(port, host, databaseName, clusterName, ns string) (string, int, error) {
 	var dbsizePretty string
 	var dbsize int
 	var conn *sql.DB
 
-	username, password, err := getPrimarySecret(clusterName)
+	username, password, err := getPrimarySecret(clusterName, ns)
 	if err != nil {
 		log.Error(err.Error())
 		return dbsizePretty, dbsize, err
@@ -215,14 +215,14 @@ func getPGSize(port, host, databaseName, clusterName string) (string, int, error
 
 }
 
-func getClaimCapacity(clientset *kubernetes.Clientset, pvcName string) (string, error) {
+func getClaimCapacity(clientset *kubernetes.Clientset, pvcName, ns string) (string, error) {
 	var err error
 	var found bool
 	var pvc *v1.PersistentVolumeClaim
 
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
-	pvc, found, err = kubeapi.GetPVC(clientset, pvcName, apiserver.Namespace)
+	pvc, found, err = kubeapi.GetPVC(clientset, pvcName, ns)
 	if err != nil {
 		if !found {
 			log.Debugf("pvc %s not found", pvcName)

@@ -1,0 +1,96 @@
+{
+    "apiVersion": "cr.client-go.k8s.io/v1",
+    "kind": "Pgcluster",
+    "metadata": {
+        "labels": {
+            "archive": "false",
+            "archive-timeout": "60",
+            "crunchy-pgbadger": "false",
+            "crunchy_collect": "false",
+            "current-primary": "fromcrd",
+            "deployment-name": "fromcrd",
+            "name": "fromcrd",
+            "pg-cluster": "fromcrd",
+            "pgo-backrest": "false",
+            "pgo-version": "3.5.0",
+            "primary": "true"
+        },
+        "name": "fromcrd",
+        "namespace": "demo"
+    },
+    "spec": {
+        "ArchiveStorage": {
+            "accessmode": "",
+            "fsgroup": "",
+            "matchLabels": "",
+            "name": "",
+            "size": "",
+            "storageclass": "",
+            "storagetype": "",
+            "supplementalgroups": ""
+        },
+        "BackrestStorage": {
+            "accessmode": "ReadWriteMany",
+            "fsgroup": "",
+            "matchLabels": "",
+            "name": "",
+            "size": "1G",
+            "storageclass": "",
+            "storagetype": "create",
+            "supplementalgroups": ""
+        },
+        "ContainerResources": {
+            "limitscpu": "",
+            "limitsmemory": "",
+            "requestscpu": "",
+            "requestsmemory": ""
+        },
+        "PrimaryStorage": {
+            "accessmode": "ReadWriteMany",
+            "fsgroup": "",
+            "matchLabels": "",
+            "name": "fromcrd",
+            "size": "1G",
+            "storageclass": "",
+            "storagetype": "create",
+            "supplementalgroups": ""
+        },
+        "ReplicaStorage": {
+            "accessmode": "ReadWriteMany",
+            "fsgroup": "",
+            "matchLabels": "",
+            "name": "",
+            "size": "1G",
+            "storageclass": "",
+            "storagetype": "create",
+            "supplementalgroups": ""
+        },
+        "backuppath": "",
+        "backuppvcname": "",
+        "ccpimagetag": "centos7-11.1-2.3.0-rc6",
+        "clustername": "fromcrd",
+        "customconfig": "",
+        "database": "userdb",
+        "name": "fromcrd",
+        "nodename": "",
+        "policies": "",
+        "port": "5432",
+        "primaryhost": "fromcrd",
+        "primarysecretname": "fromcrd-primaryuser-secret",
+        "replicas": "0",
+        "rootsecretname": "fromcrd-postgres-secret",
+        "secretfrom": "",
+        "status": "",
+        "strategy": "1",
+        "user": "testuser",
+        "userlabels": {
+            "archive": "false",
+            "archive-timeout": "60",
+            "crunchy-pgbadger": "false",
+            "crunchy_collect": "false",
+            "pgo-backrest": "false",
+            "pgo-version": "3.5.0"
+        },
+        "usersecretname": "fromcrd-testuser-secret"
+    }
+}

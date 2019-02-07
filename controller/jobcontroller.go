@@ -17,6 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -28,7 +30,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"time"
 )
 
 // JobController holds the connections for the controller
@@ -82,20 +83,30 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 }
 
 func (c *JobController) onAdd(obj interface{}) {
+	job := obj.(*apiv1.Job)
+	log.Debugf("JobController: onAdd ns=%s jobName=%s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
-	log.Debugf("[JobCONTROLLER] OnUpdate %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
+	log.Debugf("[JobController] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
+
 	var err error
-	//label is "pgrmdata" and Status of Succeeded
+
+	//handle the case of rmdata jobs succeeding
 	labels := job.GetObjectMeta().GetLabels()
-	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] != "" {
-		err = handleRmdata(job, c.JobClient, c.JobClientset, c.Namespace)
+	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] == "true" {
+		log.Debugf("jobController onUpdate rmdata job case")
+		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
-	} else if labels[util.LABEL_PGBACKUP] != "" {
+		return
+	}
+
+	//handle the case of a pgbasebackup job being added
+	if labels[util.LABEL_PGBACKUP] == "true" {
+		log.Debugf("jobController onUpdate pgbasebackup job case")
 		dbname := job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 		status := crv1.JobCompletedStatus
 		log.Debugf("got a pgbackup job status=%d for %s", job.Status.Succeeded, dbname)
@@ -107,36 +118,103 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 
 		if labels[util.LABEL_BACKREST] != "true" {
-			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, c.Namespace)
+			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
 			}
 		}
 
-	} else if labels[util.LABEL_BACKREST_RESTORE] == "true" {
+		return
+
+	}
+
+	//handle the case of a backrest restore job being added
+	if labels[util.LABEL_BACKREST_RESTORE] == "true" {
+		log.Debugf("jobController onUpdate backrest restore job case")
 		log.Debugf("got a backrest restore job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
 			log.Debugf("set status to restore job completed  for %s", labels[util.LABEL_PG_CLUSTER])
 			log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
-			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", labels[util.LABEL_JOB_NAME], c.Namespace)
+			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", job.Name, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgtask " + labels[util.LABEL_JOB_NAME] + err.Error())
 			}
 
-			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER], crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, c.Namespace, labels[crv1.PgtaskWorkflowID], labels[util.LABEL_BACKREST_RESTORE_TO_PVC])
+			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[util.LABEL_PG_CLUSTER],
+				crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
+				labels[util.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
 		}
 
-	} else if labels[util.LABEL_BACKREST] != "" {
-		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
-		log.Debugf("update the status to completed here for backrest %s", labels[util.LABEL_PG_DATABASE])
-		status := crv1.JobCompletedStatus
+		return
+	}
+
+	// handle the case of a pgdump job being added
+	if labels[util.LABEL_BACKUP_TYPE_PGDUMP] == "true" {
+		log.Debugf("jobController onUpdate pgdump job case")
+		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for pgdump %s", labels[util.LABEL_PG_DATABASE])
+
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+
 		if job.Status.Succeeded == 0 {
-			status = crv1.JobErrorStatus
+			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
 		}
-		err = util.Patch(c.JobClient, "/spec/backreststatus", status, "pgtasks", job.ObjectMeta.SelfLink, c.Namespace)
+
+		if job.Status.Failed > 0 {
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		//update the pgdump task status to submitted - updates task, not the job.
+		dumpTask := labels[util.LABEL_PGTASK]
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", dumpTask, job.ObjectMeta.Namespace)
+
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}
+
+		return
+	}
+
+	// handle the case of a pgrestore job being added
+	if labels[util.LABEL_RESTORE_TYPE_PGRESTORE] == "true" {
+		log.Debugf("jobController onUpdate pgrestore job case")
+		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
+		log.Debugf("update the status to completed here for pgrestore %s", labels[util.LABEL_PG_DATABASE])
+
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		if job.Status.Failed > 0 {
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		//update the pgdump task status to submitted - updates task, not the job.
+		restoreTask := labels[util.LABEL_PGTASK]
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", restoreTask, job.ObjectMeta.Namespace)
+
+		if err != nil {
+			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+		}
+
+		return
+	}
+
+	//handle the case of a backrest job being added
+	if labels[util.LABEL_BACKREST] == "true" {
+		log.Debugf("jobController onUpdate backrest job case")
+		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
+		if job.Status.Succeeded == 1 {
+			log.Debugf("update the status to completed here for backrest %s job %s", labels[util.LABEL_PG_DATABASE], job.Name)
+			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", job.Name, job.ObjectMeta.Namespace)
+			if err != nil {
+				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
+			}
+		}
+
+		return
 
 	}
 }
@@ -144,7 +222,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *JobController) onDelete(obj interface{}) {
 	job := obj.(*apiv1.Job)
-	log.Debugf("[JobCONTROLLER] OnDelete %s", job.ObjectMeta.SelfLink)
+	log.Debugf("[JobController] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubernetes.Clientset, namespace string) error {
@@ -159,7 +237,9 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	if err != nil {
 		return err
 	}
-	//	kubeapi.DeleteJobs(c.JobClientset, util.LABEL_PG_CLUSTER+"="+job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], c.Namespace)
+
+	selector := util.LABEL_PG_CLUSTER + "=" + job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "," + util.LABEL_RMDATA + "=true"
+	kubeapi.DeleteJobs(clientset, selector, namespace)
 
 	time.Sleep(time.Second * time.Duration(5))
 

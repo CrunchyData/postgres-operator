@@ -25,10 +25,11 @@ import (
 )
 
 // createBackrestBackup ....
-func createBackrestBackup(args []string) {
+func createBackrestBackup(args []string, ns string) {
 	log.Debugf("createBackrestBackup called %v %s", args, BackupOpts)
 
 	request := new(msgs.CreateBackrestBackupRequest)
+	request.Namespace = ns
 	request.Args = args
 	request.Selector = Selector
 	request.BackupOpts = BackupOpts
@@ -56,11 +57,11 @@ func createBackrestBackup(args []string) {
 }
 
 // showBackrest ....
-func showBackrest(args []string) {
+func showBackrest(args []string, ns string) {
 	log.Debugf("showBackrest called %v", args)
 
 	for _, v := range args {
-		response, err := api.ShowBackrest(httpclient, v, Selector, &SessionCredentials)
+		response, err := api.ShowBackrest(httpclient, v, Selector, &SessionCredentials, ns)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

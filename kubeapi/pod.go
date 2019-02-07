@@ -130,7 +130,7 @@ func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value,
 		log.Error(err)
 		log.Errorf("error add label to Pod  %s %s=%s", origPod.Name, key, value)
 	}
-	log.Infof("add label to Pod %s %s=%v", origPod.Name, key, value)
+	log.Debugf("add label to Pod %s %s=%v", origPod.Name, key, value)
 	return err
 }
 

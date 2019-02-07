@@ -24,10 +24,11 @@ const PgpolicyResourcePlural = "pgpolicies"
 
 // PgpolicySpec ...
 type PgpolicySpec struct {
-	Name   string `json:"name"`
-	URL    string `json:"url"`
-	SQL    string `json:"sql"`
-	Status string `json:"status"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	URL       string `json:"url"`
+	SQL       string `json:"sql"`
+	Status    string `json:"status"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -60,7 +61,7 @@ type PgpolicyState string
 
 const (
 	// PgpolicyStateCreated ...
-	PgpolicyStateCreated PgpolicyState = "Created"
+	PgpolicyStateCreated PgpolicyState = "pgpolicy Created"
 	// PgpolicyStateProcessed ...
-	PgpolicyStateProcessed PgpolicyState = "Processed"
+	PgpolicyStateProcessed PgpolicyState = "pgpolicy Processed"
 )

@@ -31,11 +31,11 @@ var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, PgbouncerFlag, MetricsF
 var BackrestRestoreFrom string
 var PgpoolSecret string
 var PgbouncerSecret string
+var CCPImage string
 var CCPImageTag string
 var Password string
 var SecretFrom, BackupPath, BackupPVC string
 var PoliciesFlag, PolicyFile, PolicyURL string
-var NodeLabel string
 var UserLabels string
 var ServiceType string
 var Schedule string
@@ -91,7 +91,7 @@ var createClusterCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A cluster name is required for this command.`)
 		} else {
-			createCluster(args)
+			createCluster(args, Namespace)
 		}
 	},
 }
@@ -114,7 +114,7 @@ var createPolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A policy name is required for this command.`)
 		} else {
-			createPolicy(args)
+			createPolicy(args, Namespace)
 		}
 	},
 }
@@ -132,7 +132,7 @@ var createPgbouncerCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: A cluster name or selector is required for this command.`)
 		} else {
-			createPgbouncer(args)
+			createPgbouncer(args, Namespace)
 		}
 	},
 }
@@ -150,7 +150,7 @@ var createPgpoolCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: A cluster name or selector is required for this command.`)
 		} else {
-			createPgpool(args)
+			createPgpool(args, Namespace)
 		}
 	},
 }
@@ -168,7 +168,7 @@ var createScheduleCmd = &cobra.Command{
 			fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
 			return
 		}
-		createSchedule(args)
+		createSchedule(args, Namespace)
 	},
 }
 
@@ -190,7 +190,7 @@ var createUserCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A user name is required for this command.`)
 		} else {
-			createUser(args)
+			createUser(args, Namespace)
 		}
 	},
 }
@@ -224,6 +224,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from.")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
+	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series.")
 	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
@@ -249,4 +250,5 @@ func init() {
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
+	createPgpoolCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 }

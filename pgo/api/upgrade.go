@@ -24,11 +24,11 @@ import (
 	"net/http"
 )
 
-func ShowUpgrade(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowUpgradeResponse, error) {
+func ShowUpgrade(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowUpgradeResponse, error) {
 
 	var response msgs.ShowUpgradeResponse
 
-	url := SessionCredentials.APIServerURL + "/upgrades/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/upgrades/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("showUpgrade called...[%s]", url)
 
 	action := "GET"
@@ -97,11 +97,11 @@ func CreateUpgrade(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	return response, err
 }
 
-func DeleteUpgrade(httpclient *http.Client, v string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteUpgradeResponse, error) {
+func DeleteUpgrade(httpclient *http.Client, v string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeleteUpgradeResponse, error) {
 
 	var response msgs.DeleteUpgradeResponse
 
-	url := SessionCredentials.APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/upgradesdelete/" + v + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("deleteUpgrade called...[%s]", url)
 
 	action := "GET"

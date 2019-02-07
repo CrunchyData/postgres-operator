@@ -30,12 +30,13 @@ import (
 // pgo backup --selector=name=mycluster
 // pgo backup mycluster
 func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	log.Debug("backrestservice.CreateBackupHandler called")
 
 	var request msgs.CreateBackrestBackupRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -43,29 +44,36 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := CreateBackup(&request)
+	resp := msgs.CreateBackrestBackupResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreateBackup(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
 // ShowBackrestHandler ...
 // returns a ShowBackrestResponse
 func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	vars := mux.Vars(r)
-	log.Debugf("backrestservice.ShowBackrestHandler %v\n", vars)
 
 	backupname := vars[util.LABEL_NAME]
 
 	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
 
-	err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
+	log.Debugf("ShowBackrestHandler parameters name [%s] version [%s] selector [%s] namespace [%s]", backupname, clientVersion, selector, namespace)
+
+	username, err := apiserver.Authn(apiserver.SHOW_BACKUP_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -74,14 +82,22 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	log.Debug("backrestservice.ShowBackrestHandler GET called")
-	var resp msgs.ShowBackrestResponse
-	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowBackrestResponse{}
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	resp := msgs.ShowBackrestResponse{}
 
-	} else {
-		resp = ShowBackrest(backupname, selector)
+	if clientVersion != msgs.PGO_VERSION {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowBackrest(backupname, selector, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -89,14 +105,14 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 // RestoreHandler ...
 // pgo restore mycluster --to-cluster=restored
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
+	var ns string
 
 	log.Debug("backrestservice.RestoreHandler called")
 
 	var request msgs.RestoreRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.RESTORE_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.RESTORE_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -104,11 +120,16 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := Restore(&request)
+	resp := msgs.RestoreResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	resp = Restore(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }

@@ -37,14 +37,14 @@ const MinorUpgrade = "minor"
 const separator = "-"
 
 // ShowUpgrade ...
-func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
+func ShowUpgrade(name, ns string) msgs.ShowUpgradeResponse {
 	response := msgs.ShowUpgradeResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	if name == "all" {
 		//get a list of all upgrades
 		err := kubeapi.Getpgupgrades(apiserver.RESTClient,
-			&response.UpgradeList, apiserver.Namespace)
+			&response.UpgradeList, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -54,7 +54,7 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 	} else {
 		upgrade := crv1.Pgupgrade{}
 		found, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
-			&upgrade, name, apiserver.Namespace)
+			&upgrade, name, ns)
 		if !found {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = "upgrade not found"
@@ -74,14 +74,14 @@ func ShowUpgrade(name string) msgs.ShowUpgradeResponse {
 }
 
 // DeleteUpgrade ...
-func DeleteUpgrade(name string) msgs.DeleteUpgradeResponse {
+func DeleteUpgrade(name, ns string) msgs.DeleteUpgradeResponse {
 	response := msgs.DeleteUpgradeResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 1)
 
 	if name == "all" {
 		err := kubeapi.DeleteAllpgupgrade(apiserver.RESTClient,
-			apiserver.Namespace)
+			ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -90,7 +90,7 @@ func DeleteUpgrade(name string) msgs.DeleteUpgradeResponse {
 		response.Results[0] = "all"
 	} else {
 		err := kubeapi.Deletepgupgrade(apiserver.RESTClient,
-			name, apiserver.Namespace)
+			name, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -104,7 +104,7 @@ func DeleteUpgrade(name string) msgs.DeleteUpgradeResponse {
 }
 
 // CreateUpgrade ...
-func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeResponse {
+func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpgradeResponse {
 	response := msgs.CreateUpgradeResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 1)
@@ -134,7 +134,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		//get the clusters list
 		clusterList := crv1.PgclusterList{}
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -160,10 +160,10 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 
 		// error if it already exists
 		found, err := kubeapi.Getpgupgrade(apiserver.RESTClient,
-			&result, arg, apiserver.Namespace)
+			&result, arg, ns)
 		if err == nil {
 			log.Warn("previous pgupgrade " + arg + " was found so we will remove it.")
-			delMsg := DeleteUpgrade(arg)
+			delMsg := DeleteUpgrade(arg, ns)
 			if delMsg.Status.Code == msgs.Error {
 				log.Error("could not delete previous pgupgrade " + arg)
 			}
@@ -178,7 +178,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		cl := crv1.Pgcluster{}
 
 		found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-			&cl, arg, apiserver.Namespace)
+			&cl, arg, ns)
 		if !found {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = arg + " is not a valid pgcluster"
@@ -186,11 +186,10 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 		}
 
 		// Create an instance of our CRD
-		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, request)
+		newInstance, err = getUpgradeParams(arg, cl.Spec.CCPImageTag, cl.Spec.CCPImage, request, ns)
 		if err == nil {
 			err = kubeapi.Createpgupgrade(apiserver.RESTClient,
-				newInstance,
-				apiserver.Namespace)
+				newInstance, ns)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -211,7 +210,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest) msgs.CreateUpgradeRespons
 	return response
 }
 
-func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeRequest) (*crv1.Pgupgrade, error) {
+func getUpgradeParams(name, currentImageTag, currentImage string, request *msgs.CreateUpgradeRequest, ns string) (*crv1.Pgupgrade, error) {
 
 	var err error
 	var found bool
@@ -219,9 +218,11 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 	var existingMajorVersion float64
 
 	spec := crv1.PgupgradeSpec{
+		Namespace:       ns,
 		Name:            name,
 		ResourceType:    "cluster",
 		UpgradeType:     request.UpgradeType,
+		CCPImage:        currentImage,
 		CCPImageTag:     apiserver.Pgo.Cluster.CCPImageTag,
 		StorageSpec:     crv1.PgStorageSpec{},
 		OldDatabaseName: "??",
@@ -251,7 +252,7 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 
 	cluster := crv1.Pgcluster{}
 	found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-		&cluster, name, apiserver.Namespace)
+		&cluster, name, ns)
 	if err == nil {
 		spec.ResourceType = "cluster"
 		spec.OldDatabaseName = cluster.Spec.Name
@@ -298,20 +299,10 @@ func getUpgradeParams(name, currentImageTag string, request *msgs.CreateUpgradeR
 		}
 	}
 
-	if request.UpgradeType == MajorUpgrade {
-		if requestedMajorVersion == existingMajorVersion {
-			log.Error("can't upgrade to the same major version")
-			return nil, errors.New("requested upgrade major version can not equal existing upgrade major version")
-		} else if requestedMajorVersion < existingMajorVersion {
-			log.Error("can't upgrade to a previous major version")
-			return nil, errors.New("requested upgrade major version can not be older than existing upgrade major version")
-		}
-	} else {
-		//minor upgrade
-		if requestedMajorVersion > existingMajorVersion {
-			log.Error("can't do minor upgrade to a newer major version")
-			return nil, errors.New("requested minor upgrade to major version is not allowed")
-		}
+	//minor upgrade
+	if requestedMajorVersion > existingMajorVersion {
+		log.Error("can't do minor upgrade to a newer major version")
+		return nil, errors.New("requested minor upgrade to major version is not allowed")
 	}
 
 	spec.NewVersion = strRep

@@ -75,6 +75,7 @@ type DeploymentTemplateFields struct {
 	LogMinDurationStatement string
 	CCPImagePrefix          string
 	CCPImageTag             string
+	CCPImage                string
 	Database                string
 	DeploymentLabels        string
 	PodLabels               string

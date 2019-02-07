@@ -45,9 +45,11 @@ type ClusterDetail struct {
 // pgo create cluster
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
 	log.Debug("clusterservice.CreateClusterHandler called")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	err := apiserver.Authn(apiserver.CREATE_CLUSTER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -59,12 +61,22 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp = CreateCluster(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	resp = CreateCluster(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -77,25 +89,20 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("clusterservice.ShowClusterHandler %v\n", vars)
 
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
 	ccpimagetag := r.URL.Query().Get("ccpimagetag")
-	if ccpimagetag != "" {
-		log.Debugf("ccpimagetag parameter is [%s]", ccpimagetag)
-	}
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
 
-	err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
+	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s]", clustername, selector, ccpimagetag, clientVersion, namespace)
+
+	username, err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -107,13 +114,24 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("clusterservice.ShowClusterHandler GET called")
 
 	var resp msgs.ShowClusterResponse
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowClusterResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowClusterDetail, 0)
-	} else {
-		resp = ShowCluster(clustername, selector, ccpimagetag)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		resp.Results = make([]msgs.ShowClusterDetail, 0)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowCluster(clustername, selector, ccpimagetag, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -125,41 +143,36 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	vars := mux.Vars(r)
 	log.Debugf("clusterservice.DeleteClusterHandler %v\n", vars)
 
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	namespace := r.URL.Query().Get("namespace")
 
 	deleteData := false
 	deleteDataStr := r.URL.Query().Get("delete-data")
 	if deleteDataStr != "" {
-		log.Debugf("delete-data parameter is [%s]", deleteDataStr)
 		deleteData, _ = strconv.ParseBool(deleteDataStr)
 	}
 	deleteBackups := false
 	deleteBackupsStr := r.URL.Query().Get("delete-backups")
 	if deleteBackupsStr != "" {
-		log.Debugf("delete-backups parameter is [%s]", deleteBackupsStr)
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
 	deleteConfigs := false
 	deleteConfigsStr := r.URL.Query().Get("delete-configs")
 	if deleteDataStr != "" {
-		log.Debugf("delete-configs parameter is [%s]", deleteConfigsStr)
 		deleteConfigs, _ = strconv.ParseBool(deleteConfigsStr)
 	}
 
-	err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
+	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%s] delete-backups [%s] delete-configs [%s]", namespace, selector, clientVersion, deleteDataStr, deleteBackupsStr, deleteConfigsStr)
+
+	username, err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -170,14 +183,23 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("clusterservice.DeleteClusterHandler called")
 
-	var resp msgs.DeleteClusterResponse
+	resp := msgs.DeleteClusterResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp := msgs.DeleteClusterResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]string, 0)
-	} else {
-		resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, deleteConfigs)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		resp.Results = make([]string, 0)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, deleteConfigs, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -185,20 +207,17 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 // TestClusterHandler ...
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.TestClusterHandler %v\n", vars)
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 
-	err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
+	log.Debugf("TestClusterHandler parameters name [%s] version [%s] namespace [%s] selector [%s]", clustername, clientVersion, namespace, selector)
+
+	username, err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -207,14 +226,23 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	var resp msgs.ClusterTestResponse
+	resp := msgs.ClusterTestResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ClusterTestResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = TestCluster(clustername, selector)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = TestCluster(clustername, selector, ns)
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -223,24 +251,20 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo update cluster --selector=env=research --autofail=false
 // returns a UpdateClusterResponse
 func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
-	var err error
+	var ns string
 	vars := mux.Vars(r)
-	log.Debugf("clusterservice.UpdateClusterHandler %v\n", vars)
 
 	clustername := vars["name"]
 
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 
 	autofailStr := r.URL.Query().Get("autofail")
 
-	err = apiserver.Authn(apiserver.UPDATE_CLUSTER_PERM, w, r)
+	log.Debugf("UpdateClusterHandler parameters name [%s] version [%s] selector [%s] namespace [%s] autofail [%s]", clustername, clientVersion, selector, namespace, autofailStr)
+
+	username, err := apiserver.Authn(apiserver.UPDATE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -251,7 +275,8 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("clusterservice.UpdateClusterHandler called")
 
-	var resp msgs.UpdateClusterResponse
+	resp := msgs.UpdateClusterResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
@@ -260,8 +285,15 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		resp.Results = make([]string, 0)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	if autofailStr != "" {
-		log.Debugf("autofail parameter is [%s]", autofailStr)
 		if autofailStr == "true" || autofailStr == "false" {
 		} else {
 			resp.Status = msgs.Status{
@@ -273,7 +305,7 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resp = UpdateCluster(clustername, selector, autofailStr)
+	resp = UpdateCluster(clustername, selector, autofailStr, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }

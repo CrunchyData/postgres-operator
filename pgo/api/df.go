@@ -23,13 +23,13 @@ import (
 	"net/http"
 )
 
-func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DfResponse, error) {
+func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DfResponse, error) {
 
 	var response msgs.DfResponse
 
 	log.Debugf("ShowDf called %s with selector=%s", arg, selector)
 
-	url := SessionCredentials.APIServerURL + "/df/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/df/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)

@@ -1,6 +1,6 @@
 <h1 align="center">Crunchy Data PostgreSQL Operator</h1>
 <p align="center">
-  <img width="150" src="./docs/github/images/crunchy_logo.png?raw=true"/>
+  <img width="150" src="./crunchy_logo.png?raw=true"/>
 </p>
 
 

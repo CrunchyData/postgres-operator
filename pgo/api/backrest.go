@@ -25,10 +25,10 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 )
 
-func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowBackrestResponse, error) {
+func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackrestResponse, error) {
 
 	var response msgs.ShowBackrestResponse
-	url := SessionCredentials.APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector
+	url := SessionCredentials.APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector + "&namespace=" + ns
 
 	log.Debugf("show backrest called [%s]", url)
 

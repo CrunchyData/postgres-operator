@@ -39,6 +39,9 @@ Environment variables control aspects of the Operator installation.  You can cop
     cat $HOME/odev/src/github.com/crunchydata/postgres-operator/examples/envs.sh >> $HOME/.bashrc
     source $HOME/.bashrc
 
+For various scripts used by the Operator, the *expenv* utility is required, download
+this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).
+
 In this example set of environment variables, the CO_NAMESPACE environment variable is set to *demo* as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.  
 
 Adjust the namespace value to suit your needs.   There is a Makefile target you can run to create the *demo* namespace if you want:
@@ -120,11 +123,12 @@ The Operator installation requires Kubernetes administrators to create Resources
 
 Specifically, Custom Resource Definitions for the Operator, and Service Accounts used by the Operator are created which require cluster permissions.
 
-As part of the installation, have your cluster administrator run the following Operator Makefile target:
+As part of the installation, download the *expenv* utility from the Releases page, add that to
+your path and as cluster admin, run the following Operator Makefile target:
 
     make installrbac
 
-That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.  Note that when you run *make installrbac* the set of keys used by the Operator REST API and also the pgbackrest ssh keys are generated.  These keys are stored in the ConfigMap used by the Operator for securing connections.
+That target will create the RBAC Resources required by the Operator.   This set of Resources is created a single time unless a new Operator release requires these Resources to be recreated.  Note that when you run *make installrbac* the set of keys used by the Operator REST API and also the pgbackrest ssh keys are generated.  These keys are stored in the ConfigMap used by the Operator for securing connections.  
 
 Verify the Operator Custom Resource Definitions are created as follows:
 

@@ -25,13 +25,14 @@ import (
 
 // LabelHandler ...
 func LabelHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
 
 	log.Debug("labelservice.LabelHandler called")
 
 	var request msgs.LabelRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.LABEL_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.LABEL_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -39,13 +40,24 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.LabelResponse
+	resp := msgs.LabelResponse{}
+	resp.Status = msgs.Status{Msg: "", Code: msgs.Ok}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
-		resp = msgs.LabelResponse{}
-		resp.Status = msgs.Status{Msg: apiserver.VERSION_MISMATCH_ERROR, Code: msgs.Error}
-	} else {
-		resp = Label(&request)
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		resp.Status.Code = msgs.Error
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = Label(&request, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -53,12 +65,14 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteLabelHandler ...
 func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
 
+	var ns string
+
 	log.Debug("labelservice.DeleteLabelHandler called")
 
 	var request msgs.DeleteLabelRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.LABEL_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.LABEL_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -66,13 +80,23 @@ func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.LabelResponse
+	resp := msgs.LabelResponse{}
+	resp.Status = msgs.Status{Msg: "", Code: msgs.Ok}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
-		resp = msgs.LabelResponse{}
 		resp.Status = msgs.Status{Msg: apiserver.VERSION_MISMATCH_ERROR, Code: msgs.Error}
-	} else {
-		resp = DeleteLabel(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = DeleteLabel(&request, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }

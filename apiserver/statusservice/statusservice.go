@@ -20,7 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
+	//"github.com/gorilla/mux"
 	"net/http"
 )
 
@@ -28,15 +28,15 @@ import (
 // pgo status mycluster
 // pgo status --selector=env=research
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	log.Debug("statusservice.StatusHandler %v", vars)
+	var username, ns string
 
+	//vars := mux.Vars(r)
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 
-	err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
+	namespace := r.URL.Query().Get("namespace")
+	log.Debugf("StatusHandler parameters version [%s] namespace [%s]", clientVersion, namespace)
+
+	username, err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -49,9 +49,19 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp = msgs.StatusResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = Status()
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp = msgs.StatusResponse{}
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = Status(ns)
 
 	json.NewEncoder(w).Encode(resp)
 }

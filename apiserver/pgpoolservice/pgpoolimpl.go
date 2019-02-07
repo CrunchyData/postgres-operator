@@ -28,7 +28,7 @@ import (
 // CreatePgpool ...
 // pgo create pgpool mycluster
 // pgo create pgpool --selector=name=mycluster
-func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
+func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoolResponse {
 	var err error
 	resp := msgs.CreatePgpoolResponse{}
 	resp.Status.Code = msgs.Ok
@@ -43,12 +43,23 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 		return resp
 	}
 
+	if request.PgpoolSecret != "" {
+		var found bool
+		_, found, err = kubeapi.GetSecret(apiserver.Clientset, request.PgpoolSecret, ns)
+		if !found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "--pgpool-secret specified secret " + request.PgpoolSecret + " not found"
+			return resp
+		}
+
+	}
+
 	clusterList := crv1.PgclusterList{}
 
 	//get a list of all clusters
 	if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -61,7 +72,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 
 		for i := 0; i < len(request.Args); i++ {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&argCluster, request.Args[i], apiserver.Namespace)
+				&argCluster, request.Args[i], ns)
 
 			if !found {
 				resp.Status.Msg = request.Args[i] + " was not found"
@@ -89,11 +100,13 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 		log.Debugf("adding pgpool to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskAddPgpool
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -112,7 +125,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 			resp.Status.Code = msgs.Error
 		} else {
 			err := kubeapi.Createpgtask(apiserver.RESTClient,
-				newInstance, apiserver.Namespace)
+				newInstance, ns)
 			if err != nil {
 				log.Error(err)
 				resp.Results = append(resp.Results, "error adding pgpool for "+cluster.Name+err.Error())
@@ -130,7 +143,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest) msgs.CreatePgpoolResponse {
 // DeletePgpool ...
 // pgo delete pgpool mycluster
 // pgo delete pgpool --selector=name=mycluster
-func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
+func DeletePgpool(request *msgs.DeletePgpoolRequest, ns string) msgs.DeletePgpoolResponse {
 	var err error
 	resp := msgs.DeletePgpoolResponse{}
 	resp.Status.Code = msgs.Ok
@@ -150,7 +163,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 	//get a list of all clusters
 	if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -163,7 +176,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 
 		for i := 0; i < len(request.Args); i++ {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&argCluster, request.Args[i], apiserver.Namespace)
+				&argCluster, request.Args[i], ns)
 
 			if !found {
 				resp.Status.Code = msgs.Error
@@ -191,6 +204,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 		log.Debugf("deleting pgpool from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskDeletePgpool
 		spec.StorageSpec = crv1.PgStorageSpec{}
@@ -209,7 +223,7 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest) msgs.DeletePgpoolResponse {
 		newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_DELETE] = "true"
 
 		err := kubeapi.Createpgtask(apiserver.RESTClient,
-			newInstance, apiserver.Namespace)
+			newInstance, ns)
 		if err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error

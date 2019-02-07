@@ -28,7 +28,7 @@ import (
 // CreatePgbouncer ...
 // pgo create pgbouncer mycluster
 // pgo create pgbouncer --selector=name=mycluster
-func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerResponse {
+func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.CreatePgbouncerResponse {
 	var err error
 	resp := msgs.CreatePgbouncerResponse{}
 	resp.Status.Code = msgs.Ok
@@ -48,7 +48,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 	//get a list of all clusters
 	if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -61,7 +61,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 
 		for i := 0; i < len(request.Args); i++ {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&argCluster, request.Args[i], apiserver.Namespace)
+				&argCluster, request.Args[i], ns)
 
 			if !found {
 				resp.Status.Code = msgs.Error
@@ -89,6 +89,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskAddPgbouncer
 		spec.StorageSpec = crv1.PgStorageSpec{}
@@ -112,7 +113,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 			resp.Status.Code = msgs.Error
 		} else {
 			err := kubeapi.Createpgtask(apiserver.RESTClient,
-				newInstance, apiserver.Namespace)
+				newInstance, ns)
 			if err != nil {
 				log.Error(err)
 				resp.Results = append(resp.Results, err.Error())
@@ -131,7 +132,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest) msgs.CreatePgbouncerR
 // DeletePgbouncer ...
 // pgo delete pgbouncer mycluster
 // pgo delete pgbouncer --selector=name=mycluster
-func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerResponse {
+func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.DeletePgbouncerResponse {
 	var err error
 	resp := msgs.DeletePgbouncerResponse{}
 	resp.Status.Code = msgs.Ok
@@ -151,7 +152,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 	//get a list of all clusters
 	if request.Selector != "" {
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, apiserver.Namespace)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -164,7 +165,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 
 		for i := 0; i < len(request.Args); i++ {
 			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&argCluster, request.Args[i], apiserver.Namespace)
+				&argCluster, request.Args[i], ns)
 
 			if !found || err != nil {
 				resp.Status.Code = msgs.Error
@@ -187,6 +188,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = util.LABEL_PGBOUNCER_TASK_DELETE + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskDeletePgbouncer
 		spec.StorageSpec = crv1.PgStorageSpec{}
@@ -205,7 +207,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest) msgs.DeletePgbouncerR
 		newInstance.ObjectMeta.Labels[util.LABEL_PGBOUNCER_TASK_DELETE] = "true"
 
 		err := kubeapi.Createpgtask(apiserver.RESTClient,
-			newInstance, apiserver.Namespace)
+			newInstance, ns)
 		if err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error

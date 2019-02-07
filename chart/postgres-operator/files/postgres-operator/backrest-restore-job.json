@@ -82,6 +82,7 @@
                         }
                     }]
                 }],
+        {{.NodeSelector}}
                 "restartPolicy": "Never"
             }
         }

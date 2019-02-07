@@ -30,13 +30,14 @@ import (
 // pgo reload mycluster
 func ReloadHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
+	var username, ns string
 
 	log.Debug("reloadservice.ReloadHandler called")
 
 	var request msgs.ReloadRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err = apiserver.Authn(apiserver.RELOAD_PERM, w, r)
+	username, err = apiserver.Authn(apiserver.RELOAD_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -44,11 +45,23 @@ func ReloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := Reload(&request)
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
 	if err != nil {
+		resp := msgs.ReloadResponse{}
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	reloadResponse := Reload(&request, ns)
+	if err != nil {
+		resp := msgs.ReloadResponse{}
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	json.NewEncoder(w).Encode(reloadResponse)
 }

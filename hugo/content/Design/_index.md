@@ -176,6 +176,7 @@ on PG 9.6/9.5 systems, the command you will use is *select pg_xlog_replay_resume
  * there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.
  * the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.
  * pgbackrest.org suggests running a pgbackrest backup after a restore, this needs to be done by the DBA as part of a restore
+ * when performing a restore, the **node-label** option can be utilized to target a specific node for both the pgBackRest restore job and the new (i.e. restored) primary deployment that is then created for the cluster.  If a node label is not specified, the restore job will not target any specific node, and the restored primary deployment will inherit any node label's defined for the original primary deployment.
 
 ## PGO Scheduler
 
@@ -226,3 +227,20 @@ this PVC using the backup commands:
 Policy schedules require a SQL policy already created using the Operator.  Additionally users
 can supply both the database in which the policy should run and a secret that contains the username
 and password of the PostgreSQL role that will run the SQL.  If no user is specified the scheduler will default to the replication user provided during cluster creation.
+
+
+## Custom Resource Definitions
+
+The Operator makes use of custom resource definitions to maintain state
+and resource definitions as offered by the Operator. 
+
+![Reference](/operator-crd-architecture.png)
+
+In this above diagram, the CRDs heavily used by the Operator include:
+
+ * pgcluster - defines the Postgres cluster definition, new cluster requests
+are captured in a unique pgcluster resource for that Postgres cluster
+ * pgtask - workflow and other related administration tasks are captured within a set of pgtasks for a given pgcluster
+ * pgbackup - when you run a pgbasebackup, a pgbackup is created to hold the workflow and status of the last backup job, this CRD will eventually be deprecated in favor of a more general pgtask resource
+ * pgreplica - when you create a Postgres replica, a pgreplica CRD is created to define that replica
+

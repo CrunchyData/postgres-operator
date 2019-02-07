@@ -30,6 +30,7 @@ type CreateClusterRequest struct {
 	UserLabels   string
 	BackupPath   string
 	Policies     string
+	CCPImage     string
 	CCPImageTag  string
 	Series       int
 	ReplicaCount int

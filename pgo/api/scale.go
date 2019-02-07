@@ -24,11 +24,11 @@ import (
 	"strconv"
 )
 
-func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ClusterScaleResponse, error) {
+func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
 
 	var response msgs.ClusterScaleResponse
 
-	url := SessionCredentials.APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType
+	url := SessionCredentials.APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType + "&namespace=" + ns
 	log.Debug(url)
 
 	action := "GET"

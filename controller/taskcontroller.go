@@ -27,6 +27,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
 
@@ -41,7 +42,7 @@ type PgtaskController struct {
 
 // Run starts an pgtask resource controller
 func (c *PgtaskController) Run(ctx context.Context) error {
-	log.Info("Watch Pgtask objects")
+	log.Debug("Watch Pgtask objects")
 
 	// Watch Example objects
 	_, err := c.watchPgtasks(ctx)
@@ -87,9 +88,12 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 // onAdd is called when a pgtask is added
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskCONTROLLER] OnAdd %s", task.ObjectMeta.SelfLink)
+	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+
+	//handle the case of when the operator restarts, we do not want
+	//to process pgtasks already processed
 	if task.Status.State == crv1.PgtaskStateProcessed {
-		log.Info("pgtask " + task.ObjectMeta.Name + " already processed")
+		log.Debug("pgtask " + task.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -114,61 +118,71 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
-	} else {
-		log.Debugf("UPDATED status: %#v", taskCopy)
+		log.Errorf("ERROR updating pgtask status: %s", err.Error())
 	}
 
 	//process the incoming task
 	switch task.Spec.TaskType {
 	case crv1.PgtaskDeletePgbouncer:
-		log.Info("delete pgbouncer task added")
+		log.Debug("delete pgbouncer task added")
 		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskReconfigurePgbouncer:
-		log.Info("Reconfiguredelete pgbouncer task added")
+		log.Debug("Reconfiguredelete pgbouncer task added")
 		clusteroperator.ReconfigurePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskAddPgbouncer:
-		log.Info("add pgbouncer task added")
+		log.Debug("add pgbouncer task added")
 		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskDeletePgpool:
-		log.Info("delete pgpool task added")
+		log.Debug("delete pgpool task added")
 		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskReconfigurePgpool:
-		log.Info("Reconfiguredelete pgpool task added")
+		log.Debug("Reconfiguredelete pgpool task added")
 		clusteroperator.ReconfigurePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskAddPgpool:
-		log.Info("add pgpool task added")
+		log.Debug("add pgpool task added")
 		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskFailover:
-		log.Info("failover task added")
+		log.Debug("failover task added")
 		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
 
 	case crv1.PgtaskDeleteData:
-		log.Info("delete data task added")
+		log.Debug("delete data task added")
 		taskoperator.RemoveData(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	case crv1.PgtaskDeleteBackups:
-		log.Info("delete backups task added")
+		log.Debug("delete backups task added")
 		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	case crv1.PgtaskBackrest:
-		log.Info("backrest task added")
+		log.Debug("backrest task added")
 		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 	case crv1.PgtaskBackrestRestore:
-		log.Info("backrest restore task added")
+		log.Debug("backrest restore task added")
 		backrestoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+
+	case crv1.PgtaskpgDump:
+		log.Debug("pgDump task added")
+		pgdumpoperator.Dump(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+	case crv1.PgtaskpgRestore:
+		log.Debug("pgDump restore task added")
+		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+
 	case crv1.PgtaskAutoFailover:
-		log.Infof("autofailover task added %s", task.ObjectMeta.Name)
+		log.Debugf("autofailover task added %s", task.ObjectMeta.Name)
 	case crv1.PgtaskWorkflow:
-		log.Infof("workflow task added [%s] ID [%s]", task.ObjectMeta.Name, task.Spec.Parameters[crv1.PgtaskWorkflowID])
+		log.Debugf("workflow task added [%s] ID [%s]", task.ObjectMeta.Name, task.Spec.Parameters[crv1.PgtaskWorkflowID])
 	default:
-		log.Infof("unknown task type on pgtask added [%s]", task.Spec.TaskType)
+		log.Debugf("unknown task type on pgtask added [%s]", task.Spec.TaskType)
 	}
 
 }
 
 // onUpdate is called when a pgtask is updated
 func (c *PgtaskController) onUpdate(oldObj, newObj interface{}) {
+	task := newObj.(*crv1.Pgtask)
+	log.Debugf("[PgtaskController] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 // onDelete is called when a pgtask is deleted
 func (c *PgtaskController) onDelete(obj interface{}) {
+	task := obj.(*crv1.Pgtask)
+	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
