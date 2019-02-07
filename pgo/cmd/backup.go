@@ -60,7 +60,7 @@ var backupCmd = &cobra.Command{
 
 				createBackrestBackup(args, Namespace)
 
-			case labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
+			case "", labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
 
 				createBackup(args, Namespace)
 
