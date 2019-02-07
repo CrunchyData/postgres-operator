@@ -445,24 +445,14 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
 
+	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
-		parts := strings.Split(request.NodeLabel, "=")
-		if len(parts) != 2 {
-			return nil, errors.New(request.NodeLabel + " node label does not follow key=value format")
-		}
 
-		keyValid, valueValid, err := apiserver.IsValidNodeLabel(parts[0], parts[1])
-		if err != nil {
+		if err := apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
 			return nil, err
 		}
 
-		if !keyValid {
-			return nil, errors.New(request.NodeLabel + " key was not valid .. check node labels for correct values to specify")
-		}
-		if !valueValid {
-			return nil, errors.New(request.NodeLabel + " node label value was not valid .. check node labels for correct values to specify")
-		}
-
+		parts := strings.Split(request.NodeLabel, "=")
 		spec.Parameters[util.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.Parameters[util.LABEL_NODE_LABEL_VALUE] = parts[1]
 

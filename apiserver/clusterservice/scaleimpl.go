@@ -17,6 +17,9 @@ limitations under the License.
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -28,8 +31,6 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strconv"
-	"strings"
 )
 
 // ScaleCluster ...
@@ -117,36 +118,20 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
 	}
 
-	//validate nodeLabel
+	// validate & parse nodeLabel if exists
 	if nodeLabel != "" {
-		parts = strings.Split(nodeLabel, "=")
-		if len(parts) != 2 {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = nodeLabel + " node label does not follow key=value format"
-			return response
-		}
 
-		keyValid, valueValid, err := apiserver.IsValidNodeLabel(parts[0], parts[1])
-		if err != nil {
+		if err = apiserver.ValidateNodeLabel(nodeLabel); err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
 
-		if !keyValid {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = nodeLabel + " key was not valid .. check node labels for correct values to specify"
-			return response
-		}
-		if !valueValid {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = nodeLabel + " node label value was not valid .. check node labels for correct values to specify"
-			return response
-		}
+		parts := strings.Split(nodeLabel, "=")
 		spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
-		log.Debug("using user entered node label for replica creation")
 
+		log.Debug("using user entered node label for replica creation")
 	}
 
 	labels := make(map[string]string)

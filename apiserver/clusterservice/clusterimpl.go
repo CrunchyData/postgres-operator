@@ -20,13 +20,14 @@ import (
 	"errors"
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/apiserver"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/apiserver"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
@@ -652,34 +653,20 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			log.Debug("primary node labels used from pgo.yaml")
 		}
 
+		// validate & parse nodeLabel if exists
 		if request.NodeLabel != "" {
-			parts := strings.Split(request.NodeLabel, "=")
-			if len(parts) != 2 {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.NodeLabel + " node label does not follow key=value format"
-				return resp
-			}
 
-			keyValid, valueValid, err := apiserver.IsValidNodeLabel(parts[0], parts[1])
-			if err != nil {
+			if err = apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
 			}
 
-			if !keyValid {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.NodeLabel + " key was not valid .. check node labels for correct values to specify"
-				return resp
-			}
-			if !valueValid {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.NodeLabel + " node label value was not valid .. check node labels for correct values to specify"
-				return resp
-			}
-			log.Debug("primary node labels used from user entered flag")
+			parts := strings.Split(request.NodeLabel, "=")
 			userLabelsMap[util.LABEL_NODE_LABEL_KEY] = parts[0]
 			userLabelsMap[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+
+			log.Debug("primary node labels used from user entered flag")
 		}
 
 		if request.ReplicaStorageConfig != "" {
