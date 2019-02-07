@@ -407,6 +407,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		LogStatement:            operator.Pgo.Cluster.LogStatement,
 		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
 		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImage:                cluster.Spec.CCPImage,
 		CCPImageTag:             cluster.Spec.CCPImageTag,
 		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
 		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),
