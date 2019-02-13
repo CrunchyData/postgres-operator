@@ -8,7 +8,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
-ENV PGVERSION="11" BACKREST_VERSION="2.08"
+ENV PGVERSION="11" BACKREST_VERSION="2.10"
 
 ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
