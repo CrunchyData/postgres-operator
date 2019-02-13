@@ -24,7 +24,7 @@ See below for details on the Helm and quickstart installation methods.
 ## Create Project Structure
 The Operator follows a golang project structure, you can create a structure as follows on your local Linux host:
 
-    mkdir -p $HOME/odev/src $HOME/odev/bin $HOME/odev/pkg
+    mkdir -p $HOME/odev/src/github.com/crunchydata $HOME/odev/bin $HOME/odev/pkg
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator

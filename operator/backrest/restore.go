@@ -102,19 +102,23 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		log.Errorf("restore workflow error: could not get depList using %s", selector)
 		return
 	}
-	if len(depList.Items) != 1 {
-		log.Errorf("restore workflow error: depList not equal to 1 %s", selector)
+
+	switch depLen := len(depList.Items); depLen {
+	case 0:
+		log.Debugf("restore workflow: no primary found using selector %s. Skipping deployment deletion.", selector)
+	case 1:
+		depToDelete := depList.Items[0]
+
+		err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+		if err != nil {
+			log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
+			return
+		}
+		log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
+	default:
+		log.Errorf("restore workflow error: depList has invalid length of %d using selector %s", depLen, selector)
 		return
 	}
-
-	depToDelete := depList.Items[0]
-
-	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
-	if err != nil {
-		log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
-		return
-	}
-	log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
 
 	//update backrest repo with new data path
 	targetDepName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
@@ -407,6 +411,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		LogStatement:            operator.Pgo.Cluster.LogStatement,
 		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
 		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImage:                cluster.Spec.CCPImage,
 		CCPImageTag:             cluster.Spec.CCPImageTag,
 		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
 		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),

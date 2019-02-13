@@ -8,7 +8,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm" BACKREST_VERSION="2.08"
+ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm" BACKREST_VERSION="2.10"
 
 # PGDG PostgreSQL Repository
 
