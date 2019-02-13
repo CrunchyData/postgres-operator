@@ -18,6 +18,9 @@ limitations under the License.
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -27,8 +30,6 @@ import (
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strconv"
-	"strings"
 )
 
 const pgDumpCommand = "pgdump"
@@ -446,7 +447,13 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 
 	// pgtask := getRestoreParams(cluster)
 
-	pgtask := buildPgTaskForRestore(taskName, crv1.PgtaskpgRestore, request)
+	pgtask, err := buildPgTaskForRestore(taskName, crv1.PgtaskpgRestore, request)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	existingTask := crv1.Pgtask{}
 
 	//delete any existing pgtask with the same name
@@ -482,7 +489,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 }
 
 // builds out a pgTask structure that can be handed to kube
-func buildPgTaskForRestore(taskName string, action string, request *msgs.PgRestoreRequest) *crv1.Pgtask {
+func buildPgTaskForRestore(taskName string, action string, request *msgs.PgRestoreRequest) (*crv1.Pgtask, error) {
 
 	var newInstance *crv1.Pgtask
 	var storageSpec crv1.PgStorageSpec
@@ -508,6 +515,21 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 
 	spec.Parameters[util.LABEL_PGRESTORE_PORT] = apiserver.Pgo.Cluster.Port
 	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
+
+	// validate & parse nodeLabel if exists
+	if request.NodeLabel != "" {
+
+		if err := apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
+			return nil, err
+		}
+
+		parts := strings.Split(request.NodeLabel, "=")
+		spec.Parameters[util.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.Parameters[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+
+		log.Debug("Restore node labels used from user entered flag")
+	}
+
 	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
@@ -516,7 +538,7 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 		},
 		Spec: spec,
 	}
-	return newInstance
+	return newInstance, nil
 }
 
 // TODO: Needed?

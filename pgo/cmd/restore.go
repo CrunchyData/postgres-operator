@@ -41,7 +41,9 @@ var restoreCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
-			fmt.Println("Warning:  If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
+			if BackupType == "" || BackupType == otherutil.LABEL_BACKUP_TYPE_BACKREST {
+				fmt.Println("Warning:  If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
+			}
 			if util.AskForConfirmation(NoPrompt, "") {
 				restore(args, Namespace)
 			} else {
@@ -57,7 +59,8 @@ func init() {
 
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The restore options for pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
-	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling the pgBackRest restore job and the new (i.e. restored) primary deployment. If not set, any node is used.")
+	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling "+
+		"the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
@@ -80,6 +83,8 @@ func restore(args []string, ns string) {
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
+		request.NodeLabel = NodeLabel
+
 		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
 	} else {
 

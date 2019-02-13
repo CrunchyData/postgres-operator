@@ -415,6 +415,29 @@ func IsValidStorageName(name string) bool {
 	return ok
 }
 
+// ValidateNodeLabel
+// returns error if node label is invalid
+func ValidateNodeLabel(nodeLabel string) error {
+	parts := strings.Split(nodeLabel, "=")
+	if len(parts) != 2 {
+		return errors.New(nodeLabel + " node label does not follow key=value format")
+	}
+
+	keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
+	if err != nil {
+		return err
+	}
+
+	if !keyValid {
+		return errors.New(nodeLabel + " key was not valid .. check node labels for correct values to specify")
+	}
+	if !valueValid {
+		return errors.New(nodeLabel + " node label value was not valid .. check node labels for correct values to specify")
+	}
+
+	return nil
+}
+
 // IsValidNodeLabel
 // returns bool for key validity
 // returns bool for value validity
@@ -430,14 +453,13 @@ func IsValidNodeLabel(key, value string) (bool, bool, error) {
 		return false, false, err
 	}
 
-	var v string
 	for _, node := range nodes.Items {
-		v = node.ObjectMeta.Labels[key]
-		if v != "" {
+
+		if val, exists := node.ObjectMeta.Labels[key]; exists {
 			keyValid = true
-		}
-		if v == value {
-			valueValid = true
+			if val == value {
+				valueValid = true
+			}
 		}
 	}
 
@@ -499,27 +521,15 @@ func validateWithKube() {
 
 	for _, n := range configNodeLabels {
 
+		//parse & validate pgo.yaml node labels if set
 		if n != "" {
-			parts := strings.Split(n, "=")
-			if len(parts) != 2 {
-				log.Error(n + " node label in pgo.yaml does not follow key=value format")
-				os.Exit(2)
-			}
 
-			keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
-			if err != nil {
+			if err := ValidateNodeLabel(n); err != nil {
+				log.Error(n + " node label specified in pgo.yaml is invalid")
 				log.Error(err)
 				os.Exit(2)
 			}
 
-			if !keyValid {
-				log.Error(n + " key not a valid node label key in pgo.yaml")
-				os.Exit(2)
-			}
-			if !valueValid {
-				log.Error(n + "value not a valid node label value in pgo.yaml ")
-				os.Exit(2)
-			}
 			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}

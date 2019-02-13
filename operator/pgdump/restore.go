@@ -18,6 +18,8 @@ package pgdump
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -27,7 +29,6 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
 )
 
 type restorejobTemplateFields struct {
@@ -45,6 +46,7 @@ type restorejobTemplateFields struct {
 	CCPImagePrefix      string
 	CCPImageTag         string
 	PgPort              string
+	NodeSelector        string
 }
 
 // Restore ...
@@ -90,6 +92,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		PITRTarget:          task.Spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET],
 		CCPImagePrefix:      operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
+		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 	}
 
 	var doc2 bytes.Buffer

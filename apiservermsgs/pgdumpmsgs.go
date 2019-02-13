@@ -15,9 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
 //crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-)
 
 type CreatepgDumpBackupResponse struct {
 	Results []string
@@ -49,4 +47,5 @@ type PgRestoreRequest struct {
 	FromPVC     string
 	RestoreOpts string
 	PITRTarget  string
+	NodeLabel   string
 }
