@@ -40,6 +40,7 @@ type RepoDeploymentTemplateFields struct {
 	PGbackrestDBHost      string
 	PgbackrestRepoPath    string
 	PgbackrestDBPath      string
+	PgbackrestPGPort      string
 	SshdPort              int
 	PgbackrestStanza      string
 	Name                  string
@@ -95,6 +96,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		PGbackrestDBHost:      cluster.Name,
 		PgbackrestRepoPath:    "/backrestrepo/" + repoName,
 		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
+		PgbackrestPGPort:      cluster.Spec.Port,
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
 		PgbackrestStanza:      "db",
 		Name:                  repoName,

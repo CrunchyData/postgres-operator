@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.1-2.3.0
+  CCPImageTag:  centos7-11.2-2.3.1-rc2
   Port:  5432
   User:  testuser
   Database:  userdb

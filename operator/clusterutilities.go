@@ -58,6 +58,7 @@ type PgbackrestEnvVarsTemplateFields struct {
 	PgbackrestDBPath    string
 	PgbackrestRepo1Path string
 	PgbackrestRepo1Host string
+	PgbackrestPGPort    string
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
@@ -105,13 +106,14 @@ type DeploymentTemplateFields struct {
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName string) string {
+func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
 			PgbackrestStanza:    "db",
 			PgbackrestRepo1Host: clusterName + "-backrest-shared-repo",
 			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-shared-repo",
 			PgbackrestDBPath:    "/pgdata/" + depName,
+			PgbackrestPGPort:    port,
 		}
 
 		var doc bytes.Buffer
