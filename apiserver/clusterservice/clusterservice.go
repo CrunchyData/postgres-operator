@@ -164,13 +164,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
 	}
 
-	deleteConfigs := false
-	deleteConfigsStr := r.URL.Query().Get("delete-configs")
-	if deleteDataStr != "" {
-		deleteConfigs, _ = strconv.ParseBool(deleteConfigsStr)
-	}
-
-	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%s] delete-backups [%s] delete-configs [%s]", namespace, selector, clientVersion, deleteDataStr, deleteBackupsStr, deleteConfigsStr)
+	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%s] delete-backups [%s]", namespace, selector, clientVersion, deleteDataStr, deleteBackupsStr)
 
 	username, err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -199,7 +193,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, deleteConfigs, ns)
+	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }

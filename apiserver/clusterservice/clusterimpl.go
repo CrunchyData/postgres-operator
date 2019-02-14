@@ -40,7 +40,7 @@ import (
 )
 
 // DeleteCluster ...
-func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfigs bool, ns string) msgs.DeleteClusterResponse {
+func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns string) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -54,7 +54,6 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 	}
 	log.Debugf("delete-data is [%v]\n", deleteData)
 	log.Debugf("delete-backups is [%v]\n", deleteBackups)
-	log.Debugf("delete-configs is [%v]\n", deleteConfigs)
 
 	clusterList := crv1.PgclusterList{}
 
@@ -96,12 +95,10 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups, deleteConfi
 			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups, ns)
 		}
 
-		if deleteConfigs {
-			if err := deleteConfigMaps(cluster.Spec.Name, ns); err != nil {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
+		if err := deleteConfigMaps(cluster.Spec.Name, ns); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
 		}
 
 		//delete any jobs with pg-cluster=mycluster label

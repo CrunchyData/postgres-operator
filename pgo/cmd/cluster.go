@@ -35,7 +35,7 @@ func deleteCluster(args []string, ns string) {
 	}
 
 	for _, arg := range args {
-		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, DeleteConfigMaps, ns)
+		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, ns)
 		//var response msgs.DeleteClusterResponse
 
 		if err != nil {

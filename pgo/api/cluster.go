@@ -27,7 +27,7 @@ import (
 
 const (
 	createClusterURL = "%s/clusters"
-	deleteClusterURL = "%s/clustersdelete/%s?selector=%s&delete-data=%t&delete-backups=%t&delete-configs=%t&version=%s&namespace=%s"
+	deleteClusterURL = "%s/clustersdelete/%s?selector=%s&delete-data=%t&delete-backups=%t&version=%s&namespace=%s"
 	updateClusterURL = "%s/clustersupdate/%s?selector=%s&autofail=%s&version=%s&namespace=%s"
 	showClusterURL   = "%s/clusters/%s?selector=%s&version=%s&ccpimagetag=%s&namespace=%s"
 )
@@ -72,11 +72,11 @@ func ShowCluster(httpclient *http.Client, arg, selector, ccpimagetag string, Ses
 
 }
 
-func DeleteCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, deleteData, deleteBackups, deleteConfigMaps bool, ns string) (msgs.DeleteClusterResponse, error) {
+func DeleteCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, deleteData, deleteBackups bool, ns string) (msgs.DeleteClusterResponse, error) {
 
 	var response msgs.DeleteClusterResponse
 
-	url := fmt.Sprintf(deleteClusterURL, SessionCredentials.APIServerURL, arg, selector, deleteData, deleteBackups, deleteConfigMaps, msgs.PGO_VERSION, ns)
+	url := fmt.Sprintf(deleteClusterURL, SessionCredentials.APIServerURL, arg, selector, deleteData, deleteBackups, msgs.PGO_VERSION, ns)
 
 	log.Debugf("delete cluster called %s", url)
 

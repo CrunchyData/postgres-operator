@@ -82,7 +82,6 @@ var deleteCmd = &cobra.Command{
 }
 
 var DeleteBackups bool
-var DeleteConfigMaps bool
 var NoPrompt bool
 
 func init() {
@@ -103,7 +102,6 @@ func init() {
 	deleteLabelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The label to delete for any selected or specified clusters.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
-	deleteClusterCmd.Flags().BoolVarP(&DeleteConfigMaps, "delete-configs", "c", false, "Causes the configMaps for this cluster to be removed permanently.")
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
