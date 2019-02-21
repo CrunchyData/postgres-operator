@@ -21,11 +21,11 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: nfsstorage
-XlogStorage: nfsstorage
-BackupStorage: nfsstorage
-ReplicaStorage: nfsstorage
-BackrestStorage: nfsstorage
+PrimaryStorage: rook
+XlogStorage: rook
+BackupStorage: rook
+ReplicaStorage: rook
+BackrestStorage: rook
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -60,6 +60,12 @@ Storage:
     Size:  1G
     StorageType:  dynamic
     StorageClass:  fast
+    Fsgroup:  26
+  rook:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  rook-ceph-block
     Fsgroup:  26
 DefaultContainerResources: 
 DefaultLoadResources:  

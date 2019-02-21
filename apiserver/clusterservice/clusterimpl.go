@@ -333,6 +333,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		log.Debugf("pods found %d", len(pods))
 		//loop thru the pods, make sure they are all ready
 		primaryReady := true
 		replicaReady := true
@@ -1341,7 +1342,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + util.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -1364,7 +1365,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 		output = append(output, d)
 
 	}
-	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica"
+	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + util.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
 	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
