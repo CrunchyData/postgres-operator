@@ -21,11 +21,11 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: rook
-XlogStorage: rook
-BackupStorage: rook
-ReplicaStorage: rook
-BackrestStorage: rook
+PrimaryStorage: hostpathstorage
+XlogStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
+BackrestStorage: hostpathstorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany

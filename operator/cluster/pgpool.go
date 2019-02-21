@@ -101,7 +101,11 @@ func ReconfigurePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest
 	}
 
 	//create the pgpool but leave the existing service in place
-	AddPgpool(clientset, &pgcluster, namespace, false)
+	err = AddPgpool(clientset, &pgcluster, namespace, false)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	//remove task to cleanup
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -131,7 +135,11 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		pgcluster.Spec.UserLabels[util.LABEL_PGPOOL_SECRET] = userSpecifiedSecret
 		log.Debugf("user specified pgpool-secret %s is being used for this pgpool", userSpecifiedSecret)
 	}
-	AddPgpool(clientset, &pgcluster, namespace, true)
+	err = AddPgpool(clientset, &pgcluster, namespace, true)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	//remove task
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -199,7 +207,7 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 }
 
 // ProcessPgpool ...
-func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) {
+func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) error {
 	var doc bytes.Buffer
 	var err error
 
@@ -213,10 +221,11 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 	} else {
 		//generate a secret for pgpool using the testuser credential
 		secretName = cl.Spec.Name + "-" + util.LABEL_PGPOOL_SECRET
+
 		err = CreatePgpoolSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 		log.Debug("pgpool secret created")
 	}
@@ -241,7 +250,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgpoolResources)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 		fields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
 
@@ -250,7 +259,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 	err = operator.PgpoolTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
@@ -261,13 +270,13 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 	err = json.Unmarshal(doc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling pgpool json into Deployment " + err.Error())
-		return
+		return err
 	}
 
 	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
 		log.Error("error creating pgpool Deployment " + err.Error())
-		return
+		return err
 	}
 
 	if createService {
@@ -281,9 +290,10 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 	}
+	return err
 }
 
 // DeletePgpool
@@ -302,9 +312,14 @@ func DeletePgpool(clientset *kubernetes.Clientset, clusterName, namespace string
 // CreatePgpoolSecret create a secret used by pgpool
 func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, namespace string) error {
 
-	var err error
 	var username, password string
 	var pgpoolHBABytes, pgpoolConfBytes, pgpoolPasswdBytes []byte
+
+	_, found, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	if found {
+		log.Debugf("pgpool secret %s already present, will reuse", secretName)
+		return err
+	}
 
 	pgpoolHBABytes, err = getPgpoolHBA()
 	if err != nil {
