@@ -145,7 +145,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	jobFields := restorejobTemplateFields{
-		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		JobName:             "restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
 		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterPVCName:    pvcName,
