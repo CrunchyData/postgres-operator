@@ -329,7 +329,13 @@ source $HOME/.bashrc
 </code></pre>
 
 <p>For various scripts used by the Operator, the <em>expenv</em> utility is required, download
-this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).</p>
+this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).
+<div class="notices tip" ><p>There is also a Makefile target that includes is <em>expenv</em> and several other dependencies that are only needed if you plan on building from source:</p>
+
+<pre><code>make setup
+</code></pre>
+</div>
+</p>
 
 <p>In this example set of environment variables, the CO_NAMESPACE environment variable is set to <em>demo</em> as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.</p>
 
