@@ -333,6 +333,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		log.Debugf("pods found %d", len(pods))
 		//loop thru the pods, make sure they are all ready
 		primaryReady := true
 		replicaReady := true
@@ -553,9 +554,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		if request.BadgerFlag {
 			userLabelsMap[util.LABEL_BADGER] = "true"
 		}
-		//if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
-		//userLabelsMap[util.LABEL_AUTOFAIL] = "true"
-		//}
 		if request.ServiceType != "" {
 			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
 				resp.Status.Code = msgs.Error
@@ -693,6 +691,16 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+
+		//verify that for autofail clusters we have a replica requested
+		if newInstance.Spec.Replicas == "0" {
+			if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "replica-count of 1 or more is required when autofail is specified"
+				return resp
+			}
+		}
+
 		validateConfigPolicies(clusterName, request.Policies, ns)
 
 		t := time.Now()
@@ -1341,7 +1349,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + util.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -1364,7 +1372,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 		output = append(output, d)
 
 	}
-	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica"
+	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + util.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
 	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)

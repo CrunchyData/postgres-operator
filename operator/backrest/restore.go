@@ -83,11 +83,13 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	//use the storage config from pgo.yaml for Primary
-	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+	//use the storage config from the pgcluster for the restored pvc
+	//storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+	storage := cluster.Spec.PrimaryStorage
 
 	//create the "to-cluster" PVC to hold the new data
 	var pvcName string
-	pvcName, err = createPVC(clusterName, restclient, namespace, clientset, task)
+	pvcName, err = createPVC(storage, clusterName, restclient, namespace, clientset, task)
 	if err != nil {
 		log.Error(err)
 		return
@@ -145,7 +147,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	jobFields := restorejobTemplateFields{
-		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		JobName:             "restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
 		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterPVCName:    pvcName,
@@ -247,14 +249,13 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createPVC(clusterName string, restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
+func createPVC(storage crv1.PgStorageSpec, clusterName string, restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
 	var err error
-
-	//use the storage config from pgo.yaml for Primary
-	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
 
 	//create the "to-cluster" PVC to hold the new data
 	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+	pgstoragespec := storage
+	/**
 	pgstoragespec := crv1.PgStorageSpec{}
 	pgstoragespec.AccessMode = storage.AccessMode
 	pgstoragespec.Size = storage.Size
@@ -263,6 +264,7 @@ func createPVC(clusterName string, restclient *rest.RESTClient, namespace string
 	pgstoragespec.Fsgroup = storage.Fsgroup
 	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
 	pgstoragespec.MatchLabels = storage.MatchLabels
+	*/
 
 	var found bool
 	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)

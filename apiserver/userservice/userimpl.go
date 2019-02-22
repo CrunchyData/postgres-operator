@@ -591,6 +591,7 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
+	log.Debugf("DeleteUser called name=%s", name)
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
@@ -624,6 +625,8 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+
+		log.Debugf("DeleteUser %s managed %t", name, managed)
 
 		err = deleteUser(ns, clusterName, info, name, managed)
 		if err != nil {
