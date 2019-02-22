@@ -20,6 +20,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -543,6 +544,13 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 	}
 
 	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
+
+	re := regexp.MustCompile("^[a-z0-9.-]*$")
+	if !re.MatchString(request.Name) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "user name is required to be lowercase letters and numbers only."
+		return resp
+	}
 
 	for _, c := range clusterList.Items {
 		info := getPostgresUserInfo(ns, c.Name)
