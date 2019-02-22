@@ -41,6 +41,10 @@ Environment variables control aspects of the Operator installation.  You can cop
 
 For various scripts used by the Operator, the *expenv* utility is required, download
 this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).
+{{% notice tip %}}There is also a Makefile target that includes is *expenv* and several other dependencies that are only needed if you plan on building from source: 
+
+    make setup
+{{% /notice %}}
 
 In this example set of environment variables, the CO_NAMESPACE environment variable is set to *demo* as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.  
 
