@@ -554,9 +554,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		if request.BadgerFlag {
 			userLabelsMap[util.LABEL_BADGER] = "true"
 		}
-		//if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
-		//userLabelsMap[util.LABEL_AUTOFAIL] = "true"
-		//}
 		if request.ServiceType != "" {
 			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
 				resp.Status.Code = msgs.Error
@@ -694,6 +691,16 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+
+		//verify that for autofail clusters we have a replica requested
+		if newInstance.Spec.Replicas == "0" {
+			if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "replica-count of 1 or more is required when autofail is specified"
+				return resp
+			}
+		}
+
 		validateConfigPolicies(clusterName, request.Policies, ns)
 
 		t := time.Now()
