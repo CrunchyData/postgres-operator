@@ -40,6 +40,11 @@ fi
 echo "getting expenv go library..."
 go get github.com/blang/expenv
 
+echo "getting go dependencies for cli markdown generation"
+go get github.com/cpuguy83/go-md2man/md2man
+go get github.com/spf13/cobra
+go get github.com/spf13/cobra/docs
+
 # uncomment only if you want to develop on the project
 #echo "getting all libraries for project..."
 #dep ensure
