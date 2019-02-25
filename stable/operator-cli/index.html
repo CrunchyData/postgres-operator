@@ -6,7 +6,7 @@
     
       <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="generator" content="Hugo 0.52" />
+<meta name="generator" content="Hugo 0.53" />
 <title>Operator CLI :: Crunchy Data PostgreSQL Operator Documentation</title>
 <link rel="shortcut icon" href="https://crunchydata.github.io/postgres-operator/stable/favicon.png" type="image/x-icon" />
 <link href="https://crunchydata.github.io/postgres-operator/stable/css/nucleus.css" rel="stylesheet">
@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
 <script src="https://crunchydata.github.io/postgres-operator/stable/js/jquery-2.x.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.bundle.min.js" integrity="sha384-zDnhMsjVZfS3hiP7oCBRmfjkQC4fzxVxFhBx8Hkz2aZX8gEvA/jsP3eXRCvzTofP" crossorigin="anonymous"></script>
+<script src="https://crunchydata.github.io/postgres-operator/stable/js/main.js"></script>
 <script src="https://crunchydata.github.io/postgres-operator/stable/js/toc.js"></script>
 <script type="text/javascript">
       var baseurl = "https:\/\/crunchydata.github.io\/postgres-operator\/stable\/";
@@ -182,6 +183,337 @@
     </li>
         </ul>
     </li>
+    <li data-nav-id="/cli/" class="dd-item haschildren
+        ">
+      <div>
+      <a href="https://crunchydata.github.io/postgres-operator/stable/cli/">Clis</a><i class="fas fa-angle-right fa-lg category-icon"></i>
+
+      </div>
+        <ul>
+      <li data-nav-id="/cli/pgo/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo/">
+            pgo
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_apply/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_apply/">
+            pgo_apply
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_backup/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_backup/">
+            pgo_backup
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_clidoc/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_clidoc/">
+            pgo_clidoc
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create/">
+            pgo_create
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create_cluster/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_cluster/">
+            pgo_create_cluster
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create_pgbouncer/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_pgbouncer/">
+            pgo_create_pgbouncer
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create_pgpool/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_pgpool/">
+            pgo_create_pgpool
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create_policy/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_policy/">
+            pgo_create_policy
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create_schedule/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_schedule/">
+            pgo_create_schedule
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_create_user/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_user/">
+            pgo_create_user
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete/">
+            pgo_delete
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_backup/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_backup/">
+            pgo_delete_backup
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_cluster/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_cluster/">
+            pgo_delete_cluster
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_label/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_label/">
+            pgo_delete_label
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_pgbouncer/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_pgbouncer/">
+            pgo_delete_pgbouncer
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_pgpool/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_pgpool/">
+            pgo_delete_pgpool
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_policy/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_policy/">
+            pgo_delete_policy
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_schedule/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_schedule/">
+            pgo_delete_schedule
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_upgrade/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_upgrade/">
+            pgo_delete_upgrade
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_delete_user/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete_user/">
+            pgo_delete_user
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_df/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_df/">
+            pgo_df
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_failover/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_failover/">
+            pgo_failover
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_label/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_label/">
+            pgo_label
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_load/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_load/">
+            pgo_load
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_reload/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_reload/">
+            pgo_reload
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_restore/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_restore/">
+            pgo_restore
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_scale/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_scale/">
+            pgo_scale
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_scaledown/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_scaledown/">
+            pgo_scaledown
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show/">
+            pgo_show
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_backup/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_backup/">
+            pgo_show_backup
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_cluster/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_cluster/">
+            pgo_show_cluster
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_config/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_config/">
+            pgo_show_config
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_policy/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_policy/">
+            pgo_show_policy
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_pvc/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_pvc/">
+            pgo_show_pvc
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_schedule/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_schedule/">
+            pgo_show_schedule
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_upgrade/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_upgrade/">
+            pgo_show_upgrade
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_user/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_user/">
+            pgo_show_user
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_show_workflow/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_workflow/">
+            pgo_show_workflow
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_status/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_status/">
+            pgo_status
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_test/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_test/">
+            pgo_test
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_update/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_update/">
+            pgo_update
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_update_cluster/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_update_cluster/">
+            pgo_update_cluster
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_upgrade/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_upgrade/">
+            pgo_upgrade
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_user/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_user/">
+            pgo_user
+          </a>
+        </div>
+    </li>
+      <li data-nav-id="/cli/pgo_version/" class="dd-item">
+        <div>
+          <a href="https://crunchydata.github.io/postgres-operator/stable/cli/pgo_version/">
+            pgo_version
+          </a>
+        </div>
+    </li>
+        </ul>
+    </li>
 
 
 
@@ -217,6 +549,8 @@
    Upgrade</option>
     <option value="/contributing/" >
    Contributing</option>
+    <option value="/cli/" >
+   Clis</option>
 
 
 
@@ -385,7 +719,7 @@
 <tr>
 <td align="left">restore</td>
 <td align="left">pgo restore mycluster</td>
-<td align="left">Perform a pgbackrest restore on a Postgres cluster.</td>
+<td align="left">Perform a pgbackrest or pgdump restore on a Postgres cluster.</td>
 </tr>
 
 <tr>
@@ -451,6 +785,11 @@
 <h4 id="create-cluster-with-a-primary-only">Create Cluster With a Primary Only</h4>
 
 <pre><code>pgo create cluster mycluster
+</code></pre>
+
+<p>Create a cluster using the Crunchy Postgres + PostGIS container image:</p>
+
+<pre><code>pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis
 </code></pre>
 
 <h4 id="create-cluster-with-a-primary-and-a-replica">Create Cluster With a Primary and a Replica</h4>
@@ -562,6 +901,15 @@ pgo backup mycluster --backup-type=pgbackrest --backup-opts=&quot;--type=diff&qu
 <p>The last example passes in pgbackrest flags to the backup command.  See
 pgbackrest.org for command flag descriptions.</p>
 
+<h4 id="perform-a-pgdump-backup">Perform a pgdump backup</h4>
+
+<pre><code>pgo backup mycluster --backup-type=pgdump
+pgo backup mycluster --backup-type=pgdump --backup-opts=&quot;--dump-all --verbose&quot;
+pgo backup mycluster --backup-type=pgdump --backup-opts=&quot;--schema=myschema&quot;
+</code></pre>
+
+<p>Note: To run pgdump_all instead of pgdump, pass &lsquo;&ndash;dump-all&rsquo; flag in &ndash;backup-opts as shown above. All &ndash;backup-opts should be space delimited.</p>
+
 <h4 id="perform-a-pgbackrest-restore">Perform a pgbackrest restore</h4>
 
 <pre><code>pgo restore mycluster
@@ -570,6 +918,11 @@ pgbackrest.org for command flag descriptions.</p>
 <p>Or perform a restore based on a point in time:</p>
 
 <pre><code>pgo restore mycluster --pitr-target=&quot;2019-01-14 00:02:14.921404+00&quot; --backup-opts=&quot;--type=time&quot;
+</code></pre>
+
+<p>You can also target specific nodes when performing a restore:</p>
+
+<pre><code>pgo restore mycluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a
 </code></pre>
 
 <p>Here are some steps to test PITR:</p>
@@ -591,6 +944,16 @@ before you do a restore.</p>
 <h4 id="restore-from-pgbasebackup">Restore from pgbasebackup</h4>
 
 <pre><code>pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc --secret-from=mycluster
+</code></pre>
+
+<h4 id="restore-from-pgdump-backup">Restore from pgdump backup</h4>
+
+<pre><code>pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target=&quot;2019-01-15 00:03:25&quot;
+</code></pre>
+
+<p>To restore the most recent pgdump at the default path, leave off a timestamp:</p>
+
+<pre><code>pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc
 </code></pre>
 
 <h3 id="fail-over-operations">Fail-over Operations</h3>
@@ -623,6 +986,14 @@ pgo failover mycluster --target=sometarget
 <pre><code>pgo create pgbouncer mycluster
 </code></pre>
 
+<p>Note, the pgbouncer configuration defaults to specifying only
+a single entry for the primary database.  If you want it to
+have an entry for the replica service, add the following
+configuration to pgbouncer.ini:</p>
+
+<pre><code>{{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+</code></pre>
+
 <h4 id="add-pgpool-to-a-cluster">Add pgpool to a Cluster</h4>
 
 <pre><code>pgo create pgpool mycluster
@@ -647,6 +1018,11 @@ pgo failover mycluster --target=sometarget
 
 <pre><code>pgo create cluster mycluster --metrics
 </code></pre>
+
+<p>Note: backend metric storage such as Prometheus and front end
+visualization software such as Grafana are not created automatically
+by the PostgreSQL Operator.  For instructions on installing Grafana and
+Prometheus in your environment, see the <a href="https://access.crunchydata.com/documentation/crunchy-containers/2.3.0/examples/metrics/metrics/">Crunchy Container Suite documentation</a>.</p>
 
 <h3 id="scheduled-tasks">Scheduled Tasks</h3>
 
@@ -782,8 +1158,6 @@ against the target cluster prior to creating this schedule.</p>
 
 <link href="https://crunchydata.github.io/postgres-operator/stable/css/featherlight.min.css" rel="stylesheet">
 <script src="https://crunchydata.github.io/postgres-operator/stable/js/featherlight.min.js"></script>
-
-
 
 <script src="https://crunchydata.github.io/postgres-operator/stable/theme-flex/script.js"></script>
 

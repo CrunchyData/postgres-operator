@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Contributing on Crunchy Data PostgreSQL Operator Documentation</title>
+    <link>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/</link>
+    <description>Recent content in Contributing on Crunchy Data PostgreSQL Operator Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://crunchydata.github.io/postgres-operator/3.5.1/contributing/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Updating Documentation</title>
+      <link>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/documentation-updates/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/documentation-updates/</guid>
+      <description>Documentation The documentation website is generated using Hugo and https://pages.github.com/)[GitHub Pages]().
+Hosting Hugo Locally (Optional) If you would like to build the documentation locally, view the official Installing Hugo guide to set up Hugo locally.
+You can then start the server by running the following commands -
+cd $COROOT/hugo/ hugo server  The local version of the Hugo server is accessible by default from localhost:1313. Once you&amp;rsquo;ve run hugo server, that will let you interactively make changes to the documentation as desired and view the updates in real-time.</description>
+    </item>
+    
+    <item>
+      <title>Submitting Issues</title>
+      <link>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/issues/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/issues/</guid>
+      <description>If you would like to submit an feature / issue for us to consider please submit an to the official GitHub Repository.
+If you would like to work the issue, please add that information in the issue so that we can confirm we are not already working no need to duplicate efforts.
+If you have any question you can submit a Support - Question and Answer issue and we will work with you on how you can get more involved.</description>
+    </item>
+    
+    <item>
+      <title>Submitting Pull Requests</title>
+      <link>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/pull-requests/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/3.5.1/contributing/pull-requests/</guid>
+      <description>So you decided to submit an issue and work it. Great! Let&amp;rsquo;s get it merged in to the codebase. The following will go a long way to helping get the fix merged in quicker.
+ Create a Pull Request from your Fork to the Develop branch. Update the checklists in the Pull Request Description. Reference which issues this Pull Request is resolving.  </description>
+    </item>
+    
+  </channel>
+</rss>
