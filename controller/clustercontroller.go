@@ -17,15 +17,18 @@ limitations under the License.
 
 import (
 	"context"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/util"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
 // PgclusterController holds the connections for the controller
@@ -38,7 +41,7 @@ type PgclusterController struct {
 
 // Run starts an pgcluster resource controller
 func (c *PgclusterController) Run(ctx context.Context) error {
-	log.Info("Watch Pgcluster objects")
+	log.Debug("Watch Pgcluster objects")
 
 	_, err := c.watchPgclusters(ctx)
 	if err != nil {
@@ -83,9 +86,12 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 // onAdd is called when a pgcluster is added
 func (c *PgclusterController) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	log.Infof("[PgclusterCONTROLLER] OnAdd %s", cluster.ObjectMeta.SelfLink)
+	log.Debugf("[PgclusterController] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+
+	//handle the case when the operator restarts and don't
+	//process already processed pgclusters
 	if cluster.Status.State == crv1.PgclusterStateProcessed {
-		log.Info("pgcluster " + cluster.ObjectMeta.Name + " already processed")
+		log.Debug("pgcluster " + cluster.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -109,24 +115,100 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
+		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
 	}
 
-	log.Debugf("UPDATED status: %#v", clusterCopy)
+	log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
 
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
-	newExample := newObj.(*crv1.Pgcluster)
-	log.Debugf("pgcluster %s updated", newExample.ObjectMeta.Name)
+	oldcluster := oldObj.(*crv1.Pgcluster)
+	newcluster := newObj.(*crv1.Pgcluster)
+	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
+
+	//handle the case for when the autofail lable is updated
+	if newcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] != "" {
+		oldValue := oldcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL]
+		newValue := newcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL]
+		if oldValue != newValue {
+			if newValue == "false" {
+				log.Debugf("pgcluster autofail was set to false on %s", oldcluster.Name)
+				//remove the autofail pgtask for this cluster
+				err := kubeapi.Deletepgtask(c.PgclusterClient, oldcluster.Name+"-autofail", oldcluster.ObjectMeta.Namespace)
+				if err != nil {
+					log.Error(err.Error())
+				}
+			} else if newValue == "true" {
+				log.Debugf("pgcluster autofail was set to true on %s", oldcluster.Name)
+				log.Debugf("pgcluster update %s autofail changed from %s to %s", oldcluster.Name, oldValue, newValue)
+				//get ready status
+				err, ready := GetPrimaryPodStatus(c.PgclusterClientset, newcluster, newcluster.ObjectMeta.Namespace)
+				if err != nil {
+					log.Error(err.Error())
+					return
+				}
+				//call the autofail logic on this cluster
+				clusteroperator.AutofailBase(c.PgclusterClientset, c.PgclusterClient, ready, newcluster.ObjectMeta.Name, newcluster.ObjectMeta.Namespace)
+			}
+		}
+
+	}
 
 }
 
 // onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	log.Infof("[PgclusterCONTROLLER] OnDelete %s", cluster.ObjectMeta.SelfLink)
+	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+
+	//handle pgcluster cleanup
 	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
+}
+
+func GetPrimaryPodStatus(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, ns string) (error, bool) {
+	var ready bool
+	var err error
+
+	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Name
+	pods, err := kubeapi.GetPods(clientset, selector, ns)
+	if err != nil {
+		return err, ready
+	}
+	if len(pods.Items) == 0 {
+		log.Error("GetPrimaryPodStatus found no primary pod for %s using %s", cluster.Name, selector)
+		return err, ready
+	}
+	if len(pods.Items) > 1 {
+		log.Error("GetPrimaryPodStatus found more than 1 primary pod for %s using %s", cluster.Name, selector)
+		return err, ready
+	}
+
+	pod := pods.Items[0]
+	var readyStatus string
+	readyStatus, ready = getReadyStatus(&pod)
+	log.Debugf("readyStatus found to be %s", readyStatus)
+	return err, ready
+
+}
+
+//this code is taken from apiserver/cluster/clusterimpl.go, need
+//to refactor into a higher level package to share the code
+func getReadyStatus(pod *v1.Pod) (string, bool) {
+	equal := false
+	readyCount := 0
+	containerCount := 0
+	for _, stat := range pod.Status.ContainerStatuses {
+		containerCount++
+		if stat.Ready {
+			readyCount++
+		}
+	}
+	if readyCount == containerCount {
+		equal = true
+	}
+	return fmt.Sprintf("%d/%d", readyCount, containerCount), equal
+
 }

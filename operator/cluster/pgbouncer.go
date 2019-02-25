@@ -101,7 +101,7 @@ func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *r
 	}
 
 	//create the pgbouncer but leave the existing service in place
-	AddPgbouncer(clientset, &pgcluster, namespace, false)
+	err = AddPgbouncer(clientset, &pgcluster, namespace, false)
 
 	//remove task to cleanup
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -125,7 +125,11 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		log.Error(err)
 		return
 	}
-	AddPgbouncer(clientset, &pgcluster, namespace, true)
+	err = AddPgbouncer(clientset, &pgcluster, namespace, true)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	//remove task
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -193,7 +197,7 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 }
 
 // ProcessPgbouncer ...
-func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) {
+func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) error {
 	var doc bytes.Buffer
 	var err error
 
@@ -204,7 +208,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 	err = CreatePgbouncerSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 	log.Debug("pgbouncer secret created")
 
@@ -227,7 +231,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgbouncerResources)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 		fields.ContainerResources = operator.GetContainerResourcesJSON(&tmp)
 
@@ -236,7 +240,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 	err = operator.PgbouncerTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
@@ -247,13 +251,13 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 	err = json.Unmarshal(doc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling pgbouncer json into Deployment " + err.Error())
-		return
+		return err
 	}
 
 	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
 		log.Error("error creating pgbouncer Deployment " + err.Error())
-		return
+		return err
 	}
 
 	if createService {
@@ -267,9 +271,11 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {
 			log.Error(err)
-			return
+			return err
 		}
 	}
+
+	return err
 }
 
 // DeletePgbouncer
@@ -291,6 +297,12 @@ func CreatePgbouncerSecret(clientset *kubernetes.Clientset, primary, replica, db
 	var err error
 	var username, password string
 	var pgbouncerHBABytes, pgbouncerConfBytes, pgbouncerPasswdBytes []byte
+
+	_, found, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	if found {
+		log.Debugf("pgbouncer secret %s already present, will reuse", secretName)
+		return err
+	}
 
 	pgbouncerHBABytes, err = getPgbouncerHBA()
 	if err != nil {

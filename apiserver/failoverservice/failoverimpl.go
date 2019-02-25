@@ -33,7 +33,7 @@ import (
 // pgo failover mycluster
 // pgo failover all
 // pgo failover --selector=name=mycluster
-func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResponse {
+func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateFailoverResponse {
 	var err error
 	resp := msgs.CreateFailoverResponse{}
 	resp.Status.Code = msgs.Ok
@@ -41,7 +41,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	resp.Results = make([]string, 0)
 
 	if request.Target != "" {
-		_, err = validateDeploymentName(request.Target, request.ClusterName)
+		_, err = validateDeploymentName(request.Target, request.ClusterName, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -50,7 +50,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	}
 
 	//get the clusters list
-	_, err = validateClusterName(request.ClusterName)
+	_, err = validateClusterName(request.ClusterName, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -61,10 +61,11 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
 	spec.Name = request.ClusterName + "-" + util.LABEL_FAILOVER
 
 	// previous failovers will leave a pgtask so remove it first
-	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, apiserver.Namespace)
+	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, ns)
 
 	spec.TaskType = crv1.PgtaskFailover
 	spec.Parameters = make(map[string]string)
@@ -94,7 +95,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 	}
 
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		newInstance, apiserver.Namespace)
+		newInstance, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -108,7 +109,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest) msgs.CreateFailoverResp
 
 //  QueryFailover ...
 // pgo failover mycluster --query
-func QueryFailover(name string) msgs.QueryFailoverResponse {
+func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	var err error
 	resp := msgs.QueryFailoverResponse{}
 	resp.Status.Code = msgs.Ok
@@ -119,7 +120,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 	//var deployment *v1beta1.Deployment
 
 	//get the clusters list
-	_, err = validateClusterName(name)
+	_, err = validateClusterName(name, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -132,7 +133,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 
 	if apiserver.Pgo.Pgo.PreferredFailoverNode != "" {
 		log.Debug("PreferredFailoverNode is set to %s", apiserver.Pgo.Pgo.PreferredFailoverNode)
-		nodes, err = util.GetPreferredNodes(apiserver.Clientset, apiserver.Pgo.Pgo.PreferredFailoverNode, apiserver.Namespace)
+		nodes, err = util.GetPreferredNodes(apiserver.Clientset, apiserver.Pgo.Pgo.PreferredFailoverNode, ns)
 		if err != nil {
 			log.Error("error getting preferred nodes " + err.Error())
 			resp.Status.Code = msgs.Error
@@ -146,7 +147,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 	//get pods using selector service-name=clusterName-replica
 
 	selector := util.LABEL_SERVICE_NAME + "=" + name + "-replica"
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
 		resp.Status.Msg = "no replicas found for " + name
@@ -171,7 +172,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 	selector = util.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
 
 	var deployments *v1beta1.DeploymentList
-	deployments, err = kubeapi.GetDeployments(apiserver.Clientset, selector, apiserver.Namespace)
+	deployments, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
 		resp.Status.Msg = "no replicas found for " + name
@@ -189,7 +190,7 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 		target := msgs.FailoverTargetSpec{}
 		target.Name = dep.Name
 
-		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, apiserver.Namespace, apiserver.Pgo.Cluster.Port)
+		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name)
 		if preferredNode(nodes, target.Node) {
@@ -202,10 +203,10 @@ func QueryFailover(name string) msgs.QueryFailoverResponse {
 	return resp
 }
 
-func validateClusterName(clusterName string) (*crv1.Pgcluster, error) {
+func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-		&cluster, clusterName, apiserver.Namespace)
+		&cluster, clusterName, ns)
 	if !found {
 		return &cluster, errors.New("no cluster found named " + clusterName)
 	}
@@ -213,9 +214,9 @@ func validateClusterName(clusterName string) (*crv1.Pgcluster, error) {
 	return &cluster, err
 }
 
-func validateDeploymentName(deployName, clusterName string) (*v1beta1.Deployment, error) {
+func validateDeploymentName(deployName, clusterName, ns string) (*v1beta1.Deployment, error) {
 
-	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, apiserver.Namespace)
+	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, ns)
 	if !found {
 		return deployment, errors.New("no target found named " + deployName)
 	}

@@ -18,21 +18,22 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	otherutil "github.com/crunchydata/postgres-operator/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var PITRTarget string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
-	Short: "Perform a pgBackRest restore",
-	Long: `RESTORE performs a pgBackRest restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  For example:
+	Short: "Perform a restore from previous backup",
+	Long: `RESTORE performs a restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  Valid backup types to restore from are pgbackrest and pgdump. For example:
 
 	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -40,9 +41,11 @@ var restoreCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
-			fmt.Println("Warning:  stopping this database and creating a new primary is part of the restore workflow!")
+			if BackupType == "" || BackupType == otherutil.LABEL_BACKUP_TYPE_BACKREST {
+				fmt.Println("Warning:  If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
+			}
 			if util.AskForConfirmation(NoPrompt, "") {
-				restore(args)
+				restore(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -54,23 +57,48 @@ var restoreCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(restoreCmd)
 
-	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackrest options for the restore.")
+	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The restore options for pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
+	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling "+
+		"the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.")
 	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
+	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
 
 }
 
 // restore ....
-func restore(args []string) {
+func restore(args []string, ns string) {
 	log.Debugf("restore called %v", args)
 
-	request := new(msgs.RestoreRequest)
-	request.FromCluster = args[0]
-	request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
-	request.RestoreOpts = BackupOpts
-	request.PITRTarget = PITRTarget
+	var response msgs.RestoreResponse
+	var err error
 
-	response, err := api.Restore(httpclient, &SessionCredentials, request)
+	// use different request message, depending on type.
+	if BackupType == "pgdump" {
+
+		request := new(msgs.PgRestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+		request.RestoreOpts = BackupOpts
+		request.PITRTarget = PITRTarget
+		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
+		request.NodeLabel = NodeLabel
+
+		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
+	} else {
+
+		request := new(msgs.RestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+		request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
+		request.RestoreOpts = BackupOpts
+		request.PITRTarget = PITRTarget
+		request.NodeLabel = NodeLabel
+
+		response, err = api.Restore(httpclient, &SessionCredentials, request)
+	}
+
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)

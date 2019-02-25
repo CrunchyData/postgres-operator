@@ -82,9 +82,12 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 // onAdd is called when a pgpolicy is added
 func (c *PgpolicyController) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	log.Debugf("[PgpolicyCONTROLLER] OnAdd %s", policy.ObjectMeta.SelfLink)
+	log.Debugf("[PgpolicyController] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
+
+	//handle the case of when a pgpolicy is already processed, which
+	//is the case when the operator restarts
 	if policy.Status.State == crv1.PgpolicyStateProcessed {
-		log.Info("pgpolicy " + policy.ObjectMeta.Name + " already processed")
+		log.Debug("pgpolicy " + policy.ObjectMeta.Name + " already processed")
 		return
 	}
 
@@ -108,10 +111,9 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		log.Errorf("ERROR updating status: %v", err)
+		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())
 	}
 
-	log.Debugf("UPDATED status: %#v", policyCopy)
 }
 
 // onUpdate is called when a pgpolicy is updated
@@ -121,7 +123,9 @@ func (c *PgpolicyController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgpolicy is deleted
 func (c *PgpolicyController) onDelete(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	log.Debugf("[PgpolicyCONTROLLER] OnDelete %s", policy.ObjectMeta.SelfLink)
+	log.Debugf("[PgpolicyController] onDelete ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
+
+	/**
 	err := c.PgpolicyClient.Delete().
 		Resource(crv1.PgpolicyResourcePlural).
 		Namespace(policy.ObjectMeta.Namespace).
@@ -132,5 +136,6 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 	if err != nil {
 		log.Errorf("ERROR deleting pgpolicy: %v", err)
 	}
+	*/
 	log.Debugf("DELETED pgpolicy %s", policy.ObjectMeta.Name)
 }

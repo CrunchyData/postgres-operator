@@ -19,20 +19,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+
 	//"github.com/crunchydata/postgres-operator/operator/cluster"
+	"os"
+	"time"
+
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type restorejobTemplateFields struct {
@@ -49,6 +53,7 @@ type restorejobTemplateFields struct {
 	PgbackrestDBPath    string
 	PgbackrestRepo1Path string
 	PgbackrestRepo1Host string
+	NodeSelector        string
 }
 
 // Restore ...
@@ -78,11 +83,13 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	//use the storage config from pgo.yaml for Primary
-	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+	//use the storage config from the pgcluster for the restored pvc
+	//storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+	storage := cluster.Spec.PrimaryStorage
 
 	//create the "to-cluster" PVC to hold the new data
 	var pvcName string
-	pvcName, err = createPVC(clusterName, restclient, namespace, clientset, task)
+	pvcName, err = createPVC(storage, clusterName, restclient, namespace, clientset, task)
 	if err != nil {
 		log.Error(err)
 		return
@@ -97,19 +104,23 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		log.Errorf("restore workflow error: could not get depList using %s", selector)
 		return
 	}
-	if len(depList.Items) != 1 {
-		log.Errorf("restore workflow error: depList not equal to 1 %s", selector)
+
+	switch depLen := len(depList.Items); depLen {
+	case 0:
+		log.Debugf("restore workflow: no primary found using selector %s. Skipping deployment deletion.", selector)
+	case 1:
+		depToDelete := depList.Items[0]
+
+		err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+		if err != nil {
+			log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
+			return
+		}
+		log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
+	default:
+		log.Errorf("restore workflow error: depList has invalid length of %d using selector %s", depLen, selector)
 		return
 	}
-
-	depToDelete := depList.Items[0]
-
-	err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
-	if err != nil {
-		log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
-		return
-	}
-	log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
 
 	//update backrest repo with new data path
 	targetDepName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
@@ -136,7 +147,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	jobFields := restorejobTemplateFields{
-		JobName:             "backrest-restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-to-" + pvcName,
+		JobName:             "restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
 		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterPVCName:    pvcName,
@@ -149,6 +160,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
 		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
+		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 	}
 
 	var doc2 bytes.Buffer
@@ -187,7 +199,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 }
 
-func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace, workflowID, restoreToName string) {
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace,
+	workflowID, restoreToName string, affinity *v1.Affinity) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
 
@@ -200,7 +213,7 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	}
 
 	//create the new primary deployment
-	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID)
+	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 	//cluster.Spec.Name = restoreToName
@@ -236,14 +249,13 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createPVC(clusterName string, restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
+func createPVC(storage crv1.PgStorageSpec, clusterName string, restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
 	var err error
-
-	//use the storage config from pgo.yaml for Primary
-	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
 
 	//create the "to-cluster" PVC to hold the new data
 	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+	pgstoragespec := storage
+	/**
 	pgstoragespec := crv1.PgStorageSpec{}
 	pgstoragespec.AccessMode = storage.AccessMode
 	pgstoragespec.Size = storage.Size
@@ -252,6 +264,7 @@ func createPVC(clusterName string, restclient *rest.RESTClient, namespace string
 	pgstoragespec.Fsgroup = storage.Fsgroup
 	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
 	pgstoragespec.MatchLabels = storage.MatchLabels
+	*/
 
 	var found bool
 	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
@@ -363,7 +376,8 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 	return err
 }
 
-func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset, namespace, restoreToName, workflowID string) error {
+func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
+	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
 	var err error
 
@@ -377,6 +391,18 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	archivePVCName := cluster.Spec.Name + "-xlog"
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 
+	var affinityStr string
+	if affinity != nil {
+		log.Debugf("Affinity found on restore job, and will applied to the restored deployment")
+		affinityBytes, err := json.MarshalIndent(affinity, "", "  ")
+		if err != nil {
+			log.Error("unable to marshall affinity obtained from restore job spec")
+		}
+		affinityStr = "\"affinity\":" + string(affinityBytes) + ","
+	} else {
+		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
+	}
+
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
 		Replicas:                "1",
@@ -387,6 +413,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		LogStatement:            operator.Pgo.Cluster.LogStatement,
 		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
 		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImage:                cluster.Spec.CCPImage,
 		CCPImageTag:             cluster.Spec.CCPImageTag,
 		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
 		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),
@@ -404,12 +431,12 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		RootSecretName:          cluster.Spec.RootSecretName,
 		PrimarySecretName:       cluster.Spec.PrimarySecretName,
 		UserSecretName:          cluster.Spec.UserSecretName,
-		NodeSelector:            operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In"),
+		NodeSelector:            affinityStr,
 		ContainerResources:      operator.GetContainerResourcesJSON(&cluster.Spec.ContainerResources),
 		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName),
+		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

@@ -1,10 +1,10 @@
 Cluster:
   PrimaryNodeLabel:  
-  ReplicaNodeLabel: 
+  ReplicaNodeLabel:  
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.1-2.3.0-rc6
+  CCPImageTag:  centos7-11.2-2.3.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -31,6 +31,10 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  1G
     StorageType:  create
+  replicastorage:
+    AccessMode:  ReadWriteMany
+    Size:  700M
+    StorageType:  create
   nfsstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
@@ -51,12 +55,17 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  800M
     StorageType:  create
-    SupplementalGroups:  65534
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
     StorageType:  dynamic
     StorageClass:  fast
+    Fsgroup:  26
+  rook:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  rook-ceph-block
     Fsgroup:  26
 DefaultContainerResources: 
 DefaultLoadResources:  
@@ -83,4 +92,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0
+  COImageTag:  centos7-3.5.1

@@ -79,7 +79,7 @@ var updateClusterCmd = &cobra.Command{
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				updateCluster(args)
+				updateCluster(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}

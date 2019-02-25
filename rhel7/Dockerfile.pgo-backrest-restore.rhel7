@@ -2,19 +2,19 @@ FROM registry.access.redhat.com/rhel7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
-	PostgresFullVersion="11.1" \
+	PostgresFullVersion="11.2" \
 	Version="7.6" \
-	Release="3.5.0" \
+	Release="3.5.1" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
-ENV PGVERSION="11" 
+ENV PGVERSION="11" BACKREST_VERSION="2.10"
 
 ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN yum -y update && yum -y install psmisc openssh-server openssh-clients crunchy-backrest postgresql11-server procps-ng && yum -y clean all
+RUN yum -y update && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng && yum -y clean all
 
 VOLUME ["/sshd", "/pgdata"]
 

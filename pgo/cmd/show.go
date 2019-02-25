@@ -95,7 +95,7 @@ func init() {
 	ShowCmd.AddCommand(ShowUpgradeCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
-	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", util.LABEL_BACKUP_TYPE_BASEBACKUP, "The backup type output to list. Valid choices are pgbasebackup (default) or pgbackrest.")
+	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type output to list. Valid choices are pgbasebackup (default) or pgbackrest.")
 	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
@@ -115,7 +115,7 @@ var ShowConfigCmd = &cobra.Command{
 
 	pgo show config`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showConfig(args)
+		showConfig(args, Namespace)
 	},
 }
 
@@ -126,7 +126,7 @@ var ShowWorkflowCmd = &cobra.Command{
 
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5`,
 	Run: func(cmd *cobra.Command, args []string) {
-		showWorkflow(args)
+		showWorkflow(args, Namespace)
 	},
 }
 
@@ -140,7 +140,7 @@ var ShowPolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: Policy name(s) required for this command.")
 		} else {
-			showPolicy(args)
+			showPolicy(args, Namespace)
 		}
 	},
 }
@@ -158,7 +158,7 @@ var ShowPVCCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: PVC name(s) required for this command.")
 		} else {
-			showPVC(args)
+			showPVC(args, Namespace)
 		}
 	},
 }
@@ -173,7 +173,7 @@ var ShowUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
-			showUpgrade(args)
+			showUpgrade(args, Namespace)
 		}
 	},
 }
@@ -189,13 +189,15 @@ var ShowBackupCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
-			if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
-
-				showBackrest(args)
-			} else if BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
-				showBackup(args)
+			// default is pgbasebackup
+			if BackupType == "" || BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
+				showBackup(args, Namespace)
+			} else if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
+				showBackrest(args, Namespace)
+			} else if BackupType == util.LABEL_BACKUP_TYPE_PGDUMP {
+				showpgDump(args, Namespace)
 			} else {
-				fmt.Println("Error: Valid backup-type values are pgbasebackup and pgbackrest. The default if not supplied is pgbasebackup.")
+				fmt.Println("Error: Valid backup-type values are pgbasebackup, pgbackrest and pgdump. The default if not supplied is pgbasebackup.")
 			}
 		}
 	},
@@ -213,7 +215,7 @@ var ShowClusterCmd = &cobra.Command{
 		if Selector == "" && len(args) == 0 {
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
-			showCluster(args)
+			showCluster(args, Namespace)
 		}
 	},
 }
@@ -229,7 +231,7 @@ var ShowUserCmd = &cobra.Command{
 		if Selector == "" && len(args) == 0 {
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
-			showUser(args)
+			showUser(args, Namespace)
 		}
 	},
 }
@@ -248,6 +250,6 @@ var ShowScheduleCmd = &cobra.Command{
 			fmt.Println("Error: cluster name, schedule name or selector is required to show a schedule.")
 			return
 		}
-		showSchedule(args)
+		showSchedule(args, Namespace)
 	},
 }

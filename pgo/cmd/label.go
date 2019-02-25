@@ -46,7 +46,7 @@ var labelCmd = &cobra.Command{
 		if LabelCmdLabel == "" {
 			fmt.Println("Error: You must specify the label to apply.")
 		} else {
-			labelClusters(args)
+			labelClusters(args, Namespace)
 		}
 	},
 }
@@ -60,7 +60,7 @@ func init() {
 
 }
 
-func labelClusters(clusters []string) {
+func labelClusters(clusters []string, ns string) {
 	var err error
 
 	if len(clusters) == 0 && Selector == "" {
@@ -70,6 +70,7 @@ func labelClusters(clusters []string) {
 
 	r := new(msgs.LabelRequest)
 	r.Args = clusters
+	r.Namespace = ns
 	r.Selector = Selector
 	r.DryRun = DryRun
 	r.LabelCmdLabel = LabelCmdLabel
@@ -99,11 +100,12 @@ func labelClusters(clusters []string) {
 }
 
 // deleteLabel ...
-func deleteLabel(args []string) {
+func deleteLabel(args []string, ns string) {
 	log.Debugf("deleteLabel called %v", args)
 
 	req := msgs.DeleteLabelRequest{}
 	req.Selector = Selector
+	req.Namespace = ns
 	req.Args = args
 	req.LabelCmdLabel = LabelCmdLabel
 	req.ClientVersion = msgs.PGO_VERSION

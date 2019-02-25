@@ -41,17 +41,38 @@ var backupCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
 		} else {
-			if BackupType == labelutil.LABEL_BACKUP_TYPE_BACKREST {
+
+			exitNow := false // used in switch for early exit.
+
+			switch buSelected := BackupType; buSelected {
+
+			case labelutil.LABEL_BACKUP_TYPE_BACKREST:
+
+				// storage config flag invalid for backrest
 				if StorageConfig != "" {
 					fmt.Println("Error: --storage-config is not allowed when performing a pgbackrest backup.")
+					exitNow = true
+				}
+
+				if exitNow {
 					return
 				}
-				createBackrestBackup(args)
-			} else if BackupType == labelutil.LABEL_BACKUP_TYPE_BASEBACKUP {
-				createBackup(args)
-			} else {
-				fmt.Println("Error: You must specify either pgbasebackup or pgbackrest for the --backup-type.")
+
+				createBackrestBackup(args, Namespace)
+
+			case "", labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
+
+				createBackup(args, Namespace)
+
+			case labelutil.LABEL_BACKUP_TYPE_PGDUMP:
+
+				createpgDumpBackup(args, Namespace)
+
+			default:
+				fmt.Println("Error: You must specify either pgbasebackup, pgbackrest, or pgdump for the --backup-type.")
+
 			}
+
 		}
 
 	},
@@ -64,17 +85,17 @@ func init() {
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
-	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup, and both pgbasebackup and pgbackrest are valid backup types.")
+	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
 
 }
 
 // showBackup ....
-func showBackup(args []string) {
+func showBackup(args []string, ns string) {
 	log.Debugf("showBackup called %v", args)
 
 	//show pod information for job
 	for _, v := range args {
-		response, err := api.ShowBackup(httpclient, v, &SessionCredentials)
+		response, err := api.ShowBackup(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -107,6 +128,7 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "")
 	fmt.Printf("%s%s\n", "", "pgbackup : "+result.Spec.Name)
 
+	fmt.Printf("%s%s\n", TreeBranch, "Namespace:\t"+result.Spec.Namespace)
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.StorageSpec.Name)
 	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
 	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
@@ -114,17 +136,17 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.Spec.BackupUserSecret)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Secret:\t"+result.Spec.BackupUserSecret)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
 }
 
 // deleteBackup ....
-func deleteBackup(args []string) {
+func deleteBackup(args []string, ns string) {
 	log.Debugf("deleteBackup called %v", args)
 
 	for _, v := range args {
-		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials)
+		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -149,11 +171,12 @@ func deleteBackup(args []string) {
 }
 
 // createBackup ....
-func createBackup(args []string) {
+func createBackup(args []string, ns string) {
 	log.Debugf("createBackup called %v", args)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
+	request.Namespace = ns
 	request.Selector = Selector
 	request.PVCName = PVCName
 	request.StorageConfig = StorageConfig

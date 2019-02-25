@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowConfig(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowConfigResponse, error) {
+func ShowConfig(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowConfigResponse, error) {
 
 	var response msgs.ShowConfigResponse
 
-	url := SessionCredentials.APIServerURL + "/config?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/config?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
 	req, err := http.NewRequest("GET", url, nil)

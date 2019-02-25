@@ -2,13 +2,13 @@ FROM centos:7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
-	PostgresFullVersion="11.1" \
+	PostgresFullVersion="11.2" \
 	Version="7.6" \
-	Release="3.5.0" \
+	Release="3.5.1" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm"
+ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm" BACKREST_VERSION="2.10"
 
 # PGDG PostgreSQL Repository
 
@@ -16,7 +16,7 @@ RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/r
 
 RUN yum -y update && \
 #yum -y install epel-release && \
-yum -y install openssh-server openssh-clients pgbackrest hostname pgocps-ng && \
+yum -y install openssh-server openssh-clients pgbackrest-"${BACKREST_VERSION}" hostname pgocps-ng && \
 yum -y clean all
 
 RUN useradd pgbackrest

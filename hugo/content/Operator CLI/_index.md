@@ -52,7 +52,7 @@ The following table shows the *pgo* operations currently implemented:
 | label |pgo label mycluster --label=environment=prod  |Create a metadata label for a Postgres cluster(s). |
 | load |pgo load --load-config=load.json --selector=name=mycluster  |Perform a data load into a Postgres cluster(s).|
 | reload |pgo reload mycluster  |Perform a pg_ctl reload command on a Postgres cluster(s). |
-| restore |pgo restore mycluster |Perform a pgbackrest restore on a Postgres cluster. |
+| restore |pgo restore mycluster |Perform a pgbackrest or pgdump restore on a Postgres cluster. |
 | scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
 | scaledown |pgo scaledown  mycluster --query  |Delete a replica from a Postgres cluster. |
 | show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy, schedule). |
@@ -69,6 +69,10 @@ The following table shows the *pgo* operations currently implemented:
 #### Create Cluster With a Primary Only
 
     pgo create cluster mycluster
+
+Create a cluster using the Crunchy Postgres + PostGIS container image:
+
+    pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis
 
 #### Create Cluster With a Primary and a Replica
 
@@ -156,6 +160,14 @@ The following table shows the *pgo* operations currently implemented:
 The last example passes in pgbackrest flags to the backup command.  See
 pgbackrest.org for command flag descriptions.
 
+#### Perform a pgdump backup
+
+	pgo backup mycluster --backup-type=pgdump
+	pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose"
+	pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema"
+
+Note: To run pgdump_all instead of pgdump, pass '--dump-all' flag in --backup-opts as shown above. All --backup-opts should be space delimited.
+
 #### Perform a pgbackrest restore
 
     pgo restore mycluster
@@ -163,6 +175,10 @@ pgbackrest.org for command flag descriptions.
 Or perform a restore based on a point in time:
 
     pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time"
+
+You can also target specific nodes when performing a restore:
+
+    pgo restore mycluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a
 
 Here are some steps to test PITR:
 
@@ -181,6 +197,15 @@ before you do a restore.
 #### Restore from pgbasebackup
 
     pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc --secret-from=mycluster
+
+#### Restore from pgdump backup
+
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15 00:03:25"
+	
+To restore the most recent pgdump at the default path, leave off a timestamp:
+	
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc
+	
 
 ### Fail-over Operations
 
@@ -206,6 +231,14 @@ before you do a restore.
 
     pgo create pgbouncer mycluster
 
+Note, the pgbouncer configuration defaults to specifying only
+a single entry for the primary database.  If you want it to
+have an entry for the replica service, add the following
+configuration to pgbouncer.ini:
+
+    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+
+
 #### Add pgpool to a Cluster
 
     pgo create pgpool mycluster
@@ -225,6 +258,11 @@ before you do a restore.
 #### Create a Cluster with Metrics Collection
 
     pgo create cluster mycluster --metrics
+
+Note: backend metric storage such as Prometheus and front end 
+visualization software such as Grafana are not created automatically 
+by the PostgreSQL Operator.  For instructions on installing Grafana and 
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.3.0/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 

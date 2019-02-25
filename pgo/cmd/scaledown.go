@@ -42,7 +42,7 @@ var scaledownCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the clusters to scale down.`)
 		} else {
 			if Query {
-				queryCluster(args)
+				queryCluster(args, Namespace)
 			} else {
 				if Target == "" {
 					fmt.Println(`Error: You must specify --target`)
@@ -53,7 +53,7 @@ var scaledownCmd = &cobra.Command{
 					fmt.Println("Aborting...")
 					os.Exit(2)
 				}
-				scaleDownCluster(args[0])
+				scaleDownCluster(args[0], Namespace)
 			}
 		}
 	},
@@ -69,10 +69,10 @@ func init() {
 
 }
 
-func queryCluster(args []string) {
+func queryCluster(args []string, ns string) {
 
 	for _, arg := range args {
-		response, err := api.ScaleQuery(httpclient, arg, &SessionCredentials)
+		response, err := api.ScaleQuery(httpclient, arg, &SessionCredentials, ns)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -97,9 +97,9 @@ func queryCluster(args []string) {
 	}
 }
 
-func scaleDownCluster(clusterName string) {
+func scaleDownCluster(clusterName, ns string) {
 
-	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, DeleteData, &SessionCredentials)
+	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, DeleteData, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())

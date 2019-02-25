@@ -30,11 +30,13 @@ const PgupgradeResourcePlural = "pgupgrades"
 
 // PgupgradeSpec ...
 type PgupgradeSpec struct {
+	Namespace       string        `json:"namespace"`
 	Name            string        `json:"name"`
 	ResourceType    string        `json:"resourcetype"`
 	UpgradeType     string        `json:"upgradetype"`
 	UpgradeStatus   string        `json:"upgradestatus"`
 	StorageSpec     PgStorageSpec `json:"storagespec"`
+	CCPImage        string        `json:"ccpimage"`
 	CCPImageTag     string        `json:"ccpimagetag"`
 	OldDatabaseName string        `json:"olddatabasename"`
 	NewDatabaseName string        `json:"newdatabasename"`
@@ -74,7 +76,7 @@ type PgupgradeStatus struct {
 type PgupgradeState string
 
 // PgupgradeStateCreated  ...
-const PgupgradeStateCreated PgupgradeState = "Created"
+const PgupgradeStateCreated PgupgradeState = "pgupgrade Created"
 
 // PgupgradeStateProcessed ...
-const PgupgradeStateProcessed PgupgradeState = "Processed"
+const PgupgradeStateProcessed PgupgradeState = "pgupgrade Processed"

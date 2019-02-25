@@ -7,7 +7,6 @@
                     "vendor": "crunchydata",
                     "pgo-backrest-restore": "true",
                     "pg-cluster": "{{.ClusterName}}",
-		    "pgo-backrest-restore": "true",
                     "backrest-restore-to-pvc": "{{.ToClusterPVCName}}",
                     "workflowid": "{{.WorkflowID}}"
                 }
@@ -19,11 +18,8 @@
                 "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
-                    "pgo-backrest": "true",
 		    "pgo-backrest-restore": "true",
-
                     "backrest-restore-to-pvc": "{{.ToClusterPVCName}}",
-
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.ClusterName}}"
                 }
@@ -86,6 +82,7 @@
                         }
                     }]
                 }],
+        {{.NodeSelector}}
                 "restartPolicy": "Never"
             }
         }

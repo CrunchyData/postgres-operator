@@ -89,7 +89,7 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 
 }
 
-func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string) error {
+func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string, ns string) error {
 	var err error
 
 	//create a pgtask for each root at this volume/pvc
@@ -97,6 +97,7 @@ func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName strin
 
 		//create pgtask CRD
 		spec := crv1.PgtaskSpec{}
+		spec.Namespace = ns
 		spec.Name = pvcName
 		spec.TaskType = crv1.PgtaskDeleteData
 		spec.StorageSpec = storageSpec

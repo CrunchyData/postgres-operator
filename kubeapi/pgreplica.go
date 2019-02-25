@@ -83,7 +83,7 @@ func Getpgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, namesp
 	}
 	if err != nil {
 		log.Error("error getting replica " + err.Error())
-		return true, err
+		return false, err
 	}
 
 	return true, err

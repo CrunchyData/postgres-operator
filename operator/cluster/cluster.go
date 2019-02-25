@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -28,9 +28,9 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-
 	"k8s.io/client-go/rest"
 	"strconv"
+	"strings"
 )
 
 // Strategy ....
@@ -42,8 +42,6 @@ type Strategy interface {
 	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
 
 	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	MajorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	MajorUpgradeFinalize(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
 	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
 }
 
@@ -169,9 +167,22 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			//get the resource config
 			spec.ContainerResources = cl.Spec.ContainerResources
 			//get the storage config
-			spec.ReplicaStorage, _ = operator.Pgo.GetStorageSpec(operator.Pgo.ReplicaStorage)
+			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
 			spec.UserLabels = cl.Spec.UserLabels
+
+			//the replica should not use the same node labels as the primary
+			spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = ""
+			spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = ""
+
+			//check for replica node label in pgo.yaml
+			if operator.Pgo.Cluster.ReplicaNodeLabel != "" {
+				parts := strings.Split(operator.Pgo.Cluster.ReplicaNodeLabel, "=")
+				spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
+				spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+				log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
+			}
+
 			labels := make(map[string]string)
 			labels[util.LABEL_PG_CLUSTER] = cl.Spec.Name
 
@@ -279,8 +290,6 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 			log.Error(err)
 			log.Error("error in doing minor upgrade")
 		}
-	} else if upgrade.Spec.UpgradeType == "major" {
-		err = strategy.MajorUpgrade(clientset, client, cl, upgrade, namespace)
 	} else {
 		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UpgradeType)
 		return err
@@ -323,13 +332,27 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
+		storage := crv1.PgStorageSpec{}
+		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
+		storage.StorageClass = pgoStorage.StorageClass
+		storage.AccessMode = pgoStorage.AccessMode
+		storage.Size = pgoStorage.Size
+		storage.StorageType = pgoStorage.StorageType
+		storage.MatchLabels = pgoStorage.MatchLabels
+		storage.SupplementalGroups = pgoStorage.SupplementalGroups
+		storage.Fsgroup = pgoStorage.Fsgroup
+		_, err := pvc.CreatePVC(clientset, &storage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
 			return
 		}
 	}
 
+	/**
+	//the -backrestrepo pvc is now an emptydir volume to be backward
+	//compatible with the postgres container only, it is not used
+	//with the shared backrest repo design
 	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
@@ -337,6 +360,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 			return
 		}
 	}
+	*/
 
 	log.Debugf("created replica pvc [%s]", pvcName)
 

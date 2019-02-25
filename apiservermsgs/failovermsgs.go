@@ -43,6 +43,7 @@ type CreateFailoverResponse struct {
 
 // CreateFailoverRequest ...
 type CreateFailoverRequest struct {
+	Namespace              string
 	ClusterName            string
 	AutofailReplaceReplica string
 	Target                 string

@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,7 +32,7 @@ import (
 // pgo reload mycluster
 // pgo reload all
 // pgo reload --selector=name=mycluster
-func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
+func Reload(request *msgs.ReloadRequest, ns string) msgs.ReloadResponse {
 	resp := msgs.ReloadResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -44,7 +45,7 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 
 		clusterList := crv1.PgclusterList{}
 
-		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, apiserver.Namespace)
+		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -69,7 +70,7 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 		log.Debugf("reload called for %s", arg)
 
 		cluster := crv1.Pgcluster{}
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, arg, apiserver.Namespace)
+		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, arg, ns)
 		if !found {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = arg + " was not found, verify cluster name"
@@ -81,8 +82,8 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 		}
 
 		var podList *v1.PodList
-		selector := "name=" + cluster.Spec.Name + ",primary=true"
-		podList, err = kubeapi.GetPods(apiserver.Clientset, selector, apiserver.Namespace)
+		selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+		podList, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -94,7 +95,7 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 			return resp
 		}
 
-		err = reload(&podList.Items[0], apiserver.Clientset, apiserver.RESTClient, apiserver.Namespace, apiserver.RESTConfig)
+		err = reload(&podList.Items[0], apiserver.Clientset, apiserver.RESTClient, ns, apiserver.RESTConfig, ns)
 		if err != nil {
 			if !strings.Contains(err.Error(), "normal") {
 				resp.Status.Code = msgs.Error
@@ -114,14 +115,14 @@ func Reload(request *msgs.ReloadRequest) msgs.ReloadResponse {
 func reload(
 	pod *v1.Pod,
 	clientset *kubernetes.Clientset,
-	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
+	client *rest.RESTClient, namespace string, restconfig *rest.Config, ns string) error {
 	//get the target pod that matches the replica-name=target
 
 	command := make([]string, 1)
 	command[0] = "/opt/cpm/bin/reload.sh"
 
 	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
-	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, apiserver.Namespace, nil)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, ns, nil)
 	if err != nil {
 		log.Error(err)
 	}

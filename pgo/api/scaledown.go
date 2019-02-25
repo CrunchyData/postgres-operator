@@ -25,10 +25,10 @@ import (
 	"strconv"
 )
 
-func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string, DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ScaleDownResponse, error) {
+func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string, DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ScaleDownResponse, error) {
 
 	var response msgs.ScaleDownResponse
-	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + util.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData)
+	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + util.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData) + "&namespace=" + ns
 	log.Debug(url)
 
 	action := "GET"
@@ -60,11 +60,11 @@ func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget stri
 
 }
 
-func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ScaleQueryResponse, error) {
+func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ScaleQueryResponse, error) {
 
 	var response msgs.ScaleQueryResponse
 
-	url := SessionCredentials.APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
 	action := "GET"

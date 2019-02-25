@@ -33,21 +33,32 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.UserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	err := apiserver.Authn(apiserver.USER_PERM, w, r)
+	resp := msgs.UserResponse{}
+	username, err := apiserver.Authn(apiserver.USER_PERM, w, r)
 	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	var resp msgs.UserResponse
 	if request.ClientVersion != msgs.PGO_VERSION {
-		resp = msgs.UserResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-	} else {
-		resp = User(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	var ns string
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = User(&request, ns)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -57,7 +68,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("userservice.CreateUserHandler called")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	err := apiserver.Authn(apiserver.CREATE_USER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_USER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -69,12 +80,24 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateUserResponse{}
+
+	var ns string
+	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp = CreateUser(&request)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	resp = CreateUser(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -86,20 +109,15 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeleteUserResponse
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("userservice.DeleteUserHandler %v", vars)
 
-	username := vars["name"]
-
+	name := vars["name"]
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
 
-	err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
+	log.Debugf("DeleteUserHandler parameters selector [%s] namespace [%s] version [%s] name [%s]", selector, namespace, clientVersion, name)
+
+	username, err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -108,15 +126,25 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	log.Debug("userservice.DeleteUserHandler DELETE called")
-	var resp msgs.DeleteUserResponse
+	resp := msgs.DeleteUserResponse{}
+
+	var ns string
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.DeleteUserResponse{}
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-	} else {
-		resp = DeleteUser(username, selector)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	resp = DeleteUser(name, selector, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -127,24 +155,15 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowUserResponse
 func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debugf("userservice.ShowUserHandler %v\n", vars)
 
 	clustername := vars["name"]
-
 	selector := r.URL.Query().Get("selector")
-	if selector != "" {
-		log.Debugf("selector parameter is [%s]", selector)
-	}
+	namespace := r.URL.Query().Get("namespace")
 	expired := r.URL.Query().Get("expired")
-	if expired != "" {
-		log.Debugf("expired parameter is [%s]", expired)
-	}
 	clientVersion := r.URL.Query().Get("version")
-	if clientVersion != "" {
-		log.Debugf("version parameter is [%s]", clientVersion)
-	}
+	log.Debugf("ShowUserHandler parameters expired [%s] selector [%s] namespace [%s] expired [%s] version [%s]", expired, selector, namespace, clientVersion, clustername)
 
-	err := apiserver.Authn(apiserver.SHOW_SECRETS_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_SECRETS_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -153,16 +172,24 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	log.Debug("userservice.ShowUserHandler GET called")
-
-	var resp msgs.ShowUserResponse
+	resp := msgs.ShowUserResponse{}
 	if clientVersion != msgs.PGO_VERSION {
-		resp = msgs.ShowUserResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowUserDetail, 0)
-	} else {
-		resp = ShowUser(clustername, selector, expired)
+		json.NewEncoder(w).Encode(resp)
+		return
 	}
+
+	var ns string
+	ns, err = apiserver.GetNamespace(username, namespace)
+	if err != nil {
+		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
+		resp.Results = make([]msgs.ShowUserDetail, 0)
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = ShowUser(clustername, selector, expired, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }

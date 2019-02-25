@@ -15,10 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-)
-
 // CreateBackrestBackupResponse ...
 type CreateBackrestBackupResponse struct {
 	Results []string
@@ -52,8 +48,10 @@ type RestoreResponse struct {
 
 // RestoreRequest ...
 type RestoreRequest struct {
+	Namespace   string
 	FromCluster string
 	ToPVC       string
 	RestoreOpts string
 	PITRTarget  string
+	NodeLabel   string
 }

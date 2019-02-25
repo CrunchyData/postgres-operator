@@ -23,11 +23,11 @@ import (
 	"net/http"
 )
 
-func ShowWorkflow(httpclient *http.Client, workflowID string, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowWorkflowResponse, error) {
+func ShowWorkflow(httpclient *http.Client, workflowID string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowWorkflowResponse, error) {
 
 	var response msgs.ShowWorkflowResponse
 
-	url := SessionCredentials.APIServerURL + "/workflow/" + workflowID + "?version=" + msgs.PGO_VERSION
+	url := SessionCredentials.APIServerURL + "/workflow/" + workflowID + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("ShowWorkflow called...[%s]", url)
 
 	action := "GET"

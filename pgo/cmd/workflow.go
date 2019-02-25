@@ -24,7 +24,7 @@ import (
 	"os"
 )
 
-func showWorkflow(args []string) {
+func showWorkflow(args []string, ns string) {
 	log.Debugf("showWorkflow called %v", args)
 
 	if len(args) < 1 {
@@ -32,13 +32,13 @@ func showWorkflow(args []string) {
 		os.Exit(2)
 	}
 
-	printWorkflow(args[0])
+	printWorkflow(args[0], ns)
 
 }
 
-func printWorkflow(id string) {
+func printWorkflow(id, ns string) {
 
-	response, err := api.ShowWorkflow(httpclient, id, &SessionCredentials)
+	response, err := api.ShowWorkflow(httpclient, id, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

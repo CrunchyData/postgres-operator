@@ -51,8 +51,14 @@ const PgtaskBackrestInfo = "info"
 const PgtaskBackrestRestore = "restore"
 const PgtaskBackrestStanzaCreate = "stanza-create"
 
+const PgtaskpgDump = "pgdump"
+const PgtaskpgDumpBackup = "pgdumpbackup"
+const PgtaskpgDumpInfo = "pgdumpinfo"
+const PgtaskpgRestore = "pgrestore"
+
 // PgtaskSpec ...
 type PgtaskSpec struct {
+	Namespace   string        `json:"namespace"`
 	Name        string        `json:"name"`
 	StorageSpec PgStorageSpec `json:"storagespec"`
 	TaskType    string        `json:"tasktype"`
@@ -91,7 +97,7 @@ type PgtaskState string
 
 const (
 	// PgtaskStateCreated ...
-	PgtaskStateCreated PgtaskState = "Created"
+	PgtaskStateCreated PgtaskState = "pgtask Created"
 	// PgtaskStateProcessed ...
-	PgtaskStateProcessed PgtaskState = "Processed"
+	PgtaskStateProcessed PgtaskState = "pgtask Processed"
 )

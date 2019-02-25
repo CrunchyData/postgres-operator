@@ -53,6 +53,9 @@
                         "name": "PGBACKREST_REPO_PATH",
                         "value": "{{.PgbackrestRepoPath}}"
                     }, {
+                        "name": "PGBACKREST_PG1_PORT",
+                        "value": "{{.PgbackrestPGPort}}"
+                    }, {
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"
                     }, {

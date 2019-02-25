@@ -43,7 +43,6 @@ import (
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
-const GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP = "pgo-pgbackrest-config"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -274,7 +273,7 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 }
 
 // RunPsql runs a psql statement
-func RunPsql(password string, hostip string, sqlstring string) {
+func RunPsql(password string, hostip string, sqlstring string) error {
 
 	log.Debugf("RunPsql hostip=[%s] sql=[%s]", hostip, sqlstring)
 	cmd := exec.Command("runpsql.sh", password, hostip)
@@ -290,10 +289,17 @@ func RunPsql(password string, hostip string, sqlstring string) {
 		log.Error("error in run cmd " + err.Error())
 		log.Error(out.String())
 		log.Error(stderr.String())
-		return
+		return err
+	}
+
+	if stderr.String() != "" {
+		log.Errorf("stderror in run cmd %s", stderr.String())
+		log.Error(out.String())
+		return errors.New("SQL error: " + stderr.String())
 	}
 
 	log.Debugf("runpsql output [%s]", out.String()[0:20])
+	return err
 }
 
 // GetSecretPassword ...

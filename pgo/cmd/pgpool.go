@@ -22,7 +22,7 @@ import (
 	"os"
 )
 
-func createPgpool(args []string) {
+func createPgpool(args []string, ns string) {
 
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag is required.")
@@ -32,6 +32,8 @@ func createPgpool(args []string) {
 	r := new(msgs.CreatePgpoolRequest)
 	r.Args = args
 	r.Selector = Selector
+	r.PgpoolSecret = PgpoolSecret
+	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.CreatePgpool(httpclient, &SessionCredentials, r)
@@ -54,7 +56,7 @@ func createPgpool(args []string) {
 
 }
 
-func deletePgpool(args []string) {
+func deletePgpool(args []string, ns string) {
 
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag or a cluster name is required.")
@@ -64,6 +66,7 @@ func deletePgpool(args []string) {
 	r := new(msgs.DeletePgpoolRequest)
 	r.Args = args
 	r.Selector = Selector
+	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.DeletePgpool(httpclient, &SessionCredentials, r)

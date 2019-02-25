@@ -33,9 +33,11 @@ type Pgcluster struct {
 
 // PgclusterSpec ...
 type PgclusterSpec struct {
+	Namespace          string               `json:"namespace"`
 	Name               string               `json:"name"`
 	ClusterName        string               `json:"clustername"`
 	Policies           string               `json:"policies"`
+	CCPImage           string               `json:"ccpimage"`
 	CCPImageTag        string               `json:"ccpimagetag"`
 	Port               string               `json:"port"`
 	NodeName           string               `json:"nodename"`
@@ -81,7 +83,7 @@ type PgclusterState string
 
 const (
 	// PgclusterStateCreated ...
-	PgclusterStateCreated PgclusterState = "Created"
+	PgclusterStateCreated PgclusterState = "pgcluster Created"
 	// PgclusterStateProcessed ...
-	PgclusterStateProcessed PgclusterState = "Processed"
+	PgclusterStateProcessed PgclusterState = "pgcluster Processed"
 )

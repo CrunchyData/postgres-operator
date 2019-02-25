@@ -307,7 +307,18 @@ func BasicAuthzCheck(username, perm string) bool {
 
 }
 
-func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
+//GetNamespace determines if a user has permission for
+//a namespace they are requesting as well as looks up
+//a default namespace if the requestedNS is empty
+func GetNamespace(username, requestedNS string) (string, error) {
+	var err error
+
+	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
+
+	return Namespace, err
+}
+
+func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
 	var err error
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
@@ -319,23 +330,23 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) error {
 	log.Debugf("Authentication Attempt %s username=[%s]", perm, username)
 	if authOK == false {
 		http.Error(w, "Not authorized", 401)
-		return errors.New("Not Authorized")
+		return "", errors.New("Not Authorized")
 	}
 
 	if !BasicAuthCheck(username, password) {
 		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
 		http.Error(w, "Not authenticated in apiserver", 401)
-		return errors.New("Not Authenticated")
+		return "", errors.New("Not Authenticated")
 	}
 
 	if !BasicAuthzCheck(username, perm) {
 		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
 		http.Error(w, "Not authorized for this apiserver action", 401)
-		return errors.New("Not authorized for this apiserver action")
+		return "", errors.New("Not authorized for this apiserver action")
 	}
 
 	log.Debug("Authentication Success")
-	return err
+	return username, err
 
 }
 
@@ -404,6 +415,29 @@ func IsValidStorageName(name string) bool {
 	return ok
 }
 
+// ValidateNodeLabel
+// returns error if node label is invalid
+func ValidateNodeLabel(nodeLabel string) error {
+	parts := strings.Split(nodeLabel, "=")
+	if len(parts) != 2 {
+		return errors.New(nodeLabel + " node label does not follow key=value format")
+	}
+
+	keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
+	if err != nil {
+		return err
+	}
+
+	if !keyValid {
+		return errors.New(nodeLabel + " key was not valid .. check node labels for correct values to specify")
+	}
+	if !valueValid {
+		return errors.New(nodeLabel + " node label value was not valid .. check node labels for correct values to specify")
+	}
+
+	return nil
+}
+
 // IsValidNodeLabel
 // returns bool for key validity
 // returns bool for value validity
@@ -419,14 +453,13 @@ func IsValidNodeLabel(key, value string) (bool, bool, error) {
 		return false, false, err
 	}
 
-	var v string
 	for _, node := range nodes.Items {
-		v = node.ObjectMeta.Labels[key]
-		if v != "" {
+
+		if val, exists := node.ObjectMeta.Labels[key]; exists {
 			keyValid = true
-		}
-		if v == value {
-			valueValid = true
+			if val == value {
+				valueValid = true
+			}
 		}
 	}
 
@@ -488,27 +521,15 @@ func validateWithKube() {
 
 	for _, n := range configNodeLabels {
 
+		//parse & validate pgo.yaml node labels if set
 		if n != "" {
-			parts := strings.Split(n, "=")
-			if len(parts) != 2 {
-				log.Error(n + " node label in pgo.yaml does not follow key=value format")
-				os.Exit(2)
-			}
 
-			keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
-			if err != nil {
+			if err := ValidateNodeLabel(n); err != nil {
+				log.Error(n + " node label specified in pgo.yaml is invalid")
 				log.Error(err)
 				os.Exit(2)
 			}
 
-			if !keyValid {
-				log.Error(n + " key not a valid node label key in pgo.yaml")
-				os.Exit(2)
-			}
-			if !valueValid {
-				log.Error(n + "value not a valid node label value in pgo.yaml ")
-				os.Exit(2)
-			}
 			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}

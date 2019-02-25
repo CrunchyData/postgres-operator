@@ -82,7 +82,6 @@ var deleteCmd = &cobra.Command{
 }
 
 var DeleteBackups bool
-var DeleteConfigMaps bool
 var NoPrompt bool
 
 func init() {
@@ -103,7 +102,6 @@ func init() {
 	deleteLabelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The label to delete for any selected or specified clusters.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
-	deleteClusterCmd.Flags().BoolVarP(&DeleteConfigMaps, "delete-configs", "c", false, "Causes the configMaps for this cluster to be removed permanently.")
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
@@ -124,7 +122,7 @@ var deleteUpgradeCmd = &cobra.Command{
 			fmt.Println("Error: A database or cluster name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUpgrade(args)
+				deleteUpgrade(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -143,7 +141,7 @@ var deleteBackupCmd = &cobra.Command{
 			fmt.Println("Error: A database or cluster name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteBackup(args)
+				deleteBackup(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -166,7 +164,7 @@ var deleteUserCmd = &cobra.Command{
 			fmt.Println("Error: A selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUser(args[0])
+				deleteUser(args[0], Namespace)
 
 			} else {
 				fmt.Println("Aborting...")
@@ -188,7 +186,7 @@ var deleteClusterCmd = &cobra.Command{
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteCluster(args)
+				deleteCluster(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -207,7 +205,7 @@ var deletePolicyCmd = &cobra.Command{
 			fmt.Println("Error: A policy name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deletePolicy(args)
+				deletePolicy(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -227,7 +225,7 @@ var deletePgbouncerCmd = &cobra.Command{
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deletePgbouncer(args)
+				deletePgbouncer(args, Namespace)
 
 			} else {
 				fmt.Println("Aborting...")
@@ -249,7 +247,7 @@ var deletePgpoolCmd = &cobra.Command{
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deletePgpool(args)
+				deletePgpool(args, Namespace)
 
 			} else {
 				fmt.Println("Aborting...")
@@ -273,7 +271,7 @@ var deleteScheduleCmd = &cobra.Command{
 		}
 
 		if util.AskForConfirmation(NoPrompt, "") {
-			deleteSchedule(args)
+			deleteSchedule(args, Namespace)
 		} else {
 			fmt.Println("Aborting...")
 		}
@@ -293,7 +291,7 @@ var deleteLabelCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
-			deleteLabel(args)
+			deleteLabel(args, Namespace)
 		}
 	},
 }

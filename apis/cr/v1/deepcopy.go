@@ -8,6 +8,7 @@ func (in *Pgbackup) DeepCopyInto(out *Pgbackup) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta
 	out.Spec = PgbackupSpec{
+		Namespace:        in.Spec.Namespace,
 		Name:             in.Spec.Name,
 		StorageSpec:      in.Spec.StorageSpec,
 		CCPImageTag:      in.Spec.CCPImageTag,
@@ -53,11 +54,13 @@ func (in *Pgupgrade) DeepCopyInto(out *Pgupgrade) {
 	out.Status = in.Status
 
 	out.Spec = PgupgradeSpec{
+		Namespace:       in.Spec.Namespace,
 		Name:            in.Spec.Name,
 		ResourceType:    in.Spec.ResourceType,
 		UpgradeType:     in.Spec.UpgradeType,
 		UpgradeStatus:   in.Spec.UpgradeStatus,
 		StorageSpec:     in.Spec.StorageSpec,
+		CCPImage:        in.Spec.CCPImage,
 		CCPImageTag:     in.Spec.CCPImageTag,
 		OldDatabaseName: in.Spec.OldDatabaseName,
 		NewDatabaseName: in.Spec.NewDatabaseName,
@@ -100,6 +103,7 @@ func (in *Pgreplica) DeepCopyInto(out *Pgreplica) {
 	out.ObjectMeta = in.ObjectMeta
 	out.Status = in.Status
 	out.Spec = PgreplicaSpec{
+		Namespace:          in.Spec.Namespace,
 		Name:               in.Spec.Name,
 		ClusterName:        in.Spec.ClusterName,
 		ReplicaStorage:     in.Spec.ReplicaStorage,
@@ -140,9 +144,11 @@ func (in *Pgcluster) DeepCopyInto(out *Pgcluster) {
 	out.ObjectMeta = in.ObjectMeta
 	out.Status = in.Status
 	out.Spec = PgclusterSpec{
+		Namespace:          in.Spec.Namespace,
 		Name:               in.Spec.Name,
 		ClusterName:        in.Spec.ClusterName,
 		Policies:           in.Spec.Policies,
+		CCPImage:           in.Spec.CCPImage,
 		CCPImageTag:        in.Spec.CCPImageTag,
 		Port:               in.Spec.Port,
 		NodeName:           in.Spec.NodeName,
@@ -198,10 +204,11 @@ func (in *Pgpolicy) DeepCopyInto(out *Pgpolicy) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta
 	out.Spec = PgpolicySpec{
-		Name:   in.Spec.Name,
-		URL:    in.Spec.URL,
-		SQL:    in.Spec.SQL,
-		Status: in.Spec.Status,
+		Namespace: in.Spec.Namespace,
+		Name:      in.Spec.Name,
+		URL:       in.Spec.URL,
+		SQL:       in.Spec.SQL,
+		Status:    in.Spec.Status,
 	}
 	out.Status = in.Status
 }
@@ -236,6 +243,7 @@ func (in *Pgtask) DeepCopyInto(out *Pgtask) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta
 	out.Spec = PgtaskSpec{
+		Namespace:   in.Spec.Namespace,
 		Name:        in.Spec.Name,
 		StorageSpec: in.Spec.StorageSpec,
 		TaskType:    in.Spec.TaskType,
