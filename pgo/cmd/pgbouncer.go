@@ -34,6 +34,8 @@ func createPgbouncer(args []string, ns string) {
 	r.Namespace = ns
 	r.Selector = Selector
 	r.ClientVersion = msgs.PGO_VERSION
+	r.PgBouncerUser = "pgbouncer"
+	r.PgBouncerPass = PgBouncerPassword
 
 	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, r)
 	if err != nil {

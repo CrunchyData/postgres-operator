@@ -32,10 +32,10 @@
 		    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
-                        "value": "testuser"
+                        "value": "{{.PgBouncerUser}}"
                     }, {
                         "name": "PG_PASSWORD",
-                        "value": "password"
+                        "value": "{{.PgBouncerPass}}"
                     }, {
                         "name": "PG_PRIMARY_SERVICE_NAME",
                         "value": "{{.PrimaryServiceName}}"
