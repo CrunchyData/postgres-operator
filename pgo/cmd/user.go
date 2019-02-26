@@ -56,7 +56,7 @@ var userCmd = &cobra.Command{
 	Long: `USER allows you to manage users and passwords across a set of clusters. For example:
 
 	pgo user --selector=name=mycluster --update-passwords
-	pgo user --change-password=bob --selector=name=mycluster --password=newpass`,
+	pgo user --change-password=bob --expired=300 --selector=name=mycluster --password=newpass`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("user called")
 		userManager(Namespace)

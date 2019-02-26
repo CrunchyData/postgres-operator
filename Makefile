@@ -83,6 +83,8 @@ repo-client-image:	check-go-vars
 foo:	check-go-vars
 	go install foo/foo.go
 	mv $(GOBIN)/foo ./bin/foo/
+cli-docs:	check-go-vars
+	cd $(COROOT)/hugo/content/cli && go run $(COROOT)/pgo/generatedocs.go
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars

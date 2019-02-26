@@ -43,7 +43,6 @@ import (
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
-const GLOBAL_PGBACKREST_CUSTOM_CONFIGMAP = "pgo-pgbackrest-config"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())

@@ -20,6 +20,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -544,6 +545,13 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 
 	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
 
+	re := regexp.MustCompile("^[a-z0-9.-]*$")
+	if !re.MatchString(request.Name) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "user name is required to be lowercase letters and numbers only."
+		return resp
+	}
+
 	for _, c := range clusterList.Items {
 		info := getPostgresUserInfo(ns, c.Name)
 
@@ -591,6 +599,7 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
+	log.Debugf("DeleteUser called name=%s", name)
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
@@ -624,6 +633,8 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+
+		log.Debugf("DeleteUser %s managed %t", name, managed)
 
 		err = deleteUser(ns, clusterName, info, name, managed)
 		if err != nil {

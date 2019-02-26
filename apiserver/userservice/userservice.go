@@ -110,12 +110,12 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	username := vars["name"]
+	name := vars["name"]
 	selector := r.URL.Query().Get("selector")
 	namespace := r.URL.Query().Get("namespace")
 	clientVersion := r.URL.Query().Get("version")
 
-	log.Debugf("DeleteUserHandler parameters selector [%s] namespace [%s] version [%s] name [%s]", selector, namespace, clientVersion, username)
+	log.Debugf("DeleteUserHandler parameters selector [%s] namespace [%s] version [%s] name [%s]", selector, namespace, clientVersion, name)
 
 	username, err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
 	if err != nil {
@@ -144,7 +144,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeleteUser(username, selector, ns)
+	resp = DeleteUser(name, selector, ns)
 	json.NewEncoder(w).Encode(resp)
 
 }
