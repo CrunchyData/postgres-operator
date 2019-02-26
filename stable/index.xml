@@ -38,7 +38,7 @@ Cluster    Setting Definition     BasicAuth if set to true will enable Basic Aut
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://crunchydata.github.io/postgres-operator/stable/contributing/documentation-updates/</guid>
-      <description>Documentation The documentation website is generated using Hugo and https://pages.github.com/)[GitHub Pages]().
+      <description>Documentation The documentation website is generated using Hugo and GitHub Pages.
 Hosting Hugo Locally (Optional) If you would like to build the documentation locally, view the official Installing Hugo guide to set up Hugo locally.
 You can then start the server by running the following commands -
 cd $COROOT/hugo/ hugo server  The local version of the Hugo server is accessible by default from localhost:1313. Once you&amp;rsquo;ve run hugo server, that will let you interactively make changes to the documentation as desired and view the updates in real-time.</description>
