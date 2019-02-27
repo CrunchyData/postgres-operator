@@ -5,10 +5,16 @@ LABEL Vendor="Crunchy Data Solutions" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
 	Release="3.5.1" \
+        run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-repo" \
 	description="Crunchy Data PostgreSQL Operator - pgo-backrest-repo"
 
 ENV PGVERSION="11" BACKREST_VERSION="2.10"
+
+COPY redhat/atomic/pgo_backrest_repo/help.1 /help.1
+COPY redhat/atomic/pgo_backrest_repo/help.md /help.md
+COPY redhat/licenses /licenses
+
 ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
