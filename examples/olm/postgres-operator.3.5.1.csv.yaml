@@ -33,6 +33,38 @@ spec:
             spec:
               containers:
                 - env:
+                  - name: TIMEOUT
+                    value: "3600"
+                  - name: NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                  name: scheduler
+                  image: crunchydata/pgo-scheduler:rhel7-3.5.1
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                  - mountPath: /pgo-config
+                    name: pgo-config
+                    readOnly: true
+                - env:
+                  - name: CRUNCHY_DEBUG
+                    value: "true"
+                  - name: PORT
+                    value: "8443"
+                  - name: NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                  name: operator
+                  image: crunchydata/postgres-operator:rhel7-3.5.1
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                  - mountPath: /pgo-config
+                    name: pgo-config
+                    readOnly: true
+                - env:
                   - name: CRUNCHY_DEBUG
                     value: "true"
                   - name: PORT
@@ -44,7 +76,7 @@ spec:
                         fieldPath: metadata.namespace
                   - name: TLS_NO_VERIFY
                     value: "false"
-                  name: operator
+                  name: apiserver
                   image: crunchydata/pgo-apiserver:rhel7-3.5.1
                   imagePullPolicy: IfNotPresent
                   volumeMounts:
@@ -72,8 +104,8 @@ spec:
               serviceAccount: postgres-operator
   customresourcedefinitions:
     owned:
-      - description: Represents a cluster of Memcached apps
-        displayName: Memcached App
+      - description: Represents a Postgres primary cluster member
+        displayName: Postgres Primary Cluster Member
         kind: Pgcluster
         name: pgclusters.cr.client-go.k8s.io
         version: v1
@@ -83,6 +115,39 @@ spec:
           - kind: ReplicaSet
             version: v1beta1
           - kind: Pod
+            version: v1
+          - kind: Service
+            version: v1
+        specDescriptors:
+          - description: The desired number of member Pods for the deployment.
+            displayName: Size
+            path: size
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+        statusDescriptors:
+          - description: The current status of the application.
+            displayName: Status
+            path: phase
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase'
+          - description: Explanation for the current status of the application.
+            displayName: Status Details
+            path: reason
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+      - description: Represents a Postgres replica cluster member
+        displayName: Postgres Replica Cluster Member
+        kind: Pgreplica
+        name: pgreplicas.cr.client-go.k8s.io
+        version: v1
+        resources:
+          - kind: Deployment
+            version: v1beta1
+          - kind: ReplicaSet
+            version: v1beta1
+          - kind: Pod
+            version: v1
+          - kind: Service
             version: v1
         specDescriptors:
           - description: The desired number of member Pods for the deployment.
@@ -102,18 +167,18 @@ spec:
             x-descriptors:
               - 'urn:alm:descriptor:io.kubernetes.phase:reason'
   keywords:
-    - memcached
+    - postgres
     - app
   displayName: Crunchy Postgres Cluster
   provider:
     name: Example
-    url: www.example.com
-  maturity: alpha
+    url: www.crunchydata.com
+  maturity: stable
   version: 3.5.1
   maintainers:
-    - email: corp@example.com
-      name: Some Corp
-  description: Main enterprise application providing business critical features with high availabilty and no manual intervention.
+    - email: support@crunchydata.com
+      name: Crunchy Data
+  description: Postgres Cluster on Kubernetes
   labels:
     alm-owner-enterprise-app: postgres-operator
     alm-status-descriptors: postgres-operator.v3.5.1
