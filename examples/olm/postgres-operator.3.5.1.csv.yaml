@@ -166,6 +166,126 @@ spec:
             path: reason
             x-descriptors:
               - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+      - description: Represents a Postgres sql policy 
+        displayName: Postgres SQL Policy
+        kind: Pgpolicy
+        name: pgpolicies.cr.client-go.k8s.io
+        version: v1
+        resources:
+          - kind: Pgpolicy
+            version: v1
+        specDescriptors:
+          - description: The pgpolicy name.
+            displayName: Name
+            path: name
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:name'
+          - description: The pgpolicy sql.
+            displayName: SQL
+            path: sql
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:sql'
+        statusDescriptors:
+          - description: The current status of the application.
+            displayName: Status
+            path: phase
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase'
+          - description: Explanation for the current status of the application.
+            displayName: Status Details
+            path: reason
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+      - description: Represents a Postgres workflow task 
+        displayName: Postgres workflow task
+        kind: Pgtask
+        name: pgtasks.cr.client-go.k8s.io
+        version: v1
+        resources:
+          - kind: Pgtask
+            version: v1
+        specDescriptors:
+          - description: The pgtask name.
+            displayName: Name
+            path: name
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:name'
+          - description: The pgtask type.
+            displayName: TaskType
+            path: tasktype
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:tasktype'
+        statusDescriptors:
+          - description: The current status of the application.
+            displayName: Status
+            path: phase
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase'
+          - description: Explanation for the current status of the application.
+            displayName: Status Details
+            path: reason
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+      - description: Represents a Postgres upgrade task 
+        displayName: Postgres upgrade task
+        kind: Pgupgrade
+        name: pgupgrades.cr.client-go.k8s.io
+        version: v1
+        resources:
+          - kind: Pgupgrade
+            version: v1
+        specDescriptors:
+          - description: The pgupgrade name.
+            displayName: Name
+            path: name
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:name'
+          - description: The pgupgrade type.
+            displayName: UpgradeType
+            path: upgradetype
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:upgradetype'
+        statusDescriptors:
+          - description: The current status of the application.
+            displayName: Status
+            path: phase
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase'
+          - description: Explanation for the current status of the application.
+            displayName: Status Details
+            path: reason
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+      - description: Represents a Postgres backup task 
+        displayName: Postgres backup task
+        kind: Pgbackup
+        name: pgbackups.cr.client-go.k8s.io
+        version: v1
+        resources:
+          - kind: Pgbackup
+            version: v1
+        specDescriptors:
+          - description: The pgbackup name.
+            displayName: Name
+            path: name
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:name'
+          - description: The pgbackup status.
+            displayName: BackupStatus
+            path: backupstatus
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:backupstatus'
+        statusDescriptors:
+          - description: The current status of the application.
+            displayName: Status
+            path: phase
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase'
+          - description: Explanation for the current status of the application.
+            displayName: Status Details
+            path: reason
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase:reason'
   keywords:
     - postgres
     - app
