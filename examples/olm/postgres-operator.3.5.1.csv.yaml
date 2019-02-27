@@ -1,0 +1,119 @@
+# This file defines the ClusterServiceVersion (CSV) to tell the catalog how to display, create and
+# manage the application as a whole. If changes are made to the CRD for this application kind,
+# make sure to replace those references below as well.
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: postgresoperator.v3.5.1
+  namespace: demo
+spec:
+  install: 
+    strategy: deployment
+    spec:
+      permissions:
+      - serviceAccountName: postgres-operator
+        rules:
+        - apiGroups:
+          - "*"
+          resources:
+          - "*"
+          verbs:
+          - "*"
+      deployments: 
+      - name: postgres-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: postgres-operator
+          template:
+            metadata:
+              labels:
+                name: postgres-operator
+            spec:
+              containers:
+                - env:
+                  - name: CRUNCHY_DEBUG
+                    value: "true"
+                  - name: PORT
+                    value: "8443"
+                  - name: NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                  - name: TLS_NO_VERIFY
+                    value: "false"
+                  name: operator
+                  image: crunchydata/pgo-apiserver:rhel7-3.5.1
+                  imagePullPolicy: IfNotPresent
+                  volumeMounts:
+                  - mountPath: /pgo-config
+                    name: pgo-config
+                    readOnly: true
+                  - mountPath: /pgo-auth-secret
+                    name: pgo-auth-secret
+                    readOnly: true
+                  ports:
+                  - containerPort: 8443
+                    protocol: TCP
+              volumes:
+              - configMap:
+                  defaultMode: 420
+                  name: pgo-config
+                name: pgo-config
+              - name: pgo-auth-secret
+                secret:
+                  defaultMode: 511
+                  secretName: pgo-auth-secret
+              restartPolicy: Always
+              terminationGracePeriodSeconds: 5
+              serviceAccountName: postgres-operator
+              serviceAccount: postgres-operator
+  customresourcedefinitions:
+    owned:
+      - description: Represents a cluster of Memcached apps
+        displayName: Memcached App
+        kind: Pgcluster
+        name: pgclusters.cr.client-go.k8s.io
+        version: v1
+        resources:
+          - kind: Deployment
+            version: v1beta1
+          - kind: ReplicaSet
+            version: v1beta1
+          - kind: Pod
+            version: v1
+        specDescriptors:
+          - description: The desired number of member Pods for the deployment.
+            displayName: Size
+            path: size
+            x-descriptors:
+              - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+        statusDescriptors:
+          - description: The current status of the application.
+            displayName: Status
+            path: phase
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase'
+          - description: Explanation for the current status of the application.
+            displayName: Status Details
+            path: reason
+            x-descriptors:
+              - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+  keywords:
+    - memcached
+    - app
+  displayName: Crunchy Postgres Cluster
+  provider:
+    name: Example
+    url: www.example.com
+  maturity: alpha
+  version: 3.5.1
+  maintainers:
+    - email: corp@example.com
+      name: Some Corp
+  description: Main enterprise application providing business critical features with high availabilty and no manual intervention.
+  labels:
+    alm-owner-enterprise-app: postgres-operator
+    alm-status-descriptors: postgres-operator.v3.5.1
