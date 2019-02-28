@@ -767,7 +767,7 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 			}
 		}
 
-		detail.Secrets, err = apiserver.GetSecrets(&c)
+		detail.Secrets, err = apiserver.GetSecrets(&c, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

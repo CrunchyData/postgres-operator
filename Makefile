@@ -50,11 +50,11 @@ installrbac:
 setup:
 	./bin/get-deps.sh
 setupnamespace:
-	kubectl create -f ./examples/demo-namespace.json
-	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
-	kubectl config use-context demo
+	$(CO_CMD) create -f ./examples/demo-namespace.json
+	$(CO_CMD) config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
+	$(CO_CMD) config use-context demo
 bounce:
-	kubectl get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs kubectl delete pod
+	$(CO_CMD) --namespace=$(CO_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(CO_CMD) --namespace=$(CO_NAMESPACE) delete pod
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars

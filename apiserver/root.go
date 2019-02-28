@@ -315,7 +315,8 @@ func GetNamespace(username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
-	return Namespace, err
+	//return Namespace, err
+	return "demo", err
 }
 
 func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
