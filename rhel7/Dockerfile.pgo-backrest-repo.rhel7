@@ -2,6 +2,7 @@ FROM registry.access.redhat.com/rhel7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
+	name="pgo-backrest-repo" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
 	Release="3.5.1" \
