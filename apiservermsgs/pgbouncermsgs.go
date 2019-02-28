@@ -22,8 +22,8 @@ type CreatePgbouncerRequest struct {
 	Args          []string
 	Selector      string
 	Namespace     string
-	PgBouncerUser string
-	PgBouncerPass string
+	PgbouncerUser string
+	PgbouncerPass string
 	ClientVersion string
 }
 

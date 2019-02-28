@@ -389,14 +389,6 @@ func getPgbouncerPasswd(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, nam
 	var doc bytes.Buffer
 	var pgbouncerUsername, pgbouncerPassword string
 
-	// //go get all non-pgbouncer secrets
-	// selector := util.LABEL_PG_DATABASE + "=" + clusterName + "," + util.LABEL_PGBOUNCER + "!=true"
-	// secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
-	// if err != nil {
-	// 	log.Error(err)
-	// 	return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err
-	// }
-
 	// command line specified username or default to "pgbouncer" if not set.
 	var username = cl.Spec.UserLabels[util.LABEL_PGBOUNCER_USER]
 	if !(len(username) > 0) {
@@ -415,23 +407,11 @@ func getPgbouncerPasswd(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, nam
 	}
 
 	creds := make([]PgbouncerPasswdFields, 0)
-	// for _, sec := range secrets.Items {
 
-	//		log.Debugf("in pgbouncer passwd with username=%s password=%s\n", sec.Data[util.LABEL_USERNAME][:], sec.Data[util.LABEL_PASSWORD][:])
-
-	// username := string(sec.Data[util.LABEL_USERNAME][:])
-	// password := string(sec.Data[util.LABEL_PASSWORD][:])
 	c := PgbouncerPasswdFields{}
 	c.Username = pgbouncerUsername
 	c.Password = "md5" + util.GetMD5HashForAuthFile(pgbouncerPassword+pgbouncerUsername)
 	creds = append(creds, c)
-
-	//we will use the pgbouncer user for pgbouncer to auth with
-	// if username == "pgbouncer" {
-	// 	pgbouncerUsername = username
-	// 	pgbouncerPassword = password
-	// }
-	// }
 
 	err := operator.PgbouncerUsersTemplate.Execute(&doc, creds)
 	if err != nil {
