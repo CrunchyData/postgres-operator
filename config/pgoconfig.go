@@ -17,7 +17,7 @@ limitations under the License.
 
 import (
 	"errors"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"

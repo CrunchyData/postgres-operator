@@ -17,7 +17,7 @@ limitations under the License.
 
 import (
 	"context"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"

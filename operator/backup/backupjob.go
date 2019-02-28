@@ -16,7 +16,7 @@ package backup
 */
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"os"
 
 	v1batch "k8s.io/api/batch/v1"

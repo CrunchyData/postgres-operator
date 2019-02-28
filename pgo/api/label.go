@@ -18,7 +18,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"net/http"
 )
