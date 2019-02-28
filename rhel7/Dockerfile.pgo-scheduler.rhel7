@@ -2,6 +2,7 @@ FROM registry.access.redhat.com/rhel7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	Version="7.6" \
+	name="pgo-scheduler" \
 	Release="3.5.1" \
 	summary="Crunchy Data PostgreSQL Operator - Scheduler" \
 	description="Crunchy Data PostgreSQL Operator - Scheduler"
