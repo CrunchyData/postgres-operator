@@ -194,6 +194,7 @@ func createCluster(args []string, ns string) {
 	r.AutofailFlag = AutofailFlag
 	r.PgpoolFlag = PgpoolFlag
 	r.PgbouncerFlag = PgbouncerFlag
+	r.PgbouncerPass = PgBouncerPassword
 	r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
 	//r.BackrestRestoreFrom = BackrestRestoreFrom
@@ -203,6 +204,12 @@ func createCluster(args []string, ns string) {
 	r.ReplicaStorageConfig = ReplicaStorageConfig
 	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
+
+	if !(len(PgBouncerUser) > 0) {
+		r.PgbouncerUser = "pgbouncer"
+	} else {
+		r.PgbouncerUser = PgBouncerUser
+	}
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {

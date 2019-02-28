@@ -95,6 +95,8 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+		spec.Parameters[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{

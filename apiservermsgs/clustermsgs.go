@@ -45,6 +45,8 @@ type CreateClusterRequest struct {
 	PgbouncerFlag        bool
 	PgpoolSecret         string
 	PgbouncerSecret      string
+	PgbouncerPass        string
+	PgbouncerUser        string
 	CustomConfig         string
 	StorageConfig        string
 	ReplicaStorageConfig string
