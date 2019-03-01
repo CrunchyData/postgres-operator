@@ -23,7 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"bytes"
 	"errors"
-	log "github.com/sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
