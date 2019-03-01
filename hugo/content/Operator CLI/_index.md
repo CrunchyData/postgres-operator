@@ -222,6 +222,7 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Create a Cluster with pgbouncer
 
     pgo create cluster mycluster --pgbouncer
+	pgo create cluster mycluster --pgbouncer --pgbouncer-user=someuser --pgbouncer-pass=somepass
 
 #### Create a Cluster with pgpool
 
@@ -230,6 +231,7 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Add pgbouncer to a Cluster
 
     pgo create pgbouncer mycluster
+	pgo create pgbouncer mycluster --pgbouncer-user=someuser --pgbouncer-pass=somepass
 
 Note, the pgbouncer configuration defaults to specifying only
 a single entry for the primary database.  If you want it to

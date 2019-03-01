@@ -114,6 +114,8 @@ const LABEL_PGBOUNCER_TASK_ADD = "pgbouncer-add"
 const LABEL_PGBOUNCER_TASK_DELETE = "pgbouncer-delete"
 const LABEL_PGBOUNCER_TASK_CLUSTER = "pgbouncer-cluster"
 const LABEL_PGBOUNCER_TASK_RECONFIGURE = "pgbouncer-reconfigure"
+const LABEL_PGBOUNCER_USER = "pgbouncer-user"
+const LABEL_PGBOUNCER_PASS = "pgbouncer-password"
 
 const LABEL_JOB_NAME = "job-name"
 const LABEL_PGBACKREST_STANZA = "pgbackrest-stanza"

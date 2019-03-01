@@ -2,10 +2,11 @@ FROM registry.access.redhat.com/rhel7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
+	name="pgo-backrest-restore" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
         run='docker run -d -p 8080:80 --name=web-app web-app' \
-	Release="3.5.1" \
+	Release="3.5.2-rc1" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 

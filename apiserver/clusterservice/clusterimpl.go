@@ -623,6 +623,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		if request.PgbouncerFlag {
 			userLabelsMap[util.LABEL_PGBOUNCER] = "true"
+			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+			userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
 			userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
 			log.Debug("userLabelsMap")
 			log.Debugf("%v", userLabelsMap)
