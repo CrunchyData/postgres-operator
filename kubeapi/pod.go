@@ -17,7 +17,7 @@ package kubeapi
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	jsonpatch "github.com/evanphx/json-patch"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
