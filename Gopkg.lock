@@ -19,7 +19,7 @@
 
 [[projects]]
   digest = "1:3fcbf733a8d810a21265a7f2fe08a3353db2407da052b233f8b204b5afc03d9b"
-  name = "github.com/Sirupsen/logrus"
+  name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = ""
   revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
@@ -579,7 +579,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/Sirupsen/logrus",
+    "github.com/sirupsen/logrus",
     "github.com/evanphx/json-patch",
     "github.com/fatih/color",
     "github.com/gorilla/mux",
