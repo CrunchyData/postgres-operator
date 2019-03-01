@@ -17,7 +17,7 @@ package main
 
 import (
 	"flag"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/client-go/kubernetes"

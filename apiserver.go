@@ -23,7 +23,7 @@ import (
 	"os"
 	"strconv"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
