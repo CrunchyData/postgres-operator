@@ -15,23 +15,17 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
-fi
+$CO_CMD --namespace=$CO_NAMESPACE delete serviceaccount postgres-operator
 
-$CO_CMD $NS delete serviceaccount postgres-operator
+$CO_CMD --namespace=$CO_NAMESPACE delete clusterrole pgopclusterrole pgopclusterrolecrd
+$CO_CMD --namespace=$CO_NAMESPACE delete clusterrolebinding pgopclusterbinding pgopclusterbindingcrd
 
-$CO_CMD $NS delete clusterrole pgopclusterrole pgopclusterrolecrd
-$CO_CMD $NS delete clusterrolebinding pgopclusterbinding pgopclusterbindingcrd
+$CO_CMD --namespace=$CO_NAMESPACE delete role pgo-role
+$CO_CMD --namespace=$CO_NAMESPACE delete rolebinding pgo-role-binding
 
-$CO_CMD $NS delete role pgo-role
-$CO_CMD $NS delete rolebinding pgo-role-binding
-
-$CO_CMD $NS delete serviceaccount pgo-backrest
-$CO_CMD $NS delete role pgo-backrest-role
-$CO_CMD $NS delete rolebinding pgo-backrest-role-binding
-
-$CO_CMD $NS delete clusterrolebinding,clusterrole,sa,role,rolebinding scheduler-sa scheduler-sa
+$CO_CMD --namespace=$CO_NAMESPACE delete serviceaccount pgo-backrest
+$CO_CMD --namespace=$CO_NAMESPACE delete role pgo-backrest-role
+$CO_CMD --namespace=$CO_NAMESPACE delete rolebinding pgo-backrest-role-binding
 
 sleep 5
 

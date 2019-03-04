@@ -22,7 +22,7 @@ is deployed into and should be the same as what PGO_NAMESPACE resolves
 into.
 
 The new NAMESPACE environment variable a user sets determines
-what namespaces the Operator will watch.
+which namespaces the Operator will watch.
 
 ### Namespace Watching
 
@@ -53,6 +53,16 @@ The following diagram depicts the various deployment models:
 
 ![Reference](/OperatorReferenceDiagram.png)
 
+
+### RBAC
+
+To support multiple namespace watching, the Operator deployment
+process changes a bit.
+
+Each namespace to be watch requires its own copy of the 
+pgo-backrest-repo-config Secret.  There is a script called
+deploy-for-each-namespace.sh that is required to be run
+for each namespace that will be watched.
 
 ## Operator Hub
 

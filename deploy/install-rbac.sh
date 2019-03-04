@@ -23,15 +23,11 @@ if [ $? -eq 1 ]; then
 	$CO_CMD create -f $DIR/crd.yaml
 fi
 
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
-fi
-
 # create the cluster role and add to the service account
-expenv -f $DIR/cluster-rbac.yaml | $CO_CMD create -f -
+expenv -f $DIR/cluster-rbac.yaml | $CO_CMD --namespace=$CO_NAMESPACE create -f -
 
 # create the service account, role, role-binding and add to the service account
-expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
+expenv -f $DIR/rbac.yaml | $CO_CMD create --namespace=$CO_NAMESPACE -f -
 
 # create the sshd keys for pgbackrest repo functionality
 source $DIR/gen-sshd-keys.sh
