@@ -37,7 +37,7 @@ type PgtaskController struct {
 	PgtaskClient    *rest.RESTClient
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
-	Namespace       string
+	Namespace       []string
 }
 
 // Run starts an pgtask resource controller
@@ -45,7 +45,7 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 	log.Debug("Watch Pgtask objects")
 
 	// Watch Example objects
-	_, err := c.watchPgtasks(ctx)
+	err := c.watchPgtasks(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
 		return err
@@ -56,33 +56,36 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 }
 
 // watchPgtasks watches the pgtask resource catching events
-func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PgtaskClient,
-		crv1.PgtaskResourcePlural,
-		c.Namespace,
-		fields.Everything())
+func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Info("starting pgtask controller on ns [%s]", c.Namespace[i])
+		source := cache.NewListWatchFromClient(
+			c.PgtaskClient,
+			crv1.PgtaskResourcePlural,
+			c.Namespace[i],
+			fields.Everything())
 
-	_, controller := cache.NewInformer(
-		source,
+		_, controller := cache.NewInformer(
+			source,
 
-		// The object type.
-		&crv1.Pgtask{},
+			// The object type.
+			&crv1.Pgtask{},
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgtask is added

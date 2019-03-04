@@ -32,7 +32,7 @@ type PgupgradeController struct {
 	PgupgradeClient    *rest.RESTClient
 	PgupgradeClientset *kubernetes.Clientset
 	PgupgradeScheme    *runtime.Scheme
-	Namespace          string
+	Namespace          []string
 }
 
 // Run starts an pgupgrade resource controller
@@ -53,7 +53,7 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 	source := cache.NewListWatchFromClient(
 		c.PgupgradeClient,
 		crv1.PgupgradeResourcePlural,
-		c.Namespace,
+		c.Namespace[0],
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

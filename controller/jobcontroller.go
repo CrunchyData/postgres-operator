@@ -36,13 +36,13 @@ import (
 type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
-	Namespace    string
+	Namespace    []string
 }
 
 // Run starts an pod resource controller
 func (c *JobController) Run(ctx context.Context) error {
 
-	_, err := c.watchJobs(ctx)
+	err := c.watchJobs(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for job resource: %v\n", err)
 		return err
@@ -53,33 +53,37 @@ func (c *JobController) Run(ctx context.Context) error {
 }
 
 // watchJobs is the event loop for job resources
-func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.JobClientset.BatchV1().RESTClient(),
-		"jobs",
-		c.Namespace,
-		fields.Everything())
+func (c *JobController) watchJobs(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Info("starting job controller for ns [%s]", c.Namespace[i])
 
-	_, controller := cache.NewInformer(
-		source,
+		source := cache.NewListWatchFromClient(
+			c.JobClientset.BatchV1().RESTClient(),
+			"jobs",
+			c.Namespace[i],
+			fields.Everything())
 
-		// The object type.
-		&apiv1.Job{},
+		_, controller := cache.NewInformer(
+			source,
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// The object type.
+			&apiv1.Job{},
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
+
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 func (c *JobController) onAdd(obj interface{}) {

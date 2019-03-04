@@ -32,7 +32,7 @@ type PgpolicyController struct {
 	PgpolicyClient    *rest.RESTClient
 	PgpolicyScheme    *runtime.Scheme
 	PgpolicyClientset *kubernetes.Clientset
-	Namespace         string
+	Namespace         []string
 }
 
 // Run starts an pgpolicy resource controller
@@ -54,7 +54,7 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgpolicyClient,
 		crv1.PgpolicyResourcePlural,
-		c.Namespace,
+		c.Namespace[0],
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

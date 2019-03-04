@@ -33,13 +33,13 @@ type PgreplicaController struct {
 	PgreplicaClient    *rest.RESTClient
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
-	Namespace          string
+	Namespace          []string
 }
 
 // Run starts an pgreplica resource controller
 func (c *PgreplicaController) Run(ctx context.Context) error {
 
-	_, err := c.watchPgreplicas(ctx)
+	err := c.watchPgreplicas(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgreplica resource: %v", err)
 		return err
@@ -50,33 +50,35 @@ func (c *PgreplicaController) Run(ctx context.Context) error {
 }
 
 // watchPgreplicas is the event loop for pgreplica resources
-func (c *PgreplicaController) watchPgreplicas(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PgreplicaClient,
-		crv1.PgreplicaResourcePlural,
-		c.Namespace,
-		fields.Everything())
+func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		source := cache.NewListWatchFromClient(
+			c.PgreplicaClient,
+			crv1.PgreplicaResourcePlural,
+			c.Namespace[i],
+			fields.Everything())
 
-	_, controller := cache.NewInformer(
-		source,
+		_, controller := cache.NewInformer(
+			source,
 
-		// The object type.
-		&crv1.Pgreplica{},
+			// The object type.
+			&crv1.Pgreplica{},
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgreplica is added

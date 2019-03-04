@@ -14,23 +14,17 @@ metadata:
   namespace: $CO_NAMESPACE
 rules:
 - apiGroups:
-  - '*'
-  resources:
-  - "*"
-  verbs:
-  - "*"
-- apiGroups:
   - ""
   resources:
   - pods
+  - pods/exec
   - services
   - endpoints
   - persistentvolumeclaims
   - events
   - configmaps
   - secrets
-  verbs:
-  - "*"
+  verbs: ["get", "deletecollection", "list", "watch", "create", "update", "patch", "delete"]
 - apiGroups:
   - apps
   resources:
@@ -40,6 +34,11 @@ rules:
   - statefulsets
   verbs:
   - "*"
+- apiGroups:
+  - batch 
+  - extensions 
+  resources: ["jobs", "deployments"]
+  verbs: ["get", "deletecollection", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 

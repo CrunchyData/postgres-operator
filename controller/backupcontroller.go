@@ -34,7 +34,7 @@ type PgbackupController struct {
 	PgbackupClient    *rest.RESTClient
 	PgbackupScheme    *runtime.Scheme
 	PgbackupClientset *kubernetes.Clientset
-	Namespace         string
+	Namespace         []string
 }
 
 // Run starts controller
@@ -56,7 +56,7 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 	source := cache.NewListWatchFromClient(
 		c.PgbackupClient,
 		crv1.PgbackupResourcePlural,
-		c.Namespace,
+		c.Namespace[0],
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

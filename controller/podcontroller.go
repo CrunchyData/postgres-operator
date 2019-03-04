@@ -36,7 +36,7 @@ import (
 type PodController struct {
 	PodClient    *rest.RESTClient
 	PodClientset *kubernetes.Clientset
-	Namespace    string
+	Namespace    []string
 }
 
 // Run starts an pod resource controller
@@ -57,7 +57,7 @@ func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error)
 	source := cache.NewListWatchFromClient(
 		c.PodClientset.CoreV1().RESTClient(),
 		"pods",
-		c.Namespace,
+		c.Namespace[0],
 		fields.Everything())
 
 	_, controller := cache.NewInformer(

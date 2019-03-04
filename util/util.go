@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"math/rand"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -383,4 +384,16 @@ func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
 	}
 
 	return client, scheme, nil
+}
+
+func GetNamespaces() []string {
+	raw := os.Getenv("NAMESPACE")
+
+	//the case of 'all' namespaces
+	if raw == "" {
+		return []string{""}
+	}
+
+	return strings.Split(raw, ",")
+
 }

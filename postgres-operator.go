@@ -41,7 +41,7 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
-var Namespace string
+var PgoNamespace string
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
@@ -55,12 +55,14 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	Namespace = os.Getenv("NAMESPACE")
-	log.Debugf("setting NAMESPACE to %s", Namespace)
-	if Namespace == "" {
-		log.Error("NAMESPACE env var not set")
+	PgoNamespace = os.Getenv("PGO_NAMESPACE")
+	if PgoNamespace == "" {
+		log.Info("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
+
+	namespaceList := util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	operator.Initialize()
 
@@ -90,48 +92,48 @@ func main() {
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
-		Namespace:       Namespace,
+		Namespace:       namespaceList,
 	}
 
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
-		Namespace:          Namespace,
+		Namespace:          namespaceList,
 	}
 	pgReplicacontroller := controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
-		Namespace:          Namespace,
+		Namespace:          namespaceList,
 	}
 	pgUpgradecontroller := controller.PgupgradeController{
 		PgupgradeClientset: Clientset,
 		PgupgradeClient:    crdClient,
 		PgupgradeScheme:    crdScheme,
-		Namespace:          Namespace,
+		Namespace:          namespaceList,
 	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
-		Namespace:         Namespace,
+		Namespace:         namespaceList,
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
 		PgpolicyScheme:    crdScheme,
 		PgpolicyClientset: Clientset,
-		Namespace:         Namespace,
+		Namespace:         namespaceList,
 	}
 	podcontroller := controller.PodController{
 		PodClientset: Clientset,
 		PodClient:    crdClient,
-		Namespace:    Namespace,
+		Namespace:    namespaceList,
 	}
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
-		Namespace:    Namespace,
+		Namespace:    namespaceList,
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -145,9 +147,9 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
+	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
 
-	operatorupgrade.OperatorUpgrade(Clientset, crdClient, Namespace)
+	operatorupgrade.OperatorUpgrade(Clientset, crdClient, namespaceList)
 
 	fmt.Print("at end of setup, beginning wait...")
 

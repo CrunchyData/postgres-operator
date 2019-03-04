@@ -62,9 +62,11 @@ type AutoFailoverTask struct {
 
 //at operator startup, add a state machine for each primary pod that
 //has autofail enabled
-func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) error {
+func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, nsList []string) error {
 	var err error
 	aftask := AutoFailoverTask{}
+
+	ns := nsList[0]
 
 	log.Infoln("autofailover Initialize ")
 
