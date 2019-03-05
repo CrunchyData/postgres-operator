@@ -49,10 +49,8 @@ installrbac:
 	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
-setupnamespace:
-	$(CO_CMD) create -f ./examples/demo-namespace.json
-	$(CO_CMD) config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
-	$(CO_CMD) config use-context demo
+setupnamespaces:
+	cd deploy && ./setupnamespaces.sh
 bounce:
 	$(CO_CMD) --namespace=$(CO_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(CO_CMD) --namespace=$(CO_NAMESPACE) delete pod
 deployoperator:

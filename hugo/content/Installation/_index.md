@@ -44,15 +44,43 @@ this utility from the Github Releases page, and place it into your PATH (e.g. $H
 {{% notice tip %}}There is also a Makefile target that includes is *expenv* and several other dependencies that are only needed if you plan on building from source: 
 
     make setup
+
 {{% /notice %}}
 
-In this example set of environment variables, the CO_NAMESPACE environment variable is set to *demo* as an example namespace in which the Operator will be deployed.  See the Design section of documentation on the Operator namespace requirements.  
+## Namespace Creation
 
-Adjust the namespace value to suit your needs.   There is a Makefile target you can run to create the *demo* namespace if you want:
+The example setup for the Operator will create sample namespaces
+for both the Operator to run within and also for holding the Postgres
+clusters created by the Operator.  Creating Kube namespaces is
+typically something that only a priviledged Kube user can perform
+so log into your Kube cluster as a user that has the necessary
+priviledges to create namespaces before executing this install step.
 
-    make setupnamespace
+The NAMESPACE environment variable is a comma separated list
+of namespaces that specify where the Operator will be provisioing
+PG clusters into, namely, the namespaces the Operator is watching
+for Kube events.  This value is set as follows:
 
-Note, that command sets your Kubernetes context to be *demo* as well, so use with caution if you are using your system's main kubeconfig file.
+    export NAMESPACE=pgodemo1,pgodemo2
+
+This means namespaces called *pgodemo1* and *pgodemo2* will be
+created to test the Operator with.
+
+The CO_NAMESPACE environment variable is a comma separated list
+of namespace values that the Operator itself will be deployed into.  For
+the installation example, this value is set as follows:
+
+    export CO_NAMESPACE=pgo
+
+This means a *pgo* namespace will be created and the Operator will
+be deployed into that namespace.
+
+Create the Operator namespaces using the Makefile target:
+
+    make setupnamespaces
+
+The Design section of this documentation talks further about
+the use of namespaces within the Operator.
 
 ## Configure Operator Templates
 
