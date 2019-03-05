@@ -50,7 +50,7 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = apiserver.GetNamespace(username, namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

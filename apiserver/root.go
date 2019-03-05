@@ -320,7 +320,7 @@ func BasicAuthzCheck(username, perm string) bool {
 //GetNamespace determines if a user has permission for
 //a namespace they are requesting as well as looks up
 //a default namespace if the requestedNS is empty
-func GetNamespace(username, requestedNS string) (string, error) {
+func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
@@ -331,7 +331,7 @@ func GetNamespace(username, requestedNS string) (string, error) {
 
 	}
 
-	if util.WatchingNamespace(requestedNS) {
+	if util.WatchingNamespace(clientset, requestedNS) {
 		return requestedNS, nil
 	}
 

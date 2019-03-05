@@ -435,9 +435,21 @@ func GetNamespaces() []string {
 
 }
 
-func WatchingNamespace(requestedNS string) bool {
+func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS string) bool {
 
 	nsList := GetNamespaces()
+
+	//handle the case where we are watching all namespaces but
+	//the user might enter an invalid namespace not on the kube
+	if len(nsList) > 0 {
+		if nsList[0] == "" {
+			_, found, _ := kubeapi.GetNamespace(clientset, requestedNS)
+			if !found {
+				return false
+			}
+		}
+	}
+
 	for i := 0; i < len(nsList); i++ {
 		if nsList[i] == requestedNS {
 			return true
