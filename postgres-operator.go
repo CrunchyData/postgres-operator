@@ -57,7 +57,7 @@ func main() {
 
 	PgoNamespace = os.Getenv("PGO_NAMESPACE")
 	if PgoNamespace == "" {
-		log.Info("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
+		log.Error("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
 
@@ -69,20 +69,30 @@ func main() {
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		os.Exit(2)
 	}
 
 	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Info("error creating Clientset")
-		panic(err.Error())
+		log.Error(err)
+		os.Exit(2)
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
 	//crdClient, crdScheme, err := crdclient.NewClient(config)
 	crdClient, crdScheme, err := util.NewClient(config)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		os.Exit(2)
+	}
+
+	//validate the NAMESPACE env var
+	err = util.ValidateNamespaces(Clientset)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
 	}
 
 	// start a controller on instances of our custom resource

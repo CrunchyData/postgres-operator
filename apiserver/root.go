@@ -553,6 +553,12 @@ func validateWithKube() {
 			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}
+
+	err := util.ValidateNamespaces(Clientset)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 }
 
 // GetContainerResources ...

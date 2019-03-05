@@ -23,6 +23,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |LogStatement        | postgresql.conf log_statement value (required field)
 |LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field)
 |User        | the PostgreSQL normal user name
+|Database        | the PostgreSQL normal user database
 |Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
 |Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well
 |PgmonitorPassword        | the password to use for pgmonitor metrics collection if you specify --metrics when creating a PG cluster

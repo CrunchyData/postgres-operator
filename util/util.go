@@ -386,6 +386,43 @@ func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
 	return client, scheme, nil
 }
 
+func ValidateNamespaces(clientset *kubernetes.Clientset) error {
+	raw := os.Getenv("NAMESPACE")
+
+	//the case of 'all' namespaces
+	if raw == "" {
+		return nil
+	}
+
+	allFound := false
+
+	nsList := strings.Split(raw, ",")
+
+	//check for the invalid case where a user has NAMESPACE=demo1,,demo2
+	if len(nsList) > 1 {
+		for i := 0; i < len(nsList); i++ {
+			if nsList[i] == "" {
+				allFound = true
+			}
+		}
+	}
+
+	if allFound && len(nsList) > 1 {
+		return errors.New("'' (empty string), found within the NAMESPACE environment variable along with other namespaces, this is not an accepted format")
+	}
+
+	//check for the case of a non-existing namespace being used
+	for i := 0; i < len(nsList); i++ {
+		_, found, _ := kubeapi.GetNamespace(clientset, nsList[i])
+		if !found {
+			return errors.New("NAMESPACE environment variable contains a namespace of " + nsList[i] + " but that is not found on this kube system")
+		}
+	}
+
+	return nil
+
+}
+
 func GetNamespaces() []string {
 	raw := os.Getenv("NAMESPACE")
 
