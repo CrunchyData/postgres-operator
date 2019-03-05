@@ -17,10 +17,10 @@ package operator
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"text/template"
 )
@@ -116,8 +116,7 @@ func Initialize() {
 	NAMESPACE = os.Getenv("NAMESPACE")
 	log.Debugf("setting NAMESPACE to %s", NAMESPACE)
 	if NAMESPACE == "" {
-		log.Error("NAMESPACE env var not set")
-		panic("NAMESPACE env var not set")
+		log.Error("NAMESPACE env var is set to empty string which pgo intprets as meaning you want it to watch 'all' namespaces.")
 	}
 
 	PgoBackrestRepoTemplate = util.LoadTemplate(pgoBackrestRepoTemplatePath)

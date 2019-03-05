@@ -119,9 +119,9 @@ func Initialize() {
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
-		log.Error("NAMESPACE environment variable is required")
-		os.Exit(2)
+		log.Error("NAMESPACE environment variable is set to empty string which pgo will interpret as watch 'all' namespaces")
 	}
+
 	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
@@ -335,7 +335,7 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, nil
 	}
 
-	return requestedNS, errors.New("requested Namspace was not found to be in the list of Namespaces being watched.")
+	return requestedNS, errors.New("requested Namespace was not found to be in the list of Namespaces being watched.")
 }
 
 func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
