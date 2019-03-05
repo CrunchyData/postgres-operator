@@ -18,11 +18,11 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -56,7 +56,7 @@ func (c *PgclusterController) Run(ctx context.Context) error {
 // watchPgclusters is the event loop for pgcluster resources
 func (c *PgclusterController) watchPgclusters(ctx context.Context) error {
 	for i := 0; i < len(c.Namespace); i++ {
-		log.Info("starting pgcluster controller for ns [%s]", c.Namespace[i])
+		log.Infof("starting pgcluster controller for ns [%s]", c.Namespace[i])
 		source := cache.NewListWatchFromClient(
 			c.PgclusterClient,
 			crv1.PgclusterResourcePlural,

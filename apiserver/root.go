@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -27,11 +27,11 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -66,6 +66,7 @@ var DebugFlag bool
 var BasicAuth bool
 
 // Namespace comes from the apiserver config in this version
+var PgoNamespace string
 var Namespace string
 
 // TreeTrunk is for debugging only in this context
@@ -106,6 +107,15 @@ func Initialize() {
 		log.Error("something did not validate in the pgo.yaml")
 		os.Exit(2)
 	}
+
+	PgoNamespace = os.Getenv("PGO_NAMESPACE")
+	if PgoNamespace == "" {
+		log.Info("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
+		os.Exit(2)
+	}
+
+	namespaceList := util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
@@ -311,12 +321,21 @@ func BasicAuthzCheck(username, perm string) bool {
 //a namespace they are requesting as well as looks up
 //a default namespace if the requestedNS is empty
 func GetNamespace(username, requestedNS string) (string, error) {
-	var err error
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
-	//return Namespace, err
-	return "demo", err
+	namespaceList := util.GetNamespaces()
+	if requestedNS == "" {
+		//return the first namespace for now
+		return namespaceList[0], nil
+
+	}
+
+	if util.WatchingNamespace(requestedNS) {
+		return requestedNS, nil
+	}
+
+	return requestedNS, errors.New("requested Namspace was not found to be in the list of Namespaces being watched.")
 }
 
 func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {

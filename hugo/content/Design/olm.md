@@ -71,3 +71,10 @@ location:
 
 https://www.operatorhub.io/operator/postgres-operator.v3.5.0
 
+## Changes from 3.5.2
+
+ * added pgo show namespace command
+ * added SHOW_NAMESPACE_PERM to pgorole
+ * added changes to rbac and cluster-rbac (see above)
+ * added NAMESPACE environment variable to hold watched namespaces
+

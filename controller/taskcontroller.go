@@ -58,7 +58,7 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 // watchPgtasks watches the pgtask resource catching events
 func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
 	for i := 0; i < len(c.Namespace); i++ {
-		log.Info("starting pgtask controller on ns [%s]", c.Namespace[i])
+		log.Infof("starting pgtask controller on ns [%s]", c.Namespace[i])
 		source := cache.NewListWatchFromClient(
 			c.PgtaskClient,
 			crv1.PgtaskResourcePlural,

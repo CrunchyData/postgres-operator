@@ -39,7 +39,7 @@ type PgpolicyController struct {
 func (c *PgpolicyController) Run(ctx context.Context) error {
 
 	// Watch Example objects
-	_, err := c.watchPgpolicys(ctx)
+	err := c.watchPgpolicys(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgpolicy resource: %v", err)
 		return err
@@ -50,33 +50,37 @@ func (c *PgpolicyController) Run(ctx context.Context) error {
 }
 
 // watchPgpolicys watches the pgpolicy resource catching events
-func (c *PgpolicyController) watchPgpolicys(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PgpolicyClient,
-		crv1.PgpolicyResourcePlural,
-		c.Namespace[0],
-		fields.Everything())
+func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting pgpolicy controller on ns [%s]", c.Namespace[i])
 
-	_, controller := cache.NewInformer(
-		source,
+		source := cache.NewListWatchFromClient(
+			c.PgpolicyClient,
+			crv1.PgpolicyResourcePlural,
+			c.Namespace[i],
+			fields.Everything())
 
-		// The object type.
-		&crv1.Pgpolicy{},
+		_, controller := cache.NewInformer(
+			source,
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// The object type.
+			&crv1.Pgpolicy{},
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
+
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgpolicy is added

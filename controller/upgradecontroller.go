@@ -17,9 +17,9 @@ limitations under the License.
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	upgradeoperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -38,7 +38,7 @@ type PgupgradeController struct {
 // Run starts an pgupgrade resource controller
 func (c *PgupgradeController) Run(ctx context.Context) error {
 
-	_, err := c.watchPgupgrades(ctx)
+	err := c.watchPgupgrades(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgupgrade resource: %v", err)
 		return err
@@ -49,33 +49,37 @@ func (c *PgupgradeController) Run(ctx context.Context) error {
 }
 
 // watchPgupgrades is the event loop for pgupgrade resources
-func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PgupgradeClient,
-		crv1.PgupgradeResourcePlural,
-		c.Namespace[0],
-		fields.Everything())
+func (c *PgupgradeController) watchPgupgrades(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting pgtask controller on ns [%s]", c.Namespace[i])
 
-	_, controller := cache.NewInformer(
-		source,
+		source := cache.NewListWatchFromClient(
+			c.PgupgradeClient,
+			crv1.PgupgradeResourcePlural,
+			c.Namespace[i],
+			fields.Everything())
 
-		// The object type.
-		&crv1.Pgupgrade{},
+		_, controller := cache.NewInformer(
+			source,
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// The object type.
+			&crv1.Pgupgrade{},
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
+
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when pgupgrades are added

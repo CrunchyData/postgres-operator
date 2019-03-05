@@ -17,13 +17,13 @@ limitations under the License.
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -42,7 +42,7 @@ type PodController struct {
 // Run starts an pod resource controller
 func (c *PodController) Run(ctx context.Context) error {
 
-	_, err := c.watchPods(ctx)
+	err := c.watchPods(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for pod resource: %v", err)
 		return err
@@ -53,33 +53,36 @@ func (c *PodController) Run(ctx context.Context) error {
 }
 
 // watchPods is the event loop for pod resources
-func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PodClientset.CoreV1().RESTClient(),
-		"pods",
-		c.Namespace[0],
-		fields.Everything())
+func (c *PodController) watchPods(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting pod controller on ns [%s]", c.Namespace[i])
+		source := cache.NewListWatchFromClient(
+			c.PodClientset.CoreV1().RESTClient(),
+			"pods",
+			c.Namespace[i],
+			fields.Everything())
 
-	_, controller := cache.NewInformer(
-		source,
+		_, controller := cache.NewInformer(
+			source,
 
-		// The object type.
-		&apiv1.Pod{},
+			// The object type.
+			&apiv1.Pod{},
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgcluster is added or

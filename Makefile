@@ -63,7 +63,7 @@ runmain:	check-go-vars
 	postgres-operator --kubeconfig=/etc/kubernetes/admin.conf
 runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
-apiserver:	check-go-vars
+pgo-apiserver:	check-go-vars
 	go install apiserver.go
 pgo-backrest:	check-go-vars
 	go install pgo-backrest/pgo-backrest.go
@@ -89,7 +89,7 @@ pgo-apiserver-image:	check-go-vars
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
 	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 #	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
-operator:	check-go-vars
+postgres-operator:	check-go-vars
 	go install postgres-operator.go
 postgres-operator-image:	check-go-vars
 	go install postgres-operator.go

@@ -22,10 +22,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -396,4 +396,16 @@ func GetNamespaces() []string {
 
 	return strings.Split(raw, ",")
 
+}
+
+func WatchingNamespace(requestedNS string) bool {
+
+	nsList := GetNamespaces()
+	for i := 0; i < len(nsList); i++ {
+		if nsList[i] == requestedNS {
+			return true
+		}
+	}
+
+	return false
 }

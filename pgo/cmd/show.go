@@ -39,6 +39,7 @@ var ShowCmd = &cobra.Command{
 	pgo show config
 	pgo show policy policy1
 	pgo show pvc mycluster
+	pgo show namespace
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5
 	pgo show user mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -50,6 +51,7 @@ Valid resource types include:
 	* config
 	* policy
 	* pvc
+	* namespace
 	* workflow
 	* upgrade
 	* user
@@ -62,6 +64,7 @@ Valid resource types include:
 			case "user":
 			case "config":
 			case "schedule":
+			case "namespace":
 			case "workflow":
 			case "upgrade":
 			case "backup":
@@ -74,6 +77,7 @@ Valid resource types include:
 	* config
 	* policy
 	* pvc
+	* namespace
 	* workflow
 	* upgrade
 	* user`)
@@ -88,6 +92,7 @@ func init() {
 	ShowCmd.AddCommand(ShowBackupCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
+	ShowCmd.AddCommand(ShowNamespaceCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
@@ -116,6 +121,17 @@ var ShowConfigCmd = &cobra.Command{
 	pgo show config`,
 	Run: func(cmd *cobra.Command, args []string) {
 		showConfig(args, Namespace)
+	},
+}
+
+var ShowNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Show namespace information",
+	Long: `Show namespace information for the Operator. For example:
+
+	pgo show namespace`,
+	Run: func(cmd *cobra.Command, args []string) {
+		showNamespace(args, Namespace)
 	},
 }
 

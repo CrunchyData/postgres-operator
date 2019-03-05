@@ -19,12 +19,12 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -55,7 +55,7 @@ func (c *JobController) Run(ctx context.Context) error {
 // watchJobs is the event loop for job resources
 func (c *JobController) watchJobs(ctx context.Context) error {
 	for i := 0; i < len(c.Namespace); i++ {
-		log.Info("starting job controller for ns [%s]", c.Namespace[i])
+		log.Infof("starting job controller for ns [%s]", c.Namespace[i])
 
 		source := cache.NewListWatchFromClient(
 			c.JobClientset.BatchV1().RESTClient(),

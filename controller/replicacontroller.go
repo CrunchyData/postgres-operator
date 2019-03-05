@@ -52,6 +52,9 @@ func (c *PgreplicaController) Run(ctx context.Context) error {
 // watchPgreplicas is the event loop for pgreplica resources
 func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
 	for i := 0; i < len(c.Namespace); i++ {
+
+		log.Infof("starting pgreplica controller on ns [%s]", c.Namespace[i])
+
 		source := cache.NewListWatchFromClient(
 			c.PgreplicaClient,
 			crv1.PgreplicaResourcePlural,
