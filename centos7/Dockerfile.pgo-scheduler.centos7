@@ -19,7 +19,6 @@ RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /configs \
  && chown -R 2:2 /opt/cpm /configs
 
 ADD bin/pgo-scheduler /opt/cpm/bin
-ADD conf/pgo-scheduler /opt/cpm/conf
 
 USER 2
 
