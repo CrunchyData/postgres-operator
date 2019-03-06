@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	log "github.com/sirupsen/logrus"
 
 	//"github.com/crunchydata/postgres-operator/operator/cluster"
 	"os"
@@ -441,14 +441,14 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
 	var primaryDoc bytes.Buffer
-	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	err = operator.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
 	//a form of debugging
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+		operator.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := v1beta1.Deployment{}

@@ -57,12 +57,16 @@ The following diagram depicts the various deployment models:
 ### RBAC
 
 To support multiple namespace watching, the Operator deployment
-process changes a bit.
+process changes a bit from 3.X releases.
 
 Each namespace to be watch requires its own copy of the 
-pgo-backrest-repo-config Secret.  There is a script called
-deploy-for-each-namespace.sh that is required to be run
-for each namespace that will be watched.
+pgo-backrest-repo-config Secret.  When you run the install-rbac.sh
+script, it now iterates through the list of namespaces to be
+watched and creates this Secret into each of those namespaces.
+
+If after an initial execution of install-rbac.sh, you need to add a 
+new namespace, you will need to run the create-pgo-backrest-ssh-secret.sh 
+script for that new namespace.
 
 ## Operator Hub
 
@@ -70,11 +74,4 @@ The Operator shows up on the Redhat Operator Hub at the following
 location:
 
 https://www.operatorhub.io/operator/postgres-operator.v3.5.0
-
-## Changes from 3.5.2
-
- * added pgo show namespace command
- * added SHOW_NAMESPACE_PERM to pgorole
- * added changes to rbac and cluster-rbac (see above)
- * added NAMESPACE environment variable to hold watched namespaces
 

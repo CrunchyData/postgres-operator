@@ -21,13 +21,13 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,15 +36,12 @@ import (
 	"os"
 )
 
-// Strategy1  ...
-type Strategy1 struct{}
-
 // AddCluster ...
-func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, primaryPVCName string) error {
+func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, primaryPVCName string) error {
 	var primaryDoc bytes.Buffer
 	var err error
 
-	log.Info("creating Pgcluster object using Strategy 1" + " in namespace " + namespace)
+	log.Info("creating Pgcluster object  in namespace " + namespace)
 	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
 	st := operator.Pgo.Cluster.ServiceType
@@ -133,7 +130,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
-	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	err = operator.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -141,7 +138,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 
 	//a form of debugging
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+		operator.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := v1beta1.Deployment{}
@@ -173,7 +170,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 }
 
 // DeleteCluster ...
-func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
+func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
@@ -250,7 +247,7 @@ func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName st
 }
 
 // UpdatePolicyLabels ...
-func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
+func UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
 
 	deployment, found, err := kubeapi.GetDeployment(clientset, clusterName, namespace)
 	if !found {
@@ -304,7 +301,7 @@ func (r Strategy1) UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterNa
 }
 
 // Scale ...
-func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace, pvcName string, cluster *crv1.Pgcluster) error {
+func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace, pvcName string, cluster *crv1.Pgcluster) error {
 	var err error
 	log.Debug("Scale called for " + replica.Name)
 	log.Debug("Scale called pvcName " + pvcName)
@@ -393,10 +390,10 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = operator.DeploymentTemplate1.Execute(&replicaDoc, replicaDeploymentFields)
+		err = operator.DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {
@@ -405,7 +402,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
+		operator.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
 	replicaDeployment := v1beta1.Deployment{}
@@ -421,7 +418,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 }
 
 // DeleteReplica ...
-func (r Strategy1) DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespace string) error {
+func DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgreplica object" + " in namespace " + namespace)

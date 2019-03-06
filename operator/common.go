@@ -40,7 +40,7 @@ const PgbouncerTemplatePath = "/pgo-config/pgbouncer-template.json"
 const PgbouncerConfTemplatePath = "/pgo-config/pgbouncer.ini"
 const PgbouncerUsersTemplatePath = "/pgo-config/users.txt"
 const PgbouncerHBATemplatePath = "/pgo-config/pgbouncer_hba.conf"
-const ServiceTemplate1Path = "/pgo-config/cluster-service-1.json"
+const ServiceTemplatePath = "/pgo-config/cluster-service.json"
 
 const jobPath = "/pgo-config/backup-job.json"
 const rmdatajobPath = "/pgo-config/rmdata-job.json"
@@ -49,23 +49,22 @@ const backrestRestorejobPath = "/pgo-config/backrest-restore-job.json"
 const PVCPath = "/pgo-config/pvc.json"
 const PVCMatchLabelsPath = "/pgo-config/pvc-matchlabels.json"
 const PVCSCPath = "/pgo-config/pvc-storageclass.json"
-const UpgradeJobPath = "/pgo-config/cluster-upgrade-job-1.json"
 
 const pgDumpBackupJobPath = "/pgo-config/pgdump-job.json"
 const pgRestoreJobPath = "/pgo-config/pgrestore-job.json"
 
-const DeploymentTemplate1Path = "/pgo-config/cluster-deployment-1.json"
-const CollectTemplate1Path = "/pgo-config/collect.json"
-const BadgerTemplate1Path = "/pgo-config/pgbadger.json"
-const AffinityTemplate1Path = "/pgo-config/affinity.json"
-const ContainerResourcesTemplate1Path = "/pgo-config/container-resources.json"
+const DeploymentTemplatePath = "/pgo-config/cluster-deployment.json"
+const CollectTemplatePath = "/pgo-config/collect.json"
+const BadgerTemplatePath = "/pgo-config/pgbadger.json"
+const AffinityTemplatePath = "/pgo-config/affinity.json"
+const ContainerResourcesTemplatePath = "/pgo-config/container-resources.json"
 
 var PgoBackrestRepoServiceTemplate *template.Template
 var PgoBackrestRepoTemplate *template.Template
 var PgmonitorEnvVarsTemplate *template.Template
 var PgbackrestEnvVarsTemplate *template.Template
 var JobTemplate *template.Template
-var UpgradeJobTemplate1 *template.Template
+var UpgradeJobTemplate *template.Template
 var PgpoolTemplate *template.Template
 var PgpoolConfTemplate *template.Template
 var PgpoolPasswdTemplate *template.Template
@@ -74,7 +73,7 @@ var PgbouncerTemplate *template.Template
 var PgbouncerConfTemplate *template.Template
 var PgbouncerUsersTemplate *template.Template
 var PgbouncerHBATemplate *template.Template
-var ServiceTemplate1 *template.Template
+var ServiceTemplate *template.Template
 var IngestjobTemplate *template.Template
 var RmdatajobTemplate *template.Template
 var BackrestjobTemplate *template.Template
@@ -87,13 +86,13 @@ var PgRestoreJobTemplate *template.Template
 var PVCTemplate *template.Template
 var PVCMatchLabelsTemplate *template.Template
 var PVCStorageClassTemplate *template.Template
-var AffinityTemplate1 *template.Template
-var ContainerResourcesTemplate1 *template.Template
-var CollectTemplate1 *template.Template
-var BadgerTemplate1 *template.Template
-var DeploymentTemplate1 *template.Template
-var ReplicadeploymentTemplate1 *template.Template
-var ReplicadeploymentTemplate1Shared *template.Template
+var AffinityTemplate *template.Template
+var ContainerResourcesTemplate *template.Template
+var CollectTemplate *template.Template
+var BadgerTemplate *template.Template
+var DeploymentTemplate *template.Template
+var ReplicadeploymentTemplate *template.Template
+var ReplicadeploymentTemplateShared *template.Template
 
 var Pgo config.PgoConfig
 
@@ -132,7 +131,7 @@ func Initialize() {
 	PgbouncerConfTemplate = util.LoadTemplate(PgbouncerConfTemplatePath)
 	PgbouncerUsersTemplate = util.LoadTemplate(PgbouncerUsersTemplatePath)
 	PgbouncerHBATemplate = util.LoadTemplate(PgbouncerHBATemplatePath)
-	ServiceTemplate1 = util.LoadTemplate(ServiceTemplate1Path)
+	ServiceTemplate = util.LoadTemplate(ServiceTemplatePath)
 
 	RmdatajobTemplate = util.LoadTemplate(rmdatajobPath)
 	BackrestjobTemplate = util.LoadTemplate(backrestjobPath)
@@ -140,12 +139,11 @@ func Initialize() {
 	PVCTemplate = util.LoadTemplate(PVCPath)
 	PVCMatchLabelsTemplate = util.LoadTemplate(PVCMatchLabelsPath)
 	PVCStorageClassTemplate = util.LoadTemplate(PVCSCPath)
-	DeploymentTemplate1 = util.LoadTemplate(DeploymentTemplate1Path)
-	CollectTemplate1 = util.LoadTemplate(CollectTemplate1Path)
-	BadgerTemplate1 = util.LoadTemplate(BadgerTemplate1Path)
-	AffinityTemplate1 = util.LoadTemplate(AffinityTemplate1Path)
-	ContainerResourcesTemplate1 = util.LoadTemplate(ContainerResourcesTemplate1Path)
-	UpgradeJobTemplate1 = util.LoadTemplate(UpgradeJobPath)
+	DeploymentTemplate = util.LoadTemplate(DeploymentTemplatePath)
+	CollectTemplate = util.LoadTemplate(CollectTemplatePath)
+	BadgerTemplate = util.LoadTemplate(BadgerTemplatePath)
+	AffinityTemplate = util.LoadTemplate(AffinityTemplatePath)
+	ContainerResourcesTemplate = util.LoadTemplate(ContainerResourcesTemplatePath)
 
 	PgDumpBackupJobTemplate = util.LoadTemplate(pgDumpBackupJobPath)
 	PgRestoreJobTemplate = util.LoadTemplate(pgRestoreJobPath)
@@ -200,14 +198,14 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	fields.LimitsCPU = resources.LimitsCPU
 
 	doc := bytes.Buffer{}
-	err := ContainerResourcesTemplate1.Execute(&doc, fields)
+	err := ContainerResourcesTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
 	}
 
 	if log.GetLevel() == log.DebugLevel {
-		ContainerResourcesTemplate1.Execute(os.Stdout, fields)
+		ContainerResourcesTemplate.Execute(os.Stdout, fields)
 	}
 
 	return doc.String()

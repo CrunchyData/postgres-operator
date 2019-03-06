@@ -1,7 +1,7 @@
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
-export NAMESPACE=pgodemo1,pgodemo2
+export NAMESPACE=pgouser1,pgouser2
 export CO_NAMESPACE=pgo
 export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator

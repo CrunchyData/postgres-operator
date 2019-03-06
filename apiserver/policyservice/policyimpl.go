@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
@@ -24,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -216,21 +216,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 		}
 
-		var strategyMap map[string]cluster.Strategy
-		strategyMap = make(map[string]cluster.Strategy)
-		strategyMap["1"] = cluster.Strategy1{}
-
-		strategy, ok := strategyMap[cl.Spec.Strategy]
-		if ok {
-			log.Debug("strategy found")
-		} else {
-			log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "invalid strategy " + cl.Spec.Strategy
-			return resp
-		}
-
-		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
+		err = cluster.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
 		if err != nil {
 			log.Error(err)
 		}

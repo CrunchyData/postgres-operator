@@ -55,7 +55,7 @@ $CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-config \
 	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
-	--from-file=$COROOT/conf/postgres-operator/cluster/1
+	--from-file=$COROOT/conf/postgres-operator/cluster
 
 if [ "$CO_UI" = "true" ]; then
 $CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-ui-conf \

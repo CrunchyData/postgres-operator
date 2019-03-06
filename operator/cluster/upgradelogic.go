@@ -19,20 +19,20 @@ package cluster
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 // MinorUpgrade ..
-func (r Strategy1) MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
+func MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, upgrade *crv1.Pgupgrade, namespace string) error {
 	var err error
 
-	log.Info("minor cluster upgrade using Strategy 1 in namespace " + namespace)
+	log.Info("minor cluster upgrade in namespace " + namespace)
 
 	//do this instead of deleting the deployment and creating a new one
 	//kubectl patch deploy mango --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"crunchydata/crunchy-postgres:centos7-10.4-1.8.4"}]'

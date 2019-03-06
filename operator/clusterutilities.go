@@ -18,10 +18,10 @@ package operator
 import (
 	"bytes"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"os"
 )
@@ -149,14 +149,14 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		}
 
 		var badgerDoc bytes.Buffer
-		err := BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)
+		err := BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			BadgerTemplate1.Execute(os.Stdout, badgerTemplateFields)
+			BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
 		}
 		return badgerDoc.String()
 	}
@@ -180,14 +180,14 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
-		err := CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
+		err := CollectTemplate.Execute(&collectDoc, collectTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			CollectTemplate1.Execute(os.Stdout, collectTemplateFields)
+			CollectTemplate.Execute(os.Stdout, collectTemplateFields)
 		}
 		return collectDoc.String()
 	}
@@ -284,14 +284,14 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	affinityTemplateFields.OperatorValue = affoperator
 
 	var affinityDoc bytes.Buffer
-	err := AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
+	err := AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return output
 	}
 
 	if CRUNCHY_DEBUG {
-		AffinityTemplate1.Execute(os.Stdout, affinityTemplateFields)
+		AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()
