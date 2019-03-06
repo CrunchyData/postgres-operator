@@ -22,3 +22,6 @@
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"
                     }, {
+                        "name": "PGBACKREST_PG_PORT",
+                        "value": "{{.PgbackrestPGPort}}"
+                    }, {
