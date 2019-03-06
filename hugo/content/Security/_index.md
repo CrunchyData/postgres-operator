@@ -73,7 +73,14 @@ The users pgouser file can also be located at:
 */etc/pgo/pgouser* or it can be found at a path specified by the
 PGOUSER environment variable.
 
-The following list shows the current complete list of possible pgo permissions:
+If the user tries to access a namespace that they are not
+configured for within the server side *pgouser* file then they
+will get an error message as follows:
+
+    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
+
+
+The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
 
 |Permission|Description  |
 |---|---|
@@ -119,7 +126,7 @@ The following list shows the current complete list of possible pgo permissions:
 If the user is unauthorized for a pgo command, the user will
 get back this response:
 
-    FATA[0000] Authentication Failed: 40
+    Error:  Authentication Failed: 401 
 
 ## Making Security Changes
 The Operator today requires you to make Operator security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:

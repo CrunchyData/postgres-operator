@@ -349,6 +349,11 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 	//
 	//	}
 
+	if !UserIsPermittedInNamespace(username, requestedNS) {
+		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
+		return requestedNS, errors.New(errMsg)
+	}
+
 	if util.WatchingNamespace(clientset, requestedNS) {
 		return requestedNS, nil
 	}
@@ -607,4 +612,15 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	}
 
 	return doc.String()
+}
+
+func UserIsPermittedInNamespace(username, requestedNS string) bool {
+	detail := Credentials[username]
+
+	for i := 0; i < len(detail.Namespaces); i++ {
+		if detail.Namespaces[i] == requestedNS {
+			return true
+		}
+	}
+	return false
 }
