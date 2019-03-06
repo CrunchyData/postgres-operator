@@ -18,11 +18,11 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +44,8 @@ type PgbouncerConfFields struct {
 	PG_REPLICA_SERVICE_NAME string
 	PG_USERNAME             string
 	PG_PASSWORD             string
+	PG_PORT                 string
+	PG_DATABASE             string
 }
 
 type PgbouncerTemplateFields struct {
@@ -313,6 +315,18 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, 
 		return err
 	}
 
+	// pgbouncer port for ini file
+	port := cl.Spec.Port
+
+	if !(len(port) > 0) {
+		port = "5432" // default if unset in pgo.yaml
+	}
+
+	pgbouncerDb := cl.Spec.Database
+	if !(len(pgbouncerDb) > 0) {
+		pgbouncerDb = db // default to passed in database name
+	}
+
 	pgbouncerHBABytes, err = getPgbouncerHBA()
 	if err != nil {
 		log.Error(err)
@@ -325,7 +339,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, 
 		return err
 	}
 
-	pgbouncerConfBytes, err = getPgbouncerConf(primary, replica, username, password)
+	pgbouncerConfBytes, err = getPgbouncerConf(primary, replica, username, password, port, pgbouncerDb)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -365,7 +379,7 @@ func getPgbouncerHBA() ([]byte, error) {
 }
 
 //NOTE: The config files currently uses the postgres user to admin pgouncer by default
-func getPgbouncerConf(primary, replica, username, password string) ([]byte, error) {
+func getPgbouncerConf(primary, replica, username, password, port, database string) ([]byte, error) {
 	var err error
 
 	fields := PgbouncerConfFields{}
@@ -373,6 +387,8 @@ func getPgbouncerConf(primary, replica, username, password string) ([]byte, erro
 	fields.PG_REPLICA_SERVICE_NAME = replica
 	fields.PG_USERNAME = username
 	fields.PG_PASSWORD = password
+	fields.PG_PORT = port
+	fields.PG_DATABASE = database
 
 	var doc bytes.Buffer
 	err = operator.PgbouncerConfTemplate.Execute(&doc, fields)
