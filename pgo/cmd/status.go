@@ -18,25 +18,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
-
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Display PostgreSQL cluster status",
-	Long: `Display namespace wide information for PostgreSQL clusters.	For example:
-
-	pgo status`,
-	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("status called")
-		showStatus(args, Namespace)
-	},
-}
 
 var Summary bool
 
@@ -115,4 +103,19 @@ func printSummary(status *msgs.StatusDetail) {
 			fmt.Printf("\t[%d]\t[%s]\n", status.Labels[i].Value, status.Labels[i].Key)
 		}
 	}
+}
+
+var statusCmd = &cobra.Command{
+	Use:   "status",
+	Short: "Display PostgreSQL cluster status",
+	Long: `Display namespace wide information for PostgreSQL clusters.	For example:
+
+	pgo status`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("status called")
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		showStatus(args, Namespace)
+	},
 }

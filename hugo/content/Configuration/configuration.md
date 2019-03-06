@@ -31,3 +31,17 @@ As with the other Operator templates, administrators can make custom changes to 
 
 ## Security
 Security configuration is described in the [Security](/security) section of this documentation.
+
+## Local pgo CLI Configuration
+
+You can specify the default namespace you want to use by
+setting the PGO_NAMESPACE environment variable locally
+on the host the pgo CLI command is running.
+
+    export PGO_NAMESPACE=pgouser1
+
+When that variable is set, each command you issue with *pgo* will
+use that namespace unless you over-ride it using the *--namespace*
+command line flag.
+
+    pgo show cluster foo --namespace=pgouser2

@@ -437,6 +437,8 @@ func GetNamespaces() []string {
 
 func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS string) bool {
 
+	log.Debugf("WatchingNamespace [%s]", requestedNS)
+
 	nsList := GetNamespaces()
 
 	//handle the case where we are watching all namespaces but

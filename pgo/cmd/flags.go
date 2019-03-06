@@ -36,5 +36,6 @@ var RED func(a ...interface{}) string
 var GREEN func(a ...interface{}) string
 
 var Namespace string
+var PGONamespace string
 var APIServerURL string
 var PGO_CA_CERT, PGO_CLIENT_CERT, PGO_CLIENT_KEY string

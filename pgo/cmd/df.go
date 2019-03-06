@@ -18,10 +18,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -37,6 +37,9 @@ var dfCmd = &cobra.Command{
 	pgo df all
 	pgo df --selector=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("df called")
 		if Selector == "" && len(args) == 0 {
 			fmt.Println(`Error: You must specify the name of the clusters to test.`)

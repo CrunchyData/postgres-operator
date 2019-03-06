@@ -109,6 +109,7 @@ func init() {
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+
 }
 
 var deleteUpgradeCmd = &cobra.Command{
@@ -118,6 +119,9 @@ var deleteUpgradeCmd = &cobra.Command{
 
     pgo delete upgrade mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: A database or cluster name is required for this command.")
 		} else {
@@ -137,6 +141,9 @@ var deleteBackupCmd = &cobra.Command{
     
     pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: A database or cluster name is required for this command.")
 		} else {
@@ -158,6 +165,9 @@ var deleteUserCmd = &cobra.Command{
     pgo delete user someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: A user name is required for this command.")
 		} else if Selector == "" {
@@ -182,6 +192,9 @@ var deleteClusterCmd = &cobra.Command{
     pgo delete cluster all
     pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
@@ -201,6 +214,9 @@ var deletePolicyCmd = &cobra.Command{
 
     pgo delete policy mypolicy`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: A policy name is required for this command.")
 		} else {
@@ -221,6 +237,9 @@ var deletePgbouncerCmd = &cobra.Command{
 
 	pgo delete pgbouncer mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
@@ -243,6 +262,9 @@ var deletePgpoolCmd = &cobra.Command{
     
     pgo delete pgpool mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
@@ -265,6 +287,9 @@ var deleteScheduleCmd = &cobra.Command{
     pgo delete schedule --selector=env=test
     pgo delete schedule --schedule-name=mycluster-pgbackrest-full`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" && ScheduleName == "" {
 			fmt.Println("Error: cluster name, schedule name or selector is required to delete a schedule.")
 			return
@@ -288,6 +313,9 @@ var deleteLabelCmd = &cobra.Command{
     pgo delete label all --label=env=research
     pgo delete label --selector=group=southwest --label=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {

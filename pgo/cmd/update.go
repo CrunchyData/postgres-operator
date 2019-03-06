@@ -69,6 +69,9 @@ var updateClusterCmd = &cobra.Command{
     pgo update cluster all --autofail=false
     pgo update cluster mycluster --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if AutofailStringFlag == "true" || AutofailStringFlag == "false" {
 		} else {
 			fmt.Println("Error: --autofail=true or --autofail=false is required.")

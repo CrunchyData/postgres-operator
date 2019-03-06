@@ -43,18 +43,20 @@ The *conf/postgresql-operator/pgorole* file is read at start up time when the op
 
 The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
 
-    username:password:pgoadmin:all
+    username:password:pgoadmin:
     pgouser1:password:pgoadmin:pgouser1
     pgouser2:password:pgoadmin:pgouser2
     pgouser3:password:pgoadmin:pgouser1,pgouser2
-    readonlyuser:password:pgoreader:all
+    readonlyuser:password:pgoreader:
 
 The format of the pgouser server file is:
 
     <username>:<password>:<role>:<namespace,namespace>
 
 The namespace is a comma separated list of namespaces that
-user has access to.
+user has access to.  If you do not specify a namespace, then
+all namespaces is assumed, meaning this user can access any
+namespace that the Operator is watching.
 
 A user creates a *.pgouser* file in their $HOME directory to identify
 themselves to the Operator.  An entry in .pgouser will need to match

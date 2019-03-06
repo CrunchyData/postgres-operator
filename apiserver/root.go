@@ -76,9 +76,10 @@ const TreeTrunk = "└── "
 const TreeBranch = "├── "
 
 type CredentialDetail struct {
-	Username string
-	Password string
-	Role     string
+	Username   string
+	Password   string
+	Role       string
+	Namespaces []string
 }
 
 // Credentials holds the BasicAuth credentials found in the config
@@ -137,14 +138,11 @@ func Initialize() {
 
 	InitializePerms()
 
-	err = validateCredentials()
-	if err != nil {
-		os.Exit(2)
-	}
-
 	ConnectToKube()
 
 	validateWithKube()
+
+	validateUserCredentials()
 }
 
 // ConnectToKube ...
@@ -247,9 +245,10 @@ func parseUserMap(dat string) CredentialDetail {
 	creds := CredentialDetail{}
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	creds.Username = fields[0]
-	creds.Password = fields[1]
-	creds.Role = fields[2]
+	creds.Username = strings.TrimSpace(fields[0])
+	creds.Password = strings.TrimSpace(fields[1])
+	creds.Role = strings.TrimSpace(fields[2])
+	creds.Namespaces = strings.Split(strings.TrimSpace(fields[3]), ",")
 	return creds
 }
 
@@ -267,21 +266,34 @@ func getCredentials() {
 
 }
 
-// validateCredentials ...
-func validateCredentials() error {
-
-	var err error
+// validateUserCredentials ...
+func validateUserCredentials() {
 
 	for _, v := range Credentials {
 		log.Infof("validating user %s and role %s", v.Username, v.Role)
 		if RoleMap[v.Role] == nil {
 			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
 			log.Error(errMsg)
-			return errors.New(errMsg)
+			os.Exit(2)
 		}
 	}
 
-	return err
+	//validate the pgouser server config file has valid namespaces
+	for _, v := range Credentials {
+		log.Infof("validating user %s namespaces %v", v.Username, v.Namespaces)
+		for i := 0; i < len(v.Namespaces); i++ {
+			if v.Namespaces[i] == "" {
+			} else {
+				watching := util.WatchingNamespace(Clientset, v.Namespaces[i])
+				if !watching {
+					errMsg := fmt.Sprintf("namespace %s found on pgouser user [%s], but this namespace is not being watched", v.Namespaces[i], v.Username, v.Role)
+					log.Error(errMsg)
+					os.Exit(2)
+				}
+			}
+		}
+	}
+
 }
 
 func BasicAuthCheck(username, password string) bool {
@@ -290,8 +302,10 @@ func BasicAuthCheck(username, password string) bool {
 		return true
 	}
 
-	value := Credentials[username]
-	if (CredentialDetail{}) == value {
+	var value CredentialDetail
+	var ok bool
+	if value, ok = Credentials[username]; ok {
+	} else {
 		return false
 	}
 
@@ -305,12 +319,12 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	creds := Credentials[username]
-	if creds == (CredentialDetail{}) {
-		//this means username not found in pgouser file
-		//should not happen at this point in code!
-		log.Error("%s not found in pgouser file", username)
-		return false
-	}
+	//	if creds == (CredentialDetail{}) {
+	//this means username not found in pgouser file
+	//should not happen at this point in code!
+	//		log.Error("%s not found in pgouser file", username)
+	//		return false
+	//	}
 
 	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
@@ -318,23 +332,28 @@ func BasicAuthzCheck(username, perm string) bool {
 }
 
 //GetNamespace determines if a user has permission for
-//a namespace they are requesting as well as looks up
-//a default namespace if the requestedNS is empty
+//a namespace they are requesting
+//a valid requested namespace is required
 func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
-	namespaceList := util.GetNamespaces()
 	if requestedNS == "" {
-		//return the first namespace for now
-		return namespaceList[0], nil
-
+		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
 	}
+
+	//	namespaceList := util.GetNamespaces()
+	//	if requestedNS == "" {
+	//		//return the first namespace for now
+	//		return namespaceList[0], nil
+	//
+	//	}
 
 	if util.WatchingNamespace(clientset, requestedNS) {
 		return requestedNS, nil
 	}
 
+	log.Debugf("GetNamespace did not find the requested namespace %s", requestedNS)
 	return requestedNS, errors.New("requested Namespace was not found to be in the list of Namespaces being watched.")
 }
 
@@ -559,6 +578,7 @@ func validateWithKube() {
 		log.Error(err)
 		os.Exit(2)
 	}
+
 }
 
 // GetContainerResources ...

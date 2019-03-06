@@ -17,9 +17,9 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -38,6 +38,9 @@ var labelCmd = &cobra.Command{
 	pgo label --label=environment=prod --selector=name=mycluster
 	pgo label --label=environment=prod --selector=status=final --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("label called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A selector or list of clusters is required to label a policy.")

@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	otherutil "github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +37,9 @@ var restoreCmd = &cobra.Command{
 
 	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("restore called")
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)

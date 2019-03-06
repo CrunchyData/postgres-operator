@@ -68,6 +68,19 @@ If after an initial execution of install-rbac.sh, you need to add a
 new namespace, you will need to run the create-pgo-backrest-ssh-secret.sh 
 script for that new namespace.
 
+## pgo Clients and Namespaces
+
+The *pgo* CLI now is required to identify which namespace it
+wants to use when issuing commands to the Operator.
+
+Users of *pgo* can either create a PGO_NAMESPACE environment
+variable to set the namespace in a persistent manner or they
+can specify it on the *pgo* command line using the *--namespace*
+flag.
+
+If a pgo request doe not contain a valid namespace the request
+will be rejected.
+
 ## Operator Hub
 
 The Operator shows up on the Redhat Operator Hub at the following

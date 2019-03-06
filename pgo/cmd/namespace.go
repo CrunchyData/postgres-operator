@@ -49,6 +49,10 @@ func showNamespace(args []string, ns string) {
 		return
 	}
 
+	defNS := os.Getenv("PGO_NAMESPACE")
+	if defNS != "" {
+		fmt.Printf("current local default namespace: %s\n", defNS)
+	}
 	if len(response.Results) == 0 {
 		fmt.Println("Nothing found.")
 		return
