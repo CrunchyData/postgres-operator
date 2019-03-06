@@ -1,6 +1,6 @@
 Cluster:
   PrimaryNodeLabel:  
-  ReplicaNodeLabel: 
+  ReplicaNodeLabel:  
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
@@ -21,15 +21,19 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: nfsstorage
-XlogStorage: xlogstorage
-BackupStorage: nfsstorage
-ReplicaStorage: nfsstorage
-BackrestStorage: backreststorage
+PrimaryStorage: hostpathstorage
+XlogStorage: hostpathstorage
+BackupStorage: hostpathstorage
+ReplicaStorage: hostpathstorage
+BackrestStorage: hostpathstorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
+    StorageType:  create
+  replicastorage:
+    AccessMode:  ReadWriteMany
+    Size:  700M
     StorageType:  create
   nfsstorage:
     AccessMode:  ReadWriteMany
@@ -51,12 +55,17 @@ Storage:
     AccessMode:  ReadWriteMany
     Size:  800M
     StorageType:  create
-    SupplementalGroups:  65534
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  1G
     StorageType:  dynamic
     StorageClass:  fast
+    Fsgroup:  26
+  rook:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  rook-ceph-block
     Fsgroup:  26
 DefaultContainerResources: 
 DefaultLoadResources:  
@@ -78,8 +87,9 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   AutofailSleepSeconds:  9
+  PreferredFailoverNode:  
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.0
+  COImageTag:  centos7-3.5.2-rc1
