@@ -1,13 +1,8 @@
 apiVersion: v1
 description: CrunchyData Postgres Operator Helm chart
 name: postgres-operator
-<<<<<<< HEAD
 version: 0.2.0
 appVersion: 3.5.2-rc1
-=======
-version: 0.3.0
-appVersion: 3.5.2
->>>>>>> 16c3edb7ab1a18f411fb28dfe977c43d5947afe2
 keywords:
 - postgres
 - postgresql

@@ -11,11 +11,7 @@ image:
 env:
   debug: "true"
   ccp_image_prefix: "crunchydata"
-<<<<<<< HEAD
   ccp_image_tag: "centos7-11.2-2.3.1"
-=======
-  ccp_image_tag: "centos7-11.1-2.3.1"
->>>>>>> 16c3edb7ab1a18f411fb28dfe977c43d5947afe2
   co_image_prefix: "crunchydata"
   co_image_tag: "centos7-3.5.2"
   tls_no_verify: false
