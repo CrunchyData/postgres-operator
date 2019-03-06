@@ -135,3 +135,4 @@ const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"
 
 const LABEL_NAMESPACE = "namespace"
+const LABEL_VENDOR = "vendor"

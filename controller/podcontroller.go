@@ -89,6 +89,13 @@ func (c *PodController) watchPods(ctx context.Context) error {
 // if a pgo-backrest-repo pod is added
 func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
+
+	labels := newpod.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("PodController: onAdd skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[PodController] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//handle the case when a pg database pod is added
@@ -102,6 +109,13 @@ func (c *PodController) onAdd(obj interface{}) {
 func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	oldpod := oldObj.(*apiv1.Pod)
 	newpod := newObj.(*apiv1.Pod)
+
+	labels := newpod.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("PodController: onUpdate skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//handle the case when a pg database pod is updated
@@ -114,6 +128,13 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *PodController) onDelete(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
+
+	labels := pod.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("PodController: onDelete skipping pod that is not crunchydata %s", pod.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 

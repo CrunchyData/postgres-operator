@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -88,17 +88,32 @@ func (c *JobController) watchJobs(ctx context.Context) error {
 
 func (c *JobController) onAdd(obj interface{}) {
 	job := obj.(*apiv1.Job)
+
+	//don't process any jobs unless they have a vendor=crunchydata
+	//label
+	labels := job.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("JobController: onAdd skipping job that is not crunchydata %s", job.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("JobController: onAdd ns=%s jobName=%s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
+
+	labels := job.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("JobController: onUpdate skipping job that is not crunchydata %s", job.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[JobController] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
 
 	var err error
 
 	//handle the case of rmdata jobs succeeding
-	labels := job.GetObjectMeta().GetLabels()
 	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] == "true" {
 		log.Debugf("jobController onUpdate rmdata job case")
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
@@ -226,6 +241,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *JobController) onDelete(obj interface{}) {
 	job := obj.(*apiv1.Job)
+
+	labels := job.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("JobController: onDelete skipping job that is not crunchydata %s", job.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[JobController] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
