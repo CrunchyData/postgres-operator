@@ -15,9 +15,12 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$DIR/cleanup-for-each-namespace.sh
+# parameter passed into this script should be a namespace
+# into which the secret will be created
 
-$CO_CMD --namespace=$NAMESPACE create secret generic pgo-backrest-repo-config \
+echo "creating pgo-backrest-repo-config in namespace " $1
+
+$CO_CMD --namespace=$1 create secret generic pgo-backrest-repo-config \
 	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
 	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
 	--from-file=authorized_keys=$COROOT/conf/pgo-backrest-repo/authorized_keys \

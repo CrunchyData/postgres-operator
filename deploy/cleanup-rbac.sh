@@ -16,6 +16,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
 $CO_CMD --namespace=$CO_NAMESPACE delete serviceaccount postgres-operator
+$CO_CMD --namespace=$CO_NAMESPACE delete serviceaccount pgo-backrest
 
 $CO_CMD --namespace=$CO_NAMESPACE delete clusterrole pgopclusterrole pgopclusterrolecrd
 $CO_CMD --namespace=$CO_NAMESPACE delete clusterrolebinding pgopclusterbinding pgopclusterbindingcrd
@@ -23,7 +24,6 @@ $CO_CMD --namespace=$CO_NAMESPACE delete clusterrolebinding pgopclusterbinding p
 $CO_CMD --namespace=$CO_NAMESPACE delete role pgo-role
 $CO_CMD --namespace=$CO_NAMESPACE delete rolebinding pgo-role-binding
 
-$CO_CMD --namespace=$CO_NAMESPACE delete serviceaccount pgo-backrest
 $CO_CMD --namespace=$CO_NAMESPACE delete role pgo-backrest-role
 $CO_CMD --namespace=$CO_NAMESPACE delete rolebinding pgo-backrest-role-binding
 
