@@ -19,12 +19,12 @@ on the Github Releases page for Linux, Mac, and Windows clients.
 
 The Operator can be deployed by multiple methods including:
 
- * manual installation 
+ * default installation 
  * Ansible playbook installation 
  * Openshift Console installation using OLM
 
 
-## Manual Installation - Create Project Structure
+## Default Installation - Create Project Structure
 The Operator follows a golang project structure, you can create a structure as follows on your local Linux host:
 
     mkdir -p $HOME/odev/src/github.com/crunchydata $HOME/odev/bin $HOME/odev/pkg
@@ -36,7 +36,7 @@ The Operator follows a golang project structure, you can create a structure as f
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
 
-## Manual Installation - Configure Environment
+## Default Installation - Configure Environment
 Environment variables control aspects of the Operator installation.  You can copy a sample set of Operator environment variables and aliases to your *.bashrc* file to work with.
 
     cat $HOME/odev/src/github.com/crunchydata/postgres-operator/examples/envs.sh >> $HOME/.bashrc
@@ -49,9 +49,9 @@ For various scripts used by the Operator, the *expenv* utility is required, down
 
 {{% /notice %}}
 
-## Manual Installation - Namespace Creation
+## Default Installation - Namespace Creation
 
-The manual installation will create 3 namespaces to use
+The default installation will create 3 namespaces to use
 for deploying the Operator into and for holding Postgres clusters
 created by the Operator.
 
@@ -67,7 +67,7 @@ for Kube events.  This value is set as follows:
     export NAMESPACE=pgouser1,pgouser2
 
 This means namespaces called *pgouser1* and *pgouser2* will be
-created as part of the manual installation.  
+created as part of the default installation.  
 
 The *CO_NAMESPACE* environment variable is a comma separated list
 of namespace values that the Operator itself will be deployed into.  For
@@ -85,7 +85,7 @@ Create the Operator namespaces using the Makefile target:
 The Design [Design](/Design) section of this documentation talks further about
 the use of namespaces within the Operator.
 
-## Manual Installation - Configure Operator Templates
+## Default Installation - Configure Operator Templates
 
 Within the Operator *conf* directory are several configuration files and templates used by the Operator to determine the various resources that it deploys on your Kubernetes cluster, specifically the PostgreSQL clusters it deploys.
 
@@ -154,7 +154,8 @@ Operator security is discussed in the Security section [Security](/Security) of 
 
 Adjust these settings to meet your local requirements.
 
-## Manual Installation - Create Kube RBAC Controls
+## Default Installation - Create Kube RBAC Controls
+
 The Operator installation requires Kubernetes administrators to create Resources required by the Operator.  These resources are only allowed to be created by a cluster-admin user.
 
 Specifically, Custom Resource Definitions for the Operator, and Service Accounts used by the Operator are created which require cluster permissions.

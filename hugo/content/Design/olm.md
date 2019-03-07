@@ -17,11 +17,11 @@ within by referencing the PGO_NAMESPACE environment variable
 at startup time from within its Deployment definition.  
 
 The CO_NAMESPACE environment variable a user sets in their 
-.bashrc file is still used to determine what namespace the Operator 
-is deployed into and should be the same as what PGO_NAMESPACE resolves
-into.
+.bashrc file is used to determine what namespace the Operator 
+is deployed into.  The CO_NAMESPACE variable is mapped into
+the PGO_NAMESPACE variable that the Operator references.
 
-The new NAMESPACE environment variable a user sets determines
+The .bashrc NAMESPACE environment variable a user sets determines
 which namespaces the Operator will watch.
 
 ### Namespace Watching
@@ -33,25 +33,60 @@ that is passed into the Operator containers within the deployment.json file.
 The NAMESPACE variable can hold different values which determine
 the namespaces which will be *watched* by the Operator.
 
-#### Examples
-
-To specify that *all* namespaces are watched:
- * export NAMESPACE=
-
-To specify a single namespace be watched:
- * (single namespace) export NAMESPACE=example1
-
-To specify multiple namespaces be watched:
- * (multiple namespaces) export NAMESPACE=example1,example2
-
 The format of the NAMESPACE value is modeled after the following
 document:
 
 https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md
 
-The following diagram depicts the various deployment models:
 
-![Reference](/OperatorReferenceDiagram.png)
+#### Single Namespace Example
+
+Prior to version 4.0, the Operator was deployed into
+a single namespace and Postgres Clusters created by it were
+created in that same namespace. 
+
+To achieve that same deployment model you would use
+variable settings as follows:
+
+    export CO_NAMESPACE=pgo
+    export NAMESPACE=pgo
+
+![Reference](/Namespace-Single.png)
+
+#### Single Operator Namespace and Single Target Namespace
+
+To have the Operator deployed into its own namespace but 
+create Postgres Clusters into a different namespace the
+variables would be as follows:
+
+    export CO_NAMESPACE=pgo
+    export NAMESPACE=pgouser1
+
+![Reference](/Namespace-Single-Single.png)
+
+#### Single Operator Namespace and Multiple Target Namespaces
+
+To have the Operator deployed into its own namespace but
+create Postgres Clusters into more than one namespace the
+variables would be as follows:
+
+    export CO_NAMESPACE=pgo
+    export NAMESPACE=pgouser1,pgouser2
+
+![Reference](/Namespace-Single-Multiple.png)
+
+#### Single Operator Namespace and Any Target Namespaces
+
+To have the Operator deployed into its own namespace but
+create Postgres Clusters into any target namespace the
+variables would be as follows:
+
+    export CO_NAMESPACE=pgo
+    export NAMESPACE=
+
+Here the empty string value represents *all* namespaces.
+
+![Reference](/Namespace-Single-Any.png)
 
 
 ### RBAC
