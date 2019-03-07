@@ -38,6 +38,7 @@ To get detailed help information and command flag descriptions on each *pgo* com
  
 ## Operations
 
+
 See the various *pgo* commands implemented by issuing:
 
     pgo --help
@@ -72,7 +73,7 @@ Create a cluster using the Crunchy Postgres + PostGIS container image:
 
 #### Scale a Cluster with Additional Replicas
 
-    pgo scale cluster mycluster
+    pgo scale mycluster
 
 #### Create a Cluster with pgbackrest Configured
 
@@ -80,8 +81,8 @@ Create a cluster using the Crunchy Postgres + PostGIS container image:
 
 #### Scaledown a Cluster
 
-    pgo scaledown cluster mycluster --query
-    pgo scaledown cluster mycluster --target=sometarget
+    pgo scaledown mycluster --query
+    pgo scaledown mycluster --target=sometarget
 
 #### Delete a Cluster
 
@@ -208,7 +209,7 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 
 #### Create a Cluster with Auto-fail Enabled
 
-    pgo create cluster mycluster --autofail
+    pgo create cluster mycluster --autofail --replica-count=1
 
 ### Add-On Operations
 #### Create a Cluster with pgbouncer
@@ -256,7 +257,7 @@ configuration to pgbouncer.ini:
 Note: backend metric storage such as Prometheus and front end 
 visualization software such as Grafana are not created automatically 
 by the PostgreSQL Operator.  For instructions on installing Grafana and 
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.3.0/examples/metrics/metrics/).
+Prometheus in your environment, see the [Crunchy Container Suite documentation](http://crunchydata.github.io/crunchy-containers/stable/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
