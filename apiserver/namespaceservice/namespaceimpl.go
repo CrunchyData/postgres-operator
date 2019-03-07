@@ -17,12 +17,13 @@ limitations under the License.
 
 import (
 	//"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 )
 
-func ShowNamespace() msgs.ShowNamespaceResponse {
+func ShowNamespace(username string) msgs.ShowNamespaceResponse {
 	log.Debug("ShowNamespace called")
 	response := msgs.ShowNamespaceResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -33,7 +34,7 @@ func ShowNamespace() msgs.ShowNamespaceResponse {
 	for i := 0; i < len(namespaceList); i++ {
 		r := msgs.NamespaceResult{
 			Namespace:  namespaceList[i],
-			UserAccess: true,
+			UserAccess: apiserver.UserIsPermittedInNamespace(username, namespaceList[i]),
 		}
 		response.Results = append(response.Results, r)
 	}

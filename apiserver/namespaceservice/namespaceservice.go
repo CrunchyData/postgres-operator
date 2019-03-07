@@ -57,6 +57,6 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ShowNamespace()
+	resp = ShowNamespace(username)
 	json.NewEncoder(w).Encode(resp)
 }

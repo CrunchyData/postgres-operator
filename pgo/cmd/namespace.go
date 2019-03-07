@@ -58,8 +58,13 @@ func showNamespace(args []string, ns string) {
 		return
 	}
 
+	var accessible string
 	for _, result := range response.Results {
-		fmt.Printf("namespace: %s\n", result.Namespace)
+		accessible = GREEN("accessible")
+		if !result.UserAccess {
+			accessible = RED("no access")
+		}
+		fmt.Printf("namespace: %s (%s)\n", result.Namespace, accessible)
 	}
 
 }

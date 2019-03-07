@@ -617,6 +617,13 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 func UserIsPermittedInNamespace(username, requestedNS string) bool {
 	detail := Credentials[username]
 
+	//handle the case of a user in pgouser with "" (all) namespaces
+	if len(detail.Namespaces) == 1 {
+		if detail.Namespaces[0] == "" {
+			return true
+		}
+	}
+
 	for i := 0; i < len(detail.Namespaces); i++ {
 		if detail.Namespaces[i] == requestedNS {
 			return true

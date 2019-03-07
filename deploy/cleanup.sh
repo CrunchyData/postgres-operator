@@ -14,8 +14,35 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CO_CMD --namespace=$CO_NAMESPACE delete \
-secret/pgo-backrest-repo-config secret/pgo-auth-secret \
-configmap/pgo-config service/postgres-operator deployment/postgres-operator 
+$CO_CMD --namespace=$CO_NAMESPACE get secret/pgo-backrest-repo-config 2> /dev/null
+
+if [ $? -eq 0 ]
+then
+	$CO_CMD --namespace=$CO_NAMESPACE delete secret/pgo-backrest-repo-config
+fi
+
+$CO_CMD --namespace=$CO_NAMESPACE get secret/pgo-auth-secret 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$CO_CMD --namespace=$CO_NAMESPACE delete secret/pgo-auth-secret
+fi
+
+$CO_CMD --namespace=$CO_NAMESPACE get configmap/pgo-config 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$CO_CMD --namespace=$CO_NAMESPACE delete configmap/pgo-config
+fi
+
+$CO_CMD --namespace=$CO_NAMESPACE get service/postgres-operator 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$CO_CMD --namespace=$CO_NAMESPACE delete service/postgres-operator
+fi
+
+$CO_CMD --namespace=$CO_NAMESPACE get deployment/postgres-operator 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$CO_CMD --namespace=$CO_NAMESPACE delete deployment/postgres-operator
+fi
 
 sleep 5

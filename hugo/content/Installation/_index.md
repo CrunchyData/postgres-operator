@@ -31,7 +31,7 @@ The Operator follows a golang project structure, you can create a structure as f
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-	git checkout 4.0.0-rc1
+    git checkout 4.0.0-rc1
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
@@ -142,6 +142,7 @@ Operator.
 Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
 
 ## Operator Security
+
 The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator REST API.
 
 There is a default set of Roles and Users defined respectively in the following files:
