@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 3.5.2-rc1 {docdate}
+Latest Release: 4.0.0-rc1 {docdate}
 draft: false
 weight: 31
 ---
