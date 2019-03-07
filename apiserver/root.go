@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -27,11 +27,11 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -66,6 +66,7 @@ var DebugFlag bool
 var BasicAuth bool
 
 // Namespace comes from the apiserver config in this version
+var PgoNamespace string
 var Namespace string
 
 // TreeTrunk is for debugging only in this context
@@ -75,9 +76,10 @@ const TreeTrunk = "└── "
 const TreeBranch = "├── "
 
 type CredentialDetail struct {
-	Username string
-	Password string
-	Role     string
+	Username   string
+	Password   string
+	Role       string
+	Namespaces []string
 }
 
 // Credentials holds the BasicAuth credentials found in the config
@@ -107,11 +109,20 @@ func Initialize() {
 		os.Exit(2)
 	}
 
-	Namespace = os.Getenv("NAMESPACE")
-	if Namespace == "" {
-		log.Error("NAMESPACE environment variable is required")
+	PgoNamespace = os.Getenv("PGO_NAMESPACE")
+	if PgoNamespace == "" {
+		log.Info("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
+
+	namespaceList := util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+
+	Namespace = os.Getenv("NAMESPACE")
+	if Namespace == "" {
+		log.Error("NAMESPACE environment variable is set to empty string which pgo will interpret as watch 'all' namespaces")
+	}
+
 	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
@@ -127,14 +138,11 @@ func Initialize() {
 
 	InitializePerms()
 
-	err = validateCredentials()
-	if err != nil {
-		os.Exit(2)
-	}
-
 	ConnectToKube()
 
 	validateWithKube()
+
+	validateUserCredentials()
 }
 
 // ConnectToKube ...
@@ -237,9 +245,10 @@ func parseUserMap(dat string) CredentialDetail {
 	creds := CredentialDetail{}
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	creds.Username = fields[0]
-	creds.Password = fields[1]
-	creds.Role = fields[2]
+	creds.Username = strings.TrimSpace(fields[0])
+	creds.Password = strings.TrimSpace(fields[1])
+	creds.Role = strings.TrimSpace(fields[2])
+	creds.Namespaces = strings.Split(strings.TrimSpace(fields[3]), ",")
 	return creds
 }
 
@@ -257,21 +266,34 @@ func getCredentials() {
 
 }
 
-// validateCredentials ...
-func validateCredentials() error {
-
-	var err error
+// validateUserCredentials ...
+func validateUserCredentials() {
 
 	for _, v := range Credentials {
 		log.Infof("validating user %s and role %s", v.Username, v.Role)
 		if RoleMap[v.Role] == nil {
 			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
 			log.Error(errMsg)
-			return errors.New(errMsg)
+			os.Exit(2)
 		}
 	}
 
-	return err
+	//validate the pgouser server config file has valid namespaces
+	for _, v := range Credentials {
+		log.Infof("validating user %s namespaces %v", v.Username, v.Namespaces)
+		for i := 0; i < len(v.Namespaces); i++ {
+			if v.Namespaces[i] == "" {
+			} else {
+				watching := util.WatchingNamespace(Clientset, v.Namespaces[i])
+				if !watching {
+					errMsg := fmt.Sprintf("namespace %s found on pgouser user [%s], but this namespace is not being watched", v.Namespaces[i], v.Username, v.Role)
+					log.Error(errMsg)
+					os.Exit(2)
+				}
+			}
+		}
+	}
+
 }
 
 func BasicAuthCheck(username, password string) bool {
@@ -280,8 +302,10 @@ func BasicAuthCheck(username, password string) bool {
 		return true
 	}
 
-	value := Credentials[username]
-	if (CredentialDetail{}) == value {
+	var value CredentialDetail
+	var ok bool
+	if value, ok = Credentials[username]; ok {
+	} else {
 		return false
 	}
 
@@ -295,12 +319,12 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	creds := Credentials[username]
-	if creds == (CredentialDetail{}) {
-		//this means username not found in pgouser file
-		//should not happen at this point in code!
-		log.Error("%s not found in pgouser file", username)
-		return false
-	}
+	//	if creds == (CredentialDetail{}) {
+	//this means username not found in pgouser file
+	//should not happen at this point in code!
+	//		log.Error("%s not found in pgouser file", username)
+	//		return false
+	//	}
 
 	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
@@ -308,14 +332,34 @@ func BasicAuthzCheck(username, perm string) bool {
 }
 
 //GetNamespace determines if a user has permission for
-//a namespace they are requesting as well as looks up
-//a default namespace if the requestedNS is empty
-func GetNamespace(username, requestedNS string) (string, error) {
-	var err error
+//a namespace they are requesting
+//a valid requested namespace is required
+func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
-	return Namespace, err
+	if requestedNS == "" {
+		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
+	}
+
+	//	namespaceList := util.GetNamespaces()
+	//	if requestedNS == "" {
+	//		//return the first namespace for now
+	//		return namespaceList[0], nil
+	//
+	//	}
+
+	if !UserIsPermittedInNamespace(username, requestedNS) {
+		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
+		return requestedNS, errors.New(errMsg)
+	}
+
+	if util.WatchingNamespace(clientset, requestedNS) {
+		return requestedNS, nil
+	}
+
+	log.Debugf("GetNamespace did not find the requested namespace %s", requestedNS)
+	return requestedNS, errors.New("requested Namespace was not found to be in the list of Namespaces being watched.")
 }
 
 func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
@@ -533,6 +577,13 @@ func validateWithKube() {
 			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}
+
+	err := util.ValidateNamespaces(Clientset)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
 }
 
 // GetContainerResources ...
@@ -561,4 +612,15 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	}
 
 	return doc.String()
+}
+
+func UserIsPermittedInNamespace(username, requestedNS string) bool {
+	detail := Credentials[username]
+
+	for i := 0; i < len(detail.Namespaces); i++ {
+		if detail.Namespaces[i] == requestedNS {
+			return true
+		}
+	}
+	return false
 }

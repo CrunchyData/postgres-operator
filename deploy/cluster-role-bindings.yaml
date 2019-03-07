@@ -1,36 +1,3 @@
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: pgopclusterrole
-rules:
-  - verbs:
-      - get
-      - list
-    apiGroups:
-      - '*'
-    resources:
-      - nodes
-
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: pgopclusterrolecrd
-rules:
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
-    resources:
-      - pgclusters
-      - pgpolicies
-      - pgupgrades
-      - pgtasks
-      - pgbackups
-      - pgreplicas
-
----
-
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:

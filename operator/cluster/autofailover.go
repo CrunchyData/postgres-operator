@@ -20,11 +20,11 @@ package cluster
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,9 +62,11 @@ type AutoFailoverTask struct {
 
 //at operator startup, add a state machine for each primary pod that
 //has autofail enabled
-func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) error {
+func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, nsList []string) error {
 	var err error
 	aftask := AutoFailoverTask{}
+
+	ns := nsList[0]
 
 	log.Infoln("autofailover Initialize ")
 
@@ -161,7 +163,7 @@ func (s *StateMachine) Run() {
 			s.triggerFailover()
 			//clean up to not reprocess the failover event
 			aftask.Clear(s.RESTClient, s.ClusterName, s.Namespace)
-			//recreate a new autofail task to start anew (3.5.1)
+			//recreate a new autofail task to start anew
 			aftask.AddEvent(s.RESTClient, s.ClusterName, FAILOVER_EVENT_NOT_READY, s.Namespace)
 		} else {
 			log.Infof("failoverRequired is false, no need to trigger failover\n")

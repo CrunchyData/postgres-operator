@@ -39,6 +39,7 @@ var ShowCmd = &cobra.Command{
 	pgo show config
 	pgo show policy policy1
 	pgo show pvc mycluster
+	pgo show namespace
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5
 	pgo show user mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -50,6 +51,7 @@ Valid resource types include:
 	* config
 	* policy
 	* pvc
+	* namespace
 	* workflow
 	* upgrade
 	* user
@@ -62,6 +64,7 @@ Valid resource types include:
 			case "user":
 			case "config":
 			case "schedule":
+			case "namespace":
 			case "workflow":
 			case "upgrade":
 			case "backup":
@@ -74,6 +77,7 @@ Valid resource types include:
 	* config
 	* policy
 	* pvc
+	* namespace
 	* workflow
 	* upgrade
 	* user`)
@@ -88,6 +92,7 @@ func init() {
 	ShowCmd.AddCommand(ShowBackupCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
+	ShowCmd.AddCommand(ShowNamespaceCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
@@ -115,7 +120,24 @@ var ShowConfigCmd = &cobra.Command{
 
 	pgo show config`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		showConfig(args, Namespace)
+	},
+}
+
+var ShowNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Show namespace information",
+	Long: `Show namespace information for the Operator. For example:
+
+	pgo show namespace`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		showNamespace(args, Namespace)
 	},
 }
 
@@ -126,6 +148,9 @@ var ShowWorkflowCmd = &cobra.Command{
 
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		showWorkflow(args, Namespace)
 	},
 }
@@ -140,6 +165,9 @@ var ShowPolicyCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: Policy name(s) required for this command.")
 		} else {
+			if Namespace == "" {
+				Namespace = PGONamespace
+			}
 			showPolicy(args, Namespace)
 		}
 	},
@@ -158,6 +186,9 @@ var ShowPVCCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: PVC name(s) required for this command.")
 		} else {
+			if Namespace == "" {
+				Namespace = PGONamespace
+			}
 			showPVC(args, Namespace)
 		}
 	},
@@ -173,6 +204,9 @@ var ShowUpgradeCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
+			if Namespace == "" {
+				Namespace = PGONamespace
+			}
 			showUpgrade(args, Namespace)
 		}
 	},
@@ -186,6 +220,9 @@ var ShowBackupCmd = &cobra.Command{
 
 	pgo show backup mycluser`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
@@ -212,6 +249,9 @@ var ShowClusterCmd = &cobra.Command{
 	pgo show cluster all
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if Selector == "" && len(args) == 0 {
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
@@ -228,6 +268,9 @@ var ShowUserCmd = &cobra.Command{
 
 	pgo show user mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if Selector == "" && len(args) == 0 {
 			fmt.Println("Error: Cluster name(s) required for this command.")
 		} else {
@@ -246,6 +289,9 @@ var ShowScheduleCmd = &cobra.Command{
 	pgo show schedule --selector=pg-cluster=mycluster
 	pgo show schedule --schedule-name=mycluster-pgbackrest-full`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" && ScheduleName == "" {
 			fmt.Println("Error: cluster name, schedule name or selector is required to show a schedule.")
 			return

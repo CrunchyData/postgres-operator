@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,12 +19,12 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -36,13 +36,13 @@ import (
 type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
-	Namespace    string
+	Namespace    []string
 }
 
 // Run starts an pod resource controller
 func (c *JobController) Run(ctx context.Context) error {
 
-	_, err := c.watchJobs(ctx)
+	err := c.watchJobs(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for job resource: %v\n", err)
 		return err
@@ -53,48 +53,67 @@ func (c *JobController) Run(ctx context.Context) error {
 }
 
 // watchJobs is the event loop for job resources
-func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.JobClientset.BatchV1().RESTClient(),
-		"jobs",
-		c.Namespace,
-		fields.Everything())
+func (c *JobController) watchJobs(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting job controller for ns [%s]", c.Namespace[i])
 
-	_, controller := cache.NewInformer(
-		source,
+		source := cache.NewListWatchFromClient(
+			c.JobClientset.BatchV1().RESTClient(),
+			"jobs",
+			c.Namespace[i],
+			fields.Everything())
 
-		// The object type.
-		&apiv1.Job{},
+		_, controller := cache.NewInformer(
+			source,
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// The object type.
+			&apiv1.Job{},
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
+
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 func (c *JobController) onAdd(obj interface{}) {
 	job := obj.(*apiv1.Job)
+
+	//don't process any jobs unless they have a vendor=crunchydata
+	//label
+	labels := job.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("JobController: onAdd skipping job that is not crunchydata %s", job.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("JobController: onAdd ns=%s jobName=%s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	job := newObj.(*apiv1.Job)
+
+	labels := job.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("JobController: onUpdate skipping job that is not crunchydata %s", job.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[JobController] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
 
 	var err error
 
 	//handle the case of rmdata jobs succeeding
-	labels := job.GetObjectMeta().GetLabels()
 	if job.Status.Succeeded > 0 && labels[util.LABEL_RMDATA] == "true" {
 		log.Debugf("jobController onUpdate rmdata job case")
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
@@ -222,6 +241,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *JobController) onDelete(obj interface{}) {
 	job := obj.(*apiv1.Job)
+
+	labels := job.GetObjectMeta().GetLabels()
+	if labels[util.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("JobController: onDelete skipping job that is not crunchydata %s", job.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[JobController] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 

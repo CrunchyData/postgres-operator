@@ -19,12 +19,12 @@ package cluster
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,18 +32,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// Strategy ....
-type Strategy interface {
-	Scale(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgreplica, string, string, *crv1.Pgcluster) error
-	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
-	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
-	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
-	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
-
-	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
-}
 
 // ServiceTemplateFields ...
 type ServiceTemplateFields struct {
@@ -56,13 +44,6 @@ type ServiceTemplateFields struct {
 
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
-
-var strategyMap map[string]Strategy
-
-func init() {
-	strategyMap = make(map[string]Strategy)
-	strategyMap["1"] = Strategy1{}
-}
 
 // AddClusterBase ...
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
@@ -111,25 +92,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
-	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
-	//allows user to override with their own passwords
-
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-		return
-	}
-
 	//replaced with ccpimagetag instead of pg version
 
-	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
+	AddCluster(clientset, client, cl, namespace, pvcName)
 
 	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
@@ -220,8 +185,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 // DeleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
-	log.Debugf("deleteCluster called with strategy %s", cl.Spec.Strategy)
-
 	pgtask := crv1.Pgtask{}
 	found, _ := kubeapi.Getpgtask(client, &pgtask, cl.Spec.Name+"-"+util.LABEL_AUTOFAIL, namespace)
 	if found {
@@ -229,17 +192,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 		aftask.Clear(client, cl.Spec.Name, namespace)
 	}
 
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok == false {
-		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-		return
-	}
-
-	strategy.DeleteCluster(clientset, client, cl, namespace)
+	DeleteCluster(clientset, client, cl, namespace)
 
 	upgrade := crv1.Pgupgrade{}
 	found, _ = kubeapi.Getpgupgrade(client, &upgrade, cl.Spec.Name, namespace)
@@ -260,23 +213,8 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string, cl *crv1.Pgcluster) error {
 	var err error
 
-	//get the strategy to use
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-		log.Info("using default cluster strategy")
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Debug("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
-		return err
-	}
-
-	//invoke the strategy
 	if upgrade.Spec.UpgradeType == "minor" {
-		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
+		err = MinorUpgrade(clientset, client, cl, upgrade, namespace)
 		if err == nil {
 			/**
 			err = util.Patch(client, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
@@ -370,20 +308,6 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	log.Debugf("creating Pgreplica object strategy is [%s]", cluster.Spec.Strategy)
-
-	if cluster.Spec.Strategy == "" {
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
-		return
-	}
-
 	//create the replica service if it doesnt exist
 
 	st := operator.Pgo.Cluster.ServiceType
@@ -410,7 +334,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//instantiate the replica
-	strategy.Scale(clientset, client, replica, namespace, pvcName, &cluster)
+	Scale(clientset, client, replica, namespace, pvcName, &cluster)
 
 	//update the replica CRD status
 	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
@@ -432,20 +356,6 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 		return
 	}
 
-	log.Debugf("creating Pgreplica object strategy is [%s]", cluster.Spec.Strategy)
-
-	if cluster.Spec.Strategy == "" {
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
-		return
-	}
-
-	strategy.DeleteReplica(clientset, replica, namespace)
+	DeleteReplica(clientset, replica, namespace)
 
 }

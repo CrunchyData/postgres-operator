@@ -17,9 +17,9 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 	//"github.com/gorilla/mux"
 	"net/http"
 )
@@ -45,7 +45,7 @@ func ReloadHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp := msgs.ReloadResponse{}
 		resp.Status.Code = msgs.Error

@@ -17,9 +17,9 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 	//"github.com/gorilla/mux"
 	"net/http"
 )
@@ -53,7 +53,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp = msgs.StatusResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}

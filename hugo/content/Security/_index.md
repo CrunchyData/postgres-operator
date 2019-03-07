@@ -16,25 +16,22 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 
 | Setting |Definition  |
 |---|---|
-| Custom Resource Definitions | pgbackups|
+| Custom Resource Definitions (crd.yaml) | pgbackups|
 |  | pgclusters|
 |  | pgpolicies|
 |  | pgreplicas|
 |  | pgtasks|
 |  | pgupgrades|
-| Cluster Roles | pgopclusterrole|
+| Cluster Roles (cluster-roles.yaml) | pgopclusterrole|
 |  | pgopclusterrolecrd|
-|  | scheduler-sa|
-| Cluster Role Bindings | pgopclusterbinding|
+| Cluster Role Bindings (cluster-roles-bindings.yaml) | pgopclusterbinding|
 |  | pgopclusterbindingcrd|
-|  | scheduler-sa|
-| Service Account | scheduler-sa|
-| | postgres-operator|
+| Service Account (service-accounts.yaml) | postgres-operator|
 | | pgo-backrest|
-| | scheduler-sa|
-| Roles| pgo-role|
+| Roles (rbac.yaml) | pgo-role|
 | | pgo-backrest-role|
-|Role Bindings | pgo-backrest-role-binding|
+|Role Bindings  (rbac.yaml) | pgo-backrest-role-binding|
+| | pgo-role-binding|
 
 
 
@@ -44,11 +41,22 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 
 The *conf/postgresql-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
 
-The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, and role information as follows:
+The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
 
-    username:password:pgoadmin
-    testuser:testpass:pgoadmin
-    readonlyuser:testpass:pgoreader
+    username:password:pgoadmin:
+    pgouser1:password:pgoadmin:pgouser1
+    pgouser2:password:pgoadmin:pgouser2
+    pgouser3:password:pgoadmin:pgouser1,pgouser2
+    readonlyuser:password:pgoreader:
+
+The format of the pgouser server file is:
+
+    <username>:<password>:<role>:<namespace,namespace>
+
+The namespace is a comma separated list of namespaces that
+user has access to.  If you do not specify a namespace, then
+all namespaces is assumed, meaning this user can access any
+namespace that the Operator is watching.
 
 A user creates a *.pgouser* file in their $HOME directory to identify
 themselves to the Operator.  An entry in .pgouser will need to match
@@ -57,11 +65,22 @@ entries in the *conf/postgresql-operator/pgouser* file.  A sample
 
     username:password
 
+The format of the .pgouser client file is:
+
+    <username>:<password>
+
 The users pgouser file can also be located at:
 */etc/pgo/pgouser* or it can be found at a path specified by the
 PGOUSER environment variable.
 
-The following list shows the current complete list of possible pgo permissions:
+If the user tries to access a namespace that they are not
+configured for within the server side *pgouser* file then they
+will get an error message as follows:
+
+    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
+
+
+The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
 
 |Permission|Description  |
 |---|---|
@@ -94,6 +113,7 @@ The following list shows the current complete list of possible pgo permissions:
 |ShowPolicy | allow *pgo show policy*|
 |ShowPVC | allow *pgo show pvc*|
 |ShowSchedule | allow *pgo show schedule*|
+|ShowNamespace | allow *pgo show namespace*|
 |ShowUpgrade | allow *pgo show upgrade*|
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|
@@ -106,7 +126,7 @@ The following list shows the current complete list of possible pgo permissions:
 If the user is unauthorized for a pgo command, the user will
 get back this response:
 
-    FATA[0000] Authentication Failed: 40
+    Error:  Authentication Failed: 401 
 
 ## Making Security Changes
 The Operator today requires you to make Operator security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:

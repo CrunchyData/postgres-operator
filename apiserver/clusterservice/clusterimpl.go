@@ -364,7 +364,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 		}
 
 		//get the secrets for this cluster
-		secrets, err := apiserver.GetSecrets(&c)
+		secrets, err := apiserver.GetSecrets(&c, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

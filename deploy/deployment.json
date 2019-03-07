@@ -35,6 +35,10 @@
                             },
                             {
                                 "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
+                                "name": "PGO_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -70,6 +74,10 @@
                             },
                             {
                                 "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
+                                "name": "PGO_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"

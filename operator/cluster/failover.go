@@ -19,12 +19,12 @@ package cluster
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -49,19 +49,6 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		return
 	}
 
-	if cluster.Spec.Strategy == "" {
-		cluster.Spec.Strategy = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster failover " + cluster.Spec.Strategy)
-		return
-	}
-
 	//get initial count of replicas --selector=pg-cluster=clusterName
 	replicaList := crv1.PgreplicaList{}
 	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
@@ -72,7 +59,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 	log.Debug("replica count before failover is %d", len(replicaList.Items))
 
-	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
+	Failover(clientset, client, clusterName, task, namespace, restconfig)
 	//remove the pgreplica CRD for the promoted replica
 	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
 

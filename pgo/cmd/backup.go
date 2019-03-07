@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	labelutil "github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +37,10 @@ var backupCmd = &cobra.Command{
 
   pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)

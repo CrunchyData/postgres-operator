@@ -17,11 +17,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
-fi
-
-$CO_CMD $NS get role pgo-role > /dev/null
+$CO_CMD --namespace=$CO_NAMESPACE get role pgo-role > /dev/null
 if [ $? -ne 0 ]
 then
 	echo ERROR: pgo-role was not found in $CO_NAMESPACE namespace
@@ -29,7 +25,7 @@ then
 	exit
 fi
 
-$CO_CMD $NS create secret generic pgo-backrest-repo-config \
+$CO_CMD --namespace=$CO_NAMESPACE create secret generic pgo-backrest-repo-config \
 	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
 	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
 	--from-file=authorized_keys=$COROOT/conf/pgo-backrest-repo/authorized_keys \
@@ -39,12 +35,12 @@ $CO_CMD $NS create secret generic pgo-backrest-repo-config \
 	--from-file=sshd_config=$COROOT/conf/pgo-backrest-repo/sshd_config
 
 
-$CO_CMD $NS create secret generic pgo-auth-secret \
+$CO_CMD --namespace=$CO_NAMESPACE create secret generic pgo-auth-secret \
         --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
         --from-file=server.key=$COROOT/conf/postgres-operator/server.key \
         --from-file=pgouser=$COROOT/conf/postgres-operator/pgouser \
         --from-file=pgorole=$COROOT/conf/postgres-operator/pgorole 
-$CO_CMD $NS create configmap pgo-config \
+$CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-config \
         --from-file=pgo.yaml=$COROOT/conf/postgres-operator/pgo.yaml \
         --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
         --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
@@ -59,17 +55,17 @@ $CO_CMD $NS create configmap pgo-config \
 	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
 	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
-	--from-file=$COROOT/conf/postgres-operator/cluster/1
+	--from-file=$COROOT/conf/postgres-operator/cluster
 
 if [ "$CO_UI" = "true" ]; then
-$CO_CMD $NS create configmap pgo-ui-conf \
+$CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-ui-conf \
 	--from-file=$COROOT/conf/pgo-ui/config.json \
         --from-file=$COROOT/conf/postgres-operator/server.crt \
         --from-file=$COROOT/conf/postgres-operator/server.key 
 
-	expenv -f $DIR/deployment-with-ui.json | $CO_CMD $NS create -f -
-	$CO_CMD $NS create -f $DIR/service-with-ui.json
+	expenv -f $DIR/deployment-with-ui.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service-with-ui.json
 else
-	expenv -f $DIR/deployment.json | $CO_CMD $NS create -f -
-	$CO_CMD $NS create -f $DIR/service.json
+	expenv -f $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service.json
 fi

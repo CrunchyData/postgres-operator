@@ -49,12 +49,10 @@ installrbac:
 	cd deploy && ./install-rbac.sh
 setup:
 	./bin/get-deps.sh
-setupnamespace:
-	kubectl create -f ./examples/demo-namespace.json
-	kubectl config set-context demo --cluster=kubernetes --namespace=demo --user=kubernetes-admin
-	kubectl config use-context demo
+setupnamespaces:
+	cd deploy && ./setupnamespaces.sh
 bounce:
-	kubectl get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs kubectl delete pod
+	$(CO_CMD) --namespace=$(CO_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(CO_CMD) --namespace=$(CO_NAMESPACE) delete pod
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars
@@ -63,7 +61,7 @@ runmain:	check-go-vars
 	postgres-operator --kubeconfig=/etc/kubernetes/admin.conf
 runapiserver:	check-go-vars
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
-apiserver:	check-go-vars
+pgo-apiserver:	check-go-vars
 	go install apiserver.go
 pgo-backrest:	check-go-vars
 	go install pgo-backrest/pgo-backrest.go
@@ -89,7 +87,7 @@ pgo-apiserver-image:	check-go-vars
 	docker build -t pgo-apiserver -f $(CO_BASEOS)/Dockerfile.pgo-apiserver.$(CO_BASEOS) .
 	docker tag pgo-apiserver $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 #	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
-operator:	check-go-vars
+postgres-operator:	check-go-vars
 	go install postgres-operator.go
 postgres-operator-image:	check-go-vars
 	go install postgres-operator.go

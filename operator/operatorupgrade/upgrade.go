@@ -26,13 +26,15 @@ import (
 	"time"
 )
 
-func OperatorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) error {
+func OperatorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns []string) error {
 	var err error
 	log.Info("OperatorUpgrade starts")
-	err = updateVersion(restclient, ns)
-	if err != nil {
-		log.Error("problem running operator upgrade")
-		return err
+	for i := 0; i < len(ns); i++ {
+		err = updateVersion(restclient, ns[i])
+		if err != nil {
+			log.Error("problem running operator upgrade")
+			return err
+		}
 	}
 	log.Info("OperatorUpgrade ends")
 	return err

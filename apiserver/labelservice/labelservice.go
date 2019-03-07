@@ -17,9 +17,9 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -50,7 +50,7 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
 		json.NewEncoder(w).Encode(resp)
@@ -89,7 +89,7 @@ func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
 		json.NewEncoder(w).Encode(resp)

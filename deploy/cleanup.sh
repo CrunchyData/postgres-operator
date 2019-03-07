@@ -1,5 +1,5 @@
 #!/bin/bash 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,24 +14,8 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
-fi
-
-if [ "$CO_UI" = "true" ]; then
-$CO_CMD $NS delete configmap pgo-ui-conf 
-fi
-
-$CO_CMD $NS delete secret pgo-backrest-repo-config
-
-$CO_CMD $NS delete secret pgo-auth-secret
-$CO_CMD $NS delete configmap pgo-config
-
-$CO_CMD $NS delete service postgres-operator
-
-$CO_CMD $NS delete deployment postgres-operator 
-
+$CO_CMD --namespace=$CO_NAMESPACE delete \
+secret/pgo-backrest-repo-config secret/pgo-auth-secret \
+configmap/pgo-config service/postgres-operator deployment/postgres-operator 
 
 sleep 5
-

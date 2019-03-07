@@ -17,8 +17,8 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"github.com/fatih/color"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -78,8 +78,8 @@ func initConfig() {
 
 	tmp := os.Getenv("PGO_NAMESPACE")
 	if tmp != "" {
-		Namespace = tmp
-		log.Debug("using PGO_NAMESPACE env var %s", tmp)
+		PGONamespace = tmp
+		log.Debugf("using PGO_NAMESPACE env var %s", tmp)
 	}
 
 	GetCredentials()

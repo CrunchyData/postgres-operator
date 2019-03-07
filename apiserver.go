@@ -23,7 +23,6 @@ import (
 	"os"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
@@ -33,6 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
+	"github.com/crunchydata/postgres-operator/apiserver/namespaceservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
@@ -46,6 +46,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 const serverCert = "/pgo-auth-secret/server.crt"
@@ -113,6 +114,7 @@ func main() {
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
+	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler)
 
 	// backups / backrest
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")

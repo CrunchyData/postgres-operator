@@ -26,13 +26,12 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-//TODO remove and replace with util.GetSecrets
-func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
+func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
 	selector := util.LABEL_PGBOUNCER + "!=true," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
 
-	secrets, err := kubeapi.GetSecrets(Clientset, selector, Namespace)
+	secrets, err := kubeapi.GetSecrets(Clientset, selector, ns)
 	if err != nil {
 		return output, err
 	}

@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -58,6 +58,9 @@ var userCmd = &cobra.Command{
 	pgo user --selector=name=mycluster --update-passwords
 	pgo user --change-password=bob --expired=300 --selector=name=mycluster --password=newpass`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("user called")
 		userManager(Namespace)
 	},
