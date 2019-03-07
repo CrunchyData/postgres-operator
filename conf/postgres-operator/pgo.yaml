@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.2-2.3.1
+  CCPImageTag:  rhel7-11.2-2.3.1-rc2
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -92,4 +92,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  rhel7-4.0.0
+  COImageTag:  rhel7-4.0.0-rc1

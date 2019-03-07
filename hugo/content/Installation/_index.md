@@ -189,6 +189,16 @@ This will create a postgres-operator Deployment and a postgres-operator Service.
 configuration would run this make target to pick up any changes to pgo.yaml,
 pgo users/roles,  or the Operator templates.
 
+## Default Installation - Completely Cleaning Up
+
+You can completely remove all the namespaces you have previously 
+created using the default installation by running the following:
+
+    make cleannamespaces
+
+This will permanently delete each namespace the Operator installation
+created previously.
+
 
 ## pgo CLI Installation
 Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).

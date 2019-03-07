@@ -51,6 +51,8 @@ setup:
 	./bin/get-deps.sh
 setupnamespaces:
 	cd deploy && ./setupnamespaces.sh
+cleannamespaces:
+	cd deploy && ./cleannamespaces.sh
 bounce:
 	$(CO_CMD) --namespace=$(CO_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(CO_CMD) --namespace=$(CO_NAMESPACE) delete pod
 deployoperator:
