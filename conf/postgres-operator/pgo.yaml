@@ -21,11 +21,11 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: rook
-XlogStorage: rook
-BackupStorage: rook
-ReplicaStorage: rook
-BackrestStorage: rook
+PrimaryStorage: storageos
+XlogStorage: storageos
+BackupStorage: storageos
+ReplicaStorage: storageos
+BackrestStorage: storageos
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -57,7 +57,7 @@ Storage:
     StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  300M
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26

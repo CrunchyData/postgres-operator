@@ -57,15 +57,3 @@ $CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-config \
 	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster
 
-if [ "$CO_UI" = "true" ]; then
-$CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-ui-conf \
-	--from-file=$COROOT/conf/pgo-ui/config.json \
-        --from-file=$COROOT/conf/postgres-operator/server.crt \
-        --from-file=$COROOT/conf/postgres-operator/server.key 
-
-	expenv -f $DIR/deployment-with-ui.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
-	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service-with-ui.json
-else
-	expenv -f $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
-	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service.json
-fi
