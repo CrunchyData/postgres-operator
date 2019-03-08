@@ -36,7 +36,7 @@ expenv -f $DIR/cluster-role-bindings.yaml | $CO_CMD --namespace=$CO_NAMESPACE cr
 
 # create the role, role-binding and add to the service account
 # these are created within the namespace the Operator is running
-expenv -f $DIR/rbac.yaml | $CO_CMD create --namespace=$CO_NAMESPACE -f -
+#expenv -f $DIR/rbac.yaml | $CO_CMD create --namespace=$CO_NAMESPACE -f -
 
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh
@@ -58,6 +58,6 @@ do
         then
                 $CO_CMD delete secret  pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
         fi
-        $DIR/create-pgo-backrest-ssh-secret.sh $ns
+        $DIR/create-target-rbac.sh $ns $CO_NAMESPACE
 done
 

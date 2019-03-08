@@ -65,18 +65,21 @@ To deploy the Operator on your Kubernetes cluster.  If your Kubernetes cluster i
 
 Debug level logging in turned on by default when deploying the Operator.
 
-You can view the REST API logs with the following alias:
+There are a few bash functions created when you add the environment
+variables within examples/env.sh to your .bashrc environment.
+
+You can view the REST API logs with the following function:
 ```
-alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver'
+alog
 ```
 
-You can view the Operator core logic logs with the following alias:
+You can view the Operator core logic logs with the following function:
 ```
-alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'
+olog
 ```
-You can view the Scheduler logs with the following alias:
+You can view the Scheduler logs with the following function:
 ```
-alias slog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c scheduler'
+slog
 ```
 
 You can enable the *pgo* CLI debugging with the following flag:
@@ -87,5 +90,5 @@ pgo version --debug
 You can set the REST API URL as follows after a deployment if you are
 developing on your local host:
 ```
-alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
+setip
 ```
