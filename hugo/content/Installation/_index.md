@@ -179,7 +179,7 @@ You should see the *pgclusters* CRD among the listed CRD resource types.
 See the Security documentation for a description of the various RBAC
 resources created and used by the Operator.
 
-## Manual Installation - Deploy the Operator
+## Default Installation - Deploy the Operator
 At this point, you as a normal Kubernetes user should be able to deploy the Operator.  To do this, run the following Makefile target:
 
     make deployoperator
