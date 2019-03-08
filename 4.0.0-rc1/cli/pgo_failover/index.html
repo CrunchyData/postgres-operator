@@ -701,7 +701,7 @@
 
 <pre><code>      --autofail-replace-replica string   If 'true', causes a replica to be created to replace the promoted replica.  If 'false', causes a replica to not be created, if not set, the pgo.yaml AutofailReplaceReplica setting is used.
   -h, --help                              help for failover
-  -n, --no-prompt                         No command line confirmation.
+      --no-prompt                         No command line confirmation.
       --query                             Prints the list of failover candidates.
       --target string                     The replica target which the failover will occur on.
 </code></pre>
@@ -710,7 +710,7 @@
 
 <pre><code>      --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

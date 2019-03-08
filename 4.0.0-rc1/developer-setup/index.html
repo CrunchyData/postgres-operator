@@ -697,19 +697,22 @@
 
 <p>Debug level logging in turned on by default when deploying the Operator.</p>
 
-<p>You can view the REST API logs with the following alias:</p>
+<p>There are a few bash functions created when you add the environment
+variables within examples/env.sh to your .bashrc environment.</p>
 
-<pre><code>alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c apiserver'
+<p>You can view the REST API logs with the following function:</p>
+
+<pre><code>alog
 </code></pre>
 
-<p>You can view the Operator core logic logs with the following alias:</p>
+<p>You can view the Operator core logic logs with the following function:</p>
 
-<pre><code>alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c operator'
+<pre><code>olog
 </code></pre>
 
-<p>You can view the Scheduler logs with the following alias:</p>
+<p>You can view the Scheduler logs with the following function:</p>
 
-<pre><code>alias slog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath=&quot;{.items[0].metadata.name}&quot;` -c scheduler'
+<pre><code>slog
 </code></pre>
 
 <p>You can enable the <em>pgo</em> CLI debugging with the following flag:</p>
@@ -720,7 +723,7 @@
 <p>You can set the REST API URL as follows after a deployment if you are
 developing on your local host:</p>
 
-<pre><code>alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath=&quot;{.spec.clusterIP}&quot;`:8443'
+<pre><code>setip
 </code></pre>
 
 
