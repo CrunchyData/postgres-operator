@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-for CNAME in crunchy-scheduler crunchy-postgres crunchy-collect crunchy-grafana crunchy-prometheus crunchy-backup
+for CNAME in crunchy-postgres crunchy-collect crunchy-pgbadger crunchy-backup crunchy-pgpool crunchy-pgbouncer crunchy-grafana crunchy-prometheus
 do
 	docker pull crunchydata/$CNAME:$CCP_IMAGE_TAG
 done

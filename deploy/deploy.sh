@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,7 +17,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$CO_CMD --namespace=$CO_NAMESPACE get role pgo-role > /dev/null
+$CO_CMD --namespace=$CO_NAMESPACE get role pgo-role 2> /dev/null
 if [ $? -ne 0 ]
 then
 	echo ERROR: pgo-role was not found in $CO_NAMESPACE namespace
@@ -57,15 +57,8 @@ $CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-config \
 	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
 	--from-file=$COROOT/conf/postgres-operator/cluster
 
-if [ "$CO_UI" = "true" ]; then
-$CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-ui-conf \
-	--from-file=$COROOT/conf/pgo-ui/config.json \
-        --from-file=$COROOT/conf/postgres-operator/server.crt \
-        --from-file=$COROOT/conf/postgres-operator/server.key 
-
-	expenv -f $DIR/deployment-with-ui.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
-	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service-with-ui.json
-else
-	expenv -f $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
-	$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service.json
-fi
+#
+# create the postgres-operator Deployment and Service
+#
+expenv -f $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service.json

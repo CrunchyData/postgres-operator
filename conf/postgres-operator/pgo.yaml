@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  rhel7-11.2-2.3.1
+  CCPImageTag:  centos7-11.2-2.3.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -57,7 +57,7 @@ Storage:
     StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  300M
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
@@ -92,4 +92,4 @@ Pgo:
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
-  COImageTag:  rhel7-4.0.0-rc1
+  COImageTag:  centos7-4.0.0-rc1

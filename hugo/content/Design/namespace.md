@@ -34,7 +34,7 @@ document:
 https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md
 
 
-### Single Namespace Example
+### OwnNamespace Example
 
 Prior to version 4.0, the Operator was deployed into
 a single namespace and Postgres Clusters created by it were
@@ -48,7 +48,7 @@ variable settings as follows:
 
 ![Reference](/Namespace-Single.png)
 
-### Single Operator Namespace and Single Target Namespace
+### SingleNamespace Example
 
 To have the Operator deployed into its own namespace but 
 create Postgres Clusters into a different namespace the
@@ -59,7 +59,7 @@ variables would be as follows:
 
 ![Reference](/Namespace-Single-Single.png)
 
-### Single Operator Namespace and Multiple Target Namespaces
+### MultiNamespace Example
 
 To have the Operator deployed into its own namespace but
 create Postgres Clusters into more than one namespace the
@@ -70,7 +70,7 @@ variables would be as follows:
 
 ![Reference](/Namespace-Single-Multiple.png)
 
-### Single Operator Namespace and Any Target Namespaces
+### AllNamespaces Example
 
 To have the Operator deployed into its own namespace but
 create Postgres Clusters into any target namespace the

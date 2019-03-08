@@ -142,6 +142,7 @@ Operator.
 Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
 
 ## Operator Security
+
 The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator REST API.
 
 There is a default set of Roles and Users defined respectively in the following files:

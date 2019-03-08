@@ -18,7 +18,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $DIR/cleanup-rbac.sh
 
 # see if CRDs need to be created
-$CO_CMD get crd pgclusters.cr.client-go.k8s.io
+$CO_CMD get crd pgclusters.cr.client-go.k8s.io 
 if [ $? -eq 1 ]; then
 	$CO_CMD create -f $DIR/crd.yaml
 fi

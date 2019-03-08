@@ -1,0 +1,49 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-role
+  namespace: pgouser2
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs: ["get", "deletecollection", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - "*"
+- apiGroups:
+  - batch 
+  - extensions 
+  resources: ["jobs", "deployments"]
+  verbs: ["get", "deletecollection", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgo-role-binding
+  namespace: pgouser2
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: pgo
+roleRef:
+  kind: Role
+  name: pgo-role
+  apiGroup: rbac.authorization.k8s.io
+
