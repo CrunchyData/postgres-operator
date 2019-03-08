@@ -1,8 +1,8 @@
 ---
-title: "Design"
+title: "OLM"
 date:
 draft: false
-weight: 4
+weight: 6
 ---
 
 ## Operator Lifecycle Management

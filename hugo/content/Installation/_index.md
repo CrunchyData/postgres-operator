@@ -31,7 +31,7 @@ The Operator follows a golang project structure, you can create a structure as f
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-    git checkout 4.0.0-rc1
+	git checkout 4.0.0-rc1
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
@@ -82,7 +82,7 @@ Create the Operator namespaces using the Makefile target:
 
     make setupnamespaces
 
-The Design [Design](/Design) section of this documentation talks further about
+The [Design](/design) section of this documentation talks further about
 the use of namespaces within the Operator.
 
 ## Default Installation - Configure Operator Templates
@@ -151,7 +151,7 @@ There is a default set of Roles and Users defined respectively in the following 
 ./conf/postgres-operator/pgouser
 ./conf/postgres-operator/pgorole
 ```
-Operator security is discussed in the Security section [Security](/Security) of the documentation.
+Operator security is discussed in the Security section [Security](/security) of the documentation.
 
 Adjust these settings to meet your local requirements.
 
