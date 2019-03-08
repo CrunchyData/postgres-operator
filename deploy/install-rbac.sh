@@ -59,5 +59,6 @@ do
                 $CO_CMD delete secret  pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
         fi
         $DIR/create-pgo-backrest-ssh-secret.sh $ns
+        $DIR/create-target-rbac.sh $ns $CO_NAMESPACE
 done
 
