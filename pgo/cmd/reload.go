@@ -57,7 +57,7 @@ func init() {
 	RootCmd.AddCommand(reloadCmd)
 
 	reloadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	reloadCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	reloadCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 
 }
 

@@ -54,7 +54,7 @@ func init() {
 	RootCmd.AddCommand(updateCmd)
 	updateCmd.AddCommand(updateClusterCmd)
 
-	updateClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	updateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	updateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	updateClusterCmd.Flags().StringVarP(&AutofailStringFlag, "autofail", "", "", "If set, will cause the autofail label on the pgcluster CRD for this cluster to be updated to either true or false, valid values are true or false.")
 

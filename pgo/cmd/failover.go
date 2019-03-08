@@ -62,7 +62,7 @@ func init() {
 	RootCmd.AddCommand(failoverCmd)
 
 	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
-	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	failoverCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
 	failoverCmd.Flags().StringVarP(&AutofailReplaceReplica, "autofail-replace-replica", "", "", "If 'true', causes a replica to be created to replace the promoted replica.  If 'false', causes a replica to not be created, if not set, the pgo.yaml AutofailReplaceReplica setting is used.")
 

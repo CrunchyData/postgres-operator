@@ -87,16 +87,33 @@ Here the empty string value represents *all* namespaces.
 ### RBAC
 
 To support multiple namespace watching, the Operator deployment
-process changes a bit from 3.X releases.
+process changes somewhat from 3.X releases.
 
-Each namespace to be watch requires its own copy of the 
-pgo-backrest-repo-config Secret.  When you run the install-rbac.sh
-script, it now iterates through the list of namespaces to be
-watched and creates this Secret into each of those namespaces.
+Each namespace to be watched requires its own copy of the 
+the following resources for working with the Operator:
 
-If after an initial execution of install-rbac.sh, you need to add a 
-new namespace, you will need to run the create-pgo-backrest-ssh-secret.sh 
-script for that new namespace.
+    serviceaccount/pgo-backrest
+    secret/pgo-backrest-repo-config
+    role/pgo-role
+    rolebinding/pgo-role-binding
+    role/pgo-backrest-role
+    rolebinding/pgo-backrest-role-binding
+
+When you run the install-rbac.sh script, it iterates through the 
+list of namespaces to be watched and creates these resources into 
+each of those namespaces.
+
+If you need to add a new namespace that the Operator will watch
+after an initial execution of install-rbac.sh, you will need to run 
+the following for each new namespace:
+
+    create-target-rbac.sh YOURNEWNAMESPACE $CO_NAMESPACE
+
+The example deployment creates the following RBAC structure
+on your Kube system after running the install scripts:
+
+![Reference](/Operator-RBAC-Diagram.png)
+
 
 ## pgo Clients and Namespaces
 
