@@ -200,7 +200,7 @@ before you do a restore.
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15 00:03:25"
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25"
 	
 To restore the most recent pgdump at the default path, leave off a timestamp:
 	
