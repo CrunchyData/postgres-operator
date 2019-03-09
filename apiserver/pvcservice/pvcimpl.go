@@ -1,7 +1,7 @@
 package pvcservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,14 +18,16 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	log "github.com/sirupsen/logrus"
 	//"github.com/crunchydata/postgres-operator/config"
+	"errors"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	"io"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 	"strings"
 	"time"
 )
@@ -37,7 +39,18 @@ type lspvcTemplateFields struct {
 	COImageTag         string
 	BackupRoot         string
 	PVCName            string
+	NodeSelector       string
 	ContainerResources string
+}
+
+// consolidate with cluster.affinityTemplateFields
+const AffinityInOperator = "In"
+const AFFINITY_NOTINOperator = "NotIn"
+
+type affinityTemplateFields struct {
+	NodeLabelKey   string
+	NodeLabelValue string
+	OperatorValue  string
 }
 
 type containerResourcesTemplateFields struct {
@@ -46,8 +59,15 @@ type containerResourcesTemplateFields struct {
 }
 
 // ShowPVC ...
-func ShowPVC(pvcName, PVCRoot, ns string) ([]string, error) {
+func ShowPVC(nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
 	pvcList := make([]string, 1)
+
+	if nodeLabel != "" {
+		parts := strings.Split(nodeLabel, "=")
+		if len(parts) != 2 {
+			return pvcList, errors.New("--node-label is required to be key=value formatted")
+		}
+	}
 
 	if pvcName == "all" {
 		selector := util.LABEL_PGREMOVE + "=true"
@@ -70,18 +90,18 @@ func ShowPVC(pvcName, PVCRoot, ns string) ([]string, error) {
 	}
 
 	log.Debugf("PVC %s is found", pvc.Name)
-	pvcList, err = printPVCListing(pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
+	pvcList, err = printPVCListing(nodeLabel, pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
 
 	return pvcList, err
 
 }
 
 // printPVCListing ...
-func printPVCListing(clusterName, pvcName, PVCRoot, ns string) ([]string, error) {
+func printPVCListing(nodeLabel, clusterName, pvcName, PVCRoot, ns string) ([]string, error) {
 	newlines := make([]string, 1)
 	var err error
 	var doc2 bytes.Buffer
-	var podName = "lspvc-" + pvcName
+	var podName = "lspvc-" + pvcName + "-" + util.RandStringBytesRmndr(3)
 
 	//delete lspvc pod if it was not deleted for any reason prior
 	_, found, err := kubeapi.GetPod(apiserver.Clientset, podName, ns)
@@ -132,6 +152,7 @@ func printPVCListing(clusterName, pvcName, PVCRoot, ns string) ([]string, error)
 		COImagePrefix:      apiserver.Pgo.Pgo.COImagePrefix,
 		COImageTag:         apiserver.Pgo.Pgo.COImageTag,
 		BackupRoot:         pvcRoot,
+		NodeSelector:       getAffinity(nodeLabel),
 		PVCName:            pvcName,
 		ContainerResources: cr,
 	}
@@ -197,16 +218,50 @@ func printPVCListing(clusterName, pvcName, PVCRoot, ns string) ([]string, error)
 	newlines = make([]string, last)
 	copy(newlines, lines[:last])
 
+	var twig string
 	for k, v := range newlines {
+		twig = apiserver.TreeBranch
 		if k == len(newlines)-1 {
-			log.Debugf("%s%s", apiserver.TreeTrunk, "/"+v)
-		} else {
-			log.Debugf("%s%s", apiserver.TreeBranch, "/"+v)
+			twig = apiserver.TreeTrunk
 		}
+		log.Debugf("%s%s", twig, v)
 	}
 
 	//delete lspvc pod
 	err = kubeapi.DeletePod(apiserver.Clientset, podName, ns)
 	return newlines, err
+
+}
+
+func getAffinity(nodeLabel string) string {
+	if nodeLabel == "" {
+		return ""
+	}
+
+	parts := strings.Split(nodeLabel, "=")
+	//node label should be parsed by now but lets do it again
+	//just to be safe
+	if len(parts) < 2 {
+		log.Error("node label does not containe a key and value")
+		return ""
+	}
+
+	affinityTemplateFields := affinityTemplateFields{}
+	affinityTemplateFields.NodeLabelKey = parts[0]
+	affinityTemplateFields.NodeLabelValue = parts[1]
+	affinityTemplateFields.OperatorValue = AffinityInOperator
+
+	var affinityDoc bytes.Buffer
+	err := apiserver.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if apiserver.CRUNCHY_DEBUG {
+		apiserver.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
+	}
+
+	return affinityDoc.String()
 
 }

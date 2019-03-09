@@ -17,10 +17,10 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -34,9 +34,10 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	pvcname := vars["pvcname"]
 	pvcroot := r.URL.Query().Get("pvcroot")
 	clientVersion := r.URL.Query().Get("version")
+	nodeLabel := r.URL.Query().Get("nodelabel")
 	namespace := r.URL.Query().Get("namespace")
 
-	log.Debugf("ShowPVCHandler parameters pvcroot [%s],  version [%s] namespace [%s] pvcname [%s]", pvcroot, clientVersion, namespace, pvcname)
+	log.Debugf("ShowPVCHandler parameters pvcroot [%s],  version [%s] namespace [%s] pvcname [%s] nodeLabel [%]", pvcroot, clientVersion, namespace, pvcname, nodeLabel)
 
 	switch r.Method {
 	case "GET":
@@ -70,7 +71,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Results, err = ShowPVC(pvcname, pvcroot, ns)
+	resp.Results, err = ShowPVC(nodeLabel, pvcname, pvcroot, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
