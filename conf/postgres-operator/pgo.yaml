@@ -28,7 +28,7 @@ ReplicaStorage: hostpathstorage
 BackrestStorage: hostpathstorage
 Storage:
   hostpathstorage:
-    AccessMode:  ReadWriteMany
+    AccessMode:  ReadWriteOnce
     Size:  1G
     StorageType:  create
   replicastorage:

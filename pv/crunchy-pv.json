@@ -8,11 +8,10 @@
     "capacity": {
         "storage": "1Gi"
     },
-    "accessModes": [ "ReadWriteMany" ],
+    "accessModes": [ "ReadWriteOnce" ],
     "hostPath": {
         "path": "/data"
     },
     "persistentVolumeReclaimPolicy": "Retain"
   }
 }
-
