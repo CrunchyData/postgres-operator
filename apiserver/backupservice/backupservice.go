@@ -43,9 +43,9 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("backupservice.ShowBackupHandler GET called")
 	resp := msgs.ShowBackupResponse{}
@@ -87,9 +87,10 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	log.Debug("backupservice.DeleteBackupHandler called")
 
 	resp := msgs.DeleteBackupResponse{}
@@ -128,8 +129,10 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.CreateBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}

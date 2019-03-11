@@ -93,9 +93,10 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("DeletePolicyHandler parameters version [%s] name [%s] namespace [%s]", clientVersion, policyname, namespace)
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	username, err := apiserver.Authn(apiserver.DELETE_POLICY_PERM, w, r)
 	if err != nil {
 		return
@@ -140,9 +141,10 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("ShowPolicyHandler parameters version [%s] namespace [%s] name [%s]", clientVersion, namespace, policyname)
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	username, err := apiserver.Authn(apiserver.SHOW_POLICY_PERM, w, r)
 	if err != nil {
 		return
@@ -189,8 +191,9 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.ApplyPolicyResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}

@@ -256,25 +256,66 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 
 	log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 	labels := job.GetObjectMeta().GetLabels()
+	clusterName := labels[util.LABEL_PG_CLUSTER]
+	claimName := labels[util.LABEL_CLAIM_NAME]
 
-	//delete the pgtask to cleanup
+	//delete any pgtask for this cluster
 	log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
-	err = kubeapi.Deletepgtasks(restClient, util.LABEL_RMDATA+"=true", namespace)
+	err = kubeapi.Deletepgtasks(restClient, util.LABEL_PG_CLUSTER+"="+clusterName, namespace)
 	if err != nil {
 		return err
 	}
 
-	selector := util.LABEL_PG_CLUSTER + "=" + job.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "," + util.LABEL_RMDATA + "=true"
-	kubeapi.DeleteJobs(clientset, selector, namespace)
+	err = kubeapi.DeleteJob(clientset, job.Name, namespace)
+	if err != nil {
+		log.Error(err)
+	}
 
 	time.Sleep(time.Second * time.Duration(5))
 
 	//remove the pvc referenced by that job
-	log.Debugf("deleting pvc %s", labels[util.LABEL_CLAIM_NAME])
-	err = pvc.Delete(clientset, labels[util.LABEL_CLAIM_NAME], namespace)
+	//mycluster
+	//mycluster-xlog
+
+	log.Debugf("deleting pvc %s", claimName)
+	err = pvc.Delete(clientset, claimName, namespace)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
+
+	//if a user has specified --archive for a cluster then
+	// an xlog PVC will be present and can be removed
+	var found bool
+	pvcName := clusterName + "-xlog"
+	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
+	if found {
+		log.Debugf("deleting pvc %s", pvcName)
+		err = pvc.Delete(clientset, pvcName, namespace)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+	}
+
+	//delete any completed jobs for this cluster as a cleanup
+	var jobList *apiv1.JobList
+	jobList, err = kubeapi.GetJobs(clientset, util.LABEL_PG_CLUSTER+"="+clusterName, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	for _, j := range jobList.Items {
+		if j.Status.Succeeded > 0 {
+			log.Debugf("removing Job %s since it was completed", job.Name)
+			err := kubeapi.DeleteJob(clientset, j.Name, namespace)
+			if err != nil {
+				log.Error(err)
+			}
+
+		}
+	}
+
 	return err
 }

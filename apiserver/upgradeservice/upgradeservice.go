@@ -55,8 +55,9 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.CreateUpgradeResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -94,8 +95,9 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	namespace := r.URL.Query().Get("namespace")
 	log.Debugf("ShowUpgradeHandler parameters version [%s] namespace [%s]", clientVersion, namespace)
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("upgradeservice.ShowUpgradeHandler GET called")
 
@@ -140,8 +142,9 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	namespace := r.URL.Query().Get("namespace")
 	log.Debugf("DeleteUpgradeHandler parameters version [%s] namespace [%s] name [%s]", clientVersion, namespace, upgradename)
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	username, err := apiserver.Authn(apiserver.DELETE_UPGRADE_PERM, w, r)
 	if err != nil {

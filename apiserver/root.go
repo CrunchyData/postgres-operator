@@ -38,6 +38,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const AffinityTemplatePath = "/pgo-config/affinity.json"
 const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
 const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
 
@@ -69,6 +70,8 @@ var BasicAuth bool
 var PgoNamespace string
 var Namespace string
 
+var CRUNCHY_DEBUG bool
+
 // TreeTrunk is for debugging only in this context
 const TreeTrunk = "└── "
 
@@ -89,6 +92,7 @@ var ContainerResourcesTemplate *template.Template
 var LoadTemplate *template.Template
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
+var AffinityTemplate *template.Template
 
 var Pgo config.PgoConfig
 
@@ -121,6 +125,12 @@ func Initialize() {
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
 		log.Error("NAMESPACE environment variable is set to empty string which pgo will interpret as watch 'all' namespaces")
+	}
+
+	tmp := os.Getenv("CRUNCHY_DEBUG")
+	CRUNCHY_DEBUG = false
+	if tmp == "true" {
+		CRUNCHY_DEBUG = true
 	}
 
 	log.Info("Namespace is [" + Namespace + "]")
@@ -549,6 +559,8 @@ func initTemplates() {
 		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
 		os.Exit(2)
 	}
+
+	AffinityTemplate = util.LoadTemplate(AffinityTemplatePath)
 
 	JobTemplate = util.LoadTemplate(LoadTemplatePath)
 

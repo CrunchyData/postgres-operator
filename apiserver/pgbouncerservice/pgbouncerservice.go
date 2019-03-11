@@ -28,14 +28,14 @@ import (
 func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	log.Debug("pgbouncerservice.CreatePgbouncerHandler called")
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	username, err := apiserver.Authn(apiserver.CREATE_PGBOUNCER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	var request msgs.CreatePgbouncerRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -68,14 +68,14 @@ func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 func DeletePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	log.Debug("pgbouncerservice.DeletePgbouncerHandler called")
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	username, err := apiserver.Authn(apiserver.DELETE_PGBOUNCER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	var request msgs.DeletePgbouncerRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)

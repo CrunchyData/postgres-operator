@@ -41,8 +41,9 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
@@ -67,14 +68,14 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 // pgo create user
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("userservice.CreateUserHandler called")
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	username, err := apiserver.Authn(apiserver.CREATE_USER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	var request msgs.CreateUserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -122,9 +123,9 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.DeleteUserResponse{}
 
@@ -168,9 +169,9 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.ShowUserResponse{}
 	if clientVersion != msgs.PGO_VERSION {

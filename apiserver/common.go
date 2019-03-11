@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,10 +16,10 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/util"
@@ -88,16 +88,17 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 
 }
 
-func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string, ns string) error {
+func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string, taskName, ns string) error {
 	var err error
 
+	log.Debugf("JEFF CreateRMDataTask dataRoots=%v", dataRoots)
 	//create a pgtask for each root at this volume/pvc
 	for i := 0; i < len(dataRoots); i++ {
 
 		//create pgtask CRD
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
-		spec.Name = pvcName
+		spec.Name = taskName
 		spec.TaskType = crv1.PgtaskDeleteData
 		spec.StorageSpec = storageSpec
 
@@ -108,7 +109,7 @@ func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName strin
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name: pvcName,
+				Name: taskName,
 			},
 			Spec: spec,
 		}
