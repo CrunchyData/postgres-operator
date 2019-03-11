@@ -25,7 +25,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/template"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -37,10 +36,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
-
-const AffinityTemplatePath = "/pgo-config/affinity.json"
-const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
-const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
 
 // pgouserPath ...
 const pgouserPath = "/pgo-auth-secret/pgouser"
@@ -87,12 +82,6 @@ type CredentialDetail struct {
 
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
-
-var ContainerResourcesTemplate *template.Template
-var LoadTemplate *template.Template
-var LspvcTemplate *template.Template
-var JobTemplate *template.Template
-var AffinityTemplate *template.Template
 
 var Pgo config.PgoConfig
 
@@ -144,11 +133,11 @@ func Initialize() {
 	getCredentials()
 	initConfig()
 
-	initTemplates()
-
 	InitializePerms()
 
 	ConnectToKube()
+
+	initTemplates()
 
 	validateWithKube()
 
@@ -552,19 +541,12 @@ func IsValidContainerResourceValues() bool {
 }
 
 func initTemplates() {
-	LspvcTemplate = util.LoadTemplate(lspvcTemplatePath)
-
-	LoadTemplatePath := Pgo.Pgo.LoadTemplate
-	if LoadTemplatePath == "" {
-		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
+	var err error
+	err = Pgo.GetConfig(Clientset, PgoNamespace)
+	if err != nil {
+		log.Error("could not load all required Operator pgo-config templates")
 		os.Exit(2)
 	}
-
-	AffinityTemplate = util.LoadTemplate(AffinityTemplatePath)
-
-	JobTemplate = util.LoadTemplate(LoadTemplatePath)
-
-	ContainerResourcesTemplate = util.LoadTemplate(containerResourcesTemplatePath)
 
 }
 
@@ -613,14 +595,14 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	fields.LimitsCPU = resources.LimitsCPU
 
 	doc := bytes.Buffer{}
-	err := ContainerResourcesTemplate.Execute(&doc, fields)
+	err := config.ContainerResourcesTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
 	}
 
 	if log.GetLevel() == log.DebugLevel {
-		ContainerResourcesTemplate.Execute(os.Stdout, fields)
+		config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
 	}
 
 	return doc.String()

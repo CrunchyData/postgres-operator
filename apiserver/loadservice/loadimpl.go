@@ -18,13 +18,14 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
@@ -195,7 +196,7 @@ func createJob(clusterName string, template *loadJobTemplateFields, ns string) (
 	}
 
 	var doc2 bytes.Buffer
-	err = apiserver.JobTemplate.Execute(&doc2, template)
+	err = config.JobTemplate.Execute(&doc2, template)
 	if err != nil {
 		log.Error(err.Error())
 		return "", err

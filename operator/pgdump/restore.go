@@ -20,12 +20,13 @@ import (
 	"encoding/json"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -96,7 +97,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.PgRestoreJobTemplate.Execute(&doc2, jobFields)
+	err = config.PgRestoreJobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("restore workflow: error executing job template")
@@ -104,7 +105,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgRestoreJobTemplate.Execute(os.Stdout, jobFields)
+		config.PgRestoreJobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}

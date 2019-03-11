@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -117,7 +118,7 @@ func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) st
 		}
 
 		var doc bytes.Buffer
-		err := PgbackrestEnvVarsTemplate.Execute(&doc, fields)
+		err := config.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
@@ -149,14 +150,14 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		}
 
 		var badgerDoc bytes.Buffer
-		err := BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
+		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
+			config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
 		}
 		return badgerDoc.String()
 	}
@@ -180,14 +181,14 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
-		err := CollectTemplate.Execute(&collectDoc, collectTemplateFields)
+		err := config.CollectTemplate.Execute(&collectDoc, collectTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			CollectTemplate.Execute(os.Stdout, collectTemplateFields)
+			config.CollectTemplate.Execute(os.Stdout, collectTemplateFields)
 		}
 		return collectDoc.String()
 	}
@@ -284,14 +285,14 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	affinityTemplateFields.OperatorValue = affoperator
 
 	var affinityDoc bytes.Buffer
-	err := AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
+	err := config.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return output
 	}
 
 	if CRUNCHY_DEBUG {
-		AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
+		config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()
@@ -326,7 +327,7 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 		}
 
 		var doc bytes.Buffer
-		err := PgmonitorEnvVarsTemplate.Execute(&doc, fields)
+		err := config.PgmonitorEnvVarsTemplate.Execute(&doc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""

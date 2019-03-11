@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
@@ -133,7 +134,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
-	err = operator.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
+	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
@@ -141,7 +142,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 
 	//a form of debugging
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
+		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := v1beta1.Deployment{}
@@ -388,10 +389,10 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	switch replica.Spec.ReplicaStorage.StorageType {
 	case "", "emptydir":
 		log.Debug("PrimaryStorage.StorageType is emptydir")
-		err = operator.DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
+		err = config.DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	case "existing", "create", "dynamic":
 		log.Debug("using the shared replica template ")
-		err = operator.DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
+		err = config.DeploymentTemplate.Execute(&replicaDoc, replicaDeploymentFields)
 	}
 
 	if err != nil {
@@ -400,7 +401,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
+		config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
 	replicaDeployment := v1beta1.Deployment{}

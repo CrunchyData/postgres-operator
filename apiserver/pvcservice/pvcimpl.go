@@ -18,12 +18,12 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/crunchydata/postgres-operator/apiserver"
-	log "github.com/sirupsen/logrus"
-	//"github.com/crunchydata/postgres-operator/config"
 	"errors"
+	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,7 +157,7 @@ func printPVCListing(nodeLabel, clusterName, pvcName, PVCRoot, ns string) ([]str
 		ContainerResources: cr,
 	}
 
-	err = apiserver.LspvcTemplate.Execute(&doc2, pvcFields)
+	err = config.LspvcTemplate.Execute(&doc2, pvcFields)
 	if err != nil {
 		log.Error(err.Error())
 		return newlines, err
@@ -252,14 +252,14 @@ func getAffinity(nodeLabel string) string {
 	affinityTemplateFields.OperatorValue = AffinityInOperator
 
 	var affinityDoc bytes.Buffer
-	err := apiserver.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
+	err := config.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
 	}
 
 	if apiserver.CRUNCHY_DEBUG {
-		apiserver.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
+		config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()

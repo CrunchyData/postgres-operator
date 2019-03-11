@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -72,14 +73,14 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	log.Debugf("creating rmdata job for cluster %s pvc %s", task.Spec.Name, pvcName)
 
 	var doc2 bytes.Buffer
-	err := operator.RmdatajobTemplate.Execute(&doc2, jobFields)
+	err := config.RmdatajobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.RmdatajobTemplate.Execute(os.Stdout, jobFields)
+		config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}

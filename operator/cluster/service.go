@@ -21,6 +21,7 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -37,14 +38,14 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
 	if !found || err != nil {
 
-		err = operator.ServiceTemplate.Execute(&serviceDoc, fields)
+		err = config.ServiceTemplate.Execute(&serviceDoc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return err
 		}
 
 		if operator.CRUNCHY_DEBUG {
-			operator.ServiceTemplate.Execute(os.Stdout, fields)
+			config.ServiceTemplate.Execute(os.Stdout, fields)
 		}
 
 		service := v1.Service{}

@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -248,14 +249,14 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 
 	}
 
-	err = operator.PgbouncerTemplate.Execute(&doc, fields)
+	err = config.PgbouncerTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgbouncerTemplate.Execute(os.Stdout, fields)
+		config.PgbouncerTemplate.Execute(os.Stdout, fields)
 	}
 
 	deployment := v1beta1.Deployment{}
@@ -368,7 +369,7 @@ func getPgbouncerHBA() ([]byte, error) {
 	fields := PgbouncerHBAFields{}
 
 	var doc bytes.Buffer
-	err = operator.PgbouncerHBATemplate.Execute(&doc, fields)
+	err = config.PgbouncerHBATemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -391,7 +392,7 @@ func getPgbouncerConf(primary, replica, username, password, port, database strin
 	fields.PG_DATABASE = database
 
 	var doc bytes.Buffer
-	err = operator.PgbouncerConfTemplate.Execute(&doc, fields)
+	err = config.PgbouncerConfTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -429,7 +430,7 @@ func getPgbouncerPasswd(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, nam
 	c.Password = "md5" + util.GetMD5HashForAuthFile(pgbouncerPassword+pgbouncerUsername)
 	creds = append(creds, c)
 
-	err := operator.PgbouncerUsersTemplate.Execute(&doc, creds)
+	err := config.PgbouncerUsersTemplate.Execute(&doc, creds)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err

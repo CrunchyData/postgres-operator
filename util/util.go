@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,7 +36,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -85,19 +83,6 @@ func CreateSecContext(fsGroup string, suppGroup string) string {
 	}
 
 	return sc.String()
-}
-
-// LoadTemplate will load a JSON template from a path
-func LoadTemplate(path string) *template.Template {
-	log.Debugf("loading path [%s]", path)
-	buf, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Error(err)
-		log.Error("error loading template path=" + path + err.Error())
-		panic(err.Error())
-	}
-	return template.Must(template.New(path).Parse(string(buf)))
-
 }
 
 // ThingSpec is a json patch structure

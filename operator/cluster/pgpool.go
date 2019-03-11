@@ -18,11 +18,12 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -256,14 +257,14 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 
 	}
 
-	err = operator.PgpoolTemplate.Execute(&doc, fields)
+	err = config.PgpoolTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgpoolTemplate.Execute(os.Stdout, fields)
+		config.PgpoolTemplate.Execute(os.Stdout, fields)
 	}
 
 	deployment := v1beta1.Deployment{}
@@ -362,7 +363,7 @@ func getPgpoolHBA() ([]byte, error) {
 	fields := PgpoolHBAFields{}
 
 	var doc bytes.Buffer
-	err = operator.PgpoolHBATemplate.Execute(&doc, fields)
+	err = config.PgpoolHBATemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -382,7 +383,7 @@ func getPgpoolConf(primary, replica, username, password string) ([]byte, error) 
 	fields.PG_PASSWORD = password
 
 	var doc bytes.Buffer
-	err = operator.PgpoolConfTemplate.Execute(&doc, fields)
+	err = config.PgpoolConfTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), err
@@ -421,7 +422,7 @@ func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName str
 		}
 	}
 
-	err = operator.PgpoolPasswdTemplate.Execute(&doc, creds)
+	err = config.PgpoolPasswdTemplate.Execute(&doc, creds)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), pgpoolUsername, pgpoolPassword, err

@@ -89,7 +89,5 @@ Pgo:
   AutofailSleepSeconds:  9
   PreferredFailoverNode:  
   Audit:  false
-  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
-  LoadTemplate:  /pgo-config/pgo.load-template.json
   COImagePrefix:  crunchydata
   COImageTag:  rhel7-4.0.0-rc1

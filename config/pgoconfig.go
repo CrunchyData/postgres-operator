@@ -1,7 +1,7 @@
 package config
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,13 +17,136 @@ limitations under the License.
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"strings"
+	"text/template"
 )
+
+const CustomConfigMapName = "pgo-config"
+const DefaultConfigsPath = "/default-pgo-config/"
+const CustomConfigsPath = "/pgo-config/"
+
+var PVCTemplate *template.Template
+
+const pvcPath = "pvc.json"
+
+var ContainerResourcesTemplate *template.Template
+
+const containerResourcesTemplatePath = "container-resources.json"
+
+var LoadTemplate *template.Template
+
+const loadTemplatePath = "pgo.load-template.json"
+
+var LspvcTemplate *template.Template
+
+const lspvcTemplatePath = "pgo.lspvc-template.json"
+
+var AffinityTemplate *template.Template
+
+const affinityTemplatePath = "affinity.json"
+
+var PgoBackrestRepoServiceTemplate *template.Template
+
+const pgoBackrestRepoServiceTemplatePath = "pgo-backrest-repo-service-template.json"
+
+var PgoBackrestRepoTemplate *template.Template
+
+const pgoBackrestRepoTemplatePath = "pgo-backrest-repo-template.json"
+
+var PgmonitorEnvVarsTemplate *template.Template
+
+const pgmonitorEnvVarsPath = "pgmonitor-env-vars.json"
+
+var PgbackrestEnvVarsTemplate *template.Template
+
+const pgbackrestEnvVarsPath = "pgbackrest-env-vars.json"
+
+var JobTemplate *template.Template
+
+const jobPath = "backup-job.json"
+
+var PgpoolTemplate *template.Template
+
+const pgpoolTemplatePath = "pgpool-template.json"
+
+var PgpoolConfTemplate *template.Template
+
+const pgpoolConfTemplatePath = "pgpool.conf"
+
+var PgpoolPasswdTemplate *template.Template
+
+const pgpoolPasswdTemplatePath = "pool_passwd"
+
+var PgpoolHBATemplate *template.Template
+
+const pgpoolHBATemplatePath = "pool_hba.conf"
+
+var PgbouncerTemplate *template.Template
+
+const pgbouncerTemplatePath = "pgbouncer-template.json"
+
+var PgbouncerConfTemplate *template.Template
+
+const pgbouncerConfTemplatePath = "pgbouncer.ini"
+
+var PgbouncerUsersTemplate *template.Template
+
+const pgbouncerUsersTemplatePath = "users.txt"
+
+var PgbouncerHBATemplate *template.Template
+
+const pgbouncerHBATemplatePath = "pgbouncer_hba.conf"
+
+var ServiceTemplate *template.Template
+
+const serviceTemplatePath = "cluster-service.json"
+
+var RmdatajobTemplate *template.Template
+
+const rmdatajobPath = "rmdata-job.json"
+
+var BackrestjobTemplate *template.Template
+
+const backrestjobPath = "backrest-job.json"
+
+var BackrestRestorejobTemplate *template.Template
+
+const backrestRestorejobPath = "backrest-restore-job.json"
+
+var PgDumpBackupJobTemplate *template.Template
+
+const pgDumpBackupJobPath = "pgdump-job.json"
+
+var PgRestoreJobTemplate *template.Template
+
+const pgRestoreJobPath = "pgrestore-job.json"
+
+var PVCMatchLabelsTemplate *template.Template
+
+const pvcMatchLabelsPath = "pvc-matchlabels.json"
+
+var PVCStorageClassTemplate *template.Template
+
+const pvcSCPath = "pvc-storageclass.json"
+
+var CollectTemplate *template.Template
+
+const collectTemplatePath = "collect.json"
+
+var BadgerTemplate *template.Template
+
+const badgerTemplatePath = "pgbadger.json"
+
+var DeploymentTemplate *template.Template
+
+const deploymentTemplatePath = "cluster-deployment.json"
 
 type ClusterStruct struct {
 	CCPImagePrefix          string `yaml:"CCPImagePrefix"`
@@ -189,12 +312,6 @@ func (c *PgoConfig) Validate() error {
 		if err != nil {
 			return err
 		}
-	}
-	if c.Pgo.LSPVCTemplate == "" {
-		return errors.New("Pgo.LSPVCTemplate is required")
-	}
-	if c.Pgo.LoadTemplate == "" {
-		return errors.New("Pgo.LoadTemplate is required")
 	}
 	if c.Pgo.COImagePrefix == "" {
 		return errors.New("Pgo.COImagePrefix is required")
@@ -367,5 +484,189 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 	r.LimitsCPU = s.LimitsCPU
 
 	return r, err
+
+}
+
+func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string) error {
+
+	var err error
+
+	rootPath := getRootPath(clientset, namespace)
+
+	PVCTemplate, err = c.LoadTemplate(rootPath + pvcPath)
+	if err != nil {
+		return err
+	}
+
+	ContainerResourcesTemplate, err = c.LoadTemplate(rootPath + containerResourcesTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	LoadTemplate, err = c.LoadTemplate(rootPath + loadTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	LspvcTemplate, err = c.LoadTemplate(rootPath + lspvcTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	JobTemplate, err = c.LoadTemplate(rootPath + jobPath)
+	if err != nil {
+		return err
+	}
+
+	AffinityTemplate, err = c.LoadTemplate(rootPath + affinityTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(rootPath + pgoBackrestRepoServiceTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgoBackrestRepoTemplate, err = c.LoadTemplate(rootPath + pgoBackrestRepoTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgmonitorEnvVarsTemplate, err = c.LoadTemplate(rootPath + pgmonitorEnvVarsPath)
+	if err != nil {
+		return err
+	}
+
+	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(rootPath + pgbackrestEnvVarsPath)
+	if err != nil {
+		return err
+	}
+
+	JobTemplate, err = c.LoadTemplate(rootPath + jobPath)
+	if err != nil {
+		return err
+	}
+
+	PgpoolTemplate, err = c.LoadTemplate(rootPath + pgpoolTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgpoolConfTemplate, err = c.LoadTemplate(rootPath + pgpoolConfTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgpoolPasswdTemplate, err = c.LoadTemplate(rootPath + pgpoolPasswdTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgpoolHBATemplate, err = c.LoadTemplate(rootPath + pgpoolHBATemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgbouncerTemplate, err = c.LoadTemplate(rootPath + pgbouncerTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgbouncerConfTemplate, err = c.LoadTemplate(rootPath + pgbouncerConfTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgbouncerUsersTemplate, err = c.LoadTemplate(rootPath + pgbouncerUsersTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgbouncerHBATemplate, err = c.LoadTemplate(rootPath + pgbouncerHBATemplatePath)
+	if err != nil {
+		return err
+	}
+
+	ServiceTemplate, err = c.LoadTemplate(rootPath + serviceTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	RmdatajobTemplate, err = c.LoadTemplate(rootPath + rmdatajobPath)
+	if err != nil {
+		return err
+	}
+
+	BackrestjobTemplate, err = c.LoadTemplate(rootPath + backrestjobPath)
+	if err != nil {
+		return err
+	}
+
+	BackrestRestorejobTemplate, err = c.LoadTemplate(rootPath + backrestRestorejobPath)
+	if err != nil {
+		return err
+	}
+
+	PgDumpBackupJobTemplate, err = c.LoadTemplate(rootPath + pgDumpBackupJobPath)
+	if err != nil {
+		return err
+	}
+
+	PgRestoreJobTemplate, err = c.LoadTemplate(rootPath + pgRestoreJobPath)
+	if err != nil {
+		return err
+	}
+
+	PVCMatchLabelsTemplate, err = c.LoadTemplate(rootPath + pvcMatchLabelsPath)
+	if err != nil {
+		return err
+	}
+
+	PVCStorageClassTemplate, err = c.LoadTemplate(rootPath + pvcSCPath)
+	if err != nil {
+		return err
+	}
+
+	AffinityTemplate, err = c.LoadTemplate(rootPath + affinityTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	CollectTemplate, err = c.LoadTemplate(rootPath + collectTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	BadgerTemplate, err = c.LoadTemplate(rootPath + badgerTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	DeploymentTemplate, err = c.LoadTemplate(rootPath + deploymentTemplatePath)
+	return err
+}
+
+func getRootPath(clientset *kubernetes.Clientset, namespace string) string {
+	_, found := kubeapi.GetConfigMap(clientset, CustomConfigMapName, namespace)
+	if found {
+		log.Infof("Config: %s ConfigMap found, using config files from there", CustomConfigMapName)
+		return CustomConfigsPath
+	}
+	log.Infof("Config: %s ConfigMap NOT found, using default baked-in config files from %s", CustomConfigMapName, DefaultConfigsPath)
+
+	return DefaultConfigsPath
+}
+
+// LoadTemplate will load a JSON template from a path
+func (c *PgoConfig) LoadTemplate(path string) (*template.Template, error) {
+	log.Debugf("loading path [%s]", path)
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Error(err)
+		log.Error("error loading template path=" + path + err.Error())
+		return nil, err
+	}
+	return template.Must(template.New(path).Parse(string(buf))), nil
 
 }

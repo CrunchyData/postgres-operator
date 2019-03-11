@@ -18,12 +18,13 @@ package pgdump
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -120,14 +121,14 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.PgDumpBackupJobTemplate.Execute(&doc2, jobFields)
+	err = config.PgDumpBackupJobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgDumpBackupJobTemplate.Execute(os.Stdout, jobFields)
+		config.PgDumpBackupJobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}

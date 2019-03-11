@@ -21,6 +21,7 @@ import (
 	"errors"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -164,7 +165,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
+	err = config.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("restore workflow: error executing job template")
@@ -172,7 +173,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
+		config.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -442,14 +443,14 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
 	var primaryDoc bytes.Buffer
-	err = operator.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
+	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
 	//a form of debugging
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
+		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := v1beta1.Deployment{}
