@@ -84,7 +84,10 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = cl.Spec.Name + "-xlog"
+		//archivePVCName = cl.Spec.Name + "-xlog"
+		//backrest doesn't use xlog, so we make the pvc an emptydir
+		//by setting the name to empty string
+		archivePVCName = ""
 		xlogdir = "false"
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl)
 		if err != nil {
@@ -326,7 +329,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = replica.Spec.Name + "-xlog"
+		//archivePVCName = replica.Spec.Name + "-xlog"
+		//set to emptystring to force emptyDir to be used
+		archivePVCName = ""
 		xlogdir = "false"
 	}
 

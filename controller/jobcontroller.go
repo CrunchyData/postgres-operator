@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -233,14 +233,12 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	clusterName := labels[util.LABEL_PG_CLUSTER]
 	claimName := labels[util.LABEL_CLAIM_NAME]
 
-	//delete the pgtask to cleanup
-	/**
+	//delete any pgtask for this cluster
 	log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
-	err = kubeapi.Deletepgtasks(restClient, util.LABEL_RMDATA+"=true", namespace)
+	err = kubeapi.Deletepgtasks(restClient, util.LABEL_PG_CLUSTER+"="+clusterName, namespace)
 	if err != nil {
 		return err
 	}
-	*/
 
 	err = kubeapi.DeleteJob(clientset, job.Name, namespace)
 	if err != nil {
@@ -271,6 +269,25 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 		if err != nil {
 			log.Error(err)
 			return err
+		}
+	}
+
+	//delete any completed jobs for this cluster as a cleanup
+	var jobList *apiv1.JobList
+	jobList, err = kubeapi.GetJobs(clientset, util.LABEL_PG_CLUSTER+"="+clusterName, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	for _, j := range jobList.Items {
+		if j.Status.Succeeded > 0 {
+			log.Debugf("removing Job %s since it was completed", job.Name)
+			err := kubeapi.DeleteJob(clientset, j.Name, namespace)
+			if err != nil {
+				log.Error(err)
+			}
+
 		}
 	}
 

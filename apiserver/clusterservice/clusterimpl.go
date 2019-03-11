@@ -957,7 +957,8 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 	var err error
 
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
+	//dont include pgpool or pgbouncer deployments
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PGBOUNCER + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {

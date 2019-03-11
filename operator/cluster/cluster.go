@@ -91,7 +91,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
-	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
+	//only allocate an xlog pvc if this is not a backrest
+	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cl.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
 		pvcName := cl.Spec.Name + "-xlog"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
@@ -366,7 +367,8 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
-	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
+	//dont allocate an xlog PVC if this is a backrest cluster
+	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
 		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		storage := crv1.PgStorageSpec{}
 		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
