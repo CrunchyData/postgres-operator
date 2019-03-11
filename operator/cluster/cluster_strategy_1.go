@@ -21,13 +21,13 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -212,13 +212,6 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 
 	//delete the pgreplicas if necessary
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
-
-	//delete the pgbackups if necessary
-	pgback := crv1.Pgbackup{}
-	found, err = kubeapi.Getpgbackup(restclient, &pgback, cl.Spec.Name, namespace)
-	if found {
-		kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
-	}
 
 	return err
 
