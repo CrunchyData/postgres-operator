@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +27,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
+	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
@@ -169,6 +171,11 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Debugf("autofailover task added %s", task.ObjectMeta.Name)
 	case crv1.PgtaskWorkflow:
 		log.Debugf("workflow task added [%s] ID [%s]", task.ObjectMeta.Name, task.Spec.Parameters[crv1.PgtaskWorkflowID])
+
+	case crv1.PgtaskBenchmark:
+		log.Debug("benchmark task added")
+		benchmarkoperator.Create(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", task.Spec.TaskType)
 	}

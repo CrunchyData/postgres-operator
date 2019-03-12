@@ -292,6 +292,25 @@ against the target cluster prior to creating this schedule.
          --schedule-type=policy --policy=mypolicy --database=userdb \
          --secret=mycluster-testuser-secret
 
+### Benchmark Clusters
+
+#### Create a Benchmark via Cluster Name
+
+    pgo benchmark mycluster
+
+#### Create a Benchmark via Selector
+
+    pgo benchmark --selector=pg-cluster=mycluster
+
+#### Create a Benchmark with a custom transactions
+
+    pgo create policy --in-file=/tmp/transactions.sql mytransactions
+    pgo benchmark mycluster --policy=mytransactions
+
+#### Create a Benchmark with custom parameters
+
+    pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100
+
 ### Complex Deployments
 #### Create a Cluster using Specific Storage
 
