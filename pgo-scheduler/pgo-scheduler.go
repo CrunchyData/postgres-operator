@@ -65,10 +65,8 @@ func init() {
 	}
 
 	var Pgo config.PgoConfig
-	err = Pgo.GetConfig(kubeClient, pgoNamespace)
-	if err != nil {
-		log.Error("error in Pgo configuration")
-		os.Exit(2)
+	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
+		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
 
 	/**
