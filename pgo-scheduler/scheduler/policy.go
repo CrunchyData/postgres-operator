@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -126,7 +127,7 @@ func (p PolicyJob) Run() {
 	}
 
 	var doc bytes.Buffer
-	if err := PolicyJobTemplate.Execute(&doc, policyJob); err != nil {
+	if err := config.PolicyJobTemplate.Execute(&doc, policyJob); err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err}).Error("Failed to render job template")
 		return

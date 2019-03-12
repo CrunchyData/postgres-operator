@@ -52,11 +52,6 @@
                         ],
                         "volumeMounts": [
                             {
-                                "mountPath": "/pgo-config",
-                                "name": "pgo-config",
-                                "readOnly": true
-                            },
-                            {
                                 "mountPath": "/pgo-auth-secret",
                                 "name": "pgo-auth-secret",
                                 "readOnly": true
@@ -94,11 +89,6 @@
                             }
                         ],
                         "volumeMounts": [
-                            {
-                                "mountPath": "/pgo-config",
-                                "name": "pgo-config",
-                                "readOnly": true
-                            }
                         ]
                     },
                     {
@@ -106,7 +96,7 @@
                         "image": "$CO_IMAGE_PREFIX/pgo-scheduler:$CO_IMAGE_TAG",
                         "env": [
                             {
-                                "name": "NAMESPACE",
+                                "name": "PGO_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -114,28 +104,21 @@
                                 }
                             },
                             {
+                                "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
                                 "name": "TIMEOUT",
                                 "value": "3600"
                             }
                         ],
                         "volumeMounts": [
-                            {
-                                "mountPath": "/pgo-config",
-                                "name": "pgo-config",
-                                "readOnly": true
-                            }
                         ],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }
                 ],
                 "volumes": [
-                    {
-                        "name": "pgo-config",
-                        "configMap": {
-                            "name": "pgo-config"
-                        }
-                    },
                     {
                         "name": "pgo-auth-secret",
                         "secret": {

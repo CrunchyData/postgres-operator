@@ -17,11 +17,13 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"strings"
@@ -31,6 +33,10 @@ import (
 const CustomConfigMapName = "pgo-config"
 const DefaultConfigsPath = "/default-pgo-config/"
 const CustomConfigsPath = "/pgo-config/"
+
+var PolicyJobTemplate *template.Template
+
+const policyJobTemplatePath = "pgo.sqlrunner-template.json"
 
 var PVCTemplate *template.Template
 
@@ -487,13 +493,38 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 
 func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string) error {
 
-	rootPath := getRootPath(clientset, namespace)
+	cMap, rootPath := getRootPath(clientset, namespace)
 
-	yamlFile, err := ioutil.ReadFile(rootPath + CONFIG_PATH)
-	if err != nil {
-		log.Errorf("yamlFile.Get err   #%v ", err)
-		return err
+	var yamlFile []byte
+	var err error
+
+	if cMap != nil {
+		str := cMap.Data[CONFIG_PATH]
+		if str == "" {
+			errMsg := fmt.Sprintf("could not get %s from ConfigMap", CONFIG_PATH)
+			return errors.New(errMsg)
+		}
+		yamlFile = []byte(str)
+	} else {
+		yamlFile, err = ioutil.ReadFile(rootPath + CONFIG_PATH)
+		if err != nil {
+			log.Errorf("yamlFile.Get err   #%v ", err)
+			return err
+		}
 	}
+	/**
+		yamlFile := cMap.Data[CONFIG_PATH]
+		if yamlFile == "" {
+			errMsg := fmt.Sprintf("could not get %s from ConfigMap", CONFIG_PATH)
+			return errors.New(errMsg)
+	} else {
+		yamlFile, err := ioutil.ReadFile(rootPath + CONFIG_PATH)
+		if err != nil {
+			log.Errorf("yamlFile.Get err   #%v ", err)
+			return err
+		}
+	}
+	*/
 
 	err = yaml.Unmarshal(yamlFile, c)
 	if err != nil {
@@ -507,180 +538,199 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 
-	PVCTemplate, err = c.LoadTemplate(rootPath + pvcPath)
+	PVCTemplate, err = c.LoadTemplate(cMap, rootPath, pvcPath)
 	if err != nil {
 		return err
 	}
 
-	ContainerResourcesTemplate, err = c.LoadTemplate(rootPath + containerResourcesTemplatePath)
+	PolicyJobTemplate, err = c.LoadTemplate(cMap, rootPath, policyJobTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	LoadTemplate, err = c.LoadTemplate(rootPath + loadTemplatePath)
+	ContainerResourcesTemplate, err = c.LoadTemplate(cMap, rootPath, containerResourcesTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	LspvcTemplate, err = c.LoadTemplate(rootPath + lspvcTemplatePath)
+	LoadTemplate, err = c.LoadTemplate(cMap, rootPath, loadTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	JobTemplate, err = c.LoadTemplate(rootPath + jobPath)
+	LspvcTemplate, err = c.LoadTemplate(cMap, rootPath, lspvcTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	AffinityTemplate, err = c.LoadTemplate(rootPath + affinityTemplatePath)
+	JobTemplate, err = c.LoadTemplate(cMap, rootPath, jobPath)
 	if err != nil {
 		return err
 	}
 
-	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(rootPath + pgoBackrestRepoServiceTemplatePath)
+	AffinityTemplate, err = c.LoadTemplate(cMap, rootPath, affinityTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgoBackrestRepoTemplate, err = c.LoadTemplate(rootPath + pgoBackrestRepoTemplatePath)
+	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(cMap, rootPath, pgoBackrestRepoServiceTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgmonitorEnvVarsTemplate, err = c.LoadTemplate(rootPath + pgmonitorEnvVarsPath)
+	PgoBackrestRepoTemplate, err = c.LoadTemplate(cMap, rootPath, pgoBackrestRepoTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(rootPath + pgbackrestEnvVarsPath)
+	PgmonitorEnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgmonitorEnvVarsPath)
 	if err != nil {
 		return err
 	}
 
-	JobTemplate, err = c.LoadTemplate(rootPath + jobPath)
+	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestEnvVarsPath)
 	if err != nil {
 		return err
 	}
 
-	PgpoolTemplate, err = c.LoadTemplate(rootPath + pgpoolTemplatePath)
+	JobTemplate, err = c.LoadTemplate(cMap, rootPath, jobPath)
 	if err != nil {
 		return err
 	}
 
-	PgpoolConfTemplate, err = c.LoadTemplate(rootPath + pgpoolConfTemplatePath)
+	PgpoolTemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgpoolPasswdTemplate, err = c.LoadTemplate(rootPath + pgpoolPasswdTemplatePath)
+	PgpoolConfTemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolConfTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgpoolHBATemplate, err = c.LoadTemplate(rootPath + pgpoolHBATemplatePath)
+	PgpoolPasswdTemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolPasswdTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerTemplate, err = c.LoadTemplate(rootPath + pgbouncerTemplatePath)
+	PgpoolHBATemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolHBATemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerConfTemplate, err = c.LoadTemplate(rootPath + pgbouncerConfTemplatePath)
+	PgbouncerTemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerUsersTemplate, err = c.LoadTemplate(rootPath + pgbouncerUsersTemplatePath)
+	PgbouncerConfTemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerConfTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerHBATemplate, err = c.LoadTemplate(rootPath + pgbouncerHBATemplatePath)
+	PgbouncerUsersTemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerUsersTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	ServiceTemplate, err = c.LoadTemplate(rootPath + serviceTemplatePath)
+	PgbouncerHBATemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerHBATemplatePath)
 	if err != nil {
 		return err
 	}
 
-	RmdatajobTemplate, err = c.LoadTemplate(rootPath + rmdatajobPath)
+	ServiceTemplate, err = c.LoadTemplate(cMap, rootPath, serviceTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	BackrestjobTemplate, err = c.LoadTemplate(rootPath + backrestjobPath)
+	RmdatajobTemplate, err = c.LoadTemplate(cMap, rootPath, rmdatajobPath)
 	if err != nil {
 		return err
 	}
 
-	BackrestRestorejobTemplate, err = c.LoadTemplate(rootPath + backrestRestorejobPath)
+	BackrestjobTemplate, err = c.LoadTemplate(cMap, rootPath, backrestjobPath)
 	if err != nil {
 		return err
 	}
 
-	PgDumpBackupJobTemplate, err = c.LoadTemplate(rootPath + pgDumpBackupJobPath)
+	BackrestRestorejobTemplate, err = c.LoadTemplate(cMap, rootPath, backrestRestorejobPath)
 	if err != nil {
 		return err
 	}
 
-	PgRestoreJobTemplate, err = c.LoadTemplate(rootPath + pgRestoreJobPath)
+	PgDumpBackupJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgDumpBackupJobPath)
 	if err != nil {
 		return err
 	}
 
-	PVCMatchLabelsTemplate, err = c.LoadTemplate(rootPath + pvcMatchLabelsPath)
+	PgRestoreJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgRestoreJobPath)
 	if err != nil {
 		return err
 	}
 
-	PVCStorageClassTemplate, err = c.LoadTemplate(rootPath + pvcSCPath)
+	PVCMatchLabelsTemplate, err = c.LoadTemplate(cMap, rootPath, pvcMatchLabelsPath)
 	if err != nil {
 		return err
 	}
 
-	AffinityTemplate, err = c.LoadTemplate(rootPath + affinityTemplatePath)
+	PVCStorageClassTemplate, err = c.LoadTemplate(cMap, rootPath, pvcSCPath)
 	if err != nil {
 		return err
 	}
 
-	CollectTemplate, err = c.LoadTemplate(rootPath + collectTemplatePath)
+	AffinityTemplate, err = c.LoadTemplate(cMap, rootPath, affinityTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	BadgerTemplate, err = c.LoadTemplate(rootPath + badgerTemplatePath)
+	CollectTemplate, err = c.LoadTemplate(cMap, rootPath, collectTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	DeploymentTemplate, err = c.LoadTemplate(rootPath + deploymentTemplatePath)
+	BadgerTemplate, err = c.LoadTemplate(cMap, rootPath, badgerTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	DeploymentTemplate, err = c.LoadTemplate(cMap, rootPath, deploymentTemplatePath)
 	return err
 }
 
-func getRootPath(clientset *kubernetes.Clientset, namespace string) string {
-	_, found := kubeapi.GetConfigMap(clientset, CustomConfigMapName, namespace)
+func getRootPath(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigMap, string) {
+
+	cMap, found := kubeapi.GetConfigMap(clientset, CustomConfigMapName, namespace)
 	if found {
-		log.Infof("Config: %s ConfigMap found, using config files from there", CustomConfigMapName)
-		return CustomConfigsPath
+		log.Infof("Config: %s ConfigMap found, using config files from the configmap", CustomConfigMapName)
+		return cMap, ""
 	}
 	log.Infof("Config: %s ConfigMap NOT found, using default baked-in config files from %s", CustomConfigMapName, DefaultConfigsPath)
 
-	return DefaultConfigsPath
+	return nil, DefaultConfigsPath
 }
 
 // LoadTemplate will load a JSON template from a path
-func (c *PgoConfig) LoadTemplate(path string) (*template.Template, error) {
-	log.Debugf("loading path [%s]", path)
-	buf, err := ioutil.ReadFile(path)
-	if err != nil {
-		log.Error(err)
-		log.Error("error loading template path=" + path + err.Error())
-		return nil, err
+func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*template.Template, error) {
+	var value string
+
+	if cMap != nil {
+		value = cMap.Data[path]
+		if value == "" {
+			errMsg := fmt.Sprintf("%s path not found in ConfigMap", path)
+			return nil, errors.New(errMsg)
+		}
+	} else {
+		fullPath := rootPath + path
+		log.Debugf("loading path [%s]", fullPath)
+		buf, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			log.Error("erro: could not read %s", fullPath)
+			log.Error(err)
+			return nil, err
+		}
+		value = string(buf)
 	}
-	return template.Must(template.New(path).Parse(string(buf))), nil
+
+	return template.Must(template.New(path).Parse(value)), nil
 
 }

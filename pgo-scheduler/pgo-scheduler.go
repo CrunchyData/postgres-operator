@@ -7,20 +7,23 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 const (
-	schedulerLabel = "crunchy-scheduler=true"
-	namespaceEnv   = "NAMESPACE"
-	timeoutEnv     = "TIMEOUT"
-	inCluster      = true
+	schedulerLabel  = "crunchy-scheduler=true"
+	namespaceEnv    = "NAMESPACE"
+	pgoNamespaceEnv = "PGO_NAMESPACE"
+	timeoutEnv      = "TIMEOUT"
+	inCluster       = true
 )
 
 var namespace string
+var pgoNamespace string
 var timeout time.Duration
 var seconds int
 var kubeClient *kubernetes.Clientset
@@ -35,7 +38,11 @@ func init() {
 
 	namespace = os.Getenv(namespaceEnv)
 	if namespace == "" {
-		log.WithFields(log.Fields{}).Fatalf("Failed to get namespace environment: %s", namespaceEnv)
+		log.WithFields(log.Fields{}).Fatalf("Failed to get NAMESPACE environment: %s", namespaceEnv)
+	}
+	pgoNamespace = os.Getenv(pgoNamespaceEnv)
+	if pgoNamespace == "" {
+		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_NAMESPACE environment: %s", pgoNamespaceEnv)
 	}
 
 	secondsEnv := os.Getenv(timeoutEnv)
@@ -57,14 +64,23 @@ func init() {
 		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
 	}
 
+	var Pgo config.PgoConfig
+	err = Pgo.GetConfig(kubeClient, pgoNamespace)
+	if err != nil {
+		log.Error("error in Pgo configuration")
+		os.Exit(2)
+	}
+
+	/**
 	if err := scheduler.Init(); err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to open template: %s", err)
 	}
+	*/
 }
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-	scheduler := scheduler.New(schedulerLabel, namespace, kubeClient)
+	scheduler := scheduler.New(schedulerLabel, pgoNamespace, kubeClient)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)

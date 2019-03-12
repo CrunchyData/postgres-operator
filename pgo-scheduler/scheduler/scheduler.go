@@ -4,18 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
-	"io/ioutil"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 
 	cv2 "gopkg.in/robfig/cron.v2"
 	"k8s.io/client-go/kubernetes"
 )
 
+/**
 var PolicyJobTemplate *template.Template
 
 func Init() error {
@@ -26,6 +25,7 @@ func Init() error {
 	PolicyJobTemplate = template.Must(template.New("policy").Parse(string(buf)))
 	return nil
 }
+*/
 
 func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
 	apiserver.ConnectToKube()
