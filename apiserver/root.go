@@ -92,16 +92,6 @@ type containerResourcesTemplateFields struct {
 
 func Initialize() {
 
-	Pgo.GetConf()
-	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
-	err := Pgo.Validate()
-	if err != nil {
-		log.Error(err)
-		log.Error("something did not validate in the pgo.yaml")
-		os.Exit(2)
-	}
-
 	PgoNamespace = os.Getenv("PGO_NAMESPACE")
 	if PgoNamespace == "" {
 		log.Info("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
@@ -131,13 +121,30 @@ func Initialize() {
 	log.Infoln("apiserver starts")
 
 	getCredentials()
-	initConfig()
 
 	InitializePerms()
 
 	ConnectToKube()
 
-	initTemplates()
+	/**
+	Pgo.GetConf()
+	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
+	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
+	err := Pgo.Validate()
+	if err != nil {
+		log.Error(err)
+		log.Error("something did not validate in the pgo.yaml")
+		os.Exit(2)
+	}
+	*/
+
+	err := Pgo.GetConfig(Clientset, PgoNamespace)
+	if err != nil {
+		log.Error("error in Pgo configuration")
+		os.Exit(2)
+	}
+
+	initConfig()
 
 	validateWithKube()
 
@@ -538,16 +545,6 @@ func IsValidContainerResourceValues() bool {
 		}
 	}
 	return true
-}
-
-func initTemplates() {
-	var err error
-	err = Pgo.GetConfig(Clientset, PgoNamespace)
-	if err != nil {
-		log.Error("could not load all required Operator pgo-config templates")
-		os.Exit(2)
-	}
-
 }
 
 func validateWithKube() {

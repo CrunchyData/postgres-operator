@@ -54,6 +54,7 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 
 	var err error
 
+	/**
 	Pgo.GetConf()
 
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
@@ -61,6 +62,14 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 	if err != nil {
 		log.Error(err)
 		log.Error("pgo.yaml validation failed, can't continue")
+		os.Exit(2)
+	}
+	*/
+
+	err = Pgo.GetConfig(clientset, namespace)
+	if err != nil {
+		log.Error(err)
+		log.Error("pgo-config files and templates did not load")
 		os.Exit(2)
 	}
 
@@ -86,13 +95,6 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 
 	if Pgo.Pgo.COImageTag == "" {
 		log.Error("pgo.yaml COImageTag not set, required ")
-		panic("pgo.yaml COImageTag env var not set")
-	}
-
-	err = Pgo.GetConfig(clientset, namespace)
-	if err != nil {
-		log.Error(err)
-		log.Error("pgo-config files and templates did not load")
 		os.Exit(2)
 	}
 }

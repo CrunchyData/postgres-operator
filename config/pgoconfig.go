@@ -228,7 +228,7 @@ const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
 const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
-const CONFIG_PATH = "/pgo-config/pgo.yaml"
+const CONFIG_PATH = "pgo.yaml"
 
 var log_statement_values = []string{"ddl", "none", "mod", "all"}
 
@@ -489,9 +489,25 @@ func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources
 
 func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string) error {
 
-	var err error
-
 	rootPath := getRootPath(clientset, namespace)
+
+	yamlFile, err := ioutil.ReadFile(rootPath + CONFIG_PATH)
+	if err != nil {
+		log.Errorf("yamlFile.Get err   #%v ", err)
+		return err
+	}
+
+	err = yaml.Unmarshal(yamlFile, c)
+	if err != nil {
+		log.Errorf("Unmarshal: %v", err)
+		return err
+	}
+
+	err = c.Validate()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	PVCTemplate, err = c.LoadTemplate(rootPath + pvcPath)
 	if err != nil {
