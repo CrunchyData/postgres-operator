@@ -27,7 +27,7 @@ func Init() error {
 }
 */
 
-func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
+func New(label string, nsList []string, namespace string, client *kubernetes.Clientset) *Scheduler {
 	apiserver.ConnectToKube()
 	restClient = apiserver.RESTClient
 	kubeClient = client
@@ -36,87 +36,101 @@ func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
 	cronClient.AddJob("* * * * *", p)
 
 	return &Scheduler{
-		namespace:  namespace,
-		label:      label,
-		CronClient: cronClient,
-		entries:    make(map[string]cv2.EntryID),
+		namespace:     namespace,
+		label:         label,
+		CronClient:    cronClient,
+		entries:       make(map[string]cv2.EntryID),
+		namespaceList: nsList,
 	}
 }
 
 func (s *Scheduler) AddSchedules() error {
-	configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespace)
 
-	for _, config := range configs.Items {
-		if _, ok := s.entries[string(config.Name)]; ok {
-			continue
-		}
+	log.WithFields(log.Fields{
+		"namespaceList": s.namespaceList,
+	}).Info("AddSchedules watching ")
 
-		contextErr := log.WithFields(log.Fields{
-			"configMap": config.Name,
-		})
+	for i := 0; i < len(s.namespaceList); i++ {
+		configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespaceList[i])
 
-		if len(config.Data) != 1 {
-			contextErr.WithFields(log.Fields{
-				"error": errors.New("Schedule configmaps should contain only one schedule"),
-			}).Error("Failed reading configMap")
-		}
-
-		var schedule ScheduleTemplate
-		for _, data := range config.Data {
-			if err := json.Unmarshal([]byte(data), &schedule); err != nil {
-				contextErr.WithFields(log.Fields{
-					"error": err,
-				}).Error("Failed unmarshaling configMap")
+		for _, config := range configs.Items {
+			if _, ok := s.entries[string(config.Name)]; ok {
 				continue
 			}
-		}
 
-		if err := validate(schedule); err != nil {
-			contextErr.WithFields(log.Fields{
-				"error": err,
-			}).Error("Failed to validate schedule")
-			continue
-		}
+			contextErr := log.WithFields(log.Fields{
+				"configMap": config.Name,
+			})
 
-		id, err := s.schedule(schedule)
-		if err != nil {
-			contextErr.WithFields(log.Fields{
-				"error": err,
-			}).Error("Failed to schedule configMap")
-			continue
-		}
+			if len(config.Data) != 1 {
+				contextErr.WithFields(log.Fields{
+					"error": errors.New("Schedule configmaps should contain only one schedule"),
+				}).Error("Failed reading configMap")
+			}
 
-		log.WithFields(log.Fields{
-			"configMap":  string(config.Name),
-			"type":       schedule.Type,
-			"schedule":   schedule.Schedule,
-			"namespace":  schedule.Namespace,
-			"deployment": schedule.Deployment,
-			"label":      schedule.Label,
-			"container":  schedule.Container,
-		}).Info("Added new schedule")
-		s.entries[string(config.Name)] = id
+			var schedule ScheduleTemplate
+			for _, data := range config.Data {
+				if err := json.Unmarshal([]byte(data), &schedule); err != nil {
+					contextErr.WithFields(log.Fields{
+						"error": err,
+					}).Error("Failed unmarshaling configMap")
+					continue
+				}
+			}
+
+			if err := validate(schedule); err != nil {
+				contextErr.WithFields(log.Fields{
+					"error": err,
+				}).Error("Failed to validate schedule")
+				continue
+			}
+
+			id, err := s.schedule(schedule)
+			if err != nil {
+				contextErr.WithFields(log.Fields{
+					"error": err,
+				}).Error("Failed to schedule configMap")
+				continue
+			}
+
+			log.WithFields(log.Fields{
+				"configMap":  string(config.Name),
+				"type":       schedule.Type,
+				"schedule":   schedule.Schedule,
+				"namespace":  schedule.Namespace,
+				"deployment": schedule.Deployment,
+				"label":      schedule.Label,
+				"container":  schedule.Container,
+			}).Info("Added new schedule")
+			s.entries[string(config.Name)] = id
+		}
 	}
 
 	return nil
 }
 
 func (s *Scheduler) DeleteSchedules() error {
-	configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespace)
-	for name := range s.entries {
-		found := false
-		for _, config := range configs.Items {
-			if name == string(config.Name) {
-				found = true
-			}
-		}
+	log.WithFields(log.Fields{
+		"namespaceList": s.namespaceList,
+	}).Info("DeleteSchedules watching ")
 
-		if !found {
-			log.WithFields(log.Fields{
-				"scheduleName": name,
-			}).Info("Removed schedule")
-			s.CronClient.Remove(s.entries[name])
-			delete(s.entries, name)
+	for i := 0; i < len(s.namespaceList); i++ {
+		configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespaceList[i])
+		for name := range s.entries {
+			found := false
+			for _, config := range configs.Items {
+				if name == string(config.Name) {
+					found = true
+				}
+			}
+
+			if !found {
+				log.WithFields(log.Fields{
+					"scheduleName": name,
+				}).Info("Removed schedule")
+				s.CronClient.Remove(s.entries[name])
+				delete(s.entries, name)
+			}
 		}
 	}
 	return nil

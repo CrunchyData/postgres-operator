@@ -9,6 +9,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -24,6 +25,7 @@ const (
 
 var namespace string
 var pgoNamespace string
+var namespaceList []string
 var timeout time.Duration
 var seconds int
 var kubeClient *kubernetes.Clientset
@@ -56,6 +58,9 @@ func init() {
 		}
 	}
 
+	namespaceList = util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+
 	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
 	timeout = time.Second * time.Duration(seconds)
 
@@ -78,7 +83,7 @@ func init() {
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-	scheduler := scheduler.New(schedulerLabel, pgoNamespace, kubeClient)
+	scheduler := scheduler.New(schedulerLabel, namespaceList, pgoNamespace, kubeClient)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)

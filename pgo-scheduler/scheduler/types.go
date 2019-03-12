@@ -17,6 +17,7 @@ type Scheduler struct {
 	CronClient    *cv2.Cron
 	label         string
 	namespace     string
+	namespaceList []string
 	scheduleTypes []string
 }
 
