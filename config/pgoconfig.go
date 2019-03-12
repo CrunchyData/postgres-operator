@@ -197,8 +197,6 @@ type PgoStruct struct {
 	AutofailSleepSeconds      string `yaml:"AutofailSleepSeconds"`
 	AutofailSleepSecondsValue int
 	Audit                     bool   `yaml:"Audit"`
-	LSPVCTemplate             string `yaml:"LSPVCTemplate"`
-	LoadTemplate              string `yaml:"LoadTemplate"`
 	COImagePrefix             string `yaml:"COImagePrefix"`
 	COImageTag                string `yaml:"COImageTag"`
 }
