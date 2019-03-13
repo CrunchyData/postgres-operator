@@ -117,8 +117,6 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	resp.Results = make([]string, 0)
 	resp.Targets = make([]msgs.FailoverTargetSpec, 0)
 
-	//var deployment *v1beta1.Deployment
-
 	//get the clusters list
 	_, err = validateClusterName(name, ns)
 	if err != nil {
@@ -168,7 +166,6 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	//get failover targets for this cluster
 	//deployments with --selector=primary=false,pg-cluster=ClusterName
 
-	//selector := config.LABEL_PRIMARY + "=false," + config.LABEL_PG_CLUSTER + "=" + name
 	selector = config.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
 
 	var deployments *v1beta1.DeploymentList

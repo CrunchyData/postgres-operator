@@ -1,7 +1,7 @@
 package userservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	//libpq uses this blank import
 	"database/sql"
 	"errors"
 	"fmt"
@@ -75,7 +74,6 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		//sel = request.Selector + "," + config.LABEL_PG_CLUSTER + "," + config.LABEL_PRIMARY + "=true"
 		sel = request.Selector + "," + config.LABEL_PG_CLUSTER
 	} else {
 		resp.Status.Code = msgs.Error
@@ -109,7 +107,6 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		//selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_PRIMARY + "=true"
 		selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 		if err != nil {
@@ -236,7 +233,6 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 		return err
 	}
 
-	//var ts string
 	var rows *sql.Rows
 	querystr := "ALTER user " + username + " PASSWORD '" + newPassword + "'"
 	//log.Debug(querystr)
@@ -742,7 +738,6 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 		detail.ExpiredMsgs = make([]string, 0)
 
 		if expired != "" {
-			//selector := config.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + config.LABEL_PRIMARY + "=true"
 			selector := config.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 			if err != nil {

@@ -126,18 +126,6 @@ func Initialize() {
 
 	ConnectToKube()
 
-	/**
-	Pgo.GetConf()
-	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
-	err := Pgo.Validate()
-	if err != nil {
-		log.Error(err)
-		log.Error("something did not validate in the pgo.yaml")
-		os.Exit(2)
-	}
-	*/
-
 	err := Pgo.GetConfig(Clientset, PgoNamespace)
 	if err != nil {
 		log.Error("error in Pgo configuration")
@@ -168,8 +156,6 @@ func ConnectToKube() {
 		panic(err)
 	}
 
-	// make a new config for our extension's API group, using the first config as a baseline
-	//RESTClient, _, err = crdclient.NewClient(RESTConfig)
 	RESTClient, _, err = util.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
@@ -325,13 +311,6 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	creds := Credentials[username]
-	//	if creds == (CredentialDetail{}) {
-	//this means username not found in pgouser file
-	//should not happen at this point in code!
-	//		log.Error("%s not found in pgouser file", username)
-	//		return false
-	//	}
-
 	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
 
@@ -347,13 +326,6 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 	if requestedNS == "" {
 		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
 	}
-
-	//	namespaceList := util.GetNamespaces()
-	//	if requestedNS == "" {
-	//		//return the first namespace for now
-	//		return namespaceList[0], nil
-	//
-	//	}
 
 	if !UserIsPermittedInNamespace(username, requestedNS) {
 		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)

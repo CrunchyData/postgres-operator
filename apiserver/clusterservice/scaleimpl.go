@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -87,7 +87,6 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
 	}
 
-	//spec.UserLabels = make(map[string]string)
 	spec.UserLabels = cluster.Spec.UserLabels
 
 	if ccpImageTag != "" {
@@ -215,7 +214,6 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 	//get replicas for this cluster
 	//deployments with --selector=service-name=ClusterName-replica,pg-cluster=ClusterName
 
-	//selector := config.LABEL_PRIMARY + "=false," + config.LABEL_PG_CLUSTER + "=" + name
 	selector := config.LABEL_SERVICE_NAME + "=" + name + "-replica" + "," + config.LABEL_PG_CLUSTER + "=" + name
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
@@ -282,7 +280,6 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 
 	//if this was the last replica then remove the replica service
 	var replicaList *v1beta1.DeploymentList
-	//selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PRIMARY + "=false"
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {

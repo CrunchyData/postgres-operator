@@ -146,17 +146,6 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 			return resp
 		}
 
-		//get deployment name for this cluster
-		/**
-		deployName, err = getDeployName(&cluster)
-		if err != nil {
-			log.Error(err)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-		*/
-
 		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
 		log.Debugf("setting jobName to %s", jobName)
 
@@ -243,7 +232,6 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	primaryReady := false
 
 	//make sure the primary pod is in the ready state
-	//selector = config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)

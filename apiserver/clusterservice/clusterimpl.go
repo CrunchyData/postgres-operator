@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -200,7 +200,6 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 	output := make([]msgs.ShowClusterPod, 0)
 
 	//get pods, but exclude pgpool and backup pods and backrest repo
-	//selector := "pgo-backrest-repo!=true," + "name!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	selector := config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_NAME + "!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
@@ -357,7 +356,6 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 				//dont include backrest repo service
 			} else if service.Pgbouncer {
 				databases = append(databases, service.ClusterName)
-				//databases = append(databases, service.ClusterName+"-replica")
 			} else {
 				databases = append(databases, "postgres")
 				databases = append(databases, c.Spec.Database)
@@ -561,11 +559,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			log.Debug("using Backrest from pgo.yaml")
 			userLabelsMap[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
 		}
-
-		//if request.BackrestRestoreFrom != "" {
-		//	log.Info("TODO validate the restore from value")
-		//	userLabelsMap[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.BackrestRestoreFrom
-		//		}
 
 		//add archive if backrest is requested and figure out map
 		if userLabelsMap[config.LABEL_BACKREST] == "true" {
@@ -1186,11 +1179,6 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 		Password = request.Password
 		PrimaryPassword = request.Password
 	}
-
-	//	if request.BackrestFlag && request.BackrestRestoreFrom != "" {
-	//		log.Debugf("setting secret-from to the pgbackrest restore from value %s", request.BackrestRestoreFrom)
-	//		request.SecretFrom = request.BackrestRestoreFrom
-	//	}
 
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
