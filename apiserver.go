@@ -49,8 +49,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const serverCert = "/pgo-auth-secret/server.crt"
-const serverKey = "/pgo-auth-secret/server.key"
+const serverCert = "/apiserver.local.config/certificates/tls.crt"
+const serverKey = "/apiserver.local.config/certificates/tls.key"
 
 func main() {
 

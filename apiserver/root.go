@@ -38,7 +38,7 @@ import (
 )
 
 // pgouserPath ...
-const pgouserPath = "/pgo-auth-secret/pgouser"
+const pgouserPath = "/default-pgo-config/pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 

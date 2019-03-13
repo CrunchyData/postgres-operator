@@ -85,7 +85,7 @@ const SCALE_CLUSTER_PERM = "ScaleCluster"
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
-const pgorolePath = "/pgo-auth-secret/pgorole"
+const pgorolePath = "/default-pgo-config/pgorole"
 
 func InitializePerms() {
 	PermMap = make(map[string]string)

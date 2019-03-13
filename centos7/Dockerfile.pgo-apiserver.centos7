@@ -20,10 +20,6 @@ ADD bin/apiserver /usr/local/bin
 ADD bin/postgres-operator/runpsql.sh /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config
 
-VOLUME ["/pgo-config"]
-
-#EXPOSE 8443
-
 USER daemon
 
 ENTRYPOINT ["/usr/local/bin/apiserver"]

@@ -21,10 +21,10 @@ then
 	$CO_CMD --namespace=$CO_NAMESPACE delete secret/pgo-backrest-repo-config
 fi
 
-$CO_CMD --namespace=$CO_NAMESPACE get secret/pgo-auth-secret 2> /dev/null
+$CO_CMD --namespace=$CO_NAMESPACE get secret/pgo.tls 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$CO_CMD --namespace=$CO_NAMESPACE delete secret/pgo-auth-secret
+	$CO_CMD --namespace=$CO_NAMESPACE delete secret/pgo.tls
 fi
 
 $CO_CMD --namespace=$CO_NAMESPACE get configmap/pgo-config 2> /dev/null
