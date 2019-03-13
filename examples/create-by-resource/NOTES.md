@@ -47,7 +47,7 @@ The Operator should show the new cluster started:
 	storage : Primary=1G Replica=1G
 	deployment : fromcrd
 	service : fromcrd - ClusterIP (10.97.101.79)
-	labels : pg-cluster=fromcrd pgo-backrest=false primary=true archive=false deployment-name=fromcrd name=fromcrd current-primary=fromcrd pgo-version=3.5.2-rc1 archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false 
+	labels : pg-cluster=fromcrd pgo-backrest=false primary=true archive=false deployment-name=fromcrd name=fromcrd current-primary=fromcrd pgo-version=3.5.2-rc2 archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false 
 
 Notice the user credentials we created:
 
