@@ -74,7 +74,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	err = cleanupPreviousTasks(client, cl.Spec.Name, namespace)
+	//err = cleanupPreviousTasks(client, cl.Spec.Name, namespace)
 
 	var pvcName string
 
