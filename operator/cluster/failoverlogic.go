@@ -88,9 +88,6 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	//set the service-name label to the cluster name to match
 	//the primary service selector
-	//upod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] = clusterName
-
-	//err = kubeapi.UpdatePod(clientset, upod, namespace)
 	log.Debugf("setting label on pod %s=%s", config.LABEL_SERVICE_NAME, clusterName)
 
 	err = kubeapi.AddLabelToPod(clientset, upod, config.LABEL_SERVICE_NAME, clusterName, namespace)
@@ -164,12 +161,6 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 	deploymentToDelete := pods.Items[0].ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 
 	//delete the deployment with pg-cluster=clusterName,primary=true
-	//should only be 1 primary with this name!
-	//deps, err := kubeapi.GetDeployments(clientset, config.LABEL_PG_CLUSTER+"="+clusterName+",primary=true", namespace)
-	//for _, d := range deps.Items {
-	//	log.Debugf("deleting deployment %s", d.Name)
-	//	kubeapi.DeleteDeployment(clientset, d.Name, namespace)
-	//}
 	log.Debugf("deleting deployment %s", deploymentToDelete)
 	err = kubeapi.DeleteDeployment(clientset, deploymentToDelete, namespace)
 

@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -175,7 +175,6 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 		return receiveLocation, replayLocation, nodeName
 	}
 
-	//port := operator.Pgo.Pgo.Cluster.Port
 	port := databasePort
 	databaseName := "postgres"
 	target := getSQLTarget(&pod, pgSecret.Username, pgSecret.Password, port, databaseName)

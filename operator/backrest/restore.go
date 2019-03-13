@@ -58,7 +58,6 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
-	//pvcName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
 
 	cluster := crv1.Pgcluster{}
 
@@ -213,8 +212,6 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
-	//cluster.Spec.Name = restoreToName
-	//cluster.ObjectMeta.Labels[config.LABEL_CURRENT_PRIMARY] = restoreToName
 
 	//update workflow
 	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus)
@@ -252,24 +249,11 @@ func createPVC(storage crv1.PgStorageSpec, clusterName string, restclient *rest.
 	//create the "to-cluster" PVC to hold the new data
 	pvcName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
 	pgstoragespec := storage
-	/**
-	pgstoragespec := crv1.PgStorageSpec{}
-	pgstoragespec.AccessMode = storage.AccessMode
-	pgstoragespec.Size = storage.Size
-	pgstoragespec.StorageType = storage.StorageType
-	pgstoragespec.StorageClass = storage.StorageClass
-	pgstoragespec.Fsgroup = storage.Fsgroup
-	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
-	pgstoragespec.MatchLabels = storage.MatchLabels
-	*/
 
 	var found bool
 	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 	if !found {
 		log.Debugf("pvc %s not found, will create as part of restore", pvcName)
-		//delete the pvc if it already exists
-		//kubeapi.DeletePVC(clientset, pvcName, namespace)
-
 		//create the pvc
 		err = pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
 		if err != nil {
@@ -385,7 +369,6 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	archiveMode := "on"
 	xlogdir := "false"
 	archiveTimeout := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
-	//archivePVCName := cluster.Spec.Name + "-xlog"
 	archivePVCName := ""
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 

@@ -28,10 +28,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	//crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
@@ -79,7 +75,6 @@ func main() {
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	//crdClient, crdScheme, err := crdclient.NewClient(config)
 	crdClient, crdScheme, err := util.NewClient(config)
 	if err != nil {
 		log.Error(err)

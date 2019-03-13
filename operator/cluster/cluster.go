@@ -211,15 +211,6 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 	}
 
-	//delete any existing jobs
-	/**
-	delJobSelector := config.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
-	err = kubeapi.DeleteJobs(clientset, delJobSelector, namespace)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
-
 	//delete any existing pgupgrades
 	upgrade := crv1.Pgupgrade{}
 	found, _ = kubeapi.Getpgupgrade(restclient, &upgrade, cl.Spec.Name, namespace)
@@ -234,16 +225,6 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		}
 	}
 
-	//delete any remaining pgtasks
-	/**
-	delTaskSelector := config.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
-	log.Debugf("cluster delete delTaskSelector is " + delTaskSelector)
-	err = kubeapi.Deletepgtasks(restclient, delTaskSelector, namespace)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
-
 }
 
 // AddUpgradeBase ...
@@ -253,14 +234,6 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 	if upgrade.Spec.UpgradeType == "minor" {
 		err = MinorUpgrade(clientset, client, cl, upgrade, namespace)
 		if err == nil {
-			/**
-			err = util.Patch(client, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
-			if err != nil {
-				log.Error(err)
-				log.Error("could not patch the ugpradestatus")
-			}
-			log.Debug("jeff updated pgupgrade to completed")
-			*/
 		} else {
 			log.Error(err)
 			log.Error("error in doing minor upgrade")
@@ -308,7 +281,6 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 
 	//dont allocate an xlog PVC if this is a backrest cluster
 	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
-		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		storage := crv1.PgStorageSpec{}
 		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
 		storage.StorageClass = pgoStorage.StorageClass
@@ -324,19 +296,6 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 			return
 		}
 	}
-
-	/**
-	//the -backrestrepo pvc is now an emptydir volume to be backward
-	//compatible with the postgres container only, it is not used
-	//with the shared backrest repo design
-	if cluster.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-	}
-	*/
 
 	log.Debugf("created replica pvc [%s]", pvcName)
 

@@ -77,8 +77,6 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 
 	taskName := task.Name
 
-	// workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
-
 	jobFields := restorejobTemplateFields{
 		JobName:             "pgrestore-" + task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
 		TaskName:            taskName,
@@ -123,11 +121,5 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 	log.Debugf("pgrestore job %s created", jobName)
-
-	// err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
-	// if err != nil {
-	// 	log.Error(err)
-	// 	log.Error("restore workflow: error in updating workflow status")
-	// }
 
 }

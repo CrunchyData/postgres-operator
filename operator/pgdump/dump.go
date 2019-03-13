@@ -81,9 +81,6 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		}
 	}
 
-	//update the pvc name in the CRD
-	// err = util.Patch(client, "/spec/storagespec/name", pvcName, "pgbackups", job.Spec.Name, namespace)
-
 	cr := ""
 	if operator.Pgo.DefaultBackupResources != "" {
 		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBackupResources)
@@ -97,7 +94,6 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 
 	// this task name should match
 	taskName := task.Name
-	// taskName := "backup" + "-" + task.Spec.Parameters[config.LABEL_PG_CLUSTER] + "-" + task.Spec.Parameters[config.LABEL_BACKUP_TYPE_PGDUMP]
 	jobName := taskName + "-" + util.RandStringBytesRmndr(4)
 
 	jobFields := pgDumpJobTemplateFields{

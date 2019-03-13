@@ -1,7 +1,7 @@
 package operator
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,7 +19,6 @@ import (
 	"bytes"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
-	//"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"os"
@@ -53,18 +52,6 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 	}
 
 	var err error
-
-	/**
-	Pgo.GetConf()
-
-	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	err = Pgo.Validate()
-	if err != nil {
-		log.Error(err)
-		log.Error("pgo.yaml validation failed, can't continue")
-		os.Exit(2)
-	}
-	*/
 
 	err = Pgo.GetConfig(clientset, namespace)
 	if err != nil {

@@ -296,7 +296,6 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 
 func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
 
-	//selector := config.LABEL_PRIMARY + "=false," + config.LABEL_PG_CLUSTER + "=" + clusterName
 	selector := config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica" + "," + config.LABEL_PG_CLUSTER + "=" + clusterName
 
 	deployments, err := kubeapi.GetDeployments(clientset, selector, ns)
@@ -318,7 +317,6 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 			log.Debug("autofail: found ready deployment " + dep.Name)
 			found = true
 			readyDeps = append(readyDeps, dep)
-			//return dep.Name, err
 		} else {
 			log.Debug("autofail: found not ready deployment " + dep.Name)
 		}

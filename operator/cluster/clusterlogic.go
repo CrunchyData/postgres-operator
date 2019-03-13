@@ -75,7 +75,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
-		//xlogdir = "true"
 	}
 
 	if cl.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
@@ -320,14 +319,12 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
-		//	xlogdir = "true"
 	}
 
 	if cluster.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
-		//archivePVCName = replica.Spec.Name + "-xlog"
 		//set to emptystring to force emptyDir to be used
 		archivePVCName = ""
 		xlogdir = "false"

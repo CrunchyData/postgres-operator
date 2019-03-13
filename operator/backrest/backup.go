@@ -54,8 +54,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	cmd := task.Spec.Parameters[config.LABEL_BACKREST_COMMAND]
 
 	jobFields := backrestJobTemplateFields{
-		JobName: task.Spec.Parameters[config.LABEL_JOB_NAME],
-		//		JobName:                       "backrest-" + task.Spec.Parameters[config.LABEL_BACKREST_COMMAND] + "-" + task.Spec.Parameters[config.LABEL_PG_CLUSTER],
+		JobName:                       task.Spec.Parameters[config.LABEL_JOB_NAME],
 		ClusterName:                   task.Spec.Parameters[config.LABEL_PG_CLUSTER],
 		PodName:                       task.Spec.Parameters[config.LABEL_POD_NAME],
 		SecurityContext:               "",
