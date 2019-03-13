@@ -388,7 +388,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	archiveMode := "on"
 	xlogdir := "false"
 	archiveTimeout := cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-	archivePVCName := cluster.Spec.Name + "-xlog"
+	//archivePVCName := cluster.Spec.Name + "-xlog"
+	archivePVCName := ""
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 
 	var affinityStr string

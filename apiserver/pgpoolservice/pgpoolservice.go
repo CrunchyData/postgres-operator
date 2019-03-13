@@ -29,14 +29,14 @@ func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	log.Debug("pgpoolservice.CreatePgpoolHandler called")
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	username, err := apiserver.Authn(apiserver.CREATE_PGPOOL_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	var request msgs.CreatePgpoolRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -69,14 +69,14 @@ func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 func DeletePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	log.Debug("pgpoolservice.DeletePgpoolHandler called")
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	username, err := apiserver.Authn(apiserver.DELETE_PGPOOL_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	var request msgs.DeletePgpoolRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)

@@ -81,7 +81,10 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = cl.Spec.Name + "-xlog"
+		//archivePVCName = cl.Spec.Name + "-xlog"
+		//backrest doesn't use xlog, so we make the pvc an emptydir
+		//by setting the name to empty string
+		archivePVCName = ""
 		xlogdir = "false"
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl)
 		if err != nil {
@@ -210,13 +213,6 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	//delete the pgreplicas if necessary
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
 
-	//delete the pgbackups if necessary
-	pgback := crv1.Pgbackup{}
-	found, err = kubeapi.Getpgbackup(restclient, &pgback, cl.Spec.Name, namespace)
-	if found {
-		kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
-	}
-
 	return err
 
 }
@@ -330,7 +326,9 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = replica.Spec.Name + "-xlog"
+		//archivePVCName = replica.Spec.Name + "-xlog"
+		//set to emptystring to force emptyDir to be used
+		archivePVCName = ""
 		xlogdir = "false"
 	}
 

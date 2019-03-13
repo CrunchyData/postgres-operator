@@ -90,8 +90,9 @@ func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
@@ -124,8 +125,9 @@ func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
@@ -159,8 +161,9 @@ func ShowScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {

@@ -48,14 +48,14 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
 	log.Debug("clusterservice.CreateClusterHandler called")
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	username, err := apiserver.Authn(apiserver.CREATE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	var request msgs.CreateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -107,9 +107,9 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("clusterservice.ShowClusterHandler GET called")
 
@@ -171,9 +171,9 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("clusterservice.DeleteClusterHandler called")
 
@@ -216,9 +216,9 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.ClusterTestResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -263,9 +263,9 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("clusterservice.UpdateClusterHandler called")
 

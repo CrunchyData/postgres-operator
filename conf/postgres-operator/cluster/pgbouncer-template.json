@@ -5,6 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
+            "crunchy-pgbouncer": "true",
             "pg-cluster": "{{.ClusterName}}",
             "service-name": "{{.Name}}"
         }
