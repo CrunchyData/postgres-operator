@@ -70,7 +70,7 @@ func ShowPVC(nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
 	}
 
 	if pvcName == "all" {
-		selector := util.LABEL_PGREMOVE + "=true"
+		selector := config.LABEL_PGREMOVE + "=true"
 
 		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, ns)
 		if err != nil {
@@ -90,7 +90,7 @@ func ShowPVC(nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
 	}
 
 	log.Debugf("PVC %s is found", pvc.Name)
-	pvcList, err = printPVCListing(nodeLabel, pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
+	pvcList, err = printPVCListing(nodeLabel, pvc.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
 
 	return pvcList, err
 
@@ -179,7 +179,7 @@ func printPVCListing(nodeLabel, clusterName, pvcName, PVCRoot, ns string) ([]str
 	}
 
 	timeout := time.Duration(6 * time.Second)
-	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + util.LABEL_PVCNAME + "=" + pvcName}
+	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + config.LABEL_PVCNAME + "=" + pvcName}
 	podPhase := v1.PodSucceeded
 	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, ns)
 	if err != nil {

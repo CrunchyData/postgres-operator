@@ -25,7 +25,7 @@ import (
 )
 
 // GetStorageClasses gets a list of StorageClasses
-func GetStorageClasses(clientset *kubernetes.Clientset) (*v1.StorageClassList, error) {
+func GetAllStorageClasses(clientset *kubernetes.Clientset) (*v1.StorageClassList, error) {
 
 	lo := meta_v1.ListOptions{}
 
@@ -36,4 +36,32 @@ func GetStorageClasses(clientset *kubernetes.Clientset) (*v1.StorageClassList, e
 	}
 
 	return scs, err
+}
+
+// GetStorageClasses gets a list of StorageClasses using a selector
+func GetStorageClasses(clientset *kubernetes.Clientset, selector string) (*v1.StorageClassList, error) {
+
+	lo := meta_v1.ListOptions{LabelSelector: selector}
+
+	scs, err := clientset.StorageV1().StorageClasses().List(lo)
+	if err != nil {
+		log.Error(err)
+		return scs, err
+	}
+
+	return scs, err
+}
+
+// GetStorageClass gets a single StorageClasse
+func GetStorageClass(clientset *kubernetes.Clientset, name string) (*v1.StorageClass, bool) {
+
+	lo := meta_v1.GetOptions{}
+
+	sc, err := clientset.StorageV1().StorageClasses().Get(name, lo)
+	if err != nil {
+		log.Error(err)
+		return sc, false
+	}
+
+	return sc, true
 }

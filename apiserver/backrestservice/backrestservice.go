@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -66,11 +66,11 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	backupname := vars[util.LABEL_NAME]
+	backupname := vars[config.LABEL_NAME]
 
-	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
-	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
+	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
+	selector := r.URL.Query().Get(config.LABEL_SELECTOR)
+	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
 
 	log.Debugf("ShowBackrestHandler parameters name [%s] version [%s] selector [%s] namespace [%s]", backupname, clientVersion, selector, namespace)
 

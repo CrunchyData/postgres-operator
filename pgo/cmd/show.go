@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/spf13/cobra"
 )
 
@@ -228,11 +228,11 @@ var ShowBackupCmd = &cobra.Command{
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
 			// default is pgbasebackup
-			if BackupType == "" || BackupType == util.LABEL_BACKUP_TYPE_BASEBACKUP {
+			if BackupType == "" || BackupType == config.LABEL_BACKUP_TYPE_BASEBACKUP {
 				showBackup(args, Namespace)
-			} else if BackupType == util.LABEL_BACKUP_TYPE_BACKREST {
+			} else if BackupType == config.LABEL_BACKUP_TYPE_BACKREST {
 				showBackrest(args, Namespace)
-			} else if BackupType == util.LABEL_BACKUP_TYPE_PGDUMP {
+			} else if BackupType == config.LABEL_BACKUP_TYPE_PGDUMP {
 				showpgDump(args, Namespace)
 			} else {
 				fmt.Println("Error: Valid backup-type values are pgbasebackup, pgbackrest and pgdump. The default if not supplied is pgbasebackup.")

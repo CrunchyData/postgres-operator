@@ -21,9 +21,10 @@ import (
 	"os"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"github.com/crunchydata/postgres-operator/pgo/util"
-	otherutil "github.com/crunchydata/postgres-operator/util"
+	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -44,10 +45,10 @@ var restoreCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
-			if BackupType == "" || BackupType == otherutil.LABEL_BACKUP_TYPE_BACKREST {
+			if BackupType == "" || BackupType == config.LABEL_BACKUP_TYPE_BACKREST {
 				fmt.Println("Warning:  If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
 			}
-			if util.AskForConfirmation(NoPrompt, "") {
+			if pgoutil.AskForConfirmation(NoPrompt, "") {
 				restore(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
@@ -94,7 +95,7 @@ func restore(args []string, ns string) {
 		request := new(msgs.RestoreRequest)
 		request.Namespace = ns
 		request.FromCluster = args[0]
-		request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
+		request.ToPVC = request.FromCluster + "-" + util.RandStringBytesRmndr(4)
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.NodeLabel = NodeLabel

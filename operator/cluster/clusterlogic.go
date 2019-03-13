@@ -46,8 +46,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
 	st := operator.Pgo.Cluster.ServiceType
-	if cl.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
-		st = cl.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	if cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
 	}
 
 	//create the primary service
@@ -71,17 +71,17 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	archiveMode := "off"
 	archiveTimeout := "60"
 	xlogdir := "false"
-	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+		archiveTimeout = cl.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
 		//xlogdir = "true"
 	}
 
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
-		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+		archiveTimeout = cl.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		//archivePVCName = cl.Spec.Name + "-xlog"
 		//backrest doesn't use xlog, so we make the pvc an emptydir
 		//by setting the name to empty string
@@ -94,7 +94,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		}
 	}
 
-	primaryLabels[util.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
+	primaryLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
@@ -129,8 +129,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		ConfVolume:              operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name, cl.Spec.Port),
-		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[util.LABEL_COLLECT]),
+		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[config.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name, cl.Spec.Port),
+		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -161,7 +161,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		log.Info("primary Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
 
-	primaryLabels[util.LABEL_CURRENT_PRIMARY] = cl.Spec.Name
+	primaryLabels[config.LABEL_CURRENT_PRIMARY] = cl.Spec.Name
 
 	err = util.PatchClusterCRD(client, primaryLabels, cl, namespace)
 	if err != nil {
@@ -187,7 +187,7 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	}
 
 	//delete the pgbouncer service if exists
-	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
 		DeletePgbouncer(clientset, cl.Spec.Name, namespace)
 	}
 
@@ -202,12 +202,12 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	}
 
 	//delete the pgpool deployment if necessary
-	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
 		DeletePgpool(clientset, cl.Spec.Name, namespace)
 	}
 
 	//delete the backrest repo deployment if necessary
-	if cl.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
 		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
 	}
 
@@ -223,7 +223,7 @@ func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, c
 	var err error
 
 	deployments, err := kubeapi.GetDeployments(clientset,
-		util.LABEL_PG_CLUSTER+"="+cl.Spec.Name, namespace)
+		config.LABEL_PG_CLUSTER+"="+cl.Spec.Name, namespace)
 	if err != nil {
 		return err
 	}
@@ -310,23 +310,23 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	replicaFlag := true
 
 	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
-	replicaLabels[util.LABEL_REPLICA_NAME] = replica.Spec.Name
+	replicaLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
 
 	archivePVCName := ""
 	archiveMode := "off"
 	archiveTimeout := "60"
 	xlogdir := "false"
-	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
+	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
 		//	xlogdir = "true"
 	}
 
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+	if cluster.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
-		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
+		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		//archivePVCName = replica.Spec.Name + "-xlog"
 		//set to emptystring to force emptyDir to be used
 		archivePVCName = ""
@@ -337,8 +337,8 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	//check for --ccp-image-tag at the command line
 	imageTag := cluster.Spec.CCPImageTag
-	if replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY] != "" {
-		imageTag = replica.Spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY]
+	if replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] != "" {
+		imageTag = replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY]
 	}
 
 	//allow the user to override the replica resources
@@ -347,7 +347,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		cs = cluster.Spec.ContainerResources
 	}
 
-	replicaLabels[util.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
+	replicaLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
 	//create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
@@ -382,8 +382,8 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		NodeSelector:            operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name, cluster.Spec.Port),
-		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[util.LABEL_COLLECT]),
+		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name, cluster.Spec.Port),
+		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[config.LABEL_COLLECT]),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

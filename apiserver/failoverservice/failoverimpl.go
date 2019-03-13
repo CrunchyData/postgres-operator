@@ -1,7 +1,7 @@
 package failoverservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,16 +17,16 @@ limitations under the License.
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//"k8s.io/apimachinery/pkg/labels"
 )
 
 //  CreateFailover ...
@@ -62,7 +62,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateF
 	// Create a pgtask
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
-	spec.Name = request.ClusterName + "-" + util.LABEL_FAILOVER
+	spec.Name = request.ClusterName + "-" + config.LABEL_FAILOVER
 
 	// previous failovers will leave a pgtask so remove it first
 	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, ns)
@@ -73,12 +73,12 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateF
 
 	labels := make(map[string]string)
 	labels["target"] = request.Target
-	labels[util.LABEL_PG_CLUSTER] = request.ClusterName
+	labels[config.LABEL_PG_CLUSTER] = request.ClusterName
 
 	if request.AutofailReplaceReplica != "" {
 		if request.AutofailReplaceReplica == "true" ||
 			request.AutofailReplaceReplica == "false" {
-			labels[util.LABEL_AUTOFAIL_REPLACE_REPLICA] = request.AutofailReplaceReplica
+			labels[config.LABEL_AUTOFAIL_REPLACE_REPLICA] = request.AutofailReplaceReplica
 		} else {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "true or false value required for --autofail-replace-replica flag"
@@ -146,7 +146,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 
 	//get pods using selector service-name=clusterName-replica
 
-	selector := util.LABEL_SERVICE_NAME + "=" + name + "-replica"
+	selector := config.LABEL_SERVICE_NAME + "=" + name + "-replica"
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
@@ -161,15 +161,15 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 
 	deploymentNameList := ""
 	for _, p := range pods.Items {
-		deploymentNameList = deploymentNameList + p.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME] + ","
+		deploymentNameList = deploymentNameList + p.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME] + ","
 	}
 	log.Debugf("deployment name list is %s", deploymentNameList)
 
 	//get failover targets for this cluster
 	//deployments with --selector=primary=false,pg-cluster=ClusterName
 
-	//selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
-	selector = util.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
+	//selector := config.LABEL_PRIMARY + "=false," + config.LABEL_PG_CLUSTER + "=" + name
+	selector = config.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
 
 	var deployments *v1beta1.DeploymentList
 	deployments, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
@@ -222,7 +222,7 @@ func validateDeploymentName(deployName, clusterName, ns string) (*v1beta1.Deploy
 	}
 
 	//make sure the primary is not being selected by the user
-	if deployment.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+	if deployment.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 		return deployment, errors.New("deployment primary can not be selected as failover target")
 	}
 

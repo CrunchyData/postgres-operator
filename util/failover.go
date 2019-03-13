@@ -19,11 +19,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -62,8 +63,7 @@ func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace strin
 
 	var pods *v1.PodList
 
-	//selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_PRIMARY + "=false"
-	selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 
 	pods, err = kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
@@ -151,7 +151,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	//get the crd for this dep
 	cluster := crv1.Pgcluster{}
 	var clusterfound bool
-	clusterfound, err = kubeapi.Getpgcluster(restclient, &cluster, dep.ObjectMeta.Labels[LABEL_PG_CLUSTER], namespace)
+	clusterfound, err = kubeapi.Getpgcluster(restclient, &cluster, dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], namespace)
 	if err != nil || !clusterfound {
 		log.Error("Getpgcluster error: " + err.Error())
 		return receiveLocation, replayLocation, nodeName
@@ -278,7 +278,7 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := "pgpool!=true," + LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := "pgpool!=true," + config.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {

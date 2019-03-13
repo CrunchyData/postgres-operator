@@ -16,12 +16,12 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -82,7 +82,7 @@ func Reload(request *msgs.ReloadRequest, ns string) msgs.ReloadResponse {
 		}
 
 		var podList *v1.PodList
-		selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+		selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 		podList, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error

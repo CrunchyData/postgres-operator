@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -138,7 +139,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 	log.Debug("Getting cluster")
 	var selector string
 	if sr.Request.ClusterName != "" {
-		selector = fmt.Sprintf("%s=%s", util.LABEL_PG_CLUSTER, sr.Request.ClusterName)
+		selector = fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, sr.Request.ClusterName)
 	} else if sr.Request.Selector != "" {
 		selector = sr.Request.Selector
 	}

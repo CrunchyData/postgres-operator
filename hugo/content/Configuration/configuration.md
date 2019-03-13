@@ -29,7 +29,7 @@ configurations are determined by using the default storage
 class on the system you are deploying the Operator into, the
 default storage class is one that is labeled as follows:
 
-    pgo-default-storage-class=true 
+    pgo-default-sc=true 
 
 If no storage class has that label, then the first storage class
 found on the system will be used.  If no storage class is found

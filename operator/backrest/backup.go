@@ -1,7 +1,7 @@
 package backrest
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -22,7 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
@@ -52,22 +51,22 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 
 	//create the Job to run the backrest command
 
-	cmd := task.Spec.Parameters[util.LABEL_BACKREST_COMMAND]
+	cmd := task.Spec.Parameters[config.LABEL_BACKREST_COMMAND]
 
 	jobFields := backrestJobTemplateFields{
-		JobName: task.Spec.Parameters[util.LABEL_JOB_NAME],
-		//		JobName:                       "backrest-" + task.Spec.Parameters[util.LABEL_BACKREST_COMMAND] + "-" + task.Spec.Parameters[util.LABEL_PG_CLUSTER],
-		ClusterName:                   task.Spec.Parameters[util.LABEL_PG_CLUSTER],
-		PodName:                       task.Spec.Parameters[util.LABEL_POD_NAME],
+		JobName: task.Spec.Parameters[config.LABEL_JOB_NAME],
+		//		JobName:                       "backrest-" + task.Spec.Parameters[config.LABEL_BACKREST_COMMAND] + "-" + task.Spec.Parameters[config.LABEL_PG_CLUSTER],
+		ClusterName:                   task.Spec.Parameters[config.LABEL_PG_CLUSTER],
+		PodName:                       task.Spec.Parameters[config.LABEL_POD_NAME],
 		SecurityContext:               "",
 		Command:                       cmd,
-		CommandOpts:                   task.Spec.Parameters[util.LABEL_BACKREST_OPTS],
+		CommandOpts:                   task.Spec.Parameters[config.LABEL_BACKREST_OPTS],
 		PITRTarget:                    "",
 		COImagePrefix:                 operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:                    operator.Pgo.Pgo.COImageTag,
-		PgbackrestStanza:              task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:              task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepoPath:            task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestStanza:              task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:              task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepoPath:            task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRestoreVolumes:      "",
 		PgbackrestRestoreVolumeMounts: "",
 	}

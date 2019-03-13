@@ -18,13 +18,13 @@ limitations under the License.
 import (
 	"database/sql"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
@@ -63,8 +63,7 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 
 	for _, c := range clusterList.Items {
 
-		//selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," +
-		selector := util.LABEL_SERVICE_NAME + "=" + c.Spec.Name
+		selector := config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 
 		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 		if err != nil {
@@ -153,7 +152,7 @@ func getPrimarySecret(clusterName, ns string) (string, string, error) {
 func getServices(clusterName, ns string) (map[string]string, error) {
 
 	output := make(map[string]string, 0)
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, ns)
 	if err != nil {

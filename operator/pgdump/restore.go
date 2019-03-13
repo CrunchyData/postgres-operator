@@ -1,7 +1,7 @@
 package pgdump
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -55,9 +55,9 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 
 	log.Infof(" PgDump Restore not implemented %s, %s", namespace, task.Name)
 
-	clusterName := task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER]
+	clusterName := task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER]
 
-	fromPvcName := task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_PVC]
+	fromPvcName := task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_PVC]
 
 	if !(len(fromPvcName) > 0) || !pvc.Exists(clientset, fromPvcName, namespace) {
 		log.Errorf("pgrestore: could not find source pvc required for restore: %s", fromPvcName)
@@ -80,17 +80,17 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 	// workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 
 	jobFields := restorejobTemplateFields{
-		JobName:             "pgrestore-" + task.Spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
+		JobName:             "pgrestore-" + task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
 		TaskName:            taskName,
 		ClusterName:         clusterName,
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		FromClusterPVCName:  fromPvcName,
-		PgRestoreHost:       task.Spec.Parameters[util.LABEL_PGRESTORE_HOST],
-		PgRestoreDB:         task.Spec.Parameters[util.LABEL_PGRESTORE_DB],
-		PgRestoreUserSecret: task.Spec.Parameters[util.LABEL_PGRESTORE_USER],
+		PgRestoreHost:       task.Spec.Parameters[config.LABEL_PGRESTORE_HOST],
+		PgRestoreDB:         task.Spec.Parameters[config.LABEL_PGRESTORE_DB],
+		PgRestoreUserSecret: task.Spec.Parameters[config.LABEL_PGRESTORE_USER],
 		PgPrimaryPort:       operator.Pgo.Cluster.Port,
-		PGRestoreOpts:       task.Spec.Parameters[util.LABEL_PGRESTORE_OPTS],
-		PITRTarget:          task.Spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET],
+		PGRestoreOpts:       task.Spec.Parameters[config.LABEL_PGRESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[config.LABEL_PGRESTORE_PITR_TARGET],
 		CCPImagePrefix:      operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
 		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),

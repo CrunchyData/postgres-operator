@@ -1,7 +1,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -66,10 +66,10 @@ type PgbouncerTemplateFields struct {
 const PGBOUNCER_SUFFIX = "-pgbouncer"
 
 func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debugf("ReconfigurePgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debugf("ReconfigurePgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
-	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
+	clusterName := task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER]
 	pgcluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
@@ -119,10 +119,10 @@ func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *r
 }
 
 func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("AddPgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debug("AddPgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
-	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
+	clusterName := task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER]
 	pgcluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
@@ -132,8 +132,8 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 	}
 
 	// add necessary fields from task to the cluster for pgbouncer specifics
-	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER_USER] = task.Spec.Parameters[util.LABEL_PGBOUNCER_USER]
-	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS] = task.Spec.Parameters[util.LABEL_PGBOUNCER_PASS]
+	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_USER] = task.Spec.Parameters[config.LABEL_PGBOUNCER_USER]
+	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS] = task.Spec.Parameters[config.LABEL_PGBOUNCER_PASS]
 
 	err = AddPgbouncer(clientset, &pgcluster, namespace, true)
 	if err != nil {
@@ -149,7 +149,7 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 	}
 
 	//update the pgcluster CRD
-	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER] = "true"
+	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER] = "true"
 	err = kubeapi.Updatepgcluster(restclient, &pgcluster, pgcluster.Name, namespace)
 	if err != nil {
 		log.Error(err)
@@ -159,10 +159,10 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 }
 
 func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debugf("DeletePgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debugf("DeletePgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER])
 
 	//look up the pgcluster from the task
-	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
+	clusterName := task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER]
 	pgcluster := crv1.Pgcluster{}
 
 	found, err := kubeapi.Getpgcluster(restclient, &pgcluster, clusterName, namespace)
@@ -198,7 +198,7 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 	}
 
 	//update the pgcluster CRD
-	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER] = "false"
+	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER] = "false"
 	err = kubeapi.Updatepgcluster(restclient, &pgcluster, pgcluster.Name, namespace)
 	if err != nil {
 		log.Error(err)
@@ -212,7 +212,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 	var err error
 
 	//generate a secret for pgbouncer using passed in user or default pgbouncer user
-	secretName := cl.Spec.Name + "-" + util.LABEL_PGBOUNCER_SECRET
+	secretName := cl.Spec.Name + "-" + config.LABEL_PGBOUNCER_SECRET
 	primaryName := cl.Spec.Name
 	replicaName := cl.Spec.Name + "-replica"
 	err = createPgbouncerSecret(clientset, cl, primaryName, replicaName, primaryName, secretName, namespace)
@@ -233,8 +233,8 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
-		PgBouncerUser:      cl.Spec.UserLabels[util.LABEL_PGBOUNCER_USER],
-		PgBouncerPass:      cl.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS],
+		PgBouncerUser:      cl.Spec.UserLabels[config.LABEL_PGBOUNCER_USER],
+		PgBouncerPass:      cl.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS],
 		SecretsName:        secretName,
 		ContainerResources: "",
 	}
@@ -350,8 +350,8 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, 
 
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels[util.LABEL_PG_DATABASE] = db
-	secret.ObjectMeta.Labels[util.LABEL_PGBOUNCER] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_PG_DATABASE] = db
+	secret.ObjectMeta.Labels[config.LABEL_PGBOUNCER] = "true"
 	secret.Data = make(map[string][]byte)
 	secret.Data["pgbouncer.ini"] = pgbouncerConfBytes
 	secret.Data["pg_hba.conf"] = pgbouncerHBABytes
@@ -407,14 +407,14 @@ func getPgbouncerPasswd(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, nam
 	var pgbouncerUsername, pgbouncerPassword string
 
 	// command line specified username or default to "pgbouncer" if not set.
-	var username = cl.Spec.UserLabels[util.LABEL_PGBOUNCER_USER]
+	var username = cl.Spec.UserLabels[config.LABEL_PGBOUNCER_USER]
 	if !(len(username) > 0) {
 		pgbouncerUsername = "pgbouncer"
 	} else {
 		pgbouncerUsername = username
 	}
 
-	var password = cl.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]
+	var password = cl.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS]
 	if !(len(password) > 0) {
 		log.Debugf("Using generated password, none provided by user")
 		pgbouncerPassword = util.GeneratePassword(10) // default password case when not specified by user.

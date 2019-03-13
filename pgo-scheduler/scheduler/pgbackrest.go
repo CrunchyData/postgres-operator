@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -59,7 +59,7 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+	if cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
 		contextLogger.WithFields(log.Fields{}).Error("pgBackRest is not enabled")
 		return
 	}
@@ -107,7 +107,7 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", util.LABEL_PG_CLUSTER, b.cluster)
+	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", config.LABEL_PG_CLUSTER, b.cluster)
 	pods, err := kubeapi.GetPods(kubeClient, selector, b.namespace)
 	if err != nil {
 		contextLogger.WithFields(log.Fields{

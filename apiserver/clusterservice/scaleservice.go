@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -35,16 +35,16 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
 
-	clusterName := vars[util.LABEL_NAME]
+	clusterName := vars[config.LABEL_NAME]
 
-	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
-	replicaCount := r.URL.Query().Get(util.LABEL_REPLICA_COUNT)
-	resourcesConfig := r.URL.Query().Get(util.LABEL_RESOURCES_CONFIG)
-	storageConfig := r.URL.Query().Get(util.LABEL_STORAGE_CONFIG)
-	nodeLabel := r.URL.Query().Get(util.LABEL_NODE_LABEL)
-	serviceType := r.URL.Query().Get(util.LABEL_SERVICE_TYPE)
-	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	ccpImageTag := r.URL.Query().Get(util.LABEL_CCP_IMAGE_TAG_KEY)
+	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
+	replicaCount := r.URL.Query().Get(config.LABEL_REPLICA_COUNT)
+	resourcesConfig := r.URL.Query().Get(config.LABEL_RESOURCES_CONFIG)
+	storageConfig := r.URL.Query().Get(config.LABEL_STORAGE_CONFIG)
+	nodeLabel := r.URL.Query().Get(config.LABEL_NODE_LABEL)
+	serviceType := r.URL.Query().Get(config.LABEL_SERVICE_TYPE)
+	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
+	ccpImageTag := r.URL.Query().Get(config.LABEL_CCP_IMAGE_TAG_KEY)
 
 	log.Debugf("ScaleClusterHandler parameters name [%s] namespace [%s] replica-count [%s] resources-config [%s] storage-config [%s] node-label [%s] service-type [%s] version [%s] ccp-image-tag [%s]", clusterName, namespace, replicaCount, resourcesConfig, storageConfig, nodeLabel, serviceType, clientVersion, ccpImageTag)
 
@@ -85,9 +85,9 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
 
-	clusterName := vars[util.LABEL_NAME]
-	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
+	clusterName := vars[config.LABEL_NAME]
+	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
+	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
 
 	log.Debugf("ScaleQueryHandler parameters clusterName [%v] version [%s] namespace [%s]", clusterName, clientVersion, namespace)
 
@@ -127,11 +127,11 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
 
-	clusterName := vars[util.LABEL_NAME]
-	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
-	replicaName := r.URL.Query().Get(util.LABEL_REPLICA_NAME)
-	tmp := r.URL.Query().Get(util.LABEL_DELETE_DATA)
+	clusterName := vars[config.LABEL_NAME]
+	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
+	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
+	replicaName := r.URL.Query().Get(config.LABEL_REPLICA_NAME)
+	tmp := r.URL.Query().Get(config.LABEL_DELETE_DATA)
 
 	log.Debugf("ScaleDownHandler parameters clusterName [%s] version [%s] namespace [%s] replica-name [%s] delete-data [%s]", clusterName, clientVersion, namespace, replicaName, tmp)
 

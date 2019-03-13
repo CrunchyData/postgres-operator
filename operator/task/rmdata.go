@@ -1,7 +1,7 @@
 package task
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -45,8 +45,8 @@ type rmdatajobTemplateFields struct {
 func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
 	//create the Job to remove the data
-	pvcName := task.Spec.Parameters[util.LABEL_PVC_NAME]
-	clusterName := task.Spec.Parameters[util.LABEL_PG_CLUSTER]
+	pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
+	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
 
 	cr := ""
 	if operator.Pgo.DefaultRmdataResources != "" {
@@ -67,7 +67,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		COImagePrefix:      operator.Pgo.Pgo.COImagePrefix,
 		COImageTag:         operator.Pgo.Pgo.COImageTag,
 		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
-		DataRoot:           task.Spec.Parameters[util.LABEL_DATA_ROOT],
+		DataRoot:           task.Spec.Parameters[config.LABEL_DATA_ROOT],
 		ContainerResources: cr,
 	}
 	log.Debugf("creating rmdata job for cluster %s pvc %s", task.Spec.Name, pvcName)

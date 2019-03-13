@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,12 +38,12 @@ func (p pgBackRestTask) NewBackRestTask() *crv1.Pgtask {
 			Name:     p.taskName,
 			TaskType: crv1.PgtaskBackrest,
 			Parameters: map[string]string{
-				util.LABEL_JOB_NAME:         p.taskName,
-				util.LABEL_PG_CLUSTER:       p.clusterName,
-				util.LABEL_POD_NAME:         p.podName,
-				util.LABEL_CONTAINER_NAME:   p.containerName,
-				util.LABEL_BACKREST_COMMAND: crv1.PgtaskBackrestBackup,
-				util.LABEL_BACKREST_OPTS:    fmt.Sprintf("--stanza=%s %s", p.stanza, p.backupOptions),
+				config.LABEL_JOB_NAME:         p.taskName,
+				config.LABEL_PG_CLUSTER:       p.clusterName,
+				config.LABEL_POD_NAME:         p.podName,
+				config.LABEL_CONTAINER_NAME:   p.containerName,
+				config.LABEL_BACKREST_COMMAND: crv1.PgtaskBackrestBackup,
+				config.LABEL_BACKREST_OPTS:    fmt.Sprintf("--stanza=%s %s", p.stanza, p.backupOptions),
 			},
 		},
 	}

@@ -21,6 +21,7 @@ package cluster
 import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
@@ -73,7 +74,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	//only allocate an xlog pvc if this is not a backrest
-	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cl.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" && cl.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
 		pvcName := cl.Spec.Name + "-xlog"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
@@ -109,15 +110,15 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[util.LABEL_PGPOOL])
+	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[config.LABEL_PGPOOL])
 	//add pgpool deployment if requested
-	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
 		log.Debug("pgpool requested")
 		//create the pgpool deployment using that credential
 		AddPgpool(clientset, cl, namespace, true)
 	}
 	//add pgbouncer deployment if requested
-	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
 		log.Debug("pgbouncer requested")
 		//create the pgbouncer deployment using that credential
 		AddPgbouncer(clientset, cl, namespace, true)
@@ -141,27 +142,27 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			spec.UserLabels = cl.Spec.UserLabels
 
 			//the replica should not use the same node labels as the primary
-			spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = ""
-			spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = ""
+			spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
+			spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
 			//check for replica node label in pgo.yaml
 			if operator.Pgo.Cluster.ReplicaNodeLabel != "" {
 				parts := strings.Split(operator.Pgo.Cluster.ReplicaNodeLabel, "=")
-				spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
-				spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+				spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
+				spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 				log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
 			}
 
 			labels := make(map[string]string)
-			labels[util.LABEL_PG_CLUSTER] = cl.Spec.Name
+			labels[config.LABEL_PG_CLUSTER] = cl.Spec.Name
 
 			spec.ClusterName = cl.Spec.Name
 			uniqueName := util.RandStringBytesRmndr(4)
-			labels[util.LABEL_NAME] = cl.Spec.Name + "-" + uniqueName
-			spec.Name = labels[util.LABEL_NAME]
+			labels[config.LABEL_NAME] = cl.Spec.Name + "-" + uniqueName
+			spec.Name = labels[config.LABEL_NAME]
 			newInstance := &crv1.Pgreplica{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Name:   labels[util.LABEL_NAME],
+					Name:   labels[config.LABEL_NAME],
 					Labels: labels,
 				},
 				Spec: spec,
@@ -190,7 +191,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
 	pgtask := crv1.Pgtask{}
-	found, _ := kubeapi.Getpgtask(restclient, &pgtask, cl.Spec.Name+"-"+util.LABEL_AUTOFAIL, namespace)
+	found, _ := kubeapi.Getpgtask(restclient, &pgtask, cl.Spec.Name+"-"+config.LABEL_AUTOFAIL, namespace)
 	if found {
 		aftask := AutoFailoverTask{}
 		aftask.Clear(restclient, cl.Spec.Name, namespace)
@@ -212,7 +213,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 
 	//delete any existing jobs
 	/**
-	delJobSelector := util.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
+	delJobSelector := config.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
 	err = kubeapi.DeleteJobs(clientset, delJobSelector, namespace)
 	if err != nil {
 		log.Error(err)
@@ -235,7 +236,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 
 	//delete any remaining pgtasks
 	/**
-	delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
+	delTaskSelector := config.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
 	log.Debugf("cluster delete delTaskSelector is " + delTaskSelector)
 	err = kubeapi.Deletepgtasks(restclient, delTaskSelector, namespace)
 	if err != nil {
@@ -306,7 +307,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//dont allocate an xlog PVC if this is a backrest cluster
-	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
 		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		storage := crv1.PgStorageSpec{}
 		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
@@ -328,7 +329,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	//the -backrestrepo pvc is now an emptydir volume to be backward
 	//compatible with the postgres container only, it is not used
 	//with the shared backrest repo design
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
+	if cluster.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
 		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
@@ -349,10 +350,10 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 
 	st := operator.Pgo.Cluster.ServiceType
 
-	if replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
-		st = replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
-	} else if cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
-		st = cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
+	} else if cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
 	}
 
 	serviceName := replica.Spec.ClusterName + "-replica"
@@ -415,7 +416,7 @@ func deleteConfigMaps(clientset *kubernetes.Clientset, clusterName, ns string) e
 
 func cleanupPreviousTasks(client *rest.RESTClient, clusterName, namespace string) error {
 
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	taskList := crv1.PgtaskList{}
 
 	err := kubeapi.GetpgtasksBySelector(client, &taskList, selector, namespace)

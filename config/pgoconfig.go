@@ -498,6 +498,7 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	var yamlFile []byte
 	var err error
 
+	//get the pgo.yaml config file
 	if cMap != nil {
 		str := cMap.Data[CONFIG_PATH]
 		if str == "" {
@@ -512,19 +513,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 			return err
 		}
 	}
-	/**
-		yamlFile := cMap.Data[CONFIG_PATH]
-		if yamlFile == "" {
-			errMsg := fmt.Sprintf("could not get %s from ConfigMap", CONFIG_PATH)
-			return errors.New(errMsg)
-	} else {
-		yamlFile, err := ioutil.ReadFile(rootPath + CONFIG_PATH)
-		if err != nil {
-			log.Errorf("yamlFile.Get err   #%v ", err)
-			return err
-		}
-	}
-	*/
 
 	err = yaml.Unmarshal(yamlFile, c)
 	if err != nil {
@@ -532,12 +520,22 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 
+	//validate the pgo.yaml config file
 	err = c.Validate()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
+	//determine the default storage class if necessary
+	if cMap == nil {
+		err = c.SetDefaultStorageClass(clientset)
+		if err != nil {
+			return err
+		}
+	}
+
+	//load up all the templates
 	PVCTemplate, err = c.LoadTemplate(cMap, rootPath, pvcPath)
 	if err != nil {
 		return err
@@ -733,4 +731,49 @@ func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*te
 
 	return template.Must(template.New(path).Parse(value)), nil
 
+}
+
+func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) error {
+
+	selector := LABEL_PGO_DEFAULT_SC + "=true"
+	scList, err := kubeapi.GetStorageClasses(clientset, selector)
+	if err != nil {
+		return err
+	}
+
+	if len(scList.Items) == 0 {
+		//no pgo default sc was found, so we will use 1st sc we find
+		scList, err = kubeapi.GetAllStorageClasses(clientset)
+		if err != nil {
+			return err
+		}
+		if len(scList.Items) == 0 {
+			return errors.New("no storage classes were found on this Kube system")
+		}
+		//configure with the 1st SC on the system
+	} else {
+		//configure with the default pgo sc
+	}
+
+	log.Infof("setting pgo-default-sc to %s", scList.Items[0].Name)
+
+	//add the storage class into the config
+	c.Storage[LABEL_PGO_DEFAULT_SC] = StorageStruct{
+		AccessMode:         "ReadWriteOnce",
+		Size:               "1G",
+		StorageType:        "dynamic",
+		StorageClass:       scList.Items[0].Name,
+		Fsgroup:            "26",
+		SupplementalGroups: "",
+		MatchLabels:        "",
+	}
+
+	//set the default storage configs to this new one
+	c.PrimaryStorage = LABEL_PGO_DEFAULT_SC
+	c.XlogStorage = LABEL_PGO_DEFAULT_SC
+	c.BackupStorage = LABEL_PGO_DEFAULT_SC
+	c.ReplicaStorage = LABEL_PGO_DEFAULT_SC
+	c.BackrestStorage = LABEL_PGO_DEFAULT_SC
+
+	return nil
 }
