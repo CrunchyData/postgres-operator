@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	log "github.com/sirupsen/logrus"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
@@ -52,8 +52,9 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 			selector = "name=" + name
 		}
 	}
-	log.Debugf("delete-data is [%v]\n", deleteData)
-	log.Debugf("delete-backups is [%v]\n", deleteBackups)
+
+	log.Debugf("delete-data is [%t]", deleteData)
+	log.Debugf("delete-backups is [%t]", deleteBackups)
 
 	clusterList := crv1.PgclusterList{}
 
@@ -74,16 +75,6 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 
 	for _, cluster := range clusterList.Items {
 
-		//delete any existing tasks for the pg-cluster
-		delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-		log.Debugf("cluster delete delTaskSelector is " + delTaskSelector)
-		err := kubeapi.Deletepgtasks(apiserver.RESTClient, delTaskSelector, ns)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-
 		if deleteData {
 			err := deleteDatabaseSecrets(cluster.Spec.Name, ns)
 			if err != nil {
@@ -93,21 +84,6 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 			}
 
 			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups, ns)
-		}
-
-		if err := deleteConfigMaps(cluster.Spec.Name, ns); err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-
-		//delete any jobs with pg-cluster=mycluster label
-		delJobSelector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-		err = kubeapi.DeleteJobs(apiserver.Clientset, delJobSelector, ns)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
 		}
 
 		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
@@ -981,60 +957,44 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 	var err error
 
-	//selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true"
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true"
+	//dont include pgpool or pgbouncer deployments
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PGBOUNCER + "!=true"
 	log.Debugf("selector for delete is %s", selector)
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	log.Debugf("got %d cluster pods for %s\n", len(pods.Items), clusterName)
+	log.Debugf("creatingDeleteDataTasks %d deployments for pg-cluster=%s\n", len(deployments.Items), clusterName)
 
-	//a flag for the case when a cluster has performed an autofailover
-	//we need to go back and remove the original primary's pgdata PVC
-	originalClusterPrimaryDeleted := false
-
-	for _, pod := range pods.Items {
-		deploymentName := pod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
-		if pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME] != "" {
-			deploymentName = pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME]
-		}
-
-		//get the volumes for this pod
-		for _, v := range pod.Spec.Volumes {
-
-			log.Debugf("createDeleteDataTasks pod name %s volume name %s", pod.Name, v.Name)
-			dataRoots := make([]string, 0)
-			if v.Name == "pgdata" {
-				dataRoots = append(dataRoots, deploymentName)
-			} else if v.Name == "backup" {
-				dataRoots = append(dataRoots, deploymentName+"-backups")
-			} else if v.Name == "pgwal-volume" {
-				dataRoots = append(dataRoots, deploymentName+"-wal")
-			} else if v.Name == "backrestrepo" {
-				dataRoots = append(dataRoots, deploymentName+"-backrest-shared-repo")
-			}
-
-			if v.VolumeSource.PersistentVolumeClaim != nil {
-				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
-				if clusterName == v.VolumeSource.PersistentVolumeClaim.ClaimName {
-					originalClusterPrimaryDeleted = true
-				}
-				err := apiserver.CreateRMDataTask(storageSpec, clusterName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots, ns)
-				if err != nil {
-					return err
-				}
+	if deleteBackups {
+		log.Debug("deleteBackups is called")
+		log.Debug("check for backrest-shared-repo PVC to delete")
+		pvcName := clusterName + "-backrest-shared-repo"
+		_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
+		if found {
+			log.Debugf("creating rmdata job for %s", pvcName)
+			dataRoots := []string{pvcName}
+			err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, clusterName+"-rmdata-backrest-shared-repo", ns)
+			if err != nil {
+				log.Error(err)
+				return err
 			}
 		}
 	}
 
-	if originalClusterPrimaryDeleted == false {
-		log.Debugf("for autofailover case, removing orignal primary PVC %s", clusterName)
+	for _, dep := range deployments.Items {
+
 		dataRoots := make([]string, 0)
-		dataRoots = append(dataRoots, clusterName)
-		err := apiserver.CreateRMDataTask(storageSpec, clusterName, clusterName, dataRoots, ns)
+		dataRoots = append(dataRoots, dep.Name)
+
+		claimName := dep.Name
+		taskName := dep.Name + "-rmdata-pgdata"
+		log.Debugf("creating taskName %s", taskName)
+
+		err := apiserver.CreateRMDataTask(storageSpec, clusterName, claimName, dataRoots, taskName, ns)
 		if err != nil {
+			log.Error(err)
 			return err
 		}
 	}
@@ -1064,7 +1024,8 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 				//by convention, the root directory name
 				//created by the backup job is depName-backups
 				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, ns)
+				//dataRoots = append(dataRoots, deploymentName+"-backrest-shared-repo")
+				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, dep.Name+"-rmdata-backups", ns)
 				if err != nil {
 					log.Error(err)
 					return err

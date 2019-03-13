@@ -16,12 +16,12 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -90,7 +90,7 @@ func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
 	dataRoots := []string{backupName + "-backups"}
 
 	storageSpec := crv1.PgStorageSpec{}
-	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots, ns)
+	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots, backupName+"-backup", ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

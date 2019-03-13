@@ -17,9 +17,9 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -37,8 +37,9 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.LabelResponse{}
 	resp.Status = msgs.Status{Msg: "", Code: msgs.Ok}
@@ -77,8 +78,9 @@ func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.LabelResponse{}
 	resp.Status = msgs.Status{Msg: "", Code: msgs.Ok}

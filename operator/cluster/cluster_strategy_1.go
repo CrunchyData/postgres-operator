@@ -21,13 +21,13 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
@@ -84,7 +84,10 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = cl.Spec.Name + "-xlog"
+		//archivePVCName = cl.Spec.Name + "-xlog"
+		//backrest doesn't use xlog, so we make the pvc an emptydir
+		//by setting the name to empty string
+		archivePVCName = ""
 		xlogdir = "false"
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl)
 		if err != nil {
@@ -213,13 +216,6 @@ func (r Strategy1) DeleteCluster(clientset *kubernetes.Clientset, restclient *re
 	//delete the pgreplicas if necessary
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
 
-	//delete the pgbackups if necessary
-	pgback := crv1.Pgbackup{}
-	found, err = kubeapi.Getpgbackup(restclient, &pgback, cl.Spec.Name, namespace)
-	if found {
-		kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
-	}
-
 	return err
 
 }
@@ -333,7 +329,9 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-		archivePVCName = replica.Spec.Name + "-xlog"
+		//archivePVCName = replica.Spec.Name + "-xlog"
+		//set to emptystring to force emptyDir to be used
+		archivePVCName = ""
 		xlogdir = "false"
 	}
 
