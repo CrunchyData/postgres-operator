@@ -22,6 +22,8 @@ RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
  && chown -R 2:2 /opt/cpm /pgo-config
 
 ADD bin/pgo-scheduler /opt/cpm/bin
+ADD conf/postgres-operator /default-pgo-config
+
 
 USER 2
 

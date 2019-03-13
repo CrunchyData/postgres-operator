@@ -56,23 +56,23 @@ const lspvcTemplatePath = "pgo.lspvc-template.json"
 
 var AffinityTemplate *template.Template
 
-const affinityTemplatePath = "affinity.json"
+const affinityTemplatePath = "cluster/affinity.json"
 
 var PgoBackrestRepoServiceTemplate *template.Template
 
-const pgoBackrestRepoServiceTemplatePath = "pgo-backrest-repo-service-template.json"
+const pgoBackrestRepoServiceTemplatePath = "cluster/pgo-backrest-repo-service-template.json"
 
 var PgoBackrestRepoTemplate *template.Template
 
-const pgoBackrestRepoTemplatePath = "pgo-backrest-repo-template.json"
+const pgoBackrestRepoTemplatePath = "cluster/pgo-backrest-repo-template.json"
 
 var PgmonitorEnvVarsTemplate *template.Template
 
-const pgmonitorEnvVarsPath = "pgmonitor-env-vars.json"
+const pgmonitorEnvVarsPath = "cluster/pgmonitor-env-vars.json"
 
 var PgbackrestEnvVarsTemplate *template.Template
 
-const pgbackrestEnvVarsPath = "pgbackrest-env-vars.json"
+const pgbackrestEnvVarsPath = "cluster/pgbackrest-env-vars.json"
 
 var JobTemplate *template.Template
 
@@ -80,39 +80,39 @@ const jobPath = "backup-job.json"
 
 var PgpoolTemplate *template.Template
 
-const pgpoolTemplatePath = "pgpool-template.json"
+const pgpoolTemplatePath = "cluster/pgpool-template.json"
 
 var PgpoolConfTemplate *template.Template
 
-const pgpoolConfTemplatePath = "pgpool.conf"
+const pgpoolConfTemplatePath = "cluster/pgpool.conf"
 
 var PgpoolPasswdTemplate *template.Template
 
-const pgpoolPasswdTemplatePath = "pool_passwd"
+const pgpoolPasswdTemplatePath = "cluster/pool_passwd"
 
 var PgpoolHBATemplate *template.Template
 
-const pgpoolHBATemplatePath = "pool_hba.conf"
+const pgpoolHBATemplatePath = "cluster/pool_hba.conf"
 
 var PgbouncerTemplate *template.Template
 
-const pgbouncerTemplatePath = "pgbouncer-template.json"
+const pgbouncerTemplatePath = "cluster/pgbouncer-template.json"
 
 var PgbouncerConfTemplate *template.Template
 
-const pgbouncerConfTemplatePath = "pgbouncer.ini"
+const pgbouncerConfTemplatePath = "cluster/pgbouncer.ini"
 
 var PgbouncerUsersTemplate *template.Template
 
-const pgbouncerUsersTemplatePath = "users.txt"
+const pgbouncerUsersTemplatePath = "cluster/users.txt"
 
 var PgbouncerHBATemplate *template.Template
 
-const pgbouncerHBATemplatePath = "pgbouncer_hba.conf"
+const pgbouncerHBATemplatePath = "cluster/pgbouncer_hba.conf"
 
 var ServiceTemplate *template.Template
 
-const serviceTemplatePath = "cluster-service.json"
+const serviceTemplatePath = "cluster/cluster-service.json"
 
 var RmdatajobTemplate *template.Template
 
@@ -144,15 +144,15 @@ const pvcSCPath = "pvc-storageclass.json"
 
 var CollectTemplate *template.Template
 
-const collectTemplatePath = "collect.json"
+const collectTemplatePath = "cluster/collect.json"
 
 var BadgerTemplate *template.Template
 
-const badgerTemplatePath = "pgbadger.json"
+const badgerTemplatePath = "cluster/pgbadger.json"
 
 var DeploymentTemplate *template.Template
 
-const deploymentTemplatePath = "cluster-deployment.json"
+const deploymentTemplatePath = "cluster/cluster-deployment.json"
 
 type ClusterStruct struct {
 	CCPImagePrefix          string `yaml:"CCPImagePrefix"`
@@ -566,11 +566,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 
-	AffinityTemplate, err = c.LoadTemplate(cMap, rootPath, affinityTemplatePath)
-	if err != nil {
-		return err
-	}
-
 	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(cMap, rootPath, pgoBackrestRepoServiceTemplatePath)
 	if err != nil {
 		return err
@@ -722,7 +717,7 @@ func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*te
 		log.Debugf("loading path [%s]", fullPath)
 		buf, err := ioutil.ReadFile(fullPath)
 		if err != nil {
-			log.Error("erro: could not read %s", fullPath)
+			log.Errorf("error: could not read %s", fullPath)
 			log.Error(err)
 			return nil, err
 		}
