@@ -1,7 +1,7 @@
 package api
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,8 +18,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 )

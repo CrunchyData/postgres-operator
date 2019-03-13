@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -72,7 +72,6 @@ func showDf(args []string, ns string) {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)
 		}
-		//var response msgs.DfResponse
 
 		if response.Status.Code != msgs.Ok {
 			fmt.Println("Error: " + response.Status.Msg)
