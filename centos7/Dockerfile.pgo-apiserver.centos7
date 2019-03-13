@@ -4,7 +4,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
-	Release="3.5.2-rc1" \
+	Release="3.5.2-rc2" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
