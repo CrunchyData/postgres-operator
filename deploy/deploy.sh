@@ -29,9 +29,6 @@ $CO_CMD --namespace=$CO_NAMESPACE create secret generic pgo-backrest-repo-config
 	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
 	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
 	--from-file=authorized_keys=$COROOT/conf/pgo-backrest-repo/authorized_keys \
-	--from-file=id_rsa=$COROOT/conf/pgo-backrest-repo/id_rsa \
-	--from-file=ssh_host_ecdsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ecdsa_key \
-	--from-file=ssh_host_ed25519_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ed25519_key \
 	--from-file=sshd_config=$COROOT/conf/pgo-backrest-repo/sshd_config
 
 
@@ -41,21 +38,21 @@ $CO_CMD --namespace=$CO_NAMESPACE create secret generic pgo-auth-secret \
         --from-file=pgouser=$COROOT/conf/postgres-operator/pgouser \
         --from-file=pgorole=$COROOT/conf/postgres-operator/pgorole 
 $CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-config \
-        --from-file=pgo.yaml=$COROOT/conf/postgres-operator/pgo.yaml \
-        --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
-        --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
-        --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
-	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgdump-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgrestore-job.json \
-	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
-	--from-file=$COROOT/conf/postgres-operator/cluster
+	--from-file=$COROOT/conf/postgres-operator
+#        --from-file=pgo.yaml=$COROOT/conf/postgres-operator/pgo.yaml \
+#j        --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
+#j        --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
+#j        --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
+#j	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
+#j	--from-file=$COROOT/conf/postgres-operator/pgdump-job.json \
+#j	--from-file=$COROOT/conf/postgres-operator/pgrestore-job.json \
+#j	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
+#j	--from-file=$COROOT/conf/postgres-operator/pvc.json \
+#j	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
+#j	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
+#j	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
+#j	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
+#j	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
 
 #
 # create the postgres-operator Deployment and Service

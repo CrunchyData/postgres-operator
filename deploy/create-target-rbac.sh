@@ -24,6 +24,8 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo ""
 echo "creating pgo-backrest-repo-config in namespace " $1
 
+$CO_CMD --namespace=$1 delete secret pgo-backrest-repo-config 
+
 $CO_CMD --namespace=$1 create secret generic pgo-backrest-repo-config \
 	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
 	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
@@ -40,5 +42,7 @@ echo "operator is assumed to be deployed into " $2
 
 export TARGET_NAMESPACE=$1
 export OPERATOR_NAMESPACE=$2
+expenv -f $DIR/rbac.yaml | $CO_CMD --namespace=$1 delete -f -
+
 expenv -f $DIR/rbac.yaml | $CO_CMD --namespace=$1 create -f -
 

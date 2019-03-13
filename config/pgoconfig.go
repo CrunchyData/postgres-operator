@@ -56,23 +56,23 @@ const lspvcTemplatePath = "pgo.lspvc-template.json"
 
 var AffinityTemplate *template.Template
 
-const affinityTemplatePath = "cluster/affinity.json"
+const affinityTemplatePath = "affinity.json"
 
 var PgoBackrestRepoServiceTemplate *template.Template
 
-const pgoBackrestRepoServiceTemplatePath = "cluster/pgo-backrest-repo-service-template.json"
+const pgoBackrestRepoServiceTemplatePath = "pgo-backrest-repo-service-template.json"
 
 var PgoBackrestRepoTemplate *template.Template
 
-const pgoBackrestRepoTemplatePath = "cluster/pgo-backrest-repo-template.json"
+const pgoBackrestRepoTemplatePath = "pgo-backrest-repo-template.json"
 
 var PgmonitorEnvVarsTemplate *template.Template
 
-const pgmonitorEnvVarsPath = "cluster/pgmonitor-env-vars.json"
+const pgmonitorEnvVarsPath = "pgmonitor-env-vars.json"
 
 var PgbackrestEnvVarsTemplate *template.Template
 
-const pgbackrestEnvVarsPath = "cluster/pgbackrest-env-vars.json"
+const pgbackrestEnvVarsPath = "pgbackrest-env-vars.json"
 
 var JobTemplate *template.Template
 
@@ -80,39 +80,39 @@ const jobPath = "backup-job.json"
 
 var PgpoolTemplate *template.Template
 
-const pgpoolTemplatePath = "cluster/pgpool-template.json"
+const pgpoolTemplatePath = "pgpool-template.json"
 
 var PgpoolConfTemplate *template.Template
 
-const pgpoolConfTemplatePath = "cluster/pgpool.conf"
+const pgpoolConfTemplatePath = "pgpool.conf"
 
 var PgpoolPasswdTemplate *template.Template
 
-const pgpoolPasswdTemplatePath = "cluster/pool_passwd"
+const pgpoolPasswdTemplatePath = "pool_passwd"
 
 var PgpoolHBATemplate *template.Template
 
-const pgpoolHBATemplatePath = "cluster/pool_hba.conf"
+const pgpoolHBATemplatePath = "pool_hba.conf"
 
 var PgbouncerTemplate *template.Template
 
-const pgbouncerTemplatePath = "cluster/pgbouncer-template.json"
+const pgbouncerTemplatePath = "pgbouncer-template.json"
 
 var PgbouncerConfTemplate *template.Template
 
-const pgbouncerConfTemplatePath = "cluster/pgbouncer.ini"
+const pgbouncerConfTemplatePath = "pgbouncer.ini"
 
 var PgbouncerUsersTemplate *template.Template
 
-const pgbouncerUsersTemplatePath = "cluster/users.txt"
+const pgbouncerUsersTemplatePath = "users.txt"
 
 var PgbouncerHBATemplate *template.Template
 
-const pgbouncerHBATemplatePath = "cluster/pgbouncer_hba.conf"
+const pgbouncerHBATemplatePath = "pgbouncer_hba.conf"
 
 var ServiceTemplate *template.Template
 
-const serviceTemplatePath = "cluster/cluster-service.json"
+const serviceTemplatePath = "cluster-service.json"
 
 var RmdatajobTemplate *template.Template
 
@@ -144,15 +144,15 @@ const pvcSCPath = "pvc-storageclass.json"
 
 var CollectTemplate *template.Template
 
-const collectTemplatePath = "cluster/collect.json"
+const collectTemplatePath = "collect.json"
 
 var BadgerTemplate *template.Template
 
-const badgerTemplatePath = "cluster/pgbadger.json"
+const badgerTemplatePath = "pgbadger.json"
 
 var DeploymentTemplate *template.Template
 
-const deploymentTemplatePath = "cluster/cluster-deployment.json"
+const deploymentTemplatePath = "cluster-deployment.json"
 
 type ClusterStruct struct {
 	CCPImagePrefix          string `yaml:"CCPImagePrefix"`

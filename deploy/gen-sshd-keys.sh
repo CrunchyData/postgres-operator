@@ -16,8 +16,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 LOC=$COROOT/conf/pgo-backrest-repo
 
-ssh-keygen -f $LOC/id_rsa -t rsa -N ''
+#ssh-keygen -f $LOC/id_rsa -t rsa -N ''
 ssh-keygen -t rsa -f $LOC/ssh_host_rsa_key -N ''
-ssh-keygen -t ecdsa -f $LOC/ssh_host_ecdsa_key -N ''
-ssh-keygen -t ed25519 -f $LOC/ssh_host_ed25519_key -N ''
+
+# the copying of the the keys is for the postgres container 
+# TODO - fix postgres container sshd to not require these
+# extra keys
+cp $LOC/ssh_host_rsa_key $LOC/id_rsa
+cp $LOC/ssh_host_rsa_key.pub $LOC/id_rsa.pub
+cp $LOC/ssh_host_rsa_key $LOC/ssh_host_ecdsa_key
+cp $LOC/ssh_host_rsa_key $LOC/ssh_host_ed25519_key
+
 cp $LOC/id_rsa.pub $LOC/authorized_keys
