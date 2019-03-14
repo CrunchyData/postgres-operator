@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -129,17 +129,5 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
 	log.Debugf("[PgpolicyController] onDelete ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
-	/**
-	err := c.PgpolicyClient.Delete().
-		Resource(crv1.PgpolicyResourcePlural).
-		Namespace(policy.ObjectMeta.Namespace).
-		Name(policy.ObjectMeta.Name).
-		Do().
-		Error()
-
-	if err != nil {
-		log.Errorf("ERROR deleting pgpolicy: %v", err)
-	}
-	*/
 	log.Debugf("DELETED pgpolicy %s", policy.ObjectMeta.Name)
 }

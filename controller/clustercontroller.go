@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,9 +19,9 @@ import (
 	"context"
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -133,9 +133,9 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
 
 	//handle the case for when the autofail lable is updated
-	if newcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] != "" {
-		oldValue := oldcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL]
-		newValue := newcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL]
+	if newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] != "" {
+		oldValue := oldcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL]
+		newValue := newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL]
 		if oldValue != newValue {
 			if newValue == "false" {
 				log.Debugf("pgcluster autofail was set to false on %s", oldcluster.Name)
@@ -175,7 +175,7 @@ func GetPrimaryPodStatus(clientset *kubernetes.Clientset, cluster *crv1.Pgcluste
 	var ready bool
 	var err error
 
-	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Name
+	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Name
 	pods, err := kubeapi.GetPods(clientset, selector, ns)
 	if err != nil {
 		return err, ready

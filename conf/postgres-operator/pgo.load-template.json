@@ -27,7 +27,7 @@
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "csvload",
-                    "image": "{{.COImagePrefix}}/pgo-load:{{.COImageTag}}",
+                    "image": "{{.PGOImagePrefix}}/pgo-load:{{.PGOImageTag}}",
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
                         "name": "pgdata",

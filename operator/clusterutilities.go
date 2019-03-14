@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -117,7 +118,7 @@ func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) st
 		}
 
 		var doc bytes.Buffer
-		err := PgbackrestEnvVarsTemplate.Execute(&doc, fields)
+		err := config.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
@@ -130,7 +131,7 @@ func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) st
 
 func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels[util.LABEL_BADGER] == "true" {
+	if spec.UserLabels[config.LABEL_BADGER] == "true" {
 		log.Debug("crunchy_badger was found as a label on cluster create")
 		badgerTemplateFields := badgerTemplateFields{}
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
@@ -149,14 +150,14 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		}
 
 		var badgerDoc bytes.Buffer
-		err := BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
+		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
+			config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
 		}
 		return badgerDoc.String()
 	}
@@ -165,7 +166,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 
 func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels[util.LABEL_COLLECT] == "true" {
+	if spec.UserLabels[config.LABEL_COLLECT] == "true" {
 		log.Debug("crunchy_collect was found as a label on cluster create")
 		_, PrimaryPassword, err3 := util.GetPasswordFromSecret(clientset, namespace, spec.PrimarySecretName)
 		if err3 != nil {
@@ -180,14 +181,14 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
-		err := CollectTemplate.Execute(&collectDoc, collectTemplateFields)
+		err := config.CollectTemplate.Execute(&collectDoc, collectTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			CollectTemplate.Execute(os.Stdout, collectTemplateFields)
+			config.CollectTemplate.Execute(os.Stdout, collectTemplateFields)
 		}
 		return collectDoc.String()
 	}
@@ -212,9 +213,9 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	}
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_CUSTOM_CONFIGMAP, namespace)
+	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
 	if !found {
-		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+		log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
 	} else {
 		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
 	}
@@ -244,15 +245,15 @@ func GetLabelsFromMap(labels map[string]string) string {
 // GetPrimaryLabels ...
 func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
-	primaryLabels[util.LABEL_PRIMARY] = "true"
+	primaryLabels[config.LABEL_PRIMARY] = "true"
 
 	primaryLabels["name"] = serviceName
-	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
+	primaryLabels[config.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
-		if key == util.LABEL_PGPOOL || key == util.LABEL_PGBOUNCER {
+		if key == config.LABEL_PGPOOL || key == config.LABEL_PGBOUNCER {
 			//these dont apply to a primary or replica
-		} else if key == util.LABEL_AUTOFAIL || key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
+		} else if key == config.LABEL_AUTOFAIL || key == config.LABEL_NODE_LABEL_KEY || key == config.LABEL_NODE_LABEL_VALUE {
 			//dont add these since they can break label expression checks
 			//or autofail toggling
 		} else {
@@ -264,7 +265,7 @@ func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, 
 	//replica values if this is for a replica
 
 	if replicaFlag {
-		primaryLabels[util.LABEL_PRIMARY] = "false"
+		primaryLabels[config.LABEL_PRIMARY] = "false"
 	}
 
 	return primaryLabels
@@ -284,14 +285,14 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	affinityTemplateFields.OperatorValue = affoperator
 
 	var affinityDoc bytes.Buffer
-	err := AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
+	err := config.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return output
 	}
 
 	if CRUNCHY_DEBUG {
-		AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
+		config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()
@@ -305,16 +306,16 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 	var operator, key, value string
 	log.Debug("GetReplicaAffinity ")
-	if replicaLabels[util.LABEL_NODE_LABEL_KEY] != "" {
+	if replicaLabels[config.LABEL_NODE_LABEL_KEY] != "" {
 		//use the replica labels
 		operator = "In"
-		key = replicaLabels[util.LABEL_NODE_LABEL_KEY]
-		value = replicaLabels[util.LABEL_NODE_LABEL_VALUE]
+		key = replicaLabels[config.LABEL_NODE_LABEL_KEY]
+		value = replicaLabels[config.LABEL_NODE_LABEL_VALUE]
 	} else {
 		//use the cluster labels
 		operator = "NotIn"
-		key = clusterLabels[util.LABEL_NODE_LABEL_KEY]
-		value = clusterLabels[util.LABEL_NODE_LABEL_VALUE]
+		key = clusterLabels[config.LABEL_NODE_LABEL_KEY]
+		value = clusterLabels[config.LABEL_NODE_LABEL_VALUE]
 	}
 	return GetAffinity(key, value, operator)
 }
@@ -326,7 +327,7 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 		}
 
 		var doc bytes.Buffer
-		err := PgmonitorEnvVarsTemplate.Execute(&doc, fields)
+		err := config.PgmonitorEnvVarsTemplate.Execute(&doc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""

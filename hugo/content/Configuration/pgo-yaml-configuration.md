@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 4.0.0-rc1 {docdate}
+Latest Release: 4.0.0-rc2 {docdate}
 draft: false
 weight: 31
 ---
@@ -133,8 +133,6 @@ for other access modes it might support.
 | Setting |Definition  |
 |---|---|
 |PreferredFailoverNode        | optional, a label selector (e.g. hosttype=offsite) that if set, will be used to pick the failover target which is running on a host that matches this label if multiple targets are equal in replication status
-|LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
-|LoadTemplate        | the load template file used for load jobs
 |COImagePrefix        | image tag prefix to use for the Operator containers
 |COImageTag        | image tag to use for the Operator containers
 |Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking

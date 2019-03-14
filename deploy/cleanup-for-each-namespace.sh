@@ -15,4 +15,4 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CO_CMD --namespace=$NAMESPACE delete secret generic pgo-backrest-repo-config 
+$PGO_CMD --namespace=$NAMESPACE delete secret generic pgo-backrest-repo-config 

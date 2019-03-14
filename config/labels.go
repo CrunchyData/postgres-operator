@@ -1,7 +1,7 @@
-package util
+package config
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -136,3 +136,7 @@ const LABEL_FALSE = "false"
 
 const LABEL_NAMESPACE = "namespace"
 const LABEL_VENDOR = "vendor"
+
+const LABEL_PGO_DEFAULT_SC = "pgo-default-sc"
+
+const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"

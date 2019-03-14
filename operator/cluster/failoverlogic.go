@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,6 +21,7 @@ package cluster
 import (
 	"errors"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -34,7 +35,7 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	var pod *v1.Pod
 	var err error
-	target := task.ObjectMeta.Labels[util.LABEL_TARGET]
+	target := task.ObjectMeta.Labels[config.LABEL_TARGET]
 
 	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
 
@@ -54,7 +55,7 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 	//deployment should be found, and then you would proceed to remove
 	//it
 
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_SERVICE_NAME + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName
 	log.Debugf("selector in failover get deployments is %s", selector)
 	var depList *v1beta1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
@@ -87,19 +88,16 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	//set the service-name label to the cluster name to match
 	//the primary service selector
-	//upod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] = clusterName
+	log.Debugf("setting label on pod %s=%s", config.LABEL_SERVICE_NAME, clusterName)
 
-	//err = kubeapi.UpdatePod(clientset, upod, namespace)
-	log.Debugf("setting label on pod %s=%s", util.LABEL_SERVICE_NAME, clusterName)
-
-	err = kubeapi.AddLabelToPod(clientset, upod, util.LABEL_SERVICE_NAME, clusterName, namespace)
+	err = kubeapi.AddLabelToPod(clientset, upod, config.LABEL_SERVICE_NAME, clusterName, namespace)
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating pod during failover relabel")
 		return err
 	}
 
-	targetDepName := upod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME]
+	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	log.Debug("targetDepName %s", targetDepName)
 	var targetDep *v1beta1.Deployment
 	targetDep, _, err = kubeapi.GetDeployment(clientset, targetDepName, namespace)
@@ -109,7 +107,7 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 		return err
 	}
 
-	err = kubeapi.AddLabelToDeployment(clientset, targetDep, util.LABEL_SERVICE_NAME, clusterName, namespace)
+	err = kubeapi.AddLabelToDeployment(clientset, targetDep, config.LABEL_SERVICE_NAME, clusterName, namespace)
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating deployment during failover relabel")
@@ -149,7 +147,7 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 
 	//the primary will be the one with a pod that has a label
 	//that looks like service-name=clustername
-	selector := util.LABEL_SERVICE_NAME + "=" + clusterName
+	selector := config.LABEL_SERVICE_NAME + "=" + clusterName
 	pods, err := kubeapi.GetPods(clientset, selector, namespace)
 	if len(pods.Items) == 0 {
 		log.Errorf("no primary pod found when trying to delete primary %s", selector)
@@ -160,15 +158,9 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 		return errors.New("more than 1 primary pod found in delete primary logic")
 	}
 
-	deploymentToDelete := pods.Items[0].ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME]
+	deploymentToDelete := pods.Items[0].ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 
 	//delete the deployment with pg-cluster=clusterName,primary=true
-	//should only be 1 primary with this name!
-	//deps, err := kubeapi.GetDeployments(clientset, util.LABEL_PG_CLUSTER+"="+clusterName+",primary=true", namespace)
-	//for _, d := range deps.Items {
-	//	log.Debugf("deleting deployment %s", d.Name)
-	//	kubeapi.DeleteDeployment(clientset, d.Name, namespace)
-	//}
 	log.Debugf("deleting deployment %s", deploymentToDelete)
 	err = kubeapi.DeleteDeployment(clientset, deploymentToDelete, namespace)
 

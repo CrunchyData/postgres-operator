@@ -1,7 +1,7 @@
 
 ---
 title: "Configuration Resources"
-Latest Release: 4.0.0-rc1 {docdate}
+Latest Release: 4.0.0-rc2 {docdate}
 draft: false
 weight: 30
 ---
@@ -13,6 +13,28 @@ The operator is template-driven; this makes it simple to configure both the clie
 The Operator is configured with a collection of files found in the *conf* directory.  These configuration files are deployed to your Kubernetes cluster when the Operator is deployed.  Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
 
 The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.
+
+The configuration files used by the Operator are found in 2 places:
+ * the pgo-config ConfigMap in the namespace the Operator is running in
+ * or, a copy of the configuration files are also included by default into the Operator container images themselves to support a very simplistic deployment of the Operator
+
+If the pgo-config ConfigMap is not found by the Operator, it will use
+the configuration files that are included in the Operator container
+images.
+
+The container included set of configuration files use the most
+basic setting values and the image versions of the Operator itself
+with the latest Crunchy Container image versions.  The storage
+configurations are determined by using the default storage
+class on the system you are deploying the Operator into, the
+default storage class is one that is labeled as follows:
+
+    pgo-default-sc=true 
+
+If no storage class has that label, then the first storage class
+found on the system will be used.  If no storage class is found
+on the system, the containers will not run and produce an error
+in the log.
 
 ## conf/postgres-operator/pgo.yaml
 The *pgo.yaml* file sets many different Operator configuration settings and is described in the [pgo.yaml configuration]({{< ref "pgo-yaml-configuration.md" >}}) documentation section.
@@ -26,7 +48,6 @@ The *pgo.yaml* file is deployed along with the other Operator configuration file
 
 Files within the *conf/postgres-operator* directory contain various templates that are used by the Operator when creating Kubernetes resources.  In an advanced Operator deployment, administrators can modify these templates to add their own custom meta-data or make other changes to influence the Resources that get created on your Kubernetes cluster by the Operator.
 
-## conf/postgres-operator/cluster
 Files within this directory are used specifically when creating PostgreSQL Cluster resources. Sidecar components such as pgBouncer and pgPool II templates are also located within this directory.
 
 As with the other Operator templates, administrators can make custom changes to this set of templates to add custom features or metadata into the Resources created by the Operator.

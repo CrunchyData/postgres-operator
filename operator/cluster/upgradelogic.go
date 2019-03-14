@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -44,7 +44,7 @@ func MinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	err = util.Patch(restclient, "/spec/ccpimagetag", upgrade.Spec.CCPImageTag, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 
 	//update the upgrade CRD status to completed
-	log.Debug("jeff patch pgupgrade %s to %s here in upgrade_strategy", upgrade.Spec.Name, crv1.UpgradeCompletedStatus)
+	log.Debug("patch pgupgrade %s to %s here in upgrade_strategy", upgrade.Spec.Name, crv1.UpgradeCompletedStatus)
 	err = kubeapi.Patchpgupgrade(restclient, upgrade.Spec.Name, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, namespace)
 	if err != nil {
 		log.Error("error in upgradestatus patch " + err.Error())

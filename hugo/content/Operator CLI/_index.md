@@ -193,7 +193,7 @@ before you do a restore.
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15 00:03:25"
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25"
 	
 To restore the most recent pgdump at the default path, leave off a timestamp:
 	
@@ -310,7 +310,7 @@ against the target cluster prior to creating this schedule.
 
 | Flag | Description |
 |:--|:--|
-|apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
+|apiserver-url | URL of the Operator REST API service, override with PGO_APISERVER_URL environment variable |
 |debug |enable debug messages |
 |pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
 |pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|

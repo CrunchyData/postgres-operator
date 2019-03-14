@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -121,7 +121,6 @@ var createPolicyCmd = &cobra.Command{
 		}
 		log.Debug("create policy called ")
 		if PolicyFile == "" && PolicyURL == "" {
-			//log.Error("--in-file or --url is required to create a policy")
 			fmt.Println(`Error: The --in-file or --url flags are required to create a policy.`)
 			return
 		}
@@ -236,7 +235,6 @@ func init() {
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
-	//createClusterCmd.Flags().StringVarP(&BackrestRestoreFrom, "pgbackrest-restore-from", "", "", "specifies the cluster name from where the restore is from, used to restore from a pgbackrest restore")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")

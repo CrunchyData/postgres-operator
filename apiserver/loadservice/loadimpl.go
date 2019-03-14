@@ -1,7 +1,7 @@
 package loadservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,13 +18,14 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
@@ -92,7 +93,6 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 	LoadConfigTemplate.FileType = LoadCfg.FileType
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
 	LoadConfigTemplate.SecurityContext = LoadCfg.SecurityContext
-	//apiserver.Pgo.DefaultContainerResources
 	LoadConfigTemplate.ContainerResources = ""
 	if apiserver.Pgo.DefaultLoadResources != "" {
 		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLoadResources)
@@ -195,7 +195,7 @@ func createJob(clusterName string, template *loadJobTemplateFields, ns string) (
 	}
 
 	var doc2 bytes.Buffer
-	err = apiserver.JobTemplate.Execute(&doc2, template)
+	err = config.JobTemplate.Execute(&doc2, template)
 	if err != nil {
 		log.Error(err.Error())
 		return "", err

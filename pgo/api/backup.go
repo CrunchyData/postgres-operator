@@ -1,7 +1,7 @@
 package api
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,9 +19,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -29,7 +29,7 @@ func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 
 	var response msgs.ShowBackupResponse
 
-	url := SessionCredentials.APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_NAMESPACE + "=" + ns
+	url := SessionCredentials.APIServerURL + "/backups/" + arg + "?version=" + msgs.PGO_VERSION + "&" + config.LABEL_NAMESPACE + "=" + ns
 
 	log.Debugf("show backup called [%s]", url)
 
@@ -64,7 +64,7 @@ func ShowBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 func DeleteBackup(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeleteBackupResponse, error) {
 
 	var response msgs.DeleteBackupResponse
-	url := SessionCredentials.APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_NAMESPACE + "=" + ns
+	url := SessionCredentials.APIServerURL + "/backupsdelete/" + arg + "?version=" + msgs.PGO_VERSION + "&" + config.LABEL_NAMESPACE + "=" + ns
 
 	log.Debug("delete backup called [%s]", url)
 

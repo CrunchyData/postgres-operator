@@ -15,7 +15,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CO_CMD delete configmap pgo-custom-pg-config
+$PGO_CMD delete configmap pgo-custom-pg-config
 
-$CO_CMD create configmap pgo-custom-pg-config --from-file=$DIR
+$PGO_CMD create configmap pgo-custom-pg-config --from-file=$DIR
 

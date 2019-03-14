@@ -61,7 +61,5 @@ Pgo:
   AutofailSleepSeconds:  9
   PreferredFailoverNode:  
   Audit:  false
-  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
-  LoadTemplate:  /pgo-config/pgo.load-template.json
-  COImagePrefix:  $CO_IMAGE_PREFIX
-  COImageTag:  $CO_IMAGE_TAG
+  PGOImagePrefix:  $PGO_IMAGE_PREFIX
+  PGOImageTag:  $PGO_IMAGE_TAG

@@ -17,48 +17,35 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$CO_CMD --namespace=$CO_NAMESPACE get clusterrole pgopclusterrole 2> /dev/null
+$PGO_CMD --namespace=$PGO_NAMESPACE get clusterrole pgopclusterrole 2> /dev/null
 if [ $? -ne 0 ]
 then
-	echo ERROR: pgopclusterrole was not found in $CO_NAMESPACE namespace
+	echo ERROR: pgopclusterrole was not found in $PGO_NAMESPACE namespace
 	echo Verify you ran install-rbac.sh
 	exit
 fi
 
-$CO_CMD --namespace=$CO_NAMESPACE create secret generic pgo-backrest-repo-config \
-	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
-	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
-	--from-file=authorized_keys=$COROOT/conf/pgo-backrest-repo/authorized_keys \
-	--from-file=id_rsa=$COROOT/conf/pgo-backrest-repo/id_rsa \
-	--from-file=ssh_host_ecdsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ecdsa_key \
-	--from-file=ssh_host_ed25519_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ed25519_key \
-	--from-file=sshd_config=$COROOT/conf/pgo-backrest-repo/sshd_config
+#
+# credentials for pgbackrest sshd 
+#
+$PGO_CMD --namespace=$PGO_NAMESPACE create secret generic pgo-backrest-repo-config \
+	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
+	--from-file=ssh_host_rsa_key=$PGOROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
+	--from-file=authorized_keys=$PGOROOT/conf/pgo-backrest-repo/authorized_keys \
+	--from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config
 
+#
+# credentials for pgo-apiserver TLS REST API
+#
+$PGO_CMD --namespace=$PGO_NAMESPACE delete secret tls pgo.tls
 
-$CO_CMD --namespace=$CO_NAMESPACE create secret generic pgo-auth-secret \
-        --from-file=server.crt=$COROOT/conf/postgres-operator/server.crt \
-        --from-file=server.key=$COROOT/conf/postgres-operator/server.key \
-        --from-file=pgouser=$COROOT/conf/postgres-operator/pgouser \
-        --from-file=pgorole=$COROOT/conf/postgres-operator/pgorole 
-$CO_CMD --namespace=$CO_NAMESPACE create configmap pgo-config \
-        --from-file=pgo.yaml=$COROOT/conf/postgres-operator/pgo.yaml \
-        --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
-        --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
-        --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
-	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgdump-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgrestore-job.json \
-	--from-file=$COROOT/conf/postgres-operator/rmdata-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc-storageclass.json \
-	--from-file=$COROOT/conf/postgres-operator/pvc-matchlabels.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-job.json \
-	--from-file=$COROOT/conf/postgres-operator/backrest-restore-job.json \
-	--from-file=$COROOT/conf/postgres-operator/pgo.sqlrunner-template.json \
-	--from-file=$COROOT/conf/postgres-operator/cluster
+$PGO_CMD --namespace=$PGO_NAMESPACE create secret tls pgo.tls --key=$PGOROOT/conf/postgres-operator/server.key --cert=$PGOROOT/conf/postgres-operator/server.crt
+
+$PGO_CMD --namespace=$PGO_NAMESPACE create configmap pgo-config \
+	--from-file=$PGOROOT/conf/postgres-operator
 
 #
 # create the postgres-operator Deployment and Service
 #
-expenv -f $DIR/deployment.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
-$CO_CMD --namespace=$CO_NAMESPACE create -f $DIR/service.json
+expenv -f $DIR/deployment.json | $PGO_CMD --namespace=$PGO_NAMESPACE create -f -
+$PGO_CMD --namespace=$PGO_NAMESPACE create -f $DIR/service.json

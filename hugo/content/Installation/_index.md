@@ -31,7 +31,7 @@ The Operator follows a golang project structure, you can create a structure as f
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-	git checkout 4.0.0-rc1
+    git checkout 4.0.0-rc2
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
@@ -69,11 +69,11 @@ for Kube events.  This value is set as follows:
 This means namespaces called *pgouser1* and *pgouser2* will be
 created as part of the default installation.  
 
-The *CO_NAMESPACE* environment variable is a comma separated list
+The *PGO_NAMESPACE* environment variable is a comma separated list
 of namespace values that the Operator itself will be deployed into.  For
 the installation example, this value is set as follows:
 
-    export CO_NAMESPACE=pgo
+    export PGO_NAMESPACE=pgo
 
 This means a *pgo* namespace will be created and the Operator will
 be deployed into that namespace.
@@ -128,6 +128,9 @@ As part of the Operator installation, you will need to adjust these storage sett
 For NFS Storage, it is assumed that there are sufficient Persistent Volumes (PV) created for the Operator to use when it creates Persistent Volume Claims (PVC).  The creation of Persistent Volumes is something a Kubernetes cluster-admin user would typically provide before installing the Operator.  There is an example script which can be used to create NFS Persistent Volumes located here:
 
     ./pv/create-nfs-pv.sh
+
+That script looks for the IP address of an NFS server using the 
+environment variable PGO_NFS_IP you would set in your .bashrc environment.
 
 A similar script is provided for HostPath persistent volume creation if
 you wanted to use HostPath for testing:
@@ -215,7 +218,7 @@ Prior to using *pgo*, users testing the Operator on a single host can specify th
     $ kubectl get service postgres-operator
     NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
     postgres-operator   10.104.47.110   <none>        8443/TCP   7m
-    $ export CO_APISERVER_URL=https://10.104.47.110:8443
+    $ export PGO_APISERVER_URL=https://10.104.47.110:8443
     pgo version
 ```
 
@@ -224,14 +227,14 @@ That URL address needs to be reachable from your local *pgo* client host.  Your 
 Next, the *pgo* client needs to reference the keys used to secure the Operator REST API:
 
 ```
-    export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
-    export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
-    export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
+    export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
+    export PGO_CLIENT_CERT=$PGOROOT/conf/postgres-operator/server.crt
+    export PGO_CLIENT_KEY=$PGOROOT/conf/postgres-operator/server.key
 ```
 
 You can also specify these keys on the command line as follows:
 
-    pgo version --pgo-ca-cert=$COROOT/conf/postgres-operator/server.crt --pgo-client-cert=$COROOT/conf/postgres-operator/server.crt --pgo-client-key=$COROOT/conf/postgres-operator/server.key
+    pgo version --pgo-ca-cert=$PGOROOT/conf/postgres-operator/server.crt --pgo-client-cert=$PGOROOT/conf/postgres-operator/server.crt --pgo-client-key=$PGOROOT/conf/postgres-operator/server.key
 
 Lastly, create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
 

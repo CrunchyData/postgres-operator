@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 )
 
 // deleteCluster ...
@@ -36,7 +36,6 @@ func deleteCluster(args []string, ns string) {
 
 	for _, arg := range args {
 		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, ns)
-		//var response msgs.DeleteClusterResponse
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -80,8 +79,6 @@ func showCluster(args []string, ns string) {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
 		}
-
-		//var response msgs.ShowClusterResponse
 
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
@@ -197,7 +194,6 @@ func createCluster(args []string, ns string) {
 	r.PgbouncerPass = PgBouncerPassword
 	r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
-	//r.BackrestRestoreFrom = BackrestRestoreFrom
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

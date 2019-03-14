@@ -24,14 +24,16 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo ""
 echo "creating pgo-backrest-repo-config in namespace " $1
 
-$CO_CMD --namespace=$1 create secret generic pgo-backrest-repo-config \
-	--from-file=config=$COROOT/conf/pgo-backrest-repo/config \
-	--from-file=ssh_host_rsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
-	--from-file=authorized_keys=$COROOT/conf/pgo-backrest-repo/authorized_keys \
-	--from-file=id_rsa=$COROOT/conf/pgo-backrest-repo/id_rsa \
-	--from-file=ssh_host_ecdsa_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ecdsa_key \
-	--from-file=ssh_host_ed25519_key=$COROOT/conf/pgo-backrest-repo/ssh_host_ed25519_key \
-	--from-file=sshd_config=$COROOT/conf/pgo-backrest-repo/sshd_config
+$PGO_CMD --namespace=$1 delete secret pgo-backrest-repo-config 
+
+$PGO_CMD --namespace=$1 create secret generic pgo-backrest-repo-config \
+	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
+	--from-file=ssh_host_rsa_key=$PGOROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
+	--from-file=authorized_keys=$PGOROOT/conf/pgo-backrest-repo/authorized_keys \
+	--from-file=id_rsa=$PGOROOT/conf/pgo-backrest-repo/id_rsa \
+	--from-file=ssh_host_ecdsa_key=$PGOROOT/conf/pgo-backrest-repo/ssh_host_ecdsa_key \
+	--from-file=ssh_host_ed25519_key=$PGOROOT/conf/pgo-backrest-repo/ssh_host_ed25519_key \
+	--from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config
 
 
 echo ""
@@ -40,5 +42,7 @@ echo "operator is assumed to be deployed into " $2
 
 export TARGET_NAMESPACE=$1
 export OPERATOR_NAMESPACE=$2
-expenv -f $DIR/rbac.yaml | $CO_CMD --namespace=$1 create -f -
+expenv -f $DIR/rbac.yaml | $PGO_CMD --namespace=$1 delete -f -
+
+expenv -f $DIR/rbac.yaml | $PGO_CMD --namespace=$1 create -f -
 

@@ -20,8 +20,8 @@ Port 2022
 #ListenAddress ::
 
 HostKey /sshd/ssh_host_rsa_key
-HostKey /sshd/ssh_host_ecdsa_key
-HostKey /sshd/ssh_host_ed25519_key
+#HostKey /sshd/ssh_host_ecdsa_key
+#HostKey /sshd/ssh_host_ed25519_key
 
 # Ciphers and keying
 #RekeyLimit default none

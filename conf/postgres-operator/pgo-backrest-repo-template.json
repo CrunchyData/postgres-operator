@@ -34,7 +34,7 @@
 
                 "containers": [{
                     "name": "database",
-                    "image": "{{.COImagePrefix}}/pgo-backrest-repo:{{.COImageTag}}",
+                    "image": "{{.PGOImagePrefix}}/pgo-backrest-repo:{{.PGOImageTag}}",
                     "ports": [{
                         "containerPort": {{.SshdPort}},
                         "protocol": "TCP"

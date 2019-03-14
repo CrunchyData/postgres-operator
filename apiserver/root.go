@@ -25,7 +25,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/template"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -38,12 +37,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const AffinityTemplatePath = "/pgo-config/affinity.json"
-const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
-const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
-
 // pgouserPath ...
-const pgouserPath = "/pgo-auth-secret/pgouser"
+const pgouserPath = "/default-pgo-config/pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
@@ -88,12 +83,6 @@ type CredentialDetail struct {
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
 
-var ContainerResourcesTemplate *template.Template
-var LoadTemplate *template.Template
-var LspvcTemplate *template.Template
-var JobTemplate *template.Template
-var AffinityTemplate *template.Template
-
 var Pgo config.PgoConfig
 
 type containerResourcesTemplateFields struct {
@@ -102,16 +91,6 @@ type containerResourcesTemplateFields struct {
 }
 
 func Initialize() {
-
-	Pgo.GetConf()
-	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
-	err := Pgo.Validate()
-	if err != nil {
-		log.Error(err)
-		log.Error("something did not validate in the pgo.yaml")
-		os.Exit(2)
-	}
 
 	PgoNamespace = os.Getenv("PGO_NAMESPACE")
 	if PgoNamespace == "" {
@@ -140,13 +119,18 @@ func Initialize() {
 	log.Infoln("apiserver starts")
 
 	getCredentials()
-	initConfig()
-
-	initTemplates()
 
 	InitializePerms()
 
 	ConnectToKube()
+
+	err := Pgo.GetConfig(Clientset, PgoNamespace)
+	if err != nil {
+		log.Error("error in Pgo configuration")
+		os.Exit(2)
+	}
+
+	initConfig()
 
 	validateWithKube()
 
@@ -170,8 +154,6 @@ func ConnectToKube() {
 		panic(err)
 	}
 
-	// make a new config for our extension's API group, using the first config as a baseline
-	//RESTClient, _, err = crdclient.NewClient(RESTConfig)
 	RESTClient, _, err = util.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
@@ -327,13 +309,6 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	creds := Credentials[username]
-	//	if creds == (CredentialDetail{}) {
-	//this means username not found in pgouser file
-	//should not happen at this point in code!
-	//		log.Error("%s not found in pgouser file", username)
-	//		return false
-	//	}
-
 	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
 
@@ -349,13 +324,6 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 	if requestedNS == "" {
 		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
 	}
-
-	//	namespaceList := util.GetNamespaces()
-	//	if requestedNS == "" {
-	//		//return the first namespace for now
-	//		return namespaceList[0], nil
-	//
-	//	}
 
 	if !UserIsPermittedInNamespace(username, requestedNS) {
 		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
@@ -549,23 +517,6 @@ func IsValidContainerResourceValues() bool {
 	return true
 }
 
-func initTemplates() {
-	LspvcTemplate = util.LoadTemplate(lspvcTemplatePath)
-
-	LoadTemplatePath := Pgo.Pgo.LoadTemplate
-	if LoadTemplatePath == "" {
-		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
-		os.Exit(2)
-	}
-
-	AffinityTemplate = util.LoadTemplate(AffinityTemplatePath)
-
-	JobTemplate = util.LoadTemplate(LoadTemplatePath)
-
-	ContainerResourcesTemplate = util.LoadTemplate(containerResourcesTemplatePath)
-
-}
-
 func validateWithKube() {
 	log.Debug("validateWithKube called")
 
@@ -611,14 +562,14 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	fields.LimitsCPU = resources.LimitsCPU
 
 	doc := bytes.Buffer{}
-	err := ContainerResourcesTemplate.Execute(&doc, fields)
+	err := config.ContainerResourcesTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
 	}
 
 	if log.GetLevel() == log.DebugLevel {
-		ContainerResourcesTemplate.Execute(os.Stdout, fields)
+		config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
 	}
 
 	return doc.String()

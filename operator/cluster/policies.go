@@ -1,7 +1,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -17,6 +17,7 @@ package cluster
 
 import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -32,7 +33,7 @@ import (
 // ProcessPolicies ...
 func ProcessPolicies(clientset *kubernetes.Clientset, restclient *rest.RESTClient, stopchan chan struct{}, namespace string) {
 
-	lo := meta_v1.ListOptions{LabelSelector: util.LABEL_PG_CLUSTER + ",primary"}
+	lo := meta_v1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + ",primary"}
 	fw, err := clientset.Core().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("fatal error in ProcessPolicies " + err.Error())
@@ -130,7 +131,7 @@ func getClusterName(pod *v1.Pod) string {
 	var clusterName string
 	labels := pod.ObjectMeta.Labels
 	for k, v := range labels {
-		if k == util.LABEL_PG_CLUSTER {
+		if k == config.LABEL_PG_CLUSTER {
 			clusterName = v
 		}
 	}
