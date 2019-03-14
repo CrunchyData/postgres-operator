@@ -14,14 +14,14 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CO_CMD --namespace=$CO_NAMESPACE delete pgreplicas --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgbackups --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgclusters --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgpolicies --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all
-$CO_CMD --namespace=$CO_NAMESPACE delete pgtasks --all
+$PGO_CMD --namespace=$PGO_NAMESPACE delete pgreplicas --all
+$PGO_CMD --namespace=$PGO_NAMESPACE delete pgbackups --all
+$PGO_CMD --namespace=$PGO_NAMESPACE delete pgclusters --all
+$PGO_CMD --namespace=$PGO_NAMESPACE delete pgpolicies --all
+$PGO_CMD --namespace=$PGO_NAMESPACE delete pgupgrades --all
+$PGO_CMD --namespace=$PGO_NAMESPACE delete pgtasks --all
 
-$CO_CMD --namespace=$CO_NAMESPACE delete crd \
+$PGO_CMD --namespace=$PGO_NAMESPACE delete crd \
 	pgbackups.crunchydata.com \
 	pgreplicas.crunchydata.com \
 	pgclusters.crunchydata.com \
@@ -29,6 +29,6 @@ $CO_CMD --namespace=$CO_NAMESPACE delete crd \
 	pgtasks.crunchydata.com \
 	pgupgrades.crunchydata.com
 
-$CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgrmdata=true
-$CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgbackup=true
-$CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgo-load=true
+$PGO_CMD --namespace=$PGO_NAMESPACE delete jobs --selector=pgrmdata=true
+$PGO_CMD --namespace=$PGO_NAMESPACE delete jobs --selector=pgbackup=true
+$PGO_CMD --namespace=$PGO_NAMESPACE delete jobs --selector=pgo-load=true

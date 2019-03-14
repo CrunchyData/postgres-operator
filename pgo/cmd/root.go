@@ -68,9 +68,9 @@ func initConfig() {
 	}
 
 	if APIServerURL == "" {
-		APIServerURL = os.Getenv("CO_APISERVER_URL")
+		APIServerURL = os.Getenv("PGO_APISERVER_URL")
 		if APIServerURL == "" {
-			fmt.Println("Error: The CO_APISERVER_URL environment variable or the --apiserver-url flag needs to be supplied.")
+			fmt.Println("Error: The PGO_APISERVER_URL environment variable or the --apiserver-url flag needs to be supplied.")
 			os.Exit(-1)
 		}
 	}

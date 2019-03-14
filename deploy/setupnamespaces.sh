@@ -14,17 +14,17 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-IFS=', ' read -r -a array <<< "$CO_NAMESPACE"
+IFS=', ' read -r -a array <<< "$PGO_NAMESPACE"
 
 echo "creating namespaces to deploy the Operator into..."
 for ns in "${array[@]}"
 do
-	$CO_CMD get namespace $ns > /dev/null 2> /dev/null
+	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
 	if [ $? -eq 0 ]
 	then
 		echo namespace $ns is already created
 	else
-		$CO_CMD create namespace $ns > /dev/null
+		$PGO_CMD create namespace $ns > /dev/null
 		echo namespace $ns created
 	fi
 done
@@ -35,12 +35,12 @@ echo ""
 echo "creating namespaces for the Operator to watch and create PG clusters into..."
 for ns in "${array[@]}"
 do
-	$CO_CMD get namespace $ns > /dev/null 2> /dev/null
+	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
 	if [ $? -eq 0 ]
 	then
 		echo namespace $ns is already created
 	else
-		$CO_CMD create namespace $ns > /dev/null
+		$PGO_CMD create namespace $ns > /dev/null
 		echo namespace $ns created
 	fi
 done

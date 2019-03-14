@@ -21,5 +21,5 @@ declare -a arr=(
 
 for image in "${arr[@]}"
 do
-docker push $CO_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
+docker push $PGO_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   
 done

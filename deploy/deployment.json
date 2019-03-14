@@ -17,7 +17,7 @@
                 "containers": [
                     {
                         "name": "apiserver",
-                        "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",
+                        "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
@@ -60,7 +60,7 @@
                     },
                     {
                         "name": "operator",
-                        "image": "$CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG",
+                        "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
                         "env": [
                             {
@@ -93,7 +93,7 @@
                     },
                     {
                         "name": "scheduler",
-                        "image": "$CO_IMAGE_PREFIX/pgo-scheduler:$CO_IMAGE_TAG",
+                        "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
                         "env": [
                             {
                                 "name": "PGO_NAMESPACE",

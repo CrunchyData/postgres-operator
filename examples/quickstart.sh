@@ -15,50 +15,50 @@
 
 LOG="pgo-installer.log"
 
-if [[ "$CO_BASEOS" != "" ]]; then
-	echo "CO_BASEOS is set to " $CO_BASEOS
+if [[ "$PGO_BASEOS" != "" ]]; then
+	echo "PGO_BASEOS is set to " $PGO_BASEOS
 else
-	export CO_BASEOS=centos7
+	export PGO_BASEOS=centos7
 	echo -n "Which crunchy images do you want to install (rhel7 or centos7)? ["$REPLY"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
-		echo "setting CO_BASEOS="$REPLY
-		export CO_BASEOS=$REPLY
+		echo "setting PGO_BASEOS="$REPLY
+		export PGO_BASEOS=$REPLY
 	fi
 fi
-echo $CO_BASEOS is the baseos entered | tee -a $LOG
+echo $PGO_BASEOS is the baseos entered | tee -a $LOG
 
-if [[ "$CO_VERSION" != "" ]]; then
-	echo "CO_VERSION is set to " $CO_VERSION
+if [[ "$PGO_VERSION" != "" ]]; then
+	echo "PGO_VERSION is set to " $PGO_VERSION
 else
-	export CO_VERSION=3.4.0
-	echo -n "Which Operator version do you want to install? ["$CO_VERSION"]"
+	export PGO_VERSION=3.4.0
+	echo -n "Which Operator version do you want to install? ["$PGO_VERSION"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
-		echo "setting CO_VERSION="$REPLY
-		export CO_VERSION=$REPLY
+		echo "setting PGO_VERSION="$REPLY
+		export PGO_VERSION=$REPLY
 	fi
 fi
-echo $CO_VERSION is the version entered | tee -a $LOG
+echo $PGO_VERSION is the version entered | tee -a $LOG
 
-if [[ "$CO_NAMESPACE" != "" ]]; then
-	echo "CO_NAMESPACE is set to " $CO_NAMESPACE
+if [[ "$PGO_NAMESPACE" != "" ]]; then
+	echo "PGO_NAMESPACE is set to " $PGO_NAMESPACE
 else
-	export CO_NAMESPACE=demo
-	echo -n "Which namespace do you want to install into? ["$CO_NAMESPACE"]"
+	export PGO_NAMESPACE=demo
+	echo -n "Which namespace do you want to install into? ["$PGO_NAMESPACE"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
-		echo "setting CO_NAMESPACE="$REPLY
-		export CO_NAMESPACE=$REPLY
+		echo "setting PGO_NAMESPACE="$REPLY
+		export PGO_NAMESPACE=$REPLY
 	fi
 fi
-echo $CO_NAMESPACE is the namespace entered | tee -a $LOG
-export CO_NAMESPACE=$CO_NAMESPACE
+echo $PGO_NAMESPACE is the namespace entered | tee -a $LOG
+export PGO_NAMESPACE=$PGO_NAMESPACE
 
 if [[ "$CCP_IMAGE_TAG" != "" ]]; then
 	echo "CCP_IMAGE_TAG is set to " $CCP_IMAGE_TAG
 else
-	export CCP_IMAGE_TAG=$CO_BASEOS-11.1-2.3.0
+	export CCP_IMAGE_TAG=$PGO_BASEOS-11.1-2.3.0
 	echo -n "Which CCP image tag do you want to use? ["$CCP_IMAGE_TAG"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
@@ -68,32 +68,32 @@ else
 fi
 echo $CCP_IMAGE_TAG is the CCP image tag entered | tee -a $LOG
 
-if [[ "$CO_IMAGE_PREFIX" != "" ]]; then
-	echo "CO_IMAGE_PREFIX is set to " $CO_IMAGE_PREFIX
-	CCP_IMAGE_PREFIX=$CO_IMAGE_PREFIX
+if [[ "$PGO_IMAGE_PREFIX" != "" ]]; then
+	echo "PGO_IMAGE_PREFIX is set to " $PGO_IMAGE_PREFIX
+	CCP_IMAGE_PREFIX=$PGO_IMAGE_PREFIX
 	echo "CCP_IMAGE_PREFIX is set to " $CCP_IMAGE_PREFIX
 else
-	export CO_IMAGE_PREFIX=crunchydata
-	export CCP_IMAGE_PREFIX=$CO_IMAGE_PREFIX
-	echo -n "Which image prefix do you want to use? ["$CO_IMAGE_PREFIX"]"
+	export PGO_IMAGE_PREFIX=crunchydata
+	export CCP_IMAGE_PREFIX=$PGO_IMAGE_PREFIX
+	echo -n "Which image prefix do you want to use? ["$PGO_IMAGE_PREFIX"]"
 	read REPLY
 	if [[ "$REPLY" != "" ]]; then
-		echo "setting CO_IMAGE_PREFIX="$REPLY
+		echo "setting PGO_IMAGE_PREFIX="$REPLY
 		echo "setting CCP_IMAGE_PREFIX="$REPLY
-		export CO_IMAGE_PREFIX=$REPLY
+		export PGO_IMAGE_PREFIX=$REPLY
 		export CCP_IMAGE_PREFIX=$REPLY
 	fi
 fi
-echo $CO_IMAGE_PREFIX is the CO image prefix entered | tee -a $LOG
+echo $PGO_IMAGE_PREFIX is the CO image prefix entered | tee -a $LOG
 echo $CCP_IMAGE_PREFIX is the CCP image prefix entered | tee -a $LOG
 
-export CO_CMD=kubectl
+export PGO_CMD=kubectl
 REPLY=kube
 echo -n "Is this a 'kube' install or an 'ocp' install?["$REPLY"]"
 read REPLY
 case $REPLY in
 ocp)
-	export CO_CMD=oc
+	export PGO_CMD=oc
 	;;
 esac
 
@@ -104,18 +104,18 @@ if [[ $? -ne 0 ]]; then
 	echo "The required dependency wget is missing on your system." | tee -a $LOG
 	exit 1
 fi
-which $CO_CMD > /dev/null 2> /dev/null
+which $PGO_CMD > /dev/null 2> /dev/null
 if [[ $? -ne 0 ]]; then
-	echo "The required dependency "$CO_CMD " is missing on your system." | tee -a $LOG
+	echo "The required dependency "$PGO_CMD " is missing on your system." | tee -a $LOG
 	exit 1
 fi
 
 echo ""
-echo "Testing "$CO_CMD" connection..." | tee -a $LOG
+echo "Testing "$PGO_CMD" connection..." | tee -a $LOG
 echo ""
-$CO_CMD get namespaces
+$PGO_CMD get namespaces
 if [[ $? -ne 0 ]]; then
-	echo $CO_CMD  " is not connecting to your Cluster. A successful connection is required to proceed." | tee -a $LOG
+	echo $PGO_CMD  " is not connecting to your Cluster. A successful connection is required to proceed." | tee -a $LOG
 	exit 1
 fi
 
@@ -135,9 +135,9 @@ esac
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOPATH/bin
-export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
+export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
-export CO_APISERVER_URL=https://127.0.0.1:18443
+export PGO_APISERVER_URL=https://127.0.0.1:18443
 export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
@@ -148,23 +148,23 @@ cat <<'EOF' >> $HOME/.bashrc
 
 # operator env vars
 export PATH=$PATH:$HOME/odev/bin
-export CO_APISERVER_URL=https://127.0.0.1:18443
+export PGO_APISERVER_URL=https://127.0.0.1:18443
 export PGO_CA_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/postgres-operator/server.crt
 export PGO_CLIENT_CERT=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/postgres-operator/server.crt
 export PGO_CLIENT_KEY=$HOME/odev/src/github.com/crunchydata/postgres-operator/conf/postgres-operator/server.key
-alias setip='export CO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
+alias setip='export PGO_APISERVER_URL=https://`kubectl get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443'
 alias alog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver'
 alias olog='kubectl logs `kubectl get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator'
 #
 EOF
 echo "export CCP_IMAGE_TAG="$CCP_IMAGE_TAG >> $HOME/.bashrc
 echo "export CCP_IMAGE_PREFIX="$CCP_IMAGE_PREFIX >> $HOME/.bashrc
-echo "export CO_CMD="$CO_CMD >> $HOME/.bashrc
-echo "export CO_BASEOS="$CO_BASEOS >> $HOME/.bashrc
-echo "export CO_VERSION="$CO_VERSION >> $HOME/.bashrc
-echo "export CO_NAMESPACE="$CO_NAMESPACE >> $HOME/.bashrc
-echo "export CO_IMAGE_TAG="$CO_IMAGE_TAG >> $HOME/.bashrc
-echo "export CO_IMAGE_PREFIX="$CO_IMAGE_PREFIX >> $HOME/.bashrc
+echo "export PGO_CMD="$PGO_CMD >> $HOME/.bashrc
+echo "export PGO_BASEOS="$PGO_BASEOS >> $HOME/.bashrc
+echo "export PGO_VERSION="$PGO_VERSION >> $HOME/.bashrc
+echo "export PGO_NAMESPACE="$PGO_NAMESPACE >> $HOME/.bashrc
+echo "export PGO_IMAGE_TAG="$PGO_IMAGE_TAG >> $HOME/.bashrc
+echo "export PGO_IMAGE_PREFIX="$PGO_IMAGE_PREFIX >> $HOME/.bashrc
 
 echo "Setting up installation directory..." | tee -a $LOG
 
@@ -173,16 +173,16 @@ mkdir -p $GOPATH/src/github.com/crunchydata/postgres-operator
 
 echo ""
 echo "Installing pgo server configuration..." | tee -a $LOG
-wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$CO_VERSION/postgres-operator.$CO_VERSION.tar.gz -O /tmp/postgres-operator.$CO_VERSION.tar.gz
+wget --quiet https://github.com/CrunchyData/postgres-operator/releases/download/$PGO_VERSION/postgres-operator.$PGO_VERSION.tar.gz -O /tmp/postgres-operator.$PGO_VERSION.tar.gz
 if [[ $? -ne 0 ]]; then
 	echo "ERROR: Problem getting the pgo server configuration."
 	exit 1
 fi
 
 cd $COROOT
-tar xzf /tmp/postgres-operator.$CO_VERSION.tar.gz
+tar xzf /tmp/postgres-operator.$PGO_VERSION.tar.gz
 if [[ $? -ne 0 ]]; then
-	echo "ERROR: Problem unpackaging the $CO_VERSION release."
+	echo "ERROR: Problem unpackaging the $PGO_VERSION release."
 	exit 1
 fi
 
@@ -212,7 +212,7 @@ case "${unameOut}" in
 esac
 
 echo "The available storage classes on your system:"
-$CO_CMD get sc
+$PGO_CMD get sc
 echo ""
 echo -n "Enter the name of the storage class to use: "
 read REPLY
@@ -253,8 +253,8 @@ echo "in another terminal window, log in as a cluster-admin and " | tee -a $LOG
 echo "execute the following command..." | tee -a $LOG
 
 echo ""
-echo "export CO_CMD="$CO_CMD | tee -a $LOG
-echo "export CO_NAMESPACE="$CO_NAMESPACE | tee -a $LOG
+echo "export PGO_CMD="$PGO_CMD | tee -a $LOG
+echo "export PGO_NAMESPACE="$PGO_NAMESPACE | tee -a $LOG
 echo "export COROOT="$COROOT | tee -a $LOG
 echo "export PATH=$PATH:$HOME/odev/bin" | tee -a $LOG
 echo "$COROOT/deploy/install-rbac.sh" | tee -a $LOG
@@ -269,15 +269,15 @@ n)
 	;;
 esac
 echo "Deploying the operator to the Kubernetes cluster..." | tee -a $LOG
-echo "CO_IMAGE_PREFIX here is " $CO_IMAGE_PREFIX
+echo "PGO_IMAGE_PREFIX here is " $PGO_IMAGE_PREFIX
 $COROOT/deploy/deploy.sh | tee -a $LOG
 
 echo "Installation complete." | tee -a $LOG
 echo ""
 
 echo "At this point you can access the operator by using a port-forward command similar to:"
-podname=`$CO_CMD get pod --selector=name=postgres-operator -o jsonpath={..metadata.name}`
-echo $CO_CMD" port-forward " $podname " 18443:8443"
+podname=`$PGO_CMD get pod --selector=name=postgres-operator -o jsonpath={..metadata.name}`
+echo $PGO_CMD" port-forward " $podname " 18443:8443"
 echo "Run this in another terminal or in the background."
 
 echo ""

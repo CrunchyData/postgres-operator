@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$CO_CMD delete svc --selector=pg-cluster
-$CO_CMD delete secret --selector=pg-database
-$CO_CMD delete pvc --selector=pgremove
-$CO_CMD delete pgbackups   --all
-$CO_CMD delete pgclusters --all  
-$CO_CMD delete pgpolicies --all
-$CO_CMD delete pgreplicas --all
-$CO_CMD delete pgtasks  --all
-$CO_CMD delete pgupgrades --all
+$PGO_CMD delete svc --selector=pg-cluster
+$PGO_CMD delete secret --selector=pg-database
+$PGO_CMD delete pvc --selector=pgremove
+$PGO_CMD delete pgbackups   --all
+$PGO_CMD delete pgclusters --all  
+$PGO_CMD delete pgpolicies --all
+$PGO_CMD delete pgreplicas --all
+$PGO_CMD delete pgtasks  --all
+$PGO_CMD delete pgupgrades --all

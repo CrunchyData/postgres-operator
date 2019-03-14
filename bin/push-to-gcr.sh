@@ -30,9 +30,9 @@ pgo-load
 
 for image in "${IMAGES[@]}"
 do
-	docker tag $CO_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   \
-		$GCR_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
-	gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$CO_IMAGE_TAG   
+	docker tag $PGO_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   \
+		$GCR_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   
+	gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   
 done
 
 

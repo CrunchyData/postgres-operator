@@ -14,12 +14,12 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-IFS=', ' read -r -a array <<< "$CO_NAMESPACE"
+IFS=', ' read -r -a array <<< "$PGO_NAMESPACE"
 
 echo "deleting the namespaces the operator is deployed into..."
 for ns in "${array[@]}"
 do
-	$CO_CMD delete namespace $ns > /dev/null 2> /dev/null
+	$PGO_CMD delete namespace $ns > /dev/null 2> /dev/null
 	echo namespace $ns deleted
 done
 
@@ -29,6 +29,6 @@ echo ""
 echo "deleting the watched namespaces..."
 for ns in "${array[@]}"
 do
-	$CO_CMD delete namespace $ns > /dev/null 2> /dev/null
+	$PGO_CMD delete namespace $ns > /dev/null 2> /dev/null
 	echo namespace $ns deleted
 done

@@ -15,5 +15,5 @@
 
 for CNAME in pgo-scheduler pgo-sqlrunner pgo-backrest-restore pgo-backrest-repo pgo-lspvc postgres-operator pgo-load pgo-apiserver pgo-rmdata pgo-backrest
 do
-	docker rmi -f $CNAME $CO_IMAGE_PREFIX/$CNAME:$CO_IMAGE_TAG 
+	docker rmi -f $CNAME $PGO_IMAGE_PREFIX/$CNAME:$PGO_IMAGE_TAG 
 done

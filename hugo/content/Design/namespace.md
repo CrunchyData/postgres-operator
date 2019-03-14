@@ -11,9 +11,9 @@ The Operator itself knows which namespace it is running
 within by referencing the PGO_NAMESPACE environment variable
 at startup time from within its Deployment definition.  
 
-The CO_NAMESPACE environment variable a user sets in their 
+The PGO_NAMESPACE environment variable a user sets in their 
 .bashrc file is used to determine what namespace the Operator 
-is deployed into.  The CO_NAMESPACE variable is mapped into
+is deployed into.  The PGO_NAMESPACE variable is mapped into
 the PGO_NAMESPACE variable that the Operator references.
 
 The .bashrc NAMESPACE environment variable a user sets determines
@@ -43,7 +43,7 @@ created in that same namespace.
 To achieve that same deployment model you would use
 variable settings as follows:
 
-    export CO_NAMESPACE=pgo
+    export PGO_NAMESPACE=pgo
     export NAMESPACE=pgo
 
 ![Reference](/Namespace-Single.png)
@@ -54,7 +54,7 @@ To have the Operator deployed into its own namespace but
 create Postgres Clusters into a different namespace the
 variables would be as follows:
 
-    export CO_NAMESPACE=pgo
+    export PGO_NAMESPACE=pgo
     export NAMESPACE=pgouser1
 
 ![Reference](/Namespace-Single-Single.png)
@@ -65,7 +65,7 @@ To have the Operator deployed into its own namespace but
 create Postgres Clusters into more than one namespace the
 variables would be as follows:
 
-    export CO_NAMESPACE=pgo
+    export PGO_NAMESPACE=pgo
     export NAMESPACE=pgouser1,pgouser2
 
 ![Reference](/Namespace-Single-Multiple.png)
@@ -76,7 +76,7 @@ To have the Operator deployed into its own namespace but
 create Postgres Clusters into any target namespace the
 variables would be as follows:
 
-    export CO_NAMESPACE=pgo
+    export PGO_NAMESPACE=pgo
     export NAMESPACE=
 
 Here the empty string value represents *all* namespaces.
@@ -107,7 +107,7 @@ If you need to add a new namespace that the Operator will watch
 after an initial execution of install-rbac.sh, you will need to run 
 the following for each new namespace:
 
-    create-target-rbac.sh YOURNEWNAMESPACE $CO_NAMESPACE
+    create-target-rbac.sh YOURNEWNAMESPACE $PGO_NAMESPACE
 
 The example deployment creates the following RBAC structure
 on your Kube system after running the install scripts:

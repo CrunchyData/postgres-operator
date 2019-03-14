@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$CO_CMD delete pvc $1-pvc
-$CO_CMD delete secret --selector=pg-database=$1
-$CO_CMD delete deployment $1
-$CO_CMD delete service --selector=pg-cluster=$1
-$CO_CMD delete pgcluster $1
-$CO_CMD delete pgtask $1-failover
+$PGO_CMD delete pvc $1-pvc
+$PGO_CMD delete secret --selector=pg-database=$1
+$PGO_CMD delete deployment $1
+$PGO_CMD delete service --selector=pg-cluster=$1
+$PGO_CMD delete pgcluster $1
+$PGO_CMD delete pgtask $1-failover
 

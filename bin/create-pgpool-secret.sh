@@ -28,7 +28,7 @@ if [ ! -f $FROMDIR/pool_passwd ]; then
 	echo $FROMDIR/pool_passwd not found...aborting
 	exit 2
 fi
-$CO_CMD create secret generic $CLUSTERNAME-pgpool-secret \
+$PGO_CMD create secret generic $CLUSTERNAME-pgpool-secret \
 	--from-file=pgpool.conf=$FROMDIR/pgpool.conf \
 	--from-file=pool_hba.conf=$FROMDIR/pool_hba.conf \
 	--from-file=pool_passwd=$FROMDIR/pool_passwd
