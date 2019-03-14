@@ -11,6 +11,7 @@ rules:
     resources:
       - nodes
       - namespaces
+      - storageclasses
 
 ---
 kind: ClusterRole

@@ -12,7 +12,7 @@ export PGO_NAMESPACE=pgo
 export PGO_CMD=kubectl
 
 # the directory location of the Operator scripts
-export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export PGOROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 
 # the version of the Operator you run is set by these vars
 export PGO_IMAGE_PREFIX=crunchydata
@@ -21,9 +21,9 @@ export PGO_VERSION=4.0.0-rc1
 export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 
 # for the pgo CLI to authenticate with using TLS
-export PGO_CA_CERT=$COROOT/conf/postgres-operator/server.crt
-export PGO_CLIENT_CERT=$COROOT/conf/postgres-operator/server.crt
-export PGO_CLIENT_KEY=$COROOT/conf/postgres-operator/server.key
+export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_CERT=$PGOROOT/conf/postgres-operator/server.crt
+export PGO_CLIENT_KEY=$PGOROOT/conf/postgres-operator/server.key
 
 # common bash functions for working with the Operator
 setip() 

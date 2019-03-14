@@ -35,8 +35,8 @@ import (
 type lspvcTemplateFields struct {
 	Name               string
 	ClusterName        string
-	COImagePrefix      string
-	COImageTag         string
+	PGOImagePrefix     string
+	PGOImageTag        string
 	BackupRoot         string
 	PVCName            string
 	NodeSelector       string
@@ -149,8 +149,8 @@ func printPVCListing(nodeLabel, clusterName, pvcName, PVCRoot, ns string) ([]str
 	pvcFields := lspvcTemplateFields{
 		Name:               podName,
 		ClusterName:        clusterName,
-		COImagePrefix:      apiserver.Pgo.Pgo.COImagePrefix,
-		COImageTag:         apiserver.Pgo.Pgo.COImageTag,
+		PGOImagePrefix:     apiserver.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:        apiserver.Pgo.Pgo.PGOImageTag,
 		BackupRoot:         pvcRoot,
 		NodeSelector:       getAffinity(nodeLabel),
 		PVCName:            pvcName,

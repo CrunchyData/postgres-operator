@@ -203,8 +203,8 @@ type PgoStruct struct {
 	AutofailSleepSeconds      string `yaml:"AutofailSleepSeconds"`
 	AutofailSleepSecondsValue int
 	Audit                     bool   `yaml:"Audit"`
-	COImagePrefix             string `yaml:"COImagePrefix"`
-	COImageTag                string `yaml:"COImageTag"`
+	PGOImagePrefix            string `yaml:"PGOImagePrefix"`
+	PGOImageTag               string `yaml:"PGOImageTag"`
 }
 
 type PgoConfig struct {
@@ -317,11 +317,11 @@ func (c *PgoConfig) Validate() error {
 			return err
 		}
 	}
-	if c.Pgo.COImagePrefix == "" {
-		return errors.New("Pgo.COImagePrefix is required")
+	if c.Pgo.PGOImagePrefix == "" {
+		return errors.New("Pgo.PGOImagePrefix is required")
 	}
-	if c.Pgo.COImageTag == "" {
-		return errors.New("Pgo.COImageTag is required")
+	if c.Pgo.PGOImageTag == "" {
+		return errors.New("Pgo.PGOImageTag is required")
 	}
 	if c.Pgo.AutofailSleepSeconds == "" {
 		log.Warn("Pgo.AutofailSleepSeconds not set, using default ")

@@ -68,11 +68,11 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 	} else {
 		log.Debugf("pgo.yaml CCPImagePrefix set, using %s", Pgo.Cluster.CCPImagePrefix)
 	}
-	if Pgo.Pgo.COImagePrefix == "" {
-		log.Debug("pgo.yaml COImagePrefix not set, using default")
-		Pgo.Pgo.COImagePrefix = "crunchydata"
+	if Pgo.Pgo.PGOImagePrefix == "" {
+		log.Debug("pgo.yaml PGOImagePrefix not set, using default")
+		Pgo.Pgo.PGOImagePrefix = "crunchydata"
 	} else {
-		log.Debugf("COImagePrefix set, using %s", Pgo.Pgo.COImagePrefix)
+		log.Debugf("PGOImagePrefix set, using %s", Pgo.Pgo.PGOImagePrefix)
 	}
 
 	if Pgo.Cluster.PgmonitorPassword == "" {
@@ -80,8 +80,8 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 		Pgo.Cluster.PgmonitorPassword = "password"
 	}
 
-	if Pgo.Pgo.COImageTag == "" {
-		log.Error("pgo.yaml COImageTag not set, required ")
+	if Pgo.Pgo.PGOImageTag == "" {
+		log.Error("pgo.yaml PGOImageTag not set, required ")
 		os.Exit(2)
 	}
 }

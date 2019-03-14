@@ -694,6 +694,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		}
 		id, err = createWorkflowTask(clusterName, ns)
 		if err != nil {
+			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
 			return resp
 		}

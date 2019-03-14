@@ -33,8 +33,8 @@ import (
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext       string
-	COImagePrefix         string
-	COImageTag            string
+	PGOImagePrefix        string
+	PGOImageTag           string
 	ContainerResources    string
 	BackrestRepoClaimName string
 	SshdSecretsName       string
@@ -89,8 +89,8 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	//create backrest repo deployment
 	log.Debug("hi from backup create repo deploy")
 	fields := RepoDeploymentTemplateFields{
-		COImagePrefix:         operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:            operator.Pgo.Pgo.COImageTag,
+		PGOImagePrefix:        operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
 		ContainerResources:    "",
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",

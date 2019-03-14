@@ -34,8 +34,8 @@ type rmdatajobTemplateFields struct {
 	Name               string
 	PvcName            string
 	ClusterName        string
-	COImagePrefix      string
-	COImageTag         string
+	PGOImagePrefix     string
+	PGOImageTag        string
 	SecurityContext    string
 	DataRoot           string
 	ContainerResources string
@@ -64,8 +64,8 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		Name:               task.Spec.Name + "-" + pvcName,
 		ClusterName:        clusterName,
 		PvcName:            pvcName,
-		COImagePrefix:      operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:         operator.Pgo.Pgo.COImageTag,
+		PGOImagePrefix:     operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:        operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
 		DataRoot:           task.Spec.Parameters[config.LABEL_DATA_ROOT],
 		ContainerResources: cr,

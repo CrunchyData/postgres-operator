@@ -42,8 +42,8 @@ type restorejobTemplateFields struct {
 	WorkflowID          string
 	ToClusterPVCName    string
 	SecurityContext     string
-	COImagePrefix       string
-	COImageTag          string
+	PGOImagePrefix      string
+	PGOImageTag         string
 	CommandOpts         string
 	PITRTarget          string
 	PgbackrestStanza    string
@@ -150,8 +150,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		WorkflowID:          workflowID,
 		CommandOpts:         task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
 		PITRTarget:          task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET],
-		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:          operator.Pgo.Pgo.COImageTag,
+		PGOImagePrefix:      operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:         operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:    task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:    task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
 		PgbackrestRepo1Path: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
