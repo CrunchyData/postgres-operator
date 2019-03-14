@@ -22,12 +22,12 @@ $CO_CMD --namespace=$CO_NAMESPACE delete pgupgrades --all
 $CO_CMD --namespace=$CO_NAMESPACE delete pgtasks --all
 
 $CO_CMD --namespace=$CO_NAMESPACE delete crd \
-	pgbackups.cr.client-go.k8s.io \
-	pgreplicas.cr.client-go.k8s.io \
-	pgclusters.cr.client-go.k8s.io \
-	pgpolicies.cr.client-go.k8s.io \
-	pgtasks.cr.client-go.k8s.io \
-	pgupgrades.cr.client-go.k8s.io \
+	pgbackups.crunchydata.com \
+	pgreplicas.crunchydata.com \
+	pgclusters.crunchydata.com \
+	pgpolicies.crunchydata.com \
+	pgtasks.crunchydata.com \
+	pgupgrades.crunchydata.com
 
 $CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgrmdata=true
 $CO_CMD --namespace=$CO_NAMESPACE delete jobs --selector=pgbackup=true
