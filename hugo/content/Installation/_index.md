@@ -129,6 +129,9 @@ For NFS Storage, it is assumed that there are sufficient Persistent Volumes (PV)
 
     ./pv/create-nfs-pv.sh
 
+That script looks for the IP address of an NFS server using the 
+environment variable PGO_NFS_IP you would set in your .bashrc environment.
+
 A similar script is provided for HostPath persistent volume creation if
 you wanted to use HostPath for testing:
 ```
