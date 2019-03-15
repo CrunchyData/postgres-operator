@@ -61,6 +61,12 @@ Storage:
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
+  gce:
+    AccessMode:  ReadWriteOnce
+    Size:  300M
+    StorageType:  dynamic
+    StorageClass:  standard
+    Fsgroup:  26
   rook:
     AccessMode:  ReadWriteOnce
     Size:  1G

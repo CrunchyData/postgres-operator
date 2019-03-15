@@ -98,32 +98,27 @@ Here are some common examples of configuration changes most installers would mak
 ### Storage
 Inside `conf/postgresql-operator/pgo.yaml` there are various storage configurations defined.  
 
-    PrimaryStorage: nfsstorage
-    ArchiveStorage: nfsstorage
-    BackupStorage: nfsstorage
-    ReplicaStorage: nfsstorage
-    Storage:
-      hostpathstorage:
-        AccessMode:  ReadWriteMany
-        Size:  1G
-        StorageType:  create
-      nfsstorage:
-        AccessMode:  ReadWriteMany
-        Size:  1G
-        StorageType:  create
-        SupplementalGroups:  65534
-      storageos:
+    PrimaryStorage: gce
+    XlogStorage: gce
+    ArchiveStorage: gce
+    BackupStorage: gce
+    ReplicaStorage: gce
+      gce:
         AccessMode:  ReadWriteOnce
         Size:  1G
         StorageType:  dynamic
-        StorageClass:  fast
+        StorageClass:  standard
         Fsgroup:  26
 
 Listed above are the *pgo.yaml* sections related to storage choices.  *PrimaryStorage* specifies the name of the storage configuration used for PostgreSQL primary database volumes to be provisioned.  In the example above, a NFS storage configuration is picked.  That same storage configuration is selected for the other volumes that the Operator will create.
 
 This sort of configuration allows for a PostgreSQL primary and replica to use different storage if you want.  Other storage settings like *AccessMode*, *Size*, *StorageType*, *StorageClass*, and *Fsgroup* further define the storage configuration.  Currently, NFS, HostPath, and Storage Classes are supported in the configuration.
 
-As part of the Operator installation, you will need to adjust these storage settings to suit your deployment requirements.
+As part of the Operator installation, you will need to adjust these storage settings to suit your deployment requirements.  For users wanting to try
+out the Operator on Google Kubernetes Engine you would make the 
+following change to the storage configuration in pgo.yaml:
+
+
 
 For NFS Storage, it is assumed that there are sufficient Persistent Volumes (PV) created for the Operator to use when it creates Persistent Volume Claims (PVC).  The creation of Persistent Volumes is something a Kubernetes cluster-admin user would typically provide before installing the Operator.  There is an example script which can be used to create NFS Persistent Volumes located here:
 
