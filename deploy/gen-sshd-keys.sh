@@ -14,7 +14,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-LOC=$COROOT/conf/pgo-backrest-repo
+LOC=$PGOROOT/conf/pgo-backrest-repo
 
 #ssh-keygen -f $LOC/id_rsa -t rsa -N ''
 ssh-keygen -t rsa -f $LOC/ssh_host_rsa_key -N ''
