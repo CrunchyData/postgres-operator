@@ -84,7 +84,7 @@ func initConfig() {
 
 	GetCredentials()
 
-	generateBashCompletion()
+	//generateBashCompletion()
 }
 
 func generateBashCompletion() {
