@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Design on Crunchy Data PostgreSQL Operator Documentation</title>
+    <link>https://crunchydata.github.io/postgres-operator/4.0.0-rc2/design/</link>
+    <description>Recent content in Design on Crunchy Data PostgreSQL Operator Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://crunchydata.github.io/postgres-operator/4.0.0-rc2/design/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Namespace</title>
+      <link>https://crunchydata.github.io/postgres-operator/4.0.0-rc2/design/namespace/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/4.0.0-rc2/design/namespace/</guid>
+      <description>Operator Namespaces The Operator itself knows which namespace it is running within by referencing the PGO_NAMESPACE environment variable at startup time from within its Deployment definition.
+The PGO_NAMESPACE environment variable a user sets in their .bashrc file is used to determine what namespace the Operator is deployed into. The PGO_NAMESPACE variable is mapped into the PGO_NAMESPACE variable that the Operator references.
+The .bashrc NAMESPACE environment variable a user sets determines which namespaces the Operator will watch.</description>
+    </item>
+    
+    <item>
+      <title>OLM</title>
+      <link>https://crunchydata.github.io/postgres-operator/4.0.0-rc2/design/olm/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/4.0.0-rc2/design/olm/</guid>
+      <description>Operator Lifecycle Management The Postgres Operator supports Redhats OLM (operator lifecycle manager) to a degree starting with pgo 4.0.
+The Postgres Operator supports the different deployment models as documented here:
+https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md
+Operator Hub The Operator shows up on the Redhat Operator Hub at the following location:
+https://www.operatorhub.io/operator/postgres-operator.v3.5.0</description>
+    </item>
+    
+  </channel>
+</rss>
