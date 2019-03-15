@@ -155,7 +155,12 @@ Adjust these settings to meet your local requirements.
 
 ## Default Installation - Create Kube RBAC Controls
 
-The Operator installation requires Kubernetes administrators to create Resources required by the Operator.  These resources are only allowed to be created by a cluster-admin user.
+The Operator installation requires Kubernetes administrators to create Resources required by the Operator.  These resources are only allowed to be created by a cluster-admin user.  To install on Google Cloud, you will need a user
+account with cluster-admin priviledges.  If you own the GKE cluster you
+are installing on, you can add cluster-admin role to your account as
+follows:
+
+    kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-admin --user $(gcloud config get-value account)
 
 Specifically, Custom Resource Definitions for the Operator, and Service Accounts used by the Operator are created which require cluster permissions.
 
@@ -234,13 +239,23 @@ You can also specify these keys on the command line as follows:
 Lastly, create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
 
     username:password
+or
+    pgouser1:password
+or
+    pgouser2:password
+or
+    pgouser3:password
+or
+    readonlyuser:password
 
-You can create this file as follows:
+Each example above has different priviledges in the Operator.  You can create this file as follows:
 
-    echo "username:password" > $HOME/.pgouser
+    echo "pgouser3:password" > $HOME/.pgouser
 
 Note, you can also store the pgouser file in alternate locations, see the
 Security documentation for details.
+
+{{% notice tip %}} if you are running the Operator on Google Cloud, you would open up another terminal and run *kubectl port-forward ...* to forward the Operator pod port 8443 to your localhost where you can access the Operator API from your local workstation.
 
 At this point, you can test connectivity between your laptop or workstation and the Postgres Operator deployed on a Kubernetes cluster as follows:
 
@@ -253,9 +268,9 @@ Now that you have deployed the Operator, you can verify that it is running corre
 
 You should see a pod running that contains the Operator:
 
-    kubectl get pod --selector=name=postgres-operator
+    kubectl get pod --selector=name=postgres-operator -n pgo
 
-That pod should show 3 of 3 containers in *running* state.
+That pod should show 3 of 3 containers in *running* state and that the operator is installed into the *pgo* namespace.
 
 The sample environment script, examples/env.sh, if used creates some bash functions that you can use to view the Operator logs.  This is useful in case you find one of the Operator containers not in a running status.
 
