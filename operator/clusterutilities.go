@@ -18,10 +18,10 @@ package operator
 import (
 	"bytes"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"os"
 )
@@ -103,6 +103,8 @@ type DeploymentTemplateFields struct {
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
+	// PgBouncer deployment only
+	PgbouncerPass string
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars

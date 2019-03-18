@@ -133,6 +133,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cl.Spec),
 		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[util.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name, cl.Spec.Port),
 		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[util.LABEL_COLLECT]),
+		PgbouncerPass:           cl.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS],
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

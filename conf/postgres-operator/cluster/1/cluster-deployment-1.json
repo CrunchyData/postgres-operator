@@ -84,6 +84,9 @@
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
+                    }, {
+                        "name": "PGBOUNCER_PASSWORD",
+                        "value": "{{.PgbouncerPass}}"
                     }],
 
 

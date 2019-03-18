@@ -364,6 +364,12 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 			}
 			for _, s := range secrets {
 				for _, db := range databases {
+
+					// skip postgres user for pgbouncer testing
+					if s.Username == "postgres" && service.Pgbouncer {
+						continue
+					}
+
 					item := msgs.ClusterTestDetail{}
 					username := s.Username
 					password := s.Password
@@ -382,6 +388,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 					result.Items = append(result.Items, item)
 				}
 			}
+
 		}
 		response.Results = append(response.Results, result)
 	}
@@ -599,12 +606,23 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		if request.PgbouncerFlag {
 			userLabelsMap[util.LABEL_PGBOUNCER] = "true"
-			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-			userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
-			userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
-			log.Debug("userLabelsMap")
-			log.Debugf("%v", userLabelsMap)
 		}
+
+		// pgbouncer credentials are always added to primary in case pgbouncer is added later through
+		// > pgo create pgbouncer mycluster
+		// workaround to a current limitation by the postgres container in how it handles pgbouncer
+
+		// need to create password to be added to postgres container and pgbouncer credential...
+		if !(len(request.PgbouncerPass) > 0) {
+			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
+		} else {
+			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+		}
+
+		userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+		userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
+		log.Debug("userLabelsMap")
+		log.Debugf("%v", userLabelsMap)
 
 		if existsGlobalConfig(ns) {
 			userLabelsMap[util.LABEL_CUSTOM_CONFIG] = util.GLOBAL_CUSTOM_CONFIGMAP
