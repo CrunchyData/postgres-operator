@@ -73,7 +73,6 @@ func ListConfigMap(clientset *kubernetes.Clientset, label, namespace string) (*v
 
 // DeleteConfigMap deletes a ConfigMap by name
 func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) error {
-
 	err := clientset.CoreV1().ConfigMaps(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting ConfigMap " + err.Error())
