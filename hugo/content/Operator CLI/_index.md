@@ -200,7 +200,7 @@ before you do a restore.
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15 00:03:25"
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25"
 	
 To restore the most recent pgdump at the default path, leave off a timestamp:
 	
@@ -291,6 +291,25 @@ against the target cluster prior to creating this schedule.
     pgo create schedule --selector=pg-cluster=mycluster --schedule="0 1 * * *" \
          --schedule-type=policy --policy=mypolicy --database=userdb \
          --secret=mycluster-testuser-secret
+
+### Benchmark Clusters
+
+#### Create a Benchmark via Cluster Name
+
+    pgo benchmark mycluster
+
+#### Create a Benchmark via Selector
+
+    pgo benchmark --selector=pg-cluster=mycluster
+
+#### Create a Benchmark with a custom transactions
+
+    pgo create policy --in-file=/tmp/transactions.sql mytransactions
+    pgo benchmark mycluster --policy=mytransactions
+
+#### Create a Benchmark with custom parameters
+
+    pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100
 
 ### Complex Deployments
 #### Create a Cluster using Specific Storage

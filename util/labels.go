@@ -15,8 +15,6 @@ package util
  limitations under the License.
 */
 
-import ()
-
 // resource labels used by the operator
 const LABEL_NAME = "name"
 const LABEL_SELECTOR = "selector"
@@ -124,6 +122,8 @@ const LABEL_PGBACKREST_REPO_PATH = "pgbackrest-repo-path"
 const LABEL_PGBACKREST_REPO_HOST = "pgbackrest-repo-host"
 
 const LABEL_PGO_BACKREST_REPO = "pgo-backrest-repo"
+
+const LABEL_PGO_BENCHMARK = "pgo-benchmark"
 
 const LABEL_DEPLOYMENT_NAME = "deployment-name"
 const LABEL_SERVICE_NAME = "service-name"

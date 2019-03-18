@@ -25,40 +25,43 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a backup, cluster, pgbouncer, pgpool, label, policy, upgrade, or user",
-	Long: `The delete command allows you to delete a backup, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
+	Short: "Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, upgrade, or user",
+	Long: `The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
 
-	pgo delete user testuser --selector=name=mycluster
-	pgo delete policy mypolicy
+	pgo delete backup mycluster
+	pgo delete benchmark mycluster
 	pgo delete cluster mycluster
-	pgo delete pgbouncer mycluster
-	pgo delete pgpool mycluster
-	pgo delete label mycluster --label=env=research
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
-	pgo delete backup mycluster
-	pgo delete upgrade mycluster
-	pgo delete schedule mycluster
+	pgo delete label mycluster --label=env=research
+	pgo delete pgbouncer mycluster
+	pgo delete pgpool mycluster
+	pgo delete policy mypolicy
+	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 	pgo delete schedule --selector=name=mycluster
-	pgo delete schedule --schedule-name=mycluster-pgbackrest-full`,
+	pgo delete schedule mycluster
+	pgo delete upgrade mycluster
+	pgo delete user testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
+	* benchmark
 	* cluster
+	* label
 	* pgbouncer
 	* pgpool
-	* label
 	* policy
 	* upgrade
 	* user`)
 		} else {
 			switch args[0] {
 			case "backup":
+			case "benchmark":
 			case "cluster":
-			case "pgbouncer":
 			case "label":
+			case "pgbouncer":
 			case "pgpool":
 			case "policy":
 			case "schedule":
@@ -68,9 +71,10 @@ var deleteCmd = &cobra.Command{
 			default:
 				fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
+	* benchmark
 	* cluster
-	* pgbouncer
 	* label
+	* pgbouncer
 	* pgpool
 	* policy
 	* upgrade
@@ -87,6 +91,7 @@ var NoPrompt bool
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deleteBackupCmd)
+	deleteCmd.AddCommand(deleteBenchmarkCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteCmd.AddCommand(deletePgbouncerCmd)
 	deleteCmd.AddCommand(deletePgpoolCmd)
@@ -96,6 +101,7 @@ func init() {
 	deleteCmd.AddCommand(deleteUpgradeCmd)
 	deleteCmd.AddCommand(deleteUserCmd)
 
+	deleteBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteLabelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
@@ -292,6 +298,27 @@ var deleteLabelCmd = &cobra.Command{
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
 			deleteLabel(args, Namespace)
+		}
+	},
+}
+
+var deleteBenchmarkCmd = &cobra.Command{
+	Use:   "benchmark",
+	Short: "Delete benchmarks for a cluster",
+	Long: `Delete benchmarks for a cluster. For example:
+
+    pgo delete benchmark mycluster
+    pgo delete benchmark --selector=env=test`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: cluster name or selector is required to delete a benchmark.")
+			return
+		}
+
+		if util.AskForConfirmation(NoPrompt, "") {
+			deleteBenchmark(args, Namespace)
+		} else {
+			fmt.Println("Aborting...")
 		}
 	},
 }

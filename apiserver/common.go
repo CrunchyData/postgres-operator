@@ -92,7 +92,7 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string, taskName, ns string) error {
 	var err error
 
-	log.Debugf("JEFF CreateRMDataTask dataRoots=%v", dataRoots)
+	log.Debugf("CreateRMDataTask dataRoots=%v", dataRoots)
 	//create a pgtask for each root at this volume/pvc
 	for i := 0; i < len(dataRoots); i++ {
 
