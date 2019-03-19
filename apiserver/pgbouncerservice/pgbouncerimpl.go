@@ -16,12 +16,12 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -88,6 +88,13 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 	for _, cluster := range clusterList.Items {
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
+		pgbouncerpass := request.PgbouncerPass
+
+		// create pgbouncer password if not specified by user.
+		if !(len(pgbouncerpass) > 0) {
+			pgbouncerpass = util.GeneratePassword(10)
+		}
+
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
 		spec.Name = util.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
@@ -96,7 +103,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
 		spec.Parameters[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
-		spec.Parameters[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+		spec.Parameters[util.LABEL_PGBOUNCER_PASS] = pgbouncerpass
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{

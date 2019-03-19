@@ -155,7 +155,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
 		log.Debug("pgbouncer requested")
 		//create the pgbouncer deployment using that credential
-		AddPgbouncer(clientset, cl, namespace, true)
+		AddPgbouncer(clientset, cl, namespace, true, false)
 	}
 
 	//add replicas if requested
