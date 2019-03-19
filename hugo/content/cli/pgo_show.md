@@ -11,7 +11,6 @@ Show allows you to show the details of a policy, backup, pvc, or cluster. For ex
 
 	pgo show backup mycluster
 	pgo show backup mycluster --backup-type=pgbackrest
-	pgo show benchmark mycluster
 	pgo show cluster mycluster
 	pgo show config
 	pgo show policy policy1

@@ -3,14 +3,13 @@ title: "pgo_delete"
 ---
 ## pgo delete
 
-Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, upgrade, or user
+Delete a backup,   cluster, pgbouncer, pgpool, label, policy, upgrade, or user
 
 ### Synopsis
 
-The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
+The delete command allows you to delete a backup,   cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
 
 	pgo delete backup mycluster
-	pgo delete benchmark mycluster
 	pgo delete cluster mycluster
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups

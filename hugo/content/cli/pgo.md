@@ -26,7 +26,7 @@ The pgo command line interface lets you create and manage PostgreSQL clusters.
 * [pgo apply](/cli/pgo_apply/)	 - Apply a policy
 * [pgo backup](/cli/pgo_backup/)	 - Perform a Backup
 * [pgo create](/cli/pgo_create/)	 - Create a Cluster, PGBouncer, PGPool, Policy, Schedule, or User
-* [pgo delete](/cli/pgo_delete/)	 - Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, upgrade, or user
+* [pgo delete](/cli/pgo_delete/)	 - Delete a backup,   cluster, pgbouncer, pgpool, label, policy, upgrade, or user
 * [pgo df](/cli/pgo_df/)	 - Display disk space for clusters
 * [pgo failover](/cli/pgo_failover/)	 - Performs a manual failover
 * [pgo label](/cli/pgo_label/)	 - Label a set of clusters
