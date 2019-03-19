@@ -222,7 +222,7 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Create a Cluster with pgbouncer
 
     pgo create cluster mycluster --pgbouncer
-	pgo create cluster mycluster --pgbouncer --pgbouncer-user=someuser --pgbouncer-pass=somepass
+	pgo create cluster mycluster --pgbouncer --pgbouncer-pass=somepass
 
 #### Create a Cluster with pgpool
 
@@ -231,14 +231,14 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Add pgbouncer to a Cluster
 
     pgo create pgbouncer mycluster
-	pgo create pgbouncer mycluster --pgbouncer-user=someuser --pgbouncer-pass=somepass
+	pgo create pgbouncer mycluster --pgbouncer-pass=somepass
 
 Note, the pgbouncer configuration defaults to specifying only
 a single entry for the primary database.  If you want it to
 have an entry for the replica service, add the following
 configuration to pgbouncer.ini:
 
-    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
 
 
 #### Add pgpool to a Cluster
