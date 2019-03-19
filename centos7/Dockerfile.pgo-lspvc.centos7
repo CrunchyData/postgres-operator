@@ -2,7 +2,7 @@ FROM centos:7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	Version="7.6" \
-	Release="3.5.2-rc2" \
+	Release="3.5.2-rc3" \
 	summary="Crunchy Data PostgreSQL Operator - Display PVC" \
 	description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
 
