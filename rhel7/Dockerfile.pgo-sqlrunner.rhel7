@@ -2,7 +2,7 @@ FROM registry.access.redhat.com/rhel7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	Version="7.6" \
-	Release="3.5.2-rc2" \
+	Release="3.5.2" \
 	name="pgo-sqlrunner" \
 	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
 	description="Crunchy Data PostgreSQL Operator - SQL Runner"
