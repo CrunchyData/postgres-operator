@@ -6,6 +6,7 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
+                    "pgo-backrest-job": "true",
                     "pg-cluster": "{{.ClusterName}}"
                 }
     },
@@ -17,6 +18,7 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
+                    "pgo-backrest-job": "true",
                     "pg-cluster": "{{.ClusterName}}"
                 }
             },
