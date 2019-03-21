@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	//	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
@@ -99,6 +101,8 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		return
 	}
 
+	//time.Sleep(time.Second * time.Duration(2))
+
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use taskScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
@@ -110,17 +114,43 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		State:   crv1.PgtaskStateProcessed,
 		Message: "Successfully processed Pgtask by controller",
 	}
+	task.Status = crv1.PgtaskStatus{
+		State:   crv1.PgtaskStateProcessed,
+		Message: "Successfully processed Pgtask by controller",
+	}
 
-	err := c.PgtaskClient.Put().
-		Name(task.ObjectMeta.Name).
-		Namespace(task.ObjectMeta.Namespace).
+	//Body(taskCopy).
+
+	//get pgtask
+
+	tmpTask := crv1.Pgtask{}
+	found, err := kubeapi.Getpgtask(c.PgtaskClient, &tmpTask, task.ObjectMeta.Name, task.ObjectMeta.Namespace)
+	if !found {
+		log.Errorf("ERROR onAdd getting pgtask : %s", err.Error())
+		return
+	}
+
+	//update pgtask
+	tmpTask.Status = crv1.PgtaskStatus{
+		State:   crv1.PgtaskStateProcessed,
+		Message: "Successfully processed Pgtask by controller",
+	}
+
+	err = kubeapi.Updatepgtask(c.PgtaskClient, &tmpTask, task.ObjectMeta.Name, task.ObjectMeta.Namespace)
+
+	/**
+	err = c.PgtaskClient.Put().
+		Name(tmpTask.ObjectMeta.Name).
+		Namespace(tmpTask.ObjectMeta.Namespace).
 		Resource(crv1.PgtaskResourcePlural).
-		Body(taskCopy).
+		Body(tmpTask).
 		Do().
 		Error()
 
+	*/
 	if err != nil {
-		log.Errorf("ERROR updating pgtask status: %s", err.Error())
+		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
+		return
 	}
 
 	//process the incoming task
