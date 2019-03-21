@@ -613,9 +613,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		// workaround to a current limitation by the postgres container in how it handles pgbouncer
 
 		// need to create password to be added to postgres container and pgbouncer credential...
+		/**
 		if !(len(request.PgbouncerPass) > 0) {
 			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
 		} else {
+			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+		}
+		*/
+		if request.PgbouncerPass != "" {
 			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
 		}
 
