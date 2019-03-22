@@ -606,26 +606,26 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		if request.PgbouncerFlag {
 			userLabelsMap[util.LABEL_PGBOUNCER] = "true"
+
+			// need to create password to be added to postgres container and pgbouncer credential...
+			if !(len(request.PgbouncerPass) > 0) {
+				userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
+			} else {
+				userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+			}
+
+			// default pgbouncer user to "pgbouncer" - request should be empty until configurable user is implemented.
+			if !(len(request.PgbouncerUser) > 0) {
+				userLabelsMap[util.LABEL_PGBOUNCER_USER] = "pgbouncer"
+			} else {
+
+				userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+			}
+
+			userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
+
 		}
 
-		// pgbouncer credentials are always added to primary in case pgbouncer is added later through
-		// > pgo create pgbouncer mycluster
-		// workaround to a current limitation by the postgres container in how it handles pgbouncer
-
-		// need to create password to be added to postgres container and pgbouncer credential...
-		/**
-		if !(len(request.PgbouncerPass) > 0) {
-			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
-		} else {
-			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-		}
-		*/
-		if request.PgbouncerPass != "" {
-			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-		}
-
-		userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
-		userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
 		log.Debug("userLabelsMap")
 		log.Debugf("%v", userLabelsMap)
 

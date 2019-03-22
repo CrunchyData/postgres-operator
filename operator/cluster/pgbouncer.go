@@ -227,9 +227,9 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 	replicaName := cl.Spec.Name + "-replica"
 
 	pgbouncerUser := cl.Spec.UserLabels[util.LABEL_PGBOUNCER_USER]
-	// log.Debugf("userSpecifiedPass: %s", pgbouncerUser)
+	//	log.Debugf("userSpecifiedPass: %s", pgbouncerUser)
 	pgbouncerPass := cl.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]
-	// log.Debugf("userSpecifiedPass: %s", pgbouncerPass)
+	//	log.Debugf("userSpecifiedPass: %s", pgbouncerPass)
 
 	if updateCreds {
 
@@ -255,7 +255,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 	clusterName := cl.Spec.Name
 	pgbouncerName := clusterName + PGBOUNCER_SUFFIX
 	log.Debugf("adding a pgbouncer %s", pgbouncerName)
-	// log.Debugf("secretUser: %s, secretPass: %s", secretUser, secretPass)
+	//	log.Debugf("secretUser: %s, secretPass: %s", secretUser, secretPass)
 
 	//create the pgbouncer deployment
 	fields := PgbouncerTemplateFields{
@@ -343,8 +343,30 @@ func updatePgBouncerCredentials(clientset *kubernetes.Clientset, namespace, user
 		log.Debug("Error deleting pgbouncer secret, probaby not found, ignoring")
 	}
 
-	connectionInfo := getDBUserInfo(namespace, clusterName, clientset)
+	err, databaseNames := getDatabaseListForCredentials(namespace, clusterName, clientset)
 
+	if err != nil {
+		log.Debug(err)
+		return err
+	}
+
+	for _, dbName := range databaseNames {
+
+		connectionInfo := getDBUserInfo(namespace, clusterName, dbName, clientset)
+
+		log.Debugf("Creating pgbouncer authorization in %s database", dbName)
+
+		err = createPgBouncerAuthInDB(clusterName, connectionInfo, username, namespace)
+
+		if err != nil {
+			log.Debugf("Unable to create pgbouncer user in %s database", dbName)
+			log.Debug(err.Error())
+			return err
+		}
+	}
+
+	// update the password for the pgbouncer user in postgres database
+	connectionInfo := getDBUserInfo(namespace, clusterName, "postgres", clientset)
 	err = updatePgBouncerDBPassword(clusterName, connectionInfo, username, password, namespace)
 
 	if err != nil {
@@ -360,7 +382,7 @@ func updatePgBouncerDBPassword(clusterName string, p connectionInfo, username, n
 	var err error
 	var conn *sql.DB
 
-	log.Debugf("Updating password for %s in %s ", username, p.Database)
+	//	log.Debugf("Updating password for %s in %s with %s ", username, p.Database, newPassword)
 
 	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
 	if err != nil {
@@ -389,7 +411,73 @@ func updatePgBouncerDBPassword(clusterName string, p connectionInfo, username, n
 
 }
 
-func getDBUserInfo(namespace, clusterName string, clientset *kubernetes.Clientset) connectionInfo {
+func createPgBouncerAuthInDB(clusterName string, p connectionInfo, username string, namespace string) error {
+
+	var err error
+	var conn *sql.DB
+
+	log.Debugf("Creating %s user for pgbouncer in %s ", username, p.Database)
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	var rows *sql.Rows
+
+	// create pgbouncer role and setup authorization.
+	querystr := `
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pgbouncer') THEN
+        CREATE ROLE pgbouncer;
+    END IF;
+END
+$$;
+
+ALTER ROLE pgbouncer LOGIN;
+
+CREATE SCHEMA IF NOT EXISTS pgbouncer AUTHORIZATION pgbouncer;
+
+CREATE OR REPLACE FUNCTION pgbouncer.get_auth(p_username TEXT)
+RETURNS TABLE(username TEXT, password TEXT) AS
+$$
+BEGIN
+    RAISE WARNING 'PgBouncer auth request: %', p_username;
+
+    RETURN QUERY
+    SELECT rolname::TEXT, rolpassword::TEXT
+      FROM pg_authid
+      WHERE NOT rolsuper
+        AND rolname = p_username;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+REVOKE ALL ON FUNCTION pgbouncer.get_auth(p_username TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(p_username TEXT) TO pgbouncer; `
+
+	rows, err = conn.Query(querystr)
+
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	return err
+
+}
+
+func getDBUserInfo(namespace, clusterName string, targetDB string, clientset *kubernetes.Clientset) connectionInfo {
 	info := connectionInfo{}
 
 	//get the service for the cluster
@@ -410,7 +498,7 @@ func getDBUserInfo(namespace, clusterName string, clientset *kubernetes.Clientse
 	for _, s := range secrets.Items {
 		username = string(s.Data[util.LABEL_USERNAME][:])
 		password = string(s.Data[util.LABEL_PASSWORD][:])
-		database = "postgres"
+		database = targetDB
 		hostip = service.Spec.ClusterIP
 		if username == "postgres" {
 			log.Debug("got postgres user secrets")
@@ -426,6 +514,53 @@ func getDBUserInfo(namespace, clusterName string, clientset *kubernetes.Clientse
 	info.Port = strPort
 
 	return info
+}
+
+func getDatabaseListForCredentials(namespace, clusterName string, clientSet *kubernetes.Clientset) (error, []string) {
+
+	info := getDBUserInfo(namespace, clusterName, "postgres", clientSet)
+
+	log.Debug("Getting list of database names to update for pgbouncer")
+
+	var databases []string
+
+	var err error
+	var conn *sql.DB
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err, databases
+	}
+
+	// get a list of database names from postgres
+	var rows *sql.Rows
+	querystr := "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1')"
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err, databases
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	for rows.Next() {
+		var dbName string
+		if err := rows.Scan(&dbName); err != nil {
+			log.Debug(err)
+		}
+		databases = append(databases, dbName)
+	}
+
+	return err, databases
+
 }
 
 // CreatePgbouncerSecret create a secret used by pgbouncer
