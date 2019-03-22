@@ -440,7 +440,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
 		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
-		PgbouncerEnvVars:        operator.GetPgbouncerEnvVar(cluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]),
+		//PgbouncerEnvVars:        operator.GetPgbouncerEnvVar(cluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]),
+		PgbouncerEnvVars: "",
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
