@@ -201,7 +201,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 
 	//get pods, but exclude pgpool and backup pods and backrest repo
 	//selector := "pgo-backrest-repo!=true," + "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-	selector := util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_NAME + "!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := util.LABEL_BACKREST_JOB + "!=true," + util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_NAME + "!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)

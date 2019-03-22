@@ -69,6 +69,7 @@
                         "value": "{{.DataPathOverride}}"
                     }, {
 			{{.PgmonitorEnvVars}}
+			{{.PgbouncerEnvVars}}
 			{{.PgbackrestEnvVars}}
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
@@ -84,9 +85,6 @@
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
-                    }, {
-                        "name": "PGBOUNCER_PASSWORD",
-                        "value": "{{.PgbouncerPass}}"
                     }],
 
 
