@@ -384,6 +384,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
 	}
 
+	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS])
+
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
 		Replicas:                "1",
@@ -418,6 +420,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
 		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
+		PgbouncerEnvVars:        "",
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

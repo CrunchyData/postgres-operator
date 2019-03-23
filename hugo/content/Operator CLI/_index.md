@@ -215,7 +215,7 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Create a Cluster with pgbouncer
 
     pgo create cluster mycluster --pgbouncer
-	pgo create cluster mycluster --pgbouncer --pgbouncer-user=someuser --pgbouncer-pass=somepass
+	pgo create cluster mycluster --pgbouncer --pgbouncer-pass=somepass
 
 #### Create a Cluster with pgpool
 
@@ -224,14 +224,14 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Add pgbouncer to a Cluster
 
     pgo create pgbouncer mycluster
-	pgo create pgbouncer mycluster --pgbouncer-user=someuser --pgbouncer-pass=somepass
+	pgo create pgbouncer mycluster --pgbouncer-pass=somepass
 
 Note, the pgbouncer configuration defaults to specifying only
 a single entry for the primary database.  If you want it to
 have an entry for the replica service, add the following
 configuration to pgbouncer.ini:
 
-    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
 
 
 #### Add pgpool to a Cluster
@@ -284,6 +284,25 @@ against the target cluster prior to creating this schedule.
     pgo create schedule --selector=pg-cluster=mycluster --schedule="0 1 * * *" \
          --schedule-type=policy --policy=mypolicy --database=userdb \
          --secret=mycluster-testuser-secret
+
+### Benchmark Clusters
+
+#### Create a Benchmark via Cluster Name
+
+    pgo benchmark mycluster
+
+#### Create a Benchmark via Selector
+
+    pgo benchmark --selector=pg-cluster=mycluster
+
+#### Create a Benchmark with a custom transactions
+
+    pgo create policy --in-file=/tmp/transactions.sql mytransactions
+    pgo benchmark mycluster --policy=mytransactions
+
+#### Create a Benchmark with custom parameters
+
+    pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100
 
 ### Complex Deployments
 #### Create a Cluster using Specific Storage

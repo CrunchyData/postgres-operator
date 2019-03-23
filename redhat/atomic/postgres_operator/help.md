@@ -1,6 +1,4 @@
 = postgres-operator (1)
-Jeff McCormick
-August 17, 2018
 
 == NAME
 postgres-operator - Container image for Crunchy Data's PostgreSQL Operator

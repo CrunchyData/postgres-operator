@@ -146,37 +146,38 @@ func (s *StateMachine) Evaluate(status string, events map[string]string) bool {
 // runs until
 func (s *StateMachine) Run() {
 
-	aftask := AutoFailoverTask{}
+	log.Debugf("autofail Run called %s", s.ClusterName)
 
-	for {
-		time.Sleep(time.Second * time.Duration(s.SleepSeconds))
-		s.Print()
+	//	aftask := AutoFailoverTask{}
 
-		status, events := aftask.GetEvents(s.RESTClient, s.ClusterName, s.Namespace)
-		if len(events) == 0 {
-			log.Debugf("no events for statemachine, exiting")
-			return
-		}
+	time.Sleep(time.Second * time.Duration(s.SleepSeconds))
+	s.Print()
 
-		failoverRequired := s.Evaluate(status, events)
-		if failoverRequired {
-			log.Infof("failoverRequired is true, trigger failover on %s\n", s.ClusterName)
-			s.triggerFailover()
-			//clean up to not reprocess the failover event
-			aftask.Clear(s.RESTClient, s.ClusterName, s.Namespace)
-			//recreate a new autofail task to start anew
-			aftask.AddEvent(s.RESTClient, s.ClusterName, FAILOVER_EVENT_NOT_READY, s.Namespace)
-		} else {
-			log.Infof("failoverRequired is false, no need to trigger failover\n")
-		}
+	//	status, events := aftask.GetEvents(s.RESTClient, s.ClusterName, s.Namespace)
+	//	if len(events) == 0 {
+	//		log.Debugf("no events for statemachine, exiting")
+	//		return
+	//	}
 
-		//right now, there is no need for looping with this
-		//simple failover check algorithm, later this loop
-		//will be necessary potentially if the logic evaluates
-		//failures over a span of time
-		return
-
+	//failoverRequired := s.Evaluate(status, events)
+	failoverRequired := true
+	if failoverRequired {
+		log.Infof("failoverRequired is true, trigger failover on %s\n", s.ClusterName)
+		s.triggerFailover()
+		//clean up to not reprocess the failover event
+		//		aftask.Clear(s.RESTClient, s.ClusterName, s.Namespace)
+		//recreate a new autofail task to start anew (3.5.1)
+		//aftask.AddEvent(s.RESTClient, s.ClusterName, FAILOVER_EVENT_NOT_READY, s.Namespace)
+		//		aftask.AddEvent(s.RESTClient, s.ClusterName, FAILOVER_EVENT_READY, s.Namespace)
+	} else {
+		log.Infof("failoverRequired is false, no need to trigger failover\n")
 	}
+
+	//right now, there is no need for looping with this
+	//simple failover check algorithm, later this loop
+	//will be necessary potentially if the logic evaluates
+	//failures over a span of time
+	return
 
 }
 
@@ -185,35 +186,38 @@ func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	log.Infof("AutofailBase ready=%v cluster=%s namespace=%s\n", ready, clusterName, namespace)
 
 	log.Debugf("autofail base with sleep secs = %d", operator.Pgo.Pgo.AutofailSleepSecondsValue)
-	aftask := AutoFailoverTask{}
+	//aftask := AutoFailoverTask{}
 
-	exists := aftask.Exists(restclient, clusterName, namespace)
-	if exists {
-		if !ready {
-			//add notready event, start a state machine
-			aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, namespace)
-			//create a state machine to track the failovers for test cluster
-			sm := StateMachine{
-				Clientset:    clientset,
-				RESTClient:   restclient,
-				Namespace:    namespace,
-				SleepSeconds: operator.Pgo.Pgo.AutofailSleepSecondsValue,
-				ClusterName:  clusterName,
-			}
-
-			go sm.Run()
-
+	//exists := aftask.Exists(restclient, clusterName, namespace)
+	//if exists {
+	if !ready {
+		log.Debugf("AutofailBase called with a not ready status which means we start a state machine to track it")
+		//add notready event, start a state machine
+		//		aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, namespace)
+		//create a state machine to track the failovers for test cluster
+		sm := StateMachine{
+			Clientset:    clientset,
+			RESTClient:   restclient,
+			Namespace:    namespace,
+			SleepSeconds: operator.Pgo.Pgo.AutofailSleepSecondsValue,
+			ClusterName:  clusterName,
 		}
+
+		go sm.Run()
 
 	} else {
-		//we only register the autofail target once it
-		//goes into a Ready status for the first time
-		if ready {
-			//add new map entry to keep an eye on it
-			log.Infof("adding ready failover event for %s\n", clusterName)
-			aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, namespace)
-		}
+		log.Debugf("AutofailBase called with a ready status which means we don't do anything")
 	}
+
+	//} else {
+	//we only register the autofail target once it
+	//goes into a Ready status for the first time
+	//if ready {
+	//add new map entry to keep an eye on it
+	//log.Infof("adding ready failover event for %s\n", clusterName)
+	//aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, namespace)
+	//}
+	//}
 
 }
 
@@ -282,6 +286,7 @@ func (*AutoFailoverTask) Clear(restclient *rest.RESTClient, clusterName, namespa
 	if err != nil {
 		log.Error(err)
 	}
+	log.Debugf("autofail Clear autofail pgtask %s" + taskName)
 }
 
 func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, namespace string) (string, map[string]string) {
@@ -289,6 +294,7 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 	taskName := clusterName + "-" + config.LABEL_AUTOFAIL
 	found, _ := kubeapi.Getpgtask(restclient, &task, taskName, namespace)
 	if found {
+		log.Debugf("autofail GetEvents status %s on task %s events %d", task.Spec.Status, taskName, len(task.Spec.Parameters))
 		return task.Spec.Status, task.Spec.Parameters
 	}
 	return "", make(map[string]string)
@@ -419,6 +425,7 @@ func getPodStatus(clientset *kubernetes.Clientset, depname, ns string) bool {
 }
 
 func (s *StateMachine) triggerFailover() {
+	log.Debugf("triggerFailover called ")
 	targetDeploy, err := getTargetDeployment(s.RESTClient, s.Clientset, s.ClusterName, s.Namespace)
 	if targetDeploy == "" || err != nil {
 		log.Errorf("could not autofailover with no replicas found for %s\n", s.ClusterName)

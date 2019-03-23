@@ -200,7 +200,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 	output := make([]msgs.ShowClusterPod, 0)
 
 	//get pods, but exclude pgpool and backup pods and backrest repo
-	selector := config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_NAME + "!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_NAME + "!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -362,6 +362,12 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 			}
 			for _, s := range secrets {
 				for _, db := range databases {
+
+					// skip postgres user for pgbouncer testing
+					if s.Username == "postgres" && service.Pgbouncer {
+						continue
+					}
+
 					item := msgs.ClusterTestDetail{}
 					username := s.Username
 					password := s.Password
@@ -380,6 +386,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 					result.Items = append(result.Items, item)
 				}
 			}
+
 		}
 		response.Results = append(response.Results, result)
 	}
@@ -592,12 +599,28 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		if request.PgbouncerFlag {
 			userLabelsMap[config.LABEL_PGBOUNCER] = "true"
-			userLabelsMap[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-			userLabelsMap[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+
+			// need to create password to be added to postgres container and pgbouncer credential...
+			if !(len(request.PgbouncerPass) > 0) {
+				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
+			} else {
+				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+			}
+
+			// default pgbouncer user to "pgbouncer" - request should be empty until configurable user is implemented.
+			if !(len(request.PgbouncerUser) > 0) {
+				userLabelsMap[config.LABEL_PGBOUNCER_USER] = "pgbouncer"
+			} else {
+
+				userLabelsMap[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+			}
+
 			userLabelsMap[config.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
-			log.Debug("userLabelsMap")
-			log.Debugf("%v", userLabelsMap)
+
 		}
+
+		log.Debug("userLabelsMap")
+		log.Debugf("%v", userLabelsMap)
 
 		if existsGlobalConfig(ns) {
 			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP

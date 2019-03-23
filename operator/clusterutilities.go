@@ -101,9 +101,12 @@ type DeploymentTemplateFields struct {
 	BadgerAddon             string
 	PgbackrestEnvVars       string
 	PgmonitorEnvVars        string
+	PgbouncerEnvVars        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
+	// PgBouncer deployment only
+	PgbouncerPass string
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
@@ -336,4 +339,13 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 	}
 	return ""
 
+}
+
+func GetPgbouncerEnvVar(psw string) string {
+	if psw == "" {
+		return ""
+	}
+	foo := fmt.Sprintf(`"name": "PGBOUNCER_PASSWORD", "value": "%s" },{`, psw)
+	log.Debugf("pgbouncer str [%s]", foo)
+	return foo
 }

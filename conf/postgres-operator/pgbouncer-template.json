@@ -43,6 +43,9 @@
                     }, {
                         "name": "PG_REPLICA_SERVICE_NAME",
                         "value": "{{.ReplicaServiceName}}"
+                    },{
+                        "name": "PGBOUNCER_PASSWORD",
+                        "value": "{{.PgBouncerPass}}"
                     }],
                     "volumeMounts": [{
                         "name": "pgbouncer-conf",

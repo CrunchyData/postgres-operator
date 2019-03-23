@@ -146,8 +146,8 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName string) error {
 
 	//the primary will be the one with a pod that has a label
-	//that looks like service-name=clustername
-	selector := config.LABEL_SERVICE_NAME + "=" + clusterName
+	//that looks like service-name=clustername and is not a backrest job
+	selector := config.LABEL_SERVICE_NAME + "=" + clusterName + "," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_BACKREST_JOB + "!=true"
 	pods, err := kubeapi.GetPods(clientset, selector, namespace)
 	if len(pods.Items) == 0 {
 		log.Errorf("no primary pod found when trying to delete primary %s", selector)

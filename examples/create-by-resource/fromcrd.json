@@ -12,7 +12,7 @@
             "name": "fromcrd",
             "pg-cluster": "fromcrd",
             "pgo-backrest": "false",
-	"pgo-version": "4.0.0-rc2",
+	    "pgo-version": "4.0.0-rc2",
             "primary": "true"
         },
         "name": "fromcrd",
@@ -89,7 +89,7 @@
             "crunchy-pgbadger": "false",
             "crunchy_collect": "false",
             "pgo-backrest": "false",
-	"pgo-version": "4.0.0-rc2"
+	    "pgo-version": "4.0.0-rc2"
         },
         "usersecretname": "fromcrd-testuser-secret"
     }

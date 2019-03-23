@@ -34,6 +34,10 @@ const CustomConfigMapName = "pgo-config"
 const DefaultConfigsPath = "/default-pgo-config/"
 const CustomConfigsPath = "/pgo-config/"
 
+var BenchmarkJobTemplate *template.Template
+
+const benchmarkJobPath = "pgbench-job.json"
+
 var PolicyJobTemplate *template.Template
 
 const policyJobTemplatePath = "pgo.sqlrunner-template.json"
@@ -536,6 +540,11 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	//load up all the templates
+	BenchmarkJobTemplate, err = c.LoadTemplate(cMap, rootPath, benchmarkJobPath)
+	if err != nil {
+		return err
+	}
+
 	PVCTemplate, err = c.LoadTemplate(cMap, rootPath, pvcPath)
 	if err != nil {
 		return err

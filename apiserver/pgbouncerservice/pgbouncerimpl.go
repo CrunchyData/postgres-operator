@@ -21,6 +21,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -87,6 +88,13 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 
 	for _, cluster := range clusterList.Items {
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
+
+		pgbouncerpass := request.PgbouncerPass
+
+		// create pgbouncer password if not specified by user.
+		if !(len(pgbouncerpass) > 0) {
+			pgbouncerpass = util.GeneratePassword(10)
+		}
 
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
