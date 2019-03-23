@@ -261,19 +261,19 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_NAME] == "postgres-operator" {
-		log.Debugf("postgres-operator-pod added [%s]", newpod.Name)
+		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
-		log.Debugf("pgo-backrest-repo pod added [%s]", newpod.Name)
+		log.Debugf("pgo-backrest-repo pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_PGPOOL] == "true" {
-		log.Debugf("pgpool pod added [%s]", newpod.Name)
+		log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_PGBOUNCER] == "true" {
-		log.Debugf("pgbouncer pod added [%s]", newpod.Name)
+		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
 		return false
 	}
 	return true
