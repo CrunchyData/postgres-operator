@@ -201,7 +201,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 
 	//get pods, but exclude pgpool and backup pods and backrest repo
 	//selector := "pgo-backrest-repo!=true," + "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-	selector := util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_NAME + "!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := util.LABEL_BACKREST_JOB + "!=true," + util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_NAME + "!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -606,21 +606,26 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		if request.PgbouncerFlag {
 			userLabelsMap[util.LABEL_PGBOUNCER] = "true"
+
+			// need to create password to be added to postgres container and pgbouncer credential...
+			if !(len(request.PgbouncerPass) > 0) {
+				userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
+			} else {
+				userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+			}
+
+			// default pgbouncer user to "pgbouncer" - request should be empty until configurable user is implemented.
+			if !(len(request.PgbouncerUser) > 0) {
+				userLabelsMap[util.LABEL_PGBOUNCER_USER] = "pgbouncer"
+			} else {
+
+				userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+			}
+
+			userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
+
 		}
 
-		// pgbouncer credentials are always added to primary in case pgbouncer is added later through
-		// > pgo create pgbouncer mycluster
-		// workaround to a current limitation by the postgres container in how it handles pgbouncer
-
-		// need to create password to be added to postgres container and pgbouncer credential...
-		if !(len(request.PgbouncerPass) > 0) {
-			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
-		} else {
-			userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-		}
-
-		userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
-		userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
 		log.Debug("userLabelsMap")
 		log.Debugf("%v", userLabelsMap)
 

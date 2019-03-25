@@ -17,13 +17,13 @@ limitations under the License.
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -102,8 +102,12 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//handle the case when a pg database pod is updated
+	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
 	if isPostgresPod(newpod) {
-		c.checkReadyStatus(oldpod, newpod)
+		//only check the status of primary pods
+		if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+			c.checkReadyStatus(oldpod, newpod)
+		}
 		return
 	}
 }
@@ -128,9 +132,19 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
 		clusterName != "" && autofailEnabled {
 		log.Debugf("autofail pg-cluster %s updated!", clusterName)
+		var oldStatus = false
+		for _, v := range oldpod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				oldStatus = v.Ready
+			}
+		}
 		for _, v := range newpod.Status.ContainerStatuses {
 			if v.Name == "database" {
-				clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
+				if !v.Ready && oldStatus {
+					log.Debugf("podController autofail enabled pod went from ready to not ready pod name %s", newpod.Name)
+					clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
+				}
+				//clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 			}
 		}
 	}
@@ -247,19 +261,19 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_NAME] == "postgres-operator" {
-		log.Debugf("postgres-operator-pod added [%s]", newpod.Name)
+		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
-		log.Debugf("pgo-backrest-repo pod added [%s]", newpod.Name)
+		log.Debugf("pgo-backrest-repo pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_PGPOOL] == "true" {
-		log.Debugf("pgpool pod added [%s]", newpod.Name)
+		log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[util.LABEL_PGBOUNCER] == "true" {
-		log.Debugf("pgbouncer pod added [%s]", newpod.Name)
+		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
 		return false
 	}
 	return true
