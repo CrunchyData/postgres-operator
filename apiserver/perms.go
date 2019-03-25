@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -89,6 +91,7 @@ var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
 const pgorolePath = "/default-pgo-config/pgorole"
+const pgoroleFile = "pgorole"
 
 func InitializePerms() {
 	PermMap = make(map[string]string)
@@ -163,19 +166,31 @@ func HasPerm(role string, perm string) bool {
 }
 
 func readRoles() {
-
-	f, err := os.Open(pgorolePath)
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-	defer f.Close()
-
 	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	var scanner *bufio.Scanner
+
+	cm, _ := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, Namespace)
+	if val, ok := cm.Data[pgoroleFile]; ok {
+		log.Infof("Custom %s file found in configmap", pgoroleFile)
+		scanner = bufio.NewScanner(strings.NewReader(val))
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+	} else {
+		log.Infof("No custom %s file found in configmap, using defaults", pgoroleFile)
+		f, err := os.Open(pgorolePath)
+		if err != nil {
+			log.Error(err)
+			os.Exit(2)
+		}
+		defer f.Close()
+
+		scanner = bufio.NewScanner(f)
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
 	}
+
 	if err := scanner.Err(); err != nil {
 		log.Error(err)
 		os.Exit(2)
