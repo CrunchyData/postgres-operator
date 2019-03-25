@@ -14,7 +14,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-IFS=', ' read -r -a array <<< "$PGO_NAMESPACE"
+IFS=', ' read -r -a array <<< "$PGO_OPERATOR_NAMESPACE"
 
 echo "deleting the namespaces the operator is deployed into..."
 for ns in "${array[@]}"

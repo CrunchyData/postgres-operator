@@ -69,11 +69,11 @@ for Kube events.  This value is set as follows:
 This means namespaces called *pgouser1* and *pgouser2* will be
 created as part of the default installation.  
 
-The *PGO_NAMESPACE* environment variable is a comma separated list
+The *PGO_OPERATOR_NAMESPACE* environment variable is a comma separated list
 of namespace values that the Operator itself will be deployed into.  For
 the installation example, this value is set as follows:
 
-    export PGO_NAMESPACE=pgo
+    export PGO_OPERATOR_NAMESPACE=pgo
 
 This means a *pgo* namespace will be created and the Operator will
 be deployed into that namespace.

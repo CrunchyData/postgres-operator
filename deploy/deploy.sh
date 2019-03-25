@@ -17,10 +17,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$PGO_CMD --namespace=$PGO_NAMESPACE get clusterrole pgopclusterrole 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrole 2> /dev/null
 if [ $? -ne 0 ]
 then
-	echo ERROR: pgopclusterrole was not found in $PGO_NAMESPACE namespace
+	echo ERROR: pgopclusterrole was not found in $PGO_OPERATOR_NAMESPACE namespace
 	echo Verify you ran install-rbac.sh
 	exit
 fi
@@ -28,7 +28,7 @@ fi
 #
 # credentials for pgbackrest sshd 
 #
-$PGO_CMD --namespace=$PGO_NAMESPACE create secret generic pgo-backrest-repo-config \
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-repo-config \
 	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
 	--from-file=ssh_host_rsa_key=$PGOROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
 	--from-file=authorized_keys=$PGOROOT/conf/pgo-backrest-repo/authorized_keys \
@@ -37,15 +37,15 @@ $PGO_CMD --namespace=$PGO_NAMESPACE create secret generic pgo-backrest-repo-conf
 #
 # credentials for pgo-apiserver TLS REST API
 #
-$PGO_CMD --namespace=$PGO_NAMESPACE delete secret tls pgo.tls
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret tls pgo.tls
 
-$PGO_CMD --namespace=$PGO_NAMESPACE create secret tls pgo.tls --key=$PGOROOT/conf/postgres-operator/server.key --cert=$PGOROOT/conf/postgres-operator/server.crt
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret tls pgo.tls --key=$PGOROOT/conf/postgres-operator/server.key --cert=$PGOROOT/conf/postgres-operator/server.crt
 
-$PGO_CMD --namespace=$PGO_NAMESPACE create configmap pgo-config \
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create configmap pgo-config \
 	--from-file=$PGOROOT/conf/postgres-operator
 
 #
 # create the postgres-operator Deployment and Service
 #
-expenv -f $DIR/deployment.json | $PGO_CMD --namespace=$PGO_NAMESPACE create -f -
-$PGO_CMD --namespace=$PGO_NAMESPACE create -f $DIR/service.json
+expenv -f $DIR/deployment.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f $DIR/service.json

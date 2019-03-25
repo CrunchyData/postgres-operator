@@ -38,7 +38,7 @@
                                 "value": "$NAMESPACE"
                             },
                             {
-                                "name": "PGO_NAMESPACE",
+                                "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -72,7 +72,7 @@
                                 "value": "$NAMESPACE"
                             },
                             {
-                                "name": "PGO_NAMESPACE",
+                                "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -96,7 +96,7 @@
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
                         "env": [
                             {
-                                "name": "PGO_NAMESPACE",
+                                "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"

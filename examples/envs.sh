@@ -5,8 +5,8 @@ export PATH=$PATH:$GOBIN
 # NAMESPACE is the list of namespaces the Operator will watch
 export NAMESPACE=pgouser1,pgouser2
 
-# PGO_NAMESPACE is the namespace the Operator is deployed into
-export PGO_NAMESPACE=pgo
+# PGO_OPERATOR_NAMESPACE is the namespace the Operator is deployed into
+export PGO_OPERATOR_NAMESPACE=pgo
 
 # PGO_CMD values are either kubectl or oc, use oc if Openshift
 export PGO_CMD=kubectl
@@ -28,18 +28,18 @@ export PGO_CLIENT_KEY=$PGOROOT/conf/postgres-operator/server.key
 # common bash functions for working with the Operator
 setip() 
 { 
-	export PGO_APISERVER_URL=https://`$PGO_CMD -n "$PGO_NAMESPACE" get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443 
+	export PGO_APISERVER_URL=https://`$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" get service postgres-operator -o=jsonpath="{.spec.clusterIP}"`:8443 
 }
 
 alog() {
-kubectl  -n "$PGO_NAMESPACE" logs `$PGO_CMD  -n "$PGO_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver
+$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" logs `$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c apiserver
 }
 
 olog () {
-kubectl  -n "$PGO_NAMESPACE" logs `$PGO_CMD  -n "$PGO_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator
+$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" logs `$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c operator
 }
 
 slog () {
-kubectl  -n "$PGO_NAMESPACE" logs `$PGO_CMD  -n "$PGO_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c scheduler
+$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" logs `$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c scheduler
 }
 

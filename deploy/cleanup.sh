@@ -14,35 +14,35 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$PGO_CMD --namespace=$PGO_NAMESPACE get secret/pgo-backrest-repo-config 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get secret/pgo-backrest-repo-config 2> /dev/null
 
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_NAMESPACE delete secret/pgo-backrest-repo-config
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret/pgo-backrest-repo-config
 fi
 
-$PGO_CMD --namespace=$PGO_NAMESPACE get secret pgo.tls 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get secret pgo.tls 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_NAMESPACE delete secret pgo.tls
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret pgo.tls
 fi
 
-$PGO_CMD --namespace=$PGO_NAMESPACE get configmap/pgo-config 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get configmap/pgo-config 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_NAMESPACE delete configmap/pgo-config
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete configmap/pgo-config
 fi
 
-$PGO_CMD --namespace=$PGO_NAMESPACE get service/postgres-operator 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get service/postgres-operator 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_NAMESPACE delete service/postgres-operator
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete service/postgres-operator
 fi
 
-$PGO_CMD --namespace=$PGO_NAMESPACE get deployment/postgres-operator 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get deployment/postgres-operator 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_NAMESPACE delete deployment/postgres-operator
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete deployment/postgres-operator
 fi
 
 sleep 5

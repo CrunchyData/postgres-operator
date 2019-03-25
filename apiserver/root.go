@@ -93,9 +93,9 @@ type containerResourcesTemplateFields struct {
 
 func Initialize() {
 
-	PgoNamespace = os.Getenv("PGO_NAMESPACE")
+	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
 	if PgoNamespace == "" {
-		log.Info("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
+		log.Info("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
 

@@ -54,7 +54,7 @@ setupnamespaces:
 cleannamespaces:
 	cd deploy && ./cleannamespaces.sh
 bounce:
-	$(PGO_CMD) --namespace=$(PGO_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(PGO_CMD) --namespace=$(PGO_NAMESPACE) delete pod
+	$(PGO_CMD) --namespace=$(PGO_OPERATOR_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(PGO_CMD) --namespace=$(PGO_OPERATOR_NAMESPACE) delete pod
 deployoperator:
 	cd deploy && ./deploy.sh
 main:	check-go-vars

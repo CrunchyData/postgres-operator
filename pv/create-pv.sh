@@ -20,6 +20,6 @@ for i in {1..100}
 do
    	echo "creating PV crunchy-pv$i"
 	export COUNTER=$i
-	$PGO_CMD --namespace=$PGO_NAMESPACE delete pv crunchy-pv$i
-	expenv -f $DIR/crunchy-pv.json | $PGO_CMD --namespace=$PGO_NAMESPACE create -f -
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pv crunchy-pv$i
+	expenv -f $DIR/crunchy-pv.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 done

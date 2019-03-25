@@ -171,8 +171,8 @@ That script gets executed when running:
 You can extract the server.key and server.crt from the Secret using the
 following:
 
-    oc get secret pgo.tls -n $PGO_NAMESPACE -o jsonpath='{.data.tls\.key}' | base64 --decode > /tmp/server.key
-    oc get secret pgo.tls -n $PGO_NAMESPACE -o jsonpath='{.data.tls\.crt}' | base64 --decode > /tmp/server.crt
+    oc get secret pgo.tls -n $PGO_OPERATOR_NAMESPACE -o jsonpath='{.data.tls\.key}' | base64 --decode > /tmp/server.key
+    oc get secret pgo.tls -n $PGO_OPERATOR_NAMESPACE -o jsonpath='{.data.tls\.crt}' | base64 --decode > /tmp/server.crt
 
 This server.key and server.crt can then be used to access the *pgo-apiserver*
 REST API.

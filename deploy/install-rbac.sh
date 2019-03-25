@@ -27,16 +27,16 @@ fi
 expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
 
 # create the Operator service accounts
-expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_NAMESPACE create -f -
+expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
 # create the cluster role bindings to the Operator service accounts
 # postgres-operator and pgo-backrest, here we are assuming a single
-# Operator in the PGO_NAMESPACE env variable
-expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_NAMESPACE create -f -
+# Operator in the PGO_OPERATOR_NAMESPACE env variable
+expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
 # create the role, role-binding and add to the service account
 # these are created within the namespace the Operator is running
-#expenv -f $DIR/rbac.yaml | $PGO_CMD create --namespace=$PGO_NAMESPACE -f -
+#expenv -f $DIR/rbac.yaml | $PGO_CMD create --namespace=$PGO_OPERATOR_NAMESPACE -f -
 
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh
@@ -58,6 +58,6 @@ do
         then
                 $PGO_CMD delete secret  pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
         fi
-        $DIR/create-target-rbac.sh $ns $PGO_NAMESPACE
+        $DIR/create-target-rbac.sh $ns $PGO_OPERATOR_NAMESPACE
 done
 

@@ -33,7 +33,7 @@ import (
 const (
 	schedulerLabel  = "crunchy-scheduler=true"
 	namespaceEnv    = "NAMESPACE"
-	pgoNamespaceEnv = "PGO_NAMESPACE"
+	pgoNamespaceEnv = "PGO_OPERATOR_NAMESPACE"
 	timeoutEnv      = "TIMEOUT"
 	inCluster       = true
 )
@@ -59,7 +59,7 @@ func init() {
 	}
 	pgoNamespace = os.Getenv(pgoNamespaceEnv)
 	if pgoNamespace == "" {
-		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_NAMESPACE environment: %s", pgoNamespaceEnv)
+		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_OPERATOR_NAMESPACE environment: %s", pgoNamespaceEnv)
 	}
 
 	secondsEnv := os.Getenv(timeoutEnv)

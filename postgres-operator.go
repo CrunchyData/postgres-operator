@@ -51,9 +51,9 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	PgoNamespace = os.Getenv("PGO_NAMESPACE")
+	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
 	if PgoNamespace == "" {
-		log.Error("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
+		log.Error("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
 
