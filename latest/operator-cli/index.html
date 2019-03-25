@@ -86,20 +86,6 @@
       <hr>
       <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
       <hr>
-        <b>Available Formats</b>
-        <nav class="downloads">
-                <li class="" role="">
-                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres_operator.pdf"  rel="noopener">
-                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
-                    </a>
-                </li>
-                <li class="" role="">
-                    <a href="https://crunchydata.github.io/postgres-operator/latest/epub/postgres_operator.epub"  rel="noopener">
-                      <i class='fas fa-book'></i> <label>EPUB</label>
-                    </a>
-                </li>
-        </nav>
-        <hr>
 
       <b>Navigation</b>
     <li data-nav-id="/installation/" class="dd-item
@@ -744,7 +730,7 @@
 
 <tr>
 <td align="left">scaledown</td>
-<td align="left">pgo scaledown  mycluster &ndash;query</td>
+<td align="left">pgo scaledown mycluster &ndash;query</td>
 <td align="left">Delete a replica from a Postgres cluster.</td>
 </tr>
 
@@ -813,7 +799,7 @@
 
 <h4 id="scale-a-cluster-with-additional-replicas">Scale a Cluster with Additional Replicas</h4>
 
-<pre><code>pgo scale cluster mycluster
+<pre><code>pgo scale mycluster
 </code></pre>
 
 <h4 id="create-a-cluster-with-pgbackrest-configured">Create a Cluster with pgbackrest Configured</h4>
@@ -823,8 +809,8 @@
 
 <h4 id="scaledown-a-cluster">Scaledown a Cluster</h4>
 
-<pre><code>pgo scaledown cluster mycluster --query
-pgo scaledown cluster mycluster --target=sometarget
+<pre><code>pgo scaledown mycluster --query
+pgo scaledown mycluster --target=sometarget
 </code></pre>
 
 <h4 id="delete-a-cluster">Delete a Cluster</h4>
@@ -962,7 +948,7 @@ before you do a restore.</p>
 
 <h4 id="restore-from-pgdump-backup">Restore from pgdump backup</h4>
 
-<pre><code>pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target=&quot;2019-01-15 00:03:25&quot;
+<pre><code>pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target=&quot;2019-01-15-00-03-25&quot;
 </code></pre>
 
 <p>To restore the most recent pgdump at the default path, leave off a timestamp:</p>
@@ -980,7 +966,7 @@ pgo failover mycluster --target=sometarget
 
 <h4 id="create-a-cluster-with-auto-fail-enabled">Create a Cluster with Auto-fail Enabled</h4>
 
-<pre><code>pgo create cluster mycluster --autofail
+<pre><code>pgo create cluster mycluster --autofail --replica-count=1
 </code></pre>
 
 <h3 id="add-on-operations">Add-On Operations</h3>
@@ -988,6 +974,7 @@ pgo failover mycluster --target=sometarget
 <h4 id="create-a-cluster-with-pgbouncer">Create a Cluster with pgbouncer</h4>
 
 <pre><code>pgo create cluster mycluster --pgbouncer
+pgo create cluster mycluster --pgbouncer --pgbouncer-pass=somepass
 </code></pre>
 
 <h4 id="create-a-cluster-with-pgpool">Create a Cluster with pgpool</h4>
@@ -998,6 +985,7 @@ pgo failover mycluster --target=sometarget
 <h4 id="add-pgbouncer-to-a-cluster">Add pgbouncer to a Cluster</h4>
 
 <pre><code>pgo create pgbouncer mycluster
+pgo create pgbouncer mycluster --pgbouncer-pass=somepass
 </code></pre>
 
 <p>Note, the pgbouncer configuration defaults to specifying only
@@ -1005,7 +993,7 @@ a single entry for the primary database.  If you want it to
 have an entry for the replica service, add the following
 configuration to pgbouncer.ini:</p>
 
-<pre><code>{{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+<pre><code>{{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
 </code></pre>
 
 <h4 id="add-pgpool-to-a-cluster">Add pgpool to a Cluster</h4>
@@ -1036,7 +1024,7 @@ configuration to pgbouncer.ini:</p>
 <p>Note: backend metric storage such as Prometheus and front end
 visualization software such as Grafana are not created automatically
 by the PostgreSQL Operator.  For instructions on installing Grafana and
-Prometheus in your environment, see the <a href="https://access.crunchydata.com/documentation/crunchy-containers/2.3.0/examples/metrics/metrics/">Crunchy Container Suite documentation</a>.</p>
+Prometheus in your environment, see the <a href="http://crunchydata.github.io/crunchy-containers/stable/examples/metrics/metrics/">Crunchy Container Suite documentation</a>.</p>
 
 <h3 id="scheduled-tasks">Scheduled Tasks</h3>
 
@@ -1066,6 +1054,29 @@ against the target cluster prior to creating this schedule.</p>
 <pre><code>pgo create schedule --selector=pg-cluster=mycluster --schedule=&quot;0 1 * * *&quot; \
      --schedule-type=policy --policy=mypolicy --database=userdb \
      --secret=mycluster-testuser-secret
+</code></pre>
+
+<h3 id="benchmark-clusters">Benchmark Clusters</h3>
+
+<h4 id="create-a-benchmark-via-cluster-name">Create a Benchmark via Cluster Name</h4>
+
+<pre><code>pgo benchmark mycluster
+</code></pre>
+
+<h4 id="create-a-benchmark-via-selector">Create a Benchmark via Selector</h4>
+
+<pre><code>pgo benchmark --selector=pg-cluster=mycluster
+</code></pre>
+
+<h4 id="create-a-benchmark-with-a-custom-transactions">Create a Benchmark with a custom transactions</h4>
+
+<pre><code>pgo create policy --in-file=/tmp/transactions.sql mytransactions
+pgo benchmark mycluster --policy=mytransactions
+</code></pre>
+
+<h4 id="create-a-benchmark-with-custom-parameters">Create a Benchmark with custom parameters</h4>
+
+<pre><code>pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100
 </code></pre>
 
 <h3 id="complex-deployments">Complex Deployments</h3>

@@ -86,20 +86,6 @@
       <hr>
       <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
       <hr>
-        <b>Available Formats</b>
-        <nav class="downloads">
-                <li class="" role="">
-                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres_operator.pdf"  rel="noopener">
-                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
-                    </a>
-                </li>
-                <li class="" role="">
-                    <a href="https://crunchydata.github.io/postgres-operator/latest/epub/postgres_operator.epub"  rel="noopener">
-                      <i class='fas fa-book'></i> <label>EPUB</label>
-                    </a>
-                </li>
-        </nav>
-        <hr>
 
       <b>Navigation</b>
     <li data-nav-id="/installation/" class="dd-item
@@ -872,6 +858,103 @@ are captured in a unique pgcluster resource for that Postgres cluster</li>
 <li>pgbackup - when you run a pgbasebackup, a pgbackup is created to hold the workflow and status of the last backup job, this CRD will eventually be deprecated in favor of a more general pgtask resource</li>
 <li>pgreplica - when you create a Postgres replica, a pgreplica CRD is created to define that replica</li>
 </ul>
+
+<h2 id="considerations-for-multi-zone-cloud-environments">Considerations for Multi-zone Cloud Environments</h2>
+
+<h4 id="overview">Overview</h4>
+
+<p>When using the Operator in a Kubernetes cluster consisting of nodes that span multiple zones, special consideration must be
+taken to ensure all pods and the volumes they require are scheduled and provisioned within the same zone.  Specifically,
+being that a pod is unable mount a volume that is located in another zone, any volumes that are dynamically provisioned must
+be provisioned in a topology-aware manner according to the specific scheduling requirements for the pod. For instance, this
+means ensuring that the volume containing the database files for the primary DB in a new PG cluster is provisioned in the
+same zone as the node containing the PG primary pod that will be using it.</p>
+
+<h4 id="default-behavior">Default Behavior</h4>
+
+<p>By default, the Kubernetes scheduler will ensure any pods created that claim a specific volume via a PVC are scheduled on a
+node in the same zone as that volume.  This is part of the
+<a href="https://kubernetes.io/docs/setup/multiple-zones/">multi-zone support</a> that is included in Kubernetes by default. However,
+when using dynamic provisioning, volumes are not provisioned in a topology-aware manner by default, which means a volume
+will not be provisioned according to the same scheduling requirements that will be placed on the pod that will be using it
+(e.g. it will not consider node selectors, resource requirements, pod affinity/anti-affinity, and various other scheduling
+requirements).  Rather, PVC&rsquo;s are immediately bound as soon as they are requested, which means volumes are provisioned
+without knowledge of these scheduling requirements. This behavior is the result of the <code>volumeBindingMode</code> defined on the
+Storage Class being utilized to dynamically provision the volume, which is set to <code>Immediate</code> by default.  This can be seen
+in the following Storage Class definition, which defines a Storage Class for a Google Cloud Engine Persistent Disk (GCE PD)
+that uses the default value of <code>Immediate</code> for its <code>volumeBindingMode</code>:</p>
+<div class="highlight"><pre style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: example-sc
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+volumeBindingMode: Immediate</code></pre></div>
+<p>Unfortunately, using <code>Immediate</code> for the <code>volumeBindingMode</code> in a multi-zone cluster can result in undesired behavior when
+using the Operator, being that the scheduler will ignore any requested <em>(but not mandatory)</em> scheduling requirements if
+necessary to ensure the pod can be scheduled. Specifically, the scheduler will ultimately schedule the pod on a node in the
+same zone as the volume, even if another node was requested for scheduling that pod. For instance, a node label might be
+specified using the <code>--node-label</code> option when creating a cluster using the <code>pgo create cluster</code> command in order target a
+specific node (or nodes) for the deployment of that cluster. Within the Operator, a <strong>node label</strong> is implemented as a
+<code>preferredDuringSchedulingIgnoredDuringExecution</code> node affinity rule, which is an affinity rule that Kubernetes will attempt
+to adhere to when scheduling any pods for the cluster, but <em>will not guarantee</em> (more information on node affinity rules can
+be found <a href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity">here</a>). Therefore,
+if the volume ends up in a zone other than the zone containing the node (or nodes) defined by the node label, the node label
+will be ignored, and the pod will be scheduled according to the zone containing the volume.</p>
+
+<h4 id="topology-aware-volumes">Topology Aware Volumes</h4>
+
+<p>In order to overcome the behavior described above in a multi-zone cluster, volumes must be made topology aware.  This is
+accomplished by setting the <code>volumeBindingMode</code> for the storage class to <code>WaitForFirstConsumer</code>, which delays the dynamic
+provisioning of a volume until a pod using it is created. In other words, the PVC is no longer bound as soon as it is
+requested, but rather waits for a pod utilizing it to be creating prior to binding.  This change ensures that volume can
+take into account the scheduling requirements for the pod, which in the case of a multi-zone cluster means ensuring the
+volume is provisioned in the same zone containing the node where the pod has be scheduled.  This also means the scheduler
+should no longer ignore a node label in order to follow a volume to another zone when scheduling a pod, since the volume
+will now follow the pod according to the pod&rsquo;s specificscheduling requirements.  The following is an example of the the same
+Storage Class defined above, only with <code>volumeBindingMode</code> now set to <code>WaitForFirstConsumer</code>:</p>
+<div class="highlight"><pre style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: example-sc
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+volumeBindingMode: WaitForFirstConsumer</code></pre></div>
+<h4 id="additional-solutions">Additional Solutions</h4>
+
+<p>If you are using a version of Kubernetes that does not support <code>WaitForFirstConsumer</code>, an alternate <em>(and now deprecated)</em>
+solution exists in the form of parameters that can be defined on the Storage Class definition to ensure volumes are
+provisioned in a specific zone (or zones).  For instance, when defining a Storage Class for a GCE PD for use in Google
+Kubernetes Engine (GKE) cluster, the <strong>zone</strong> parameter can be used to ensure any volumes dynamically provisioned using that
+Storage Class are located in that specific zone.  The following is an example of a Storage Class for a GKE cluster that will
+provision volumes in the <strong>us-east1</strong> zone:</p>
+<div class="highlight"><pre style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: example-sc
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-standard
+  replication-type: none
+  zone: us-east1</code></pre></div>
+<p>Once storage classes have been defined for one or more zones, they can then be defined as one or more storage configurations
+within the pgo.yaml configuration file (as described in the
+<a href="https://crunchydata.github.io/postgres-operator/latest/configuration/pgo-yaml-configuration">PGO YAML configuration guide</a>).  From there those storage configurations can then be
+selected when creating a new cluster, as shown in the following example:</p>
+<div class="highlight"><pre style="color:#272822;background-color:#fafafa;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">pgo create cluster mycluster --storage-config<span style="color:#f92672">=</span>example-sc</code></pre></div>
+<p>With this approach, the pod will once again be scheduled according to the zone in which the volume was provisioned. However,
+the zone parameters defined on the Storage Class bring consistency to scheduling by guaranteeing that the volume, and
+therefore also the pod using that volume, are scheduled in a specific zone as defined by the user, bringing consistency
+and predictability to volume provisioning and pod scheduling in multi-zone clusters.</p>
+
+<p>For more information regarding the specific parameters available for the Storage Classes being utilizing in your cloud
+environment, please see the
+<a href="https://kubernetes.io/docs/concepts/storage/storage-classes/">Kubernetes documentation for Storage Classes</a>.</p>
+
+<p>Lastly, while the above applies to the dynamic provisioning of volumes, it should be noted that volumes can also be manually
+provisioned in desired zones in order to achieve the desired topology requirements for any pods and their volumes.</p>
 
 
 
