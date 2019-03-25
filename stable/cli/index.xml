@@ -85,7 +85,7 @@ pgo create cluster mycluster  pgo create cluster [flags]  Options  --archive Ena
       <guid>https://crunchydata.github.io/postgres-operator/stable/cli/pgo_create_pgbouncer/</guid>
       <description>pgo create pgbouncer Create a pgbouncer
 Synopsis Create a pgbouncer. For example:
-pgo create pgbouncer mycluster  pgo create pgbouncer [flags]  Options  -h, --help help for pgbouncer  Options inherited from parent commands  --apiserver-url string The URL for the PostgreSQL Operator apiserver. --debug Enable debugging when true. --namespace string The namespace to use for pgo requests. --pgo-ca-cert string The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.</description>
+pgo create pgbouncer mycluster  pgo create pgbouncer [flags]  Options  -h, --help help for pgbouncer --pgbouncer-pass string Password for the pgbouncer user of the crunchy-pgboucer deployment.  Options inherited from parent commands  --apiserver-url string The URL for the PostgreSQL Operator apiserver. --debug Enable debugging when true. --namespace string The namespace to use for pgo requests.</description>
     </item>
     
     <item>
@@ -140,7 +140,7 @@ pgo create user manageduser --managed --selector=name=mycluster pgo create user 
       <guid>https://crunchydata.github.io/postgres-operator/stable/cli/pgo_delete/</guid>
       <description>pgo delete Delete a backup, cluster, pgbouncer, pgpool, label, policy, upgrade, or user
 Synopsis The delete command allows you to delete a backup, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
-pgo delete user testuser --selector=name=mycluster pgo delete policy mypolicy pgo delete cluster mycluster pgo delete pgbouncer mycluster pgo delete pgpool mycluster pgo delete label mycluster --label=env=research pgo delete cluster mycluster --delete-data pgo delete cluster mycluster --delete-data --delete-backups pgo delete backup mycluster pgo delete upgrade mycluster pgo delete schedule mycluster pgo delete schedule --selector=name=mycluster pgo delete schedule --schedule-name=mycluster-pgbackrest-full  pgo delete [flags]  Options  -h, --help help for delete  Options inherited from parent commands  --apiserver-url string The URL for the PostgreSQL Operator apiserver.</description>
+pgo delete backup mycluster pgo delete cluster mycluster pgo delete cluster mycluster --delete-data pgo delete cluster mycluster --delete-data --delete-backups pgo delete label mycluster --label=env=research pgo delete pgbouncer mycluster pgo delete pgpool mycluster pgo delete policy mypolicy pgo delete schedule --schedule-name=mycluster-pgbackrest-full pgo delete schedule --selector=name=mycluster pgo delete schedule mycluster pgo delete upgrade mycluster pgo delete user testuser --selector=name=mycluster  pgo delete [flags]  Options  -h, --help help for delete  Options inherited from parent commands  --apiserver-url string The URL for the PostgreSQL Operator apiserver.</description>
     </item>
     
     <item>
@@ -393,7 +393,7 @@ pgo show policy policy1  pgo show policy [flags]  Options  -h, --help help for p
       <guid>https://crunchydata.github.io/postgres-operator/stable/cli/pgo_show_pvc/</guid>
       <description>pgo show pvc Show PVC information
 Synopsis Show PVC information. For example:
-pgo show pvc mycluster pgo show pvc mycluster-backup pgo show pvc mycluster-xlog pgo show pvc a2-backup --pvc-root=a2-backups/2019-01-12-17-09-42  pgo show pvc [flags]  Options  -h, --help help for pvc --pvc-root string The PVC directory to list.  Options inherited from parent commands  --apiserver-url string The URL for the PostgreSQL Operator apiserver. --debug Enable debugging when true.</description>
+pgo show pvc mycluster pgo show pvc mycluster-backup pgo show pvc mycluster-xlog pgo show pvc a2-backup --pvc-root=a2-backups/2019-01-12-17-09-42  pgo show pvc [flags]  Options  -h, --help help for pvc --node-label string The node label (key=value) to use --pvc-root string The PVC directory to list.  Options inherited from parent commands  --apiserver-url string The URL for the PostgreSQL Operator apiserver.</description>
     </item>
     
     <item>
@@ -504,7 +504,7 @@ pgo upgrade [flags]  Options  --ccp-image-tag string The CCPImageTag to use for 
       <guid>https://crunchydata.github.io/postgres-operator/stable/cli/pgo_user/</guid>
       <description>pgo user Manage PostgreSQL users
 Synopsis USER allows you to manage users and passwords across a set of clusters. For example:
-pgo user --selector=name=mycluster --update-passwords pgo user --change-password=bob --selector=name=mycluster --password=newpass  pgo user [flags]  Options  --change-password string Updates the password for a user on selective clusters. --db string Grants the user access to a database. --expired string required flag when updating passwords that will expire in X days using --update-passwords flag.</description>
+pgo user --selector=name=mycluster --update-passwords pgo user --change-password=bob --expired=300 --selector=name=mycluster --password=newpass  pgo user [flags]  Options  --change-password string Updates the password for a user on selective clusters. --db string Grants the user access to a database. --expired string required flag when updating passwords that will expire in X days using --update-passwords flag.</description>
     </item>
     
     <item>
