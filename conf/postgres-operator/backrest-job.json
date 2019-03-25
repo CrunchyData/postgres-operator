@@ -30,7 +30,7 @@
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "backrest",
-                    "image": "{{.COImagePrefix}}/pgo-backrest:{{.COImageTag}}",
+                    "image": "{{.PGOImagePrefix}}/pgo-backrest:{{.PGOImageTag}}",
                     "volumeMounts": [
 		{{.PgbackrestRestoreVolumeMounts}}
 			    ],

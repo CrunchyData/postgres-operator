@@ -89,7 +89,5 @@ Pgo:
   AutofailSleepSeconds:  9
   PreferredFailoverNode:  
   Audit:  false
-  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
-  LoadTemplate:  /pgo-config/pgo.load-template.json
-  COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.2
+  PGOImagePrefix:  crunchydata
+  PGOImageTag:  centos7-4.0.0-rc2

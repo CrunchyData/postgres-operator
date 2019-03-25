@@ -1,7 +1,7 @@
 package pvc
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,11 +19,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"os"
@@ -89,9 +89,9 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 
 	if storageSpec.StorageType == "dynamic" {
 		log.Debug("using dynamic PVC template")
-		err = operator.PVCStorageClassTemplate.Execute(&doc2, pvcFields)
+		err = config.PVCStorageClassTemplate.Execute(&doc2, pvcFields)
 		if operator.CRUNCHY_DEBUG {
-			operator.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
+			config.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
 		}
 	} else {
 		log.Debugf("matchlabels from spec is [%s]", storageSpec.MatchLabels)
@@ -105,9 +105,9 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 			log.Debugf("matchlabels constructed is %s", pvcFields.MatchLabels)
 		}
 
-		err = operator.PVCTemplate.Execute(&doc2, pvcFields)
+		err = config.PVCTemplate.Execute(&doc2, pvcFields)
 		if operator.CRUNCHY_DEBUG {
-			operator.PVCTemplate.Execute(os.Stdout, pvcFields)
+			config.PVCTemplate.Execute(os.Stdout, pvcFields)
 		}
 	}
 	if err != nil {
@@ -150,7 +150,7 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 
 	log.Debugf("PVC %s is found", pvc.Name)
 
-	if pvc.ObjectMeta.Labels[util.LABEL_PGREMOVE] == "true" {
+	if pvc.ObjectMeta.Labels[config.LABEL_PGREMOVE] == "true" {
 		log.Debugf("delete PVC %s in namespace %s", name, namespace)
 		err = kubeapi.DeletePVC(clientset, name, namespace)
 		if err != nil {
@@ -176,7 +176,7 @@ func getMatchLabels(key, value string) string {
 	matchLabelsTemplateFields.Value = value
 
 	var doc bytes.Buffer
-	err := operator.PVCMatchLabelsTemplate.Execute(&doc, matchLabelsTemplateFields)
+	err := config.PVCMatchLabelsTemplate.Execute(&doc, matchLabelsTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""

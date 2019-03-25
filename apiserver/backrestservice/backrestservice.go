@@ -1,7 +1,7 @@
 package backrestservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -48,7 +48,7 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreateBackrestBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -66,11 +66,11 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
-	backupname := vars[util.LABEL_NAME]
+	backupname := vars[config.LABEL_NAME]
 
-	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
-	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
+	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
+	selector := r.URL.Query().Get(config.LABEL_SELECTOR)
+	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
 
 	log.Debugf("ShowBackrestHandler parameters name [%s] version [%s] selector [%s] namespace [%s]", backupname, clientVersion, selector, namespace)
 
@@ -91,7 +91,7 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -125,7 +125,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.RestoreResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

@@ -22,7 +22,7 @@ pgo restore [flags]
       --backup-pvc string    The PVC containing the pgdump directory to restore from.
       --backup-type string   The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.
   -h, --help                 help for restore
-  -n, --no-prompt            No command line confirmation.
+      --no-prompt            No command line confirmation.
       --node-label string    The node label (key=value) to use when scheduling the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.
       --pitr-target string   The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.
 ```
@@ -32,7 +32,7 @@ pgo restore [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

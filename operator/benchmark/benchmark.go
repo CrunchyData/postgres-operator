@@ -21,8 +21,8 @@ import (
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
@@ -74,7 +74,7 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 	}
 
 	var doc2 bytes.Buffer
-	err := operator.BenchmarkJobTemplate.Execute(&doc2, jobFields)
+	err := config.BenchmarkJobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err)
 		return

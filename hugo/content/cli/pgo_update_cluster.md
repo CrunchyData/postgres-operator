@@ -21,7 +21,7 @@ pgo update cluster [flags]
 ```
       --autofail string   If set, will cause the autofail label on the pgcluster CRD for this cluster to be updated to either true or false, valid values are true or false.
   -h, --help              help for cluster
-  -n, --no-prompt         No command line confirmation.
+      --no-prompt         No command line confirmation.
   -s, --selector string   The selector to use for cluster filtering.
 ```
 
@@ -30,7 +30,7 @@ pgo update cluster [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

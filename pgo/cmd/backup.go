@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	labelutil "github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +37,10 @@ var backupCmd = &cobra.Command{
 
   pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
@@ -46,7 +50,7 @@ var backupCmd = &cobra.Command{
 
 			switch buSelected := BackupType; buSelected {
 
-			case labelutil.LABEL_BACKUP_TYPE_BACKREST:
+			case config.LABEL_BACKUP_TYPE_BACKREST:
 
 				// storage config flag invalid for backrest
 				if StorageConfig != "" {
@@ -60,11 +64,11 @@ var backupCmd = &cobra.Command{
 
 				createBackrestBackup(args, Namespace)
 
-			case "", labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
+			case "", config.LABEL_BACKUP_TYPE_BASEBACKUP:
 
 				createBackup(args, Namespace)
 
-			case labelutil.LABEL_BACKUP_TYPE_PGDUMP:
+			case config.LABEL_BACKUP_TYPE_PGDUMP:
 
 				createpgDumpBackup(args, Namespace)
 

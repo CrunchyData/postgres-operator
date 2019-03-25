@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -70,6 +70,7 @@ const SHOW_BACKUP_PERM = "ShowBackup"
 const SHOW_BENCHMARK_PERM = "ShowBenchmark"
 const SHOW_CLUSTER_PERM = "ShowCluster"
 const SHOW_CONFIG_PERM = "ShowConfig"
+const SHOW_NAMESPACE_PERM = "ShowNamespace"
 const SHOW_INGEST_PERM = "ShowIngest"
 const SHOW_POLICY_PERM = "ShowPolicy"
 const SHOW_PVC_PERM = "ShowPVC"
@@ -87,7 +88,7 @@ const SCALE_CLUSTER_PERM = "ScaleCluster"
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
-const pgorolePath = "/pgo-auth-secret/pgorole"
+const pgorolePath = "/default-pgo-config/pgorole"
 
 func InitializePerms() {
 	PermMap = make(map[string]string)
@@ -135,6 +136,7 @@ func InitializePerms() {
 	PermMap[SHOW_BENCHMARK_PERM] = "yes"
 	PermMap[SHOW_CLUSTER_PERM] = "yes"
 	PermMap[SHOW_CONFIG_PERM] = "yes"
+	PermMap[SHOW_NAMESPACE_PERM] = "yes"
 	PermMap[SHOW_INGEST_PERM] = "yes"
 	PermMap[SHOW_POLICY_PERM] = "yes"
 	PermMap[SHOW_PVC_PERM] = "yes"

@@ -1,7 +1,7 @@
 package backrest
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,24 +19,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	log "github.com/sirupsen/logrus"
-
-	//"github.com/crunchydata/postgres-operator/operator/cluster"
-	"os"
-	"time"
-
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
+	"time"
 )
 
 type restorejobTemplateFields struct {
@@ -45,8 +42,8 @@ type restorejobTemplateFields struct {
 	WorkflowID          string
 	ToClusterPVCName    string
 	SecurityContext     string
-	COImagePrefix       string
-	COImageTag          string
+	PGOImagePrefix      string
+	PGOImageTag         string
 	CommandOpts         string
 	PITRTarget          string
 	PgbackrestStanza    string
@@ -59,9 +56,8 @@ type restorejobTemplateFields struct {
 // Restore ...
 func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
-	clusterName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
-	//pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
 
 	cluster := crv1.Pgcluster{}
 
@@ -72,8 +68,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	//turn off autofail if its on
-	if cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
-		cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = "false"
+	if cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] == "true" {
+		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "false"
 		log.Debugf("restore workflow: turning off autofail on %s", clusterName)
 		err = kubeapi.Updatepgcluster(restclient, &cluster, clusterName, namespace)
 		if err != nil {
@@ -97,7 +93,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	log.Debugf("restore workflow: created pvc %s for cluster %s", pvcName, clusterName)
 	//delete current primary deployment
-	selector := util.LABEL_SERVICE_NAME + "=" + clusterName
+	selector := config.LABEL_SERVICE_NAME + "=" + clusterName
 	var depList *v1beta1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if err != nil {
@@ -123,7 +119,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	//update backrest repo with new data path
-	targetDepName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+	targetDepName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
 	err = UpdateDBPath(clientset, &cluster, targetDepName, namespace)
 	if err != nil {
 		log.Errorf("restore workflow error: could not bounce repo with new db path")
@@ -147,24 +143,24 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	jobFields := restorejobTemplateFields{
-		JobName:             "restore-" + task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
-		ClusterName:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		JobName:             "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
+		ClusterName:         task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
 		ToClusterPVCName:    pvcName,
 		WorkflowID:          workflowID,
-		CommandOpts:         task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS],
-		PITRTarget:          task.Spec.Parameters[util.LABEL_BACKREST_PITR_TARGET],
-		COImagePrefix:       operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:          operator.Pgo.Pgo.COImageTag,
-		PgbackrestStanza:    task.Spec.Parameters[util.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:    task.Spec.Parameters[util.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepo1Path: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH],
-		PgbackrestRepo1Host: task.Spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST],
+		CommandOpts:         task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
+		PITRTarget:          task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET],
+		PGOImagePrefix:      operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:         operator.Pgo.Pgo.PGOImageTag,
+		PgbackrestStanza:    task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:    task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepo1Path: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Host: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
+	err = config.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		log.Error("restore workflow: error executing job template")
@@ -172,7 +168,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
+		config.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -216,8 +212,6 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
-	//cluster.Spec.Name = restoreToName
-	//cluster.ObjectMeta.Labels[util.LABEL_CURRENT_PRIMARY] = restoreToName
 
 	//update workflow
 	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus)
@@ -253,26 +247,13 @@ func createPVC(storage crv1.PgStorageSpec, clusterName string, restclient *rest.
 	var err error
 
 	//create the "to-cluster" PVC to hold the new data
-	pvcName := task.Spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC]
+	pvcName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
 	pgstoragespec := storage
-	/**
-	pgstoragespec := crv1.PgStorageSpec{}
-	pgstoragespec.AccessMode = storage.AccessMode
-	pgstoragespec.Size = storage.Size
-	pgstoragespec.StorageType = storage.StorageType
-	pgstoragespec.StorageClass = storage.StorageClass
-	pgstoragespec.Fsgroup = storage.Fsgroup
-	pgstoragespec.SupplementalGroups = storage.SupplementalGroups
-	pgstoragespec.MatchLabels = storage.MatchLabels
-	*/
 
 	var found bool
 	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 	if !found {
 		log.Debugf("pvc %s not found, will create as part of restore", pvcName)
-		//delete the pvc if it already exists
-		//kubeapi.DeletePVC(clientset, pvcName, namespace)
-
 		//create the pvc
 		err = pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
 		if err != nil {
@@ -383,12 +364,11 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
 
-	primaryLabels[util.LABEL_DEPLOYMENT_NAME] = restoreToName
+	primaryLabels[config.LABEL_DEPLOYMENT_NAME] = restoreToName
 
 	archiveMode := "on"
 	xlogdir := "false"
-	archiveTimeout := cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-	//archivePVCName := cluster.Spec.Name + "-xlog"
+	archiveTimeout := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 	archivePVCName := ""
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 
@@ -404,7 +384,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
 	}
 
-	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS])
+	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS])
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
@@ -439,21 +419,20 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
-		//PgbouncerEnvVars:        operator.GetPgbouncerEnvVar(cluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]),
-		PgbouncerEnvVars: "",
+		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
+		PgbouncerEnvVars:        "",
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
 	var primaryDoc bytes.Buffer
-	err = operator.DeploymentTemplate1.Execute(&primaryDoc, deploymentFields)
+	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
 	//a form of debugging
 	if operator.CRUNCHY_DEBUG {
-		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
+		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := v1beta1.Deployment{}
@@ -467,7 +446,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		return err
 	}
 
-	primaryLabels[util.LABEL_CURRENT_PRIMARY] = restoreToName
+	primaryLabels[config.LABEL_CURRENT_PRIMARY] = restoreToName
 
 	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
 

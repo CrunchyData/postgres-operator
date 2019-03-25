@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -25,8 +25,8 @@ import (
 	"runtime"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
 const etcpath = "/etc/pgo/pgouser"
@@ -35,8 +35,6 @@ const pgouserenvvar = "PGOUSER"
 // BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
 
 var SessionCredentials msgs.BasicAuthCredentials
-
-//var BasicAuthUsername, BasicAuthPassword string
 
 var caCertPool *x509.CertPool
 var cert tls.Certificate
@@ -70,7 +68,7 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 	fields := strings.Split(strings.TrimSpace(dat), ":")
 	log.Debugf("%v", fields)
 	log.Debugf("username=[%s] password=[%s]", fields[0], fields[1])
-	//return fields[0], fields[1]
+
 	creds := msgs.BasicAuthCredentials{
 		Username:     fields[0],
 		Password:     fields[1],

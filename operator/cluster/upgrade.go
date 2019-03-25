@@ -16,9 +16,9 @@ package cluster
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -41,7 +41,6 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		//update the upgrade CRD status to submitted
 		upgrade.Spec.UpgradeStatus = crv1.UpgradeSubmittedStatus
 		kubeapi.Updatepgupgrade(restclient, upgrade, upgrade.Spec.Name, namespace)
-		//		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeSubmittedStatus, "pgupgrades", upgrade.Spec.Name, namespace)
 		if err != nil {
 			log.Error("error setting upgrade status " + err.Error())
 		}

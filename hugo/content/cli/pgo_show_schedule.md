@@ -21,7 +21,7 @@ pgo show schedule [flags]
 
 ```
   -h, --help                   help for schedule
-  -n, --no-prompt              No command line confirmation.
+      --no-prompt              No command line confirmation.
       --schedule-name string   The name of the schedule to show.
   -s, --selector string        The selector to use for cluster filtering.
 ```
@@ -31,7 +31,7 @@ pgo show schedule [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

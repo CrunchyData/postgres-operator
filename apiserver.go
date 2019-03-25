@@ -33,6 +33,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
+	"github.com/crunchydata/postgres-operator/apiserver/namespaceservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
@@ -49,8 +50,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const serverCert = "/pgo-auth-secret/server.crt"
-const serverKey = "/pgo-auth-secret/server.key"
+const serverCert = "/apiserver.local.config/certificates/tls.crt"
+const serverKey = "/apiserver.local.config/certificates/tls.key"
 
 func main() {
 
@@ -114,6 +115,7 @@ func main() {
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
+	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler)
 
 	// backups / backrest
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")

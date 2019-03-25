@@ -34,6 +34,10 @@ pgo create cluster [flags]
       --pgbadger                        Adds the crunchy-pgbadger container to the database pod.
       --pgbouncer                       Adds a crunchy-pgbouncer deployment to the cluster.
       --pgbouncer-pass string           Password for the pgbouncer user of the crunchy-pgboucer deployment.
+<<<<<<< HEAD
+      --pgbouncer-user string           Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.
+=======
+>>>>>>> develop
       --pgpool                          Adds the crunchy-pgpool container to the database pod.
       --pgpool-secret string            The name of a pgpool secret to use for the pgpool configuration.
   -z, --policies string                 The policies to apply when creating a cluster, comma separated.
@@ -51,7 +55,7 @@ pgo create cluster [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

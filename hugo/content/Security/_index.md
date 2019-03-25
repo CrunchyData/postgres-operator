@@ -16,25 +16,22 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 
 | Setting |Definition  |
 |---|---|
-| Custom Resource Definitions | pgbackups|
+| Custom Resource Definitions (crd.yaml) | pgbackups|
 |  | pgclusters|
 |  | pgpolicies|
 |  | pgreplicas|
 |  | pgtasks|
 |  | pgupgrades|
-| Cluster Roles | pgopclusterrole|
+| Cluster Roles (cluster-roles.yaml) | pgopclusterrole|
 |  | pgopclusterrolecrd|
-|  | scheduler-sa|
-| Cluster Role Bindings | pgopclusterbinding|
+| Cluster Role Bindings (cluster-roles-bindings.yaml) | pgopclusterbinding|
 |  | pgopclusterbindingcrd|
-|  | scheduler-sa|
-| Service Account | scheduler-sa|
-| | postgres-operator|
+| Service Account (service-accounts.yaml) | postgres-operator|
 | | pgo-backrest|
-| | scheduler-sa|
-| Roles| pgo-role|
+| Roles (rbac.yaml) | pgo-role|
 | | pgo-backrest-role|
-|Role Bindings | pgo-backrest-role-binding|
+|Role Bindings  (rbac.yaml) | pgo-backrest-role-binding|
+| | pgo-role-binding|
 
 
 
@@ -44,11 +41,22 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 
 The *conf/postgresql-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
 
-The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, and role information as follows:
+The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
 
-    username:password:pgoadmin
-    testuser:testpass:pgoadmin
-    readonlyuser:testpass:pgoreader
+    username:password:pgoadmin:
+    pgouser1:password:pgoadmin:pgouser1
+    pgouser2:password:pgoadmin:pgouser2
+    pgouser3:password:pgoadmin:pgouser1,pgouser2
+    readonlyuser:password:pgoreader:
+
+The format of the pgouser server file is:
+
+    <username>:<password>:<role>:<namespace,namespace>
+
+The namespace is a comma separated list of namespaces that
+user has access to.  If you do not specify a namespace, then
+all namespaces is assumed, meaning this user can access any
+namespace that the Operator is watching.
 
 A user creates a *.pgouser* file in their $HOME directory to identify
 themselves to the Operator.  An entry in .pgouser will need to match
@@ -57,11 +65,22 @@ entries in the *conf/postgresql-operator/pgouser* file.  A sample
 
     username:password
 
+The format of the .pgouser client file is:
+
+    <username>:<password>
+
 The users pgouser file can also be located at:
 */etc/pgo/pgouser* or it can be found at a path specified by the
 PGOUSER environment variable.
 
-The following list shows the current complete list of possible pgo permissions:
+If the user tries to access a namespace that they are not
+configured for within the server side *pgouser* file then they
+will get an error message as follows:
+
+    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
+
+
+The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
 
 |Permission|Description  |
 |---|---|
@@ -94,6 +113,7 @@ The following list shows the current complete list of possible pgo permissions:
 |ShowPolicy | allow *pgo show policy*|
 |ShowPVC | allow *pgo show pvc*|
 |ShowSchedule | allow *pgo show schedule*|
+|ShowNamespace | allow *pgo show namespace*|
 |ShowUpgrade | allow *pgo show upgrade*|
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|
@@ -106,20 +126,53 @@ The following list shows the current complete list of possible pgo permissions:
 If the user is unauthorized for a pgo command, the user will
 get back this response:
 
-    FATA[0000] Authentication Failed: 40
+    Error:  Authentication Failed: 401 
 
 ## Making Security Changes
-The Operator today requires you to make Operator security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
+The Operator today requires you to make Operator user security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
 
     make deployoperator
 
-This will recreate the *pgo-auth-secret* Secret that stores these files and is mounted by the Operator during its initialization.
+This will recreate the *pgo-config* ConfigMap that stores these files and is mounted by the Operator during its initialization.
 
 ## API Security
-The Operator REST API is secured with keys stored in the *pgo-auth-secret* Secret.  Adjust the default keys to meet your security requirements using your own keys.  The *pgo-auth-secret* Secret is created when you run:
+
+The Operator REST API is secured with keys stored in the *pgo.tls* Secret.  Adjust the default keys to meet your security requirements using your own keys.  The *pgo.tls* Secret is created when you run:
 
     make deployoperator
 
 The keys are generated when the RBAC script is executed by the cluster admin:
 
     make installrbac
+
+The the Secret keys within the *pgo-apiserver* container
+are mounted at:
+
+    /apiserver.local.config/certificates/tls.crt
+    /apiserver.local.config/certificates/tls.key
+
+You can view the TLS secret using:
+
+    kubectl get secret pgo.tls -n pgo
+or
+    oc get secret pgo.tls -n pgo
+
+The key and cert that are generated by the default installation are
+found here:
+
+    $PGOROOT/conf/postgres-operator/server.crt 
+    $PGOROOT/conf/postgres-operator/server.key 
+
+The key and cert are generated using the *deploy/gen-api-keys.sh* script.
+That script gets executed when running:
+
+    make installrbac
+
+You can extract the server.key and server.crt from the Secret using the
+following:
+
+    oc get secret pgo.tls -n $PGO_NAMESPACE -o jsonpath='{.data.tls\.key}' | base64 --decode > /tmp/server.key
+    oc get secret pgo.tls -n $PGO_NAMESPACE -o jsonpath='{.data.tls\.crt}' | base64 --decode > /tmp/server.crt
+
+This server.key and server.crt can then be used to access the *pgo-apiserver*
+REST API.

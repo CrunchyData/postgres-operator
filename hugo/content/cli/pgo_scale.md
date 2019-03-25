@@ -20,7 +20,7 @@ pgo scale [flags]
 ```
       --ccp-image-tag string      The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.
   -h, --help                      help for scale
-  -n, --no-prompt                 No command line confirmation.
+      --no-prompt                 No command line confirmation.
       --node-label string         The node label (key) to use in placing the primary database. If not set, any node is used.
       --replica-count int         The replica count to apply to the clusters. (default 1)
       --resources-config string   The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
@@ -33,7 +33,7 @@ pgo scale [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

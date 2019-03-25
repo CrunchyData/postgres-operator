@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -17,9 +17,9 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -38,6 +38,9 @@ var labelCmd = &cobra.Command{
 	pgo label --label=environment=prod --selector=name=mycluster
 	pgo label --label=environment=prod --selector=status=final --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("label called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A selector or list of clusters is required to label a policy.")
@@ -111,8 +114,6 @@ func deleteLabel(args []string, ns string) {
 	req.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.DeleteLabel(httpclient, &SessionCredentials, &req)
-	//var response msgs.LabelResponse
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

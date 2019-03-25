@@ -28,6 +28,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -53,9 +54,9 @@ func ShowBenchmark(request *msgs.ShowBenchmarkRequest) msgs.ShowBenchmarkRespons
 		return *br
 	}
 
-	selector := fmt.Sprintf("%s=true,", util.LABEL_PGO_BENCHMARK)
+	selector := fmt.Sprintf("%s=true,", config.LABEL_PGO_BENCHMARK)
 	if request.ClusterName != "" {
-		selector += fmt.Sprintf("%s=%s", util.LABEL_PG_CLUSTER, request.ClusterName)
+		selector += fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 	} else if request.Selector != "" {
 		selector += request.Selector
 	}
@@ -115,9 +116,9 @@ func DeleteBenchmark(request *msgs.DeleteBenchmarkRequest) msgs.DeleteBenchmarkR
 		return *br
 	}
 
-	selector := fmt.Sprintf("%s=true,", util.LABEL_PGO_BENCHMARK)
+	selector := fmt.Sprintf("%s=true,", config.LABEL_PGO_BENCHMARK)
 	if request.ClusterName != "" {
-		selector += fmt.Sprintf("%s=%s", util.LABEL_PG_CLUSTER, request.ClusterName)
+		selector += fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 	} else if request.Selector != "" {
 		selector += request.Selector
 	}
@@ -169,7 +170,7 @@ func CreateBenchmark(request *msgs.CreateBenchmarkRequest, ns string) msgs.Creat
 	log.Debug("Getting cluster")
 	var selector string
 	if request.ClusterName != "" {
-		selector = fmt.Sprintf("%s=%s", util.LABEL_PG_CLUSTER, request.ClusterName)
+		selector = fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 	} else if request.Selector != "" {
 		selector = request.Selector
 	}
@@ -267,8 +268,8 @@ func (b benchmarkTask) newBenchmarkTask() *crv1.Pgtask {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: b.taskName,
 			Labels: map[string]string{
-				util.LABEL_PG_CLUSTER:    b.clusterName,
-				util.LABEL_PGO_BENCHMARK: "true",
+				config.LABEL_PG_CLUSTER:    b.clusterName,
+				config.LABEL_PGO_BENCHMARK: "true",
 			},
 		},
 		Spec: crv1.PgtaskSpec{
@@ -330,7 +331,7 @@ func createConfigMapFromPolicy(policyName, configMapName, ns string) (string, er
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: configMapName,
 				Labels: map[string]string{
-					util.LABEL_PGO_BENCHMARK: "true",
+					config.LABEL_PGO_BENCHMARK: "true",
 				},
 			},
 			Data: map[string]string{
@@ -360,8 +361,8 @@ func createWorkflowTask(clusterName, uid, ns string) (string, error) {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: taskName,
 			Labels: map[string]string{
-				util.LABEL_PG_CLUSTER: clusterName,
-				crv1.PgtaskWorkflowID: id,
+				config.LABEL_PG_CLUSTER: clusterName,
+				crv1.PgtaskWorkflowID:   id,
 			},
 		},
 		Spec: crv1.PgtaskSpec{
@@ -370,7 +371,7 @@ func createWorkflowTask(clusterName, uid, ns string) (string, error) {
 			TaskType:  crv1.PgtaskWorkflow,
 			Parameters: map[string]string{
 				crv1.PgtaskWorkflowSubmittedStatus: time.Now().Format("2006-01-02.15.04.05"),
-				util.LABEL_PG_CLUSTER:              clusterName,
+				config.LABEL_PG_CLUSTER:            clusterName,
 				crv1.PgtaskWorkflowID:              id,
 			},
 		},

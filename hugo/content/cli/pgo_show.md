@@ -15,6 +15,7 @@ Show allows you to show the details of a policy, backup, pvc, or cluster. For ex
 	pgo show config
 	pgo show policy policy1
 	pgo show pvc mycluster
+	pgo show namespace
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5
 	pgo show user mycluster
 
@@ -33,7 +34,7 @@ pgo show [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.
@@ -45,6 +46,10 @@ pgo show [flags]
 * [pgo show backup](/cli/pgo_show_backup/)	 - Show backup information
 * [pgo show cluster](/cli/pgo_show_cluster/)	 - Show cluster information
 * [pgo show config](/cli/pgo_show_config/)	 - Show configuration information
+<<<<<<< HEAD
+* [pgo show namespace](/cli/pgo_show_namespace/)	 - Show namespace information
+=======
+>>>>>>> develop
 * [pgo show policy](/cli/pgo_show_policy/)	 - Show policy information
 * [pgo show pvc](/cli/pgo_show_pvc/)	 - Show PVC information
 * [pgo show schedule](/cli/pgo_show_schedule/)	 - Show schedule information

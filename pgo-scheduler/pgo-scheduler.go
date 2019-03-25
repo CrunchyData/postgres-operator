@@ -1,5 +1,20 @@
 package main
 
+/*
+ Copyright 2019 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import (
 	"os"
 	"os/signal"
@@ -7,20 +22,25 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 const (
-	schedulerLabel = "crunchy-scheduler=true"
-	namespaceEnv   = "NAMESPACE"
-	timeoutEnv     = "TIMEOUT"
-	inCluster      = true
+	schedulerLabel  = "crunchy-scheduler=true"
+	namespaceEnv    = "NAMESPACE"
+	pgoNamespaceEnv = "PGO_NAMESPACE"
+	timeoutEnv      = "TIMEOUT"
+	inCluster       = true
 )
 
 var namespace string
+var pgoNamespace string
+var namespaceList []string
 var timeout time.Duration
 var seconds int
 var kubeClient *kubernetes.Clientset
@@ -35,7 +55,11 @@ func init() {
 
 	namespace = os.Getenv(namespaceEnv)
 	if namespace == "" {
-		log.WithFields(log.Fields{}).Fatalf("Failed to get namespace environment: %s", namespaceEnv)
+		log.WithFields(log.Fields{}).Fatalf("Failed to get NAMESPACE environment: %s", namespaceEnv)
+	}
+	pgoNamespace = os.Getenv(pgoNamespaceEnv)
+	if pgoNamespace == "" {
+		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_NAMESPACE environment: %s", pgoNamespaceEnv)
 	}
 
 	secondsEnv := os.Getenv(timeoutEnv)
@@ -49,6 +73,9 @@ func init() {
 		}
 	}
 
+	namespaceList = util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+
 	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
 	timeout = time.Second * time.Duration(seconds)
 
@@ -57,14 +84,16 @@ func init() {
 		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
 	}
 
-	if err := scheduler.Init(); err != nil {
-		log.WithFields(log.Fields{}).Fatalf("Failed to open template: %s", err)
+	var Pgo config.PgoConfig
+	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
+		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
+
 }
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-	scheduler := scheduler.New(schedulerLabel, namespace, kubeClient)
+	scheduler := scheduler.New(schedulerLabel, namespaceList, pgoNamespace, kubeClient)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)

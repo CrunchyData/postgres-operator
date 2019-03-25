@@ -18,21 +18,20 @@ limitations under the License.
 import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/api/core/v1"
 )
 
-//TODO remove and replace with util.GetSecrets
-func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
+func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := util.LABEL_PGBOUNCER + "!=true," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := config.LABEL_PGBOUNCER + "!=true," + config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
 
-	secrets, err := kubeapi.GetSecrets(Clientset, selector, Namespace)
+	secrets, err := kubeapi.GetSecrets(Clientset, selector, ns)
 	if err != nil {
 		return output, err
 	}
@@ -53,7 +52,7 @@ func GetSecrets(cluster *crv1.Pgcluster) ([]msgs.ShowUserSecret, error) {
 func GetPodStatus(deployName string) (string, string) {
 
 	//get pods with replica-name=deployName
-	pods, err := kubeapi.GetPods(Clientset, util.LABEL_REPLICA_NAME+"="+deployName, Namespace)
+	pods, err := kubeapi.GetPods(Clientset, config.LABEL_REPLICA_NAME+"="+deployName, Namespace)
 	if err != nil {
 		return "error", "error"
 	}
@@ -104,9 +103,9 @@ func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName strin
 		spec.StorageSpec = storageSpec
 
 		spec.Parameters = make(map[string]string)
-		spec.Parameters[util.LABEL_PVC_NAME] = pvcName
-		spec.Parameters[util.LABEL_DATA_ROOT] = dataRoots[i]
-		spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+		spec.Parameters[config.LABEL_PVC_NAME] = pvcName
+		spec.Parameters[config.LABEL_DATA_ROOT] = dataRoots[i]
+		spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -115,9 +114,8 @@ func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName strin
 			Spec: spec,
 		}
 		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
-		//newInstance.ObjectMeta.Labels[util.LABEL_DATA_ROOT] = dataRoots[i]
-		newInstance.ObjectMeta.Labels[util.LABEL_RMDATA] = "true"
+		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+		newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
 
 		err := kubeapi.Createpgtask(RESTClient,
 			newInstance, Namespace)

@@ -18,12 +18,12 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/crunchydata/postgres-operator/apiserver"
-	log "github.com/sirupsen/logrus"
-	//"github.com/crunchydata/postgres-operator/config"
 	"errors"
+	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,8 +35,8 @@ import (
 type lspvcTemplateFields struct {
 	Name               string
 	ClusterName        string
-	COImagePrefix      string
-	COImageTag         string
+	PGOImagePrefix     string
+	PGOImageTag        string
 	BackupRoot         string
 	PVCName            string
 	NodeSelector       string
@@ -70,7 +70,7 @@ func ShowPVC(nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
 	}
 
 	if pvcName == "all" {
-		selector := util.LABEL_PGREMOVE + "=true"
+		selector := config.LABEL_PGREMOVE + "=true"
 
 		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, ns)
 		if err != nil {
@@ -90,7 +90,7 @@ func ShowPVC(nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
 	}
 
 	log.Debugf("PVC %s is found", pvc.Name)
-	pvcList, err = printPVCListing(nodeLabel, pvc.ObjectMeta.Labels[util.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
+	pvcList, err = printPVCListing(nodeLabel, pvc.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], pvc.Name, PVCRoot, ns)
 
 	return pvcList, err
 
@@ -149,15 +149,15 @@ func printPVCListing(nodeLabel, clusterName, pvcName, PVCRoot, ns string) ([]str
 	pvcFields := lspvcTemplateFields{
 		Name:               podName,
 		ClusterName:        clusterName,
-		COImagePrefix:      apiserver.Pgo.Pgo.COImagePrefix,
-		COImageTag:         apiserver.Pgo.Pgo.COImageTag,
+		PGOImagePrefix:     apiserver.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:        apiserver.Pgo.Pgo.PGOImageTag,
 		BackupRoot:         pvcRoot,
 		NodeSelector:       getAffinity(nodeLabel),
 		PVCName:            pvcName,
 		ContainerResources: cr,
 	}
 
-	err = apiserver.LspvcTemplate.Execute(&doc2, pvcFields)
+	err = config.LspvcTemplate.Execute(&doc2, pvcFields)
 	if err != nil {
 		log.Error(err.Error())
 		return newlines, err
@@ -179,7 +179,7 @@ func printPVCListing(nodeLabel, clusterName, pvcName, PVCRoot, ns string) ([]str
 	}
 
 	timeout := time.Duration(6 * time.Second)
-	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + util.LABEL_PVCNAME + "=" + pvcName}
+	lo := meta_v1.ListOptions{LabelSelector: "name=lspvc," + config.LABEL_PVCNAME + "=" + pvcName}
 	podPhase := v1.PodSucceeded
 	err = util.WaitUntilPod(apiserver.Clientset, lo, podPhase, timeout, ns)
 	if err != nil {
@@ -252,14 +252,14 @@ func getAffinity(nodeLabel string) string {
 	affinityTemplateFields.OperatorValue = AffinityInOperator
 
 	var affinityDoc bytes.Buffer
-	err := apiserver.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
+	err := config.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
 	}
 
 	if apiserver.CRUNCHY_DEBUG {
-		apiserver.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
+		config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()

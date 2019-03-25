@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,9 +21,10 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"os"
@@ -37,14 +38,14 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
 	if !found || err != nil {
 
-		err = operator.ServiceTemplate1.Execute(&serviceDoc, fields)
+		err = config.ServiceTemplate.Execute(&serviceDoc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return err
 		}
 
 		if operator.CRUNCHY_DEBUG {
-			operator.ServiceTemplate1.Execute(os.Stdout, fields)
+			config.ServiceTemplate.Execute(os.Stdout, fields)
 		}
 
 		service := v1.Service{}

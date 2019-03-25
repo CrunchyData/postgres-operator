@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.2-2.3.1
+  CCPImageTag:  rhel7-11.2-2.3.1-rc2
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -21,11 +21,11 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: hostpathstorage
-XlogStorage: hostpathstorage
-BackupStorage: hostpathstorage
-ReplicaStorage: hostpathstorage
-BackrestStorage: hostpathstorage
+PrimaryStorage: storageos
+XlogStorage: storageos
+BackupStorage: storageos
+ReplicaStorage: storageos
+BackrestStorage: storageos
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -57,9 +57,15 @@ Storage:
     StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  300M
     StorageType:  dynamic
     StorageClass:  fast
+    Fsgroup:  26
+  gce:
+    AccessMode:  ReadWriteOnce
+    Size:  300M
+    StorageType:  dynamic
+    StorageClass:  standard
     Fsgroup:  26
   rook:
     AccessMode:  ReadWriteOnce
@@ -89,7 +95,6 @@ Pgo:
   AutofailSleepSeconds:  9
   PreferredFailoverNode:  
   Audit:  false
-  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
-  LoadTemplate:  /pgo-config/pgo.load-template.json
-  COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.2
+  PGOImagePrefix:  crunchydata
+  PGOImageTag:  rhel7-4.0.0-rc3
+

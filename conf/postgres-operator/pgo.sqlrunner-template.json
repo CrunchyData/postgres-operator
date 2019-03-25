@@ -24,7 +24,7 @@
                 "containers": [
                     {
                         "name": "sqlrunner",
-                        "image": "{{.COImagePrefix}}/pgo-sqlrunner:{{.COImageTag}}",
+                        "image": "{{.PGOImagePrefix}}/pgo-sqlrunner:{{.PGOImageTag}}",
                         "env": [
                             {
                                 "name": "PG_HOST",

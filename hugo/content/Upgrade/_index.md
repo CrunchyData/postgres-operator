@@ -1,6 +1,10 @@
 ---
 title: "Upgrade"
+<<<<<<< HEAD
+Latest Release: 4.0.0-rc2 {docdate}
+=======
 Latest Release: 3.5.2 {docdate}
+>>>>>>> develop
 draft: false
 weight: 7
 ---

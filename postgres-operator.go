@@ -28,10 +28,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	//crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
@@ -41,7 +37,7 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
-var Namespace string
+var PgoNamespace string
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
@@ -55,32 +51,43 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	Namespace = os.Getenv("NAMESPACE")
-	log.Debugf("setting NAMESPACE to %s", Namespace)
-	if Namespace == "" {
-		log.Error("NAMESPACE env var not set")
+	PgoNamespace = os.Getenv("PGO_NAMESPACE")
+	if PgoNamespace == "" {
+		log.Error("PGO_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
 
-	operator.Initialize()
+	namespaceList := util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		os.Exit(2)
 	}
 
 	Clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Info("error creating Clientset")
-		panic(err.Error())
+		log.Error(err)
+		os.Exit(2)
 	}
 
 	// make a new config for our extension's API group, using the first config as a baseline
-	//crdClient, crdScheme, err := crdclient.NewClient(config)
 	crdClient, crdScheme, err := util.NewClient(config)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		os.Exit(2)
+	}
+
+	operator.Initialize(Clientset, PgoNamespace)
+
+	//validate the NAMESPACE env var
+	err = util.ValidateNamespaces(Clientset)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
 	}
 
 	// start a controller on instances of our custom resource
@@ -90,48 +97,48 @@ func main() {
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
-		Namespace:       Namespace,
+		Namespace:       namespaceList,
 	}
 
 	pgClustercontroller := controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
-		Namespace:          Namespace,
+		Namespace:          namespaceList,
 	}
 	pgReplicacontroller := controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
-		Namespace:          Namespace,
+		Namespace:          namespaceList,
 	}
 	pgUpgradecontroller := controller.PgupgradeController{
 		PgupgradeClientset: Clientset,
 		PgupgradeClient:    crdClient,
 		PgupgradeScheme:    crdScheme,
-		Namespace:          Namespace,
+		Namespace:          namespaceList,
 	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
-		Namespace:         Namespace,
+		Namespace:         namespaceList,
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
 		PgpolicyScheme:    crdScheme,
 		PgpolicyClientset: Clientset,
-		Namespace:         Namespace,
+		Namespace:         namespaceList,
 	}
 	podcontroller := controller.PodController{
 		PodClientset: Clientset,
 		PodClient:    crdClient,
-		Namespace:    Namespace,
+		Namespace:    namespaceList,
 	}
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
-		Namespace:    Namespace,
+		Namespace:    namespaceList,
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -145,9 +152,9 @@ func main() {
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
-	cluster.InitializeAutoFailover(Clientset, crdClient, Namespace)
+	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
 
-	operatorupgrade.OperatorUpgrade(Clientset, crdClient, Namespace)
+	operatorupgrade.OperatorUpgrade(Clientset, crdClient, namespaceList)
 
 	fmt.Print("at end of setup, beginning wait...")
 

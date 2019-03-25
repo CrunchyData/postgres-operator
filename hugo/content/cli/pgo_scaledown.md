@@ -24,7 +24,7 @@ pgo scaledown [flags]
 ```
   -d, --delete-data     Causes the data for the scaled down replica to be removed permanently.
   -h, --help            help for scaledown
-  -n, --no-prompt       No command line confirmation.
+      --no-prompt       No command line confirmation.
       --query           Prints the list of targetable replica candidates.
       --target string   The replica to target for scaling down
 ```
@@ -34,7 +34,7 @@ pgo scaledown [flags]
 ```
       --apiserver-url string     The URL for the PostgreSQL Operator apiserver.
       --debug                    Enable debugging when true.
-      --namespace string         The namespace to use for pgo requests.
+  -n, --namespace string         The namespace to use for pgo requests.
       --pgo-ca-cert string       The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-cert string   The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.
       --pgo-client-key string    The Client Key file path for authenticating to the PostgreSQL Operator apiserver.

@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -34,11 +34,6 @@ type TestResults struct {
 // ClusterDetail ...
 type ClusterDetail struct {
 	Name string
-	//deployments
-	//replicasets
-	//pods
-	//services
-	//secrets
 }
 
 // CreateClusterHandler ...
@@ -69,7 +64,7 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -123,7 +118,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]msgs.ShowClusterDetail, 0)
@@ -186,7 +181,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]string, 0)
@@ -229,7 +224,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -279,7 +274,7 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]string, 0)
