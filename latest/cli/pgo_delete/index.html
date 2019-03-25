@@ -86,20 +86,6 @@
       <hr>
       <a class="baselink" href="https://crunchydata.github.io/postgres-operator/latest/">Crunchy Data PostgreSQL Operator Documentation</a>
       <hr>
-        <b>Available Formats</b>
-        <nav class="downloads">
-                <li class="" role="">
-                    <a href="https://crunchydata.github.io/postgres-operator/latest/pdf/postgres_operator.pdf"  rel="noopener">
-                      <i class='fas fa-file-pdf'></i> <label>PDF</label>
-                    </a>
-                </li>
-                <li class="" role="">
-                    <a href="https://crunchydata.github.io/postgres-operator/latest/epub/postgres_operator.epub"  rel="noopener">
-                      <i class='fas fa-book'></i> <label>EPUB</label>
-                    </a>
-                </li>
-        </nav>
-        <hr>
 
       <b>Navigation</b>
     <li data-nav-id="/installation/" class="dd-item
@@ -675,25 +661,25 @@
 
 <h2 id="pgo-delete">pgo delete</h2>
 
-<p>Delete a backup, cluster, pgbouncer, pgpool, label, policy, upgrade, or user</p>
+<p>Delete a backup,   cluster, pgbouncer, pgpool, label, policy, upgrade, or user</p>
 
 <h3 id="synopsis">Synopsis</h3>
 
-<p>The delete command allows you to delete a backup, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:</p>
+<p>The delete command allows you to delete a backup,   cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:</p>
 
-<pre><code>pgo delete user testuser --selector=name=mycluster
-pgo delete policy mypolicy
+<pre><code>pgo delete backup mycluster
 pgo delete cluster mycluster
-pgo delete pgbouncer mycluster
-pgo delete pgpool mycluster
-pgo delete label mycluster --label=env=research
 pgo delete cluster mycluster --delete-data
 pgo delete cluster mycluster --delete-data --delete-backups
-pgo delete backup mycluster
-pgo delete upgrade mycluster
-pgo delete schedule mycluster
-pgo delete schedule --selector=name=mycluster
+pgo delete label mycluster --label=env=research
+pgo delete pgbouncer mycluster
+pgo delete pgpool mycluster
+pgo delete policy mypolicy
 pgo delete schedule --schedule-name=mycluster-pgbackrest-full
+pgo delete schedule --selector=name=mycluster
+pgo delete schedule mycluster
+pgo delete upgrade mycluster
+pgo delete user testuser --selector=name=mycluster
 </code></pre>
 
 <pre><code>pgo delete [flags]
@@ -717,19 +703,19 @@ pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 <h3 id="see-also">SEE ALSO</h3>
 
 <ul>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo/">pgo</a>  - The pgo command line interface.</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_backup/">pgo delete backup</a>  - Delete a backup</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_cluster/">pgo delete cluster</a>    - Delete a PostgreSQL cluster</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_label/">pgo delete label</a>    - Delete a label from clusters</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_pgbouncer/">pgo delete pgbouncer</a>    - Delete a pgbouncer from a cluster</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_pgpool/">pgo delete pgpool</a>  - Delete a pgpool from a cluster</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_policy/">pgo delete policy</a>  - Delete a SQL policy</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_schedule/">pgo delete schedule</a>  - Delete a schedule</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_upgrade/">pgo delete upgrade</a>    - Delete an upgrade</li>
-<li><a href="https://crunchydata.github.io/postgres-operator/latest/commands/pgo_delete_user/">pgo delete user</a>  - Delete a user</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo/">pgo</a>   - The pgo command line interface.</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_backup/">pgo delete backup</a>   - Delete a backup</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_cluster/">pgo delete cluster</a>     - Delete a PostgreSQL cluster</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_label/">pgo delete label</a>     - Delete a label from clusters</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_pgbouncer/">pgo delete pgbouncer</a>     - Delete a pgbouncer from a cluster</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_pgpool/">pgo delete pgpool</a>   - Delete a pgpool from a cluster</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_policy/">pgo delete policy</a>   - Delete a SQL policy</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_schedule/">pgo delete schedule</a>   - Delete a schedule</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_upgrade/">pgo delete upgrade</a>     - Delete an upgrade</li>
+<li><a href="https://crunchydata.github.io/postgres-operator/latest/cli/pgo_delete_user/">pgo delete user</a>   - Delete a user</li>
 </ul>
 
-<h6 id="auto-generated-by-spf13-cobra-on-21-feb-2019">Auto generated by spf13/cobra on 21-Feb-2019</h6>
+<h6 id="auto-generated-by-spf13-cobra-on-19-mar-2019">Auto generated by spf13/cobra on 19-Mar-2019</h6>
 
 
 
