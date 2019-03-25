@@ -34,6 +34,13 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 | | pgo-role-binding|
 
 
+Note that the cluster role bindings have a naming convention of
+pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and
+pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  The PGO_OPERATOR_NAMESPACE
+environment variable is added to make each cluster role binding
+name unique and to support more than a single Operator being deployed
+on the same Kube cluster.
+
 
 
 

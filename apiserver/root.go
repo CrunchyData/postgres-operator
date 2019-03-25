@@ -98,6 +98,7 @@ func Initialize() {
 		log.Info("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
+	log.Info("Pgo Namespace is [" + PgoNamespace + "]")
 
 	namespaceList := util.GetNamespaces()
 	log.Debugf("watching the following namespaces: [%v]", namespaceList)
@@ -247,9 +248,17 @@ func getCredentials() {
 	var err error
 	Credentials = make(map[string]CredentialDetail)
 
-	cm, _ := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, Namespace)
-	if val, ok := cm.Data[pgouserFile]; ok {
-		log.Infof("Custom %s file found in configmap", pgouserFile)
+	log.Infof("getCredentials with PgoNamespace=%s", PgoNamespace)
+
+	cm, found := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, PgoNamespace)
+	if found {
+		log.Infof("Config: %s ConfigMap found in ns %s, using config files from the configmap", config.CustomConfigMapName, PgoNamespace)
+		val := cm.Data[pgouserFile]
+		if val == "" {
+			log.Infof("could not find %s in ConfigMap", pgouserFile)
+			log.Error(err)
+			os.Exit(2)
+		}
 		scanner := bufio.NewScanner(strings.NewReader(val))
 		for scanner.Scan() {
 			lines = append(lines, scanner.Text())

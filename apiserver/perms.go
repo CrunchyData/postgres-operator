@@ -166,16 +166,26 @@ func HasPerm(role string, perm string) bool {
 }
 
 func readRoles() {
+	var err error
 	var lines []string
 	var scanner *bufio.Scanner
 
-	cm, _ := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, Namespace)
-	if val, ok := cm.Data[pgoroleFile]; ok {
+	cm, found := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, PgoNamespace)
+	if found {
+		log.Infof("Config: %s ConfigMap found in ns %s, using config files from the configmap", config.CustomConfigMapName, PgoNamespace)
+
+		val := cm.Data[pgoroleFile]
+		if val == "" {
+			log.Infof("could not find %s in ConfigMap", pgoroleFile)
+			os.Exit(2)
+		}
+
 		log.Infof("Custom %s file found in configmap", pgoroleFile)
 		scanner = bufio.NewScanner(strings.NewReader(val))
 		for scanner.Scan() {
 			lines = append(lines, scanner.Text())
 		}
+		err = scanner.Err()
 	} else {
 		log.Infof("No custom %s file found in configmap, using defaults", pgoroleFile)
 		f, err := os.Open(pgorolePath)
@@ -189,9 +199,10 @@ func readRoles() {
 		for scanner.Scan() {
 			lines = append(lines, scanner.Text())
 		}
+		err = scanner.Err()
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
