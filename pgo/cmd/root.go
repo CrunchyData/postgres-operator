@@ -17,8 +17,8 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"github.com/fatih/color"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -84,7 +84,7 @@ func initConfig() {
 
 	GetCredentials()
 
-	//generateBashCompletion()
+	generateBashCompletion()
 }
 
 func generateBashCompletion() {

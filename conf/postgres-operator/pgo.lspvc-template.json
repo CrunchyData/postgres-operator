@@ -11,6 +11,9 @@
         }
     },
     "spec": {
+
+	    {{.NodeSelector}}
+
         "restartPolicy": "Never",
         "containers": [{
             "name": "lspvc",

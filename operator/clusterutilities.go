@@ -18,10 +18,10 @@ package operator
 import (
 	"bytes"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"os"
 )
@@ -100,9 +100,12 @@ type DeploymentTemplateFields struct {
 	BadgerAddon             string
 	PgbackrestEnvVars       string
 	PgmonitorEnvVars        string
+	PgbouncerEnvVars        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
+	// PgBouncer deployment only
+	PgbouncerPass string
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
@@ -242,24 +245,31 @@ func GetLabelsFromMap(labels map[string]string) string {
 }
 
 // GetPrimaryLabels ...
-func GetPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
+func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
 	primaryLabels[util.LABEL_PRIMARY] = "true"
-	if replicaFlag {
-		primaryLabels[util.LABEL_PRIMARY] = "false"
-	}
 
-	primaryLabels["name"] = Name
+	primaryLabels["name"] = serviceName
 	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
-		if key == util.LABEL_AUTOFAIL || key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
+		if key == util.LABEL_PGPOOL || key == util.LABEL_PGBOUNCER {
+			//these dont apply to a primary or replica
+		} else if key == util.LABEL_AUTOFAIL || key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
 			//dont add these since they can break label expression checks
 			//or autofail toggling
 		} else {
 			primaryLabels[key] = value
 		}
 	}
+
+	//now that we have the primary labels, we will overlay with
+	//replica values if this is for a replica
+
+	if replicaFlag {
+		primaryLabels[util.LABEL_PRIMARY] = "false"
+	}
+
 	return primaryLabels
 }
 
@@ -328,4 +338,13 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 	}
 	return ""
 
+}
+
+func GetPgbouncerEnvVar(psw string) string {
+	if psw == "" {
+		return ""
+	}
+	foo := fmt.Sprintf(`"name": "PGBOUNCER_PASSWORD", "value": "%s" },{`, psw)
+	log.Debugf("pgbouncer str [%s]", foo)
+	return foo
 }

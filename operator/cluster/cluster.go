@@ -19,12 +19,13 @@ package cluster
 */
 
 import (
-	log "github.com/Sirupsen/logrus"
+	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -73,6 +74,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
+	//err = cleanupPreviousTasks(client, cl.Spec.Name, namespace)
+
 	var pvcName string
 
 	_, found, err := kubeapi.GetPVC(clientset, cl.Spec.Name, namespace)
@@ -88,7 +91,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
-	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
+	//only allocate an xlog pvc if this is not a backrest
+	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cl.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
 		pvcName := cl.Spec.Name + "-xlog"
 		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
 		if found {
@@ -151,7 +155,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
 		log.Debug("pgbouncer requested")
 		//create the pgbouncer deployment using that credential
-		AddPgbouncer(clientset, cl, namespace, true)
+		AddPgbouncer(clientset, cl, namespace, true, false)
 	}
 
 	//add replicas if requested
@@ -218,15 +222,15 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 }
 
 // DeleteClusterBase ...
-func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
+func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
 	log.Debugf("deleteCluster called with strategy %s", cl.Spec.Strategy)
 
 	pgtask := crv1.Pgtask{}
-	found, _ := kubeapi.Getpgtask(client, &pgtask, cl.Spec.Name+"-"+util.LABEL_AUTOFAIL, namespace)
+	found, _ := kubeapi.Getpgtask(restclient, &pgtask, cl.Spec.Name+"-"+util.LABEL_AUTOFAIL, namespace)
 	if found {
 		aftask := AutoFailoverTask{}
-		aftask.Clear(client, cl.Spec.Name, namespace)
+		aftask.Clear(restclient, cl.Spec.Name, namespace)
 	}
 
 	if cl.Spec.Strategy == "" {
@@ -239,12 +243,34 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 		return
 	}
 
-	strategy.DeleteCluster(clientset, client, cl, namespace)
+	strategy.DeleteCluster(clientset, restclient, cl, namespace)
 
-	upgrade := crv1.Pgupgrade{}
-	found, _ = kubeapi.Getpgupgrade(client, &upgrade, cl.Spec.Name, namespace)
+	//delete any existing pgbackups
+	pgback := crv1.Pgbackup{}
+	found, err := kubeapi.Getpgbackup(restclient, &pgback, cl.Spec.Name, namespace)
 	if found {
-		err := kubeapi.Deletepgupgrade(client, cl.Spec.Name, namespace)
+		kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
+	}
+
+	//delete any existing configmaps
+	if err = deleteConfigMaps(clientset, cl.Spec.Name, namespace); err != nil {
+		log.Error(err)
+	}
+
+	//delete any existing jobs
+	/**
+	delJobSelector := util.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
+	err = kubeapi.DeleteJobs(clientset, delJobSelector, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+	*/
+
+	//delete any existing pgupgrades
+	upgrade := crv1.Pgupgrade{}
+	found, _ = kubeapi.Getpgupgrade(restclient, &upgrade, cl.Spec.Name, namespace)
+	if found {
+		err := kubeapi.Deletepgupgrade(restclient, cl.Spec.Name, namespace)
 		if err == nil {
 			log.Debug("deleted pgupgrade " + cl.Spec.Name)
 		} else if kerrors.IsNotFound(err) {
@@ -253,6 +279,16 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient,
 			log.Error("error deleting pgupgrade " + cl.Spec.Name + err.Error())
 		}
 	}
+
+	//delete any remaining pgtasks
+	/**
+	delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
+	log.Debugf("cluster delete delTaskSelector is " + delTaskSelector)
+	err = kubeapi.Deletepgtasks(restclient, delTaskSelector, namespace)
+	if err != nil {
+		log.Error(err)
+	}
+	*/
 
 }
 
@@ -331,7 +367,8 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
-	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" {
+	//dont allocate an xlog PVC if this is a backrest cluster
+	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
 		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
 		storage := crv1.PgStorageSpec{}
 		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
@@ -448,4 +485,39 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 
 	strategy.DeleteReplica(clientset, replica, namespace)
 
+}
+
+func deleteConfigMaps(clientset *kubernetes.Clientset, clusterName, ns string) error {
+	label := fmt.Sprintf("pg-cluster=%s", clusterName)
+	list, ok := kubeapi.ListConfigMap(clientset, label, ns)
+	if !ok {
+		return fmt.Errorf("No configMaps found for selector: %s", label)
+	}
+
+	for _, configmap := range list.Items {
+		err := kubeapi.DeleteConfigMap(clientset, configmap.Name, ns)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanupPreviousTasks(client *rest.RESTClient, clusterName, namespace string) error {
+
+	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
+	taskList := crv1.PgtaskList{}
+
+	err := kubeapi.GetpgtasksBySelector(client, &taskList, selector, namespace)
+	if err != nil {
+		return err
+	}
+
+	for _, t := range taskList.Items {
+		err = kubeapi.Deletepgtask(client, t.Name, namespace)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+	return err
 }

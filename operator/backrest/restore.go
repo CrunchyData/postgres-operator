@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	"errors"
 
-	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	log "github.com/sirupsen/logrus"
 
 	//"github.com/crunchydata/postgres-operator/operator/cluster"
 	"os"
@@ -388,7 +388,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	archiveMode := "on"
 	xlogdir := "false"
 	archiveTimeout := cluster.Spec.UserLabels[util.LABEL_ARCHIVE_TIMEOUT]
-	archivePVCName := cluster.Spec.Name + "-xlog"
+	//archivePVCName := cluster.Spec.Name + "-xlog"
+	archivePVCName := ""
 	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 
 	var affinityStr string
@@ -402,6 +403,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	} else {
 		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
 	}
+
+	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS])
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
@@ -437,6 +440,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
 		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[util.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
+		//PgbouncerEnvVars:        operator.GetPgbouncerEnvVar(cluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]),
+		PgbouncerEnvVars: "",
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

@@ -20,7 +20,6 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -28,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -364,43 +364,16 @@ func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStor
 
 	var err error
 
-	log.Info("inside createDeleteDataTasksForReplica")
+	log.Infof("inside createDeleteDataTasksForReplica %s", replicaName)
 
-	selector := util.LABEL_REPLICA_NAME + "=" + replicaName
-	log.Debugf("selector for delete is %s", selector)
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	dataRoots := make([]string, 0)
+	dataRoots = append(dataRoots, replicaName)
+
+	claimName := replicaName
+
+	err = apiserver.CreateRMDataTask(storageSpec, replicaName, claimName, dataRoots, replicaName+"-rmdata-pgdata", ns)
 	if err != nil {
-		log.Error(err)
 		return err
-	}
-	log.Debugf("got %d cluster pods for %s\n", len(pods.Items), replicaName)
-
-	for _, pod := range pods.Items {
-		deploymentName := pod.ObjectMeta.Labels[util.LABEL_REPLICA_NAME]
-
-		//get the volumes for this pod
-		for _, v := range pod.Spec.Volumes {
-
-			log.Debugf("volume name in delete logic is %s", v.Name)
-			dataRoots := make([]string, 0)
-			if v.Name == "pgdata" {
-				dataRoots = append(dataRoots, deploymentName)
-			} else if v.Name == "backrestrepo-volume" {
-				dataRoots = append(dataRoots, deploymentName+"{-backups,-spool}")
-			} else if v.Name == "backup" {
-				dataRoots = append(dataRoots, deploymentName+"-backups")
-			} else if v.Name == "pgwal-volume" {
-				dataRoots = append(dataRoots, deploymentName+"-wal")
-			}
-
-			if v.VolumeSource.PersistentVolumeClaim != nil {
-				log.Debugf("volume [%s] pvc [%s] dataroots [%v]\n", v.Name, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots)
-				err = apiserver.CreateRMDataTask(storageSpec, replicaName, v.VolumeSource.PersistentVolumeClaim.ClaimName, dataRoots, ns)
-				if err != nil {
-					return err
-				}
-			}
-		}
 	}
 
 	return err

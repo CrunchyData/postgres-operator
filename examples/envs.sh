@@ -6,7 +6,7 @@ export CO_CMD=kubectl
 export COROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 export CO_IMAGE_PREFIX=crunchydata
 export CO_BASEOS=centos7
-export CO_VERSION=3.5.1
+export CO_VERSION=3.5.2
 export CO_IMAGE_TAG=$CO_BASEOS-$CO_VERSION
 
 # for the pgo CLI auth

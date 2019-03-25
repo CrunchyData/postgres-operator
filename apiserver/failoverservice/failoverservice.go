@@ -17,10 +17,10 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -39,8 +39,9 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.CreateFailoverResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -82,9 +83,9 @@ func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.QueryFailoverResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}

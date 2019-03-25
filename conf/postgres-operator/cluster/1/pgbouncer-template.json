@@ -5,6 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
+            "crunchy-pgbouncer": "true",
             "pg-cluster": "{{.ClusterName}}",
             "service-name": "{{.Name}}"
         }
@@ -32,16 +33,19 @@
 		    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
-                        "value": "testuser"
+                        "value": "{{.PgBouncerUser}}"
                     }, {
                         "name": "PG_PASSWORD",
-                        "value": "password"
+                        "value": "{{.PgBouncerPass}}"
                     }, {
                         "name": "PG_PRIMARY_SERVICE_NAME",
                         "value": "{{.PrimaryServiceName}}"
                     }, {
                         "name": "PG_REPLICA_SERVICE_NAME",
                         "value": "{{.ReplicaServiceName}}"
+                    },{
+                        "name": "PGBOUNCER_PASSWORD",
+                        "value": "{{.PgBouncerPass}}"
                     }],
                     "volumeMounts": [{
                         "name": "pgbouncer-conf",

@@ -17,12 +17,14 @@ package cluster
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
+	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +46,8 @@ type PgbouncerConfFields struct {
 	PG_REPLICA_SERVICE_NAME string
 	PG_USERNAME             string
 	PG_PASSWORD             string
+	PG_PORT                 string
+	PG_DATABASE             string
 }
 
 type PgbouncerTemplateFields struct {
@@ -56,6 +60,17 @@ type PgbouncerTemplateFields struct {
 	PrimaryServiceName string
 	ReplicaServiceName string
 	ContainerResources string
+	PgBouncerUser      string
+	PgBouncerPass      string
+}
+
+// connInfo ....
+type connectionInfo struct {
+	Username string
+	Hostip   string
+	Port     string
+	Database string
+	Password string
 }
 
 const PGBOUNCER_SUFFIX = "-pgbouncer"
@@ -101,7 +116,7 @@ func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *r
 	}
 
 	//create the pgbouncer but leave the existing service in place
-	err = AddPgbouncer(clientset, &pgcluster, namespace, false)
+	err = AddPgbouncer(clientset, &pgcluster, namespace, false, true)
 
 	//remove task to cleanup
 	err = kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace)
@@ -114,7 +129,7 @@ func ReconfigurePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *r
 }
 
 func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
-	log.Debug("AddPgbouncerFromTask task cluster=[%s]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER])
+	log.Debugf("AddPgbouncerFromTask task cluster=[ %s ], NS=[ %s ]", task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER], namespace)
 
 	//look up the pgcluster from the task
 	clusterName := task.Spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER]
@@ -125,7 +140,12 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		log.Error(err)
 		return
 	}
-	err = AddPgbouncer(clientset, &pgcluster, namespace, true)
+
+	// add necessary fields from task to the cluster for pgbouncer specifics
+	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER_USER] = task.Spec.Parameters[util.LABEL_PGBOUNCER_USER]
+	pgcluster.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS] = task.Spec.Parameters[util.LABEL_PGBOUNCER_PASS]
+
+	err = AddPgbouncer(clientset, &pgcluster, namespace, true, true)
 	if err != nil {
 		log.Error(err)
 		return
@@ -197,24 +217,45 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 }
 
 // ProcessPgbouncer ...
-func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool) error {
+func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, createService bool, updateCreds bool) error {
 	var doc bytes.Buffer
 	var err error
 
-	//generate a secret for pgbouncer using the testuser credential
+	//generate a secret for pgbouncer using passed in user or default pgbouncer user
 	secretName := cl.Spec.Name + "-" + util.LABEL_PGBOUNCER_SECRET
 	primaryName := cl.Spec.Name
 	replicaName := cl.Spec.Name + "-replica"
-	err = CreatePgbouncerSecret(clientset, primaryName, replicaName, primaryName, secretName, namespace)
+
+	pgbouncerUser := cl.Spec.UserLabels[util.LABEL_PGBOUNCER_USER]
+	//	log.Debugf("userSpecifiedPass: %s", pgbouncerUser)
+	pgbouncerPass := cl.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]
+	//	log.Debugf("userSpecifiedPass: %s", pgbouncerPass)
+
+	if updateCreds {
+
+		log.Debug("Updating pgbouncer password in secret and database")
+
+		err := updatePgBouncerCredentials(clientset, namespace, pgbouncerUser, pgbouncerPass, secretName, cl.Spec.Name)
+
+		if err != nil {
+			log.Debug("Failed to update existing pgbouncer credentials")
+			log.Debug(err.Error())
+			return err
+		}
+	}
+
+	// attempt creation of pgbouncer secret, obtains user and pass from existing or created.
+	err, secretUser, secretPass := createPgbouncerSecret(clientset, cl, primaryName, replicaName, primaryName, secretName, namespace)
+
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	log.Debug("pgbouncer secret created")
 
 	clusterName := cl.Spec.Name
 	pgbouncerName := clusterName + PGBOUNCER_SUFFIX
 	log.Debugf("adding a pgbouncer %s", pgbouncerName)
+	//	log.Debugf("secretUser: %s, secretPass: %s", secretUser, secretPass)
 
 	//create the pgbouncer deployment
 	fields := PgbouncerTemplateFields{
@@ -223,6 +264,8 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
+		PgBouncerUser:      secretUser,
+		PgBouncerPass:      secretPass,
 		SecretsName:        secretName,
 		ContainerResources: "",
 	}
@@ -291,35 +334,276 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, clusterName, namespace str
 
 }
 
+func updatePgBouncerCredentials(clientset *kubernetes.Clientset, namespace, username, password, secretName, clusterName string) error {
+
+	// delete the secret so it will be recreated.
+	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
+
+	if err != nil {
+		log.Debug("Error deleting pgbouncer secret, probaby not found, ignoring")
+	}
+
+	err, databaseNames := getDatabaseListForCredentials(namespace, clusterName, clientset)
+
+	if err != nil {
+		log.Debug(err)
+		return err
+	}
+
+	for _, dbName := range databaseNames {
+
+		connectionInfo := getDBUserInfo(namespace, clusterName, dbName, clientset)
+
+		log.Debugf("Creating pgbouncer authorization in %s database", dbName)
+
+		err = createPgBouncerAuthInDB(clusterName, connectionInfo, username, namespace)
+
+		if err != nil {
+			log.Debugf("Unable to create pgbouncer user in %s database", dbName)
+			log.Debug(err.Error())
+			return err
+		}
+	}
+
+	// update the password for the pgbouncer user in postgres database
+	connectionInfo := getDBUserInfo(namespace, clusterName, "postgres", clientset)
+	err = updatePgBouncerDBPassword(clusterName, connectionInfo, username, password, namespace)
+
+	if err != nil {
+		log.Debug("Unable to update pgbouncer password in database.")
+		log.Debug(err.Error())
+	}
+
+	return err
+}
+
+func updatePgBouncerDBPassword(clusterName string, p connectionInfo, username, newPassword, namespace string) error {
+
+	var err error
+	var conn *sql.DB
+
+	//	log.Debugf("Updating password for %s in %s with %s ", username, p.Database, newPassword)
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	var rows *sql.Rows
+	querystr := "ALTER user " + username + " PASSWORD '" + newPassword + "'"
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	return err
+
+}
+
+func createPgBouncerAuthInDB(clusterName string, p connectionInfo, username string, namespace string) error {
+
+	var err error
+	var conn *sql.DB
+
+	log.Debugf("Creating %s user for pgbouncer in %s ", username, p.Database)
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	var rows *sql.Rows
+
+	// create pgbouncer role and setup authorization.
+	querystr := `
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pgbouncer') THEN
+        CREATE ROLE pgbouncer;
+    END IF;
+END
+$$;
+
+ALTER ROLE pgbouncer LOGIN;
+
+CREATE SCHEMA IF NOT EXISTS pgbouncer AUTHORIZATION pgbouncer;
+
+CREATE OR REPLACE FUNCTION pgbouncer.get_auth(p_username TEXT)
+RETURNS TABLE(username TEXT, password TEXT) AS
+$$
+BEGIN
+    RAISE WARNING 'PgBouncer auth request: %', p_username;
+
+    RETURN QUERY
+    SELECT rolname::TEXT, rolpassword::TEXT
+      FROM pg_authid
+      WHERE NOT rolsuper
+        AND rolname = p_username;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+REVOKE ALL ON FUNCTION pgbouncer.get_auth(p_username TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION pgbouncer.get_auth(p_username TEXT) TO pgbouncer; `
+
+	rows, err = conn.Query(querystr)
+
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	return err
+
+}
+
+func getDBUserInfo(namespace, clusterName string, targetDB string, clientset *kubernetes.Clientset) connectionInfo {
+	info := connectionInfo{}
+
+	//get the service for the cluster
+	service, found, err := kubeapi.GetService(clientset, clusterName, namespace)
+	if !found || err != nil {
+		return info
+	}
+
+	//get the pgbouncer secret for this cluster
+	selector := util.LABEL_PG_DATABASE + "=" + clusterName
+	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
+	if err != nil {
+		return info
+	}
+
+	//get the postgres user secret info
+	var username, password, database, hostip string
+	for _, s := range secrets.Items {
+		username = string(s.Data[util.LABEL_USERNAME][:])
+		password = string(s.Data[util.LABEL_PASSWORD][:])
+		database = targetDB
+		hostip = service.Spec.ClusterIP
+		if username == "postgres" {
+			log.Debug("got postgres user secrets")
+			break
+		}
+	}
+
+	strPort := fmt.Sprint(service.Spec.Ports[0].Port)
+	info.Username = username
+	info.Password = password
+	info.Database = database
+	info.Hostip = hostip
+	info.Port = strPort
+
+	return info
+}
+
+func getDatabaseListForCredentials(namespace, clusterName string, clientSet *kubernetes.Clientset) (error, []string) {
+
+	info := getDBUserInfo(namespace, clusterName, "postgres", clientSet)
+
+	log.Debug("Getting list of database names to update for pgbouncer")
+
+	var databases []string
+
+	var err error
+	var conn *sql.DB
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err, databases
+	}
+
+	// get a list of database names from postgres
+	var rows *sql.Rows
+	querystr := "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1')"
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err, databases
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	for rows.Next() {
+		var dbName string
+		if err := rows.Scan(&dbName); err != nil {
+			log.Debug(err)
+		}
+		databases = append(databases, dbName)
+	}
+
+	return err, databases
+
+}
+
 // CreatePgbouncerSecret create a secret used by pgbouncer
-func CreatePgbouncerSecret(clientset *kubernetes.Clientset, primary, replica, db, secretName, namespace string) error {
+func createPgbouncerSecret(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, primary, replica, db, secretName, namespace string) (error, string, string) {
 
 	var err error
 	var username, password string
 	var pgbouncerHBABytes, pgbouncerConfBytes, pgbouncerPasswdBytes []byte
 
-	_, found, err := kubeapi.GetSecret(clientset, secretName, namespace)
-	if found {
+	username, password, err = util.GetPasswordFromSecret(clientset, namespace, secretName)
+	if err == nil {
 		log.Debugf("pgbouncer secret %s already present, will reuse", secretName)
-		return err
+		return err, username, password
+	}
+
+	// pgbouncer port for ini file
+	port := cl.Spec.Port
+
+	if !(len(port) > 0) {
+		port = "5432" // default if unset in pgo.yaml
+	}
+
+	pgbouncerDb := cl.Spec.Database
+	if !(len(pgbouncerDb) > 0) {
+		pgbouncerDb = db // default to passed in database name
 	}
 
 	pgbouncerHBABytes, err = getPgbouncerHBA()
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, "", ""
 	}
 
-	pgbouncerPasswdBytes, username, password, err = getPgbouncerPasswd(clientset, namespace, db)
+	pgbouncerPasswdBytes, username, password, err = getPgbouncerPasswd(clientset, cl, namespace, db)
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, "", ""
 	}
 
-	pgbouncerConfBytes, err = getPgbouncerConf(primary, replica, username, password)
+	pgbouncerConfBytes, err = getPgbouncerConf(primary, replica, username, password, port, pgbouncerDb)
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, "", ""
 	}
 
 	secret := v1.Secret{}
@@ -335,7 +619,7 @@ func CreatePgbouncerSecret(clientset *kubernetes.Clientset, primary, replica, db
 
 	err = kubeapi.CreateSecret(clientset, &secret, namespace)
 
-	return err
+	return err, username, password
 
 }
 
@@ -356,7 +640,7 @@ func getPgbouncerHBA() ([]byte, error) {
 }
 
 //NOTE: The config files currently uses the postgres user to admin pgouncer by default
-func getPgbouncerConf(primary, replica, username, password string) ([]byte, error) {
+func getPgbouncerConf(primary, replica, username, password, port, database string) ([]byte, error) {
 	var err error
 
 	fields := PgbouncerConfFields{}
@@ -364,6 +648,8 @@ func getPgbouncerConf(primary, replica, username, password string) ([]byte, erro
 	fields.PG_REPLICA_SERVICE_NAME = replica
 	fields.PG_USERNAME = username
 	fields.PG_PASSWORD = password
+	fields.PG_PORT = port
+	fields.PG_DATABASE = database
 
 	var doc bytes.Buffer
 	err = operator.PgbouncerConfTemplate.Execute(&doc, fields)
@@ -376,36 +662,35 @@ func getPgbouncerConf(primary, replica, username, password string) ([]byte, erro
 	return doc.Bytes(), err
 }
 
-func getPgbouncerPasswd(clientset *kubernetes.Clientset, namespace, clusterName string) ([]byte, string, string, error) {
+func getPgbouncerPasswd(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace, clusterName string) ([]byte, string, string, error) {
 	var doc bytes.Buffer
 	var pgbouncerUsername, pgbouncerPassword string
 
-	//go get all non-pgbouncer secrets
-	selector := util.LABEL_PG_DATABASE + "=" + clusterName + "," + util.LABEL_PGBOUNCER + "!=true"
-	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
-	if err != nil {
-		log.Error(err)
-		return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err
+	// command line specified username or default to "pgbouncer" if not set.
+	var username = cl.Spec.UserLabels[util.LABEL_PGBOUNCER_USER]
+	if !(len(username) > 0) {
+		pgbouncerUsername = "pgbouncer"
+	} else {
+		pgbouncerUsername = username
+	}
+
+	var password = cl.Spec.UserLabels[util.LABEL_PGBOUNCER_PASS]
+	if !(len(password) > 0) {
+		log.Debugf("Pgbouncer: creating password, none provided by user")
+		pgbouncerPassword = util.GeneratePassword(10) // default password case when not specified by user.
+	} else {
+		log.Debugf("using provided pgbouncer password")
+		pgbouncerPassword = password
 	}
 
 	creds := make([]PgbouncerPasswdFields, 0)
-	for _, sec := range secrets.Items {
-		//log.Debugf("in pgbouncer passwd with username=%s password=%s\n", sec.Data[util.LABEL_USERNAME][:], sec.Data[util.LABEL_PASSWORD][:])
-		username := string(sec.Data[util.LABEL_USERNAME][:])
-		password := string(sec.Data[util.LABEL_PASSWORD][:])
-		c := PgbouncerPasswdFields{}
-		c.Username = username
-		c.Password = "md5" + util.GetMD5HashForAuthFile(password+username)
-		creds = append(creds, c)
 
-		//we will use the postgres user for pgbouncer to auth with
-		if username == "postgres" {
-			pgbouncerUsername = username
-			pgbouncerPassword = password
-		}
-	}
+	c := PgbouncerPasswdFields{}
+	c.Username = pgbouncerUsername
+	c.Password = "md5" + util.GetMD5HashForAuthFile(pgbouncerPassword+pgbouncerUsername)
+	creds = append(creds, c)
 
-	err = operator.PgbouncerUsersTemplate.Execute(&doc, creds)
+	err := operator.PgbouncerUsersTemplate.Execute(&doc, creds)
 	if err != nil {
 		log.Error(err)
 		return doc.Bytes(), pgbouncerUsername, pgbouncerPassword, err

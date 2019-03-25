@@ -2,7 +2,7 @@ FROM centos:7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	Version="7.6" \
-	Release="3.5.1" \
+	Release="3.5.2" \
 	summary="Crunchy Data PostgreSQL Operator - Scheduler" \
 	description="Crunchy Data PostgreSQL Operator - Scheduler"
 
@@ -19,7 +19,6 @@ RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /configs \
  && chown -R 2:2 /opt/cpm /configs
 
 ADD bin/pgo-scheduler /opt/cpm/bin
-ADD conf/pgo-scheduler /opt/cpm/conf
 
 USER 2
 

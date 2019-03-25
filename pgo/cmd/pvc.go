@@ -17,9 +17,9 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -28,21 +28,21 @@ func showPVC(args []string, ns string) {
 
 	if args[0] == "all" {
 		//special case to just list all the PVCs
-		printPVC(args[0], "", ns)
+		printPVC(args[0], "", NodeLabel, ns)
 	} else {
 		//args are a list of pvc names...for this case show details
 		for _, arg := range args {
 			log.Debugf("show pvc called for %s", arg)
-			printPVC(arg, PVCRoot, ns)
+			printPVC(arg, PVCRoot, NodeLabel, ns)
 
 		}
 	}
 
 }
 
-func printPVC(pvcName, pvcRoot, ns string) {
+func printPVC(pvcName, pvcRoot, nodeLabel, ns string) {
 
-	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials, ns)
+	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials, nodeLabel, ns)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

@@ -27,7 +27,7 @@
 
             {
                     "name": "database",
-                    "image": "{{.CCPImagePrefix}}/crunchy-postgres:{{.CCPImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
                     "readinessProbe": {
                         "exec": {
                             "command": [

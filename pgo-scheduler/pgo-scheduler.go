@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

@@ -17,12 +17,13 @@ package operator
 
 import (
 	"bytes"
-	log "github.com/Sirupsen/logrus"
+	"os"
+	"text/template"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/util"
-	"os"
-	"text/template"
+	log "github.com/sirupsen/logrus"
 )
 
 var CRUNCHY_DEBUG bool
@@ -54,6 +55,8 @@ const UpgradeJobPath = "/pgo-config/cluster-upgrade-job-1.json"
 const pgDumpBackupJobPath = "/pgo-config/pgdump-job.json"
 const pgRestoreJobPath = "/pgo-config/pgrestore-job.json"
 
+const benchmarkJobPath = "/pgo-config/pgbench-job.json"
+
 const DeploymentTemplate1Path = "/pgo-config/cluster-deployment-1.json"
 const CollectTemplate1Path = "/pgo-config/collect.json"
 const BadgerTemplate1Path = "/pgo-config/pgbadger.json"
@@ -83,6 +86,8 @@ var BackrestRestoreConfigMapTemplate *template.Template
 
 var PgDumpBackupJobTemplate *template.Template
 var PgRestoreJobTemplate *template.Template
+
+var BenchmarkJobTemplate *template.Template
 
 var PVCTemplate *template.Template
 var PVCMatchLabelsTemplate *template.Template
@@ -150,6 +155,8 @@ func Initialize() {
 
 	PgDumpBackupJobTemplate = util.LoadTemplate(pgDumpBackupJobPath)
 	PgRestoreJobTemplate = util.LoadTemplate(pgRestoreJobPath)
+
+	BenchmarkJobTemplate = util.LoadTemplate(benchmarkJobPath)
 
 	Pgo.GetConf()
 	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)

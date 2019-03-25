@@ -36,6 +36,7 @@ const PgtaskAddPolicies = "addpolicies"
 
 const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"
+const PgtaskWorkflowCreateBenchmarkType = "createbenchmark"
 const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
 const PgtaskWorkflowSubmittedStatus = "task submitted"
 const PgtaskWorkflowCompletedStatus = "task completed"
@@ -56,15 +57,16 @@ const PgtaskpgDumpBackup = "pgdumpbackup"
 const PgtaskpgDumpInfo = "pgdumpinfo"
 const PgtaskpgRestore = "pgrestore"
 
+const PgtaskBenchmark = "benchmark"
+
 // PgtaskSpec ...
 type PgtaskSpec struct {
-	Namespace   string        `json:"namespace"`
-	Name        string        `json:"name"`
-	StorageSpec PgStorageSpec `json:"storagespec"`
-	TaskType    string        `json:"tasktype"`
-	Status      string        `json:"status"`
-	//Parameters  string            `json:"parameters"`
-	Parameters map[string]string `json:"parameters"`
+	Namespace   string            `json:"namespace"`
+	Name        string            `json:"name"`
+	StorageSpec PgStorageSpec     `json:"storagespec"`
+	TaskType    string            `json:"tasktype"`
+	Status      string            `json:"status"`
+	Parameters  map[string]string `json:"parameters"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

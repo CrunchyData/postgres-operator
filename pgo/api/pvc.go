@@ -18,16 +18,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
-func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowPVCResponse, error) {
+func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredentials *msgs.BasicAuthCredentials, nodeLabel, ns string) (msgs.ShowPVCResponse, error) {
 
 	var response msgs.ShowPVCResponse
 
-	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
+	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&nodelabel=" + nodeLabel + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("ShowPVC called...[%s]", url)
 
 	action := "GET"

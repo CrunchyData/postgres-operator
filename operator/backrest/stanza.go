@@ -16,7 +16,7 @@ package backrest
 */
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
@@ -46,7 +46,7 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
 
-	jobName := "backrest-" + crv1.PgtaskBackrestStanzaCreate + "-" + clusterName
+	jobName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)

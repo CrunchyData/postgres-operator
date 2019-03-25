@@ -1,7 +1,7 @@
 package main
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -23,10 +23,10 @@ import (
 	"os"
 	"strconv"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
+	"github.com/crunchydata/postgres-operator/apiserver/benchmarkservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/configservice"
 	"github.com/crunchydata/postgres-operator/apiserver/dfservice"
@@ -46,6 +46,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 const serverCert = "/pgo-auth-secret/server.crt"
@@ -140,6 +141,11 @@ func main() {
 	r.HandleFunc("/schedule", scheduleservice.CreateScheduleHandler).Methods("POST")
 	r.HandleFunc("/scheduledelete", scheduleservice.DeleteScheduleHandler).Methods("POST")
 	r.HandleFunc("/scheduleshow", scheduleservice.ShowScheduleHandler).Methods("POST")
+
+	//benchmark
+	r.HandleFunc("/benchmark", benchmarkservice.CreateBenchmarkHandler).Methods("POST")
+	r.HandleFunc("/benchmarkdelete", benchmarkservice.DeleteBenchmarkHandler).Methods("POST")
+	r.HandleFunc("/benchmarkshow", benchmarkservice.ShowBenchmarkHandler).Methods("POST")
 
 	caCert, err := ioutil.ReadFile(serverCert)
 	if err != nil {

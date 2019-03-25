@@ -17,8 +17,10 @@ package kubeapi
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
+	"io"
+
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,6 +133,19 @@ func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value,
 		log.Errorf("error add label to Pod  %s %s=%s", origPod.Name, key, value)
 	}
 	log.Debugf("add label to Pod %s %s=%v", origPod.Name, key, value)
+	return err
+}
+
+func GetLogs(client *kubernetes.Clientset, logOpts v1.PodLogOptions, out io.Writer, podName, ns string) error {
+	req := client.CoreV1().Pods(ns).GetLogs(podName, &logOpts)
+
+	readCloser, err := req.Stream()
+	if err != nil {
+		return err
+	}
+
+	defer readCloser.Close()
+	_, err = io.Copy(out, readCloser)
 	return err
 }
 

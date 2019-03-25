@@ -2,13 +2,19 @@ FROM registry.access.redhat.com/rhel7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
+	name="pgo-backrest-restore" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
-	Release="3.5.1" \
+        run='docker run -d -p 8080:80 --name=web-app web-app' \
+	Release="3.5.2" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
 ENV PGVERSION="11" BACKREST_VERSION="2.10"
+
+COPY redhat/atomic/pgo_backrest_restore/help.1 /help.1
+COPY redhat/atomic/pgo_backrest_restore/help.md /help.md
+COPY redhat/licenses /licenses
 
 ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/

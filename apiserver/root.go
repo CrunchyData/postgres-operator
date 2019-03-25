@@ -27,17 +27,18 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const AffinityTemplatePath = "/pgo-config/affinity.json"
 const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
 const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
 
@@ -68,6 +69,8 @@ var BasicAuth bool
 // Namespace comes from the apiserver config in this version
 var Namespace string
 
+var CRUNCHY_DEBUG bool
+
 // TreeTrunk is for debugging only in this context
 const TreeTrunk = "└── "
 
@@ -87,6 +90,7 @@ var ContainerResourcesTemplate *template.Template
 var LoadTemplate *template.Template
 var LspvcTemplate *template.Template
 var JobTemplate *template.Template
+var AffinityTemplate *template.Template
 
 var Pgo config.PgoConfig
 
@@ -111,6 +115,11 @@ func Initialize() {
 	if Namespace == "" {
 		log.Error("NAMESPACE environment variable is required")
 		os.Exit(2)
+	}
+	tmp := os.Getenv("CRUNCHY_DEBUG")
+	CRUNCHY_DEBUG = false
+	if tmp == "true" {
+		CRUNCHY_DEBUG = true
 	}
 	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
@@ -505,6 +514,8 @@ func initTemplates() {
 		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
 		os.Exit(2)
 	}
+
+	AffinityTemplate = util.LoadTemplate(AffinityTemplatePath)
 
 	JobTemplate = util.LoadTemplate(LoadTemplatePath)
 

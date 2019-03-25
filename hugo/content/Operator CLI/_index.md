@@ -54,7 +54,7 @@ The following table shows the *pgo* operations currently implemented:
 | reload |pgo reload mycluster  |Perform a pg_ctl reload command on a Postgres cluster(s). |
 | restore |pgo restore mycluster |Perform a pgbackrest or pgdump restore on a Postgres cluster. |
 | scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
-| scaledown |pgo scaledown  mycluster --query  |Delete a replica from a Postgres cluster. |
+| scaledown |pgo scaledown mycluster --query  |Delete a replica from a Postgres cluster. |
 | show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy, schedule). |
 | status |pgo status  |Display Operator status. |
 | test |pgo test mycluster  |Perform a SQL test on a Postgres cluster(s). |
@@ -80,7 +80,7 @@ Create a cluster using the Crunchy Postgres + PostGIS container image:
 
 #### Scale a Cluster with Additional Replicas
 
-    pgo scale cluster mycluster
+    pgo scale mycluster
 
 #### Create a Cluster with pgbackrest Configured
 
@@ -88,8 +88,8 @@ Create a cluster using the Crunchy Postgres + PostGIS container image:
 
 #### Scaledown a Cluster
 
-    pgo scaledown cluster mycluster --query
-    pgo scaledown cluster mycluster --target=sometarget
+    pgo scaledown mycluster --query
+    pgo scaledown mycluster --target=sometarget
 
 #### Delete a Cluster
 
@@ -200,7 +200,7 @@ before you do a restore.
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15 00:03:25"
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25"
 	
 To restore the most recent pgdump at the default path, leave off a timestamp:
 	
@@ -216,12 +216,13 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 
 #### Create a Cluster with Auto-fail Enabled
 
-    pgo create cluster mycluster --autofail
+    pgo create cluster mycluster --autofail --replica-count=1
 
 ### Add-On Operations
 #### Create a Cluster with pgbouncer
 
     pgo create cluster mycluster --pgbouncer
+	pgo create cluster mycluster --pgbouncer --pgbouncer-pass=somepass
 
 #### Create a Cluster with pgpool
 
@@ -230,13 +231,14 @@ To restore the most recent pgdump at the default path, leave off a timestamp:
 #### Add pgbouncer to a Cluster
 
     pgo create pgbouncer mycluster
+	pgo create pgbouncer mycluster --pgbouncer-pass=somepass
 
 Note, the pgbouncer configuration defaults to specifying only
 a single entry for the primary database.  If you want it to
 have an entry for the replica service, add the following
 configuration to pgbouncer.ini:
 
-    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port=5432 auth_user={{.PG_USERNAME}} dbname=userdb
+    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
 
 
 #### Add pgpool to a Cluster
@@ -262,7 +264,7 @@ configuration to pgbouncer.ini:
 Note: backend metric storage such as Prometheus and front end 
 visualization software such as Grafana are not created automatically 
 by the PostgreSQL Operator.  For instructions on installing Grafana and 
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.3.0/examples/metrics/metrics/).
+Prometheus in your environment, see the [Crunchy Container Suite documentation](http://crunchydata.github.io/crunchy-containers/stable/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
@@ -289,6 +291,25 @@ against the target cluster prior to creating this schedule.
     pgo create schedule --selector=pg-cluster=mycluster --schedule="0 1 * * *" \
          --schedule-type=policy --policy=mypolicy --database=userdb \
          --secret=mycluster-testuser-secret
+
+### Benchmark Clusters
+
+#### Create a Benchmark via Cluster Name
+
+    pgo benchmark mycluster
+
+#### Create a Benchmark via Selector
+
+    pgo benchmark --selector=pg-cluster=mycluster
+
+#### Create a Benchmark with a custom transactions
+
+    pgo create policy --in-file=/tmp/transactions.sql mytransactions
+    pgo benchmark mycluster --policy=mytransactions
+
+#### Create a Benchmark with custom parameters
+
+    pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100
 
 ### Complex Deployments
 #### Create a Cluster using Specific Storage

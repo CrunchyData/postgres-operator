@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"path/filepath"
 	"path"
 	"strings"
@@ -31,7 +31,7 @@ func main() {
 
 	linkHandler := func(name string) string {
 		base := strings.TrimSuffix(name, path.Ext(name))
-		return "/commands/" + strings.ToLower(base) + "/"
+		return "/cli/" + strings.ToLower(base) + "/"
 	}
 
 	err := doc.GenMarkdownTreeCustom(cmd.RootCmd, "./", filePrepender, linkHandler)

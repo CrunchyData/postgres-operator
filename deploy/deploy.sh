@@ -49,6 +49,7 @@ $CO_CMD $NS create configmap pgo-config \
         --from-file=pgo.load-template.json=$COROOT/conf/postgres-operator/pgo.load-template.json \
         --from-file=pgo.lspvc-template.json=$COROOT/conf/postgres-operator/pgo.lspvc-template.json \
         --from-file=container-resources.json=$COROOT/conf/postgres-operator/container-resources.json \
+	--from-file=$COROOT/conf/postgres-operator/pgbench-job.json \
 	--from-file=$COROOT/conf/postgres-operator/backup-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pgdump-job.json \
 	--from-file=$COROOT/conf/postgres-operator/pgrestore-job.json \

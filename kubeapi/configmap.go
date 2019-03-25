@@ -1,7 +1,7 @@
 package kubeapi
 
 /*
- Copyright 2017-2019 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -16,7 +16,7 @@ package kubeapi
 */
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,7 +73,6 @@ func ListConfigMap(clientset *kubernetes.Clientset, label, namespace string) (*v
 
 // DeleteConfigMap deletes a ConfigMap by name
 func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) error {
-
 	err := clientset.CoreV1().ConfigMaps(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error("error deleting ConfigMap " + err.Error())

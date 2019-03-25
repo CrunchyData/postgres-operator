@@ -20,10 +20,10 @@ package cluster
 
 import (
 	"errors"
-	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
@@ -149,8 +149,8 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName string) error {
 
 	//the primary will be the one with a pod that has a label
-	//that looks like service-name=clustername
-	selector := util.LABEL_SERVICE_NAME + "=" + clusterName
+	//that looks like service-name=clustername and is not a backrest job
+	selector := util.LABEL_SERVICE_NAME + "=" + clusterName + "," + util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_BACKREST_JOB + "!=true"
 	pods, err := kubeapi.GetPods(clientset, selector, namespace)
 	if len(pods.Items) == 0 {
 		log.Errorf("no primary pod found when trying to delete primary %s", selector)

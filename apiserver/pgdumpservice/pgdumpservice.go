@@ -17,11 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
-	log "github.com/Sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/util"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -39,8 +39,9 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.CreatepgDumpBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -74,9 +75,9 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("pgdumpservice.pgdumpHandler GET called")
 	resp := msgs.ShowBackupResponse{}
@@ -116,8 +117,9 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.PgRestoreResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
