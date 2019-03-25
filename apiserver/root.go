@@ -39,6 +39,7 @@ import (
 
 // pgouserPath ...
 const pgouserPath = "/default-pgo-config/pgouser"
+const pgouserFile = "pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
@@ -118,11 +119,11 @@ func Initialize() {
 
 	log.Infoln("apiserver starts")
 
+	ConnectToKube()
+
 	getCredentials()
 
 	InitializePerms()
-
-	ConnectToKube()
 
 	err := Pgo.GetConfig(Clientset, PgoNamespace)
 	if err != nil {
@@ -210,7 +211,7 @@ func initConfig() {
 
 }
 
-func file2lines(filePath string) []string {
+func file2lines(filePath string) ([]string, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		log.Error(err)
@@ -223,11 +224,8 @@ func file2lines(filePath string) []string {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
-		log.Error(err)
-	}
 
-	return lines
+	return lines, scanner.Err()
 }
 
 func parseUserMap(dat string) CredentialDetail {
@@ -245,9 +243,28 @@ func parseUserMap(dat string) CredentialDetail {
 // getCredentials ...
 func getCredentials() {
 
+	var lines []string
+	var err error
 	Credentials = make(map[string]CredentialDetail)
 
-	lines := file2lines(pgouserPath)
+	cm, _ := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, Namespace)
+	if val, ok := cm.Data[pgouserFile]; ok {
+		log.Infof("Custom %s file found in configmap", pgouserFile)
+		scanner := bufio.NewScanner(strings.NewReader(val))
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		err = scanner.Err()
+	} else {
+		log.Infof("No custom %s file found in configmap, using defaults", pgouserFile)
+		lines, err = file2lines(pgouserPath)
+	}
+
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
 	for _, v := range lines {
 		creds := parseUserMap(v)
 		Credentials[creds.Username] = creds
