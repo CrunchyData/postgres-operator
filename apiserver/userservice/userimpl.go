@@ -71,6 +71,16 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 
 	getDefaults()
 
+	log.Debugf("in User with password [%]", request.Password)
+	if request.Password != "" {
+		err = validPassword(request.Password)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "invalid password format"
+			return resp
+		}
+	}
+
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
@@ -116,7 +126,13 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 		}
 
 		for _, d := range deployments.Items {
-			info := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+			//info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+			info, err := getPostgresUserInfo(ns, cluster.Spec.Name)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
 
 			if request.ChangePasswordForUser != "" {
 				msg := "changing password of user " + request.ChangePasswordForUser + " on " + d.ObjectMeta.Name
@@ -160,6 +176,9 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
 							if err != nil {
 								log.Error("error in updating password")
+								resp.Status.Code = msgs.Error
+								resp.Status.Msg = err.Error()
+								return resp
 							}
 							//log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 						}
@@ -226,6 +245,17 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, pgpool bool, pgbouncer bool, passwordLength int) error {
 	var err error
 	var conn *sql.DB
+
+	log.Debugf("username [%s] password=[%s] database=[%] hostip=[%s] port=[%s]", p.Username,
+		p.Password,
+		p.Database,
+		p.Hostip,
+		p.Port)
+
+	err = validPassword(newPassword)
+	if err != nil {
+		return err
+	}
 
 	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
 	if err != nil {
@@ -323,20 +353,23 @@ func getDefaults() {
 }
 
 // getPostgresUserInfo...
-func getPostgresUserInfo(namespace, clusterName string) connInfo {
+func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
+	var err error
 	info := connInfo{}
 
-	//get the service for the cluster
 	service, found, err := kubeapi.GetService(apiserver.Clientset, clusterName, namespace)
-	if !found || err != nil {
-		return info
+	if err != nil {
+		return info, err
+	}
+	if !found {
+		return info, errors.New("primary service not found for " + clusterName)
 	}
 
 	//get the secrets for this cluster
 	selector := config.LABEL_PG_DATABASE + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
-		return info
+		return info, err
 	}
 
 	//get the postgres user secret info
@@ -360,7 +393,7 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 	info.Hostip = hostip
 	info.Port = strPort
 
-	return info
+	return info, err
 }
 
 // addUser ...
@@ -550,7 +583,12 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 	}
 
 	for _, c := range clusterList.Items {
-		info := getPostgresUserInfo(ns, c.Name)
+		info, err := getPostgresUserInfo(ns, c.Name)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 
 		err = addUser(request, ns, c.Name, info)
 		if err != nil {
@@ -620,7 +658,12 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 
 	for _, cluster := range clusterList.Items {
 		clusterName = cluster.Spec.Name
-		info := getPostgresUserInfo(ns, clusterName)
+		info, err := getPostgresUserInfo(ns, clusterName)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 
 		secretName := clusterName + "-" + name + "-secret"
 
@@ -747,7 +790,13 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 			}
 
 			for _, d := range deployments.Items {
-				info := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+				info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+				if err != nil {
+					response.Status.Code = msgs.Error
+					response.Status.Msg = err.Error()
+					return response
+				}
+
 				if expired != "" {
 					results := callDB(info, d.ObjectMeta.Name, expired)
 					if len(results) > 0 {
@@ -841,4 +890,18 @@ func reconfigurePgpool(clusterName, ns string) error {
 		return err
 	}
 	return err
+}
+
+func validPassword(instr string) error {
+	if len(instr) > 16 {
+		return errors.New("valid passwords are less than 16 chars")
+	}
+
+	matched, err := regexp.MatchString(`^[A-Za-z_][A-Za-z\d_]*$`, instr)
+	log.Debugf("password valid %t", matched)
+	if !matched {
+		return errors.New("the password format was invalid")
+	}
+	return err
+
 }
