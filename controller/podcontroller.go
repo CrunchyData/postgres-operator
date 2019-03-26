@@ -24,8 +24,8 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -209,7 +209,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 // to match the correct Service selector for the PG cluster
 func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 
-	var dep *v1beta1.Deployment
+	var dep *v1.Deployment
 	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], ns)
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)

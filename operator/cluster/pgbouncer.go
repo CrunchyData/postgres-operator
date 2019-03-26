@@ -26,8 +26,8 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
@@ -291,7 +291,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace
 		config.PgbouncerTemplate.Execute(os.Stdout, fields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := appsv1.Deployment{}
 	err = json.Unmarshal(doc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling pgbouncer json into Deployment " + err.Error())

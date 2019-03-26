@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -168,7 +168,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 
 	selector = config.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
 
-	var deployments *v1beta1.DeploymentList
+	var deployments *v1.DeploymentList
 	deployments, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
@@ -211,7 +211,7 @@ func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 	return &cluster, err
 }
 
-func validateDeploymentName(deployName, clusterName, ns string) (*v1beta1.Deployment, error) {
+func validateDeploymentName(deployName, clusterName, ns string) (*v1.Deployment, error) {
 
 	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, ns)
 	if !found {

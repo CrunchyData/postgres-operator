@@ -29,7 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -145,7 +145,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := v1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
@@ -403,7 +403,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
-	replicaDeployment := v1beta1.Deployment{}
+	replicaDeployment := v1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())

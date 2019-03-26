@@ -1,6 +1,6 @@
 {
     "kind": "Deployment",
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "apps/v1",
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
@@ -10,6 +10,12 @@
     },
     "spec": {
         "replicas": {{.Replicas}},
+        "selector": {
+		"matchLabels": {
+		    "vendor": "crunchydata",
+		    {{.DeploymentLabels }}
+		}
+        },
         "template": {
             "metadata": {
                 "labels": {
