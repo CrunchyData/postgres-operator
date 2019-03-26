@@ -26,9 +26,9 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -94,7 +94,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	log.Debugf("restore workflow: created pvc %s for cluster %s", pvcName, clusterName)
 	//delete current primary deployment
 	selector := config.LABEL_SERVICE_NAME + "=" + clusterName
-	var depList *v1beta1.DeploymentList
+	var depList *appsv1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if err != nil {
 		log.Errorf("restore workflow error: could not get depList using %s", selector)
@@ -278,8 +278,8 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 	newPath := "/pgdata/" + target
 	depName := cluster.Name + "-backrest-shared-repo"
 
-	var deployment *v1beta1.Deployment
-	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+	var deployment *appsv1.Deployment
+	deployment, err = clientset.AppsV1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error getting deployment in UpdateDBPath using name " + depName)
@@ -325,7 +325,7 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 	//TODO fix this loop to be a proper wait
 	var zero bool
 	for i := 0; i < 8; i++ {
-		deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+		deployment, err = clientset.AppsV1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
 		if err != nil {
 			log.Error("could not get deployment UpdateDBPath " + err.Error())
 			return err
@@ -435,7 +435,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := appsv1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())

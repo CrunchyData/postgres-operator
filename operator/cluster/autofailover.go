@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -316,7 +316,7 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	//return a deployment target that has a Ready database
 	log.Debugf("autofail deps len %d\n", len(deployments.Items))
 	found := false
-	readyDeps := make([]v1beta1.Deployment, 0)
+	readyDeps := make([]v1.Deployment, 0)
 	for _, dep := range deployments.Items {
 		ready := getPodStatus(clientset, dep.Name, ns)
 		if ready {

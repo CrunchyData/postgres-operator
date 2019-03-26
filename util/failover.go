@@ -25,8 +25,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -51,13 +51,13 @@ type ReplicationInfo struct {
 }
 
 // GetBestTarget
-func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (*v1.Pod, *v1beta1.Deployment, error) {
+func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (*v1.Pod, *appsv1.Deployment, error) {
 
 	var err error
 
 	//get all the replica deployment pods for this cluster
 	var pod v1.Pod
-	var deployment v1beta1.Deployment
+	var deployment appsv1.Deployment
 
 	//get all the deployments that are replicas for this clustername
 
@@ -128,7 +128,7 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	return pod, err
 }
 
-func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *v1beta1.Deployment, namespace, databasePort string) (uint64, uint64, string) {
+func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *appsv1.Deployment, namespace, databasePort string) (uint64, uint64, string) {
 	var receiveLocation, replayLocation uint64
 
 	var nodeName string

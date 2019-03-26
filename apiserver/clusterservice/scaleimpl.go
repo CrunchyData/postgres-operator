@@ -28,7 +28,7 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -279,7 +279,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	}
 
 	//if this was the last replica then remove the replica service
-	var replicaList *v1beta1.DeploymentList
+	var replicaList *v1.DeploymentList
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {

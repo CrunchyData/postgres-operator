@@ -25,8 +25,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -57,7 +57,7 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName
 	log.Debugf("selector in failover get deployments is %s", selector)
-	var depList *v1beta1.DeploymentList
+	var depList *appsv1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if len(depList.Items) > 0 {
 		log.Debug("in failover, the primary deployment is found before removal")
@@ -99,7 +99,7 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	log.Debug("targetDepName %s", targetDepName)
-	var targetDep *v1beta1.Deployment
+	var targetDep *appsv1.Deployment
 	targetDep, _, err = kubeapi.GetDeployment(clientset, targetDepName, namespace)
 	if err != nil {
 		log.Error(err)

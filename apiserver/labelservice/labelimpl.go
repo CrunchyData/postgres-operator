@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -151,7 +151,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 }
 
-func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string, ns string) error {
+func updateLabels(deployment *v1.Deployment, clusterName string, newLabels map[string]string, ns string) error {
 
 	var err error
 
@@ -415,7 +415,7 @@ func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) err
 
 }
 
-func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMap map[string]string, ns string) error {
+func deleteTheLabel(deployment *v1.Deployment, clusterName string, labelsMap map[string]string, ns string) error {
 
 	var err error
 
