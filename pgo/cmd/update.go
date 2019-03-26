@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -54,7 +54,7 @@ func init() {
 	RootCmd.AddCommand(updateCmd)
 	updateCmd.AddCommand(updateClusterCmd)
 
-	updateClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	updateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	updateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	updateClusterCmd.Flags().StringVarP(&AutofailStringFlag, "autofail", "", "", "If set, will cause the autofail label on the pgcluster CRD for this cluster to be updated to either true or false, valid values are true or false.")
 
@@ -69,6 +69,9 @@ var updateClusterCmd = &cobra.Command{
     pgo update cluster all --autofail=false
     pgo update cluster mycluster --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if AutofailStringFlag == "true" || AutofailStringFlag == "false" {
 		} else {
 			fmt.Println("Error: --autofail=true or --autofail=false is required.")

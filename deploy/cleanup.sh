@@ -1,5 +1,5 @@
 #!/bin/bash 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,24 +14,35 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get secret/pgo-backrest-repo-config 2> /dev/null
 
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret/pgo-backrest-repo-config
 fi
 
-if [ "$CO_UI" = "true" ]; then
-$CO_CMD $NS delete configmap pgo-ui-conf 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get secret pgo.tls 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret pgo.tls
 fi
 
-$CO_CMD $NS delete secret pgo-backrest-repo-config
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get configmap/pgo-config 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete configmap/pgo-config
+fi
 
-$CO_CMD $NS delete secret pgo-auth-secret
-$CO_CMD $NS delete configmap pgo-config
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get service/postgres-operator 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete service/postgres-operator
+fi
 
-$CO_CMD $NS delete service postgres-operator
-
-$CO_CMD $NS delete deployment postgres-operator 
-
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get deployment/postgres-operator 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete deployment/postgres-operator
+fi
 
 sleep 5
-

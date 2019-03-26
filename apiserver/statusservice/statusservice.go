@@ -1,7 +1,7 @@
 package statusservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -30,7 +30,6 @@ import (
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	var username, ns string
 
-	//vars := mux.Vars(r)
 	clientVersion := r.URL.Query().Get("version")
 
 	namespace := r.URL.Query().Get("namespace")
@@ -53,7 +52,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp = msgs.StatusResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}

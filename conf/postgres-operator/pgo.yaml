@@ -57,9 +57,15 @@ Storage:
     StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  300M
     StorageType:  dynamic
     StorageClass:  fast
+    Fsgroup:  26
+  gce:
+    AccessMode:  ReadWriteOnce
+    Size:  300M
+    StorageType:  dynamic
+    StorageClass:  standard
     Fsgroup:  26
   rook:
     AccessMode:  ReadWriteOnce
@@ -89,7 +95,6 @@ Pgo:
   AutofailSleepSeconds:  9
   PreferredFailoverNode:  
   Audit:  false
-  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
-  LoadTemplate:  /pgo-config/pgo.load-template.json
-  COImagePrefix:  crunchydata
-  COImageTag:  centos7-3.5.2
+  PGOImagePrefix:  crunchydata
+  PGOImageTag:  centos7-4.0.0-rc3
+

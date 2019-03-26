@@ -1,5 +1,5 @@
 #!/bin/bash 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,10 +14,10 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$CO_CMD --namespace=$CO_NAMESPACE get pgbackups
-$CO_CMD --namespace=$CO_NAMESPACE get pgclusters
-$CO_CMD --namespace=$CO_NAMESPACE get pgreplicas
-$CO_CMD --namespace=$CO_NAMESPACE get pgpolicies 
-$CO_CMD --namespace=$CO_NAMESPACE get pgpolicylogs
-$CO_CMD --namespace=$CO_NAMESPACE get pgupgrades
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgbackups
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgclusters
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgreplicas
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgpolicies 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgpolicylogs
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgupgrades
 

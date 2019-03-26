@@ -1,7 +1,7 @@
 package workflowservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,12 +17,12 @@ limitations under the License.
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // ShowWorkflow ...
@@ -48,7 +48,7 @@ func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 		return detail, errors.New("workflow id NOT found for id " + id)
 	}
 	t := taskList.Items[0]
-	detail.ClusterName = t.Spec.Parameters[util.LABEL_PG_CLUSTER]
+	detail.ClusterName = t.Spec.Parameters[config.LABEL_PG_CLUSTER]
 	detail.Parameters = t.Spec.Parameters
 
 	return detail, err

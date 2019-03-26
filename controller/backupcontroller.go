@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -34,14 +34,14 @@ type PgbackupController struct {
 	PgbackupClient    *rest.RESTClient
 	PgbackupScheme    *runtime.Scheme
 	PgbackupClientset *kubernetes.Clientset
-	Namespace         string
+	Namespace         []string
 }
 
 // Run starts controller
 func (c *PgbackupController) Run(ctx context.Context) error {
 	log.Debugf("Watch Pgbackup objects")
 
-	_, err := c.watchPgbackups(ctx)
+	err := c.watchPgbackups(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgbackup resource: %v", err)
 		return err
@@ -52,33 +52,37 @@ func (c *PgbackupController) Run(ctx context.Context) error {
 }
 
 // watchPgbackups will watch events for the pgbackups
-func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PgbackupClient,
-		crv1.PgbackupResourcePlural,
-		c.Namespace,
-		fields.Everything())
+func (c *PgbackupController) watchPgbackups(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting pgbackup controller on ns [%s]", c.Namespace[i])
 
-	_, controller := cache.NewInformer(
-		source,
+		source := cache.NewListWatchFromClient(
+			c.PgbackupClient,
+			crv1.PgbackupResourcePlural,
+			c.Namespace[i],
+			fields.Everything())
 
-		// The object type.
-		&crv1.Pgbackup{},
+		_, controller := cache.NewInformer(
+			source,
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// The object type.
+			&crv1.Pgbackup{},
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
+
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgbackup is added

@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright 2018 Crunchy Data Solutions, Inc.
+#!/bin/bash 
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,23 +18,46 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $DIR/cleanup-rbac.sh
 
 # see if CRDs need to be created
-$CO_CMD get crd pgclusters.cr.client-go.k8s.io
+$PGO_CMD get crd pgclusters.crunchydata.com
 if [ $? -eq 1 ]; then
-	$CO_CMD create -f $DIR/crd.yaml
+	$PGO_CMD create -f $DIR/crd.yaml
 fi
 
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
-fi
+# create the cluster roles one time for the entire Kube cluster
+expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
 
-# create the cluster role and add to the service account
-expenv -f $DIR/cluster-rbac.yaml | $CO_CMD create -f -
+# create the Operator service accounts
+expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
-# create the service account, role, role-binding and add to the service account
-expenv -f $DIR/rbac.yaml | $CO_CMD create -f -
+# create the cluster role bindings to the Operator service accounts
+# postgres-operator and pgo-backrest, here we are assuming a single
+# Operator in the PGO_OPERATOR_NAMESPACE env variable
+expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+
+# create the role, role-binding and add to the service account
+# these are created within the namespace the Operator is running
+#expenv -f $DIR/rbac.yaml | $PGO_CMD create --namespace=$PGO_OPERATOR_NAMESPACE -f -
+
+# create the keys used for pgo API
+source $DIR/gen-api-keys.sh
 
 # create the sshd keys for pgbackrest repo functionality
 source $DIR/gen-sshd-keys.sh
 
-# create the keys used for pgo API
-source $DIR/gen-api-keys.sh
+# create a pgo-backrest-repo-config Secret into each namespace the
+# Operator will be watching
+
+IFS=', ' read -r -a array <<< "$NAMESPACE"
+
+echo ""
+echo "create pgo-backrest-repo-config Secret into each namespace the Operator is watching..."
+for ns in "${array[@]}"
+do
+        $PGO_CMD get secret pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
+        if [ $? -eq 0 ]
+        then
+                $PGO_CMD delete secret  pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
+        fi
+        $DIR/create-target-rbac.sh $ns $PGO_OPERATOR_NAMESPACE
+done
+

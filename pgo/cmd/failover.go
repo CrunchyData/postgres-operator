@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -35,6 +35,9 @@ var failoverCmd = &cobra.Command{
 
 	pgo failover mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("failover called")
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster to failover.`)
@@ -59,7 +62,7 @@ func init() {
 	RootCmd.AddCommand(failoverCmd)
 
 	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
-	failoverCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	failoverCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
 	failoverCmd.Flags().StringVarP(&AutofailReplaceReplica, "autofail-replace-replica", "", "", "If 'true', causes a replica to be created to replace the promoted replica.  If 'false', causes a replica to not be created, if not set, the pgo.yaml AutofailReplaceReplica setting is used.")
 

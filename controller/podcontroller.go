@@ -18,14 +18,14 @@ limitations under the License.
 import (
 	"context"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -36,13 +36,13 @@ import (
 type PodController struct {
 	PodClient    *rest.RESTClient
 	PodClientset *kubernetes.Clientset
-	Namespace    string
+	Namespace    []string
 }
 
 // Run starts an pod resource controller
 func (c *PodController) Run(ctx context.Context) error {
 
-	_, err := c.watchPods(ctx)
+	err := c.watchPods(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for pod resource: %v", err)
 		return err
@@ -53,39 +53,49 @@ func (c *PodController) Run(ctx context.Context) error {
 }
 
 // watchPods is the event loop for pod resources
-func (c *PodController) watchPods(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PodClientset.CoreV1().RESTClient(),
-		"pods",
-		c.Namespace,
-		fields.Everything())
+func (c *PodController) watchPods(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting pod controller on ns [%s]", c.Namespace[i])
+		source := cache.NewListWatchFromClient(
+			c.PodClientset.CoreV1().RESTClient(),
+			"pods",
+			c.Namespace[i],
+			fields.Everything())
 
-	_, controller := cache.NewInformer(
-		source,
+		_, controller := cache.NewInformer(
+			source,
 
-		// The object type.
-		&apiv1.Pod{},
+			// The object type.
+			&apiv1.Pod{},
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgcluster is added or
 // if a pgo-backrest-repo pod is added
 func (c *PodController) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
+
+	labels := newpod.GetObjectMeta().GetLabels()
+	if labels[config.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("PodController: onAdd skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[PodController] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//handle the case when a pg database pod is added
@@ -99,13 +109,20 @@ func (c *PodController) onAdd(obj interface{}) {
 func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	oldpod := oldObj.(*apiv1.Pod)
 	newpod := newObj.(*apiv1.Pod)
+
+	labels := newpod.GetObjectMeta().GetLabels()
+	if labels[config.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("PodController: onUpdate skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//handle the case when a pg database pod is updated
-	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 	if isPostgresPod(newpod) {
 		//only check the status of primary pods
-		if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 			c.checkReadyStatus(oldpod, newpod)
 		}
 		return
@@ -115,21 +132,28 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 // onDelete is called when a pgcluster is deleted
 func (c *PodController) onDelete(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
+
+	labels := pod.GetObjectMeta().GetLabels()
+	if labels[config.LABEL_VENDOR] != "crunchydata" {
+		log.Debugf("PodController: onDelete skipping pod that is not crunchydata %s", pod.ObjectMeta.SelfLink)
+		return
+	}
+
 	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
 func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 	//handle the case of a service-name re-label
-	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] !=
-		oldpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] {
+	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] !=
+		oldpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] {
 		log.Debug("the pod was updated and the service names were changed in this pod update, not going to check the ReadyStatus")
 		return
 	}
 	//handle the case of a database pod going to Ready that has
 	//autofail enabled
 	autofailEnabled := c.checkAutofailLabel(newpod, newpod.ObjectMeta.Namespace)
-	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
-	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName &&
+	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName &&
 		clusterName != "" && autofailEnabled {
 		log.Debugf("autofail pg-cluster %s updated!", clusterName)
 		var oldStatus = false
@@ -151,7 +175,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 
 	//handle applying policies, and updating workflow after a database  pod
 	//is made Ready, in the case of backrest, create the create stanza job
-	if newpod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 		var oldDatabaseStatus bool
 		for _, v := range oldpod.Status.ContainerStatuses {
 			if v.Name == "database" {
@@ -165,7 +189,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
-					if newpod.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
+					if newpod.ObjectMeta.Labels[config.LABEL_BACKREST] == "true" {
 						tmptask := crv1.Pgtask{}
 						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
 						if !found && err != nil {
@@ -185,33 +209,33 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 // to match the correct Service selector for the PG cluster
 func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 
-	var dep *v1beta1.Deployment
-	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[util.LABEL_DEPLOYMENT_NAME], ns)
+	var dep *v1.Deployment
+	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], ns)
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return
 	}
 
-	if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" || newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
+	if newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "true" || newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "false" {
 
 		serviceName := ""
 
-		if dep.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] != "" {
+		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != "" {
 			log.Debug("this means the deployment was already labeled")
 			log.Debug("which means its pod was restarted for some reason")
 			log.Debug("we will use the service name on the deployment")
-			serviceName = dep.ObjectMeta.Labels[util.LABEL_SERVICE_NAME]
-		} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "true" {
-			log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER])
+			serviceName = dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]
+		} else if newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "true" {
+			log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER])
 			//add label onto pod "service-name=clustername"
-			serviceName = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
-		} else if newpod.ObjectMeta.Labels[util.LABEL_PRIMARY] == "false" {
-			log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]+"-replica")
+			serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+		} else if newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "false" {
+			log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]+"-replica")
 			//add label onto pod "service-name=clustername-replica"
-			serviceName = newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] + "-replica"
+			serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
 		}
 
-		err = kubeapi.AddLabelToPod(c.PodClientset, newpod, util.LABEL_SERVICE_NAME, serviceName, ns)
+		err = kubeapi.AddLabelToPod(c.PodClientset, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
 		if err != nil {
 			log.Error(err)
 			log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
@@ -219,7 +243,7 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 		}
 
 		//add the service name label to the Deployment
-		err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, util.LABEL_SERVICE_NAME, serviceName, ns)
+		err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
 
 		if err != nil {
 			log.Error("could not add label to deployment on pod add")
@@ -232,7 +256,7 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 
 //check for the autofail flag on the pgcluster CRD
 func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
-	clusterName := newpod.ObjectMeta.Labels[util.LABEL_PG_CLUSTER]
+	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
 	pgcluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, ns)
@@ -243,7 +267,7 @@ func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
 		return false
 	}
 
-	if pgcluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] == "true" {
+	if pgcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] == "true" {
 		log.Debugf("autofail is on for this pod %s", newpod.Name)
 		return true
 	}
@@ -252,27 +276,27 @@ func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
 }
 
 func isPostgresPod(newpod *apiv1.Pod) bool {
-	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
+	if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
 		log.Debugf("pgo-backrest-repo found %s", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[util.LABEL_JOB_NAME] != "" {
+	if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
 		log.Debugf("job pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[util.LABEL_NAME] == "postgres-operator" {
+	if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
 		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] == "true" {
+	if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
 		log.Debugf("pgo-backrest-repo pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[util.LABEL_PGPOOL] == "true" {
+	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL] == "true" {
 		log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[util.LABEL_PGBOUNCER] == "true" {
+	if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
 		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
 		return false
 	}

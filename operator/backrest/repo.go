@@ -1,7 +1,7 @@
 package backrest
 
 /*
- Copyright 2018 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,12 +18,13 @@ package backrest
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,8 +33,8 @@ import (
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext       string
-	COImagePrefix         string
-	COImageTag            string
+	PGOImagePrefix        string
+	PGOImageTag           string
 	ContainerResources    string
 	BackrestRepoClaimName string
 	SshdSecretsName       string
@@ -88,8 +89,8 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	//create backrest repo deployment
 	log.Debug("hi from backup create repo deploy")
 	fields := RepoDeploymentTemplateFields{
-		COImagePrefix:         operator.Pgo.Pgo.COImagePrefix,
-		COImageTag:            operator.Pgo.Pgo.COImageTag,
+		PGOImagePrefix:        operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
 		ContainerResources:    "",
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",
@@ -105,14 +106,14 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	}
 	log.Debugf(fields.Name)
 
-	err = operator.PgoBackrestRepoTemplate.Execute(&b, fields)
+	err = config.PgoBackrestRepoTemplate.Execute(&b, fields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.PgoBackrestRepoTemplate.Execute(os.Stdout, fields)
+		config.PgoBackrestRepoTemplate.Execute(os.Stdout, fields)
 	}
 
 	deployment := v1.Deployment{}
@@ -136,14 +137,14 @@ func createService(clientset *kubernetes.Clientset, fields *RepoServiceTemplateF
 	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
 	if !found || err != nil {
 
-		err = operator.PgoBackrestRepoServiceTemplate.Execute(&b, fields)
+		err = config.PgoBackrestRepoServiceTemplate.Execute(&b, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return err
 		}
 
 		if operator.CRUNCHY_DEBUG {
-			operator.PgoBackrestRepoServiceTemplate.Execute(os.Stdout, fields)
+			config.PgoBackrestRepoServiceTemplate.Execute(os.Stdout, fields)
 		}
 
 		s := corev1.Service{}

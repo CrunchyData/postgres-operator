@@ -17,10 +17,10 @@ package kubeapi
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/apps/v1"
-	"k8s.io/api/extensions/v1beta1"
+	//	"k8s.io/api/extensions/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,7 +34,7 @@ func DeleteDeployment(clientset *kubernetes.Clientset, name, namespace string) e
 	delProp = meta_v1.DeletePropagationForeground
 	delOptions.PropagationPolicy = &delProp
 
-	err := clientset.ExtensionsV1beta1().Deployments(namespace).Delete(name, &delOptions)
+	err := clientset.AppsV1().Deployments(namespace).Delete(name, &delOptions)
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting Deployment " + name)
@@ -44,8 +44,8 @@ func DeleteDeployment(clientset *kubernetes.Clientset, name, namespace string) e
 }
 
 // CreateDeployment creates a deployment
-func CreateDeployment(clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, namespace string) error {
-	deploymentResult, err := clientset.ExtensionsV1beta1().Deployments(namespace).Create(deployment)
+func CreateDeployment(clientset *kubernetes.Clientset, deployment *v1.Deployment, namespace string) error {
+	deploymentResult, err := clientset.AppsV1().Deployments(namespace).Create(deployment)
 	if err != nil {
 		log.Error("error creating Deployment " + err.Error())
 		return err
@@ -70,8 +70,8 @@ func CreateDeploymentV1(clientset *kubernetes.Clientset, deployment *v1.Deployme
 }
 
 // GetDeployment gets a deployment by name
-func GetDeployment(clientset *kubernetes.Clientset, name, namespace string) (*v1beta1.Deployment, bool, error) {
-	deploymentResult, err := clientset.ExtensionsV1beta1().Deployments(namespace).Get(name, meta_v1.GetOptions{})
+func GetDeployment(clientset *kubernetes.Clientset, name, namespace string) (*v1.Deployment, bool, error) {
+	deploymentResult, err := clientset.AppsV1().Deployments(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		log.Debugf("deployment %s not found", name)
 		return deploymentResult, false, err
@@ -87,10 +87,10 @@ func GetDeployment(clientset *kubernetes.Clientset, name, namespace string) (*v1
 }
 
 // GetDeployments gets a list of deployments using a label selector
-func GetDeployments(clientset *kubernetes.Clientset, selector, namespace string) (*v1beta1.DeploymentList, error) {
+func GetDeployments(clientset *kubernetes.Clientset, selector, namespace string) (*v1.DeploymentList, error) {
 	lo := meta_v1.ListOptions{LabelSelector: selector}
 
-	deployments, err := clientset.ExtensionsV1beta1().Deployments(namespace).List(lo)
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(lo)
 	if err != nil {
 		log.Error(err)
 		log.Error("error getting Deployment list selector[" + selector + "]")
@@ -121,7 +121,7 @@ func PatchDeployment(clientset *kubernetes.Clientset, name, namespace, jsonpath,
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Error("error patching Deployment " + name)
@@ -152,7 +152,7 @@ func PatchReplicas(clientset *kubernetes.Clientset, name, namespace, jsonpath st
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Error("error patching Deployment " + name)
@@ -162,7 +162,7 @@ func PatchReplicas(clientset *kubernetes.Clientset, name, namespace, jsonpath st
 }
 
 // MergePatchDeployment patches a deployment for failover only at this point
-func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1beta1.Deployment, newname, namespace string) error {
+func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1.Deployment, newname, namespace string) error {
 	var newData, patchBytes []byte
 	var err error
 
@@ -191,7 +191,7 @@ func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Error("error merge patching Deployment " + newname)
@@ -200,7 +200,7 @@ func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 	return err
 }
 
-func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1beta1.Deployment, key, value, namespace string) error {
+func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1.Deployment, key, value, namespace string) error {
 	var newData, patchBytes []byte
 	var err error
 
@@ -222,7 +222,7 @@ func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Errorf("error add label to Deployment %s=%s", key, value)
@@ -231,10 +231,10 @@ func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1bet
 	return err
 }
 
-func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, namespace string) error {
+func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1.Deployment, namespace string) error {
 	var err error
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Update(deployment)
+	_, err = clientset.AppsV1().Deployments(namespace).Update(deployment)
 	if err != nil {
 		log.Error(err)
 		log.Errorf("error updating deployment %s", deployment.Name)

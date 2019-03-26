@@ -1,7 +1,7 @@
 package upgradeservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -27,11 +27,6 @@ import (
 // UpgradeDetail ...
 type UpgradeDetail struct {
 	Name string
-	//deployments
-	//replicasets
-	//pods
-	//services
-	//secrets
 }
 
 // ShowUpgradeResponse ...
@@ -68,7 +63,7 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -116,7 +111,7 @@ func ShowUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp = msgs.ShowUpgradeResponse{}
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
@@ -161,7 +156,7 @@ func DeleteUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		json.NewEncoder(w).Encode(resp)

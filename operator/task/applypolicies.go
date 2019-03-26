@@ -1,7 +1,7 @@
 package task
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -17,12 +17,12 @@ package task
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -68,17 +68,7 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, p
 
 	}
 
-	var strategyMap map[string]cluster.Strategy
-	strategyMap = make(map[string]cluster.Strategy)
-	strategyMap["1"] = cluster.Strategy1{}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if !ok {
-		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-		return
-	}
-
-	err = strategy.UpdatePolicyLabels(clientset, clusterName, ns, labels)
+	err = cluster.UpdatePolicyLabels(clientset, clusterName, ns, labels)
 	if err != nil {
 		log.Error(err)
 	}

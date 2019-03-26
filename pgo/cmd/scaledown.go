@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -17,10 +17,10 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -36,6 +36,9 @@ var scaledownCmd = &cobra.Command{
 	To scale down a specific replica:
 	pgo scaledown mycluster --target=mycluster-replica-xxxx`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("scaledown called")
 
 		if len(args) == 0 {
@@ -65,7 +68,7 @@ func init() {
 	scaledownCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of targetable replica candidates.")
 	scaledownCmd.Flags().StringVarP(&Target, "target", "", "", "The replica to target for scaling down")
 	scaledownCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for the scaled down replica to be removed permanently.")
-	scaledownCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	scaledownCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 
 }
 

@@ -1,5 +1,5 @@
 #!/bin/bash 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,24 +14,65 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-
-if [ "$CO_CMD" = "kubectl" ]; then
-	NS="--namespace=$CO_NAMESPACE"
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount postgres-operator 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete serviceaccount postgres-operator
 fi
 
-$CO_CMD $NS delete serviceaccount postgres-operator
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount pgo-backrest 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete serviceaccount pgo-backrest
+fi
 
-$CO_CMD $NS delete clusterrole pgopclusterrole pgopclusterrolecrd
-$CO_CMD $NS delete clusterrolebinding pgopclusterbinding pgopclusterbindingcrd
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrole  
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrole 
+fi
 
-$CO_CMD $NS delete role pgo-role
-$CO_CMD $NS delete rolebinding pgo-role-binding
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrolecrd 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrolecrd
+fi
 
-$CO_CMD $NS delete serviceaccount pgo-backrest
-$CO_CMD $NS delete role pgo-backrest-role
-$CO_CMD $NS delete rolebinding pgo-backrest-role-binding
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrolebinding pgopclusterbinding-$PGO_OPERATOR_NAMESPACE  
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbinding-$PGO_OPERATOR_NAMESPACE 
+fi
 
-$CO_CMD $NS delete clusterrolebinding,clusterrole,sa,role,rolebinding scheduler-sa scheduler-sa
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrolebinding pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbindingcr-$PGO_OPERATOR_NAMESPACE
+fi
+
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get role pgo-role 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete role pgo-role
+fi
+
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get rolebinding pgo-role-binding 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete rolebinding pgo-role-binding
+fi
+
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get role pgo-backrest-role 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete role pgo-backrest-role
+fi
+
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get rolebinding pgo-backrest-role-binding 
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete rolebinding pgo-backrest-role-binding
+fi
 
 sleep 5
 

@@ -1,7 +1,7 @@
 package userservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	//libpq uses this blank import
 	"database/sql"
 	"errors"
 	"fmt"
@@ -25,13 +24,14 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -71,11 +71,20 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 
 	getDefaults()
 
+	log.Debugf("in User with password [%]", request.Password)
+	if request.Password != "" {
+		err = validPassword(request.Password)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "invalid password format"
+			return resp
+		}
+	}
+
 	//set up the selector
 	var sel string
 	if request.Selector != "" {
-		//sel = request.Selector + "," + util.LABEL_PG_CLUSTER + "," + util.LABEL_PRIMARY + "=true"
-		sel = request.Selector + "," + util.LABEL_PG_CLUSTER
+		sel = request.Selector + "," + config.LABEL_PG_CLUSTER
 	} else {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector is required"
@@ -108,8 +117,7 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 	}
 
 	for _, cluster := range clusterList.Items {
-		//selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
-		selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+		selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -118,7 +126,13 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 		}
 
 		for _, d := range deployments.Items {
-			info := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+			//info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+			info, err := getPostgresUserInfo(ns, cluster.Spec.Name)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
 
 			if request.ChangePasswordForUser != "" {
 				msg := "changing password of user " + request.ChangePasswordForUser + " on " + d.ObjectMeta.Name
@@ -135,8 +149,8 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 					newPassword = request.Password
 				}
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				pgbouncer := cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
-				pgpool := cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
+				pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
+				pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 
 				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
 				if err != nil {
@@ -157,11 +171,14 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 						if request.UpdatePasswords {
 							newPassword := util.GeneratePassword(request.PasswordLength)
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-							pgbouncer := cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
-							pgpool := cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
+							pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
+							pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
 							if err != nil {
 								log.Error("error in updating password")
+								resp.Status.Code = msgs.Error
+								resp.Status.Msg = err.Error()
+								return resp
 							}
 							//log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
 						}
@@ -229,13 +246,23 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	var err error
 	var conn *sql.DB
 
+	log.Debugf("username [%s] password=[%s] database=[%] hostip=[%s] port=[%s]", p.Username,
+		p.Password,
+		p.Database,
+		p.Hostip,
+		p.Port)
+
+	err = validPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
 	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
 	}
 
-	//var ts string
 	var rows *sql.Rows
 	querystr := "ALTER user " + username + " PASSWORD '" + newPassword + "'"
 	//log.Debug(querystr)
@@ -326,27 +353,30 @@ func getDefaults() {
 }
 
 // getPostgresUserInfo...
-func getPostgresUserInfo(namespace, clusterName string) connInfo {
+func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
+	var err error
 	info := connInfo{}
 
-	//get the service for the cluster
 	service, found, err := kubeapi.GetService(apiserver.Clientset, clusterName, namespace)
-	if !found || err != nil {
-		return info
+	if err != nil {
+		return info, err
+	}
+	if !found {
+		return info, errors.New("primary service not found for " + clusterName)
 	}
 
 	//get the secrets for this cluster
-	selector := util.LABEL_PG_DATABASE + "=" + clusterName
+	selector := config.LABEL_PG_DATABASE + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
-		return info
+		return info, err
 	}
 
 	//get the postgres user secret info
 	var username, password, database, hostip string
 	for _, s := range secrets.Items {
-		username = string(s.Data[util.LABEL_USERNAME][:])
-		password = string(s.Data[util.LABEL_PASSWORD][:])
+		username = string(s.Data[config.LABEL_USERNAME][:])
+		password = string(s.Data[config.LABEL_PASSWORD][:])
 		database = "postgres"
 		hostip = service.Spec.ClusterIP
 		if username == "postgres" {
@@ -363,7 +393,7 @@ func getPostgresUserInfo(namespace, clusterName string) connInfo {
 	info.Hostip = hostip
 	info.Port = strPort
 
-	return info
+	return info, err
 }
 
 // addUser ...
@@ -553,7 +583,12 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 	}
 
 	for _, c := range clusterList.Items {
-		info := getPostgresUserInfo(ns, c.Name)
+		info, err := getPostgresUserInfo(ns, c.Name)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 
 		err = addUser(request, ns, c.Name, info)
 		if err != nil {
@@ -576,8 +611,8 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 		}
 		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 
-		pgbouncer := c.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true"
-		pgpool := c.Spec.UserLabels[util.LABEL_PGPOOL] == "true"
+		pgbouncer := c.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
+		pgpool := c.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
 		if err != nil {
 			log.Error(err.Error())
@@ -623,7 +658,12 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 
 	for _, cluster := range clusterList.Items {
 		clusterName = cluster.Spec.Name
-		info := getPostgresUserInfo(ns, clusterName)
+		info, err := getPostgresUserInfo(ns, clusterName)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 
 		secretName := clusterName + "-" + name + "-secret"
 
@@ -650,7 +690,7 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 
 		//see if any pooler needs to be reconfigured
 		if managed {
-			if cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+			if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
 				err := reconfigurePgbouncer(clusterName, ns)
 				if err != nil {
 					log.Error(err)
@@ -659,7 +699,7 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 					return response
 				}
 			}
-			if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+			if cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
 				err := reconfigurePgpool(clusterName, ns)
 				if err != nil {
 					log.Error(err)
@@ -741,8 +781,7 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 		detail.ExpiredMsgs = make([]string, 0)
 
 		if expired != "" {
-			//selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + util.LABEL_PRIMARY + "=true"
-			selector := util.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + c.Spec.Name
+			selector := config.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 			if err != nil {
 				response.Status.Code = msgs.Error
@@ -751,7 +790,13 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 			}
 
 			for _, d := range deployments.Items {
-				info := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+				info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+				if err != nil {
+					response.Status.Code = msgs.Error
+					response.Status.Msg = err.Error()
+					return response
+				}
+
 				if expired != "" {
 					results := callDB(info, d.ObjectMeta.Name, expired)
 					if len(results) > 0 {
@@ -767,7 +812,7 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 			}
 		}
 
-		detail.Secrets, err = apiserver.GetSecrets(&c)
+		detail.Secrets, err = apiserver.GetSecrets(&c, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -792,11 +837,11 @@ func reconfigurePgbouncer(clusterName, ns string) error {
 	var err error
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
-	spec.Name = util.LABEL_PGBOUNCER_TASK_RECONFIGURE + "-" + clusterName
+	spec.Name = config.LABEL_PGBOUNCER_TASK_RECONFIGURE + "-" + clusterName
 	spec.TaskType = crv1.PgtaskReconfigurePgbouncer
 	spec.StorageSpec = crv1.PgStorageSpec{}
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = clusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -806,8 +851,8 @@ func reconfigurePgbouncer(clusterName, ns string) error {
 	}
 
 	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
-	newInstance.ObjectMeta.Labels[util.LABEL_PGBOUNCER_TASK_RECONFIGURE] = "true"
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_RECONFIGURE] = "true"
 
 	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
 	if err != nil {
@@ -821,11 +866,11 @@ func reconfigurePgpool(clusterName, ns string) error {
 	var err error
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
-	spec.Name = util.LABEL_PGPOOL_TASK_RECONFIGURE + "-" + clusterName
+	spec.Name = config.LABEL_PGPOOL_TASK_RECONFIGURE + "-" + clusterName
 	spec.TaskType = crv1.PgtaskReconfigurePgpool
 	spec.StorageSpec = crv1.PgStorageSpec{}
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_PGPOOL_TASK_CLUSTER] = clusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -835,8 +880,8 @@ func reconfigurePgpool(clusterName, ns string) error {
 	}
 
 	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
-	newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_RECONFIGURE] = "true"
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PGPOOL_TASK_RECONFIGURE] = "true"
 
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
 		newInstance, ns)
@@ -845,4 +890,18 @@ func reconfigurePgpool(clusterName, ns string) error {
 		return err
 	}
 	return err
+}
+
+func validPassword(instr string) error {
+	if len(instr) > 16 {
+		return errors.New("valid passwords are less than 16 chars")
+	}
+
+	matched, err := regexp.MatchString(`^[A-Za-z_][A-Za-z\d_]*$`, instr)
+	log.Debugf("password valid %t", matched)
+	if !matched {
+		return errors.New("the password format was invalid")
+	}
+	return err
+
 }

@@ -1,17 +1,9 @@
 
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: postgres-operator
-  namespace: $CO_NAMESPACE
-
----
-
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-role
-  namespace: $CO_NAMESPACE
+  namespace: $TARGET_NAMESPACE
 rules:
 - apiGroups:
   - ""
@@ -30,9 +22,7 @@ rules:
   - apps
   resources:
   - deployments
-  - daemonsets
   - replicasets
-  - statefulsets
   verbs:
   - "*"
 - apiGroups:
@@ -47,31 +37,22 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-role-binding
-  namespace: $CO_NAMESPACE
+  namespace: $TARGET_NAMESPACE
 subjects:
 - kind: ServiceAccount
   name: postgres-operator
-  namespace: $CO_NAMESPACE
+  namespace: $OPERATOR_NAMESPACE
 roleRef:
   kind: Role
   name: pgo-role
   apiGroup: rbac.authorization.k8s.io
 
 ---
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: pgo-backrest
-  namespace: $CO_NAMESPACE
-
----
-
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-backrest-role
-  namespace: $CO_NAMESPACE
+  namespace: $TARGET_NAMESPACE
 rules:
 - apiGroups: [""]
   resources: ["pods"]
@@ -81,16 +62,23 @@ rules:
   verbs: ["create"]
 
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pgo-backrest
+  namespace: $TARGET_NAMESPACE
+
+---
 
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-backrest-role-binding
-  namespace: $CO_NAMESPACE
+  namespace: $TARGET_NAMESPACE
 subjects:
 - kind: ServiceAccount
   name: pgo-backrest
-  namespace: $CO_NAMESPACE
+  namespace: $TARGET_NAMESPACE
 roleRef:
   kind: Role
   name: pgo-backrest-role
