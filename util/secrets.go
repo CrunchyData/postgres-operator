@@ -42,7 +42,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels["pg-database"] = db
+	secret.ObjectMeta.Labels["pg-cluster"] = db
 	secret.Data = make(map[string][]byte)
 	secret.Data["username"] = []byte(enUsername)
 	secret.Data["password"] = []byte(password)
@@ -94,7 +94,7 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
 
 	log.Debugf("CopySecrets %s to %s", fromCluster, toCluster)
-	selector := "pg-database=" + fromCluster
+	selector := "pg-cluster=" + fromCluster
 
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
@@ -106,7 +106,7 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 		secret := v1.Secret{}
 		secret.Name = strings.Replace(s.ObjectMeta.Name, fromCluster, toCluster, 1)
 		secret.ObjectMeta.Labels = make(map[string]string)
-		secret.ObjectMeta.Labels["pg-database"] = toCluster
+		secret.ObjectMeta.Labels["pg-cluster"] = toCluster
 		secret.Data = make(map[string][]byte)
 		secret.Data["username"] = s.Data["username"][:]
 		secret.Data["password"] = s.Data["password"][:]

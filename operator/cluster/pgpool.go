@@ -344,7 +344,7 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels[config.LABEL_PG_DATABASE] = db
+	secret.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = db
 	secret.ObjectMeta.Labels[config.LABEL_PGPOOL] = "true"
 	secret.Data = make(map[string][]byte)
 	secret.Data["pgpool.conf"] = pgpoolConfBytes
@@ -398,7 +398,7 @@ func getPgpoolPasswd(clientset *kubernetes.Clientset, namespace, clusterName str
 	var pgpoolUsername, pgpoolPassword string
 
 	//go get all non-pgpool secrets
-	selector := config.LABEL_PG_DATABASE + "=" + clusterName + "," + config.LABEL_PGPOOL + "!=true"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGPOOL + "!=true"
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err)

@@ -277,7 +277,7 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := "pgpool!=true," + config.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := "pgpool!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {

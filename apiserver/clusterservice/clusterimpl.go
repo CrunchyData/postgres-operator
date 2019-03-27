@@ -919,7 +919,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 func validateSecretFrom(secretname, ns string) error {
 	var err error
-	selector := config.LABEL_PG_DATABASE + "=" + secretname
+	selector := config.LABEL_PG_CLUSTER + "=" + secretname
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return err
@@ -1153,11 +1153,11 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 	return output, err
 }
 
-// deleteDatabaseSecrets delete secrets that match pg-database=somecluster
+// deleteDatabaseSecrets delete secrets that match pg-cluster=somecluster
 func deleteDatabaseSecrets(db, ns string) error {
 	var err error
-	//get all that match pg-database=db
-	selector := config.LABEL_PG_DATABASE + "=" + db
+	//get all that match pg-cluster=db
+	selector := config.LABEL_PG_CLUSTER + "=" + db
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {
 		log.Error(err)

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 $PGO_CMD delete svc --selector=pg-cluster
-$PGO_CMD delete secret --selector=pg-database
+$PGO_CMD delete secret --selector=pg-cluster
 $PGO_CMD delete pvc --selector=pgremove
 $PGO_CMD delete pgbackups   --all
 $PGO_CMD delete pgclusters --all  

@@ -12,7 +12,7 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgo-load": "true",
-                    "pg-database": "{{.DbHost}}"
+                    "pg-cluster": "{{.DbHost}}"
                 }
             },
             "spec": {

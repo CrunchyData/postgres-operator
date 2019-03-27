@@ -128,7 +128,7 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 // getPrimarySecret get only the primary postgres secret
 func getPrimarySecret(clusterName, ns string) (string, string, error) {
 
-	selector := "pgpool!=true,pg-database=" + clusterName
+	selector := "pgpool!=true,pg-cluster=" + clusterName
 
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {

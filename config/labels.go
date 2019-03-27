@@ -20,7 +20,7 @@ const LABEL_NAME = "name"
 const LABEL_SELECTOR = "selector"
 const LABEL_OPERATOR = "postgres-operator"
 const LABEL_PG_CLUSTER = "pg-cluster"
-const LABEL_PG_DATABASE = "pg-database"
+
 const LABEL_PGBACKUP = "pgbackup"
 const LABEL_PGTASK = "pg-task"
 
