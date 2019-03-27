@@ -181,7 +181,7 @@ func GetCredentials() {
 	}
 	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
-		fmt.Println("Error: could not load example.com.crt and example.com.key")
+		fmt.Printf("Error loading client certificate/key: %s\n", err)
 		os.Exit(2)
 	}
 
