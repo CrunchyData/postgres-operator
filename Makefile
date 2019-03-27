@@ -76,7 +76,7 @@ pgo-backrest-repo-image:	check-go-vars
 	docker build -t pgo-backrest-repo -f $(PGO_BASEOS)/Dockerfile.pgo-backrest-repo.$(PGO_BASEOS) .
 	docker tag pgo-backrest-repo $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG)
 cli-docs:	check-go-vars
-	cd $(PGOROOT)/hugo/content/cli && go run $(PGOROOT)/pgo/generatedocs.go
+	cd $(PGOROOT)/hugo/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
 pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars
