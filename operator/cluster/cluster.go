@@ -27,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -51,7 +50,7 @@ const ReplicaSuffix = "-replica"
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
-	if cl.Spec.Status == crv1.UpgradeCompletedStatus {
+	if cl.Spec.Status == crv1.CompletedStatus {
 		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
 		return
 	}
@@ -101,7 +100,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	AddCluster(clientset, client, cl, namespace, pvcName)
 
-	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
@@ -211,47 +210,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 	}
 
-	//delete any existing pgupgrades
-	upgrade := crv1.Pgupgrade{}
-	found, _ = kubeapi.Getpgupgrade(restclient, &upgrade, cl.Spec.Name, namespace)
-	if found {
-		err := kubeapi.Deletepgupgrade(restclient, cl.Spec.Name, namespace)
-		if err == nil {
-			log.Debug("deleted pgupgrade " + cl.Spec.Name)
-		} else if kerrors.IsNotFound(err) {
-			log.Debug("will not delete pgupgrade, not found for " + cl.Spec.Name)
-		} else {
-			log.Error("error deleting pgupgrade " + cl.Spec.Name + err.Error())
-		}
-	}
-
-}
-
-// AddUpgradeBase ...
-func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string, cl *crv1.Pgcluster) error {
-	var err error
-
-	if upgrade.Spec.UpgradeType == "minor" {
-		err = MinorUpgrade(clientset, client, cl, upgrade, namespace)
-		if err == nil {
-		} else {
-			log.Error(err)
-			log.Error("error in doing minor upgrade")
-		}
-	} else {
-		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UpgradeType)
-		return err
-	}
-	if err == nil {
-		log.Info("updating the pg version after cluster upgrade")
-		fullVersion := upgrade.Spec.CCPImageTag
-		err = util.Patch(client, "/spec/ccpimagetag", fullVersion, crv1.PgclusterResourcePlural, upgrade.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err.Error())
-		}
-	}
-
-	return err
+	//delete any existing pgtasks ???
 
 }
 
@@ -259,7 +218,7 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
 	var err error
 
-	if replica.Spec.Status == crv1.UpgradeCompletedStatus {
+	if replica.Spec.Status == crv1.CompletedStatus {
 		log.Warn("crv1 pgreplica " + replica.Spec.Name + " is already marked complete, will not recreate")
 		return
 	}
@@ -334,7 +293,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	Scale(clientset, client, replica, namespace, pvcName, &cluster)
 
 	//update the replica CRD status
-	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}

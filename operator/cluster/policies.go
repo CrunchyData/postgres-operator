@@ -100,7 +100,7 @@ func applyPolicies(namespace string, clientset *kubernetes.Clientset, restclient
 
 	}
 
-	err = UpdatePolicyLabels(clientset, clusterName, namespace, labels)
+	err = util.UpdatePolicyLabels(clientset, clusterName, namespace, labels)
 	if err != nil {
 		log.Error(err)
 	}

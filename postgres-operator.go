@@ -112,12 +112,6 @@ func main() {
 		PgreplicaClientset: Clientset,
 		Namespace:          namespaceList,
 	}
-	pgUpgradecontroller := controller.PgupgradeController{
-		PgupgradeClientset: Clientset,
-		PgupgradeClient:    crdClient,
-		PgupgradeScheme:    crdScheme,
-		Namespace:          namespaceList,
-	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
@@ -147,7 +141,6 @@ func main() {
 	go pgClustercontroller.Run(ctx)
 	go pgReplicacontroller.Run(ctx)
 	go pgBackupcontroller.Run(ctx)
-	go pgUpgradecontroller.Run(ctx)
 	go pgPolicycontroller.Run(ctx)
 	go podcontroller.Run(ctx)
 	go jobcontroller.Run(ctx)

@@ -63,56 +63,6 @@ func (in *PgbackupList) DeepCopyObject() runtime.Object {
 
 // DeepCopyInto copies all properties of this object into another object of the
 // same type that is provided as a pointer.
-func (in *Pgupgrade) DeepCopyInto(out *Pgupgrade) {
-	out.TypeMeta = in.TypeMeta
-	out.ObjectMeta = in.ObjectMeta
-	out.Status = in.Status
-
-	out.Spec = PgupgradeSpec{
-		Namespace:       in.Spec.Namespace,
-		Name:            in.Spec.Name,
-		ResourceType:    in.Spec.ResourceType,
-		UpgradeType:     in.Spec.UpgradeType,
-		UpgradeStatus:   in.Spec.UpgradeStatus,
-		StorageSpec:     in.Spec.StorageSpec,
-		CCPImage:        in.Spec.CCPImage,
-		CCPImageTag:     in.Spec.CCPImageTag,
-		OldDatabaseName: in.Spec.OldDatabaseName,
-		NewDatabaseName: in.Spec.NewDatabaseName,
-		OldVersion:      in.Spec.OldVersion,
-		NewVersion:      in.Spec.NewVersion,
-		OldPVCName:      in.Spec.OldPVCName,
-		NewPVCName:      in.Spec.NewPVCName,
-		BackupPVCName:   in.Spec.BackupPVCName,
-	}
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *Pgupgrade) DeepCopyObject() runtime.Object {
-	out := Pgupgrade{}
-	in.DeepCopyInto(&out)
-
-	return &out
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *PgupgradeList) DeepCopyObject() runtime.Object {
-	out := PgupgradeList{}
-	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
-
-	if in.Items != nil {
-		out.Items = make([]Pgupgrade, len(in.Items))
-		for i := range in.Items {
-			in.Items[i].DeepCopyInto(&out.Items[i])
-		}
-	}
-
-	return &out
-}
-
-// DeepCopyInto copies all properties of this object into another object of the
-// same type that is provided as a pointer.
 func (in *Pgreplica) DeepCopyInto(out *Pgreplica) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta

@@ -33,6 +33,7 @@ const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"
 const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
+const PgtaskMinorUpgrade = "minorupgradecluster"
 
 const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"

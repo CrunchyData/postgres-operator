@@ -27,11 +27,11 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
-	jsonpatch "github.com/evanphx/json-patch"
+	//jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/types"
+	//"k8s.io/apimachinery/pkg/api/meta"
+	//"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
@@ -241,60 +241,6 @@ func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName st
 
 	_, found, _ := kubeapi.GetDeployment(clientset, clusterName, namespace)
 	return found
-}
-
-// UpdatePolicyLabels ...
-func UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
-
-	deployment, found, err := kubeapi.GetDeployment(clientset, clusterName, namespace)
-	if !found {
-		return err
-	}
-
-	var patchBytes, newData, origData []byte
-	origData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	accessor, err2 := meta.Accessor(deployment)
-	if err2 != nil {
-		return err2
-	}
-
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-
-	//update the deployment labels
-	for key, value := range newLabels {
-		objLabels[key] = value
-	}
-	log.Debugf("updated labels are %v\n", objLabels)
-
-	accessor.SetLabels(objLabels)
-
-	newData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
-	createdPatch := err == nil
-	if err != nil {
-		return err
-	}
-	if createdPatch {
-		log.Debug("created merge patch")
-	}
-
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
-	if err != nil {
-		log.Debug("error patching deployment " + err.Error())
-	}
-	return err
-
 }
 
 // Scale ...

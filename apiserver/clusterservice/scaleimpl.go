@@ -25,7 +25,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	//clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/apps/v1"
@@ -317,6 +317,8 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		}
 	}
 
+	//delete the pgreplica CRD which will case the replica to be
+	//deleted
 	err = kubeapi.Deletepgreplica(apiserver.RESTClient, replicaName, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
@@ -325,7 +327,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	}
 
 	//delete the replica deployment
-	clusteroperator.ScaleDownBase(apiserver.Clientset, apiserver.RESTClient, &replica, ns)
+	//clusteroperator.ScaleDownBase(apiserver.Clientset, apiserver.RESTClient, &replica, ns)
 
 	if deleteData {
 		log.Debug("delete-data is true on replica scale down, createing rmdata task")

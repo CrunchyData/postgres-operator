@@ -25,8 +25,8 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, upgrade, or user",
-	Long: `The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
+	Short: "Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, or user",
+	Long: `The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, or user. For example:
 
 	pgo delete backup mycluster
 	pgo delete benchmark mycluster
@@ -40,7 +40,6 @@ var deleteCmd = &cobra.Command{
 	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 	pgo delete schedule --selector=name=mycluster
 	pgo delete schedule mycluster
-	pgo delete upgrade mycluster
 	pgo delete user testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -53,7 +52,6 @@ var deleteCmd = &cobra.Command{
 	* pgbouncer
 	* pgpool
 	* policy
-	* upgrade
 	* user`)
 		} else {
 			switch args[0] {
@@ -65,7 +63,6 @@ var deleteCmd = &cobra.Command{
 			case "pgpool":
 			case "policy":
 			case "schedule":
-			case "upgrade":
 			case "user":
 				break
 			default:
@@ -77,7 +74,6 @@ var deleteCmd = &cobra.Command{
 	* pgbouncer
 	* pgpool
 	* policy
-	* upgrade
 	* user`)
 			}
 		}
@@ -98,7 +94,6 @@ func init() {
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteLabelCmd)
 	deleteCmd.AddCommand(deleteScheduleCmd)
-	deleteCmd.AddCommand(deleteUpgradeCmd)
 	deleteCmd.AddCommand(deleteUserCmd)
 
 	deleteClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -116,28 +111,6 @@ func init() {
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
-}
-
-var deleteUpgradeCmd = &cobra.Command{
-	Use:   "upgrade",
-	Short: "Delete an upgrade",
-	Long: `Delete an upgrade. For example:
-
-    pgo delete upgrade mydatabase`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		if len(args) == 0 {
-			fmt.Println("Error: A database or cluster name is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUpgrade(args, Namespace)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-	},
 }
 
 var deleteBackupCmd = &cobra.Command{

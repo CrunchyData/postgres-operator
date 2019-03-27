@@ -22,7 +22,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	cluster "github.com/crunchydata/postgres-operator/operator/cluster"
+	//cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -216,7 +216,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 		}
 
-		err = cluster.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
+		err = util.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
 		if err != nil {
 			log.Error(err)
 		}
