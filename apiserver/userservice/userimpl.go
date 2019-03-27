@@ -246,6 +246,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	var err error
 	var conn *sql.DB
 
+
 	err = validPassword(newPassword)
 	if err != nil {
 		return err
