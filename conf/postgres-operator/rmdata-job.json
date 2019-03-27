@@ -7,7 +7,6 @@
         	"vendor": "crunchydata",
                	"pgrmdata": "true",
 		"pg-cluster": "{{.ClusterName}}",
-                "pg-database": "{{.ClusterName}}",
                 "claimName": "{{.PvcName}}"
 	}
     },
@@ -20,7 +19,6 @@
                     "vendor": "crunchydata",
                     "pgrmdata": "true",
                     "pg-cluster": "{{.ClusterName}}",
-                    "pg-database": "{{.ClusterName}}",
                     "claimName": "{{.PvcName}}"
                 }
             },

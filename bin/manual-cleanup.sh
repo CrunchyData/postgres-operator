@@ -14,7 +14,7 @@
 # limitations under the License.
 
 $PGO_CMD delete pvc $1-pvc
-$PGO_CMD delete secret --selector=pg-database=$1
+$PGO_CMD delete secret --selector=pg-cluster=$1
 $PGO_CMD delete deployment $1
 $PGO_CMD delete service --selector=pg-cluster=$1
 $PGO_CMD delete pgcluster $1

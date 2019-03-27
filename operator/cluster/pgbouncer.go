@@ -488,7 +488,7 @@ func getDBUserInfo(namespace, clusterName string, targetDB string, clientset *ku
 	}
 
 	//get the pgbouncer secret for this cluster
-	selector := config.LABEL_PG_DATABASE + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
 		return info
@@ -611,7 +611,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, 
 
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels[config.LABEL_PG_DATABASE] = db
+	secret.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = db
 	secret.ObjectMeta.Labels[config.LABEL_PGBOUNCER] = "true"
 	secret.Data = make(map[string][]byte)
 	secret.Data["pgbouncer.ini"] = pgbouncerConfBytes

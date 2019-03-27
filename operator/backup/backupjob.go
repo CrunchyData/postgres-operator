@@ -52,7 +52,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, n
 			gotjob := event.Object.(*v1batch.Job)
 			log.Infof("pgbackup job modified=%d\n", gotjob.Status.Succeeded)
 			if gotjob.Status.Succeeded == 1 {
-				dbname := gotjob.ObjectMeta.Labels["pg-database"]
+				dbname := gotjob.ObjectMeta.Labels["pg-cluster"]
 				log.Infoln("pgbackup job " + gotjob.Name + " succeeded" + " marking " + dbname + " completed")
 			}
 		default:

@@ -73,7 +73,7 @@ func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, time
 	var err error
 	var fw watch.Interface
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + podname}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + podname}
 	fw, err = clientset.CoreV1().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching pods 2 " + err.Error())

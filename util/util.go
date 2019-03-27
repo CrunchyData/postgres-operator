@@ -291,7 +291,7 @@ func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace st
 
 	var err error
 
-	selector := "pg-database=" + db
+	selector := "pg-cluster=" + db
 	secrets, err := kubeapi.GetSecrets(clientset, selector, Namespace)
 	if err != nil {
 		return "", err

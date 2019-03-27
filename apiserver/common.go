@@ -29,7 +29,7 @@ import (
 func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := config.LABEL_PGBOUNCER + "!=true," + config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := config.LABEL_PGBOUNCER + "!=true," + config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(Clientset, selector, ns)
 	if err != nil {

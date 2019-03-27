@@ -246,12 +246,6 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	var err error
 	var conn *sql.DB
 
-	log.Debugf("username [%s] password=[%s] database=[%] hostip=[%s] port=[%s]", p.Username,
-		p.Password,
-		p.Database,
-		p.Hostip,
-		p.Port)
-
 	err = validPassword(newPassword)
 	if err != nil {
 		return err
@@ -366,7 +360,7 @@ func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
 	}
 
 	//get the secrets for this cluster
-	selector := config.LABEL_PG_DATABASE + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
 		return info, err

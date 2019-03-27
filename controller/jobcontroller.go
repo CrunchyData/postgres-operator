@@ -140,7 +140,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if labels[config.LABEL_BACKREST] != "true" {
 			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, job.ObjectMeta.Namespace)
 			if err != nil {
-				log.Error("error in patching pgbackup " + labels["pg-database"] + err.Error())
+				log.Error("error in patching pgbackup " + labels["pg-cluster"] + err.Error())
 			}
 		}
 
@@ -172,7 +172,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	if labels[config.LABEL_BACKUP_TYPE_PGDUMP] == "true" {
 		log.Debugf("jobController onUpdate pgdump job case")
 		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
-		log.Debugf("update the status to completed here for pgdump %s", labels[config.LABEL_PG_DATABASE])
+		log.Debugf("update the status to completed here for pgdump %s", labels[config.LABEL_PG_CLUSTER])
 
 		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
 
@@ -199,7 +199,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	if labels[config.LABEL_RESTORE_TYPE_PGRESTORE] == "true" {
 		log.Debugf("jobController onUpdate pgrestore job case")
 		log.Debugf("pgdump job status=%d", job.Status.Succeeded)
-		log.Debugf("update the status to completed here for pgrestore %s", labels[config.LABEL_PG_DATABASE])
+		log.Debugf("update the status to completed here for pgrestore %s", labels[config.LABEL_PG_CLUSTER])
 
 		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
 
@@ -227,7 +227,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("jobController onUpdate backrest job case")
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
-			log.Debugf("update the status to completed here for backrest %s job %s", labels[config.LABEL_PG_DATABASE], job.Name)
+			log.Debugf("update the status to completed here for backrest %s job %s", labels[config.LABEL_PG_CLUSTER], job.Name)
 			err = util.Patch(c.JobClient, "/spec/backreststatus", crv1.JobCompletedStatus, "pgtasks", job.Name, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
