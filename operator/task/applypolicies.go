@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -68,7 +67,7 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, p
 
 	}
 
-	err = cluster.UpdatePolicyLabels(clientset, clusterName, ns, labels)
+	err = util.UpdatePolicyLabels(clientset, clusterName, ns, labels)
 	if err != nil {
 		log.Error(err)
 	}

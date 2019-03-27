@@ -55,7 +55,6 @@ Valid resource types include:
 	* pvc
 	* namespace
 	* workflow
-	* upgrade
 	* user
 	`)
 		} else {
@@ -69,7 +68,6 @@ Valid resource types include:
 			case "schedule":
 			case "namespace":
 			case "workflow":
-			case "upgrade":
 			case "user":
 				break
 			default:
@@ -83,7 +81,6 @@ Valid resource types include:
 	* pvc
 	* namespace
 	* workflow
-	* upgrade
 	* user`)
 			}
 		}
@@ -102,7 +99,6 @@ func init() {
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
 	ShowCmd.AddCommand(ShowScheduleCmd)
-	ShowCmd.AddCommand(ShowUpgradeCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
 	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type output to list. Valid choices are pgbasebackup (default) or pgbackrest.")
@@ -196,24 +192,6 @@ var ShowPVCCmd = &cobra.Command{
 				Namespace = PGONamespace
 			}
 			showPVC(args, Namespace)
-		}
-	},
-}
-
-var ShowUpgradeCmd = &cobra.Command{
-	Use:   "upgrade",
-	Short: "Show upgrade information",
-	Long: `Show upgrade information. For example:
-
-	pgo show upgrade mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: cluster name(s) required for this command.")
-		} else {
-			if Namespace == "" {
-				Namespace = PGONamespace
-			}
-			showUpgrade(args, Namespace)
 		}
 	},
 }

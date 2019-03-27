@@ -100,9 +100,6 @@ func main() {
 	//here
 	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
-	r.HandleFunc("/upgrades/{name}", upgradeservice.ShowUpgradeHandler).Methods("GET")
-	//here
-	r.HandleFunc("/upgradesdelete/{name}", upgradeservice.DeleteUpgradeHandler).Methods("GET")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
 	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET")
 	//here

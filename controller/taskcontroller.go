@@ -17,15 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	//	"time"
-
-	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
@@ -33,6 +24,12 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 )
 
 // PgtaskController holds connections for the controller
@@ -158,6 +155,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskMinorUpgrade:
+		log.Debug("delete minor upgrade task added")
+		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskDeletePgbouncer:
 		log.Debug("delete pgbouncer task added")
 		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)

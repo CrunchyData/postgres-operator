@@ -18,7 +18,6 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgreplicas --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgbackups --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgclusters --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgpolicies --all
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgupgrades --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgtasks --all
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete crd \
@@ -26,8 +25,7 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete crd \
 	pgreplicas.crunchydata.com \
 	pgclusters.crunchydata.com \
 	pgpolicies.crunchydata.com \
-	pgtasks.crunchydata.com \
-	pgupgrades.crunchydata.com
+	pgtasks.crunchydata.com 
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgrmdata=true
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgbackup=true

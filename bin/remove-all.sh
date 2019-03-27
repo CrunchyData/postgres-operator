@@ -21,4 +21,3 @@ $PGO_CMD delete pgclusters --all
 $PGO_CMD delete pgpolicies --all
 $PGO_CMD delete pgreplicas --all
 $PGO_CMD delete pgtasks  --all
-$PGO_CMD delete pgupgrades --all

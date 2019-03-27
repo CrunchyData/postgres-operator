@@ -50,7 +50,7 @@ type jobTemplateFields struct {
 func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var err error
 
-	if job.Spec.BackupStatus == crv1.UpgradeCompletedStatus {
+	if job.Spec.BackupStatus == crv1.CompletedStatus {
 		log.Warn("pgbackup " + job.Spec.Name + " already completed, not recreating it")
 		return
 	}
@@ -127,7 +127,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	}
 
 	//update the backup CRD status to submitted
-	err = util.Patch(client, "/spec/backupstatus", crv1.UpgradeSubmittedStatus, "pgbackups", job.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/backupstatus", crv1.SubmittedStatus, "pgbackups", job.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}

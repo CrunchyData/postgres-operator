@@ -48,8 +48,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PgclusterList{},
 		&Pgreplica{},
 		&PgreplicaList{},
-		&Pgupgrade{},
-		&PgupgradeList{},
 		&Pgbackup{},
 		&PgbackupList{},
 		&Pgpolicy{},

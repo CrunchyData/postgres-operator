@@ -27,7 +27,6 @@ rules:
     resources:
       - pgclusters
       - pgpolicies
-      - pgupgrades
       - pgtasks
       - pgbackups
       - pgreplicas

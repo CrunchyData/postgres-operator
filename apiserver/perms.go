@@ -64,7 +64,6 @@ const DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
 const DELETE_PGPOOL_PERM = "DeletePgpool"
 const DELETE_POLICY_PERM = "DeletePolicy"
 const DELETE_SCHEDULE_PERM = "DeleteSchedule"
-const DELETE_UPGRADE_PERM = "DeleteUpgrade"
 const DELETE_USER_PERM = "DeleteUser"
 
 // SHOW
@@ -79,7 +78,6 @@ const SHOW_PVC_PERM = "ShowPVC"
 const SHOW_WORKFLOW_PERM = "ShowWorkflow"
 const SHOW_SCHEDULE_PERM = "ShowSchedule"
 const SHOW_SECRETS_PERM = "ShowSecrets"
-const SHOW_UPGRADE_PERM = "ShowUpgrade"
 
 // UPDATE
 const UPDATE_CLUSTER_PERM = "UpdateCluster"
@@ -132,7 +130,6 @@ func InitializePerms() {
 	PermMap[DELETE_PGPOOL_PERM] = "yes"
 	PermMap[DELETE_POLICY_PERM] = "yes"
 	PermMap[DELETE_SCHEDULE_PERM] = "yes"
-	PermMap[DELETE_UPGRADE_PERM] = "yes"
 	PermMap[DELETE_USER_PERM] = "yes"
 	// Show
 	PermMap[SHOW_BACKUP_PERM] = "yes"
@@ -146,7 +143,6 @@ func InitializePerms() {
 	PermMap[SHOW_WORKFLOW_PERM] = "yes"
 	PermMap[SHOW_SCHEDULE_PERM] = "yes"
 	PermMap[SHOW_SECRETS_PERM] = "yes"
-	PermMap[SHOW_UPGRADE_PERM] = "yes"
 
 	// Scale
 	PermMap[SCALE_CLUSTER_PERM] = "yes"
