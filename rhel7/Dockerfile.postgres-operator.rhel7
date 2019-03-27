@@ -7,7 +7,7 @@ LABEL name="postgres-operator" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
-	Release="3.5.2" \
+	Release="4.0.0-rc3" \
 	run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="Crunchy Data PostgreSQL Operator" \
 	description="Crunchy Data PostgreSQL Operator"
@@ -27,8 +27,7 @@ RUN rpm --import RPM-GPG-KEY-crunchydata
 RUN yum -y update && yum -y install postgresql${PGVERSION} && yum -y clean all
 
 ADD bin/postgres-operator /usr/local/bin
-
-VOLUME ["/pgconf"]
+ADD conf/postgres-operator /default-pgo-config
 
 USER daemon
 

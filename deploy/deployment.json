@@ -17,7 +17,7 @@
                 "containers": [
                     {
                         "name": "apiserver",
-                        "image": "$CO_IMAGE_PREFIX/pgo-apiserver:$CO_IMAGE_TAG",
+                        "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
@@ -35,6 +35,10 @@
                             },
                             {
                                 "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
+                                "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -48,20 +52,15 @@
                         ],
                         "volumeMounts": [
                             {
-                                "mountPath": "/pgo-config",
-                                "name": "pgo-config",
-                                "readOnly": true
-                            },
-                            {
-                                "mountPath": "/pgo-auth-secret",
-                                "name": "pgo-auth-secret",
+                                "mountPath": "/apiserver.local.config/certificates",
+                                "name": "pgo-tls",
                                 "readOnly": true
                             }
                         ]
                     },
                     {
                         "name": "operator",
-                        "image": "$CO_IMAGE_PREFIX/postgres-operator:$CO_IMAGE_TAG",
+                        "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
                         "env": [
                             {
@@ -70,6 +69,10 @@
                             },
                             {
                                 "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
+                                "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -86,19 +89,14 @@
                             }
                         ],
                         "volumeMounts": [
-                            {
-                                "mountPath": "/pgo-config",
-                                "name": "pgo-config",
-                                "readOnly": true
-                            }
                         ]
                     },
                     {
                         "name": "scheduler",
-                        "image": "$CO_IMAGE_PREFIX/pgo-scheduler:$CO_IMAGE_TAG",
+                        "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
                         "env": [
                             {
-                                "name": "NAMESPACE",
+                                "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
                                         "fieldPath": "metadata.namespace"
@@ -106,16 +104,15 @@
                                 }
                             },
                             {
+                                "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
                                 "name": "TIMEOUT",
                                 "value": "3600"
                             }
                         ],
                         "volumeMounts": [
-                            {
-                                "mountPath": "/pgo-config",
-                                "name": "pgo-config",
-                                "readOnly": true
-                            }
                         ],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
@@ -123,15 +120,9 @@
                 ],
                 "volumes": [
                     {
-                        "name": "pgo-config",
-                        "configMap": {
-                            "name": "pgo-config"
-                        }
-                    },
-                    {
-                        "name": "pgo-auth-secret",
+                        "name": "pgo-tls",
                         "secret": {
-                            "secretName": "pgo-auth-secret",
+                            "secretName": "pgo.tls",
                             "defaultMode": 511
                         }
                     }

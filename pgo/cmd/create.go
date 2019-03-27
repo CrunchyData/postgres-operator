@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -82,7 +82,11 @@ var createClusterCmd = &cobra.Command{
 
     pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create cluster called")
+
 		if BackupPath != "" || BackupPVC != "" {
 			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
 				fmt.Println(`Error: The --secret-from, --backup-path, and --backup-pvc flags are all required to perform a restore.`)
@@ -112,9 +116,11 @@ var createPolicyCmd = &cobra.Command{
 
     pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create policy called ")
 		if PolicyFile == "" && PolicyURL == "" {
-			//log.Error("--in-file or --url is required to create a policy")
 			fmt.Println(`Error: The --in-file or --url flags are required to create a policy.`)
 			return
 		}
@@ -135,6 +141,10 @@ var createPgbouncerCmd = &cobra.Command{
 
 	pgo create pgbouncer mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create pgbouncer called ")
 
 		if len(args) == 0 && Selector == "" {
@@ -153,6 +163,10 @@ var createPgpoolCmd = &cobra.Command{
 
     pgo create pgpool mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create pgpool called ")
 
 		if len(args) == 0 && Selector == "" {
@@ -171,6 +185,10 @@ var createScheduleCmd = &cobra.Command{
 
     pgo create schedule --schedule="* * * * *" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create schedule called ")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
@@ -189,6 +207,10 @@ var createUserCmd = &cobra.Command{
     pgo create user manageduser --managed --selector=name=mycluster
     pgo create user user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create user called ")
 		if Selector == "" {
 			fmt.Println(`Error: The --selector flag is required to create a user.`)
@@ -213,7 +235,6 @@ func init() {
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
-	//createClusterCmd.Flags().StringVarP(&BackrestRestoreFrom, "pgbackrest-restore-from", "", "", "specifies the cluster name from where the restore is from, used to restore from a pgbackrest restore")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")

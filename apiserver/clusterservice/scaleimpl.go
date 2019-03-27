@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -28,7 +28,7 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -87,11 +87,10 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
 	}
 
-	//spec.UserLabels = make(map[string]string)
 	spec.UserLabels = cluster.Spec.UserLabels
 
 	if ccpImageTag != "" {
-		spec.UserLabels[util.LABEL_CCP_IMAGE_TAG_KEY] = ccpImageTag
+		spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] = ccpImageTag
 	}
 	if serviceType != "" {
 		if serviceType != config.DEFAULT_SERVICE_TYPE &&
@@ -101,20 +100,20 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 			response.Status.Msg = "error --service-type should be either ClusterIP, NodePort, or LoadBalancer "
 			return response
 		}
-		spec.UserLabels[util.LABEL_SERVICE_TYPE] = serviceType
+		spec.UserLabels[config.LABEL_SERVICE_TYPE] = serviceType
 	}
 
 	var parts []string
 
 	//set replica node lables to blank to start with, then check for overrides
-	spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = ""
-	spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = ""
+	spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
+	spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
 	if apiserver.Pgo.Cluster.ReplicaNodeLabel != "" {
 		//should have been validated at apiserver startup
 		parts = strings.Split(apiserver.Pgo.Cluster.ReplicaNodeLabel, "=")
-		spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
-		spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+		spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 		log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
 	}
 
@@ -128,14 +127,14 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		}
 
 		parts := strings.Split(nodeLabel, "=")
-		spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
-		spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+		spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 
 		log.Debug("using user entered node label for replica creation")
 	}
 
 	labels := make(map[string]string)
-	labels[util.LABEL_PG_CLUSTER] = cluster.Spec.Name
+	labels[config.LABEL_PG_CLUSTER] = cluster.Spec.Name
 
 	spec.ClusterName = cluster.Spec.Name
 
@@ -151,13 +150,13 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 	for i := 0; i < rc; i++ {
 
 		uniqueName := util.RandStringBytesRmndr(4)
-		labels[util.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
+		labels[config.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
 		spec.Namespace = ns
-		spec.Name = labels[util.LABEL_NAME]
+		spec.Name = labels[config.LABEL_NAME]
 
 		newInstance := &crv1.Pgreplica{
 			ObjectMeta: meta_v1.ObjectMeta{
-				Name:   labels[util.LABEL_NAME],
+				Name:   labels[config.LABEL_NAME],
 				Labels: labels,
 			},
 			Spec: spec,
@@ -178,7 +177,7 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 			log.Error(" in creating Pgreplica instance" + err.Error())
 		}
 
-		response.Results = append(response.Results, "created Pgreplica "+labels[util.LABEL_NAME])
+		response.Results = append(response.Results, "created Pgreplica "+labels[config.LABEL_NAME])
 	}
 
 	return response
@@ -215,8 +214,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 	//get replicas for this cluster
 	//deployments with --selector=service-name=ClusterName-replica,pg-cluster=ClusterName
 
-	//selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + name
-	selector := util.LABEL_SERVICE_NAME + "=" + name + "-replica" + "," + util.LABEL_PG_CLUSTER + "=" + name
+	selector := config.LABEL_SERVICE_NAME + "=" + name + "-replica" + "," + config.LABEL_PG_CLUSTER + "=" + name
 
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
@@ -281,9 +279,8 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	}
 
 	//if this was the last replica then remove the replica service
-	var replicaList *v1beta1.DeploymentList
-	//selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PRIMARY + "=false"
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
+	var replicaList *v1.DeploymentList
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
@@ -332,7 +329,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 
 	if deleteData {
 		log.Debug("delete-data is true on replica scale down, createing rmdata task")
-		selector := util.LABEL_REPLICA_NAME + "=" + replicaName
+		selector := config.LABEL_REPLICA_NAME + "=" + replicaName
 		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 		if err != nil {
 			log.Error(err)

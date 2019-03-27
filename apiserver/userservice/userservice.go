@@ -1,7 +1,7 @@
 package userservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -52,7 +52,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var ns string
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -83,7 +83,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreateUserResponse{}
 
 	var ns string
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
@@ -130,7 +130,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.DeleteUserResponse{}
 
 	var ns string
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -182,7 +182,7 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var ns string
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]msgs.ShowUserDetail, 0)

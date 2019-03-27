@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 3.5.2 {docdate}
+Latest Release: 4.0.0-rc2 {docdate}
 draft: false
 weight: 31
 ---
@@ -23,7 +23,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |LogStatement        | postgresql.conf log_statement value (required field)
 |LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field)
 |User        | the PostgreSQL normal user name
-|Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
+|Database        | the PostgreSQL normal user database
 |Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well
 |PgmonitorPassword        | the password to use for pgmonitor metrics collection if you specify --metrics when creating a PG cluster
 |Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
@@ -133,8 +133,6 @@ for other access modes it might support.
 | Setting |Definition  |
 |---|---|
 |PreferredFailoverNode        | optional, a label selector (e.g. hosttype=offsite) that if set, will be used to pick the failover target which is running on a host that matches this label if multiple targets are equal in replication status
-|LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
-|LoadTemplate        | the load template file used for load jobs
 |COImagePrefix        | image tag prefix to use for the Operator containers
 |COImageTag        | image tag to use for the Operator containers
 |Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking

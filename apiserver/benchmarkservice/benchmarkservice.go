@@ -39,7 +39,7 @@ func ShowBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	ns, err := apiserver.GetNamespace(username, request.Namespace)
+	ns, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp := msgs.CreateBenchmarkResponse{
 			Status: msgs.Status{
@@ -72,7 +72,7 @@ func DeleteBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	ns, err := apiserver.GetNamespace(username, request.Namespace)
+	ns, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp := msgs.CreateBenchmarkResponse{
 			Status: msgs.Status{
@@ -108,7 +108,7 @@ func CreateBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp := msgs.CreateBenchmarkResponse{
 			Status: msgs.Status{

@@ -1,7 +1,7 @@
 package pgpoolservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,12 +16,12 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -101,12 +101,12 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoo
 
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
-		spec.Name = util.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
+		spec.Name = config.LABEL_PGPOOL_TASK_ADD + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskAddPgpool
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
-		spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
-		spec.Parameters[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
+		spec.Parameters[config.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[config.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -116,11 +116,11 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoo
 		}
 
 		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
-		newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_ADD] = "true"
+		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
+		newInstance.ObjectMeta.Labels[config.LABEL_PGPOOL_TASK_ADD] = "true"
 
 		//check if this cluster already has a pgpool
-		if cluster.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+		if cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
 			resp.Results = append(resp.Results, cluster.Name+" already has pgpool added")
 			resp.Status.Code = msgs.Error
 		} else {
@@ -205,11 +205,11 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest, ns string) msgs.DeletePgpoo
 
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
-		spec.Name = util.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name
+		spec.Name = config.LABEL_PGPOOL_TASK_DELETE + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskDeletePgpool
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
-		spec.Parameters[util.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[config.LABEL_PGPOOL_TASK_CLUSTER] = cluster.Name
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -219,8 +219,8 @@ func DeletePgpool(request *msgs.DeletePgpoolRequest, ns string) msgs.DeletePgpoo
 		}
 
 		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
-		newInstance.ObjectMeta.Labels[util.LABEL_PGPOOL_TASK_DELETE] = "true"
+		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
+		newInstance.ObjectMeta.Labels[config.LABEL_PGPOOL_TASK_DELETE] = "true"
 
 		err := kubeapi.Createpgtask(apiserver.RESTClient,
 			newInstance, ns)

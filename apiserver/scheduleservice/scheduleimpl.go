@@ -1,7 +1,7 @@
 package scheduleservice
 
 /*
- Copyright 2017-2019 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -114,8 +115,8 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string
 			Name:        s.Request.PolicyName,
 			Database:    s.Request.Database,
 			Secret:      s.Request.Secret,
-			ImagePrefix: apiserver.Pgo.Pgo.COImagePrefix,
-			ImageTag:    apiserver.Pgo.Pgo.COImageTag,
+			ImagePrefix: apiserver.Pgo.Pgo.PGOImagePrefix,
+			ImageTag:    apiserver.Pgo.Pgo.PGOImageTag,
 		},
 	}
 	return schedule
@@ -138,7 +139,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 	log.Debug("Getting cluster")
 	var selector string
 	if sr.Request.ClusterName != "" {
-		selector = fmt.Sprintf("%s=%s", util.LABEL_PG_CLUSTER, sr.Request.ClusterName)
+		selector = fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, sr.Request.ClusterName)
 	} else if sr.Request.Selector != "" {
 		selector = sr.Request.Selector
 	}

@@ -1,7 +1,7 @@
 package policyservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,14 +16,15 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -167,7 +168,6 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 	}
 
 	//get filtered list of Deployments
-	//selector := request.Selector + "," + util.LABEL_PRIMARY + "=true"
 	selector := request.Selector
 	log.Debugf("selector string=[%s]", selector)
 
@@ -190,7 +190,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 	labels[request.Name] = "pgpolicy"
 
 	for _, d := range deployments.Items {
-		if d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] {
+		if d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
 			log.Debug("skipping apply policy on deployment %s", d.Name)
 			continue
 			//skip non primary deployments
@@ -198,7 +198,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, ns, request.Name, d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME])
+		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME])
 		if err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
@@ -208,7 +208,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 		cl := crv1.Pgcluster{}
 		_, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-			&cl, d.ObjectMeta.Labels[util.LABEL_SERVICE_NAME], ns)
+			&cl, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -216,27 +216,13 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 		}
 
-		var strategyMap map[string]cluster.Strategy
-		strategyMap = make(map[string]cluster.Strategy)
-		strategyMap["1"] = cluster.Strategy1{}
-
-		strategy, ok := strategyMap[cl.Spec.Strategy]
-		if ok {
-			log.Debug("strategy found")
-		} else {
-			log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "invalid strategy " + cl.Spec.Strategy
-			return resp
-		}
-
-		err = strategy.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
+		err = cluster.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//update the pgcluster crd labels with the new policy
-		err = labelservice.PatchPgcluster(request.Name+"="+util.LABEL_PGPOLICY, cl, ns)
+		err = labelservice.PatchPgcluster(request.Name+"="+config.LABEL_PGPOLICY, cl, ns)
 		if err != nil {
 			log.Error(err)
 		}

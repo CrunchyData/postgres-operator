@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -36,5 +36,6 @@ var RED func(a ...interface{}) string
 var GREEN func(a ...interface{}) string
 
 var Namespace string
+var PGONamespace string
 var APIServerURL string
 var PGO_CA_CERT, PGO_CLIENT_CERT, PGO_CLIENT_KEY string

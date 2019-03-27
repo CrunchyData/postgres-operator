@@ -1,7 +1,7 @@
 package labelservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,14 +18,14 @@ limitations under the License.
 import (
 	"encoding/json"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
-	"k8s.io/api/extensions/v1beta1"
+	log "github.com/sirupsen/logrus"
+	"k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -131,7 +131,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
-		selector := util.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
+		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 		if err != nil {
 			return
@@ -151,7 +151,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 }
 
-func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string, ns string) error {
+func updateLabels(deployment *v1.Deployment, clusterName string, newLabels map[string]string, ns string) error {
 
 	var err error
 
@@ -360,7 +360,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
-		selector := util.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
+		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 		if err != nil {
 			return err
@@ -415,7 +415,7 @@ func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) err
 
 }
 
-func deleteTheLabel(deployment *v1beta1.Deployment, clusterName string, labelsMap map[string]string, ns string) error {
+func deleteTheLabel(deployment *v1.Deployment, clusterName string, labelsMap map[string]string, ns string) error {
 
 	var err error
 

@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -70,6 +72,7 @@ const SHOW_BACKUP_PERM = "ShowBackup"
 const SHOW_BENCHMARK_PERM = "ShowBenchmark"
 const SHOW_CLUSTER_PERM = "ShowCluster"
 const SHOW_CONFIG_PERM = "ShowConfig"
+const SHOW_NAMESPACE_PERM = "ShowNamespace"
 const SHOW_INGEST_PERM = "ShowIngest"
 const SHOW_POLICY_PERM = "ShowPolicy"
 const SHOW_PVC_PERM = "ShowPVC"
@@ -87,7 +90,8 @@ const SCALE_CLUSTER_PERM = "ScaleCluster"
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
-const pgorolePath = "/pgo-auth-secret/pgorole"
+const pgorolePath = "/default-pgo-config/pgorole"
+const pgoroleFile = "pgorole"
 
 func InitializePerms() {
 	PermMap = make(map[string]string)
@@ -135,6 +139,7 @@ func InitializePerms() {
 	PermMap[SHOW_BENCHMARK_PERM] = "yes"
 	PermMap[SHOW_CLUSTER_PERM] = "yes"
 	PermMap[SHOW_CONFIG_PERM] = "yes"
+	PermMap[SHOW_NAMESPACE_PERM] = "yes"
 	PermMap[SHOW_INGEST_PERM] = "yes"
 	PermMap[SHOW_POLICY_PERM] = "yes"
 	PermMap[SHOW_PVC_PERM] = "yes"
@@ -161,20 +166,43 @@ func HasPerm(role string, perm string) bool {
 }
 
 func readRoles() {
-
-	f, err := os.Open(pgorolePath)
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-	defer f.Close()
-
+	var err error
 	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	var scanner *bufio.Scanner
+
+	cm, found := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, PgoNamespace)
+	if found {
+		log.Infof("Config: %s ConfigMap found in ns %s, using config files from the configmap", config.CustomConfigMapName, PgoNamespace)
+
+		val := cm.Data[pgoroleFile]
+		if val == "" {
+			log.Infof("could not find %s in ConfigMap", pgoroleFile)
+			os.Exit(2)
+		}
+
+		log.Infof("Custom %s file found in configmap", pgoroleFile)
+		scanner = bufio.NewScanner(strings.NewReader(val))
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		err = scanner.Err()
+	} else {
+		log.Infof("No custom %s file found in configmap, using defaults", pgoroleFile)
+		f, err := os.Open(pgorolePath)
+		if err != nil {
+			log.Error(err)
+			os.Exit(2)
+		}
+		defer f.Close()
+
+		scanner = bufio.NewScanner(f)
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		err = scanner.Err()
 	}
-	if err := scanner.Err(); err != nil {
+
+	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}

@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,5 +15,5 @@
 
 for CNAME in pgo-scheduler pgo-sqlrunner pgo-backrest-restore pgo-backrest-repo pgo-lspvc postgres-operator pgo-load pgo-apiserver pgo-rmdata pgo-backrest
 do
-	docker rmi -f $CNAME $CO_IMAGE_PREFIX/$CNAME:$CO_IMAGE_TAG 
+	docker rmi -f $CNAME $PGO_IMAGE_PREFIX/$CNAME:$PGO_IMAGE_TAG 
 done

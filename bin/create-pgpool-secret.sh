@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -28,7 +28,7 @@ if [ ! -f $FROMDIR/pool_passwd ]; then
 	echo $FROMDIR/pool_passwd not found...aborting
 	exit 2
 fi
-$CO_CMD create secret generic $CLUSTERNAME-pgpool-secret \
+$PGO_CMD create secret generic $CLUSTERNAME-pgpool-secret \
 	--from-file=pgpool.conf=$FROMDIR/pgpool.conf \
 	--from-file=pool_hba.conf=$FROMDIR/pool_hba.conf \
 	--from-file=pool_passwd=$FROMDIR/pool_passwd

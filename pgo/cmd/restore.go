@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"github.com/crunchydata/postgres-operator/pgo/util"
-	otherutil "github.com/crunchydata/postgres-operator/util"
+	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
+	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -37,14 +38,17 @@ var restoreCmd = &cobra.Command{
 
 	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("restore called")
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
-			if BackupType == "" || BackupType == otherutil.LABEL_BACKUP_TYPE_BACKREST {
+			if BackupType == "" || BackupType == config.LABEL_BACKUP_TYPE_BACKREST {
 				fmt.Println("Warning:  If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
 			}
-			if util.AskForConfirmation(NoPrompt, "") {
+			if pgoutil.AskForConfirmation(NoPrompt, "") {
 				restore(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
@@ -61,7 +65,7 @@ func init() {
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
 	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling "+
 		"the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.")
-	restoreCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	restoreCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
 
@@ -91,7 +95,7 @@ func restore(args []string, ns string) {
 		request := new(msgs.RestoreRequest)
 		request.Namespace = ns
 		request.FromCluster = args[0]
-		request.ToPVC = request.FromCluster + "-" + otherutil.RandStringBytesRmndr(4)
+		request.ToPVC = request.FromCluster + "-" + util.RandStringBytesRmndr(4)
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.NodeLabel = NodeLabel

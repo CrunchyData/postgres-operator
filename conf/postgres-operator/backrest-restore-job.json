@@ -42,7 +42,7 @@
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "backrest",
-                    "image": "{{.COImagePrefix}}/pgo-backrest-restore:{{.COImageTag}}",
+                    "image": "{{.PGOImagePrefix}}/pgo-backrest-restore:{{.PGOImageTag}}",
                     "volumeMounts": [ {
 			"mountPath": "/pgdata",
 			"name": "pgdata",
