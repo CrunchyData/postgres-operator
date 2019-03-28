@@ -17,11 +17,13 @@ package operator
 
 import (
 	"bytes"
+	"os"
+	"strings"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 var CRUNCHY_DEBUG bool
@@ -112,4 +114,24 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	}
 
 	return doc.String()
+}
+
+// GetRepoType returns the proper repo type to set in container based on the
+// backrest storage type provided
+func GetRepoType(backrestStorageType string) string {
+	if backrestStorageType != "" && backrestStorageType == "s3" {
+		return "s3"
+	} else {
+		return "posix"
+	}
+}
+
+// IsLocalAndS3Storage a boolean indicating whether or not local and s3 storage should
+// be enabled for pgBackRest based on the backrestStorageType string provided
+func IsLocalAndS3Storage(backrestStorageType string) bool {
+	if backrestStorageType != "" && strings.Contains(backrestStorageType, "s3") &&
+		strings.Contains(backrestStorageType, "local") {
+		return true
+	}
+	return false
 }

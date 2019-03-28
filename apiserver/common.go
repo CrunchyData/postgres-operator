@@ -16,6 +16,8 @@ limitations under the License.
 */
 
 import (
+	"strings"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
@@ -25,6 +27,8 @@ import (
 
 	"k8s.io/api/core/v1"
 )
+
+var backrestStorageTypes = []string{"local", "s3"}
 
 func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
 
@@ -125,4 +129,34 @@ func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName strin
 	}
 	return err
 
+}
+
+// IsValidBackrestStorageType determines if the storageType string contains valid pgBackRest
+// storage type values
+func IsValidBackrestStorageType(storageType string) bool {
+	isValid := true
+	for _, storageType := range strings.Split(storageType, ",") {
+		if !IsStringOneOf(storageType, GetBackrestStorageTypes()...) {
+			isValid = false
+			break
+		}
+	}
+	return isValid
+}
+
+// IsStringOneOf tests to see string testVal is included in the list
+// of strings provided using acceptedVals
+func IsStringOneOf(testVal string, acceptedVals ...string) bool {
+	isOneOf := false
+	for _, val := range acceptedVals {
+		if testVal == val {
+			isOneOf = true
+			break
+		}
+	}
+	return isOneOf
+}
+
+func GetBackrestStorageTypes() []string {
+	return backrestStorageTypes
 }

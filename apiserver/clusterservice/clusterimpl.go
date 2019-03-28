@@ -569,6 +569,18 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			userLabelsMap[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
 		}
 
+		err = validateBackrestStorageType(request.BackrestStorageType, request.BackrestFlag)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		if request.BackrestStorageType != "" {
+			log.Debug("using backrest storage type provided by user")
+			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
+		}
+
 		//add archive if backrest is requested and figure out map
 		if userLabelsMap[config.LABEL_BACKREST] == "true" {
 			userLabelsMap[config.LABEL_ARCHIVE] = "true"
@@ -1375,4 +1387,20 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	return output, err
 
+}
+
+func validateBackrestStorageType(requestBackRestStorageType string, backrestEnabled bool) error {
+
+	if requestBackRestStorageType != "" && !backrestEnabled {
+		return errors.New("pgBackRest storage type is only applicable if pgBackRest is enabled")
+	} else if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
+		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
+			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	} else if strings.Contains(requestBackRestStorageType, "s3") && (apiserver.Pgo.Cluster.BackrestS3Bucket == "" ||
+		apiserver.Pgo.Cluster.BackrestS3Endpoint == "" || apiserver.Pgo.Cluster.BackrestS3Region == "") {
+		return errors.New("A configuration setting for AWS S3 storage is missing from pgo.yaml. Values must be provided for " +
+			"'BackrestS3Bucket', 'BackrestS3Endpoint' and 'BackrestS3Region' in order to use the 's3' storage type with pgBackRest.")
+	}
+
+	return nil
 }

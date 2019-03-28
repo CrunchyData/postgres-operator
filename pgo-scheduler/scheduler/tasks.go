@@ -15,7 +15,6 @@ package scheduler
  limitations under the License.
 */
 
-
 import (
 	"fmt"
 
@@ -43,6 +42,7 @@ type pgBackRestTask struct {
 	containerName string
 	backupOptions string
 	stanza        string
+	storageType   string
 }
 
 func (p pgBackRestTask) NewBackRestTask() *crv1.Pgtask {
@@ -54,12 +54,13 @@ func (p pgBackRestTask) NewBackRestTask() *crv1.Pgtask {
 			Name:     p.taskName,
 			TaskType: crv1.PgtaskBackrest,
 			Parameters: map[string]string{
-				config.LABEL_JOB_NAME:         p.taskName,
-				config.LABEL_PG_CLUSTER:       p.clusterName,
-				config.LABEL_POD_NAME:         p.podName,
-				config.LABEL_CONTAINER_NAME:   p.containerName,
-				config.LABEL_BACKREST_COMMAND: crv1.PgtaskBackrestBackup,
-				config.LABEL_BACKREST_OPTS:    fmt.Sprintf("--stanza=%s %s", p.stanza, p.backupOptions),
+				config.LABEL_JOB_NAME:              p.taskName,
+				config.LABEL_PG_CLUSTER:            p.clusterName,
+				config.LABEL_POD_NAME:              p.podName,
+				config.LABEL_CONTAINER_NAME:        p.containerName,
+				config.LABEL_BACKREST_COMMAND:      crv1.PgtaskBackrestBackup,
+				config.LABEL_BACKREST_OPTS:         fmt.Sprintf("--stanza=%s %s", p.stanza, p.backupOptions),
+				config.LABEL_BACKREST_STORAGE_TYPE: p.storageType,
 			},
 		},
 	}

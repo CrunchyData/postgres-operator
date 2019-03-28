@@ -68,7 +68,7 @@ func init() {
 	restoreCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
-
+	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"local\", \"s3\". (default \"local\")")
 }
 
 // restore ....
@@ -99,6 +99,7 @@ func restore(args []string, ns string) {
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.NodeLabel = NodeLabel
+		request.BackrestStorageType = BackrestStorageType
 
 		response, err = api.Restore(httpclient, &SessionCredentials, request)
 	}

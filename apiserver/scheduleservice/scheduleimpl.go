@@ -17,7 +17,9 @@ package scheduleservice
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -39,6 +41,14 @@ type scheduleRequest struct {
 
 func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PGBackRestType)
+
+	err := validateBackrestStorageType(s.Request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE])
+	if err != nil {
+		s.Response.Status.Code = msgs.Error
+		s.Response.Status.Msg = err.Error()
+		return &PgScheduleSpec{}
+	}
+
 	schedule := &PgScheduleSpec{
 		Name:      name,
 		Cluster:   cluster.Name,
@@ -48,9 +58,10 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns stri
 		Type:      s.Request.ScheduleType,
 		Namespace: ns,
 		PGBackRest: PGBackRest{
-			Label:     fmt.Sprintf("pg-cluster=%s,service-name=%s", cluster.Name, cluster.Name),
-			Container: "database",
-			Type:      s.Request.PGBackRestType,
+			Label:       fmt.Sprintf("pg-cluster=%s,service-name=%s", cluster.Name, cluster.Name),
+			Container:   "database",
+			Type:        s.Request.PGBackRestType,
+			StorageType: s.Request.BackrestStorageType,
 		},
 	}
 	return schedule
@@ -350,4 +361,20 @@ func getSchedules(clusterName, selector, ns string) ([]string, error) {
 	}
 
 	return schedules, nil
+}
+
+func validateBackrestStorageType(requestedStorageType, clusterStorageType string) error {
+
+	if requestedStorageType != "" && !apiserver.IsValidBackrestStorageType(requestedStorageType) {
+		return fmt.Errorf("Invalid value provided for --pgbackrest-storage-type. The following values are allowed: %s",
+			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	} else if strings.Contains(requestedStorageType, "s3") && !strings.Contains(clusterStorageType, "s3") {
+		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for pgBackRest in this cluster")
+	} else if (requestedStorageType == "" || strings.Contains(requestedStorageType, "local")) &&
+		(clusterStorageType != "" && !strings.Contains(clusterStorageType, "local")) {
+		return errors.New("Storage type 'local' not allowed. Local storage is not enabled for pgBackRest in this cluster. " +
+			"If this cluster uses S3 storage only, specify 's3' for the pgBackRest storage type.")
+	}
+
+	return nil
 }

@@ -18,10 +18,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 // createBackrestBackup ....
@@ -33,6 +34,7 @@ func createBackrestBackup(args []string, ns string) {
 	request.Args = args
 	request.Selector = Selector
 	request.BackupOpts = BackupOpts
+	request.BackrestStorageType = BackrestStorageType
 
 	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
 	if err != nil {

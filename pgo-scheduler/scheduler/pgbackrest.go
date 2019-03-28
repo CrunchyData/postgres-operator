@@ -15,7 +15,6 @@ package scheduler
  limitations under the License.
 */
 
-
 import (
 	"fmt"
 	"time"
@@ -28,35 +27,38 @@ import (
 )
 
 type BackRestBackupJob struct {
-	backupType string
-	stanza     string
-	namespace  string
-	deployment string
-	label      string
-	container  string
-	cluster    string
+	backupType  string
+	stanza      string
+	namespace   string
+	deployment  string
+	label       string
+	container   string
+	cluster     string
+	storageType string
 }
 
 func (s *ScheduleTemplate) NewBackRestSchedule() BackRestBackupJob {
 	return BackRestBackupJob{
-		backupType: s.PGBackRest.Type,
-		stanza:     "db",
-		namespace:  s.Namespace,
-		deployment: s.PGBackRest.Deployment,
-		label:      s.PGBackRest.Label,
-		container:  s.PGBackRest.Container,
-		cluster:    s.Cluster,
+		backupType:  s.PGBackRest.Type,
+		stanza:      "db",
+		namespace:   s.Namespace,
+		deployment:  s.PGBackRest.Deployment,
+		label:       s.PGBackRest.Label,
+		container:   s.PGBackRest.Container,
+		cluster:     s.Cluster,
+		storageType: s.PGBackRest.StorageType,
 	}
 }
 
 func (b BackRestBackupJob) Run() {
 	contextLogger := log.WithFields(log.Fields{
-		"namespace":  b.namespace,
-		"deployment": b.deployment,
-		"label":      b.label,
-		"container":  b.container,
-		"backupType": b.backupType,
-		"cluster":    b.cluster})
+		"namespace":   b.namespace,
+		"deployment":  b.deployment,
+		"label":       b.label,
+		"container":   b.container,
+		"backupType":  b.backupType,
+		"cluster":     b.cluster,
+		"storageType": b.storageType})
 
 	contextLogger.Info("Running pgBackRest backup")
 
@@ -149,6 +151,7 @@ func (b BackRestBackupJob) Run() {
 		containerName: "database",
 		backupOptions: fmt.Sprintf("--type=%s", b.backupType),
 		stanza:        b.stanza,
+		storageType:   b.storageType,
 	}
 
 	err = kubeapi.Createpgtask(restClient, backrest.NewBackRestTask(), b.namespace)

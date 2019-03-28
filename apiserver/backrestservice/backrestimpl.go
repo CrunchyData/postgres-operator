@@ -17,9 +17,12 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
+
+	"github.com/crunchydata/postgres-operator/operator"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -92,6 +95,13 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 			return resp
 		}
 
+		err = validateBackrestStorageType(request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
 		result := crv1.Pgtask{}
 
 		// error if it already exists
@@ -149,7 +159,9 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
 		log.Debugf("setting jobName to %s", jobName)
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, jobName, ns), ns)
+		err = kubeapi.Createpgtask(apiserver.RESTClient,
+			getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, request.BackrestStorageType, jobName, ns),
+			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -162,7 +174,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, jobName, ns string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, backrestStorageType, jobName, ns string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -177,6 +189,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = containerName
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = action
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
+	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = backrestStorageType
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -317,7 +330,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 		}
 
 		//here is where we would exec to get the backrest info
-		info, err := getInfo(c.Name, podname, ns)
+		info, err := getInfo(c.Name, c.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], podname, ns)
 		if err != nil {
 			detail.Info = err.Error()
 		} else {
@@ -331,9 +344,10 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 
 }
 
-func getInfo(clusterName, podname, ns string) (string, error) {
+func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 
 	var err error
+	const repoTypeFlagS3 = "--repo-type=s3"
 
 	cmd := make([]string, 0)
 
@@ -344,13 +358,26 @@ func getInfo(clusterName, podname, ns string) (string, error) {
 
 	log.Infof("command is %v ", cmd)
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
+
+	if err != nil {
+		log.Error(err, stderr)
+		return "", err
+	}
+
+	if operator.IsLocalAndS3Storage(storageType) {
+		cmd = append(cmd, repoTypeFlagS3)
+		outputS3, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
+		if err != nil {
+			log.Error(err, stderr)
+			return "", err
+		}
+
+		output = "\nStorage Type: local\n" + output + "\nStorage Type: s3\n" + outputS3
+	}
+
 	log.Info("output=[" + output + "]")
 	log.Info("stderr=[" + stderr + "]")
 
-	if err != nil {
-		log.Error(err)
-		return "", err
-	}
 	log.Debug("backrest info ends")
 	return output, err
 
@@ -382,6 +409,13 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	if cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"
+		return resp
+	}
+
+	err = validateBackrestStorageType(request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -432,6 +466,7 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 	spec.Parameters[config.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
 	spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
+	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
@@ -506,4 +541,27 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 		return "", err
 	}
 	return spec.Parameters[crv1.PgtaskWorkflowID], err
+}
+
+func validateBackrestStorageType(requestBackRestStorageType, clusterBackRestStorageType string, restore bool) error {
+
+	if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
+		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
+			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	} else if requestBackRestStorageType != "" && strings.Contains(requestBackRestStorageType, "s3") &&
+		!strings.Contains(clusterBackRestStorageType, "s3") {
+		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for pgBackRest in this cluster")
+	} else if (requestBackRestStorageType == "" || strings.Contains(requestBackRestStorageType, "local")) &&
+		(clusterBackRestStorageType != "" && !strings.Contains(clusterBackRestStorageType, "local")) {
+		return errors.New("Storage type 'local' not allowed. Local storage is not enabled for pgBackRest in this cluster. " +
+			"If this cluster uses S3 storage only, specify 's3' for the pgBackRest storage type.")
+	}
+
+	// storage type validation that is only applicable for restores
+	if restore && requestBackRestStorageType != "" && len(strings.Split(requestBackRestStorageType, ",")) > 1 {
+		return fmt.Errorf("Multiple storage types cannot be selected cannot be select when performing a restore. Please "+
+			"select one of the following: %s", "\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	}
+
+	return nil
 }

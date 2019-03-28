@@ -17,15 +17,17 @@ package main
 
 import (
 	"flag"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"strings"
-	"time"
 )
 
 var Clientset *kubernetes.Clientset
@@ -36,6 +38,7 @@ const backrestBackupCommand = `backup`
 const backrestInfoCommand = `info`
 const backrestStanzaCreateCommand = `stanza-create`
 const containername = "database"
+const repoTypeFlagS3 = "--repo-type=s3"
 
 func main() {
 	log.Info("pgo-backrest starts")
@@ -74,6 +77,15 @@ func main() {
 		os.Exit(2)
 	}
 
+	REPO_TYPE := os.Getenv("PGBACKREST_REPO_TYPE")
+	log.Debugf("setting REPO_TYPE to %s", REPO_TYPE)
+
+	BACKREST_LOCAL_AND_S3_STORAGE, err := strconv.ParseBool(os.Getenv("BACKREST_LOCAL_AND_S3_STORAGE"))
+	if err != nil {
+		panic(err)
+	}
+	log.Debugf("setting BACKREST_LOCAL_AND_S3_STORAGE to %s", BACKREST_LOCAL_AND_S3_STORAGE)
+
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
 		panic(err)
@@ -110,6 +122,17 @@ func main() {
 	default:
 		log.Error("unsupported backup command specified " + COMMAND)
 		os.Exit(2)
+	}
+
+	if BACKREST_LOCAL_AND_S3_STORAGE {
+		firstCmd := cmdStrs
+		cmdStrs = append(cmdStrs, "&&")
+		cmdStrs = append(cmdStrs, strings.Join(firstCmd, " "))
+		cmdStrs = append(cmdStrs, repoTypeFlagS3)
+		log.Info("backrest command will be executed for both local and s3 storage")
+	} else if REPO_TYPE == "s3" {
+		cmdStrs = append(cmdStrs, repoTypeFlagS3)
+		log.Info("s3 flag enabled for backrest command")
 	}
 
 	log.Infof("command to execute is [%s]", strings.Join(cmdStrs, " "))

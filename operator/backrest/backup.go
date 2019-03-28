@@ -18,6 +18,8 @@ package backrest
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -25,7 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 type backrestJobTemplateFields struct {
@@ -42,6 +43,8 @@ type backrestJobTemplateFields struct {
 	PgbackrestStanza              string
 	PgbackrestDBPath              string
 	PgbackrestRepoPath            string
+	PgbackrestRepoType            string
+	BackrestLocalAndS3Storage     bool
 	PgbackrestRestoreVolumes      string
 	PgbackrestRestoreVolumeMounts string
 }
@@ -68,6 +71,8 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		PgbackrestRepoPath:            task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRestoreVolumes:      "",
 		PgbackrestRestoreVolumeMounts: "",
+		PgbackrestRepoType:            operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 	}
 
 	var doc2 bytes.Buffer

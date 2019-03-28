@@ -76,7 +76,8 @@
                     }, {
 			{{.PgmonitorEnvVars}}
 			{{.PgbouncerEnvVars}}
-			{{.PgbackrestEnvVars}}
+            {{.PgbackrestEnvVars}}
+            {{.PgbackrestS3EnvVars}}
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
                     }, {

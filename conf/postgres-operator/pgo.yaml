@@ -17,6 +17,9 @@ Cluster:
   ServiceType:  ClusterIP
   Backrest:  false
   BackrestPort:  2022
+  BackrestS3Bucket:
+  BackrestS3Endpoint:
+  BackrestS3Region:
   Autofail:  false
   AutofailReplaceReplica:  false
   LogStatement:  none

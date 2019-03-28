@@ -19,6 +19,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -32,8 +35,6 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type restorejobTemplateFields struct {
@@ -50,6 +51,8 @@ type restorejobTemplateFields struct {
 	PgbackrestDBPath    string
 	PgbackrestRepo1Path string
 	PgbackrestRepo1Host string
+	PgbackrestRepoType  string
+	PgbackrestS3EnvVars string
 	NodeSelector        string
 }
 
@@ -157,6 +160,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		PgbackrestRepo1Path: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRepo1Host: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
+		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
 	}
 
 	var doc2 bytes.Buffer
@@ -419,8 +424,10 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], cluster.Spec.Name, restoreToName, cluster.Spec.Port),
 		PgbouncerEnvVars:        "",
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], cluster.Spec.ClusterName, restoreToName,
+			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

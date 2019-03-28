@@ -235,6 +235,7 @@ func init() {
 	CreateCmd.AddCommand(createUserCmd)
 
 	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
+	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
@@ -267,6 +268,7 @@ func init() {
 	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
 	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest, pgbasebackup or policy).")
 	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full or diff).")
+	createScheduleCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createScheduleCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The name of the backup PVC to use (only used in pgbasebackup schedules).")
 	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")

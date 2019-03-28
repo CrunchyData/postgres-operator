@@ -42,6 +42,14 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 
 	podName := pods.Items[0].Name
 
+	// get the cluster to determine the proper storage type
+	cluster := crv1.Pgcluster{}
+	_, err = kubeapi.Getpgcluster(RESTClient, &cluster,
+		clusterName, namespace)
+	if err != nil {
+		return
+	}
+
 	//create the stanza-create task
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
@@ -56,6 +64,7 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = "pgo-backrest-repo"
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestStanzaCreate
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = ""
+	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
