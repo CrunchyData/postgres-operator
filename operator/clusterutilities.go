@@ -18,13 +18,17 @@ package operator
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strings"
+
+	"gopkg.in/yaml.v2"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 // consolidate with cluster.affinityTemplateFields
@@ -55,11 +59,21 @@ type badgerTemplateFields struct {
 }
 
 type PgbackrestEnvVarsTemplateFields struct {
-	PgbackrestStanza    string
-	PgbackrestDBPath    string
-	PgbackrestRepo1Path string
-	PgbackrestRepo1Host string
-	PgbackrestPGPort    string
+	PgbackrestStanza            string
+	PgbackrestDBPath            string
+	PgbackrestRepo1Path         string
+	PgbackrestRepo1Host         string
+	PgbackrestRepo1Type         string
+	PgbackrestLocalAndS3Storage bool
+	PgbackrestPGPort            string
+}
+
+type PgbackrestS3EnvVarsTemplateFields struct {
+	PgbackrestS3Bucket    string
+	PgbackrestS3Endpoint  string
+	PgbackrestS3Region    string
+	PgbackrestS3Key       string
+	PgbackrestS3KeySecret string
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
@@ -100,6 +114,7 @@ type DeploymentTemplateFields struct {
 	CollectAddon            string
 	BadgerAddon             string
 	PgbackrestEnvVars       string
+	PgbackrestS3EnvVars     string
 	PgmonitorEnvVars        string
 	PgbouncerEnvVars        string
 	//next 2 are for the replica deployment only
@@ -110,14 +125,16 @@ type DeploymentTemplateFields struct {
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) string {
+func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port, storageType string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:    "db",
-			PgbackrestRepo1Host: clusterName + "-backrest-shared-repo",
-			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-shared-repo",
-			PgbackrestDBPath:    "/pgdata/" + depName,
-			PgbackrestPGPort:    port,
+			PgbackrestStanza:            "db",
+			PgbackrestRepo1Host:         clusterName + "-backrest-shared-repo",
+			PgbackrestRepo1Path:         "/backrestrepo/" + clusterName + "-backrest-shared-repo",
+			PgbackrestDBPath:            "/pgdata/" + depName,
+			PgbackrestPGPort:            port,
+			PgbackrestRepo1Type:         GetRepoType(storageType),
+			PgbackrestLocalAndS3Storage: IsLocalAndS3Storage(storageType),
 		}
 
 		var doc bytes.Buffer
@@ -256,7 +273,8 @@ func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, 
 	for key, value := range userLabels {
 		if key == config.LABEL_PGPOOL || key == config.LABEL_PGBOUNCER {
 			//these dont apply to a primary or replica
-		} else if key == config.LABEL_AUTOFAIL || key == config.LABEL_NODE_LABEL_KEY || key == config.LABEL_NODE_LABEL_VALUE {
+		} else if key == config.LABEL_AUTOFAIL || key == config.LABEL_NODE_LABEL_KEY || key == config.LABEL_NODE_LABEL_VALUE ||
+			key == config.LABEL_BACKREST_STORAGE_TYPE {
 			//dont add these since they can break label expression checks
 			//or autofail toggling
 		} else {
@@ -348,4 +366,49 @@ func GetPgbouncerEnvVar(psw string) string {
 	foo := fmt.Sprintf(`"name": "PGBOUNCER_PASSWORD", "value": "%s" },{`, psw)
 	log.Debugf("pgbouncer str [%s]", foo)
 	return foo
+}
+
+func GetPgbackrestS3EnvVars(userLabels map[string]string, clientset *kubernetes.Clientset, ns string) string {
+
+	if userLabels[config.LABEL_BACKREST] == "true" && strings.Contains(userLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
+
+		s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
+			PgbackrestS3Bucket:   Pgo.Cluster.BackrestS3Bucket,
+			PgbackrestS3Endpoint: Pgo.Cluster.BackrestS3Endpoint,
+			PgbackrestS3Region:   Pgo.Cluster.BackrestS3Region,
+		}
+
+		secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config", ns)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		} else if !secretExists {
+			log.Error("Secret 'pgo-backrest-repo-config' does not exist. Unable to set S3 env vars for pgBackRest")
+			return ""
+		}
+
+		data := struct {
+			Key       string `yaml:"aws-s3-key"`
+			KeySecret string `yaml:"aws-s3-key-secret"`
+		}{}
+
+		err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &data)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+
+		s3EnvVars.PgbackrestS3Key = data.Key
+		s3EnvVars.PgbackrestS3KeySecret = data.KeySecret
+
+		var b bytes.Buffer
+		err = config.PgbackrestS3EnvVarsTemplate.Execute(&b, s3EnvVars)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+
+		return b.String()
+	}
+	return ""
 }

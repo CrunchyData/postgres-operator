@@ -15,7 +15,6 @@ package scheduler
  limitations under the License.
 */
 
-
 import (
 	"errors"
 	"fmt"
@@ -33,7 +32,8 @@ func validate(s ScheduleTemplate) error {
 		return err
 	}
 
-	if err := ValidateBackRestSchedule(s.Type, s.Deployment, s.Label, s.PGBackRest.Type); err != nil {
+	if err := ValidateBackRestSchedule(s.Type, s.Deployment, s.Label, s.PGBackRest.Type,
+		s.PGBackRest.StorageType); err != nil {
 		return err
 	}
 
@@ -68,7 +68,7 @@ func ValidateScheduleType(schedule string) error {
 	return fmt.Errorf("%s is not a valid schedule type", schedule)
 }
 
-func ValidateBackRestSchedule(scheduleType, deployment, label, backupType string) error {
+func ValidateBackRestSchedule(scheduleType, deployment, label, backupType, storageType string) error {
 	if scheduleType == "pgbackrest" {
 		if deployment == "" && label == "" {
 			return errors.New("Deployment or Label required for pgBackRest schedules")

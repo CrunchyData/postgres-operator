@@ -116,25 +116,29 @@ func (s *Scheduler) DeleteSchedules() error {
 		"namespaceList": s.namespaceList,
 	}).Info("DeleteSchedules watching ")
 
+	found := false
+	var scheduleToRemove string
 	for i := 0; i < len(s.namespaceList); i++ {
 		configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespaceList[i])
 		for name := range s.entries {
-			found := false
 			for _, config := range configs.Items {
 				if name == string(config.Name) {
 					found = true
+					scheduleToRemove = name
+					break
 				}
-			}
-
-			if !found {
-				log.WithFields(log.Fields{
-					"scheduleName": name,
-				}).Info("Removed schedule")
-				s.CronClient.Remove(s.entries[name])
-				delete(s.entries, name)
 			}
 		}
 	}
+
+	if !found {
+		log.WithFields(log.Fields{
+			"scheduleName": scheduleToRemove,
+		}).Info("Removed schedule")
+		s.CronClient.Remove(s.entries[scheduleToRemove])
+		delete(s.entries, scheduleToRemove)
+	}
+
 	return nil
 }
 

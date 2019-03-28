@@ -29,14 +29,15 @@ import (
 )
 
 type schedule struct {
-	schedule     string
-	scheduleType string
-	pvcName      string
-	backrestType string
-	clusterName  string
-	selector     string
-	policy       string
-	database     string
+	schedule            string
+	scheduleType        string
+	pvcName             string
+	backrestType        string
+	backrestStorageType string
+	clusterName         string
+	selector            string
+	policy              string
+	database            string
 }
 
 func createSchedule(args []string, ns string) {
@@ -48,14 +49,15 @@ func createSchedule(args []string, ns string) {
 	}
 
 	s := schedule{
-		clusterName:  clusterName,
-		backrestType: PGBackRestType,
-		pvcName:      PVCName,
-		schedule:     Schedule,
-		selector:     Selector,
-		scheduleType: ScheduleType,
-		policy:       SchedulePolicy,
-		database:     ScheduleDatabase,
+		clusterName:         clusterName,
+		backrestType:        PGBackRestType,
+		backrestStorageType: BackrestStorageType,
+		pvcName:             PVCName,
+		schedule:            Schedule,
+		selector:            Selector,
+		scheduleType:        ScheduleType,
+		policy:              SchedulePolicy,
+		database:            ScheduleDatabase,
 	}
 
 	err := s.validateSchedule()
@@ -65,17 +67,18 @@ func createSchedule(args []string, ns string) {
 	}
 
 	r := &msgs.CreateScheduleRequest{
-		ClusterName:     clusterName,
-		PGBackRestType:  PGBackRestType,
-		PVCName:         PVCName,
-		ScheduleOptions: ScheduleOptions,
-		Schedule:        Schedule,
-		Selector:        Selector,
-		ScheduleType:    strings.ToLower(ScheduleType),
-		PolicyName:      SchedulePolicy,
-		Database:        ScheduleDatabase,
-		Secret:          ScheduleSecret,
-		Namespace:       ns,
+		ClusterName:         clusterName,
+		PGBackRestType:      PGBackRestType,
+		BackrestStorageType: BackrestStorageType,
+		PVCName:             PVCName,
+		ScheduleOptions:     ScheduleOptions,
+		Schedule:            Schedule,
+		Selector:            Selector,
+		ScheduleType:        strings.ToLower(ScheduleType),
+		PolicyName:          SchedulePolicy,
+		Database:            ScheduleDatabase,
+		Secret:              ScheduleSecret,
+		Namespace:           ns,
 	}
 
 	response, err := api.CreateSchedule(httpclient, &SessionCredentials, r)
@@ -201,7 +204,8 @@ func (s *schedule) validateSchedule() error {
 		return err
 	}
 
-	if err := scheduler.ValidateBackRestSchedule(s.scheduleType, s.clusterName, s.selector, s.backrestType); err != nil {
+	if err := scheduler.ValidateBackRestSchedule(s.scheduleType, s.clusterName, s.selector, s.backrestType,
+		s.backrestStorageType); err != nil {
 		return err
 	}
 

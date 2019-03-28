@@ -23,10 +23,11 @@ type CreateBackrestBackupResponse struct {
 
 // CreateBackrestBackupRequest ...
 type CreateBackrestBackupRequest struct {
-	Namespace  string
-	Args       []string
-	Selector   string
-	BackupOpts string
+	Namespace           string
+	Args                []string
+	Selector            string
+	BackupOpts          string
+	BackrestStorageType string
 }
 
 type ShowBackrestDetail struct {
@@ -48,10 +49,11 @@ type RestoreResponse struct {
 
 // RestoreRequest ...
 type RestoreRequest struct {
-	Namespace   string
-	FromCluster string
-	ToPVC       string
-	RestoreOpts string
-	PITRTarget  string
-	NodeLabel   string
+	Namespace           string
+	FromCluster         string
+	ToPVC               string
+	RestoreOpts         string
+	PITRTarget          string
+	NodeLabel           string
+	BackrestStorageType string
 }

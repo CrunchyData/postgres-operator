@@ -21,6 +21,8 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -34,7 +36,6 @@ import (
 	//"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
 )
 
 // AddCluster ...
@@ -128,9 +129,11 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		ConfVolume:              operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cl.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[config.LABEL_BACKREST], cl.Spec.Name, cl.Spec.Name, cl.Spec.Port),
 		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
 		PgbouncerEnvVars:        operator.GetPgbouncerEnvVar(cl.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS]),
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[config.LABEL_BACKREST], cl.Spec.ClusterName, cl.Spec.Name,
+			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cl.Spec.UserLabels, clientset, namespace),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -326,9 +329,11 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		NodeSelector:            operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
-		PgbackrestEnvVars:       operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name, cluster.Spec.Port),
 		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[config.LABEL_COLLECT]),
 		PgbouncerEnvVars:        "",
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name,
+			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

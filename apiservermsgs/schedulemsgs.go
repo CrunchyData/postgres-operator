@@ -17,19 +17,20 @@ limitations under the License.
 
 // CreateScheduleRequest ...
 type CreateScheduleRequest struct {
-	ClusterName     string
-	Name            string
-	Namespace       string
-	Schedule        string
-	ScheduleType    string
-	Selector        string
-	PGBackRestType  string
-	PVCName         string
-	ScheduleOptions string
-	StorageConfig   string
-	PolicyName      string
-	Database        string
-	Secret          string
+	ClusterName         string
+	Name                string
+	Namespace           string
+	Schedule            string
+	ScheduleType        string
+	Selector            string
+	PGBackRestType      string
+	BackrestStorageType string
+	PVCName             string
+	ScheduleOptions     string
+	StorageConfig       string
+	PolicyName          string
+	Database            string
+	Secret              string
 }
 
 type CreateScheduleResponse struct {

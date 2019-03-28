@@ -18,16 +18,17 @@ limitations under the License.
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"strconv"
+	"strings"
+	"text/template"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"strconv"
-	"strings"
-	"text/template"
 )
 
 const CustomConfigMapName = "pgo-config"
@@ -77,6 +78,10 @@ const pgmonitorEnvVarsPath = "pgmonitor-env-vars.json"
 var PgbackrestEnvVarsTemplate *template.Template
 
 const pgbackrestEnvVarsPath = "pgbackrest-env-vars.json"
+
+var PgbackrestS3EnvVarsTemplate *template.Template
+
+const pgbackrestS3EnvVarsPath = "pgbackrest-s3-env-vars.json"
 
 var JobTemplate *template.Template
 
@@ -180,6 +185,9 @@ type ClusterStruct struct {
 	ServiceType             string `yaml:"ServiceType"`
 	BackrestPort            int    `yaml:"BackrestPort"`
 	Backrest                bool   `yaml:"Backrest"`
+	BackrestS3Bucket        string `yaml:"BackrestS3Bucket"`
+	BackrestS3Endpoint      string `yaml:"BackrestS3Endpoint"`
+	BackrestS3Region        string `yaml:"BackrestS3Region"`
 	Autofail                bool   `yaml:"Autofail"`
 	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
 	PgmonitorPassword       string `yaml:"PgmonitorPassword"`
@@ -591,6 +599,11 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestEnvVarsPath)
+	if err != nil {
+		return err
+	}
+
+	PgbackrestS3EnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestS3EnvVarsPath)
 	if err != nil {
 		return err
 	}

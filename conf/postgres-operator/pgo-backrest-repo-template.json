@@ -41,6 +41,7 @@
                     }],
 		    {{.ContainerResources }}
                     "env": [{
+            {{.PgbackrestS3EnvVars}}
                         "name": "PGBACKREST_STANZA",
                         "value": "{{.PgbackrestStanza}}"
                     }, {

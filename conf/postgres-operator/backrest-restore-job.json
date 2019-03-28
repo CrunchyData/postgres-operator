@@ -53,6 +53,7 @@
 			"readOnly": true
 		    } ],
                     "env": [{
+            {{.PgbackrestS3EnvVars}}
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
                     }, {
@@ -70,6 +71,9 @@
                     }, {
                         "name": "PGBACKREST_REPO1_HOST",
                         "value": "{{.PgbackrestRepo1Host}}"
+                    }, {
+                        "name": "PGBACKREST_REPO_TYPE",
+                        "value": "{{.PgbackrestRepoType}}"
                     }, {
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"

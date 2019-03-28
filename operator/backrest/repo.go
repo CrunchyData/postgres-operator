@@ -18,6 +18,8 @@ package backrest
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -28,7 +30,6 @@ import (
 	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 type RepoDeploymentTemplateFields struct {
@@ -44,6 +45,8 @@ type RepoDeploymentTemplateFields struct {
 	PgbackrestPGPort      string
 	SshdPort              int
 	PgbackrestStanza      string
+	PgbackrestRepoType    string
+	PgbackrestS3EnvVars   string
 	Name                  string
 	ClusterName           string
 }
@@ -100,6 +103,8 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		PgbackrestPGPort:      cluster.Spec.Port,
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
 		PgbackrestStanza:      "db",
+		PgbackrestRepoType:    operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
 		Name:                  repoName,
 		ClusterName:           cluster.Name,
 		SecurityContext:       util.CreateSecContext(cluster.Spec.PrimaryStorage.Fsgroup, cluster.Spec.PrimaryStorage.SupplementalGroups),
