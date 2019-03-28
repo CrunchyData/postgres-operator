@@ -1,5 +1,5 @@
 {
-    "apiVersion": "cr.client-go.k8s.io/v1",
+    "apiVersion": "crunchydata.com/v1",
     "kind": "Pgcluster",
     "metadata": {
         "labels": {
@@ -16,27 +16,27 @@
             "primary": "true"
         },
         "name": "fromcrd",
-        "namespace": "demo"
+        "namespace": "pgouser1"
     },
     "spec": {
         "ArchiveStorage": {
             "accessmode": "",
-            "fsgroup": "",
+            "fsgroup": "26",
             "matchLabels": "",
             "name": "",
             "size": "",
-            "storageclass": "",
-            "storagetype": "",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
             "supplementalgroups": ""
         },
         "BackrestStorage": {
-            "accessmode": "ReadWriteMany",
-            "fsgroup": "",
+            "accessmode": "ReadWriteOnce",
+            "fsgroup": "26",
             "matchLabels": "",
             "name": "",
             "size": "1G",
-            "storageclass": "",
-            "storagetype": "create",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
             "supplementalgroups": ""
         },
         "ContainerResources": {
@@ -46,32 +46,34 @@
             "requestsmemory": ""
         },
         "PrimaryStorage": {
-            "accessmode": "ReadWriteMany",
-            "fsgroup": "",
+            "accessmode": "ReadWriteOnce",
+            "fsgroup": "26",
             "matchLabels": "",
             "name": "fromcrd",
             "size": "1G",
-            "storageclass": "",
-            "storagetype": "create",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
             "supplementalgroups": ""
         },
         "ReplicaStorage": {
-            "accessmode": "ReadWriteMany",
-            "fsgroup": "",
+            "accessmode": "ReadWriteOnce",
+            "fsgroup": "26",
             "matchLabels": "",
             "name": "",
             "size": "1G",
-            "storageclass": "",
-            "storagetype": "create",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
             "supplementalgroups": ""
         },
         "backuppath": "",
         "backuppvcname": "",
+	"ccpimage":"crunchy-postgres",
         "ccpimagetag": "centos7-11.2-2.3.1",
         "clustername": "fromcrd",
         "customconfig": "",
         "database": "userdb",
         "name": "fromcrd",
+	"namespace":"pgouser1",
         "nodename": "",
         "policies": "",
         "port": "5432",
@@ -89,7 +91,7 @@
             "crunchy-pgbadger": "false",
             "crunchy_collect": "false",
             "pgo-backrest": "false",
-	    "pgo-version": "4.0.0-rc2"
+	    "pgo-version": "4.0.0-rc3"
         },
         "usersecretname": "fromcrd-testuser-secret"
     }
