@@ -44,40 +44,38 @@ spec:
                   - name: TIMEOUT
                     value: "3600"
                   - name: NAMESPACE
+                    value: "pgouser1,pgouser2"
+                  - name: PGO_OPERATOR_NAMESPACE
                     valueFrom:
                       fieldRef:
                         apiVersion: v1
                         fieldPath: metadata.namespace
                   name: scheduler
-                  image: crunchydata/pgo-scheduler:rhel7-3.5.1
+                  image: crunchydata/pgo-scheduler:rhel7-4.0.0-rc3
                   imagePullPolicy: IfNotPresent
-                  volumeMounts:
-                  - mountPath: /pgo-config
-                    name: pgo-config
-                    readOnly: true
                 - env:
                   - name: CRUNCHY_DEBUG
                     value: "true"
                   - name: PORT
                     value: "8443"
                   - name: NAMESPACE
+                    value: "pgouser1,pgouser2"
+                  - name: PGO_OPERATOR_NAMESPACE
                     valueFrom:
                       fieldRef:
                         apiVersion: v1
                         fieldPath: metadata.namespace
                   name: operator
-                  image: crunchydata/postgres-operator:rhel7-3.5.1
+                  image: crunchydata/postgres-operator:rhel7-4.0.0-rc3
                   imagePullPolicy: IfNotPresent
-                  volumeMounts:
-                  - mountPath: /pgo-config
-                    name: pgo-config
-                    readOnly: true
                 - env:
                   - name: CRUNCHY_DEBUG
                     value: "true"
                   - name: PORT
                     value: "8443"
                   - name: NAMESPACE
+                    value: "pgouser1,pgouser2"
+                  - name: PGO_OPERATOR_NAMESPACE
                     valueFrom:
                       fieldRef:
                         apiVersion: v1
@@ -85,27 +83,20 @@ spec:
                   - name: TLS_NO_VERIFY
                     value: "false"
                   name: apiserver
-                  image: crunchydata/pgo-apiserver:rhel7-3.5.1
+                  image: crunchydata/pgo-apiserver:rhel7-4.0.0-rc3
                   imagePullPolicy: IfNotPresent
                   volumeMounts:
-                  - mountPath: /pgo-config
-                    name: pgo-config
-                    readOnly: true
-                  - mountPath: /pgo-auth-secret
-                    name: pgo-auth-secret
+                  - mountPath: /apiserver.local.config/certificates
+                    name: pgo-tls
                     readOnly: true
                   ports:
                   - containerPort: 8443
                     protocol: TCP
               volumes:
-              - configMap:
-                  defaultMode: 420
-                  name: pgo-config
-                name: pgo-config
-              - name: pgo-auth-secret
+              - name: pgo-tls
                 secret:
                   defaultMode: 511
-                  secretName: pgo-auth-secret
+                  secretName: pgo.tls
               restartPolicy: Always
               terminationGracePeriodSeconds: 5
               serviceAccountName: postgres-operator
