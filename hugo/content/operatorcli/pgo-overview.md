@@ -46,6 +46,7 @@ The following table shows the *pgo* operations currently implemented:
 | backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
 | create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, schedule, user) |
 | delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user, schedule) |
+| ls |pgo ls mycluster  |Perform a Linux *ls* command on the cluster. |
 | df |pgo df mycluster  |Display the disk status/capacity of a Postgres cluster. |
 | failover |pgo failover mycluster  |Perform a manual failover of a Postgres cluster. |
 | help |pgo help |Display general *pgo* help information. |
@@ -95,7 +96,7 @@ Create a cluster using the Crunchy Postgres + PostGIS container image:
 
     pgo delete cluster mycluster
 
-#### Delete a Cluster and It's Persistent Volume Claims
+#### Delete a Cluster and Its Persistent Volume Claims
 
     pgo delete cluster mycluster --delete-data
 
