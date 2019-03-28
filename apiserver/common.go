@@ -91,7 +91,7 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string, taskName, ns string) error {
 	var err error
 
-	log.Debugf("CreateRMDataTask dataRoots=%v", dataRoots)
+	log.Debugf("a CreateRMDataTask dataRoots=%v ns=%s", dataRoots, ns)
 	//create a pgtask for each root at this volume/pvc
 	for i := 0; i < len(dataRoots); i++ {
 
@@ -117,8 +117,7 @@ func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName strin
 		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 		newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
 
-		err := kubeapi.Createpgtask(RESTClient,
-			newInstance, Namespace)
+		err := kubeapi.Createpgtask(RESTClient, newInstance, ns)
 		if err != nil {
 			log.Error(err)
 			return err

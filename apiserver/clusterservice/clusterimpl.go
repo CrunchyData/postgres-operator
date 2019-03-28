@@ -76,8 +76,10 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
+			log.Debugf("deleting data on cluster %s", cluster.Spec.Name)
 			err := deleteDatabaseSecrets(cluster.Spec.Name, ns)
 			if err != nil {
+				log.Debugf("error on deleting secrets %s", err.Error())
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response

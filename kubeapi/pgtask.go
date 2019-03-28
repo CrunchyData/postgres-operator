@@ -119,6 +119,7 @@ func Createpgtask(client *rest.RESTClient, task *crv1.Pgtask, namespace string) 
 		Into(&result)
 	if err != nil {
 		log.Error("error creating pgtask " + err.Error())
+		return err
 	}
 
 	log.Debugf("created pgtask %s", task.Name)
@@ -137,6 +138,7 @@ func Updatepgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace st
 		Error()
 	if err != nil {
 		log.Error("error updating pgtask " + err.Error())
+		return err
 	}
 
 	log.Debugf("updated pgtask %s", task.Name)
