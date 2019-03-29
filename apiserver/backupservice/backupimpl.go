@@ -164,12 +164,8 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 			return resp
 		}
 
-		//remove any existing backup job
-		RemoveBackupJob("backup-"+arg, ns)
-
 		result := crv1.Pgbackup{}
 
-		// error if it already exists
 		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, ns)
 		if !found {
 			log.Debugf("pgbackup %s was not found so we will create it", arg)
@@ -256,16 +252,4 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 		Spec: spec,
 	}
 	return newInstance, nil
-}
-
-func RemoveBackupJob(name, ns string) {
-
-	_, found := kubeapi.GetJob(apiserver.Clientset, name, ns)
-	if !found {
-		return
-	}
-
-	log.Debugf("found backup job %s will remove\n", name)
-
-	kubeapi.DeleteJob(apiserver.Clientset, name, ns)
 }
