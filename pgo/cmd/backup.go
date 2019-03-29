@@ -144,6 +144,10 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Secret:\t"+result.Spec.BackupUserSecret)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
+	for _, v := range result.Spec.Toc {
+		fmt.Printf("%s%s\n", TreeTrunk, "Backup Path:\t"+v)
+	}
+
 }
 
 // deleteBackup ....

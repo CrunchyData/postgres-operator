@@ -84,7 +84,9 @@ func initConfig() {
 
 	GetCredentials()
 
-	//generateBashCompletion()
+	if os.Getenv("GENERATE_BASH_COMPLETION") != "" {
+		generateBashCompletion()
+	}
 }
 
 func generateBashCompletion() {

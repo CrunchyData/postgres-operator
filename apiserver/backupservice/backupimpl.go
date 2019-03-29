@@ -173,42 +173,41 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, ns)
 		if !found {
 			log.Debugf("pgbackup %s was not found so we will create it", arg)
+			// Create an instance of our CRD
+			newInstance, err = getBackupParams(arg, request, ns)
+			if err != nil {
+				msg := "error creating backup for " + arg
+				log.Error(err)
+				resp.Results = append(resp.Results, msg)
+				break
+			}
+			if request.PVCName != "" {
+				log.Debugf("backuppvc is %s", request.PVCName)
+				newInstance.Spec.BackupPVC = request.PVCName
+			}
+
+			err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, ns)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
 		} else if err != nil {
 			resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
 			break
 		} else {
-			log.Debugf("pgbackup %s was found so we will recreate it", arg)
-			dels := make([]string, 1)
-			dels[0] = arg
+			log.Debugf("pgbackup %s was found so we will update it with a re-add status", arg)
+			result.Spec.BackupStatus = crv1.PgBackupJobReSubmitted
 
-			err = kubeapi.Deletepgbackup(apiserver.RESTClient, arg, ns)
+			err = kubeapi.Updatepgbackup(apiserver.RESTClient, &result, arg, ns)
 
 			if err != nil {
 				log.Error(err)
-				resp.Results = append(resp.Results, "error getting pgbackup for "+arg)
+				resp.Results = append(resp.Results, "error updating pgbackup for "+arg)
 				break
 			}
 		}
 
-		// Create an instance of our CRD
-		newInstance, err = getBackupParams(arg, request, ns)
-		if err != nil {
-			msg := "error creating backup for " + arg
-			log.Error(err)
-			resp.Results = append(resp.Results, msg)
-			break
-		}
-		if request.PVCName != "" {
-			log.Debugf("backuppvc is %s", request.PVCName)
-			newInstance.Spec.BackupPVC = request.PVCName
-		}
-
-		err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, ns)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
 		resp.Results = append(resp.Results, "created backup Job for "+arg)
 
 	}
@@ -234,6 +233,7 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 	spec.BackupUserSecret = "primaryuser"
 	spec.BackupPort = apiserver.Pgo.Cluster.Port
 	spec.BackupOpts = request.BackupOpts
+	spec.Toc = make(map[string]string)
 
 	cluster := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, name, ns)

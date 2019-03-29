@@ -16,6 +16,7 @@ package backup
 */
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -26,9 +27,11 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -156,4 +159,69 @@ func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, 
 		log.Debug("waiting for backup job to report being deleted")
 		time.Sleep(time.Second * time.Duration(3))
 	}
+}
+
+func UpdateBackupPaths(clientset *kubernetes.Clientset, jobName, namespace string) string {
+	//its pod has this label job-name=backup-yank-fjus
+	selector := "job-name=" + jobName
+	log.Debugf("looking for pod with selector %s", selector)
+	podList, err := kubeapi.GetPods(clientset, selector, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err.Error()
+	}
+
+	if len(podList.Items) != 1 {
+		log.Error("could not find a pod for this job")
+		return "error"
+	}
+
+	podName := podList.Items[0].Name
+	log.Debugf("found pod %s", podName)
+	backupPath, err := getBackupPath(clientset, podName, namespace)
+	if err != nil {
+		log.Error("error in getting logs %s", err.Error())
+		return err.Error()
+	}
+	log.Debugf("backupPath is %s", backupPath)
+
+	return backupPath
+
+}
+
+//this func assumes the pod has completed and its a backup job pod
+func getBackupPath(clientset *kubernetes.Clientset, podName, namespace string) (string, error) {
+	opts := v1.PodLogOptions{
+		Container: "backup",
+	}
+	var logs bytes.Buffer
+
+	err := kubeapi.GetLogs(clientset, opts, &logs, podName, namespace)
+	if err != nil {
+		log.Error("error in getting logs %s", err.Error())
+		return "", err
+	}
+
+	//this is what the backup container puts in its log and what
+	//we are looking to parse out of its container log
+	token := "BACKUP_PATH is set to /pgdata/"
+
+	var backupPath string
+	scanner := bufio.NewScanner(strings.NewReader(logs.String()))
+	for scanner.Scan() {
+		rawStr := scanner.Text()
+		rawlen := len(rawStr)
+		idx := strings.Index(rawStr, token)
+		if idx > -1 {
+			log.Debugf("log line of interest %s", scanner.Text())
+			content := rawlen - idx
+			log.Debugf("raw length %d token at %d content at %d\n", rawlen, idx, content)
+			//parsed := rawStr[idx+len(token):]
+			parsed := rawStr[content:]
+			backupPath = parsed[:rawlen-content-5]
+		}
+	}
+
+	return backupPath, nil
+
 }

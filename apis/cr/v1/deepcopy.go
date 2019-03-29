@@ -33,6 +33,7 @@ func (in *Pgbackup) DeepCopyInto(out *Pgbackup) {
 		BackupOpts:       in.Spec.BackupOpts,
 		BackupStatus:     in.Spec.BackupStatus,
 		BackupPVC:        in.Spec.BackupPVC,
+		Toc:              in.Spec.Toc,
 	}
 	out.Status = in.Status
 }
