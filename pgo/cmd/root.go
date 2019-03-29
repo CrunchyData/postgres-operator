@@ -84,10 +84,13 @@ func initConfig() {
 
 	GetCredentials()
 
-	//generateBashCompletion()
+	if os.Getenv("GENERATE_BASH_COMPLETION") != "" {
+		generateBashCompletion()
+	}
 }
 
 func generateBashCompletion() {
+	log.Debugf("generating bash completion script")
 	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
 	if err2 != nil {
 		fmt.Println("Error: ", err2.Error())
