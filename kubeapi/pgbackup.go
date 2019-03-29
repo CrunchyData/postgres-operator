@@ -16,8 +16,8 @@ package kubeapi
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 )
@@ -104,5 +104,23 @@ func Createpgbackup(client *rest.RESTClient, backup *crv1.Pgbackup, namespace st
 		return err
 	}
 
+	return err
+}
+
+func Updatepgbackup(client *rest.RESTClient, backup *crv1.Pgbackup, name, namespace string) error {
+
+	err := client.Put().
+		Name(name).
+		Namespace(namespace).
+		Resource(crv1.PgbackupResourcePlural).
+		Body(backup).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error updating pgbackup " + err.Error())
+		return err
+	}
+
+	log.Debugf("updated pgbackup %s", backup.Name)
 	return err
 }

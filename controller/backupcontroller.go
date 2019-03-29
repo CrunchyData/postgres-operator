@@ -126,8 +126,15 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgbackup is updated
 func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
+	oldBackup := oldObj.(*crv1.Pgbackup)
 	backup := newObj.(*crv1.Pgbackup)
 	log.Debugf("[PgbackupController] ns=%s onUpdate %s", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
+
+	if oldBackup.Spec.BackupStatus != crv1.PgBackupJobReSubmitted &&
+		backup.Spec.BackupStatus == crv1.PgBackupJobReSubmitted {
+		log.Debugf("[PgbackupController] ns=%s onUpdate %s re-submitted", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
+		backupoperator.AddBackupBase(c.PgbackupClientset, c.PgbackupClient, backup, backup.ObjectMeta.Namespace)
+	}
 }
 
 // onDelete is called when a pgbackup is deleted

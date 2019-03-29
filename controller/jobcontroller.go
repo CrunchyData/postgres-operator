@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
+	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -124,12 +125,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	//handle the case of a pgbasebackup job being added
+	log.Debugf("job controller backup label " + labels[config.LABEL_PGBACKUP])
+	//handle the case of a pgbasebackup job being updated
 	if labels[config.LABEL_PGBACKUP] == "true" {
 		log.Debugf("jobController onUpdate pgbasebackup job case")
-		dbname := job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+		clusterName := job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 		status := crv1.JobCompletedStatus
-		log.Debugf("got a pgbackup job status=%d for %s", job.Status.Succeeded, dbname)
+		log.Debugf("got a pgbackup job status=%d for cluster %s", job.Status.Succeeded, clusterName)
 		if job.Status.Succeeded == 0 {
 			status = crv1.JobSubmittedStatus
 		}
@@ -137,11 +139,38 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			status = crv1.JobErrorStatus
 		}
 
-		if labels[config.LABEL_BACKREST] != "true" {
-			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, job.ObjectMeta.Namespace)
-			if err != nil {
-				log.Error("error in patching pgbackup " + labels["pg-cluster"] + err.Error())
-			}
+		//get the pgbackup for this job
+		backupName := clusterName
+		var found bool
+		backup := crv1.Pgbackup{}
+		found, err = kubeapi.Getpgbackup(c.JobClient, &backup, backupName, job.ObjectMeta.Namespace)
+		if !found {
+			log.Errorf("jobController onUpdate could not find pgbackup %s", backupName)
+			return
+		}
+
+		/**
+		err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", backupName, job.ObjectMeta.Namespace)
+		if err != nil {
+			log.Errorf("error in patching pgbackup %s %s", backupName, err.Error())
+			return
+		}
+		*/
+
+		//update the backup paths if the job completed
+		if status == crv1.JobCompletedStatus {
+			path := backupoperator.UpdateBackupPaths(c.JobClientset, job.Name, job.ObjectMeta.Namespace)
+			backup.Spec.Toc[path] = path
+		}
+
+		//update the pgbackup status
+		backup.Spec.BackupStatus = status
+
+		//update the pgbackup
+		err = kubeapi.Updatepgbackup(c.JobClient, &backup, backupName, job.ObjectMeta.Namespace)
+		if err != nil {
+			log.Error("error in updating pgbackup " + labels["pg-cluster"] + err.Error())
+			return
 		}
 
 		return
