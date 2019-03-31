@@ -1108,7 +1108,13 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 func getType(pod *v1.Pod, clusterName string) string {
 
 	//log.Debugf("%v\n", pod.ObjectMeta.Labels)
-	if pod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] != "" {
+	if primary, found := pod.ObjectMeta.Labels[config.LABEL_PRIMARY]; found {
+		if primary == "true" {
+			return msgs.PodTypePrimary
+		} else {
+			return msgs.PodTypeReplica
+		}
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] != "" {
 		return msgs.PodTypePgbackrest
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] != "" {
 		return msgs.PodTypePgbouncer
@@ -1116,10 +1122,6 @@ func getType(pod *v1.Pod, clusterName string) string {
 		return msgs.PodTypePgpool
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
-	} else if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		return msgs.PodTypePrimary
-	} else {
-		return msgs.PodTypeReplica
 	}
 	return msgs.PodTypeUnknown
 
