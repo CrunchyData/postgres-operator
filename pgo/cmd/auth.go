@@ -80,24 +80,45 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 func GetCredentials() {
 	log.Debug("GetCredentials called")
 
+	found := false
 	dir := UserHomeDir()
 	fullPath := dir + "/" + ".pgouser"
-	log.Debugf("looking in %s for credentials", fullPath)
-	dat, err := ioutil.ReadFile(fullPath)
-	found := false
-	if err != nil {
-		log.Debugf("%s not found", fullPath)
-	} else {
-		log.Debugf("%s found", fullPath)
+
+	//look in env var for pgouser file
+	pgoUser := os.Getenv(pgouserenvvar)
+	if pgoUser != "" {
+		fullPath = pgoUser
+		log.Debugf("%s environment variable is being used at %s", pgouserenvvar, fullPath)
+		dat, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			fmt.Printf("Error: %s file not found", fullPath)
+			os.Exit(2)
+		}
+
 		log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
 		SessionCredentials = parseCredentials(string(dat))
 		found = true
-
 	}
 
+	//look in home directory for .pgouser file
+	if !found {
+		log.Debugf("looking in %s for credentials", fullPath)
+		dat, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			log.Debugf("%s not found", fullPath)
+		} else {
+			log.Debugf("%s found", fullPath)
+			log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
+			SessionCredentials = parseCredentials(string(dat))
+			found = true
+
+		}
+	}
+
+	//look in etc for pgouser file
 	if !found {
 		fullPath = etcpath
-		dat, err = ioutil.ReadFile(fullPath)
+		dat, err := ioutil.ReadFile(fullPath)
 		if err != nil {
 			log.Debugf("%s not found", etcpath)
 		} else {
@@ -109,22 +130,8 @@ func GetCredentials() {
 	}
 
 	if !found {
-		pgoUser := os.Getenv(pgouserenvvar)
-		if pgoUser == "" {
-			fmt.Printf("Error: %s environment variable not set", pgouserenvvar)
-			os.Exit(2)
-		}
-
-		fullPath = pgoUser
-		log.Debugf("%s environment variable is being used at %s", pgouserenvvar, fullPath)
-		dat, err = ioutil.ReadFile(fullPath)
-		if err != nil {
-			fmt.Printf("Error: %s file not found", fullPath)
-			os.Exit(2)
-		}
-
-		log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
-		SessionCredentials = parseCredentials(string(dat))
+		fmt.Println("could not find pgouser file")
+		os.Exit(2)
 	}
 
 	if PGO_CA_CERT != "" {
