@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  rhel7-11.2-2.3.1-rc2
+  CCPImageTag:  rhel7-11.2-2.4.0-rc2
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -99,5 +99,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  rhel7-4.0.0-rc3
+  PGOImageTag:  rhel7-4.0.0-rc4
 
