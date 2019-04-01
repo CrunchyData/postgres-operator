@@ -86,6 +86,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/version", versionservice.VersionHandler)
+	r.HandleFunc("/health", versionservice.HealthHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
 	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET")
 	//here

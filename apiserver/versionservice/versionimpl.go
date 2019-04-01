@@ -29,3 +29,12 @@ func Version() msgs.VersionResponse {
 
 	return resp
 }
+
+func Health() msgs.VersionResponse {
+	resp := msgs.VersionResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = "healthy"
+	resp.Version = "healthy"
+
+	return resp
+}

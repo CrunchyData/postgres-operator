@@ -24,6 +24,15 @@
                                 "containerPort": 8443
                             }
                         ],
+			"livenessProbe": {
+				"httpGet": {
+					"port": 8443,
+					"path": "/health",
+					"scheme": "HTTPS"
+				},
+				"initialDelaySeconds": 4,
+				"periodSeconds": 5
+			},
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -62,6 +71,16 @@
                         "name": "operator",
                         "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
+			"readinessProbe": {
+				"exec": {
+					"command": [
+						"ls",
+						"/tmp"
+					]
+				},
+				"initialDelaySeconds": 4,
+				"periodSeconds": 5
+			},
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -94,6 +113,16 @@
                     {
                         "name": "scheduler",
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
+			"readinessProbe": {
+				"exec": {
+					"command": [
+						"ls",
+						"/tmp"
+					]
+				},
+				"initialDelaySeconds": 4,
+				"periodSeconds": 5
+			},
                         "env": [
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
