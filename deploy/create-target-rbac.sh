@@ -41,7 +41,7 @@ echo "creating target rbac role and rolebinding in namespace " $1
 echo "operator is assumed to be deployed into " $2
 
 export TARGET_NAMESPACE=$1
-export OPERATOR_NAMESPACE=$2
+export PGO_OPERATOR_NAMESPACE=$2
 expenv -f $DIR/rbac.yaml | $PGO_CMD --namespace=$1 delete -f -
 
 expenv -f $DIR/rbac.yaml | $PGO_CMD --namespace=$1 create -f -

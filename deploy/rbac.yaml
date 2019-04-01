@@ -41,7 +41,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: postgres-operator
-  namespace: $OPERATOR_NAMESPACE
+  namespace: $PGO_OPERATOR_NAMESPACE
 roleRef:
   kind: Role
   name: pgo-role
