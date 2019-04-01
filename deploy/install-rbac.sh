@@ -34,10 +34,6 @@ expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESP
 # Operator in the PGO_OPERATOR_NAMESPACE env variable
 expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
-# create the role, role-binding and add to the service account
-# these are created within the namespace the Operator is running
-#expenv -f $DIR/rbac.yaml | $PGO_CMD create --namespace=$PGO_OPERATOR_NAMESPACE -f -
-
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh
 
