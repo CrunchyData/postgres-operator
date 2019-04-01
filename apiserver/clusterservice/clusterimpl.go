@@ -1108,8 +1108,8 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 func getType(pod *v1.Pod, clusterName string) string {
 
 	//log.Debugf("%v\n", pod.ObjectMeta.Labels)
-	if primary, found := pod.ObjectMeta.Labels[config.LABEL_PRIMARY]; found {
-		if primary == "true" {
+	if _, found := pod.ObjectMeta.Labels[config.LABEL_PRIMARY]; found {
+		if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 			return msgs.PodTypePrimary
 		} else {
 			return msgs.PodTypeReplica
