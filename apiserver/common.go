@@ -53,10 +53,10 @@ func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, erro
 	return output, err
 }
 
-func GetPodStatus(deployName string) (string, string) {
+func GetPodStatus(deployName, ns string) (string, string) {
 
 	//get pods with replica-name=deployName
-	pods, err := kubeapi.GetPods(Clientset, config.LABEL_REPLICA_NAME+"="+deployName, Namespace)
+	pods, err := kubeapi.GetPods(Clientset, config.LABEL_REPLICA_NAME+"="+deployName, ns)
 	if err != nil {
 		return "error", "error"
 	}
