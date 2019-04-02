@@ -174,8 +174,6 @@ type ClusterStruct struct {
 	Metrics                 bool   `yaml:"Metrics"`
 	Badger                  bool   `yaml:"Badger"`
 	Port                    string `yaml:"Port"`
-	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
-	ArchiveMode             string `yaml:"ArchiveMode"`
 	User                    string `yaml:"User"`
 	Database                string `yaml:"Database"`
 	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
@@ -225,7 +223,6 @@ type PgoConfig struct {
 	Pgo                       PgoStruct                           `yaml:"Pgo"`
 	ContainerResources        map[string]ContainerResourcesStruct `yaml:"ContainerResources"`
 	PrimaryStorage            string                              `yaml:"PrimaryStorage"`
-	XlogStorage               string                              `yaml:"XlogStorage"`
 	BackupStorage             string                              `yaml:"BackupStorage"`
 	ReplicaStorage            string                              `yaml:"ReplicaStorage"`
 	BackrestStorage           string                              `yaml:"BackrestStorage"`
@@ -308,11 +305,6 @@ func (c *PgoConfig) Validate() error {
 	if !ok {
 		return errors.New("BackupStorage setting required")
 	}
-	_, ok = c.Storage[c.XlogStorage]
-	if !ok {
-		log.Warning("XlogStorage setting not set, will use PrimaryStorage setting")
-		c.Storage[c.XlogStorage] = c.Storage[c.PrimaryStorage]
-	}
 	_, ok = c.Storage[c.BackrestStorage]
 	if !ok {
 		log.Warning("BackrestStorage setting not set, will use PrimaryStorage setting")
@@ -390,24 +382,6 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
 		if !ok {
 			return errors.New("DefaultPgbouncerResources setting invalid")
-		}
-	}
-
-	if c.Cluster.ArchiveMode == "" {
-		log.Info("Pgo.Cluster.ArchiveMode not set, using 'false'")
-		c.Cluster.ArchiveMode = "false"
-	} else {
-		if c.Cluster.ArchiveMode != "true" && c.Cluster.ArchiveMode != "false" {
-			return errors.New("Cluster.ArchiveMode invalid value, can either be 'true' or 'false'")
-		}
-	}
-
-	if c.Cluster.ArchiveTimeout == "" {
-		log.Info("Pgo.Cluster.ArchiveTimeout not set, using '60'")
-	} else {
-		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
-		if err != nil {
-			return errors.New("Cluster.ArchiveTimeout invalid int value found")
 		}
 	}
 
@@ -787,7 +761,6 @@ func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) erro
 
 	//set the default storage configs to this new one
 	c.PrimaryStorage = LABEL_PGO_DEFAULT_SC
-	c.XlogStorage = LABEL_PGO_DEFAULT_SC
 	c.BackupStorage = LABEL_PGO_DEFAULT_SC
 	c.ReplicaStorage = LABEL_PGO_DEFAULT_SC
 	c.BackrestStorage = LABEL_PGO_DEFAULT_SC

@@ -547,20 +547,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
 		}
 
-		if request.ArchiveFlag && request.BackrestFlag {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "error --archive and --pgbackrest flags are mutually exclusive, use one or the other."
-
-			return resp
-		}
-
-		if request.ArchiveFlag {
-			userLabelsMap[config.LABEL_ARCHIVE] = "true"
-			log.Debug("archive set to true in user labels")
-		} else {
-			log.Debug("using ArchiveMode from pgo.yaml")
-			userLabelsMap[config.LABEL_ARCHIVE] = apiserver.Pgo.Cluster.ArchiveMode
-		}
 		if request.BackrestFlag {
 			userLabelsMap[config.LABEL_BACKREST] = "true"
 			log.Debug("backrest set to true in user labels")
@@ -580,13 +566,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			log.Debug("using backrest storage type provided by user")
 			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 		}
-
-		//add archive if backrest is requested and figure out map
-		if userLabelsMap[config.LABEL_BACKREST] == "true" {
-			userLabelsMap[config.LABEL_ARCHIVE] = "true"
-		}
-
-		userLabelsMap[config.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
 
 		//validate --pgpool-secret
 		if request.PgpoolSecret != "" {

@@ -25,7 +25,6 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: storageos
-XlogStorage: storageos
 BackupStorage: storageos
 ReplicaStorage: storageos
 BackrestStorage: storageos
@@ -54,10 +53,6 @@ Storage:
     MatchLabels: crunchyzone=red
     StorageType:  create
     SupplementalGroups:  65534
-  xlogstorage:
-    AccessMode:  ReadWriteMany
-    Size:  800M
-    StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  300M
