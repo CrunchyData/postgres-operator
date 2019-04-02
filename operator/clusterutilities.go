@@ -263,6 +263,7 @@ func GetLabelsFromMap(labels map[string]string) string {
 }
 
 // GetPrimaryLabels ...
+/**
 func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
 
@@ -277,12 +278,14 @@ func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, 
 			//dont add these since they can break label expression checks
 			//or autofail toggling
 		} else {
+			log.Debugf("JEFF label copying XXX key=%s value=%s", key, value)
 			primaryLabels[key] = value
 		}
 	}
 
 	return primaryLabels
 }
+*/
 
 // GetAffinity ...
 func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {

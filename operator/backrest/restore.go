@@ -367,9 +367,11 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	var err error
 
-	primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
+	//primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
 
-	primaryLabels[config.LABEL_DEPLOYMENT_NAME] = restoreToName
+	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = restoreToName
+	cluster.Spec.UserLabels["name"] = cluster.Spec.Name
+	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.ClusterName
 
 	archiveMode := "on"
 	xlogdir := "false"
@@ -404,8 +406,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CCPImage:                cluster.Spec.CCPImage,
 		CCPImageTag:             cluster.Spec.CCPImageTag,
 		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
-		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),
-		PodLabels:               operator.GetLabelsFromMap(primaryLabels),
+		DeploymentLabels:        operator.GetLabelsFromMap(cluster.Spec.UserLabels),
+		PodLabels:               operator.GetLabelsFromMap(cluster.Spec.UserLabels),
 		BackupPVCName:           util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
 		BackupPath:              cluster.Spec.BackupPath,
 		DataPathOverride:        restoreToName,
@@ -453,11 +455,11 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		return err
 	}
 
-	primaryLabels[config.LABEL_CURRENT_PRIMARY] = restoreToName
+	cluster.Spec.UserLabels[config.LABEL_CURRENT_PRIMARY] = restoreToName
 
 	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
 
-	err = util.PatchClusterCRD(restclient, primaryLabels, cluster, namespace)
+	err = util.PatchClusterCRD(restclient, cluster.Spec.UserLabels, cluster, namespace)
 	if err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
