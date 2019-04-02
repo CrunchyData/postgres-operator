@@ -122,7 +122,7 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string)
 	for k, v := range cluster.Spec.UserLabels {
 		spec.UserLabels[k] = v
 	}
-	spec.UserLabels[config.LABEL_PRIMARY] = "false"
+
 	spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.Name
 
 	newInstance := &crv1.Pgreplica{
@@ -140,7 +140,7 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string)
 	for x, y := range cluster.ObjectMeta.Labels {
 		newInstance.ObjectMeta.Labels[x] = y
 	}
-	newInstance.ObjectMeta.Labels[config.LABEL_PRIMARY] = "false"
+
 	newInstance.ObjectMeta.Labels[config.LABEL_NAME] = uniqueName
 
 	kubeapi.Createpgreplica(client, newInstance, ns)
