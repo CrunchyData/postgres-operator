@@ -31,8 +31,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
 |PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
-|ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
 |ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |BackrestPort        | currently required to be port 2022
@@ -43,7 +41,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 | Setting|Definition  |
 |---|---|
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
-|XlogStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
