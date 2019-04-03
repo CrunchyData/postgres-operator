@@ -182,6 +182,7 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 				newInstance.Spec.BackupPVC = request.PVCName
 			}
 
+			log.Debugf("CreateBackup BackupOpts=%s", newInstance.Spec.BackupOpts)
 			err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -194,6 +195,7 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 		} else {
 			log.Debugf("pgbackup %s was found so we will update it with a re-add status", arg)
 			result.Spec.BackupStatus = crv1.PgBackupJobReSubmitted
+			result.Spec.BackupOpts = request.BackupOpts
 
 			err = kubeapi.Updatepgbackup(apiserver.RESTClient, &result, arg, ns)
 
