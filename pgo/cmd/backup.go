@@ -183,7 +183,7 @@ func deleteBackup(args []string, ns string) {
 
 // createBackup ....
 func createBackup(args []string, ns string) {
-	log.Debugf("createBackup called %v", args)
+	log.Debugf("createBackup called %v BackupOpts %s", args, BackupOpts)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
