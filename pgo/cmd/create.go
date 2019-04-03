@@ -234,7 +234,7 @@ func init() {
 	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
-	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
+	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", true, "Enables a pgBackRest volume for the database pod.")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")

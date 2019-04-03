@@ -88,6 +88,8 @@ Valid resource types include:
 	},
 }
 
+var showBackupType string
+
 func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
@@ -101,7 +103,7 @@ func init() {
 	ShowCmd.AddCommand(ShowScheduleCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
-	ShowBackupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type output to list. Valid choices are pgbasebackup (default) or pgbackrest.")
+	ShowBackupCmd.Flags().StringVarP(&showBackupType, "backup-type", "", "pgbackrest", "The backup type output to list. Valid choices are pgbasebackup or pgbackrest (default).")
 	ShowBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
@@ -211,11 +213,11 @@ var ShowBackupCmd = &cobra.Command{
 			fmt.Println("Error: cluster name(s) required for this command.")
 		} else {
 			// default is pgbasebackup
-			if BackupType == "" || BackupType == config.LABEL_BACKUP_TYPE_BASEBACKUP {
+			if showBackupType == "" || showBackupType == config.LABEL_BACKUP_TYPE_BASEBACKUP {
 				showBackup(args, Namespace)
-			} else if BackupType == config.LABEL_BACKUP_TYPE_BACKREST {
+			} else if showBackupType == config.LABEL_BACKUP_TYPE_BACKREST {
 				showBackrest(args, Namespace)
-			} else if BackupType == config.LABEL_BACKUP_TYPE_PGDUMP {
+			} else if showBackupType == config.LABEL_BACKUP_TYPE_PGDUMP {
 				showpgDump(args, Namespace)
 			} else {
 				fmt.Println("Error: Valid backup-type values are pgbasebackup, pgbackrest and pgdump. The default if not supplied is pgbasebackup.")
