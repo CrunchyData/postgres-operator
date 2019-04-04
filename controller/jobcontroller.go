@@ -25,6 +25,7 @@ import (
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
+	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
@@ -161,6 +162,10 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if status == crv1.JobCompletedStatus {
 			path := backupoperator.UpdateBackupPaths(c.JobClientset, job.Name, job.ObjectMeta.Namespace)
 			backup.Spec.Toc[path] = path
+
+			// update pgtask for workflow
+			taskoperator.CompleteBackupWorkflow(clusterName, c.JobClientset, c.JobClient, job.ObjectMeta.Namespace)
+
 		}
 
 		//update the pgbackup status
