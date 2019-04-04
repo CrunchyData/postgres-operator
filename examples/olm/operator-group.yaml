@@ -1,0 +1,9 @@
+apiVersion: operators.coreos.com/v1alpha2
+kind: OperatorGroup
+metadata:
+  name: pgo-group
+  namespace: pgo
+  spec:
+    targetNamespaces:
+    - pgouser1
+    - pgouser2
