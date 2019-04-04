@@ -1,24 +1,35 @@
 {
     "kind": "Deployment",
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "apps/v1",
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
             "pg-cluster": "{{.ClusterName}}",
             "crunchy-pgpool": "true",
-            "service-name": "{{.Name}}"
+            "service-name": "{{.Name}}",
+	    "vendor": "crunchydata"
         }
     },
     "spec": {
         "replicas": 1,
+	"selector": {
+		"matchLabels": {
+            		"name": "{{.Name}}",
+            		"pg-cluster": "{{.ClusterName}}",
+            		"crunchy-pgpool": "true",
+            		"service-name": "{{.Name}}",
+	    		"vendor": "crunchydata"
+		}
+	},
         "template": {
             "metadata": {
                 "labels": {
                     "name": "{{.Name}}",
-                    "crunchy-pgpool": "true",
                     "pg-cluster": "{{.ClusterName}}",
-                    "service-name": "{{.Name}}"
+                    "crunchy-pgpool": "true",
+                    "service-name": "{{.Name}}",
+	    	    "vendor": "crunchydata"
                 }
             },
             "spec": {
