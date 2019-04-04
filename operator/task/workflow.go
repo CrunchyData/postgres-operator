@@ -53,3 +53,31 @@ func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Cli
 	}
 
 }
+
+func CompleteBackupWorkflow(clusterName string, clientSet *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
+
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
+
+	task := crv1.Pgtask{}
+	task.Spec = crv1.PgtaskSpec{}
+	task.Spec.Name = taskName
+
+	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
+	if found && err == nil {
+		//mark this workflow as completed
+		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
+
+		log.Debugf("completing workflow %s  id %s", taskName, id)
+		task.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format("2006-01-02.15.04.05")
+
+		//update pgtask
+		err = kubeapi.Updatepgtask(RESTClient, &task, taskName, ns)
+		if err != nil {
+			log.Error(err)
+		}
+	} else {
+		log.Errorf("Error completing  workflow %s  id %s", taskName, task.Spec.Parameters[crv1.PgtaskWorkflowID])
+		log.Error(err)
+	}
+
+}

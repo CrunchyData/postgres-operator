@@ -19,10 +19,13 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"time"
 )
 
 // ShowBackup ...
@@ -112,6 +115,7 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 	resp.Results = make([]string, 0)
 
 	var newInstance *crv1.Pgbackup
+	var wfId string
 
 	log.Info("CreateBackup sc " + request.StorageConfig)
 	if request.StorageConfig != "" {
@@ -166,6 +170,8 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 
 		result := crv1.Pgbackup{}
 
+		wfId, err = createBackupWorkflowTask(cluster.Spec.Name, ns)
+
 		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, ns)
 		if !found {
 			log.Debugf("pgbackup %s was not found so we will create it", arg)
@@ -180,6 +186,11 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 			if request.PVCName != "" {
 				log.Debugf("backuppvc is %s", request.PVCName)
 				newInstance.Spec.BackupPVC = request.PVCName
+			}
+
+			if err != nil {
+				resp.Results = append(resp.Results, err.Error())
+				return resp
 			}
 
 			err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, ns)
@@ -205,6 +216,8 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 		}
 
 		resp.Results = append(resp.Results, "created backup Job for "+arg)
+
+		resp.Results = append(resp.Results, "workflow id "+wfId)
 
 	}
 
@@ -252,4 +265,60 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 		Spec: spec,
 	}
 	return newInstance, nil
+}
+
+func createBackupWorkflowTask(clusterName, ns string) (string, error) {
+
+	existingTask := crv1.Pgtask{}
+
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
+
+	//delete any existing pgtask with the same name
+	found, err := kubeapi.Getpgtask(apiserver.RESTClient,
+		&existingTask, taskName, ns)
+	if found {
+		log.Debugf("deleting prior pgtask %s", taskName)
+		err = kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	//create pgtask CRD
+	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
+	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackupType
+	spec.TaskType = crv1.PgtaskWorkflow
+
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
+
+	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+
+	log.Debugf("Backup workflow id: %s", u)
+
+	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
+
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+		},
+		Spec: spec,
+	}
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
+
+	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	return spec.Parameters[crv1.PgtaskWorkflowID], err
+
 }
