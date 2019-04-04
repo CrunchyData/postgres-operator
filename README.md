@@ -32,13 +32,13 @@ in the [Design](https://crunchydata.github.io/postgres-operator/stable/design/).
 The Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.
 
 ## Documentation
-The following documentation is provided:
 
+ - [Getting Started](https://crunchydata.github.io/postgres-operator/stable/gettingstarted/)
  - [pgo CLI Syntax and Examples](https://crunchydata.github.io/postgres-operator/stable/operator-cli/)
  - [Installation](https://crunchydata.github.io/postgres-operator/stable/installation/)
  - [Configuration](https://crunchydata.github.io/postgres-operator/stable/configuration/configuration/)
  - [pgo.yaml Description](https://crunchydata.github.io/postgres-operator/stable/configuration/pgo-yaml-configuration/)
  - [Security](https://crunchydata.github.io/postgres-operator/stable/security/)
- - [Design Overview](https://crunchydata.github.io/postgres-operator/stable/design/)
+ - [Design](https://crunchydata.github.io/postgres-operator/stable/design/)
  - [Developing](https://crunchydata.github.io/postgres-operator/stable/developer-setup/)
  - [Upgrading the Operator](https://crunchydata.github.io/postgres-operator/stable/upgrade/)
