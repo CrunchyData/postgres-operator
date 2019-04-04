@@ -72,30 +72,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
-	//only allocate an xlog pvc if this is not a backrest
-	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" && cl.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
-		pvcName := cl.Spec.Name + "-xlog"
-		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
-		if found {
-			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
-		} else {
-			storage := crv1.PgStorageSpec{}
-			pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
-			storage.StorageClass = pgoStorage.StorageClass
-			storage.AccessMode = pgoStorage.AccessMode
-			storage.Size = pgoStorage.Size
-			storage.StorageType = pgoStorage.StorageType
-			storage.MatchLabels = pgoStorage.MatchLabels
-			storage.SupplementalGroups = pgoStorage.SupplementalGroups
-			storage.Fsgroup = pgoStorage.Fsgroup
-			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
-	}
-
 	//replaced with ccpimagetag instead of pg version
 
 	AddCluster(clientset, client, cl, namespace, pvcName)
@@ -236,24 +212,6 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	if err != nil {
 		log.Error(err)
 		return
-	}
-
-	//dont allocate an xlog PVC if this is a backrest cluster
-	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
-		storage := crv1.PgStorageSpec{}
-		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
-		storage.StorageClass = pgoStorage.StorageClass
-		storage.AccessMode = pgoStorage.AccessMode
-		storage.Size = pgoStorage.Size
-		storage.StorageType = pgoStorage.StorageType
-		storage.MatchLabels = pgoStorage.MatchLabels
-		storage.SupplementalGroups = pgoStorage.SupplementalGroups
-		storage.Fsgroup = pgoStorage.Fsgroup
-		_, err := pvc.CreatePVC(clientset, &storage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
 	}
 
 	log.Debugf("created replica pvc [%s]", pvcName)

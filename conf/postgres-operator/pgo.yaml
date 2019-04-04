@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  rhel7-11.2-2.4.0-rc2
+  CCPImageTag:  centos7-11.2-2.3.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -25,7 +25,6 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
 PrimaryStorage: storageos
-XlogStorage: storageos
 BackupStorage: storageos
 ReplicaStorage: storageos
 BackrestStorage: storageos
@@ -54,10 +53,6 @@ Storage:
     MatchLabels: crunchyzone=red
     StorageType:  create
     SupplementalGroups:  65534
-  xlogstorage:
-    AccessMode:  ReadWriteMany
-    Size:  800M
-    StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
     Size:  300M
@@ -99,5 +94,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  rhel7-4.0.0-rc4
+  PGOImageTag:  centos7-4.0.0-rc4
 

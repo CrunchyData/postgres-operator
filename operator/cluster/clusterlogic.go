@@ -66,7 +66,12 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		return err
 	}
 
-	primaryLabels := operator.GetPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
+	//refactor section
+	//primaryLabels := make(map[string]string)
+	//primaryLabels := operator.GetPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
+	cl.Spec.UserLabels["name"] = cl.Spec.Name
+	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
+	//end refactor section
 
 	archivePVCName := ""
 	archiveMode := "off"
@@ -94,7 +99,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		}
 	}
 
-	primaryLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
+	cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
@@ -110,8 +115,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		CCPImage:                cl.Spec.CCPImage,
 		CCPImageTag:             cl.Spec.CCPImageTag,
 		PVCName:                 util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
-		DeploymentLabels:        operator.GetLabelsFromMap(primaryLabels),
-		PodLabels:               operator.GetLabelsFromMap(primaryLabels),
+		DeploymentLabels:        operator.GetLabelsFromMap(cl.Spec.UserLabels),
+		PodLabels:               operator.GetLabelsFromMap(cl.Spec.UserLabels),
 		BackupPVCName:           util.CreateBackupPVCSnippet(cl.Spec.BackupPVCName),
 		BackupPath:              cl.Spec.BackupPath,
 		DataPathOverride:        cl.Spec.Name,
@@ -164,9 +169,9 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		log.Info("primary Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
 
-	primaryLabels[config.LABEL_CURRENT_PRIMARY] = cl.Spec.Name
+	cl.Spec.UserLabels[config.LABEL_CURRENT_PRIMARY] = cl.Spec.Name
 
-	err = util.PatchClusterCRD(client, primaryLabels, cl, namespace)
+	err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, namespace)
 	if err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
@@ -256,10 +261,12 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	var replicaDoc bytes.Buffer
 
 	serviceName := replica.Spec.ClusterName + "-replica"
-	replicaFlag := true
+	//replicaFlag := true
 
-	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
-	replicaLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
+	//	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
+	cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
+	cluster.Spec.UserLabels["name"] = serviceName
+	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = replica.Spec.ClusterName
 
 	archivePVCName := ""
 	archiveMode := "off"
@@ -294,7 +301,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		cs = cluster.Spec.ContainerResources
 	}
 
-	replicaLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
+	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
 	//create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
@@ -319,8 +326,8 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		ArchiveTimeout:          archiveTimeout,
 		Replicas:                "1",
 		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
-		DeploymentLabels:        operator.GetLabelsFromMap(replicaLabels),
-		PodLabels:               operator.GetLabelsFromMap(replicaLabels),
+		DeploymentLabels:        operator.GetLabelsFromMap(cluster.Spec.UserLabels),
+		PodLabels:               operator.GetLabelsFromMap(cluster.Spec.UserLabels),
 		SecurityContext:         util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
 		RootSecretName:          cluster.Spec.RootSecretName,
 		PrimarySecretName:       cluster.Spec.PrimarySecretName,

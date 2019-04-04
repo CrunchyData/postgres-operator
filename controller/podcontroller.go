@@ -209,47 +209,53 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 // to match the correct Service selector for the PG cluster
 func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 
+	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
+
+	replica := false
+	pgreplica := crv1.Pgreplica{}
+	found, err := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
+	if found {
+		replica = true
+	}
+	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
+
 	var dep *v1.Deployment
-	dep, _, err := kubeapi.GetDeployment(c.PodClientset, newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], ns)
+	dep, _, err = kubeapi.GetDeployment(c.PodClientset, depName, ns)
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return
 	}
 
-	if newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "true" || newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "false" {
+	serviceName := ""
 
-		serviceName := ""
+	if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != "" {
+		log.Debug("this means the deployment was already labeled")
+		log.Debug("which means its pod was restarted for some reason")
+		log.Debug("we will use the service name on the deployment")
+		serviceName = dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]
+	} else if replica == false {
+		log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER])
+		//add label onto pod "service-name=clustername"
+		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+	} else if replica == true {
+		log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]+"-replica")
+		//add label onto pod "service-name=clustername-replica"
+		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
+	}
 
-		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != "" {
-			log.Debug("this means the deployment was already labeled")
-			log.Debug("which means its pod was restarted for some reason")
-			log.Debug("we will use the service name on the deployment")
-			serviceName = dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]
-		} else if newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "true" {
-			log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER])
-			//add label onto pod "service-name=clustername"
-			serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-		} else if newpod.ObjectMeta.Labels[config.LABEL_PRIMARY] == "false" {
-			log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]+"-replica")
-			//add label onto pod "service-name=clustername-replica"
-			serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
-		}
+	err = kubeapi.AddLabelToPod(c.PodClientset, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
+	if err != nil {
+		log.Error(err)
+		log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
+		return
+	}
 
-		err = kubeapi.AddLabelToPod(c.PodClientset, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
-		if err != nil {
-			log.Error(err)
-			log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
-			return
-		}
+	//add the service name label to the Deployment
+	err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
 
-		//add the service name label to the Deployment
-		err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
-
-		if err != nil {
-			log.Error("could not add label to deployment on pod add")
-			return
-		}
-
+	if err != nil {
+		log.Error("could not add label to deployment on pod add")
+		return
 	}
 
 }

@@ -48,7 +48,7 @@ var backupCmd = &cobra.Command{
 
 			exitNow := false // used in switch for early exit.
 
-			switch buSelected := BackupType; buSelected {
+			switch buSelected := backupType; buSelected {
 
 			case config.LABEL_BACKUP_TYPE_BACKREST:
 
@@ -82,6 +82,8 @@ var backupCmd = &cobra.Command{
 	},
 }
 
+var backupType string
+
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
@@ -89,7 +91,7 @@ func init() {
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
-	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
+	backupCmd.Flags().StringVar(&backupType, "backup-type", "pgbackrest", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
 	backupCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 
 }
@@ -181,7 +183,7 @@ func deleteBackup(args []string, ns string) {
 
 // createBackup ....
 func createBackup(args []string, ns string) {
-	log.Debugf("createBackup called %v", args)
+	log.Debugf("createBackup called %v BackupOpts %s", args, BackupOpts)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args
