@@ -17,20 +17,23 @@ Use the following syntax to run  `pgo`  commands from your terminal window:
     pgo [command] ([TYPE] [NAME]) [flags]
 
 Where *command* is a verb like:
- - show
- - get
- - create
- - delete
+
+ * show
+ * get
+ * create
+ * delete
 
 And *type* is a resource type like:
- - cluster
- - policy
- - user
+
+ * cluster
+ * policy
+ * user
 
 And *name* is the name of the resource type like:
- - mycluster
- - somesqlpolicy
- - john
+
+ * mycluster
+ * somesqlpolicy
+ * john
 
 To get detailed help information and command flag descriptions on each *pgo* command, enter:
 
@@ -67,78 +70,138 @@ The following table shows the *pgo* operations currently implemented:
 
 ## Common Operations
 
+In all the examples below, the user is specifying the *pgouser1* namespace
+as the target of the operator.  Replace this value with your own namespace
+value.  You can specify a default namespace to be used by setting the
+PGO_NAMESPACE environment variable on the *pgo* client environment.
+
 ### Cluster Operations
-#### Create Cluster With a Primary Only
 
-    pgo create cluster mycluster
+A user will typically start using the Operator by creating a Postgres
+cluster as follows:
 
-Create a cluster using the Crunchy Postgres + PostGIS container image:
+    pgo create cluster mycluster -n pgouser1
 
-    pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis
+This command creates a Postgres cluster in the *pgouser1* namespace 
+that has a single Postgres primary container. 
 
-Create a cluster with a Custom ConfigMap:
+You can see the Postgres cluster using the following:
 
-    pgo create cluster mycustomcluster --custom-config myconfigmap
+    pgo show cluster mycluster -n pgouser1
 
-#### Create Cluster With a Primary and a Replica
+You can test the Postgres cluster by entering:
 
-    pgo create cluster mycluster --replica-count=1
+    pgo test mycluster -n pgouser1
 
-#### Scale a Cluster with Additional Replicas
+You can optionally add a Postgres replica to your Postgres
+cluster as follows:
 
-    pgo scale mycluster
+    pgo scale mycluster -n pgouser1
 
-#### Create a Cluster with pgbackrest Configured
+You can create a Postgres cluster initially with a Postgres replica as follows:
 
-    pgo create cluster mycluster --pgbackrest
+    pgo create cluster mycluster --replica-count=1 -n pgouser1
+
+To view the Postgres logs, you can enter commands such as:
+
+    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log 
+    pgo cat mycluster -n pgouser1 /pgdata/mycluster/pg_log/postgresql-Mon.log | tail -3
+
+
+#### Backups
+
+By default the Operator deploys pgbackrest for a Postgres cluster to
+hold database backup data.  
+
+You can create a pgbackrest backup job as follows:
+
+    pgo backup mycluster -n pgouser1
+
+You can perform a pgbasebackup job as follows:
+
+    pgo backup mycluster --backup-type=pgbasebackup -n pgouser1
+
+You can optionally pass pgbackrest command options into the backup
+command as follows:
+
+    pgo backup mycluster --backup-type=pgbackrest --backup-opts="--type=diff" -n pgouser1
+
+See pgbackrest.org for command flag descriptions.
+
+You can create a Postgres cluster that does not include pgbackrest 
+if you specify the following:
+
+    pgo create cluster mycluster --pgbackrest=false -n pgouser1
 
 #### Scaledown a Cluster
 
-    pgo scaledown mycluster --query
-    pgo scaledown mycluster --target=sometarget
+You can remove a Postgres replica using the following:
+
+    pgo scaledown mycluster --query -n pgouser1
+    pgo scaledown mycluster --target=sometarget -n pgouser1
 
 #### Delete a Cluster
 
-    pgo delete cluster mycluster
+You can remove a Postgres cluster by entering:
+
+    pgo delete cluster mycluster -n pgouser1
 
 #### Delete a Cluster and Its Persistent Volume Claims
 
-    pgo delete cluster mycluster --delete-data
+You can remove the persistent volumes when removing a Postgres cluster
+by specifying the following command flag:
 
-#### Test a Cluster
-
-    pgo test mycluster
+    pgo delete cluster mycluster --delete-data -n pgouser1
 
 #### View Disk Utilization
 
-    pgo df mycluster
+You can see a comparison of Postgres data size versus the Persistent
+volume claim size by entering the following:
+
+    pgo df mycluster -n pgouser1
 
 ### Label Operations
 #### Apply a Label to a Cluster
 
-    pgo label mycluster --label=environment=prod
+You can apply a Kubernetes label to a Postgres cluster as follows:
 
-#### Appy a Label to a Set of Clusters
+    pgo label mycluster --label=environment=prod -n pgouser1
 
-    pgo label --selector=clustertypes=research --label=environment=prod
+In this example, the label key is *environment* and the label
+value is *prod*.
 
-#### Show Clusters by Label
+You can apply labels across a category of Postgres clusters by
+using the *--selector* command flag as follows:
 
-    pgo show cluster --selector=environment=prod
+    pgo label --selector=clustertypes=research --label=environment=prod -n pgouser1
+
+In this example, any Postgres cluster with the label of *clustertypes=research*
+will have the label *environment=prod* set.
+
+In the following command, you can also view Postgres clusters by
+using the *--selector* command flag which specifies a label key value
+to search with:
+
+    pgo show cluster --selector=environment=prod -n pgouser1
 
 ### Policy Operations
 #### Create a Policy
 
-    pgo create policy mypolicy --in-file=mypolicy.sql
+To create a SQL policy, enter the following:
 
-#### View Policies
+    pgo create policy mypolicy --in-file=mypolicy.sql -n pgouser1
 
-    pgo show policy all
+This examples creates a policy named *mypolicy* using the contents
+of the file *mypolicy.sql* which is assumed to be in the current
+directory.
 
-#### View Postgres Logs
+You can view policies as following:
 
-    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log
-    pgo cat mycluster -n pgouser1 /pgdata/mycluster/pg_log/postgresql-Mon.log | tail -3
+    pgo show policy all -n pgouser1
+
+In this example, the special *all* value is used to indicate you
+want to see all policies.
+
 
 #### Apply a Policy
 
@@ -148,57 +211,50 @@ Create a cluster with a Custom ConfigMap:
 ### Operator Status
 #### Show Operator Version
 
+To see what version of the Operator client and server you are using, enter:
+
     pgo version
 
-#### Show Operator Status
+To see the Operator server status, enter:
 
-    pgo status
+    pgo status -n pgouser1
 
-#### Show Operator Configuration
+To see the Operator server configuration, enter:
 
-    pgo show config
+    pgo show config -n pgouser1
 
-### Backup and Restore
-#### Perform a pgbasebackup
+To see what namespaces exist and if you have access to them, enter:
 
-    pgo backup mycluster
-
-#### Perform a pgbackrest backup
-
-    pgo backup mycluster --backup-type=pgbackrest
-    pgo backup mycluster --backup-type=pgbackrest --backup-opts="--type=diff"
-
-The last example passes in pgbackrest flags to the backup command.  See
-pgbackrest.org for command flag descriptions.
+    pgo show namespaces -n pgouser1
 
 #### Perform a pgdump backup
 
-	pgo backup mycluster --backup-type=pgdump
-	pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose"
-	pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema"
+	pgo backup mycluster --backup-type=pgdump -n pgouser1
+	pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose" -n pgouser1
+	pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema" -n pgouser1
 
 Note: To run pgdump_all instead of pgdump, pass '--dump-all' flag in --backup-opts as shown above. All --backup-opts should be space delimited.
 
 #### Perform a pgbackrest restore
 
-    pgo restore mycluster
+    pgo restore mycluster -n pgouser1
 
 Or perform a restore based on a point in time:
 
-    pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time"
+    pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time" -n pgouser1
 
 You can also target specific nodes when performing a restore:
 
-    pgo restore mycluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a
+    pgo restore mycluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a -n pgouser1
 
 Here are some steps to test PITR:
 
- * pgo create cluster mycluster --pgbackrest
+ * pgo create cluster mycluster
  * create a table on the new cluster called *beforebackup*
- * pgo backup mycluster --backup-type=pgbackrest
+ * pgo backup mycluster -n pgouser1
  * create a table on the cluster called *afterbackup*
  * execute *select now()* on the database to get the time, use this timestamp minus a couple of minutes when you perform the restore
- * pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info"
+ * pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info" -n pgouser1
  * wait for the database to be restored
  * execute *\d* in the database and you should see the database state prior to where the *afterbackup* table was created
 
@@ -207,42 +263,59 @@ before you do a restore.
 
 #### Restore from pgbasebackup
 
-    pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc --secret-from=mycluster
+    pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc --secret-from=mycluster -n pgouser1
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25"
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25" -n pgouser1
 	
 To restore the most recent pgdump at the default path, leave off a timestamp:
 	
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc
+	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc -n pgouser1
 	
 
 ### Fail-over Operations
 
-#### Perform a Manual Fail-over
+To perform a manual failover, enter the following:
 
-    pgo failover mycluster --query
-    pgo failover mycluster --target=sometarget
+    pgo failover mycluster --query -n pgouser1
+
+That example queries to find the available Postgres replicas that
+could be promoted to the primary.
+
+    pgo failover mycluster --target=sometarget -n pgouser1
+
+That command chooses a specific target, and starts the failover workflow.
 
 #### Create a Cluster with Auto-fail Enabled
 
-    pgo create cluster mycluster --autofail --replica-count=1
+To support an automated failover, you can specify the *--autofail* flag
+on a Postgres cluster when you create it as follows:
+
+    pgo create cluster mycluster --autofail --replica-count=1 -n pgouser1
+
+You can set the auto-fail flag on a Postgres cluster after it is created
+by the following command:
+
+    pgo update cluster --label=autofail=false -n pgouser1
+    pgo update cluster --label=autofail=true -n pgouser1
+
+Note that if you do a pgbackrest restore, you will need to reset the
+autofail flag to true after the restore is completed.
 
 ### Add-On Operations
-#### Create a Cluster with pgbouncer
 
-    pgo create cluster mycluster --pgbouncer
-	pgo create cluster mycluster --pgbouncer --pgbouncer-pass=somepass
+To add a pgbouncer Deployment to your Postgres cluster, enter:
 
-#### Create a Cluster with pgpool
+    pgo create cluster mycluster --pgbouncer -n pgouser1
 
-    pgo create cluster mycluster --pgpool
-
-#### Add pgbouncer to a Cluster
+You can add pgbouncer after a Postgres cluster is created as follows:
 
     pgo create pgbouncer mycluster
-	pgo create pgbouncer mycluster --pgbouncer-pass=somepass
+
+You can also specify a pgbouncer password as follows:
+
+    pgo create cluster mycluster --pgbouncer --pgbouncer-pass=somepass -n pgouser1
 
 Note, the pgbouncer configuration defaults to specifying only
 a single entry for the primary database.  If you want it to
@@ -252,25 +325,28 @@ configuration to pgbouncer.ini:
     {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
 
 
-#### Add pgpool to a Cluster
+To add a pgpool Deployment to your Postgres cluster, enter:
 
-    pgo create pgpool mycluster
+    pgo create cluster mycluster --pgpool -n pgouser1
 
-#### Remove pgbouncer from a Cluster
+You can also add a pgpool to a cluster after initial creation as follows:
 
-    pgo delete pgbouncer mycluster
+    pgo create pgpool mycluster -n pgouser1
 
-#### Remove pgpool from a Cluster
+You can remove a pgbouncer or pgpool from a cluster as follows:
 
-    pgo delete pgpool mycluster
+    pgo delete pgbouncer mycluster -n pgouser1
+    pgo delete pgpool mycluster -n pgouser1
 
-#### Create a Cluster with pgbadger
+You can create a pgbadger sidecar container in your Postgres cluster
+pod as follows:
 
-    pgo create cluster mycluster --pgbadger
+    pgo create cluster mycluster --pgbadger -n pgouser1
 
-#### Create a Cluster with Metrics Collection
+Likewise, you can add the Crunchy Collect Metrics sidecar container
+into your Postgres cluster pod as follows:
 
-    pgo create cluster mycluster --metrics
+    pgo create cluster mycluster --metrics -n pgouser1
 
 Note: backend metric storage such as Prometheus and front end 
 visualization software such as Grafana are not created automatically 
@@ -279,74 +355,112 @@ Prometheus in your environment, see the [Crunchy Container Suite documentation](
 
 ### Scheduled Tasks
 
-#### Automated full pgBackRest backups every Sunday at 1 am
+There is a cron based scheduler included into the Operator Deployment
+by default.  
+
+You can create automated full pgBackRest backups every Sunday at 1 am
+as follows:
 
     pgo create schedule mycluster --schedule="0 1 * * SUN" \
-        --schedule-type=pgbackrest --pgbackrest-backup-type=full
+        --schedule-type=pgbackrest --pgbackrest-backup-type=full -n pgouser1
 
-#### Automated diff pgBackRest backups every Monday-Saturday at 1 am
+You can create automated diff pgBackRest backups every Monday-Saturday at 1 am
+as follows:
 
     pgo create schedule mycluster --schedule="0 1 * * MON-SAT" \
-        --schedule-type=pgbackrest --pgbackrest-backup-type=diff
+        --schedule-type=pgbackrest --pgbackrest-backup-type=diff -n pgouser1
 
-#### Automated pgBaseBackup backups every day at 1 am
+You can create automated pgBaseBackup backups every day at 1 am as
+follows:
 
 In order to have a backup PVC created, users should run the `pgo backup` command
 against the target cluster prior to creating this schedule.
 
     pgo create schedule mycluster --schedule="0 1 * * *" \
-        --schedule-type=pgbasebackup --pvc-name=mycluster-backup
+        --schedule-type=pgbasebackup --pvc-name=mycluster-backup -n pgouser1
 
-#### Automated Policy every day at 1 am
+You can create automated Policy every day at 1 am as follows:
 
     pgo create schedule --selector=pg-cluster=mycluster --schedule="0 1 * * *" \
          --schedule-type=policy --policy=mypolicy --database=userdb \
-         --secret=mycluster-testuser-secret
+         --secret=mycluster-testuser-secret -n pgouser1
 
 ### Benchmark Clusters
 
-#### Create a Benchmark via Cluster Name
+The pgbench utility containerized and made available to Operator
+users.
 
-    pgo benchmark mycluster
+To create a Benchmark via Cluster Name you enter:
 
-#### Create a Benchmark via Selector
+    pgo benchmark mycluster -n pgouser1
 
-    pgo benchmark --selector=pg-cluster=mycluster
+To create a Benchmark via Selector, enter:
 
-#### Create a Benchmark with a custom transactions
+    pgo benchmark --selector=pg-cluster=mycluster -n pgouser1
 
-    pgo create policy --in-file=/tmp/transactions.sql mytransactions
-    pgo benchmark mycluster --policy=mytransactions
+To create a Benchmark with a custom transactions, enter:
 
-#### Create a Benchmark with custom parameters
+    pgo create policy --in-file=/tmp/transactions.sql mytransactions -n pgouser1
+    pgo benchmark mycluster --policy=mytransactions -n pgouser1
 
-    pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100
+To create a Benchmark with custom parameters, enter:
+
+    pgo benchmark mycluster --clients=10 --jobs=2 --scale=10 --transactions=100 -n pgouser1
+
+You can view benchmarks by entering:
+
+    pgo show benchmark -n pgouser1
 
 ### Complex Deployments
 #### Create a Cluster using Specific Storage
 
-    pgo create cluster mycluster --storage-config=somestorageconfig
+    pgo create cluster mycluster --storage-config=somestorageconfig -n pgouser1
 
-#### Create a Cluster using a Preferred Node
+Likewise, you can specify a storage configuration when creating
+a replica:
 
-    pgo create cluster mycluster --node-label=speed=superfast
+    pgo scale mycluster --storage-config=someslowerstorage -n pgouser1
 
-#### Create a Replica using Specific Storage
+This example specifies the *somestorageconfig* storage configuration
+to be used by the Postgres cluster.  This lets you specify a storage
+configuration that is defined in the *pgo.yaml* file specifically for
+a given Postgres cluster.
 
-    pgo scale mycluster --storage-config=someslowerstorage
+You can create a Cluster using a Preferred Node as follows:
 
-#### Create a Replica using a Preferred Node
+    pgo create cluster mycluster --node-label=speed=superfast -n pgouser1
 
-    pgo scale mycluster --node-label=speed=slowerthannormal
+That command will cause a node affinity rule to be added to the
+Postgres pod which will influence the node upon which Kubernetes
+will schedule the Pod.
+
+Likewise, you can create a Replica using a Preferred Node as follows:
+
+    pgo scale mycluster --node-label=speed=slowerthannormal -n pgouser1
 
 #### Create a Cluster with LoadBalancer ServiceType
 
-    pgo create cluster mycluster --service-type=LoadBalancer
+    pgo create cluster mycluster --service-type=LoadBalancer -n pgouser1
+
+This command will cause the Postgres Service to be of a specific
+type instead of the default ClusterIP service type.
+
+#### Miscellaneous 
+
+Create a cluster using the Crunchy Postgres + PostGIS container image:
+
+    pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis -n pgouser1
+
+Create a cluster with a Custom ConfigMap:
+
+    pgo create cluster mycustomcluster --custom-config myconfigmap -n pgouser1
+
 ## pgo Global Flags
 *pgo* global command flags include:
 
 | Flag | Description |
 |:--|:--|
+|n | namespace targeted for the command|
 |apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
 |debug |enable debug messages |
 |pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
