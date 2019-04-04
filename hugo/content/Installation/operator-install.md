@@ -25,18 +25,20 @@ The Operator can be deployed by multiple methods including:
 
 
 ## Default Installation - Create Project Structure
+
 The Operator follows a golang project structure, you can create a structure as follows on your local Linux host:
 
     mkdir -p $HOME/odev/src/github.com/crunchydata $HOME/odev/bin $HOME/odev/pkg
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-    git checkout 4.0.0-rc2
+    git checkout 4.0.0-rc4
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
 
 ## Default Installation - Configure Environment
+
 Environment variables control aspects of the Operator installation.  You can copy a sample set of Operator environment variables and aliases to your *.bashrc* file to work with.
 
     cat $HOME/odev/src/github.com/crunchydata/postgres-operator/examples/envs.sh >> $HOME/.bashrc
@@ -215,7 +217,7 @@ Prior to using *pgo*, users testing the Operator on a single host can specify th
 *postgres-operator* URL as follows:
 
 ```
-    $ kubectl get service postgres-operator
+    $ kubectl get service postgres-operator -n pgo
     NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
     postgres-operator   10.104.47.110   <none>        8443/TCP   7m
     $ export PGO_APISERVER_URL=https://10.104.47.110:8443
