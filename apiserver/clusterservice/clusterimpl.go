@@ -524,18 +524,10 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		if err != nil {
 			log.Error(err)
 		}
-		//set the badger flag with the global setting first
-		userLabelsMap[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
-		if err != nil {
-			log.Error(err)
-		}
 
 		//if metrics is chosen on the pgo command, stick it into the user labels
 		if request.MetricsFlag {
 			userLabelsMap[config.LABEL_COLLECT] = "true"
-		}
-		if request.BadgerFlag {
-			userLabelsMap[config.LABEL_BADGER] = "true"
 		}
 		if request.ServiceType != "" {
 			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
@@ -894,6 +886,12 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	labels[config.LABEL_NAME] = name
 	if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
 		labels[config.LABEL_AUTOFAIL] = "true"
+	}
+
+	//set with global flag first then check for a user flag
+	labels[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
+	if request.BadgerFlag {
+		labels[config.LABEL_BADGER] = "true"
 	}
 
 	newInstance := &crv1.Pgcluster{
