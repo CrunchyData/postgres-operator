@@ -118,12 +118,21 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 
 	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
-	//handle the case when a pg database pod is updated
+	//look up the pgcluster CRD for this pod's cluster
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+	pgcluster := crv1.Pgcluster{}
+	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, newpod.ObjectMeta.Namespace)
+	if !found || err != nil {
+		log.Error(err.Error())
+		log.Error("you should not get a not found in the onUpdate in PodController")
+		return
+	}
+
+	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
 		//only check the status of primary pods
 		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-			c.checkReadyStatus(oldpod, newpod)
+			c.checkReadyStatus(oldpod, newpod, &pgcluster)
 		}
 		return
 	}
@@ -142,7 +151,7 @@ func (c *PodController) onDelete(obj interface{}) {
 	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
-func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
+func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.Pgcluster) {
 	//handle the case of a service-name re-label
 	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] !=
 		oldpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] {
@@ -189,7 +198,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod) {
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
-					if newpod.ObjectMeta.Labels[config.LABEL_BACKREST] == "true" {
+					if cluster.Labels[config.LABEL_BACKREST] == "true" {
 						tmptask := crv1.Pgtask{}
 						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
 						if !found && err != nil {
