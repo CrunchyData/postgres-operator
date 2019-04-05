@@ -18,32 +18,32 @@ pgo create cluster [flags]
 ### Options
 
 ```
-      --archive                         Enables archive logging for the database cluster.
-      --autofail                        If set, will cause autofailover to be enabled on this cluster.
-  -x, --backup-path string              The backup archive path to restore from.
-  -p, --backup-pvc string               The backup archive PVC to restore from.
-      --ccp-image string                The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.
-  -c, --ccp-image-tag string            The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
-      --custom-config string            The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
-  -h, --help                            help for cluster
-  -l, --labels string                   The labels to apply to this cluster.
-      --metrics                         Adds the crunchy-collect container to the database pod.
-      --node-label string               The node label (key=value) to use in placing the primary database. If not set, any node is used.
-  -w, --password string                 The password to use for initial database users.
-      --pgbackrest                      Enables a pgBackRest volume for the database pod.
-      --pgbadger                        Adds the crunchy-pgbadger container to the database pod.
-      --pgbouncer                       Adds a crunchy-pgbouncer deployment to the cluster.
-      --pgbouncer-pass string           Password for the pgbouncer user of the crunchy-pgboucer deployment.
-      --pgpool                          Adds the crunchy-pgpool container to the database pod.
-      --pgpool-secret string            The name of a pgpool secret to use for the pgpool configuration.
-  -z, --policies string                 The policies to apply when creating a cluster, comma separated.
-      --replica-count int               The number of replicas to create as part of the cluster.
-      --replica-storage-config string   The name of a Storage config in pgo.yaml to use for the cluster replica storage.
-  -r, --resources-config string         The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
-  -s, --secret-from string              The cluster name to use when restoring secrets.
-  -e, --series int                      The number of clusters to create in a series. (default 1)
-      --service-type string             The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
-      --storage-config string           The name of a Storage config in pgo.yaml to use for the cluster storage.
+      --autofail                         If set, will cause autofailover to be enabled on this cluster.
+  -x, --backup-path string               The backup archive path to restore from.
+  -p, --backup-pvc string                The backup archive PVC to restore from.
+      --ccp-image string                 The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.
+  -c, --ccp-image-tag string             The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
+      --custom-config string             The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
+  -h, --help                             help for cluster
+  -l, --labels string                    The labels to apply to this cluster.
+      --metrics                          Adds the crunchy-collect container to the database pod.
+      --node-label string                The node label (key=value) to use in placing the primary database. If not set, any node is used.
+  -w, --password string                  The password to use for initial database users.
+      --pgbackrest                       Enables a pgBackRest volume for the database pod. (default true)
+      --pgbackrest-storage-type string   The type of storage to use with pgBackRest. Either "local", "s3" or both, comma separated. (default "local")
+      --pgbadger                         Adds the crunchy-pgbadger container to the database pod.
+      --pgbouncer                        Adds a crunchy-pgbouncer deployment to the cluster.
+      --pgbouncer-pass string            Password for the pgbouncer user of the crunchy-pgboucer deployment.
+      --pgpool                           Adds the crunchy-pgpool container to the database pod.
+      --pgpool-secret string             The name of a pgpool secret to use for the pgpool configuration.
+  -z, --policies string                  The policies to apply when creating a cluster, comma separated.
+      --replica-count int                The number of replicas to create as part of the cluster.
+      --replica-storage-config string    The name of a Storage config in pgo.yaml to use for the cluster replica storage.
+  -r, --resources-config string          The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
+  -s, --secret-from string               The cluster name to use when restoring secrets.
+  -e, --series int                       The number of clusters to create in a series. (default 1)
+      --service-type string              The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
+      --storage-config string            The name of a Storage config in pgo.yaml to use for the cluster storage.
 ```
 
 ### Options inherited from parent commands
@@ -61,4 +61,4 @@ pgo create cluster [flags]
 
 * [pgo create](/operatorcli/cli/pgo_create/)	 - Create a Cluster, PGBouncer, PGPool, Policy, Schedule, or User
 
-###### Auto generated by spf13/cobra on 27-Mar-2019
+###### Auto generated by spf13/cobra on 5-Apr-2019
