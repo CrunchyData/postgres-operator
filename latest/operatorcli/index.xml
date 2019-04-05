@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Operator Command Line Utility on Crunchy Data PostgreSQL Operator Documentation</title>
+    <link>https://crunchydata.github.io/postgres-operator/latest/operatorcli/</link>
+    <description>Recent content in Operator Command Line Utility on Crunchy Data PostgreSQL Operator Documentation</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://crunchydata.github.io/postgres-operator/latest/operatorcli/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Operator CLI Overview</title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/operatorcli/pgo-overview/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/latest/operatorcli/pgo-overview/</guid>
+      <description>The command line tool, pgo, is used to interact with the Postgres Operator.
+Most users will work with the Operator using the pgo CLI tool. That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
+The pgo client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
+Syntax Use the following syntax to run pgo commands from your terminal window:</description>
+    </item>
+    
+  </channel>
+</rss>

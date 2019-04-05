@@ -10,5 +10,27 @@
 	<atom:link href="https://crunchydata.github.io/postgres-operator/latest/installation/index.xml" rel="self" type="application/rss+xml" />
     
     
+    <item>
+      <title>Operator Installation</title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/installation/operator-install/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/operator-install/</guid>
+      <description>A full installation of the Operator includes the following steps:
+ create a project structure configure your environment variables configure Operator templates create security resources deploy the operator install pgo CLI (end user command tool)  Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps. pgo CLI clients are provided on the Github Releases page for Linux, Mac, and Windows clients.</description>
+    </item>
+    
+    <item>
+      <title>Developer Setup</title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/installation/developer-setup/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/latest/installation/developer-setup/</guid>
+      <description>Developing The Postgres-Operator is an open source project hosted on GitHub.
+Developers that wish to build the Operator from source or contribute to the project via pull requests would set up a development environment through the following steps.
+Create Kubernetes Cluster We use either OpenShift Container Platform or kubeadm to install development clusters.
+Create a Local Development Host We currently build on CentOS 7 and RHEL 7 hosts. Others operating systems are possible, however we do not support building or running the Operator on other operating systems at this time.</description>
+    </item>
+    
   </channel>
 </rss>

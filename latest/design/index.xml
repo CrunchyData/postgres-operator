@@ -10,5 +10,16 @@
 	<atom:link href="https://crunchydata.github.io/postgres-operator/latest/design/index.xml" rel="self" type="application/rss+xml" />
     
     
+    <item>
+      <title>Custom Configuration</title>
+      <link>https://crunchydata.github.io/postgres-operator/latest/design/custom-config/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://crunchydata.github.io/postgres-operator/latest/design/custom-config/</guid>
+      <description>Custom Postgres Configurations Starting in release 2.5, users and administrators can specify a custom set of Postgres configuration files be used when creating a new Postgres cluster. The configuration files you can change include -
+ postgresql.conf pg_hba.conf setup.sql  Different configurations for PostgreSQL might be defined for the following -
+ OLTP types of databases OLAP types of databases High Memory Minimal Configuration for Development Project Specific configurations Special Security Requirements  Global ConfigMap If you create a configMap called pgo-custom-pg-config with any of the above files within it, new clusters will use those configuration files when setting up a new database instance.</description>
+    </item>
+    
   </channel>
 </rss>
