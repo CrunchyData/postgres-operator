@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -123,6 +124,15 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 			log.Info("CreateBackup sc error is found " + request.StorageConfig)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
+	if request.BackupOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.BackupOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 	}
