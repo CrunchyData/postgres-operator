@@ -160,14 +160,14 @@ The following StorageType values are possible -
 
 The operator will create new PVCs using this naming convention: *dbname* where *dbname* is the database name you have specified.  For example, if you run:
 
-    pgo create cluster example1
+    pgo create cluster example1 -n pgouser1
 
 It will result in a PVC being created named *example1* and in the case of a backup job, the pvc is named *example1-backup*
 
 Note, when Storage Type is *create*, you can specify a storage configuration setting of *MatchLabels*, when set, this will cause a *selector* of *key=value* to be added into the PVC, this will let you target specific PV(s) to be matched for this cluster. Note, if a PV does not match the claim request, then the cluster will not start.  Users
 that want to use this feature have to place labels on their PV resources as part of PG cluster creation before creating the PG cluster.  For example, users would add a label like this to their PV before they create the PG cluster:
 
-    kubectl label pv somepv myzone=somezone
+    kubectl label pv somepv myzone=somezone -n pgouser1
 
 If you do not specify *MatchLabels* in the storage configuration, then no match filter is added and any available PV will be used to satisfy the PVC request.  This option does not apply to *dynamic* storage types.
 
@@ -182,7 +182,7 @@ In the *pgo.yaml* configuration file you have the option to configure a default 
 
 You can also override the default value using the `--resources-config` command flag when creating a new cluster:
 
-    pgo create cluster testcluster --resources-config=large
+    pgo create cluster testcluster --resources-config=large -n pgouser1
 
 Note, if you try to allocate more resources than your
 host or Kube cluster has available then you will see your
@@ -197,17 +197,17 @@ Events:
 ## Overriding Storage Configuration Defaults
  
 
-    pgo create cluster testcluster --storage-config=bigdisk
+    pgo create cluster testcluster --storage-config=bigdisk -n pgouser1
 
  
 
 That example will create a cluster and specify a storage configuration of *bigdisk* to be used for the primary database storage. The replica storage will default to the value of ReplicaStorage as specified in *pgo.yaml*.
 
-    pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk
+    pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk -n pgouser1
 
 That example will create a cluster and specify a storage configuration of *fastdisk* to be used for the primary database storage, while the replica storage will use the storage configuration *slowdisk*.
 
-    pgo backup testcluster --storage-config=offsitestorage
+    pgo backup testcluster --storage-config=offsitestorage -n pgouser1
 
 That example will create a backup and use the *offsitestorage* storage configuration for persisting the backup.
 

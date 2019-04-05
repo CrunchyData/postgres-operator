@@ -82,8 +82,8 @@ clusters.
 
 #### Defaults
 
-If there's no reason to change the default PostgreSQL configuration
-files that ship with the Crunchy Postgres container, there's no
+If there is  no reason to change the default PostgreSQL configuration
+files that ship with the Crunchy Postgres container, there is  no
 requirement to. In this event, continue using the Operator as usual
 and avoid defining a global configMap.
 

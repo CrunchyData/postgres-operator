@@ -266,6 +266,7 @@ At this point, you can test connectivity between your laptop or workstation and 
 You should get back a valid response showing the client and server version numbers.
 
 ## Verify the Installation
+
 Now that you have deployed the Operator, you can verify that it is running correctly.
 
 You should see a pod running that contains the Operator:
