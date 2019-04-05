@@ -539,14 +539,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
 		}
 
-		if request.BackrestFlag {
-			userLabelsMap[config.LABEL_BACKREST] = "true"
-			log.Debug("backrest set to true in user labels")
-		} else {
-			log.Debug("using Backrest from pgo.yaml")
-			userLabelsMap[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
-		}
-
 		err = validateBackrestStorageType(request.BackrestStorageType, request.BackrestFlag)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -888,10 +880,19 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		labels[config.LABEL_AUTOFAIL] = "true"
 	}
 
-	//set with global flag first then check for a user flag
+	//pgbadger - set with global flag first then check for a user flag
 	labels[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
 	if request.BadgerFlag {
 		labels[config.LABEL_BADGER] = "true"
+	}
+
+	//pgbackrest - set with user request first or look at global flag is not set
+	if request.BackrestFlag {
+		labels[config.LABEL_BACKREST] = "true"
+		log.Debug("backrest set to true in user labels")
+	} else {
+		log.Debug("using Backrest from pgo.yaml")
+		labels[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
 	}
 
 	newInstance := &crv1.Pgcluster{
