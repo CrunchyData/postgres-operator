@@ -23,6 +23,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -55,6 +56,15 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 			log.Info("CreateBackup sc error is found " + request.StorageConfig)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
+	if request.BackupOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.BackupOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 	}
@@ -432,6 +442,15 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 	taskName := "restore-" + request.FromCluster + pgDumpTaskExtension
 
 	log.Debugf("Restore %v\n", request)
+
+	if request.RestoreOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.RestoreOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
 
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, ns)
