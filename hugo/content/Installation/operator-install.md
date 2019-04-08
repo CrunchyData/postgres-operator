@@ -61,6 +61,15 @@ Creating Kube namespaces is typically something that only a
 priviledged Kube user can perform so log into your Kube cluster as a user 
 that has the necessary priviledges.
 
+On Openshift if you do not want to install the Operator as the system
+administrator, you can grant cluster-admin priviledges to a user
+as follows:
+
+    oc adm policy add-cluster-role-to-user cluster-admin pgoinstaller
+
+In the above command, you are granting cluster-admin priviledges
+to a user named pgoinstaller.  
+
 The *NAMESPACE* environment variable is a comma separated list
 of namespaces that specify where the Operator will be provisioing
 PG clusters into, specifically, the namespaces the Operator is watching
