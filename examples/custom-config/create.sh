@@ -13,9 +13,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+RESET="\033[0m"
+
+function echo_err() {
+    echo -e "${RED?}$(date) ERROR: ${1?}${RESET?}"
+}
+
+function echo_info() {
+    echo -e "${GREEN?}$(date) INFO: ${1?}${RESET?}"
+}
+
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$PGO_CMD delete configmap pgo-custom-pg-config
+#Error if PGO_CMD not set
+if [[ -z ${PGO_CMD} ]]
+then
+	echo_err "PGO_CMD is not set."
+fi
 
-$PGO_CMD create configmap pgo-custom-pg-config --from-file=$DIR
+#Error is PGO_NAMESPACE not set
+if [[ -z ${PGO_NAMESPACE} ]]
+then
+        echo_err "PGO_NAMESPACE is not set."
+fi
 
+# If both PGO_CMD and PGO_NAMESPACE are set, config map can be created.
+if [[ ! -z ${PGO_CMD} ]] && [[ ! -z ${PGO_NAMESPACE} ]]
+then
+
+	echo_info "PGO_NAMESPACE=${PGO_NAMESPACE}"
+	
+	$PGO_CMD delete configmap pgo-custom-pg-config -n ${PGO_NAMESPACE}
+
+	$PGO_CMD create configmap pgo-custom-pg-config --from-file=$DIR -n ${PGO_NAMESPACE}
+fi

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	"github.com/crunchydata/postgres-operator/operator"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -46,6 +47,15 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
+
+	if request.BackupOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.BackupOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
 
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
@@ -89,7 +99,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 			return resp
 		}
 
-		if cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
+		if cluster.Labels[config.LABEL_BACKREST] != "true" {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " does not have pgbackrest enabled"
 			return resp
@@ -393,6 +403,15 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 
 	log.Debugf("Restore %v\n", request)
 
+	if request.RestoreOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.RestoreOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, ns)
 	if !found {
@@ -406,7 +425,7 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	}
 
 	//verify that the cluster we are restoring from has backrest enabled
-	if cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
+	if cluster.Labels[config.LABEL_BACKREST] != "true" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"
 		return resp

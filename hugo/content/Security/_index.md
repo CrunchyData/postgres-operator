@@ -92,8 +92,11 @@ The following list shows the current complete list of possible pgo permissions t
 |Permission|Description  |
 |---|---|
 |ApplyPolicy | allow *pgo apply*|
+|Cat | allow *pgo cat*|
 |CreateBackup | allow *pgo backup*|
+|CreateBenchmark | allow *pgo create benchmark*|
 |CreateCluster | allow *pgo create cluster*|
+|CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
 |CreatePgpool | allow *pgo create pgpool*|
@@ -102,6 +105,7 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateUpgrade | allow *pgo upgrade*|
 |CreateUser | allow *pgo create user*|
 |DeleteBackup | allow *pgo delete backup*|
+|DeleteBenchmark | allow *pgo delete benchmark*|
 |DeleteCluster | allow *pgo delete cluster*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
 |DeletePgpool | allow *pgo delete pgpool*|
@@ -112,9 +116,12 @@ The following list shows the current complete list of possible pgo permissions t
 |DfCluster | allow *pgo df*|
 |Label | allow *pgo label*|
 |Load | allow *pgo load*|
+|Ls | allow *pgo ls*|
 |Reload | allow *pgo reload*|
 |Restore | allow *pgo restore*|
+|RestoreDump | allow *pgo restore* for pgdumps|
 |ShowBackup | allow *pgo show backup*|
+|ShowBenchmark | allow *pgo show benchmark*|
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
 |ShowPolicy | allow *pgo show policy*|

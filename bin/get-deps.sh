@@ -27,7 +27,11 @@ fi
 which go
 if [ $? -eq 1 ]; then
 	echo "installing golang..."
-	sudo $PM -y install golang
+	cd /tmp
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	ls *.rpm
+	sudo rpm -ivh epel*.rpm
+	sudo yum -y install golang
 fi
 
 which dep

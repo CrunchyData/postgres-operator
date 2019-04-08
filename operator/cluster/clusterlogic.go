@@ -83,7 +83,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		archivePVCName = cl.Spec.Name + "-xlog"
 	}
 
-	if cl.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
+	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		archiveTimeout = cl.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
@@ -133,10 +133,10 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		ConfVolume:              operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cl.Spec),
-		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cl.Spec),
+		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, cl),
 		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
 		PgbouncerEnvVars:        operator.GetPgbouncerEnvVar(cl.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS]),
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl.Spec.UserLabels[config.LABEL_BACKREST], cl.Spec.ClusterName, cl.Spec.Name,
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl.Labels[config.LABEL_BACKREST], cl.Spec.ClusterName, cl.Spec.Name,
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cl.Spec.UserLabels, clientset, namespace),
 	}
@@ -215,7 +215,7 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	}
 
 	//delete the backrest repo deployment if necessary
-	if cl.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
+	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
 	}
 
@@ -278,7 +278,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
-	if cluster.Spec.UserLabels[config.LABEL_BACKREST] == "true" {
+	if cluster.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
 		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
@@ -335,10 +335,10 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		ContainerResources:      operator.GetContainerResourcesJSON(&cs),
 		NodeSelector:            operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, &cluster.Spec),
+		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, cluster),
 		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[config.LABEL_COLLECT]),
 		PgbouncerEnvVars:        "",
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Spec.UserLabels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name,
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
 	}

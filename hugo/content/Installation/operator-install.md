@@ -61,6 +61,15 @@ Creating Kube namespaces is typically something that only a
 priviledged Kube user can perform so log into your Kube cluster as a user 
 that has the necessary priviledges.
 
+On Openshift if you do not want to install the Operator as the system
+administrator, you can grant cluster-admin priviledges to a user
+as follows:
+
+    oc adm policy add-cluster-role-to-user cluster-admin pgoinstaller
+
+In the above command, you are granting cluster-admin priviledges
+to a user named pgoinstaller.  
+
 The *NAMESPACE* environment variable is a comma separated list
 of namespaces that specify where the Operator will be provisioing
 PG clusters into, specifically, the namespaces the Operator is watching
@@ -258,6 +267,7 @@ Note, you can also store the pgouser file in alternate locations, see the
 Security documentation for details.
 
 {{% notice tip %}} if you are running the Operator on Google Cloud, you would open up another terminal and run *kubectl port-forward ...* to forward the Operator pod port 8443 to your localhost where you can access the Operator API from your local workstation.
+{{% /notice %}}
 
 At this point, you can test connectivity between your laptop or workstation and the Postgres Operator deployed on a Kubernetes cluster as follows:
 
@@ -266,11 +276,15 @@ At this point, you can test connectivity between your laptop or workstation and 
 You should get back a valid response showing the client and server version numbers.
 
 ## Verify the Installation
+
 Now that you have deployed the Operator, you can verify that it is running correctly.
 
 You should see a pod running that contains the Operator:
 
     kubectl get pod --selector=name=postgres-operator -n pgo
+    NAME                                 READY     STATUS    RESTARTS   AGE
+    postgres-operator-79bf94c658-zczf6   3/3       Running   0          47s
+
 
 That pod should show 3 of 3 containers in *running* state and that the operator is installed into the *pgo* namespace.
 
