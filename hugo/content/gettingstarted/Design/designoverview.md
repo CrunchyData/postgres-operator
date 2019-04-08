@@ -2,7 +2,7 @@
 title: "Design"
 date:
 draft: false
-weight: 4
+weight: 3
 ---
 
 ## Provisioning
@@ -177,6 +177,88 @@ on PG 9.6/9.5 systems, the command you will use is *select pg_xlog_replay_resume
  * the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.
  * pgbackrest.org suggests running a pgbackrest backup after a restore, this needs to be done by the DBA as part of a restore
  * when performing a pgBackRest restore, the **node-label** flag can be utilized to target a specific node for both the pgBackRest restore job and the new (i.e. restored) primary deployment that is then created for the cluster.  If a node label is not specified, the restore job will not target any specific node, and the restored primary deployment will inherit any node label's defined for the original primary deployment.
+
+### pgbackrest AWS S3 Support
+
+The Operator supports the use AWS S3 storage buckets for the pgbackrest repository in any pgbackrest-enabled cluster.  When S3 support is enabled for a cluster, all archives will automatically be pushed to a pre-configured S3 storage bucket, and that same bucket can then be utilized for the creation of any backups as well as when performing restores.  Please note that once a storage type has been selected for a cluster during cluster creation (specifically `local`, `s3`, or _both_, as described in detail below), it cannot be changed.    
+
+The Operator allows for the configuration of a single storage bucket, which can then be utilized across multiple clusters.  Once S3 support has been enabled for a cluster, pgbackrest will create a `backrestrepo` directory in the root of the configured S3 storage bucket (if it does not already exist), and subdirectories will then be created under the `backrestrepo` directory for each cluster created with S3 storage enabled.
+
+#### S3 Configuration
+
+In order to enable S3 storage, you must provide the required AWS S3 configuration information prior to deploying the Operator.  First, you will need to add the proper S3 bucket name, AWS S3 endpoint and AWS S3 region to the `Cluster` section of the `pgo.yaml` configuration file (additional information regarding the configuration of the `pgo.yaml` file can be found [here](/configuration/pgo-yaml-configuration/))  :
+
+```yaml
+Cluster:
+  BackrestS3Bucket: containers-dev-pgbackrest
+  BackrestS3Endpoint: s3.amazonaws.com
+  BackrestS3Region: us-east-1
+```
+
+You will then need to specify the proper credentials for authenticating into the S3 bucket specified by adding a **key** and **key secret** to the `$PGOROOT/pgo-backrest-repo/aws-s3-credentials.yaml` configuration file:
+
+```yaml
+---
+aws-s3-key: ABCDEFGHIJKLMNOPQRST
+aws-s3-key-secret: ABCDEFG/HIJKLMNOPQSTU/VWXYZABCDEFGHIJKLM
+```
+
+Once the above configuration details have been provided, you can deploy the Operator per the [PGO installation instructions](/installation/operator-install/).  
+
+#### Enabling S3 Storage in a Cluster
+
+With S3 storage properly configured within your PGO installation, you can now select either local storage, S3 storage, or _both_ when creating a new cluster.  The type of storage selected upon creation of the cluster will determine the type of storage that can subsequently be used when performing pgbackrest backups and restores.  A storage type is specified using the `--pgbackrest-storage-type` flag, and can be one of the following values:
+
+* `local` - pgbackrest will use volumes local to the container (e.g. Persistent Volumes) for storing archives, creating backups and locating backups for restores.  This is the default value for the `--pgbackrest-storage-type` flag.
+* `s3` - pgbackrest will use the pre-configured AWS S3 storage bucket for storing archives, creating backups and locating backups for restores
+* `local,s3` (both) - pgbackrest will use both volumes local to the container (e.g. persistent volumes), as well as the pre-configured AWS S3 storage bucket, for storing archives.  Also allows the use of local and/or S3 storage when performing backups and restores.
+
+For instance, the following command enables both `local` and `s3` storage in a new cluster:
+
+```bash
+pgo create cluster mycluster --pgbackrest --pgbackrest-storage-type=local,s3 -n pgouser1
+```
+
+As described above, this will result in pgbackrest pushing archives to both local and S3 storage, while also allowing both local and S3 storage to be utilized for backups and restores.  However, you could also enable S3 storage only when creating the cluster:
+
+```bash
+pgo create cluster mycluster --pgbackrest --pgbackrest-storage-type=s3 -n pgouser1
+```
+
+Now all archives for the cluster will be pushed to S3 storage only, and local storage will not be utilized for storing archives (nor can local storage be utilized for backups and restores).
+
+#### Using S3 to Backup & Restore
+
+As described above, once S3 storage has been enabled for a cluster, it can also be used when backing up or restoring a cluster.  Here a both local and S3 storage is selected when performing a backup:
+
+```bash
+pgo backup mycluster --backup-type=pgbackrest --pgbackrest-storage-type=local,s3 -n pgouser1
+```
+
+This results in pgbackrest creating a backup in a local volume (e.g. a persistent volume), while also creating an additional backup in the configured S3 storage bucket.  However, a backup can be created using S3 storage only:
+
+```bash
+pgo backup mycluster --backup-type=pgbackrest --pgbackrest-storage-type=s3 -n pgouser1
+```
+
+Now pgbackrest will only create a backup in the S3 storage bucket only.
+
+When performing a restore, either `local` or `s3` must be selected (selecting both for a restore will result in an error).  For instance, the following command specifies S3 storage for the restore:
+
+```bash
+pgo restore mycluster --pgbackrest-storage-type=s3 -n pgouser1
+```
+
+This will result in a full restore utilizing the backups and archives stored in the configured S3 storage bucket.
+
+_Please note that because `local` is the default storage type for the `backup` and `restore` commands, `s3` must be explicitly set using the `--pgbackrest-storage-type` flag when performing backups and restores on clusters where only S3 storage is enabled._
+
+#### AWS Certificate Authority
+The Operator installation includes a default certificate bundle that is utilized by default to establish trust between pgbackrest and the AWS S3 endpoint used for S3 storage.  Please modify or replace this certificate bundle as needed prior to deploying the Operator if another certificate authority is needed to properly establish trust between pgbackrest and your S3 endpoint.  
+
+The certificate bundle can be found here: `$PGOROOT/pgo-backrest-repo/aws-s3-ca.crt`.  
+
+When modifying or replacing the certificate bundle, please be sure to maintain the same path and filename.
 
 ## PGO Scheduler
 
