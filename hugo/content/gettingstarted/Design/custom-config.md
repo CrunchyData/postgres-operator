@@ -7,7 +7,7 @@ weight: 4
 
 ## Custom Postgres Configurations
 
-Starting in release 2.5, users and administrators can specify a
+Users and administrators can specify a
 custom set of Postgres configuration files be used when creating
 a new Postgres cluster.  The configuration files you can
 change include -
@@ -34,13 +34,6 @@ files when setting up a new database instance.  You do *NOT* have to
 specify all of the configuration files. It is entirely up to your use case
 to determine which to use.
 
-This global configmap holds the pgbackrest.conf file, this is required
-for pgbackrest backups to work!  This also applies to ANY custom
-configuration file you wish to use, it MUST contain a pgbackrest.conf
-file as a key.  See the example for pgo-custom-pg-config for the
-pgbackrest.conf file and how to add it to your custom configuration
-ConfigMap.
-
 An example set of configuration files and a script to create the
 global configMap is found at 
 ```
@@ -63,12 +56,6 @@ is run when the database is first created. Changes would be made
 to this if you wanted to define which database objects are created by
 default.
 
-The *pgbackrest.conf* file is merely used to tell the Postgres container
-that it should allocate a pgbackrest configuration directory when
-initializing the container.  The contents of this file do not get inspected
-but the name has to be *pgbackrest.conf*.  This requirement will change
-in upcoming operator releases.
-
 #### Granular Config Maps
 
 Granular config maps can be defined if it is necessary to use
@@ -87,13 +74,5 @@ files that ship with the Crunchy Postgres container, there is  no
 requirement to. In this event, continue using the Operator as usual
 and avoid defining a global configMap.
 
-#### Labeling
 
-When a custom configMap is used in cluster creation, the Operator
-labels the primary Postgres Deployment with a label of
-*custom-config* and a value of what configMap was used when creating
-the database.
-
-Commands coming in future releases will take advantage of this
-labeling.
 
