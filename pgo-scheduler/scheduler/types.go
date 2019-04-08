@@ -1,4 +1,5 @@
 package scheduler
+
 /*
  Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +14,6 @@ package scheduler
  See the License for the specific language governing permissions and
  limitations under the License.
 */
-
 
 import (
 	"time"
@@ -87,8 +87,8 @@ type SecurityContext struct {
 type PolicyTemplate struct {
 	JobName        string
 	ClusterName    string
-	COImagePrefix  string
-	COImageTag     string
+	PGOImagePrefix string
+	PGOImageTag    string
 	PGHost         string
 	PGPort         string
 	PGDatabase     string

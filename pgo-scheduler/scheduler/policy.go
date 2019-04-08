@@ -15,7 +15,6 @@ package scheduler
  limitations under the License.
 */
 
-
 import (
 	"bytes"
 	"encoding/json"
@@ -133,8 +132,8 @@ func (p PolicyJob) Run() {
 	policyJob := PolicyTemplate{
 		JobName:        name,
 		ClusterName:    p.cluster,
-		COImagePrefix:  p.ccpImagePrefix,
-		COImageTag:     p.ccpImageTag,
+		PGOImagePrefix: p.ccpImagePrefix,
+		PGOImageTag:    p.ccpImageTag,
 		PGHost:         p.cluster,
 		PGPort:         cluster.Spec.Port,
 		PGDatabase:     p.database,
