@@ -45,7 +45,7 @@ func Status(ns string) msgs.StatusResponse {
 func getStatus(results *msgs.StatusDetail, ns string) error {
 
 	var err error
-	results.OperatorStartTime = getOperatorStart(ns)
+	results.OperatorStartTime = getOperatorStart(apiserver.PgoNamespace)
 	results.NumBackups = getNumBackups(ns)
 	results.NumClaims = getNumClaims(ns)
 	results.NumDatabases = getNumDatabases(ns)
