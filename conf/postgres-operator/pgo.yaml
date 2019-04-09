@@ -94,5 +94,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.0.0-rc4
+  PGOImageTag:  centos7-4.0.0-rc5
 

@@ -5,7 +5,7 @@ MAINTAINER jeff.mccormick@crunchydata.com
 LABEL name="pgo-lspvc" \
     vendor="crunchydata.com" \
 	Version="7.6" \
-	Release="4.0.0-rc3" \
+	Release="4.0.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Display PVC" \
     description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
