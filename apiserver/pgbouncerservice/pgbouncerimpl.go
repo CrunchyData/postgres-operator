@@ -118,7 +118,8 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_ADD] = "true"
 
 		//check if this cluster already has a pgbouncer
-		if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+		// if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+		if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
 			resp.Results = append(resp.Results, cluster.Name+" already has pgbouncer added")
 			resp.Status.Code = msgs.Error
 		} else {
