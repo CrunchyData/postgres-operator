@@ -24,7 +24,7 @@
                 }],
 
         {{.SecurityContext}}
-                "serviceAccountName": "pgo-backrest",
+                "serviceAccountName": "postgres-operator",
                 "containers": [{
                     "name": "csvload",
                     "image": "{{.PGOImagePrefix}}/pgo-load:{{.PGOImageTag}}",
