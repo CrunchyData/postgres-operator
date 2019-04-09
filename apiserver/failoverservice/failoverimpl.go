@@ -187,7 +187,14 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		target := msgs.FailoverTargetSpec{}
 		target.Name = dep.Name
 
-		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
+		target.ReceiveLocation, target.ReplayLocation, target.Node, err = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
+		if err != nil {
+			log.Error("error getting rep status " + err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name, ns)
 		if preferredNode(nodes, target.Node) {
