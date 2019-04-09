@@ -575,7 +575,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		}
 
 		if request.PgbouncerFlag {
-			userLabelsMap[config.LABEL_PGBOUNCER] = "true"
+			// set flag at cluster level later
+			// userLabelsMap[config.LABEL_PGBOUNCER] = "true"
 
 			// need to create password to be added to postgres container and pgbouncer credential...
 			if !(len(request.PgbouncerPass) > 0) {
@@ -893,6 +894,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	} else {
 		log.Debug("using Backrest from pgo.yaml")
 		labels[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
+	}
+
+	// pgbouncer
+	if request.PgbouncerFlag {
+		labels[config.LABEL_PGBOUNCER] = "true"
 	}
 
 	newInstance := &crv1.Pgcluster{
