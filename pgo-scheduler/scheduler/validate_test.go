@@ -15,7 +15,6 @@ package scheduler
  limitations under the License.
 */
 
-
 import (
 	"testing"
 )
@@ -82,23 +81,26 @@ func TestValidScheduleType(t *testing.T) {
 
 func TestValidBackRestSchedule(t *testing.T) {
 	tests := []struct {
-		schedule, deployment, label, backupType string
-		valid                                   bool
+		schedule, deployment, label, backupType, storageType string
+		valid                                                bool
 	}{
-		{"pgbackrest", "testdeployment", "", "full", true},
-		{"pgbackrest", "", "testlabel=label", "diff", true},
-		{"pgbasebackup", "", "", "", false},
-		{"policy", "", "", "", false},
-		{"pgbackrest", "", "", "", false},
-		{"pgbackrest", "", "", "full", false},
-		{"pgbackrest", "testdeployment", "", "", false},
-		{"pgbackrest", "", "testlabel=label", "", false},
-		{"pgbackrest", "testdeployment", "", "foobar", false},
-		{"pgbackrest", "", "testlabel=label", "foobar", false},
+		{"pgbackrest", "testdeployment", "", "full", "local", true},
+		{"pgbackrest", "", "testlabel=label", "diff", "local", true},
+		{"pgbackrest", "testdeployment", "", "full", "s3", true},
+		{"pgbackrest", "", "testlabel=label", "diff", "s3", true},
+		{"pgbasebackup", "", "", "", "local", false},
+		{"policy", "", "", "", "local", false},
+		{"pgbackrest", "", "", "", "local", false},
+		{"pgbackrest", "", "", "full", "local", false},
+		{"pgbackrest", "testdeployment", "", "", "local", false},
+		{"pgbackrest", "", "testlabel=label", "", "local", false},
+		{"pgbackrest", "testdeployment", "", "foobar", "local", false},
+		{"pgbackrest", "", "testlabel=label", "foobar", "local", false},
+		{"pgbackrest", "", "testlabel=label", "foobar", "", false},
 	}
 
 	for i, test := range tests {
-		err := ValidateBackRestSchedule(test.schedule, test.deployment, test.label, test.backupType)
+		err := ValidateBackRestSchedule(test.schedule, test.deployment, test.label, test.backupType, test.storageType)
 		if test.valid && err != nil {
 			t.Fatalf("tests[%d] - invalid schedule type. expected valid, got invalid: %s",
 				i, err)
