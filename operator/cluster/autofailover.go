@@ -340,10 +340,13 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	readyTargets := make([]util.ReplicationInfo, 0)
 	for _, d := range readyDeps {
 		target := util.ReplicationInfo{}
-		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(restclient, clientset, &d, ns, operator.Pgo.Cluster.Port)
+		target.ReceiveLocation, target.ReplayLocation, target.Node, err = util.GetRepStatus(restclient, clientset, &d, ns, operator.Pgo.Cluster.Port)
+		if err != nil {
+			return "", err
+		}
 		target.DeploymentName = d.Name
 		readyTargets = append(readyTargets, target)
-		log.Debug("autofail receive=%d replay=%d dep=%s\n", target.ReceiveLocation, target.ReplayLocation, d.Name)
+		log.Debugf("autofail receive=%d replay=%d dep=%s\n", target.ReceiveLocation, target.ReplayLocation, d.Name)
 	}
 
 	//next see which one is the most up to date, this is the case

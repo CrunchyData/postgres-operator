@@ -128,22 +128,25 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	return pod, err
 }
 
-func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *appsv1.Deployment, namespace, databasePort string) (uint64, uint64, string) {
+func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *appsv1.Deployment, namespace, databasePort string) (uint64, uint64, string, error) {
+	var err error
+
 	var receiveLocation, replayLocation uint64
 
 	var nodeName string
 
 	//get the pods for this deployment
-	selector := "primary=false,replica-name=" + dep.Name
+	selector := config.LABEL_DEPLOYMENT_NAME + "=" + dep.Name
 	podList, err := kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err.Error())
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	if len(podList.Items) != 1 {
 		log.Debugf("no replicas found for dep %s", dep.Name)
-		return receiveLocation, replayLocation, nodeName
+		log.Error(err.Error())
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	pod := podList.Items[0]
@@ -154,7 +157,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	clusterfound, err = kubeapi.Getpgcluster(restclient, &cluster, dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], namespace)
 	if err != nil || !clusterfound {
 		log.Error("Getpgcluster error: " + err.Error())
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	//get the postgres secret for this dep
@@ -172,7 +175,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	if !found {
 		log.Error("postgres secret not found for " + dep.Name)
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, errors.New("postgres secret not found for " + dep.Name)
 	}
 
 	port := databasePort
@@ -182,7 +185,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	repInfo, err = GetReplicationInfo(target)
 	if err != nil {
 		log.Error(err)
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	receiveLocation = repInfo.ReceiveLocation
@@ -190,7 +193,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	nodeName = pod.Spec.NodeName
 
-	return receiveLocation, replayLocation, nodeName
+	return receiveLocation, replayLocation, nodeName, nil
 }
 
 func getSQLTarget(pod *v1.Pod, username, password, port, db string) string {
