@@ -240,7 +240,13 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		//get the pod status
 		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name, ns)
 		//get the rep status
-		receiveLocation, replayLocation, _ := util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
+		receiveLocation, replayLocation, _, err := util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
+		if err != nil {
+			log.Error("error getting rep status " + err.Error())
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 
 		target.RepStatus = fmt.Sprintf("receive %d replay %d", receiveLocation, replayLocation)
 		response.Targets = append(response.Targets, target)
@@ -327,6 +333,13 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	}
 
 	//delete the replica deployment
+	err = kubeapi.DeleteDeployment(apiserver.Clientset, replicaName, ns)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
 	//clusteroperator.ScaleDownBase(apiserver.Clientset, apiserver.RESTClient, &replica, ns)
 
 	if deleteData {

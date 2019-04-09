@@ -10,6 +10,7 @@ rules:
       - '*'
     resources:
       - nodes
+      - pods
       - namespaces
       - configmaps
       - storageclasses
