@@ -23,16 +23,17 @@ import (
 )
 
 type LoadConfig struct {
-	PGOImagePrefix  string `yaml:"PGOImagePrefix"`
-	PGOImageTag     string `yaml:"PGOImageTag"`
-	DbDatabase      string `yaml:"DbDatabase"`
-	DbUser          string `yaml:"DbUser"`
-	DbPort          string `yaml:"DbPort"`
-	TableToLoad     string `yaml:"TableToLoad"`
-	FilePath        string `yaml:"FilePath"`
-	FileType        string `yaml:"FileType"`
-	PVCName         string `yaml:"PVCName"`
-	SecurityContext string `yaml:"SecurityContext"`
+	PGOImagePrefix    string `yaml:"PGOImagePrefix"`
+	PGOImageTag       string `yaml:"PGOImageTag"`
+	DbDatabase        string `yaml:"DbDatabase"`
+	DbUser            string `yaml:"DbUser"`
+	DbPort            string `yaml:"DbPort"`
+	TableToLoad       string `yaml:"TableToLoad"`
+	FilePath          string `yaml:"FilePath"`
+	FileType          string `yaml:"FileType"`
+	PVCName           string `yaml:"PVCName"`
+	FSGroup           string `yaml:"FSGroup"`
+	SupplementalGroup string `yaml:"SupplementalGroup"`
 }
 
 func (c *LoadConfig) validate() error {
@@ -88,7 +89,8 @@ func (c *LoadConfig) print() {
 	log.Println("FilePath:" + c.FilePath)
 	log.Println("FileType:" + c.FileType)
 	log.Println("PVCName:" + c.PVCName)
-	log.Println("SecurityContext:" + c.SecurityContext)
+	log.Println("FSGroup:" + c.FSGroup)
+	log.Println("SupplementalGroup:" + c.SupplementalGroup)
 
 }
 

@@ -71,7 +71,14 @@ Unmount the volume so that it can be mounted by the load job:
 At this point, you have a storageos backed PVC, csv-pvc, that has
 the sample.json file loaded into it and its ready to be used
 by the load job.   One last change is required to mount the storageos
-volume within the Operator load job, that is to add a SecurityContext
-to the load job configuration:
+volume within the Operator load job, that is to specify FSGroup, this
+will cause a SecurityContext to be added into the load job which allows
+access to the RWO storage class volume:
 
-    SecurityContext:  "securityContext":{"fsGroup":26},
+    FSGroup:  26
+
+To conclude, you would load using a storage class using a command similar
+to this one:
+
+    pgo load --load-config=sample-json-load-config-sc.yaml  --selector=name=mycluster -n pgouser1
+
