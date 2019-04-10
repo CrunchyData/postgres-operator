@@ -58,7 +58,7 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns stri
 		Type:      s.Request.ScheduleType,
 		Namespace: ns,
 		PGBackRest: PGBackRest{
-			Label:       fmt.Sprintf("pg-cluster=%s,service-name=%s", cluster.Name, cluster.Name),
+			Label:       fmt.Sprintf("pg-cluster=%s,name=%s,deployment-name=%s", cluster.Name, cluster.Name, cluster.Name),
 			Container:   "database",
 			Type:        s.Request.PGBackRestType,
 			StorageType: s.Request.BackrestStorageType,

@@ -22,14 +22,14 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 
 	cv2 "gopkg.in/robfig/cron.v2"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func New(label string, nsList []string, namespace string, client *kubernetes.Clientset) *Scheduler {
+func New(label, namespace string, nsList []string, client *kubernetes.Clientset) *Scheduler {
 	apiserver.ConnectToKube()
 	restClient = apiserver.RESTClient
 	kubeClient = client
@@ -46,100 +46,54 @@ func New(label string, nsList []string, namespace string, client *kubernetes.Cli
 	}
 }
 
-func (s *Scheduler) AddSchedules() error {
+func (s *Scheduler) AddSchedule(config *v1.ConfigMap) error {
+	name := config.Name + config.Namespace
+	if _, ok := s.entries[name]; ok {
+		return nil
+	}
 
-	log.WithFields(log.Fields{
-		"namespaceList": s.namespaceList,
-	}).Info("AddSchedules watching ")
+	if len(config.Data) != 1 {
+		return errors.New("Schedule configmaps should contain only one schedule")
+	}
 
-	for i := 0; i < len(s.namespaceList); i++ {
-		configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespaceList[i])
-
-		for _, config := range configs.Items {
-			if _, ok := s.entries[string(config.Name)]; ok {
-				continue
-			}
-
-			contextErr := log.WithFields(log.Fields{
-				"configMap": config.Name,
-			})
-
-			if len(config.Data) != 1 {
-				contextErr.WithFields(log.Fields{
-					"error": errors.New("Schedule configmaps should contain only one schedule"),
-				}).Error("Failed reading configMap")
-			}
-
-			var schedule ScheduleTemplate
-			for _, data := range config.Data {
-				if err := json.Unmarshal([]byte(data), &schedule); err != nil {
-					contextErr.WithFields(log.Fields{
-						"error": err,
-					}).Error("Failed unmarshaling configMap")
-					continue
-				}
-			}
-
-			if err := validate(schedule); err != nil {
-				contextErr.WithFields(log.Fields{
-					"error": err,
-				}).Error("Failed to validate schedule")
-				continue
-			}
-
-			id, err := s.schedule(schedule)
-			if err != nil {
-				contextErr.WithFields(log.Fields{
-					"error": err,
-				}).Error("Failed to schedule configMap")
-				continue
-			}
-
-			log.WithFields(log.Fields{
-				"configMap":  string(config.Name),
-				"type":       schedule.Type,
-				"schedule":   schedule.Schedule,
-				"namespace":  schedule.Namespace,
-				"deployment": schedule.Deployment,
-				"label":      schedule.Label,
-				"container":  schedule.Container,
-			}).Info("Added new schedule")
-			s.entries[string(config.Name)] = id
+	var schedule ScheduleTemplate
+	for _, data := range config.Data {
+		if err := json.Unmarshal([]byte(data), &schedule); err != nil {
+			return fmt.Errorf("Failed unmarhsaling configMap: %s", err)
 		}
 	}
 
+	if err := validate(schedule); err != nil {
+		return fmt.Errorf("Failed to validate schedule: %s", err)
+	}
+
+	id, err := s.schedule(schedule)
+	if err != nil {
+		return fmt.Errorf("Failed to schedule configmap: %s", err)
+	}
+
+	log.WithFields(log.Fields{
+		"configMap":  string(config.Name),
+		"type":       schedule.Type,
+		"schedule":   schedule.Schedule,
+		"namespace":  schedule.Namespace,
+		"deployment": schedule.Deployment,
+		"label":      schedule.Label,
+		"container":  schedule.Container,
+	}).Info("Added new schedule")
+
+	s.entries[name] = id
 	return nil
 }
 
-func (s *Scheduler) DeleteSchedules() error {
+func (s *Scheduler) DeleteSchedule(config *v1.ConfigMap) {
 	log.WithFields(log.Fields{
-		"namespaceList": s.namespaceList,
-	}).Info("DeleteSchedules watching ")
+		"scheduleName": config.Name,
+	}).Info("Removed schedule")
 
-	found := false
-	var scheduleToRemove string
-	for i := 0; i < len(s.namespaceList); i++ {
-		configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespaceList[i])
-		for name := range s.entries {
-			for _, config := range configs.Items {
-				if name == string(config.Name) {
-					found = true
-					scheduleToRemove = name
-					break
-				}
-			}
-		}
-	}
-
-	if !found {
-		log.WithFields(log.Fields{
-			"scheduleName": scheduleToRemove,
-		}).Info("Removed schedule")
-		s.CronClient.Remove(s.entries[scheduleToRemove])
-		delete(s.entries, scheduleToRemove)
-	}
-
-	return nil
+	name := config.Name + config.Namespace
+	s.CronClient.Remove(s.entries[name])
+	delete(s.entries, name)
 }
 
 func (s *Scheduler) schedule(st ScheduleTemplate) (cv2.EntryID, error) {

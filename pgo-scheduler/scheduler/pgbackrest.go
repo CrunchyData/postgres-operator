@@ -77,11 +77,6 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	if cluster.Spec.UserLabels[config.LABEL_BACKREST] != "true" {
-		contextLogger.WithFields(log.Fields{}).Error("pgBackRest is not enabled")
-		return
-	}
-
 	taskName := fmt.Sprintf("%s-backrest-%s-backup-schedule", b.cluster, b.backupType)
 
 	result := crv1.Pgtask{}
