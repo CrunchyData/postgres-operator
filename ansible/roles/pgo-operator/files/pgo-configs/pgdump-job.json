@@ -1,0 +1,97 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+        "labels": {
+                "vendor": "crunchydata",
+                "pgdump": "true",
+                "pg-cluster": "{{.ClusterName}}",
+	        "pg-task": "{{.TaskName}}"
+	}
+    },
+    "spec": {
+	"backoffLimit": 0,
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor":"crunchydata",
+		    "pgdump":"true",
+		    "pg-cluster":"{{.ClusterName}}"
+                }
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "pgdata",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.PgDumpPVC}}" 
+                        }
+                    }
+                ],
+		
+                {{.SecurityContext}}
+
+                "containers": [{
+                        "name": "pgdump",
+                        "image": "{{.CCPImagePrefix}}/crunchy-pgdump:{{.CCPImageTag}}",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgdata",
+                                "name": "pgdata",
+                                "readOnly": false
+                            }
+                        ],
+		        {{.ContainerResources}}
+                        "env": [
+                            {
+                                "name": "PGDUMP_HOST",
+                                "value": "{{.PgDumpHost}}"
+                            },
+                            {
+                                "name": "PGDUMP_USER",
+                                "valueFrom": {
+				    "secretKeyRef": {
+					"name": "{{.PgDumpUserSecret}}",
+					"key": "username"
+				    }
+				}
+                            },
+                            {
+                                "name": "PGDUMP_PASS",
+                                "valueFrom": {
+				    "secretKeyRef": {
+					"name": "{{.PgDumpUserSecret}}",
+					"key": "password"
+				    }
+				}
+                            },
+                            {
+                                "name": "PGDUMP_DB",
+                                "value": "{{.PgDumpDB}}"
+                            },
+			    {
+				"name": "PGDUMP_PORT",
+				"value": "{{.PgDumpPort}}"
+			    },
+			    {
+				"name": "PGDUMP_CUSTOM_OPTS",
+				"value": "{{.PgDumpOpts}}"
+			    },
+			    {
+				"name": "PGDUMP_FILENAME",
+				"value": "{{.PgDumpFilename}}"
+			    },
+			    {
+				"name": "PGDUMP_ALL",
+				"value": "{{.PgDumpAll}}"
+			    }
+                        ]
+                    }
+                ],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

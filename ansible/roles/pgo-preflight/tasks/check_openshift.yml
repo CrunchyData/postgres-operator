@@ -1,0 +1,40 @@
+# check_openshift.yml
+---
+- name: openshift_user should be defined
+  assert:
+    that:
+      - openshift_user is defined and openshift_user != ''
+    msg: "Set the value of 'openshift_user' in the inventory file."
+  when: openshift_token is not defined
+  tags: always
+
+- name: openshift_password should be defined
+  assert:
+    that:
+      - openshift_password is defined and openshift_password != ''
+    msg: "Set the value of 'openshift_password' in the inventory file."
+  when: openshift_token is not defined
+  tags: always
+
+- name: openshift_token should be defined
+  assert:
+    that:
+      - openshift_token is defined and openshift_token != ''
+    msg: "Set the value of 'openshift_token' in the inventory file."
+  when: 
+    - openshift_user is not defined
+    - openshift_password is not defined
+  tags: always
+
+- name: Check if the oc command is installed
+  shell: which oc
+  register: oc_result
+  ignore_errors: yes
+  tags: always
+
+- name: Ensure OpenShift CLI is installed
+  assert:
+    that:
+      - oc_result.rc == 0
+    msg: "Install the OpenShift CLI (oc)"
+  tags: always

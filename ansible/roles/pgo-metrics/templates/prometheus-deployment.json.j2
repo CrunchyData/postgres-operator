@@ -1,0 +1,63 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+        "name": "crunchy-prometheus"
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{ prometheus_service_name }}",
+                    "vendor": "crunchydata"
+                }
+            },
+            "spec": {
+                "serviceAccountName": "prometheus-sa",
+                "containers": [
+                    {
+                        "name": "prometheus",
+                        "image": "{{ ccp_image_prefix }}/crunchy-prometheus:{{ ccp_image_tag }}",
+                        "ports": [
+                            {
+                                "containerPort": {{ prometheus_port }},
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "tcpSocket": {
+                                "port": {{ prometheus_port }}
+                            },
+                            "initialDelaySeconds": 20,
+                            "periodSeconds": 10
+                        },
+                        "livenessProbe": {
+                            "tcpSocket": {
+                                "port": {{ prometheus_port }}
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 20
+                        },
+                        "env": [],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/data",
+                                "name": "prometheusdata",
+                                "readOnly": false
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "prometheusdata",
+                        "persistentVolumeClaim": {
+                            "claimName": "prometheusdata"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,9 @@
+---
+grafana_default_dashboards: "true"
+grafana_port: "3000"
+grafana_service_name: "crunchy-grafana"
+
+metrics_namespace: "crunchy-metrics"
+
+prometheus_port: "9090"
+prometheus_service_name: "crunchy-prometheus"

@@ -1,0 +1,20 @@
+---
+backrest_aws_s3_key: ""
+backrest_aws_s3_secret: ""
+backrest_aws_s3_bucket: ""
+backrest_aws_s3_endpoint: ""
+backrest_aws_s3_region: ""
+backrest_port: "2022"
+
+cleanup: "false"
+common_name: "crunchydata"
+crunchy_debug: "false"
+
+pgo_client_install: "true"
+
+storage1_supplemental_groups: ''
+storage1_fs_group: ''
+storage2_supplemental_groups: ''
+storage2_fs_group: ''
+storage3_supplemental_groups: ''
+storage3_fs_group: ''
