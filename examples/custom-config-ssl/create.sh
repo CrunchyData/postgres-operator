@@ -78,7 +78,6 @@ ${PGO_CMD?} create --namespace=${PGO_NAMESPACE?} configmap pgo-custom-ssl-config
     --from-file=${DIR?}/configs/pg_hba.conf \
     --from-file=${DIR?}/configs/pg_ident.conf \
     --from-file=${DIR?}/configs/postgresql.conf
-fi
 
 echo ""
 echo "To connect via SSL, run the following once the DB is ready: "
@@ -89,3 +88,5 @@ sslcrl=$PGOROOT/examples/custom-config-ssl/certs/ca.crl&\
 sslcert=$PGOROOT/examples/custom-config-ssl/certs/client.crt&\
 sslkey=$PGOROOT/examples/custom-config-ssl/certs/client.key\""
 echo ""
+
+fi
