@@ -1,0 +1,37 @@
+---
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags: always
+
+- name: DEPRECATED Delete scheduler deployment
+  shell: |
+    {{ kubectl_or_oc }} delete deployment \
+      crunchy-scheduler -n {{ kubernetes_namespace }}
+  ignore_errors: yes
+  no_log: true
+  tags: always
+
+- name: DEPRECATED Delete scheduler service account
+  shell: |
+    {{ kubectl_or_oc }} delete serviceaccount \
+      scheduler-sa -n {{ kubernetes_namespace }}
+  ignore_errors: yes
+  no_log: true
+  tags: always
+
+- name: DEPRECATED Delete scheduler cluster role binding
+  shell: |
+    {{ kubectl_or_oc }} delete clusterrolebinding \
+      scheduler-sa -n {{ kubernetes_namespace }}
+  ignore_errors: yes
+  no_log: true
+  tags: always
+
+- name: DEPRECATED Delete scheduler cluster role
+  shell: |
+    {{ kubectl_or_oc }} delete clusterrole \
+      scheduler-sa -n {{ kubernetes_namespace }}
+  ignore_errors: yes
+  no_log: true
+  tags: always

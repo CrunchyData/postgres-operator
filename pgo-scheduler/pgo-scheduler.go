@@ -26,8 +26,11 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -93,7 +96,8 @@ func init() {
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-	scheduler := scheduler.New(schedulerLabel, namespaceList, pgoNamespace, kubeClient)
+
+	scheduler := scheduler.New(schedulerLabel, pgoNamespace, namespaceList, kubeClient)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)
@@ -108,33 +112,54 @@ func main() {
 		done <- true
 	}()
 
-	go func() {
-		for {
-			if err := scheduler.AddSchedules(); err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Error("Failed to add schedules")
-			}
-			time.Sleep(time.Second * 10)
-		}
-	}()
+	stop := make(chan struct{})
 
-	go func() {
-		for {
-			time.Sleep(time.Second * 10)
-			if err := scheduler.DeleteSchedules(); err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Error("Failed to delete schedules")
-			}
-		}
-	}()
+	log.WithFields(log.Fields{}).Infof("Watching namespaces: %s", namespaceList)
+
+	for _, namespace := range namespaceList {
+		watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
+			"configmaps", namespace, fields.Everything())
+
+		_, controller := cache.NewInformer(watchlist, &v1.ConfigMap{}, 0,
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					cm, ok := obj.(*v1.ConfigMap)
+					if !ok {
+						log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
+					}
+
+					if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
+						return
+					}
+
+					if err := scheduler.AddSchedule(cm); err != nil {
+						log.WithFields(log.Fields{
+							"error": err,
+						}).Error("Failed to add schedules")
+					}
+				},
+				DeleteFunc: func(obj interface{}) {
+					cm, ok := obj.(*v1.ConfigMap)
+					if !ok {
+						log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
+					}
+
+					if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
+						return
+					}
+					scheduler.DeleteSchedule(cm)
+				},
+			},
+		)
+		go controller.Run(stop)
+	}
 
 	for {
 		select {
 		case <-done:
 			log.Warning("Shutting down scheduler")
 			scheduler.CronClient.Stop()
+			close(stop)
 			os.Exit(0)
 		default:
 			time.Sleep(time.Second * 1)
@@ -153,5 +178,6 @@ func newKubeClient() (*kubernetes.Clientset, error) {
 	if err != nil {
 		return client, err
 	}
+
 	return client, nil
 }

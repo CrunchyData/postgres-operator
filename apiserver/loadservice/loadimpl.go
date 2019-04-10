@@ -33,8 +33,8 @@ import (
 
 type loadJobTemplateFields struct {
 	Name               string
-	COImagePrefix      string
-	COImageTag         string
+	PGOImagePrefix     string
+	PGOImageTag        string
 	DbHost             string
 	DbDatabase         string
 	DbUser             string
@@ -83,8 +83,8 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 		return resp
 	}
 
-	LoadConfigTemplate.COImagePrefix = LoadCfg.COImagePrefix
-	LoadConfigTemplate.COImageTag = LoadCfg.COImageTag
+	LoadConfigTemplate.PGOImagePrefix = LoadCfg.PGOImagePrefix
+	LoadConfigTemplate.PGOImageTag = LoadCfg.PGOImageTag
 	LoadConfigTemplate.DbDatabase = LoadCfg.DbDatabase
 	LoadConfigTemplate.DbUser = LoadCfg.DbUser
 	LoadConfigTemplate.DbPort = LoadCfg.DbPort
@@ -92,7 +92,7 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 	LoadConfigTemplate.FilePath = LoadCfg.FilePath
 	LoadConfigTemplate.FileType = LoadCfg.FileType
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
-	LoadConfigTemplate.SecurityContext = LoadCfg.SecurityContext
+	LoadConfigTemplate.SecurityContext = operutil.CreateSecContext(LoadCfg.FSGroup, LoadCfg.SupplementalGroup)
 	LoadConfigTemplate.ContainerResources = ""
 	if apiserver.Pgo.DefaultLoadResources != "" {
 		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLoadResources)
@@ -195,7 +195,7 @@ func createJob(clusterName string, template *loadJobTemplateFields, ns string) (
 	}
 
 	var doc2 bytes.Buffer
-	err = config.JobTemplate.Execute(&doc2, template)
+	err = config.LoadTemplate.Execute(&doc2, template)
 	if err != nil {
 		log.Error(err.Error())
 		return "", err

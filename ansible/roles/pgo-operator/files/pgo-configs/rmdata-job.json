@@ -1,0 +1,53 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+	"labels": {
+        	"vendor": "crunchydata",
+               	"pgrmdata": "true",
+		"pg-cluster": "{{.ClusterName}}",
+                "claimName": "{{.PvcName}}"
+	}
+    },
+    "spec": {
+	"backoffLimit": 0,
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgrmdata": "true",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "claimName": "{{.PvcName}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    "name": "pgdata",
+                    "persistentVolumeClaim" : {
+                        "claimName": "{{.PvcName}}"
+                    }
+                }],
+
+        {{.SecurityContext}}
+
+                "containers": [{
+                    "name": "rmdata",
+                    "image": "{{.PGOImagePrefix}}/pgo-rmdata:{{.PGOImageTag}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }],
+		    {{.ContainerResources }}
+                    "env": [{
+                        "name": "DATA_ROOT",
+                        "value": "{{.DataRoot}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

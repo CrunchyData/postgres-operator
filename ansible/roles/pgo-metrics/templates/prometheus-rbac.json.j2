@@ -1,0 +1,51 @@
+{
+    "apiVersion": "rbac.authorization.k8s.io/v1beta1",
+    "kind": "ClusterRole",
+    "metadata": {
+        "name": "{{ metrics_namespace }}-prometheus-sa"
+    },
+    "rules": [
+        {
+            "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "pods"
+            ],
+            "verbs": [
+                "get",
+                "list",
+                "watch"
+            ]
+        }
+    ]
+}
+
+{
+    "apiVersion": "v1",
+    "kind": "ServiceAccount",
+    "metadata": {
+        "name": "prometheus-sa",
+        "namespace": "{{ metrics_namespace }}"
+    }
+}
+
+{
+    "apiVersion": "rbac.authorization.k8s.io/v1beta1",
+    "kind": "ClusterRoleBinding",
+    "metadata": {
+        "name": "{{ metrics_namespace }}-prometheus-sa"
+    },
+    "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "{{ metrics_namespace }}-prometheus-sa"
+    },
+    "subjects": [
+        {
+            "kind": "ServiceAccount",
+            "name": "prometheus-sa",
+            "namespace": "{{ metrics_namespace }}"
+        }
+    ]
+}

@@ -1,0 +1,78 @@
+Cluster:
+  PrimaryNodeLabel:
+  ReplicaNodeLabel:
+  CCPImagePrefix:  {{ ccp_image_prefix }}
+  CCPImageTag:  {{ ccp_image_tag }}
+  Autofail:  {{ auto_failover }}
+  AutofailReplaceReplica:  {{ auto_failover_replace_replica }}
+  Backrest:  {{ backrest }}
+  BackrestPort:  {{ backrest_port }}
+  BackrestS3Bucket: {{ backrest_aws_s3_bucket }}
+  BackrestS3Endpoint: {{ backrest_aws_s3_endpoint }}
+  BackrestS3Region: {{ backrest_aws_s3_region }}
+  Metrics:  {{ metrics }}
+  Badger:  {{ badger }}
+  Port:  {{ db_port }}
+  User:  {{ db_user}}
+  Database:  {{ db_name }}
+  PasswordAgeDays:  {{ db_password_age_days }}
+  PasswordLength:  {{ db_password_length }}
+  Strategy:  1
+  Replicas:  {{ db_replicas }}
+  ArchiveMode:  {{ archive_mode }}
+  ArchiveTimeout:  {{ archive_timeout }}
+  ServiceType:  ClusterIP
+  LogStatement: {{ log_statement }}
+  LogMinDurationStatement:  {{ log_min_duration_statement }}
+PrimaryStorage: {{ primary_storage }}
+BackupStorage: {{ backup_storage }}
+ReplicaStorage: {{ replica_storage }}
+BackrestStorage: {{ backrest_storage }}
+Storage:
+  storage1:
+    AccessMode:  {{ storage1_access_mode }}
+    Size:  {{ storage1_size }}
+    StorageType:  {{ storage1_type }}
+    StorageClass: {{ storage1_class }}
+    SupplementalGroups: {{ storage1_supplemental_groups }}
+    Fsgroup: {{ storage1_fs_group }}
+  storage2:
+    AccessMode:  {{ storage2_access_mode }}
+    Size:  {{ storage2_size }}
+    StorageType:  {{ storage2_type }}
+    StorageClass: {{ storage2_class }}
+    SupplementalGroups: {{ storage2_supplemental_groups }}
+    Fsgroup: {{ storage2_fs_group }}
+  storage3:
+    AccessMode:  {{ storage3_access_mode }}
+    Size:  {{ storage3_size }}
+    StorageType:  {{ storage3_type }}
+    StorageClass: {{ storage3_class }}
+    SupplementalGroups: {{ storage3_supplemental_groups }}
+    Fsgroup: {{ storage3_fs_group }}
+DefaultContainerResource:
+DefaultContainerResources: 
+DefaultLoadResources:  
+DefaultLspvcResources:  
+DefaultRmdataResources:  
+DefaultBackupResources:  
+DefaultPgbouncerResources:  
+DefaultPgpoolResources:
+ContainerResources:
+  small:
+    RequestsMemory:  512Mi
+    RequestsCPU:  0.1
+    LimitsMemory:  512Mi
+    LimitsCPU:  0.1
+  large:
+    RequestsMemory:  2Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  2Gi
+    LimitsCPU:  4.0
+Pgo:
+  AutofailSleepSeconds:  {{ auto_failover_sleep_secs }} 
+  Audit:  false
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
+  PGOImagePrefix:  {{ pgo_image_prefix }}
+  PGOImageTag:  {{ pgo_image_tag }}

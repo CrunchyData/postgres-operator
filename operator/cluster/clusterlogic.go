@@ -195,7 +195,8 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	}
 
 	//delete the pgbouncer service if exists
-	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+	//	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+	if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
 		DeletePgbouncer(clientset, cl.Spec.Name, namespace)
 	}
 

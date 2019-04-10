@@ -1,0 +1,10 @@
+            "resources": {
+                "requests": {
+                    "memory": "{{.RequestsMemory}}",
+                    "cpu": "{{.RequestsCPU}}"
+                },
+                "limits": {
+                    "memory": "{{.LimitsMemory}}",
+                    "cpu": "{{.LimitsCPU}}"
+                }
+            },

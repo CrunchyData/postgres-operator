@@ -1,0 +1,138 @@
+localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env python"
+
+[all:vars]
+
+crunchy_debug='false'
+
+# ===================
+# PGO Settings
+# The following settings configure the Crunchy PostgreSQL Operator 
+# functionality.
+# ===================
+pgo_client_install='true'
+
+# PGO Namespace
+pgo_namespace='pgo'
+target_namespaces='pgo'
+
+# PGO Admin Credentials
+pgo_admin_username='admin'
+pgo_admin_password=''
+
+# PGO TLS
+pgo_tls_no_verify='false'
+
+# Crunchy Container Suite images to use. The tags centos7 and rhel7 are acceptable.
+ccp_image_prefix='crunchydata'
+ccp_image_tag='centos7-11.2-2.3.1'
+
+# Crunchy PostgreSQL Operator images to use.  The tags centos7 and rhel7 are acceptable.
+pgo_image_prefix='crunchydata'
+pgo_image_tag='centos7-4.0.0-rc5'
+
+# This will set default enhancements for operator deployed PostgreSQL clusters
+auto_failover='false'
+backrest='false'
+badger='false'
+metrics='false'
+
+# pgBackRest Defaults
+archive_mode='true'
+archive_timeout=60
+
+# Log Defaults
+log_statement='none'
+log_min_duration_statement=60000
+
+# Autofail Settings
+auto_failover_replace_replica=false
+auto_failover_sleep_secs=9
+
+# Scheduler Settings
+scheduler_timeout=3600
+
+# pgBackRest S3 Settings
+#backrest_aws_s3_key=""
+#backrest_aws_s3_secret=""
+#backrest_aws_s3_bucket=""
+#backrest_aws_s3_endpoint=""
+#backrest_aws_s3_region=""
+
+# ===================
+# PostgreSQL Settings
+# Default parameters for objects created when the database container starts
+# such as: default database name and default username
+# ===================
+db_name='userdb'
+db_password_age_days=60
+db_password_length=20
+db_port=5432
+db_replicas=0
+db_user='testuser'
+
+# ==================
+# Metrics
+# ==================
+# Optional installation of Grafana and Prometheus optimized 
+# to work with the Crunchy PostgreSQL Operator
+metrics_namespace='metrics'
+
+grafana_install='true'
+grafana_admin_username='admin'
+grafana_admin_password=''
+#grafana_storage_access_mode='ReadWriteOnce'
+#grafana_storage_class_name='fast'
+#grafana_volume_size='1G'
+
+prometheus_install='true'
+#prometheus_storage_access_mode='ReadWriteOnce'
+#prometheus_storage_class_name='fast'
+#prometheus_volume_size='1G'
+
+# ==================
+# Storage Settings
+# ==================
+# Which storage definitions to use when creating persistent volumes
+# for a variety of uses.
+# Note: it is suggested that backup_storage be configured to a ReadWriteMany
+# storage provider for pgBackRest to work correctly.
+backrest_storage='storage1'
+backup_storage='storage1'
+primary_storage='storage2'
+replica_storage='storage3'
+xlog_storage='storage1'
+
+storage1_access_mode='ReadWriteMany'
+storage1_size='1G'
+storage1_type='dynamic'
+storage1_class='nfs'
+#storage1_supplemental_groups=65534
+#storage1_fs_group=26
+
+storage2_access_mode='ReadWriteOnce'
+storage2_size='1G'
+storage2_type='dynamic'
+storage2_class='fast'
+#storage2_supplemental_groups=65534
+#storage2_fs_group=26
+
+storage3_access_mode='ReadWriteOnce'
+storage3_size='1G'
+storage3_type='dynamic'
+storage3_class='fast'
+#storage3_supplemental_groups=65534
+#storage3_fs_group=26
+
+# ==================
+# Deploy into Openshift
+# Note: openshift_token can be used for token authentication
+# ==================
+# openshift_host=''
+# openshift_skip_tls_verify=true
+# openshift_user=''
+# openshift_password=''
+
+# ==================
+# Deploy into Kubernetes
+# ==================
+# kubernetes_context=''

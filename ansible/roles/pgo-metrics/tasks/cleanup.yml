@@ -1,0 +1,79 @@
+---
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags:
+  - deprovision-metrics
+  - upgrade-metrics
+
+- name: Delete Prometheus Deployment
+  shell: |
+    {{ kubectl_or_oc }} delete deployment crunchy-prometheus -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Grafana Deployment
+  shell: |
+    {{ kubectl_or_oc }} delete deployment crunchy-grafana -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Prometheus Service
+  shell: |
+    {{ kubectl_or_oc }} delete service {{ prometheus_service_name }} -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Grafana Service 
+  shell: |
+    {{ kubectl_or_oc }} delete service {{ grafana_service_name }} -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Prometheus Cluster Roles 
+  shell: |
+    {{ kubectl_or_oc }} delete clusterrole,clusterrolebinding {{ metrics_namespace }}-prometheus-sa -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Prometheus Service Account
+  shell: |
+    {{ kubectl_or_oc }} delete serviceaccount prometheus-sa -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Grafana PVC
+  shell: |
+    {{ kubectl_or_oc }} delete pvc grafanadata -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Prometheus PVC
+  shell: |
+    {{ kubectl_or_oc }} delete pvc prometheusdata -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
+
+- name: Delete Grafana Secret
+  shell: |
+    {{ kubectl_or_oc }} delete secret grafana-secret -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision-metrics
