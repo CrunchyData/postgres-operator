@@ -1,0 +1,42 @@
+{
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "vendor": "crunchydata",
+            "name": "lspvc",
+            "pg-cluster": "{{.ClusterName}}",
+            "pvcname": "{{.PVCName}}"
+        }
+    },
+    "spec": {
+
+	    {{.NodeSelector}}
+
+        "restartPolicy": "Never",
+        "containers": [{
+            "name": "lspvc",
+            "securityContext": {
+                "privileged": false
+            },
+            "image": "{{.PGOImagePrefix}}/pgo-lspvc:{{.PGOImageTag}}",
+	    {{.ContainerResources }}
+            "env": [{
+                "name": "BACKUP_ROOT",
+                "value": "{{.BackupRoot}}"
+            }],
+            "volumeMounts": [{
+                "mountPath": "/pgdata",
+                "name": "pgdata",
+                "readOnly": true
+            }]
+        }],
+        "volumes": [{
+            "name": "pgdata",
+            "persistentVolumeClaim": {
+                "claimName": "{{.PVCName}}"
+            }
+        }]
+    }
+}
