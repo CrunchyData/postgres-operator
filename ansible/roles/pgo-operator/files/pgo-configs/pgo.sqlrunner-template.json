@@ -1,0 +1,81 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+        "labels": {
+            "vendor": "crunchydata",
+            "pgo-sqlrunner": "true",
+            "pg-cluster": "{{.ClusterName}}"
+        }
+    },
+    "spec": {
+        "backoffLimit": 0,
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgo-sqlrunner": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "sqlrunner",
+                        "image": "{{.PGOImagePrefix}}/pgo-sqlrunner:{{.PGOImageTag}}",
+                        "env": [
+                            {
+                                "name": "PG_HOST",
+                                "value": "{{.PGHost}}"
+                            },
+                            {
+                                "name": "PG_PORT",
+                                "value": "{{.PGPort}}"
+                            },
+                            {
+                                "name": "PG_DATABASE",
+                                "value": "{{.PGDatabase}}"
+                            },
+                            {
+                                "name": "PG_USER",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "{{.PGUserSecret}}",
+                                        "key": "username"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "PG_PASSWORD",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "{{.PGUserSecret}}",
+                                        "key": "password"
+                                    }
+                                }
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgconf",
+                                "name": "pgconf",
+                                "readOnly": true
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "pgconf",
+                        "configMap": {
+                            "name": "{{.PGSQLConfigMap}}"
+                        }
+                    }
+                ],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

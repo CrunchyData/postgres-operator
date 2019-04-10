@@ -23,8 +23,8 @@ import (
 )
 
 type LoadConfig struct {
-	COImagePrefix   string `yaml:"COImagePrefix"`
-	COImageTag      string `yaml:"COImageTag"`
+	PGOImagePrefix  string `yaml:"PGOImagePrefix"`
+	PGOImageTag     string `yaml:"PGOImageTag"`
 	DbDatabase      string `yaml:"DbDatabase"`
 	DbUser          string `yaml:"DbUser"`
 	DbPort          string `yaml:"DbPort"`
@@ -38,11 +38,11 @@ type LoadConfig struct {
 func (c *LoadConfig) validate() error {
 	var err error
 
-	if c.COImagePrefix == "" {
-		return errors.New("COImagePrefix is not supplied")
+	if c.PGOImagePrefix == "" {
+		return errors.New("PGOImagePrefix is not supplied")
 	}
-	if c.COImageTag == "" {
-		return errors.New("COImageTag is not supplied")
+	if c.PGOImageTag == "" {
+		return errors.New("PGOImageTag is not supplied")
 	}
 	if c.DbDatabase == "" {
 		return errors.New("DbDatabase is not supplied")
@@ -79,8 +79,8 @@ func (c *LoadConfig) getConf(yamlFile *bytes.Buffer) (*LoadConfig, error) {
 
 func (c *LoadConfig) print() {
 	log.Println("LoadConfig...")
-	log.Println("COImagePrefix:" + c.COImagePrefix)
-	log.Println("COImageTag:" + c.COImageTag)
+	log.Println("PGOImagePrefix:" + c.PGOImagePrefix)
+	log.Println("PGOImageTag:" + c.PGOImageTag)
 	log.Println("DbDatabase:" + c.DbDatabase)
 	log.Println("DbUser:" + c.DbUser)
 	log.Println("DbPort:" + c.DbPort)

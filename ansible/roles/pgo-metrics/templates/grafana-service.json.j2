@@ -1,0 +1,26 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{ grafana_service_name }}",
+        "labels": {
+            "name": "{{ grafana_service_name }}",
+            "vendor": "crunchydata"
+        }
+    },
+    "spec": {
+        "ports": [
+            {
+                "name": "grafana",
+                "protocol": "TCP",
+                "port": {{ grafana_port }},
+                "targetPort": {{ grafana_port }}
+            }
+        ],
+        "selector": {
+            "name": "{{ grafana_service_name }}"
+        },
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+    }
+}
