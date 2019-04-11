@@ -11,6 +11,8 @@ Additionally, this script requires the certstrap utility to be installed. An ins
 
 The relevant configuration files are located in the configs directory and will configure the clsuter to use SSL client authentication. These, along with the client certificate for the user 'testuser' and a server certificate for 'pgo-custom-ssl-container', will make up the necessary configuration items to be stored in the 'pgo-custom-ssl-config' configmap.
 
+# Example Steps
+
 Run the script as follow:
 cd $PGOROOT/examples/custom-config-ssl
 ./create.sh
@@ -51,3 +53,11 @@ SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 25
 Type "help" for help.
 
 userdb=>
+
+# Important Notes
+
+Because SSL will be required for connections, certain features of the Operator will not function as expected. These include the following:
+
+pgo test
+pgo load
+pgo apply
