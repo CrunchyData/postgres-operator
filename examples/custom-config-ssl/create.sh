@@ -18,7 +18,7 @@ GREEN="\033[0;32m"
 RESET="\033[0m"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CONTAINER_NAME='pgo-custom-config-ssl'
+CONTAINER_NAME='pgo-custom-ssl-container'
 
 echo $DIR
 
