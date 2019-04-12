@@ -230,7 +230,6 @@ Prior to using *pgo*, users testing the Operator on a single host can specify th
     NAME                CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
     postgres-operator   10.104.47.110   <none>        8443/TCP   7m
     $ export PGO_APISERVER_URL=https://10.104.47.110:8443
-    pgo version
 ```
 
 That URL address needs to be reachable from your local *pgo* client host.  Your Kubernetes administrator will likely need to create a network route, ingress, or LoadBalancer service to expose the Operator REST API to applications outside of the Kubernetes cluster.  Your Kubernetes administrator might also allow you to run the Kubernetes port-forward command, contact your adminstrator for details.
