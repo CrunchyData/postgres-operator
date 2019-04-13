@@ -154,12 +154,36 @@ Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/conf
 
 The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator REST API.
 
-There is a default set of Roles and Users defined respectively in the following files:
+There is a default set of Roles and Users defined respectively in the following files and can be copied into your home directory as such:
 
 ```
 ./conf/postgres-operator/pgouser
 ./conf/postgres-operator/pgorole
+
+cp ./conf/postgres-operator/pgouser $HOME/.pgouser
+cp ./conf/postgres-operator/pgorole $HOME/.pgorole
 ```
+
+Or create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
+```
+    username:password
+or
+    pgouser1:password
+or
+    pgouser2:password
+or
+    pgouser3:password
+or
+    readonlyuser:password
+```
+
+Each example above has different priviledges in the Operator.  You can create this file as follows:
+
+    echo "pgouser3:password" > $HOME/.pgouser
+
+Note, you can also store the pgouser file in alternate locations, see the
+Security documentation for details.
+
 Operator security is discussed in the Security section [Security](/security) of the documentation.
 
 Adjust these settings to meet your local requirements.
@@ -246,25 +270,6 @@ Next, the *pgo* client needs to reference the keys used to secure the Operator R
 You can also specify these keys on the command line as follows:
 
     pgo version --pgo-ca-cert=$PGOROOT/conf/postgres-operator/server.crt --pgo-client-cert=$PGOROOT/conf/postgres-operator/server.crt --pgo-client-key=$PGOROOT/conf/postgres-operator/server.key
-
-Lastly, create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
-
-    username:password
-or
-    pgouser1:password
-or
-    pgouser2:password
-or
-    pgouser3:password
-or
-    readonlyuser:password
-
-Each example above has different priviledges in the Operator.  You can create this file as follows:
-
-    echo "pgouser3:password" > $HOME/.pgouser
-
-Note, you can also store the pgouser file in alternate locations, see the
-Security documentation for details.
 
 {{% notice tip %}} if you are running the Operator on Google Cloud, you would open up another terminal and run *kubectl port-forward ...* to forward the Operator pod port 8443 to your localhost where you can access the Operator API from your local workstation.
 {{% /notice %}}
