@@ -8,9 +8,9 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
 	description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm" BACKREST_VERSION="2.10"
+ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm" BACKREST_VERSION="2.12"
 
-RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-8-x86_64/${PGDG_REPO}
 
 RUN yum -y update && yum -y install postgresql11-server && yum -y install pgbackrest-"${BACKREST_VERSION}" && yum -y clean all
 
