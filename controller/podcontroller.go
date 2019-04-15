@@ -197,6 +197,11 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 				if oldDatabaseStatus == false && v.Ready {
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+
+					if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
+						taskoperator.UpdatePgBouncerAuthorizations(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+					}
+
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 					if cluster.Labels[config.LABEL_BACKREST] == "true" {
 						tmptask := crv1.Pgtask{}
@@ -205,6 +210,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
 						}
 					}
+
 				}
 			}
 		}
