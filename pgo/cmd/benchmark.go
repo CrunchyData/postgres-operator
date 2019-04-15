@@ -55,7 +55,7 @@ var benchmarkCmd = &cobra.Command{
 }
 
 func init() {
-	//RootCmd.AddCommand(benchmarkCmd)
+	RootCmd.AddCommand(benchmarkCmd)
 	benchmarkCmd.Flags().StringVarP(&BenchmarkDatabase, "database", "d", "postgres", "The database where the benchmark should be run.")
 	benchmarkCmd.Flags().StringVarP(&BenchmarkInitOpts, "init-opts", "i", "", "The extra flags passed to pgBench during the initialization of the benchmark.")
 	benchmarkCmd.Flags().StringVarP(&BenchmarkOpts, "benchmark-opts", "b", "", "The extra flags passed to pgBench during the benchmark.")
