@@ -1,0 +1,42 @@
+---
+- include_tasks: "preflight-grafana.yml"
+  tags: always
+  when: "grafana_install == 'true'"
+
+- include_tasks: "preflight-prometheus.yml"
+  tags: always
+  when: "prometheus_install == 'true'"
+
+- include_tasks: "{{ tasks }}"
+  with_items:
+    - openshift_auth.yml
+    - openshift.yml
+  loop_control:
+    loop_var: tasks
+  when: openshift_host is defined
+  tags: always
+
+- include_tasks: "{{ tasks }}"
+  with_items:
+    - kubernetes_auth.yml
+    - kubernetes.yml
+  loop_control:
+    loop_var: tasks
+  when: kubernetes_context is defined
+  tags: always
+
+- include_tasks: cleanup.yml
+  tags: [deprovision-metrics, upgrade-metrics]
+
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags: always
+
+- include_tasks: prometheus.yml
+  when: prometheus_install == "true"
+  tags: always
+
+- include_tasks: grafana.yml
+  when: grafana_install == "true"
+  tags: always

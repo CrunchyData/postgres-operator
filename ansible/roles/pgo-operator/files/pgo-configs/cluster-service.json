@@ -1,0 +1,52 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "vendor": "crunchydata",
+            "pg-cluster": "{{.ClusterName}}",
+            "name": "{{.Name}}"
+        }
+    },
+    "spec": {
+        "ports": [
+    {
+         "name": "postgres",
+            "protocol": "TCP",
+            "port": {{.Port}},
+            "targetPort": {{.Port}},
+            "nodePort": 0
+        }, {
+         "name": "node-exporter",
+    "protocol": "TCP",
+    "port": 9100,
+    "targetPort": 9100,
+    "nodePort": 0
+    }, {
+    "name": "pgbadger",
+    "protocol": "TCP",
+    "port": 10000,
+    "targetPort": 10000,
+    "nodePort": 0
+    }, {
+    "name": "sshd",
+    "protocol": "TCP",
+    "port": 2022,
+    "targetPort": 2022,
+    "nodePort": 0
+    }, {
+    "name": "postgres-exporter",
+    "protocol": "TCP",
+    "port": 9187,
+    "targetPort": 9187,
+    "nodePort": 0
+    }
+    ],
+        "selector": {
+            "service-name": "{{.ServiceName}}"
+        },
+        "type": "{{.ServiceType}}",
+        "sessionAffinity": "None"
+    }
+}

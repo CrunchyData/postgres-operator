@@ -1,0 +1,36 @@
+---
+- name: Ensure directory exists for local self-signed TLS certs.
+  file:
+    path: '{{ output_dir }}'
+    state: directory
+  tags: [install]
+
+- name: Generate SSH RSA Host Key
+  command : ssh-keygen -q -t rsa -f "{{ output_dir }}/ssh_host_rsa_key" -C "" -N ""
+  args:
+    creates: "{{ output_dir }}/ssh_host_rsa_key"
+  tags: [install]
+
+- name: Generate SSH ECDSA Host Key
+  command : ssh-keygen -q -t ecdsa -f "{{ output_dir }}/ssh_host_ecdsa_key" -C "" -N ""
+  args:
+    creates: "{{ output_dir }}/ssh_host_ecdsa_key"
+  tags: [install]
+
+- name: Generate SSH ED25519 Host Key
+  command : ssh-keygen -q -t ed25519 -f "{{ output_dir }}/ssh_host_ed25519_key" -C "" -N ""
+  args:
+    creates: "{{ output_dir }}/ssh_host_ed25519_key"
+  tags: [install]
+
+- name: Generate SSH Client Key
+  command : ssh-keygen -q -f "{{ output_dir }}/id_rsa" -C "" -N ""
+  args:
+    creates: "{{ output_dir }}/id_rsa"
+  tags: [install]
+
+- name: Create authorized_keys
+  command : cp {{ output_dir }}/id_rsa.pub {{ output_dir }}/authorized_keys
+  args:
+    creates: "{{ output_dir }}/authorized_keys"
+  tags: [install]

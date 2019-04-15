@@ -1,0 +1,71 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+       	"labels": {
+       		"vendor": "crunchydata",
+               	"pgbackup": "true",
+                "pg-cluster": "{{.Name}}"
+	}
+    },
+    "spec": {
+        "backoffLimit": 0,
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+       			"vendor": "crunchydata",
+               		"pgbackup": "true",
+                    	"pg-cluster": "{{.Name}}"
+                }
+            },
+            "spec": {
+                "volumes": [{
+                    "name": "pgdata",
+                    {{.PvcName}}
+                }],
+
+        {{.SecurityContext}}
+
+                "containers": [{
+                    "name": "backup",
+                    "image": "{{.CCPImagePrefix}}/crunchy-backup:{{.CCPImageTag}}",
+                    "volumeMounts": [{
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }],
+		    {{.ContainerResources }}
+                    "env": [{
+                        "name": "BACKUP_HOST",
+                        "value": "{{.BackupHost}}"
+                    }, {
+                        "name": "BACKUP_OPTS",
+                        "value": "{{.BackupOpts}}"
+                    }, {
+                        "name": "BACKUP_USER",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.BackupUserSecret}}",
+                                "key": "username"
+                            }
+                        }
+                    }, {
+                        "name": "BACKUP_PASS",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.BackupUserSecret}}",
+                                "key": "password"
+                            }
+                        }
+                    }, {
+                        "name": "BACKUP_PORT",
+                        "value": "{{.BackupPort}}"
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

@@ -7,4 +7,5 @@ TableToLoad:  JSON_COLLECTION
 FilePath:  sample.json
 FileType:  json
 PVCName:  csv-pvc
-SecurityContext:  
+FSGroup:  
+SupplementalGroup:  

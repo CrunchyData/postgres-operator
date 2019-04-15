@@ -1,0 +1,25 @@
+{
+        "kind": "Service",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "{{.Name}}",
+            "labels": {
+                "name": "{{.Name}}",
+                "pgo-backrest-repo": "true",
+                "pg-cluster": "{{.ClusterName}}"
+            }
+        },
+        "spec": {
+            "ports": [{
+                "protocol": "TCP",
+                "port": {{.Port}},
+                "targetPort": {{.Port}},
+                "nodePort": 0
+            }],
+            "selector": {
+                "name": "{{.Name}}"
+            },
+            "type": "ClusterIP",
+            "sessionAffinity": "None"
+        }
+}

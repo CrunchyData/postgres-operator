@@ -1,0 +1,12 @@
+---
+- name: Check if inventory file variables are defined for Prometheus
+  fail: msg="Please specify the value of {{item}} in your inventory file"
+  tags: always
+  when: "{{ item }} is undefined or {{ item }} == ''"
+  with_items:
+  - metrics_namespace
+  - prometheus_service_name
+  - prometheus_port
+  - prometheus_storage_access_mode
+  - prometheus_storage_class_name
+  - prometheus_volume_size

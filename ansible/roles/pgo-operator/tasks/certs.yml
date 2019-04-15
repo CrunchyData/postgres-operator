@@ -1,0 +1,47 @@
+---
+- name: Ensure directory exists for local self-signed TLS certs.
+  file:
+    path: '{{ output_dir }}'
+    state: directory
+  tags: [install]
+
+- name: Generate RSA Key
+  command: openssl genrsa -out "{{ output_dir }}/server.pem" 2048
+  args:
+    creates: "{{ output_dir }}/server.pem"
+  tags: [install]
+
+- name: Generate CSR
+  command: openssl req \
+    -new \
+    -subj '/C=US/ST=SC/L=Charleston/O=CrunchyData/CN=pg-operator' \
+    -key "{{ output_dir }}/server.pem" \
+    -out "{{ output_dir }}/server.csr"
+  args:
+    creates: "{{ output_dir }}/server.csr"
+  tags: [install]
+
+- name: Generate Self-signed Certificate
+  command: openssl req \
+    -x509 \
+    -days 1825 \
+    -key "{{ output_dir }}/server.pem" \
+    -in "{{ output_dir }}/server.csr" \
+    -out "{{ output_dir }}/server.crt"
+  args:
+    creates: "{{ output_dir }}/server.crt"
+  tags: [install]
+
+- name: Ensure {{ pgo_keys_dir }} Directory Exists
+  file:
+    path: '{{ pgo_keys_dir }}'
+    state: directory
+  tags: [install]
+
+- name: Copy certificates to {{ pgo_keys_dir }}
+  command: "cp {{ output_dir }}/server.crt {{ pgo_keys_dir }}/client.crt"
+  tags: [install]
+
+- name: Copy keys to {{ pgo_keys_dir }}
+  command: "cp {{ output_dir }}/server.pem {{ pgo_keys_dir }}/client.pem"
+  tags: [install]

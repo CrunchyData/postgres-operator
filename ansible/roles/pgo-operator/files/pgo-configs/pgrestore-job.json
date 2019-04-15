@@ -1,0 +1,94 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+	"labels": {
+	    "vendor": "crunchydata",
+	    "pgrestore": "true",
+	    "pg-cluster": "{{.ClusterName}}",
+  	    "pg-task": "{{.TaskName}}"
+
+                }
+    },
+    "spec": {
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+		    "vendor": "crunchydata",
+		    "pgrestore": "true",
+		    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "pgdata",
+                        "persistentVolumeClaim": {
+                            "claimName": "{{.FromClusterPVCName}}"
+                        }
+                    }
+                ],
+		
+                    {{.SecurityContext}}
+                
+                "containers": [
+                    {
+                        "name": "pgrestore",
+                        "image": "{{.CCPImagePrefix}}/crunchy-pgrestore:{{.CCPImageTag}}",
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgdata",
+                                "name": "pgdata",
+                                "readOnly": true
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "PGRESTORE_USER",
+                                "valueFrom": {
+				    "secretKeyRef": {
+					"name": "{{.PgRestoreUserSecret}}",
+					"key": "username"
+				    }
+				}
+                            },
+                            {
+                                "name": "PGRESTORE_PASS",
+                                "valueFrom": {
+				   "secretKeyRef": {
+				       "name": "{{.PgRestoreUserSecret}}",
+				       "key": "password"
+				    }
+				}
+                            },
+			    {
+                                "name": "PGRESTORE_HOST",
+                                "value": "{{.PgRestoreHost}}"
+                            },
+                            {
+                                "name": "PGRESTORE_DB",
+                                "value": "{{.PgRestoreDB}}"
+                            },
+			    {
+				"name": "PG_PRIMARY_PORT",
+				"value": "5432"
+			    },
+			    {
+				"name": "PGRESTORE_CUSTOM_OPTS",
+				"value": "{{.PGRestoreOpts}}"
+			    },
+			    {
+				"name": "PGRESTORE_BACKUP_TIMESTAMP",
+				"value": "{{.PITRTarget}}"
+			    }
+                        ]
+                    }
+                ],
+        {{.NodeSelector}}
+                        "restartPolicy": "Never"
+            }
+        }
+    }
+}
