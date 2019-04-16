@@ -34,3 +34,7 @@ type BasicAuthCredentials struct {
 	Password     string
 	APIServerURL string
 }
+
+func (b BasicAuthCredentials) HasUsernameAndPassword() bool {
+	return len(b.Username) > 0 && len(b.Password) > 0
+}
