@@ -116,7 +116,6 @@ type DeploymentTemplateFields struct {
 	PgbackrestEnvVars       string
 	PgbackrestS3EnvVars     string
 	PgmonitorEnvVars        string
-	PgbouncerEnvVars        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
@@ -354,15 +353,6 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 	}
 	return ""
 
-}
-
-func GetPgbouncerEnvVar(psw string) string {
-	if psw == "" {
-		return ""
-	}
-	foo := fmt.Sprintf(`"name": "PGBOUNCER_PASSWORD", "value": "%s" },{`, psw)
-	log.Debugf("pgbouncer str [%s]", foo)
-	return foo
 }
 
 func GetPgbackrestS3EnvVars(userLabels map[string]string, clientset *kubernetes.Clientset, ns string) string {

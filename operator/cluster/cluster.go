@@ -97,7 +97,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
 		log.Debug("pgbouncer requested")
 		//create the pgbouncer deployment using that credential
-		AddPgbouncer(clientset, cl, namespace, true, false)
+		AddPgbouncer(clientset, client, cl, namespace, true, false)
+
+		// create the task to update db authorizations after pg container goes ready....
 	}
 
 	//add replicas if requested

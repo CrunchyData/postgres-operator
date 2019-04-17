@@ -209,6 +209,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Debug("benchmark task added")
 		benchmarkoperator.Create(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
 
+	case crv1.PgtaskUpdatePgbouncerAuths:
+		log.Debug("Pgbouncer update credential task was found...will be handled by pod controller when ready")
+
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", task.Spec.TaskType)
 	}
