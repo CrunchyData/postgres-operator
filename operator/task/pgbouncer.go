@@ -24,6 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 // Update authorizations for pgbouncer user in postgres database
@@ -50,13 +51,18 @@ func UpdatePgBouncerAuthorizations(clusterName string, clientset *kubernetes.Cli
 			log.Debug(err.Error())
 		} else {
 
-			log.Debug("***** Updating pgbouncer authorization in postgres ****")
+			log.Debug("Updating pgbouncer authorization in postgres container - 2 sec wait to prevent timeout")
+
+			// this is needed to allow the service be enabled after the pod goes ready. consider hitting pod directly instead of service.
+			time.Sleep(2 * time.Second)
 
 			err = clusteroperator.UpdatePgBouncerAuthorizations(clientset, ns, username, password, secretName, clusterName)
 
 			if err != nil {
 				log.Debug("Failed to update existing pgbouncer credentials")
 				log.Debug(err.Error())
+			} else {
+				log.Debug("Pgbouncer authorization update complete")
 			}
 		}
 
