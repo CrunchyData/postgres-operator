@@ -80,10 +80,6 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, p
 
 }
 
-func ApplyPgbouncerAuthorizations() {
-
-}
-
 func PatchPgcluster(restclient *rest.RESTClient, newLabel string, oldCRD crv1.Pgcluster, ns string) error {
 
 	fields := strings.Split(newLabel, "=")

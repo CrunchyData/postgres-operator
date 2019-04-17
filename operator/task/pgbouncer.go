@@ -17,27 +17,48 @@ package task
 
 import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	//	"github.com/crunchydata/postgres-operator/util"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	//	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//	"strings"
 )
 
-// RemoveBackups ...
-func UpdatePgBouncerAuthorizations(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
+// Update authorizations for pgbouncer user in postgres database
+func UpdatePgBouncerAuthorizations(clusterName string, clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
 
 	taskName := clusterName + crv1.PgtaskUpdatePgbouncerAuths
 	task := crv1.Pgtask{}
 	task.Spec = crv1.PgtaskSpec{}
 	task.Spec.Name = taskName
+	var username, password string
 
 	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
 	if found && err == nil {
 
-		log.Debug("***** Updating pgbouncer authorization in postgres ****")
+		// get secret name from task and retrieve username and password from secret.
+
+		secretName := task.ObjectMeta.Labels[config.LABEL_PGBOUNCER_SECRET]
+		log.Debugf("Got secret for pgbouncer: %s", secretName)
+
+		username, password, err = util.GetPasswordFromSecret(clientset, ns, secretName)
+
+		if err != nil {
+			log.Debug("Error retrieving username and password from pgbouncer secret")
+			log.Debug(err.Error())
+		} else {
+
+			log.Debug("***** Updating pgbouncer authorization in postgres ****")
+
+			err = clusteroperator.UpdatePgBouncerAuthorizations(clientset, ns, username, password, secretName, clusterName)
+
+			if err != nil {
+				log.Debug("Failed to update existing pgbouncer credentials")
+				log.Debug(err.Error())
+			}
+		}
 
 		//delete the pgtask to not redo this again
 		kubeapi.Deletepgtask(RESTClient, taskName, ns)

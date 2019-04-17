@@ -251,7 +251,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 		log.Debug("Updating pgbouncer password in secret and database")
 
-		err := updatePgBouncerAuthorizations(clientset, namespace, secretUser, secretPass, secretName, clusterName)
+		err := UpdatePgBouncerAuthorizations(clientset, namespace, secretUser, secretPass, secretName, clusterName)
 
 		if err != nil {
 			log.Debug("Failed to update existing pgbouncer credentials")
@@ -264,15 +264,6 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 		createPgbouncerDBUpdateTask(restclient, clusterName, secretName, namespace)
 
-	}
-
-	// update the password for the pgbouncer user in postgres database
-	connectionInfo := getDBUserInfo(namespace, clusterName, "postgres", clientset)
-	err = updatePgBouncerDBPassword(clusterName, connectionInfo, secretUser, secretPass, namespace)
-
-	if err != nil {
-		log.Debug("Unable to update pgbouncer password in database.")
-		log.Debug(err.Error())
 	}
 
 	pgbouncerName := clusterName + PGBOUNCER_SUFFIX
@@ -356,14 +347,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, clusterName, namespace str
 
 }
 
-func updatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, username, password, secretName, clusterName string) error {
-
-	// delete the secret so it will be recreated.
-	// err := kubeapi.DeleteSecret(clientset, secretName, namespace)
-
-	// if err != nil {
-	// 	log.Debug("Error deleting pgbouncer secret, probaby not found, ignoring")
-	// }
+func UpdatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, username, password, secretName, clusterName string) error {
 
 	err, databaseNames := getDatabaseListForCredentials(namespace, clusterName, clientset)
 
@@ -385,6 +369,15 @@ func updatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, u
 			log.Debug(err.Error())
 			return err
 		}
+	}
+
+	// update the password for the pgbouncer user in postgres database
+	connectionInfo := getDBUserInfo(namespace, clusterName, "postgres", clientset)
+	err = updatePgBouncerDBPassword(clusterName, connectionInfo, username, password, namespace)
+
+	if err != nil {
+		log.Debug("Unable to update pgbouncer password in database.")
+		log.Debug(err.Error())
 	}
 
 	return err
