@@ -1,0 +1,6 @@
+oc create -f pgo.configmap.yaml
+oc create -f pgo.catalogsource.yaml	
+oc create -f pgo.operatorgroup.yaml
+
+echo "NOTE:  at this time, we have to create the subscription from the web console instead of from the command line"
+#oc create -f pgo.subscription.yaml
