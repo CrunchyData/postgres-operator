@@ -246,7 +246,6 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	var err error
 	var conn *sql.DB
 
-
 	err = validPassword(newPassword)
 	if err != nil {
 		return err
@@ -645,6 +644,13 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 		log.Debug("no clusters found")
 		response.Status.Code = msgs.Error
 		response.Status.Msg = "no clusters found"
+		return response
+	}
+
+	re := regexp.MustCompile("^[a-z0-9.-]*$")
+	if !re.MatchString(name) {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "user name is required to be lowercase letters and numbers only."
 		return response
 	}
 
