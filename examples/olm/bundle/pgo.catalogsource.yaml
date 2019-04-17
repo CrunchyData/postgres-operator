@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: dev-operators
+  namespace: pgo
+spec:
+  displayName: Dev Operators
+  publisher: Development Team
+  sourceType: configmap
+  configMap: dev-operators
