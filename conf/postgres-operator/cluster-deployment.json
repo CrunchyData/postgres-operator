@@ -75,7 +75,6 @@
                         "value": "{{.DataPathOverride}}"
                     }, {
 			{{.PgmonitorEnvVars}}
-			{{.PgbouncerEnvVars}}
             {{.PgbackrestEnvVars}}
             {{.PgbackrestS3EnvVars}}
                         "name": "PG_DATABASE",
