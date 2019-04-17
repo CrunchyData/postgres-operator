@@ -61,67 +61,69 @@ const FAILOVER_EVENT_READY = "Ready"
 type AutoFailoverTask struct {
 }
 
-//at operator startup, add a state machine for each primary pod that
-//has autofail enabled
+//at operator startup, check for autofail enabled pods in Not Ready status
+//in each namespace the operator is watching, trigger a failover if found
 func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, nsList []string) error {
 	var err error
 	aftask := AutoFailoverTask{}
-
-	ns := nsList[0]
-
-	log.Infoln("autofailover Initialize ")
-
 	selector := config.LABEL_AUTOFAIL + "=true"
-	clusterList := crv1.PgclusterList{}
 
-	err = kubeapi.GetpgclustersBySelector(restclient, &clusterList, selector, ns)
-	if err != nil {
-		log.Error(err)
-		log.Error("could not InitializeAutoFailover")
-		return err
-	}
-	log.Debugf("InitializeAutoFailover %d is the pgcluster len", len(clusterList.Items))
+	for i := 0; i < len(nsList); i++ {
+		ns := nsList[i]
 
-	for i := 0; i < len(clusterList.Items); i++ {
-		cl := clusterList.Items[i]
-		clusterName := cl.Name
-		selector := "service-name=" + clusterName
-		pods, err := kubeapi.GetPods(clientset, selector, ns)
+		log.Infof("autofailover Initialize ns=%s ", ns)
+
+		clusterList := crv1.PgclusterList{}
+
+		err = kubeapi.GetpgclustersBySelector(restclient, &clusterList, selector, ns)
 		if err != nil {
 			log.Error(err)
 			log.Error("could not InitializeAutoFailover")
 			return err
 		}
-		if len(pods.Items) == 0 {
-			log.Errorf("could not InitializeAutoFailover: zero primary pods were found for cluster %s", cl.Name)
-			return err
-		}
+		log.Debugf("InitializeAutoFailover ns %s  pgclusters %d", ns, len(clusterList.Items))
 
-		p := pods.Items[0]
-		for _, c := range p.Status.ContainerStatuses {
-			if c.Name == "database" {
-				if c.Ready {
-					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, ns)
-				} else {
-					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
-					secs, _ := strconv.Atoi(operator.Pgo.Pgo.AutofailSleepSeconds)
-					log.Debugf("InitializeAutoFailover: started state machine for cluster %s", clusterName)
-					sm := StateMachine{
-						Clientset:    clientset,
-						RESTClient:   restclient,
-						Namespace:    ns,
-						SleepSeconds: secs,
-						ClusterName:  clusterName,
+		for i := 0; i < len(clusterList.Items); i++ {
+			cl := clusterList.Items[i]
+			clusterName := cl.Name
+			selector := "service-name=" + clusterName
+			pods, err := kubeapi.GetPods(clientset, selector, ns)
+			if err != nil {
+				log.Error(err)
+				log.Error("could not InitializeAutoFailover")
+				return err
+			}
+			if len(pods.Items) == 0 {
+				log.Errorf("could not InitializeAutoFailover: zero primary pods were found for cluster %s", cl.Name)
+				return err
+			}
+
+			p := pods.Items[0]
+			for _, c := range p.Status.ContainerStatuses {
+				if c.Name == "database" {
+					if c.Ready {
+						aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, ns)
+					} else {
+						aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
+						secs, _ := strconv.Atoi(operator.Pgo.Pgo.AutofailSleepSeconds)
+						log.Debugf("InitializeAutoFailover: started state machine for cluster %s", clusterName)
+						sm := StateMachine{
+							Clientset:    clientset,
+							RESTClient:   restclient,
+							Namespace:    ns,
+							SleepSeconds: secs,
+							ClusterName:  clusterName,
+						}
+
+						go sm.Run()
+
 					}
-
-					go sm.Run()
-
 				}
 			}
 		}
-	}
 
-	aftask.Print(restclient, ns)
+		aftask.Print(restclient, ns)
+	}
 	return err
 }
 
