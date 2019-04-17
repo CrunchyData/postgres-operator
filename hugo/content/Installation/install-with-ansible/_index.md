@@ -15,7 +15,7 @@ roles for installing and managing the [Crunchy Data PostgreSQL Operator](https:/
 The playbooks provided allow users to:
 
 * install PostgreSQL Operator on Kubernetes and OpenShift
-* install PostgreSQL from a Linux, Mac or Windows(Cygwin) host
+* install PostgreSQL Operator from a Linux, Mac or Windows(Ubuntu subsystem)host
 * generate TLS certificates required by the PostgreSQL Operator
 * configure PostgreSQL Operator settings from a single inventory file
 * support a variety of deployment models

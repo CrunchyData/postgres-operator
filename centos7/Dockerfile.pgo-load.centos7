@@ -14,7 +14,7 @@ LABEL name="crunchydata/pgo-load" \
     io.openshift.expose-services="" \
     io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm"
+ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 
 # PGDG PostgreSQL Repository
 
