@@ -22,6 +22,7 @@ import (
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -166,8 +167,13 @@ func printPolicies(d *msgs.ShowClusterDeployment) {
 func createCluster(args []string, ns string) {
 	var err error
 
-	if len(args) == 0 {
-		fmt.Println("Error: Cluster name argument is required.")
+	if len(args) != 1 {
+		fmt.Println("Error: A single Cluster name argument is required.")
+		return
+	}
+
+	if !util.IsValidForResourceName(args[0]) {
+		fmt.Println("Error: Cluster name specified is not valid name - must be lowercase alphanumeric")
 		return
 	}
 
