@@ -100,9 +100,7 @@ var createClusterCmd = &cobra.Command{
 			return
 		}
 
-		numArgs := len(args)
-
-		if numArgs != 1 {
+		if len(args) != 1 {
 			fmt.Println(`Error: A single cluster name is required for this command.`)
 		} else {
 			createCluster(args, Namespace)
