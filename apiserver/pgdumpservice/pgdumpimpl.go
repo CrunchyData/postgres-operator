@@ -484,7 +484,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		log.Debugf("deleting prior pgtask %s", pgtask.Name)
 		err = kubeapi.Deletepgtask(apiserver.RESTClient,
 			pgtask.Name,
-			apiserver.Namespace)
+			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -495,7 +495,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 	//create a pgtask for the restore workflow
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
 		pgtask,
-		apiserver.Namespace)
+		ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
