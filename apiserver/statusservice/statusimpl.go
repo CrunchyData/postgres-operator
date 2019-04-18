@@ -16,6 +16,10 @@ limitations under the License.
 */
 
 import (
+	"fmt"
+	"sort"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
@@ -24,7 +28,6 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
-	"sort"
 )
 
 func Status(ns string) msgs.StatusResponse {
@@ -140,18 +143,32 @@ func getDBTags(ns string) map[string]int {
 }
 
 func getNotReady(ns string) []string {
-	//show all pods with pg-cluster that have status.Phase of not Running
+	//show all database pods for each pgcluster that are not yet running
 	agg := make([]string, 0)
+	clusterList := crv1.PgclusterList{}
+	kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, ns)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
-	if err != nil {
-		log.Error(err)
-		return agg
-	}
-	for _, p := range pods.Items {
-		for _, stat := range p.Status.ContainerStatuses {
+	for _, cluster := range clusterList.Items {
+
+		selector := fmt.Sprintf("%s=crunchydata,name=%s", config.LABEL_VENDOR, cluster.Spec.ClusterName)
+		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+		if err != nil {
+			log.Error(err)
+			return agg
+		} else if len(pods.Items) > 1 {
+			log.Error(fmt.Errorf("Multiple database pods found with the same name using selector while searching for "+
+				"databases that are not ready using selector %s", selector))
+			return agg
+		} else if len(pods.Items) == 0 {
+			log.Error(fmt.Errorf("No database pods found while searching for database pods that are not ready using "+
+				"selector %s", selector))
+			return agg
+		}
+
+		pod := pods.Items[0]
+		for _, stat := range pod.Status.ContainerStatuses {
 			if !stat.Ready {
-				agg = append(agg, p.ObjectMeta.Name)
+				agg = append(agg, pod.ObjectMeta.Name)
 			}
 		}
 	}

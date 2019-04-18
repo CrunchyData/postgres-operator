@@ -222,6 +222,8 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	//delete the pgreplicas if necessary
 	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
 
+	//delete any pgtasks for this cluster
+	deletePgtasks(restclient, cl.Spec.Name, namespace)
 	return err
 
 }
@@ -397,5 +399,26 @@ func deleteBackrestRepo(clientset *kubernetes.Clientset, clusterName, namespace 
 	err = kubeapi.DeleteService(clientset, depName, namespace)
 
 	return err
+
+}
+
+// deletePgtasks
+func deletePgtasks(restclient *rest.RESTClient, clusterName, namespace string) {
+
+	taskList := crv1.PgtaskList{}
+
+	//get a list of pgtasks for this cluster
+	err := kubeapi.GetpgtasksBySelector(restclient,
+		&taskList, config.LABEL_PG_CLUSTER+"="+clusterName,
+		namespace)
+	if err != nil {
+		return
+	}
+
+	log.Debugf("pgtasks to remove is %d\n", len(taskList.Items))
+
+	for _, r := range taskList.Items {
+		err = kubeapi.Deletepgtask(restclient, r.Spec.Name, namespace)
+	}
 
 }

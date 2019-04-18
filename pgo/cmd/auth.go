@@ -30,7 +30,9 @@ import (
 )
 
 const etcpath = "/etc/pgo/pgouser"
-const pgouserenvvar = "PGOUSER"
+const pgoUserFileEnvVar = "PGOUSER"
+const pgoUserNameEnvVar = "PGOUSERNAME"
+const pgoUserPasswordEnvVar = "PGOUSERPASS"
 
 // BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
 
@@ -77,18 +79,17 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 	return creds
 }
 
-func GetCredentials() {
-	log.Debug("GetCredentials called")
-
+func GetCredentialsFromFile() msgs.BasicAuthCredentials {
 	found := false
 	dir := UserHomeDir()
 	fullPath := dir + "/" + ".pgouser"
+	var creds msgs.BasicAuthCredentials
 
 	//look in env var for pgouser file
-	pgoUser := os.Getenv(pgouserenvvar)
+	pgoUser := os.Getenv(pgoUserFileEnvVar)
 	if pgoUser != "" {
 		fullPath = pgoUser
-		log.Debugf("%s environment variable is being used at %s", pgouserenvvar, fullPath)
+		log.Debugf("%s environment variable is being used at %s", pgoUserFileEnvVar, fullPath)
 		dat, err := ioutil.ReadFile(fullPath)
 		if err != nil {
 			fmt.Printf("Error: %s file not found", fullPath)
@@ -96,7 +97,7 @@ func GetCredentials() {
 		}
 
 		log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
-		SessionCredentials = parseCredentials(string(dat))
+		creds = parseCredentials(string(dat))
 		found = true
 	}
 
@@ -109,7 +110,7 @@ func GetCredentials() {
 		} else {
 			log.Debugf("%s found", fullPath)
 			log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
-			SessionCredentials = parseCredentials(string(dat))
+			creds = parseCredentials(string(dat))
 			found = true
 
 		}
@@ -124,7 +125,7 @@ func GetCredentials() {
 		} else {
 			log.Debugf("%s found", fullPath)
 			log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
-			SessionCredentials = parseCredentials(string(dat))
+			creds = parseCredentials(string(dat))
 			found = true
 		}
 	}
@@ -132,6 +133,38 @@ func GetCredentials() {
 	if !found {
 		fmt.Println("could not find pgouser file")
 		os.Exit(2)
+	}
+
+	return creds
+}
+
+func GetCredentialsFromEnvironment() msgs.BasicAuthCredentials {
+	pgoUser := os.Getenv(pgoUserNameEnvVar)
+	pgoPass := os.Getenv(pgoUserPasswordEnvVar)
+
+	if len(pgoUser) > 0 && len(pgoPass) < 1 {
+		fmt.Println("Error: PGOUSERPASS needs to be specified if PGOUSERNAME is provided")
+		os.Exit(2)
+	}
+	if len(pgoPass) > 0 && len(pgoUser) < 1 {
+		fmt.Println("Error: PGOUSERNAME needs to be specified if PGOUSERPASS is provided")
+		os.Exit(2)
+	}
+
+	creds := msgs.BasicAuthCredentials{
+		Username:     os.Getenv(pgoUserNameEnvVar),
+		Password:     os.Getenv(pgoUserPasswordEnvVar),
+		APIServerURL: APIServerURL,
+	}
+	return creds
+}
+func GetCredentials() {
+	log.Debug("GetCredentials called")
+
+	SessionCredentials = GetCredentialsFromEnvironment()
+
+	if !SessionCredentials.HasUsernameAndPassword() {
+		SessionCredentials = GetCredentialsFromFile()
 	}
 
 	if PGO_CA_CERT != "" {

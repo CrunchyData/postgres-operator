@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  rhel7-9.6.12-2.4.0-rc4
+  CCPImageTag:  centos7-11.2-2.4.0-rc4
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -94,5 +94,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  rhel7-4.0.0-rc6
+  PGOImageTag:  centos7-4.0.0-rc7
 

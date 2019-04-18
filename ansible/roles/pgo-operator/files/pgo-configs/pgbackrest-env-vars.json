@@ -22,7 +22,7 @@
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"
                     }, {
-                        "name": "PGBACKREST_PG_PORT",
+                        "name": "PGBACKREST_PG1_PORT",
                         "value": "{{.PgbackrestPGPort}}"
                     }, {
                         "name": "PGBACKREST_REPO_TYPE",
