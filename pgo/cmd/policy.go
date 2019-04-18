@@ -35,6 +35,11 @@ var applyCmd = &cobra.Command{
 	pgo apply mypolicy1 --selector=someotherpolicy --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("apply called")
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		if Selector == "" {
 			fmt.Println("Error: Selector is required to apply a policy.")
 			return
