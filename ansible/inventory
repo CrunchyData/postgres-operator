@@ -11,9 +11,11 @@ crunchy_debug='false'
 # ===================
 pgo_client_install='true'
 
-# PGO Namespace
-pgo_namespace='pgo'
-target_namespaces='pgo'
+# Namespace where operator will be deployed
+pgo_operator_namespace='pgo'
+
+# Comma separated list of namespaces Operator will manage
+namespace='pgo'
 
 # PGO Admin Credentials
 pgo_admin_username='admin'
