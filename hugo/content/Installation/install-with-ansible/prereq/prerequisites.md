@@ -95,7 +95,7 @@ The following are the variables available for configuration:
 | `pgo_client_install`              | true        | Configures the playbooks to install the `pgo` client if set to true.                                                                                                             |
 | `pgo_image_prefix`                | crunchydata | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc).                                             |
 | `pgo_image_tag`                   |             | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
-| `pgo_namespace`                   |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
+| `pgo_operator_namespace`                   |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
 | `pgo_tls_no_verify`               |             | Set to configure Operator to verify TLS certificates.                                                                                                                            |
 | `primary_storage`                 | storage2    | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
 | `prometheus_install`              | true        | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
@@ -111,7 +111,7 @@ The following are the variables available for configuration:
 | `storage<ID>_size`                |             | Set to configure the size of the volumes created when using this storage definition.                                                                                             |
 | `storage<ID>_supplemental_groups` |             | Set to configure any supplemental groups that should be added to security contexts on newly created clusters.                                                                    |
 | `storage<ID>_type`                |             | Set to either `create` or `dynamic` to configure the operator to create persistent volumes or have them created dynamically by a storage class.                                  |
-| `target_namespaces`               |             | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
+| `namespace`               |             | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
 | `xlog_storage`                    | storage1    | Set to configure which storage definition to use when creating volumes used to store Write Ahead Logs (WAL) archives on all newly created clusters.                              |
 
 
@@ -187,7 +187,7 @@ can configure the `primary_storage=storage1` variable in the inventory file.
 To utitlize mutli-zone deployments, see _Considerations for Multi-Zone Cloud Environments_ above.
 {{% /notice %}}
 
-## Understanding `pgo_namespace` & `target_namespaces`
+## Understanding `pgo_operator_namespace` & `namespace`
 
 The Crunchy PostgreSQL Operator can be configured to be deployed and manage a single 
 namespace or manage several namespaces.  The following are examples of different types 
@@ -199,8 +199,8 @@ To deploy the Crunchy PostgreSQL Operator to work with a single namespace (in th
 our namespace is named `pgo`), configure the following `inventory` settings:
 
 ```ini
-pgo_namespace='pgo'
-target_namespaces='pgo'
+pgo_operator_namespace='pgo'
+namespace='pgo'
 ```
 
 ### Multiple Namespaces
@@ -209,8 +209,8 @@ To deploy the Crunchy PostgreSQL Operator to work with multiple namespaces (in t
 our namespaces are named `pgo`, `pgouser1` and `pgouser2`), configure the following `inventory` settings:
 
 ```ini
-pgo_namespace='pgo'
-target_namespaces='pgouser1,pgouser2'
+pgo_operator_namespace='pgo'
+namespace='pgouser1,pgouser2'
 ```
 
 ## Deploying Multiple Operators
@@ -221,23 +221,23 @@ for each deployment of the operator.
 
 For each operator deployment the following inventory variables should be configured uniquely for each install.
 
-For example, operator could be deployed twice by changing the `pgo_namespace` and `target_namespaces` for those 
+For example, operator could be deployed twice by changing the `pgo_operator_namespace` and `namespace` for those 
 deployments:
 
 Inventory A would deploy operator to the `pgo` namespace and it would manage the `pgo` target namespace.
 
 ```init
 # Inventory A
-pgo_namespace='pgo'
-target_namespaces='pgo'
+pgo_operator_namespace='pgo'
+namespace='pgo'
 ...
 ```
 
 Inventory B would deploy operator to the `pgo2` namespace and it would manage the `pgo2` and `pgo3` target namespaces.
 ```init
 # Inventory B
-pgo_namespace='pgo2'
-target_namespaces='pgo2,pgo3'
+pgo_operator_namespace='pgo2'
+namespace='pgo2,pgo3'
 ...
 ```
 

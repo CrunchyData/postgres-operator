@@ -7,7 +7,7 @@
   tags: [install, upgrade]
 
 - name: Create PGBackup CRD
-  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgbackups-crd.yaml -n {{ pgo_namespace }}"
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgbackups-crd.yaml -n {{ pgo_operator_namespace }}"
   when: crds_result.rc == 1
   ignore_errors: no
   no_log: false
@@ -21,7 +21,7 @@
   tags: [install, upgrade]
 
 - name: Create PGClusters CRD
-  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgclusters-crd.yaml -n {{ pgo_namespace }}"
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgclusters-crd.yaml -n {{ pgo_operator_namespace }}"
   when: crds_result.rc == 1
   ignore_errors: no
   no_log: false
@@ -35,7 +35,7 @@
   tags: [install, upgrade]
 
 - name: Create PGPolicies CRD
-  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgpolicies-crd.yaml -n {{ pgo_namespace }}"
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgpolicies-crd.yaml -n {{ pgo_operator_namespace }}"
   when: crds_result.rc == 1
   ignore_errors: no
   no_log: false
@@ -49,7 +49,7 @@
   tags: [install, upgrade]
 
 - name: Create PGReplicas CRD
-  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgreplicas-crd.yaml -n {{ pgo_namespace }}"
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgreplicas-crd.yaml -n {{ pgo_operator_namespace }}"
   when: crds_result.rc == 1
   ignore_errors: no
   no_log: false
@@ -63,7 +63,7 @@
   tags: [install, upgrade]
 
 - name: Create PGTasks CRD
-  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgtasks-crd.yaml -n {{ pgo_namespace }}"
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgtasks-crd.yaml -n {{ pgo_operator_namespace }}"
   when: crds_result.rc == 1
   ignore_errors: no
   no_log: false
