@@ -76,13 +76,13 @@ type pgDumpAllOptions struct {
 	DataOnly                   bool   `flag:"data-only" flag-short:"a"`
 	Clean                      bool   `flag:"clean" flag-short:"c"`
 	Encoding                   string `flag:"encoding" flag-short:"E"`
-	GlobalsOnly                bool   `flag:"globals-only"`
+	GlobalsOnly                bool   `flag:"globals-only" flag-short:"g"`
 	Oids                       bool   `flag:"oids" flag-short:"o"`
 	NoOwner                    bool   `flag:"no-owner" flag-short:"O"`
-	RolesOnly                  bool   `flag:"roles-only"`
+	RolesOnly                  bool   `flag:"roles-only" flag-short:"r"`
 	SchemaOnly                 bool   `flag:"schema-only" flag-short:"s"`
 	SuperUser                  string `flag:"superuser" flag-short:"S"`
-	TablespacesOnly            bool   `flag:"tablespaces-only"`
+	TablespacesOnly            bool   `flag:"tablespaces-only" flag-short:"t"`
 	Verbose                    bool   `flag:"verbose" flag-short:"v"`
 	NoPrivileges               bool   `flag:"no-privileges" flag-short:"x"`
 	NoACL                      bool   `flag:"no-acl"`
