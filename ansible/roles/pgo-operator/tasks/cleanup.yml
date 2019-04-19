@@ -8,7 +8,7 @@
 
 - name: Delete existing Deployments
   shell: |
-    {{ kubectl_or_oc }} delete deployment postgres-operator -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete deployment postgres-operator -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -17,7 +17,7 @@
 
 - name: Delete existing ConfigMaps
   shell: |
-    {{ kubectl_or_oc }} delete configmap pgo-config -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete configmap pgo-config -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -37,7 +37,7 @@
 
 - name: Delete existing Secrets
   shell: |
-    {{ kubectl_or_oc }} delete secret {{ item }} -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete secret {{ item }} -n {{ pgo_operator_namespace }}
   with_items:
   - "pgo.tls"
   ignore_errors: yes
@@ -46,7 +46,7 @@
 
 - name: Delete existing Services
   shell: |
-    {{ kubectl_or_oc }} delete service postgres-operator -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete service postgres-operator -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -55,7 +55,7 @@
 
 - name: Delete existing Service Account
   shell: |
-    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -75,7 +75,7 @@
 
 - name: Delete existing Cluster Role Bindings
   shell: |
-    {{ kubectl_or_oc }} delete clusterrolebinding {{ pgo_namespace }}{{ item }} -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete clusterrolebinding {{ pgo_operator_namespace }}{{ item }} -n {{ pgo_operator_namespace }}
   with_items:
   - "clusterbinding"
   - "clusterbindingcrd"
@@ -87,7 +87,7 @@
 
 - name: Delete existing Cluster Roles
   shell: |
-    {{ kubectl_or_oc }} delete clusterrole {{ pgo_namespace }}{{ item }} -n {{ pgo_namespace }}
+    {{ kubectl_or_oc }} delete clusterrole {{ pgo_operator_namespace }}{{ item }} -n {{ pgo_operator_namespace }}
   with_items:
   - "clusterrole"
   - "clusterrolecrd"
@@ -143,7 +143,7 @@
 
 - name: Delete existing Custom Objects
   shell: |
-    {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ pgo_namespace }} --all
+    {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ pgo_operator_namespace }} --all
   with_items:
   - "{{ all_namespaces }}"
   ignore_errors: yes

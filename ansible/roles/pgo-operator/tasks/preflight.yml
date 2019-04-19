@@ -4,8 +4,8 @@
   tags: always
   when: "{{item}} is undefined or {{item}} == ''"
   with_items:
-    - pgo_namespace
-    - target_namespaces
+    - pgo_operator_namespace
+    - namespace
     - pgo_admin_username
     - pgo_admin_password
     - ccp_image_prefix

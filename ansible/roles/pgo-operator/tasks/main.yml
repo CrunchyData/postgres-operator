@@ -6,7 +6,7 @@
 
 - name: Set output directory fact
   set_fact:
-    output_dir: "./output/{{ pgo_namespace }}"
+    output_dir: "./output/{{ pgo_operator_namespace }}"
   tags: always
 
 - name: Ensure output directory exists
@@ -20,8 +20,8 @@
   set_fact:
     all_namespaces: "{{ all_namespaces }} + [ '{{ item }}' ]"
   with_items: 
-  - "{{ target_namespaces.split(',') }}"
-  - "{{ pgo_namespace }}"
+  - "{{ namespace.split(',') }}"
+  - "{{ pgo_operator_namespace }}"
   tags: always
 
 - name: Set namespace unique list
@@ -77,7 +77,7 @@
       tags: [install, upgrade]
 
     - name: Create Cluster RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_namespace }}"
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
       tags: [install, upgrade]
     
     - name: Template PGO RBAC
@@ -143,7 +143,7 @@
         {{ kubectl_or_oc }} create secret tls pgo.tls \
           --cert='{{ output_dir }}/server.crt' \
           --key='{{ output_dir }}/server.pem' \
-          -n {{ pgo_namespace }}
+          -n {{ pgo_operator_namespace }}
       tags: [install, upgrade]
 
     - name: Create PGO ConfigMap
@@ -152,12 +152,12 @@
           --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
           --from-file=pgouser='{{ output_dir }}/pgouser' \
           --from-file='{{ role_path }}/files/pgo-configs' \
-          -n {{ pgo_namespace }}
+          -n {{ pgo_operator_namespace }}
       tags: [install, upgrade]
 
     - name: Create PGO Service
       command: |
-        {{ kubectl_or_oc }} create --filename='{{ role_path }}/files/service.json' -n {{ pgo_namespace }}
+        {{ kubectl_or_oc }} create --filename='{{ role_path }}/files/service.json' -n {{ pgo_operator_namespace }}
       tags: [install, upgrade]
 
     - name: Template PGO Deployment
@@ -169,7 +169,7 @@
 
     - name: Deploy PGO
       command: |
-        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_namespace }}
+        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
       tags: [install, upgrade]
 
     - name: Download PGO Linux Client
