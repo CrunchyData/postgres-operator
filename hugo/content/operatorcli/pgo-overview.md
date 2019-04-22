@@ -316,6 +316,7 @@ To add a pgbouncer Deployment to your Postgres cluster, enter:
 You can add pgbouncer after a Postgres cluster is created as follows:
 
     pgo create pgbouncer mycluster
+	pgo create pgbouncer --selector=name=mycluster
 
 You can also specify a pgbouncer password as follows:
 
