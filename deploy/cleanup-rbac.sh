@@ -32,6 +32,13 @@ then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrole 
 fi
 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrolesecret
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrolesecret 
+fi
+
+
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrolecrd 
 if [ $? -eq 0 ]
 then

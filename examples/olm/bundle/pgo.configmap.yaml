@@ -179,7 +179,7 @@ data:
                               apiVersion: v1
                               fieldPath: metadata.namespace
                         name: scheduler
-                        image: crunchydata/pgo-scheduler:centos7-4.0.0-rc5
+                        image: crunchydata/pgo-scheduler:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
                       - env:
                         - name: CRUNCHY_DEBUG
@@ -196,7 +196,7 @@ data:
                               apiVersion: v1
                               fieldPath: metadata.namespace
                         name: operator
-                        image: crunchydata/postgres-operator:centos7-4.0.0-rc5
+                        image: crunchydata/postgres-operator:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
                       - env:
                         - name: CRUNCHY_DEBUG
@@ -215,20 +215,11 @@ data:
                         - name: TLS_NO_VERIFY
                           value: "false"
                         name: apiserver
-                        image: crunchydata/pgo-apiserver:centos7-4.0.0-rc5
+                        image: crunchydata/pgo-apiserver:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
-                        volumeMounts:
-                        - mountPath: /apiserver.local.config/certificates
-                          name: pgo-tls
-                          readOnly: true
                         ports:
                         - containerPort: 8443
                           protocol: TCP
-                    volumes:
-                    - name: pgo-tls
-                      secret:
-                        defaultMode: 511
-                        secretName: pgo.tls
                     restartPolicy: Always
                     terminationGracePeriodSeconds: 5
                     serviceAccountName: postgres-operator
