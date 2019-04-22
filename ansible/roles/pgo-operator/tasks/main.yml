@@ -48,7 +48,7 @@
   tags: always
 
 - include_tasks: cleanup.yml
-  tags: [deprovision, upgrade]
+  tags: [deprovision, update]
 
 - include_tasks: deprecated.yml
   tags: always
@@ -67,18 +67,18 @@
 - name: Deploy PostgreSQL Operator
   block:
     - include_tasks: crds.yml
-      tags: [install, upgrade]
+      tags: [install]
 
     - name: Template Cluster RBAC
       template:
         src: cluster-rbac.yaml.j2
         dest: "{{ output_dir }}/cluster-rbac.yaml"
         mode: '0600'
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Create Cluster RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
-      tags: [install, upgrade]
+      tags: [install, update]
     
     - name: Template PGO RBAC
       template:
@@ -87,41 +87,41 @@
         mode: '0600'
       with_items: 
       - "{{ all_namespaces }}"
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Create PGO RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/rbac-{{ item }}.yaml"
       with_items: 
       - "{{ all_namespaces }}"
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Template PGO User
       template:
         src: pgouser.j2
         dest: "{{ output_dir }}/pgouser"
         mode: '0600'
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Template Local PGO User
       template:
         src: pgouser.local.j2
         dest: "{{ pgo_keys_dir }}/pgouser"
         mode: '0400'
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Template PGO Configuration
       template:
         src: pgo.yaml.j2
         dest: "{{ output_dir }}/pgo.yaml"
         mode: '0600'
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Template BackRest AWS S3 Configuration
       template:
         src: aws-s3-credentials.yaml.j2
         dest: "{{ output_dir }}/aws-s3-credentials.yaml"
         mode: '0600'
-      tags: [install, upgrade]
+      tags: [install]
 
     - name: Create PGO BackRest Repo Secret
       command: |
@@ -136,7 +136,7 @@
           -n {{ item }}
       with_items:
       - "{{ all_namespaces }}"
-      tags: [install, upgrade]
+      tags: [install]
 
     - name: Create PGO API Secret
       command: |
@@ -144,7 +144,7 @@
           --cert='{{ output_dir }}/server.crt' \
           --key='{{ output_dir }}/server.pem' \
           -n {{ pgo_operator_namespace }}
-      tags: [install, upgrade]
+      tags: [install]
 
     - name: Create PGO ConfigMap
       command: |
@@ -153,24 +153,24 @@
           --from-file=pgouser='{{ output_dir }}/pgouser' \
           --from-file='{{ role_path }}/files/pgo-configs' \
           -n {{ pgo_operator_namespace }}
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Create PGO Service
       command: |
         {{ kubectl_or_oc }} create --filename='{{ role_path }}/files/service.json' -n {{ pgo_operator_namespace }}
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Template PGO Deployment
       template:
         src: deployment.json.j2
         dest: "{{ output_dir }}/deployment.json"
         mode: '0600'
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Deploy PGO
       command: |
         {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Download PGO Linux Client
       become: yes
@@ -180,7 +180,7 @@
         dest: "/usr/local/bin/pgo"
         mode: 0755
       when: uname_result.stdout == "Linux" and pgo_client_install == "true"
-      tags: [install, upgrade]
+      tags: [install, update]
 
     - name: Download PGO MacOS Client
       become: yes
@@ -190,12 +190,4 @@
         dest: "/usr/local/bin/pgo"
         mode: 0755
       when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
-      tags: [install, upgrade]
-    
-    - name: Download PGO Windows Client
-      get_url:
-        url: "{{ pgo_client_url }}/pgo.exe"
-        dest: "/usr/local/bin/pgo"
-        mode: 0755
-      when: '"CYGWIN" in uname_result.stdout and pgo_client_install == "true"'
-      tags: [install, upgrade]
+      tags: [install, update]

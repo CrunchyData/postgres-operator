@@ -9,7 +9,7 @@ weight: 20
 
 The following is required prior to installing Crunchy PostgreSQL Operator using Ansible:
 
-* [postgres-operator-playbooks](https://github.com/CrunchyData/postgres-operator-playbooks) source code for the target version
+* [postgres-operator playbooks](https://github.com/CrunchyData/postgres-operator/) source code for the target version
 * Ansible 2.4.6+
 
 ## Kubernetes Installs

@@ -11,5 +11,5 @@ Latest Release: 4.0.0
 This repository contains Ansible Roles for deploying the Crunchy PostgreSQL Operator 
 for Kubernetes and OpenShift.
 
-See the [official documentation for more information](https://crunchydata.github.io/postgres-operator-/stable/) 
+See the [official documentation for more information](https://crunchydata.github.io/postgres-operator/stable/) 
 on installing Crunchy PostgreSQL Operator.
