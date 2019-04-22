@@ -1,11 +1,10 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: pgo-operator
-  namespace: pgo
+  generateName: postgres-operator-
 spec:
   source: dev-operators
   sourceNamespace: pgo
-  name: postgres-operator
-  startingCSV: postgresoperator.v4.0.0
   channel: stable
+  name: postgresql
+  startingCSV: postgresoperator.v4.0.0
