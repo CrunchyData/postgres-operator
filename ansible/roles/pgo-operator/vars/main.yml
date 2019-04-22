@@ -1,4 +1,4 @@
 ---
-pgo_version: "4.0.0-rc6"
+pgo_version: "4.0.0-rc7"
 pgo_client_url: "https://github.com/CrunchyData/postgres-operator/releases/download/{{ pgo_version }}"
 pgo_keys_dir: "~/.pgo/{{ pgo_operator_namespace }}"
