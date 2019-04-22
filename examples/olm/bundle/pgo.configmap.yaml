@@ -217,18 +217,9 @@ data:
                         name: apiserver
                         image: crunchydata/pgo-apiserver:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
-                        volumeMounts:
-                        - mountPath: /apiserver.local.config/certificates
-                          name: pgo-tls
-                          readOnly: true
                         ports:
                         - containerPort: 8443
                           protocol: TCP
-                    volumes:
-                    - name: pgo-tls
-                      secret:
-                        defaultMode: 511
-                        secretName: pgo.tls
                     restartPolicy: Always
                     terminationGracePeriodSeconds: 5
                     serviceAccountName: postgres-operator

@@ -52,8 +52,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const serverCert = "/apiserver.local.config/certificates/tls.crt"
-const serverKey = "/apiserver.local.config/certificates/tls.key"
+const serverCertPath = "/tmp/server.crt"
+const serverKeyPath = "/tmp/server.key"
 
 func main() {
 
@@ -151,10 +151,18 @@ func main() {
 	r.HandleFunc("/benchmarkdelete", benchmarkservice.DeleteBenchmarkHandler).Methods("POST")
 	r.HandleFunc("/benchmarkshow", benchmarkservice.ShowBenchmarkHandler).Methods("POST")
 
-	caCert, err := ioutil.ReadFile(serverCert)
+	err := apiserver.GetTLS(serverCertPath, serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
-		log.Error("could not read " + serverCert)
+		os.Exit(2)
+	}
+
+	var caCert []byte
+
+	caCert, err = ioutil.ReadFile(serverCertPath)
+	if err != nil {
+		log.Fatal(err)
+		log.Error("could not read " + serverCertPath)
 		os.Exit(2)
 	}
 	caCertPool := x509.NewCertPool()
@@ -176,12 +184,12 @@ func main() {
 		TLSConfig: cfg,
 	}
 
-	_, err = ioutil.ReadFile(serverKey)
+	_, err = ioutil.ReadFile(serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
-		log.Error("could not read " + serverKey)
+		log.Error("could not read " + serverKeyPath)
 		os.Exit(2)
 	}
 
-	log.Fatal(srv.ListenAndServeTLS(serverCert, serverKey))
+	log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
 }

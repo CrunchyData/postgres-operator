@@ -60,11 +60,6 @@
                             }
                         ],
                         "volumeMounts": [
-                            {
-                                "mountPath": "/apiserver.local.config/certificates",
-                                "name": "pgo-tls",
-                                "readOnly": true
-                            }
                         ]
                     },
                     {
@@ -148,13 +143,6 @@
                     }
                 ],
                 "volumes": [
-                    {
-                        "name": "pgo-tls",
-                        "secret": {
-                            "secretName": "pgo.tls",
-                            "defaultMode": 511
-                        }
-                    }
                 ]
             }
         }

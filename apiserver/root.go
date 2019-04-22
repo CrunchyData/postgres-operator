@@ -18,24 +18,34 @@ limitations under the License.
 import (
 	"bufio"
 	"bytes"
+	"crypto/rsa"
+	"crypto/x509"
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/tlsutil"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+const rsaKeySize = 2048
+const duration365d = time.Hour * 24 * 365
+const PGOSecretName = "pgo.tls"
 
 // pgouserPath ...
 const pgouserPath = "/default-pgo-config/pgouser"
@@ -617,4 +627,87 @@ func UserIsPermittedInNamespace(username, requestedNS string) bool {
 		}
 	}
 	return false
+}
+
+//validate or generate the TLS keys
+func GetTLS(certPath, keyPath string) error {
+
+	var pgoSecret *v1.Secret
+	var found bool
+	var err error
+
+	pgoSecret, found, err = kubeapi.GetSecret(Clientset, PGOSecretName, PgoNamespace)
+	if found {
+		log.Infof("%s Secret found in namespace %s", PGOSecretName, PgoNamespace)
+		log.Infof("cert key data len is %d", len(pgoSecret.Data[v1.TLSCertKey]))
+		if err := ioutil.WriteFile(certPath, pgoSecret.Data[v1.TLSCertKey], 0644); err != nil {
+			return err
+		}
+		log.Infof("private key data len is %d", len(pgoSecret.Data[v1.TLSPrivateKeyKey]))
+		if err := ioutil.WriteFile(keyPath, pgoSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+			return err
+		}
+	} else {
+		log.Infof("%s Secret NOT found in namespace %s", PGOSecretName, PgoNamespace)
+		err = generateTLS(certPath, keyPath)
+		if err != nil {
+			log.Error("error generating pgo.tls Secret")
+			return err
+		}
+	}
+
+	return nil
+
+}
+
+// generate a self signed cert and the pgo.tls Secret to hold it
+func generateTLS(certPath, keyPath string) error {
+	var err error
+
+	//generate private key
+	var privateKey *rsa.PrivateKey
+	privateKey, err = tlsutil.NewPrivateKey()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	privateKeyBytes := tlsutil.EncodePrivateKeyPEM(privateKey)
+	log.Debugf("generated privateKeyBytes len %d", len(privateKeyBytes))
+
+	var caCert *x509.Certificate
+	caCert, err = tlsutil.NewSelfSignedCACertificate(privateKey)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	caCertBytes := tlsutil.EncodeCertificatePEM(caCert)
+	log.Debugf("generated caCertBytes len %d", len(caCertBytes))
+
+	// CreateSecret
+	newSecret := v1.Secret{}
+	newSecret.Name = PGOSecretName
+	newSecret.ObjectMeta.Labels = make(map[string]string)
+	newSecret.ObjectMeta.Labels[config.LABEL_VENDOR] = "crunchydata"
+	newSecret.Data = make(map[string][]byte)
+	newSecret.Data[v1.TLSCertKey] = caCertBytes
+	newSecret.Data[v1.TLSPrivateKeyKey] = privateKeyBytes
+	newSecret.Type = v1.SecretTypeTLS
+
+	err = kubeapi.CreateSecret(Clientset, &newSecret, PgoNamespace)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	if err := ioutil.WriteFile(certPath, newSecret.Data[v1.TLSCertKey], 0644); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(keyPath, newSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+		return err
+	}
+
+	return err
+
 }
