@@ -75,7 +75,7 @@ data:
       metadata:
         annotations:
           categories: "Database"
-          containerImage: crunchydata/postgres-operator:centos7-4.0.0-rc5
+          containerImage: crunchydata/postgres-operator:centos7-4.0.0-rc7
           createdAt: 2019-01-01T11:59:59Z
           support: crunchydata.com
           description: A Postgres Operator from Crunchydata.com
@@ -179,7 +179,7 @@ data:
                               apiVersion: v1
                               fieldPath: metadata.namespace
                         name: scheduler
-                        image: crunchydata/pgo-scheduler:centos7-4.0.0-rc5
+                        image: crunchydata/pgo-scheduler:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
                       - env:
                         - name: CRUNCHY_DEBUG
@@ -196,7 +196,7 @@ data:
                               apiVersion: v1
                               fieldPath: metadata.namespace
                         name: operator
-                        image: crunchydata/postgres-operator:centos7-4.0.0-rc5
+                        image: crunchydata/postgres-operator:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
                       - env:
                         - name: CRUNCHY_DEBUG
@@ -215,7 +215,7 @@ data:
                         - name: TLS_NO_VERIFY
                           value: "false"
                         name: apiserver
-                        image: crunchydata/pgo-apiserver:centos7-4.0.0-rc5
+                        image: crunchydata/pgo-apiserver:centos7-4.0.0-rc7
                         imagePullPolicy: IfNotPresent
                         volumeMounts:
                         - mountPath: /apiserver.local.config/certificates
