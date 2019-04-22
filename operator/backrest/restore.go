@@ -161,7 +161,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		PgbackrestRepo1Host: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
+			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
 	}
 
 	var doc2 bytes.Buffer
@@ -428,7 +429,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, cluster),
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], cluster.Spec.ClusterName, restoreToName,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
+			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

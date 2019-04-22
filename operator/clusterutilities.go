@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/validation"
+
 	"gopkg.in/yaml.v2"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -253,10 +255,11 @@ func GetLabelsFromMap(labels map[string]string) string {
 	mapLen := len(labels)
 	i := 1
 	for key, value := range labels {
-		if i < mapLen {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
-		} else {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\"")
+		if len(validation.IsQualifiedName(key)) == 0 && len(validation.IsValidLabelValue(value)) == 0 {
+			output += fmt.Sprintf("\"%s\": \"%s\"", key, value)
+			if i < mapLen {
+				output += ","
+			}
 		}
 		i++
 	}
@@ -355,9 +358,10 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 
 }
 
-func GetPgbackrestS3EnvVars(userLabels map[string]string, clientset *kubernetes.Clientset, ns string) string {
+func GetPgbackrestS3EnvVars(backrestLabel, backRestStorageTypeLabel string,
+	clientset *kubernetes.Clientset, ns string) string {
 
-	if userLabels[config.LABEL_BACKREST] == "true" && strings.Contains(userLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
+	if backrestLabel == "true" && strings.Contains(backRestStorageTypeLabel, "s3") {
 
 		s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
 			PgbackrestS3Bucket:   Pgo.Cluster.BackrestS3Bucket,

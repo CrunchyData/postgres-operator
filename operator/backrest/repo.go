@@ -104,10 +104,11 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
 		PgbackrestStanza:      "db",
 		PgbackrestRepoType:    operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(cluster.Spec.UserLabels, clientset, namespace),
-		Name:                  repoName,
-		ClusterName:           cluster.Name,
-		SecurityContext:       util.CreateSecContext(cluster.Spec.PrimaryStorage.Fsgroup, cluster.Spec.PrimaryStorage.SupplementalGroups),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
+			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
+		Name:            repoName,
+		ClusterName:     cluster.Name,
+		SecurityContext: util.CreateSecContext(cluster.Spec.PrimaryStorage.Fsgroup, cluster.Spec.PrimaryStorage.SupplementalGroups),
 	}
 	log.Debugf(fields.Name)
 
