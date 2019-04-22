@@ -1,13 +1,13 @@
 ---
 - fail:
-    msg: "Please specify the a tag: deprovision, deprovision-metrics, install, install-metrics or upgrade"
+    msg: "Please specify the a tag: deprovision, deprovision-metrics, install, install-metrics or update"
   tags: always
   when: ansible_run_tags[0] == "all"
 
 - name: Check Operating System
   shell: uname
   register: uname_result
-  tags: [install, upgrade]
+  tags: [install, update]
 
 - name: Check if required Kube or OpenShift variables are defined
   fail: msg="Please specify either OpenShift or Kubernetes variables in inventory"

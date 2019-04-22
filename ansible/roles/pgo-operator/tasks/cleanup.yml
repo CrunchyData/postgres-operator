@@ -4,7 +4,7 @@
     kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Deployments
   shell: |
@@ -13,7 +13,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing ConfigMaps
   shell: |
@@ -22,7 +22,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing secrets
   shell: |
@@ -33,7 +33,6 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
 
 - name: Delete existing Secrets
   shell: |
@@ -42,7 +41,8 @@
   - "pgo.tls"
   ignore_errors: yes
   no_log: false
-  tags: deprovision
+  tags: 
+  - deprovision
 
 - name: Delete existing Services
   shell: |
@@ -51,7 +51,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Service Account
   shell: |
@@ -60,7 +60,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Service Account
   shell: |
@@ -71,7 +71,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Cluster Role Bindings
   shell: |
@@ -79,11 +79,12 @@
   with_items:
   - "clusterbinding"
   - "clusterbindingcrd"
+  - "clusterbindingsecret"
   ignore_errors: yes
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Cluster Roles
   shell: |
@@ -91,11 +92,12 @@
   with_items:
   - "clusterrole"
   - "clusterrolecrd"
+  - "clusterrolesecret"
   ignore_errors: yes
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Role Binding
   shell: |
@@ -106,7 +108,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Role Binding
   shell: |
@@ -117,7 +119,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Role
   shell: |
@@ -128,7 +130,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Role
   shell: |
@@ -139,7 +141,7 @@
   no_log: false
   tags:
   - deprovision
-  - upgrade
+  - update
 
 - name: Delete existing Custom Objects
   shell: |
