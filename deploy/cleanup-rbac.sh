@@ -57,6 +57,12 @@ then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE
 fi
 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrolebinding pgopclusterbindingsecret-$PGO_OPERATOR_NAMESPACE
+if [ $? -eq 0 ]
+then
+    $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbindingsecret-$PGO_OPERATOR_NAMESPACE
+fi
+
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get role pgo-role 
 if [ $? -eq 0 ]
 then
