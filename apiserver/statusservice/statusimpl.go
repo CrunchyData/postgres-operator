@@ -121,7 +121,7 @@ func getVolumeCap(ns string) string {
 		capTotal = capTotal + getClaimCapacity(apiserver.Clientset, &p)
 	}
 	q := resource.NewQuantity(capTotal, resource.BinarySI)
-	log.Infof("capTotal string is %s\n", q.String())
+	//log.Infof("capTotal string is %s\n", q.String())
 	return q.String()
 }
 

@@ -29,7 +29,7 @@ import (
 func LoadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var ns string
-	log.Infoln("loadservice.LoadHandler called")
+	log.Debug("loadservice.LoadHandler called")
 
 	var request msgs.LoadRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)

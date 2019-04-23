@@ -345,7 +345,7 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	creds := Credentials[username]
-	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
+	log.Debugf("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
 
 }

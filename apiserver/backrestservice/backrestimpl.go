@@ -361,12 +361,12 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 
 	cmd := make([]string, 0)
 
-	log.Info("backrest info command requested")
+	log.Debug("backrest info command requested")
 	//pgbackrest --stanza=db info
 	cmd = append(cmd, backrestCommand)
 	cmd = append(cmd, backrestInfoCommand)
 
-	log.Infof("command is %v ", cmd)
+	log.Debugf("command is %v ", cmd)
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
 
 	if err != nil {
@@ -385,8 +385,8 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 		output = "\nStorage Type: local\n" + output + "\nStorage Type: s3\n" + outputS3
 	}
 
-	log.Info("output=[" + output + "]")
-	log.Info("stderr=[" + stderr + "]")
+	log.Debug("output=[" + output + "]")
+	log.Debug("stderr=[" + stderr + "]")
 
 	log.Debug("backrest info ends")
 	return output, err

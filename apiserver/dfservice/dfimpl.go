@@ -98,7 +98,7 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 			result.Working = true
 
 			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, p.Status.PodIP, "postgres", c.Spec.Name, ns)
-			log.Infof("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty, c.Spec.Name)
+			log.Debugf("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty, c.Spec.Name)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -177,7 +177,7 @@ func getPGSize(port, host, databaseName, clusterName, ns string) (string, int, e
 		log.Error(err.Error())
 		return dbsizePretty, dbsize, err
 	}
-	log.Info("username=" + username + " password=" + password)
+	//log.Debug("username=" + username + " password=" + password)
 
 	conn, err = sql.Open("postgres", "sslmode=disable user="+username+" host="+host+" port="+port+" dbname="+databaseName+" password="+password)
 	if err != nil {

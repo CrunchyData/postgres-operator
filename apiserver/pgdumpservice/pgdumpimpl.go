@@ -50,10 +50,10 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 
 	// var newInstance *crv1.Pgtask
 
-	log.Info("CreatePgDump storage config... " + request.StorageConfig)
+	log.Debug("CreatePgDump storage config... " + request.StorageConfig)
 	if request.StorageConfig != "" {
 		if apiserver.IsValidStorageName(request.StorageConfig) == false {
-			log.Info("CreateBackup sc error is found " + request.StorageConfig)
+			log.Debug("CreateBackup sc error is found " + request.StorageConfig)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
 			return resp

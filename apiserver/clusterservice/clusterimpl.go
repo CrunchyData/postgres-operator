@@ -216,7 +216,6 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus, d.Ready = getReadyStatus(&p)
 		d.PVCName = apiserver.GetPVCName(&p)
-		log.Infof("after getPVCName call")
 
 		d.Primary = false
 		d.Type = getType(&p, cluster.Spec.Name)

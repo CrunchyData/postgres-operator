@@ -376,7 +376,7 @@ func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStor
 
 	var err error
 
-	log.Infof("inside createDeleteDataTasksForReplica %s", replicaName)
+	log.Debugf("inside createDeleteDataTasksForReplica %s", replicaName)
 
 	dataRoots := make([]string, 0)
 	dataRoots = append(dataRoots, replicaName)
