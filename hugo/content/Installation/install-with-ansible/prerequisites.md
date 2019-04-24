@@ -2,7 +2,7 @@
 title: "Prerequisites"
 date:
 draft: false
-weight: 20
+weight: 10
 ---
 
 # Prerequisites
@@ -85,6 +85,7 @@ The following are the variables available for configuration:
 | `log_statement`                   | none        | Set to `none`, `ddl`, `mod`, or `all` to configure the statements that will be logged in PostgreSQL's logs on all newly created clusters.                                        |
 | `metrics`                         | false       | Set to true enable performance metrics on all newly created clusters.                                                                                                            |
 | `metrics_namespace`               | metrics     | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
+| `namespace`                       |             | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
 | `openshift_host`                  |             | When deploying to OpenShift, set to configure the hostname of the OpenShift cluster to connect to.                                                                               |
 | `openshift_password`              |             | When deploying to OpenShift, set to configure the password used for login.                                                                                                       |
 | `openshift_skip_tls_verify`       |             | When deploying to Openshift, set to ignore the integrity of TLS certificates for the OpenShift cluster.                                                                          |
@@ -111,9 +112,7 @@ The following are the variables available for configuration:
 | `storage<ID>_size`                |             | Set to configure the size of the volumes created when using this storage definition.                                                                                             |
 | `storage<ID>_supplemental_groups` |             | Set to configure any supplemental groups that should be added to security contexts on newly created clusters.                                                                    |
 | `storage<ID>_type`                |             | Set to either `create` or `dynamic` to configure the operator to create persistent volumes or have them created dynamically by a storage class.                                  |
-| `namespace`               |             | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
 | `xlog_storage`                    | storage1    | Set to configure which storage definition to use when creating volumes used to store Write Ahead Logs (WAL) archives on all newly created clusters.                              |
-
 
 {{% notice tip %}}
 To retrieve the `kubernetes_context` value for Kubernetes installs, run the following command:

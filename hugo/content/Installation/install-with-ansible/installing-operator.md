@@ -1,55 +1,47 @@
 ---
-title: "Updating PostgreSQL Operator"
+title: "Installing PostgreSQL Operator"
 date:
 draft: false
-weight: 50
+weight: 21
 ---
 
-# Updating
+# Installing
 
-Updating the Crunchy PostgreSQL Operator is essential to the lifecycle management 
-of the service.  Using the `update` flag will:
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+we can now install the PostgreSQL Operator.
 
-* Update and redeploy the operator deployment
-* Recreate configuration maps used by operator
-* Remove any deprecated objects
-* Allow administrators to change settings configured in the `inventory`
-
-The following assumes the proper [prerequisites are satisfied](/getting-started/prerequisites)
-we can now update the PostgreSQL Operator.
-
-The commands should be run in the directory where the Crunchy PostgreSQL Operator 
-playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator 
+The commands should be run in the directory where the Crunchy PostgreSQL Operator
+playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator
 project for the inventory file, main playbook and ansible roles.
 
-## Updating on Linux
+## Installing on Linux
 
-On a Linux host with Ansible installed we can run the following command to update  
+On a Linux host with Ansible installed we can run the following command to install 
 the PostgreSQL Operator:
 
 ```bash
-ansible-playbook -i /path/to/inventory main.yml --tags=update --ask-become-pass
+ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
 ```
 
-## Updating on MacOS
+## Installing on MacOS
 
-On a MacOS host with Ansible installed we can run the following command to update  
+On a MacOS host with Ansible installed we can run the following command to install
 the PostgreSQL Operator.
 
 ```bash
-ansible-playbook -i /path/to/inventory main.yml --tags=update --ask-become-pass
+ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
 ```
 
-## Updating on Windows Ubuntu Subsystem
+## Installing on Windows Ubuntu Subsystem
 
-On a Windows host with an Ubuntu subsystem we can run the following commands to update  
+On a Windows host with an Ubuntu subsystem we can run the following commands to install 
 the PostgreSQL Operator.
 
 ```bash
-ansible-playbook -i /path/to/inventory main.yml --tags=update --ask-become-pass
+ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
 ```
 
-## Verifying the Update
+## Verifying the Installation
 
 This may take a few minutes to deploy.  To check the status of the deployment run 
 the following:
@@ -66,7 +58,7 @@ oc get pods -n <NAMESPACE_NAME>
 
 ## Configure Environment Variables
 
-After the Crunchy PostgreSQL Operator has successfully been updated we will need 
+After the Crunchy PostgreSQL Operator has successfully been installed we will need 
 to configure local environment variables before using the `pgo` client.
 
 To configure the environment variables used by `pgo` run the following command:
@@ -111,4 +103,4 @@ pgo version
 ```
 
 If the above command outputs versions of both the client and API server, the Crunchy 
-PostgreSQL Operator has been updated successfully.
+PostgreSQL Operator has been installed successfully.

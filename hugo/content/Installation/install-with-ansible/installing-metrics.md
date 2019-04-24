@@ -2,24 +2,25 @@
 title: "Installing Metrics Stack"
 date:
 draft: false
-weight: 40
+weight: 22
 ---
 
 # Installing
 
-The following assumes the proper [prerequisites are satisfied](/getting-started/prerequisites)
-we can now install the Grafana and Prometheus services.
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+we can now install the PostgreSQL Operator.
+
+The commands should be run in the directory where the Crunchy PostgreSQL Operator
+playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator
+project for the inventory file, main playbook and ansible roles.
 
 ## Installing on Linux
 
 On a Linux host with Ansible installed we can run the following command to install 
 the Metrics stack:
 
-The following command should be run from the directory where the
-`postgres-operator-playbooks` project is located:
-
 ```bash
-ansible-playbook -i /path/to/inventory main.yml --tags=install-metrics
+ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
 ```
 
 ## Installing on MacOS
@@ -27,11 +28,8 @@ ansible-playbook -i /path/to/inventory main.yml --tags=install-metrics
 On a MacOS host with Ansible installed we can run the following command to install 
 the Metrics stack:
 
-The following command should be run from the directory where the
-`postgres-operator-playbooks` project is located:
-
 ```bash
-ansible-playbook -i /path/to/inventory main.yml --tags=install-metrics
+ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
 ```
 
 ## Installing on Windows
@@ -39,11 +37,8 @@ ansible-playbook -i /path/to/inventory main.yml --tags=install-metrics
 On a Windows host with the Ubuntu subsystem we can run the following commands to install 
 the Metrics stack:
 
-The following command should be run from the directory where the
-`postgres-operator-playbooks` project is located:
-
 ```bash
-ansible-playbook -i /path/to/inventory main.yml --tags=install-metrics
+ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
 ```
 
 ## Verifying the Installation

@@ -1,8 +1,8 @@
 ---
-title: "Operator Installation"
+title: "Install Operator Using Bash"
 date:
 draft: false
-weight: 301
+weight: 300
 ---
 
 A full installation of the Operator includes the following steps:
