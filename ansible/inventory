@@ -102,7 +102,6 @@ backrest_storage='storage1'
 backup_storage='storage1'
 primary_storage='storage2'
 replica_storage='storage3'
-xlog_storage='storage1'
 
 storage1_access_mode='ReadWriteMany'
 storage1_size='1G'

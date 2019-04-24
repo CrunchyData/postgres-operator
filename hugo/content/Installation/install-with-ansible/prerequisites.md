@@ -112,7 +112,6 @@ The following are the variables available for configuration:
 | `storage<ID>_size`                |             | Set to configure the size of the volumes created when using this storage definition.                                                                                             |
 | `storage<ID>_supplemental_groups` |             | Set to configure any supplemental groups that should be added to security contexts on newly created clusters.                                                                    |
 | `storage<ID>_type`                |             | Set to either `create` or `dynamic` to configure the operator to create persistent volumes or have them created dynamically by a storage class.                                  |
-| `xlog_storage`                    | storage1    | Set to configure which storage definition to use when creating volumes used to store Write Ahead Logs (WAL) archives on all newly created clusters.                              |
 
 {{% notice tip %}}
 To retrieve the `kubernetes_context` value for Kubernetes installs, run the following command:
