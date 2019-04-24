@@ -258,7 +258,25 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	}
 
 	var rows *sql.Rows
-	querystr := "ALTER user " + username + " PASSWORD '" + newPassword + "'"
+	querystr := "SELECT 'md5'|| md5('" + newPassword + username + "')"
+	//log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	var md5Password string
+	for rows.Next() {
+		err = rows.Scan(&md5Password)
+		if err != nil {
+			log.Debug(err.Error())
+			return err
+		}
+	}
+
+	//querystr = "ALTER user " + username + " PASSWORD '" + newPassword + "'"
+	querystr = "ALTER user " + username + " PASSWORD '" + md5Password + "'"
 	//log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
