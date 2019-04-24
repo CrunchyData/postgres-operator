@@ -26,7 +26,7 @@ pgo_tls_no_verify='false'
 
 # Crunchy Container Suite images to use. The tags centos7 and rhel7 are acceptable.
 ccp_image_prefix='crunchydata'
-ccp_image_tag='centos7-11.2-2.3.1'
+ccp_image_tag='centos7-11.2-2.4.0-rc5'
 
 # Crunchy PostgreSQL Operator images to use.  The tags centos7 and rhel7 are acceptable.
 pgo_image_prefix='crunchydata'
