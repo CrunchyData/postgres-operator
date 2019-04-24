@@ -92,15 +92,15 @@ kubectl get nodes
 
 You can then specify one of those names (e.g. kubeadm-node2)  when creating a cluster;
 ```
-pgo create cluster thatcluster --node-name=kubeadm-node2
+pgo create cluster thatcluster --node-label=kubeadm-node2
 ```
 
-The affinity rule inserted in the Deployment use a *preferred*
+The affinity rule inserted in the Deployment uses a *preferred*
 strategy so that if the node were down or not available, Kubernetes will
 go ahead and schedule the Pod on another node.
 
 When you scale up a Cluster and add a replica, the scaling will
-take into account the use of `--node-name`.  If it sees that a
+take into account the use of `--node-label`.  If it sees that a
 cluster was created with a specific node name, then the replica
 Deployment will add an affinity rule to attempt to schedule
 
