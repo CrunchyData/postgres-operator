@@ -11,6 +11,8 @@ IMAGES=(
     crunchy-pgbadger
     crunchy-pgbouncer
     crunchy-pgpool
+    crunchy-pgdump
+    crunchy-pgrestore
 )
 
 function echo_green() {
