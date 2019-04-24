@@ -74,7 +74,7 @@ func ExecToPodThroughAPI(config *rest.Config, clientset *kubernetes.Clientset, c
 	})
 	if err != nil {
 		log.Error(err)
-		return "", "", err
+		return stdout.String(), stderr.String(), err
 	}
 
 	return stdout.String(), stderr.String(), nil
