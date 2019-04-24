@@ -26,6 +26,20 @@ then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete serviceaccount pgo-backrest
 fi
 
+IFS=', ' read -r -a array <<< "$NAMESPACE"
+
+echo ""
+echo "delete pgo-backrest ServiceAccount from each target namespace"
+
+for ns in "${array[@]}"
+do
+	$PGO_CMD get sa pgo-backrest --namespace=$ns > /dev/null 2> /dev/null
+	if [ $? -eq 0 ]
+	then
+		$PGO_CMD delete sa  pgo-backrest --namespace=$ns > /dev/null 2> /dev/null
+	fi
+done
+
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrole  
 if [ $? -eq 0 ]
 then
