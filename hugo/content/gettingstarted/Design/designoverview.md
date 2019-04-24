@@ -33,6 +33,15 @@ Persistent Volumes. Each volume can use different storage
 configurations which provides fined grained placement of
 the database data files.
 
+There is a Service created for the primary Postgres deployment
+and a Service created for any replica Postgres deployments within
+a given Postgres cluster.  Primary services match Postgres deployments
+using a label *service-name* of the following format:
+
+    service-name=mycluster
+    service-name=mycluster-replica
+
+
 ## Custom Resource Definitions
 
 Kubernetes Custom Resource Definitions are used in the design
@@ -40,7 +49,6 @@ of the PostgreSQL Operator to define the following:
 
  * Cluster - *pgclusters*
  * Backup - *pgbackups*
- * Upgrade - *pgupgrades*
  * Policy - *pgpolicies*
  * Tasks - *pgtasks*
 
@@ -52,7 +60,7 @@ The *postgres-operator* design incorporates the following concepts:
 
 ## Event Listeners
 
-Kubernetes events are created for the Operator's CRD resources when
+Kubernetes events are created for the Operator CRD resources when
 new resources are made, deleted, or updated.  These events are
 processed by the Operator to perform asynchronous actions.
 
@@ -175,7 +183,7 @@ Other things to take into account before you do a restore:
  * there is currently no Operator validation of user entered pgBackRest command options, you will need to make sure to enter these correctly, if not the pgBackRest restore command can fail.
  * the restore workflow does not perform a backup after the restore nor does it verify that any replicas are in a working status after the restore, it is possible you might have to take actions on the replica to get them back to replicating with the new restored primary.
  * pgbackrest.org suggests running a pgbackrest backup after a restore, this needs to be done by the DBA as part of a restore
- * when performing a pgBackRest restore, the **node-label** flag can be utilized to target a specific node for both the pgBackRest restore job and the new (i.e. restored) primary deployment that is then created for the cluster.  If a node label is not specified, the restore job will not target any specific node, and the restored primary deployment will inherit any node label's defined for the original primary deployment.
+ * when performing a pgBackRest restore, the **node-label** flag can be utilized to target a specific node for both the pgBackRest restore job and the new (i.e. restored) primary deployment that is then created for the cluster.  If a node label is not specified, the restore job will not target any specific node, and the restored primary deployment will inherit any node labels defined for the original primary deployment.
 
 ### pgbackrest AWS S3 Support
 
@@ -343,7 +351,7 @@ node in the same zone as that volume.  This is part of the
 when using dynamic provisioning, volumes are not provisioned in a topology-aware manner by default, which means a volume
 will not be provisioned according to the same scheduling requirements that will be placed on the pod that will be using it
 (e.g. it will not consider node selectors, resource requirements, pod affinity/anti-affinity, and various other scheduling
-requirements).  Rather, PVC's are immediately bound as soon as they are requested, which means volumes are provisioned 
+requirements).  Rather, PVCs are immediately bound as soon as they are requested, which means volumes are provisioned 
 without knowledge of these scheduling requirements. This behavior is the result of the `volumeBindingMode` defined on the
 Storage Class being utilized to dynamically provision the volume, which is set to `Immediate` by default.  This can be seen
 in the following Storage Class definition, which defines a Storage Class for a Google Cloud Engine Persistent Disk (GCE PD)
@@ -380,7 +388,7 @@ requested, but rather waits for a pod utilizing it to be creating prior to bindi
 take into account the scheduling requirements for the pod, which in the case of a multi-zone cluster means ensuring the
 volume is provisioned in the same zone containing the node where the pod has be scheduled.  This also means the scheduler
 should no longer ignore a node label in order to follow a volume to another zone when scheduling a pod, since the volume
-will now follow the pod according to the pod's specificscheduling requirements.  The following is an example of the the same
+will now follow the pod according to the pods specificscheduling requirements.  The following is an example of the the same
 Storage Class defined above, only with `volumeBindingMode` now set to `WaitForFirstConsumer`:
 
 ```bash

@@ -45,7 +45,7 @@ The following table shows the *pgo* operations currently implemented:
 
 | Operation   |      Syntax      |  Description |
 |:----------|:-------------|:------|
-| apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s)|
+| apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s) that have a label matching service-name=mycluster|
 | backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
 | create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, schedule, user) |
 | delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user, schedule) |

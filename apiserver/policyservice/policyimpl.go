@@ -22,9 +22,9 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	//cluster "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/apps/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
@@ -169,17 +169,38 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 
 	//get filtered list of Deployments
 	selector := request.Selector
-	log.Debugf("selector string=[%s]", selector)
+	log.Debugf("apply policy selector string=[%s]", selector)
 
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	//get a list of all clusters
+	clusterList := crv1.PgclusterList{}
+
+	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+		&clusterList, selector, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
+	log.Debugf("apply policy clusters found len is %d", len(clusterList.Items))
+
+	var allDeployments []v1.Deployment
+	for _, c := range clusterList.Items {
+		depSelector := config.LABEL_SERVICE_NAME + "=" + c.Name
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, depSelector, ns)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		if len(deployments.Items) < 1 {
+			log.Error("%s  did not have a deployment for some reason", c.Name)
+		} else {
+			allDeployments = append(allDeployments, deployments.Items[0])
+		}
+	}
 
 	if request.DryRun {
-		for _, d := range deployments.Items {
+		for _, d := range allDeployments {
 			log.Debugf("deployment : %s", d.ObjectMeta.Name)
 			resp.Name = append(resp.Name, d.ObjectMeta.Name)
 		}
@@ -189,7 +210,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 	labels := make(map[string]string)
 	labels[request.Name] = "pgpolicy"
 
-	for _, d := range deployments.Items {
+	for _, d := range allDeployments {
 		if d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
 			log.Debug("skipping apply policy on deployment %s", d.Name)
 			continue

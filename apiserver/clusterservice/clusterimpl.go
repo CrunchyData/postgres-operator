@@ -185,7 +185,7 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 		d.Name = dep.Name
 		d.PolicyLabels = make([]string, 0)
 
-		for k, v := range dep.ObjectMeta.Labels {
+		for k, v := range cluster.ObjectMeta.Labels {
 			if v == "pgpolicy" {
 				d.PolicyLabels = append(d.PolicyLabels, k)
 			}
