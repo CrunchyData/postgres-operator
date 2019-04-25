@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
+	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
@@ -262,6 +263,29 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 		return
 
+	}
+
+	//handle the case of a benchmark job being upddated
+	if labels[config.LABEL_PGO_BENCHMARK] == "true" {
+		log.Debugf("jobController onUpdate benchmark job case")
+		log.Debugf("got a benchmark job status=%d", job.Status.Succeeded)
+
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		if job.Status.Failed > 0 {
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", job.Name, job.ObjectMeta.Namespace)
+		if err != nil {
+			log.Error("error in patching pgtask " + labels["workflowName"] + err.Error())
+		}
+
+		benchmarkoperator.UpdateWorkflow(c.JobClient, labels["workflowName"], job.ObjectMeta.Namespace, crv1.JobCompletedStatus)
+		return
 	}
 }
 
