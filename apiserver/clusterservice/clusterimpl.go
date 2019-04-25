@@ -1038,8 +1038,29 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 				//by convention, the root directory name
 				//created by the backup job is depName-backups
 				dataRoots := []string{dep.Name + "-backups"}
-				//dataRoots = append(dataRoots, deploymentName+"-backrest-shared-repo")
 				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, dep.Name+"-rmdata-backups", ns)
+				if err != nil {
+					log.Error(err)
+					return err
+				}
+			}
+
+			// check for pgdump backups
+			pgdumpPvcName := "backup-" + dep.Name + "-pgdump-pvc"
+
+			log.Debugf("checking dep %s for pgdump backup pvc %s\n", dep.Name, pgdumpPvcName)
+			_, found, err = kubeapi.GetPVC(apiserver.Clientset, pgdumpPvcName, ns)
+			if !found {
+				log.Debugf("%s pvc was not found when looking for pgdump backups to delete\n", pgdumpPvcName)
+			} else {
+				if err != nil {
+					log.Error(err)
+					return err
+				}
+				//by convention, the root directory name
+				//created by the backup job is depName-backups
+				dataRoots := []string{dep.Name + "-backups"}
+				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pgdumpPvcName, dataRoots, dep.Name+"-rmdata-pgdump", ns)
 				if err != nil {
 					log.Error(err)
 					return err
