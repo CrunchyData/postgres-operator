@@ -154,7 +154,7 @@ func (backRestRestoreOpts pgBackRestRestoreOptions) validate(setFlagFieldNames [
 				errstrings = append(errstrings, err.Error())
 			}
 		case "RestoreType":
-			validRestoreTypes := []string{"default", "immediate ", "name ", "xid", "time", "preserve", "none"}
+			validRestoreTypes := []string{"default", "immediate", "name", "xid", "time", "preserve", "none"}
 			if !isValidValue(validRestoreTypes, backRestRestoreOpts.RestoreType) {
 				err := errors.New("Invalid type provided for pgBackRest restore")
 				errstrings = append(errstrings, err.Error())
