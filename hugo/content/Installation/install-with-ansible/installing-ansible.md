@@ -2,7 +2,7 @@
 title: "Installing Ansible"
 date:
 draft: false
-weight: 30
+weight: 20
 ---
 
 ## Installing Ansible on Linux, MacOS or Windows Ubuntu Subsystem
