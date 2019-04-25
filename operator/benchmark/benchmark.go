@@ -47,6 +47,7 @@ type benchmarkJobTemplateFields struct {
 	PGBenchScale        string
 	PGBenchTransactions string
 	PGBenchConfigMap    string
+	WorkflowName        string
 }
 
 // Create ...
@@ -71,6 +72,7 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 		PGPort:              task.Spec.Parameters["port"],
 		PGUserSecret:        task.Spec.Parameters["secret"],
 		TaskName:            task.Spec.Parameters["taskName"],
+		WorkflowName:        task.Spec.Parameters["workflowName"],
 	}
 
 	var doc2 bytes.Buffer
@@ -103,14 +105,14 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 
 	log.Debug("Updating benchmark workflow")
 	workflowName := task.Spec.Parameters["workflowName"]
-	err = updateWorkflow(restclient, workflowName, namespace, crv1.PgtaskWorkflowSubmittedStatus)
+	err = UpdateWorkflow(restclient, workflowName, namespace, crv1.PgtaskWorkflowSubmittedStatus)
 	if err != nil {
 		log.Errorf("could not update benchmark workflow: %s", err)
 		return
 	}
 }
 
-func updateWorkflow(client *rest.RESTClient, name, namespace, status string) error {
+func UpdateWorkflow(client *rest.RESTClient, name, namespace, status string) error {
 	log.Debugf("benchmark workflow: update workflow %s", name)
 
 	task := crv1.Pgtask{}
