@@ -4,6 +4,27 @@ localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env pyth
 
 crunchy_debug='false'
 
+# ==================
+# Kuberenetes and OpenShift Settings
+# Note: Either Kubernetes or OpenShift must be used
+
+# Deploy into Openshift
+# ==================
+# Note: openshift_host can use the format https://URL:PORT
+# Note: openshift_token can be used for token authentication
+# ==================
+# openshift_host=''
+# openshift_skip_tls_verify=true
+# openshift_user=''
+# openshift_password=''
+
+# Deploy into Kubernetes
+# ==================
+# Note: Context name can be found using:
+#   kubectl config current-context
+# ==================
+# kubernetes_context=''
+
 # ===================
 # PGO Settings
 # The following settings configure the Crunchy PostgreSQL Operator 
@@ -12,9 +33,11 @@ crunchy_debug='false'
 pgo_client_install='true'
 
 # Namespace where operator will be deployed
+# NOTE: Ansible will create namespaces that don't exist
 pgo_operator_namespace='pgo'
 
 # Comma separated list of namespaces Operator will manage
+# NOTE: Ansible will create namespaces that don't exist
 namespace='pgo'
 
 # PGO Admin Credentials
@@ -25,6 +48,8 @@ pgo_admin_password=''
 pgo_tls_no_verify='false'
 
 # Crunchy Container Suite images to use. The tags centos7 and rhel7 are acceptable.
+# CentOS7 images can be found in dockerhub: https://hub.docker.com/u/crunchydata
+# RHEL7 images are available to Crunchy customers: https://access.crunchydata.com/login/
 ccp_image_prefix='crunchydata'
 ccp_image_tag='centos7-11.2-2.4.0'
 
@@ -96,8 +121,7 @@ prometheus_install='true'
 # ==================
 # Which storage definitions to use when creating persistent volumes
 # for a variety of uses.
-# Note: it is suggested that backup_storage be configured to a ReadWriteMany
-# storage provider for pgBackRest to work correctly.
+
 backrest_storage='storage1'
 backup_storage='storage1'
 primary_storage='storage2'
@@ -107,7 +131,7 @@ storage1_access_mode='ReadWriteMany'
 storage1_size='1G'
 storage1_type='dynamic'
 storage1_class='nfs'
-#storage1_supplemental_groups=65534
+storage1_supplemental_groups=65534
 #storage1_fs_group=26
 
 storage2_access_mode='ReadWriteOnce'
@@ -121,19 +145,26 @@ storage3_access_mode='ReadWriteOnce'
 storage3_size='1G'
 storage3_type='dynamic'
 storage3_class='fast'
+storage3_fs_group=26
 #storage3_supplemental_groups=65534
-#storage3_fs_group=26
 
 # ==================
-# Deploy into Openshift
-# Note: openshift_token can be used for token authentication
+# Metrics
 # ==================
-# openshift_host=''
-# openshift_skip_tls_verify=true
-# openshift_user=''
-# openshift_password=''
+# Optional installation of Grafana and Prometheus optimized
+# to work with the Crunchy PostgreSQL Operator
 
-# ==================
-# Deploy into Kubernetes
-# ==================
-# kubernetes_context=''
+# Note: Ansible will create namespaces that don't exist
+metrics_namespace='metrics'
+
+grafana_install='false'
+grafana_admin_username='admin'
+grafana_admin_password=''
+#grafana_storage_access_mode='ReadWriteOnce'
+#grafana_storage_class_name='fast'
+#grafana_volume_size='1G'
+
+prometheus_install='false'
+#prometheus_storage_access_mode='ReadWriteOnce'
+#prometheus_storage_class_name='fast'
+#prometheus_volume_size='1G'
