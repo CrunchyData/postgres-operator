@@ -45,4 +45,4 @@ The Operator is developed and tested on CentOS and RHEL linux platforms but is k
 
 
 If you are looking for the latest documentation, please see the develop branch which is considered unstable. The development
-documentation can be reviewed link:https://crunchydata.github.io/crunchy-containers/latest/[here].
+documentation can be reviewed link:https://crunchydata.github.io/postgres-operator/latest/[here].
