@@ -30,7 +30,10 @@ crunchy_debug='false'
 # The following settings configure the Crunchy PostgreSQL Operator 
 # functionality.
 # ===================
-pgo_client_install='true'
+
+# PGO Admin Credentials
+pgo_admin_username='admin'
+pgo_admin_password=''
 
 # Namespace where operator will be deployed
 # NOTE: Ansible will create namespaces that don't exist
@@ -39,13 +42,6 @@ pgo_operator_namespace='pgo'
 # Comma separated list of namespaces Operator will manage
 # NOTE: Ansible will create namespaces that don't exist
 namespace='pgo'
-
-# PGO Admin Credentials
-pgo_admin_username='admin'
-pgo_admin_password=''
-
-# PGO TLS
-pgo_tls_no_verify='false'
 
 # Crunchy Container Suite images to use. The tags centos7 and rhel7 are acceptable.
 # CentOS7 images can be found in dockerhub: https://hub.docker.com/u/crunchydata
@@ -56,6 +52,12 @@ ccp_image_tag='centos7-11.2-2.4.0'
 # Crunchy PostgreSQL Operator images to use.  The tags centos7 and rhel7 are acceptable.
 pgo_image_prefix='crunchydata'
 pgo_image_tag='centos7-4.0.0'
+
+# PGO Client Install
+pgo_client_install='true'
+
+# PGO TLS
+pgo_tls_no_verify='false'
 
 # This will set default enhancements for operator deployed PostgreSQL clusters
 auto_failover='false'
@@ -96,25 +98,6 @@ db_password_length=20
 db_port=5432
 db_replicas=0
 db_user='testuser'
-
-# ==================
-# Metrics
-# ==================
-# Optional installation of Grafana and Prometheus optimized 
-# to work with the Crunchy PostgreSQL Operator
-metrics_namespace='metrics'
-
-grafana_install='true'
-grafana_admin_username='admin'
-grafana_admin_password=''
-#grafana_storage_access_mode='ReadWriteOnce'
-#grafana_storage_class_name='fast'
-#grafana_volume_size='1G'
-
-prometheus_install='true'
-#prometheus_storage_access_mode='ReadWriteOnce'
-#prometheus_storage_class_name='fast'
-#prometheus_volume_size='1G'
 
 # ==================
 # Storage Settings

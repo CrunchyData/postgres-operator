@@ -55,7 +55,9 @@
 
 - name: Delete existing Service Account
   shell: |
-    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ pgo_operator_namespace }}
+    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ item }}
+  with_items:
+  - "{{ all_namespaces }}"
   ignore_errors: yes
   no_log: false
   tags:
@@ -66,7 +68,7 @@
   shell: |
     {{ kubectl_or_oc }} delete serviceaccount pgo-backrest -n {{ item }}
   with_items:
-  - "{{ all_namespaces }}"
+  - "{{ namespace.split(',') }}"
   ignore_errors: yes
   no_log: false
   tags:
@@ -99,18 +101,18 @@
   - deprovision
   - update
 
-- name: Delete existing Role Binding
+- name: Delete existing Backrest Role Binding
   shell: |
     {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding -n {{ item }}
   with_items:
-  - "{{ all_namespaces }}"
+  - "{{ namespace.split(',') }}"
   ignore_errors: yes
   no_log: false
   tags:
   - deprovision
   - update
 
-- name: Delete existing Role Binding
+- name: Delete existing PGO Role Binding
   shell: |
     {{ kubectl_or_oc }} delete rolebinding pgo-role-binding -n {{ item }}
   with_items:
@@ -121,18 +123,18 @@
   - deprovision
   - update
 
-- name: Delete existing Role
+- name: Delete existing Backrest Role
   shell: |
     {{ kubectl_or_oc }} delete role pgo-backrest-role -n {{ item }}
   with_items:
-  - "{{ all_namespaces }}"
+  - "{{ namespace.split(',') }}"
   ignore_errors: yes
   no_log: false
   tags:
   - deprovision
   - update
 
-- name: Delete existing Role
+- name: Delete existing PGO Role
   shell: |
     {{ kubectl_or_oc }} delete role pgo-role -n {{ item }}
   with_items:
@@ -145,7 +147,7 @@
 
 - name: Delete existing Custom Objects
   shell: |
-    {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ pgo_operator_namespace }} --all
+    {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ item }} --all
   with_items:
   - "{{ all_namespaces }}"
   ignore_errors: yes
