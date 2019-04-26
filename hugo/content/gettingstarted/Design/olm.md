@@ -2,7 +2,7 @@
 title: "OLM"
 date:
 draft: false
-weight: 6
+weight: 7
 ---
 
 ## Operator Lifecycle Management
