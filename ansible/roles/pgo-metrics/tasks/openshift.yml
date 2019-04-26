@@ -3,6 +3,7 @@
   shell: "{{ openshift_oc_bin}} get project {{ metrics_namespace }}"
   register: namespace_details
   ignore_errors: yes
+  no_log: true
   tags: install-metrics
 
 - name: Create Project {{ metrics_namespace }}

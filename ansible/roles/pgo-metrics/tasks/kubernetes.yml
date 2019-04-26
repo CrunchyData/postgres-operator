@@ -3,6 +3,7 @@
   shell: "kubectl get namespace {{ metrics_namespace }}" 
   register: namespace_details
   ignore_errors: yes
+  no_log: true
   tags: install-metrics
 
 - name: Create Namespace {{ metrics_namespace }}
