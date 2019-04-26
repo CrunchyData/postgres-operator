@@ -2,7 +2,7 @@
 title: "Security"
 date:
 draft: false
-weight: 6
+weight: 7
 ---
 
 ## Kubernetes RBAC

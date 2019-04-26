@@ -2,7 +2,7 @@
 title: "Namespace"
 date:
 draft: false
-weight: 5
+weight: 6
 ---
 
 ## Operator Namespaces

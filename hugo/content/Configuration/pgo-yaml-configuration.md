@@ -3,7 +3,7 @@
 title: "PGO YAML"
 Latest Release: 4.0.0 {docdate}
 draft: false
-weight: 31
+weight: 3
 ---
 
 # pgo.yaml Configuration

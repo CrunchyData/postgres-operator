@@ -3,7 +3,7 @@
 title: "Configuration Resources"
 Latest Release: 4.0.0 {docdate}
 draft: false
-weight: 30
+weight: 2
 ---
 
 The operator is template-driven; this makes it simple to configure both the client and the operator.

@@ -2,7 +2,7 @@
 title: "Custom SSL Configuration"
 date:
 draft: false
-weight: 4
+weight: 5
 ---
 
 ## Custom Postgres SSL Configurations

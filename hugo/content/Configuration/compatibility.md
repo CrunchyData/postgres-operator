@@ -3,7 +3,7 @@
 title: "Compatibility Requirements"
 Latest Release: 4.0.0 {docdate}
 draft: false
-weight: 30
+weight: 1
 ---
 
 ## Container Dependencies
