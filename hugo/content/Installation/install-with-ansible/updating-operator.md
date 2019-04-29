@@ -31,6 +31,16 @@ the PostgreSQL Operator:
 ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass main.yml
 ```
 
+If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
+following commands:
+
+```bash
+export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
+
+ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass \
+    /usr/share/ansible/postgres-operator/playbooks/main.yml
+```
+
 ## Updating on MacOS
 
 On a MacOS host with Ansible installed we can run the following command to update  
