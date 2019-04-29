@@ -82,17 +82,32 @@
     
     - name: Template PGO RBAC
       template:
-        src: rbac.yaml.j2
-        dest: "{{ output_dir }}/rbac-{{ item }}.yaml"
+        src: pgo-role-rbac.yaml.j2
+        dest: "{{ output_dir }}/pgo-role-rbac-{{ item }}.yaml"
         mode: '0600'
       with_items: 
       - "{{ all_namespaces }}"
       tags: [install, update]
 
     - name: Create PGO RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/rbac-{{ item }}.yaml"
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-role-rbac-{{ item }}.yaml"
       with_items: 
       - "{{ all_namespaces }}"
+      tags: [install, update]
+
+    - name: Template PGO Backrest RBAC
+      template:
+        src: pgo-backrest-role-rbac.yaml.j2
+        dest: "{{ output_dir }}/pgo-backrest-role-rbac-{{ item }}.yaml"
+        mode: '0600'
+      with_items:
+      - "{{ namespace.split(',') }}"
+      tags: [install, update]
+
+    - name: Create PGO Backrest RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-backrest-role-rbac-{{ item }}.yaml"
+      with_items:
+      - "{{ namespace.split(',') }}"
       tags: [install, update]
 
     - name: Template PGO User
