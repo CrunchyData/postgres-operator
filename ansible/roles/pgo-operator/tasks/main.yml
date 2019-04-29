@@ -6,7 +6,7 @@
 
 - name: Set output directory fact
   set_fact:
-    output_dir: "./output/{{ pgo_operator_namespace }}"
+    output_dir: "{{ ansible_env.HOME }}/.pgo/{{ pgo_operator_namespace }}/output"
   tags: always
 
 - name: Ensure output directory exists

@@ -19,3 +19,13 @@ the following command:
 ```bash
 ansible-playbook -i /path/to/inventory --tags=deprovision-metrics main.yml
 ```
+
+If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
+following commands:
+
+```bash
+export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
+
+ansible-playbook -i /path/to/inventory --tags=deprovision-metrics \
+    /usr/share/ansible/postgres-operator/playbooks/main.yml
+```
