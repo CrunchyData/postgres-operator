@@ -7,7 +7,7 @@ LABEL name="postgres-operator" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.2" \
 	Version="7.6" \
-	Release="4.0.0" \
+	Release="4.0.0-rc8" \
 	run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="Crunchy Data PostgreSQL Operator" \
 	description="Crunchy Data PostgreSQL Operator"

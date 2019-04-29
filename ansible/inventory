@@ -47,11 +47,11 @@ namespace='pgo'
 # CentOS7 images can be found in dockerhub: https://hub.docker.com/u/crunchydata
 # RHEL7 images are available to Crunchy customers: https://access.crunchydata.com/login/
 ccp_image_prefix='crunchydata'
-ccp_image_tag='centos7-11.2-2.4.0'
+ccp_image_tag='centos7-11.2-2.4.0-rc6'
 
 # Crunchy PostgreSQL Operator images to use.  The tags centos7 and rhel7 are acceptable.
 pgo_image_prefix='crunchydata'
-pgo_image_tag='centos7-4.0.0'
+pgo_image_tag='centos7-4.0.0-rc8'
 
 # PGO Client Install
 pgo_client_install='true'
