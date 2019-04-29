@@ -56,15 +56,15 @@ The following are the variables available for configuration:
 | `archive_timeout`                 | 60          | Set to a value in seconds to configure the timeout threshold for archiving.                                                                                                      |
 | `auto_failover_replace_replica`   | false       | Set to true to replace promoted replicas during failovers with a new replica on all newly created clusters.                                                                      |
 | `auto_failover_sleep_secs`        | 9           | Set to a value in seconds to configure the sleep time before initiating a failover on all newly created clusters.                                                                |
-| `auto_failover`                   | false       | Set to true enable auto failover capabilities on all newly created clusters.                                                                                                     |
-| `backrest`                        | false       | Set to true enable pgBackRest capabilities on all newly created clusters.                                                                                                        |
+| `auto_failover`                   | false       | Set to true enable auto failover capabilities on all newly created cluster requests.  This can be disabled by the client.                                                        |
+| `backrest`                        | false       | Set to true enable pgBackRest capabilities on all newly created cluster request.  This can be disabled by the client.                                                            |
 | `backrest_aws_s3_key`             |             | Set to configure the key used by pgBackRest to authenticate with Amazon Web Service S3 for backups and restoration in S3.                                                        |
 | `backrest_aws_s3_secret`          |             | Set to configure the secret used by pgBackRest to authenticate with Amazon Web Service S3 for backups and restoration in S3.                                                     |
 | `backrest_aws_s3_bucket`          |             | Set to configure the bucket used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
 | `backrest_aws_s3_endpoint`        |             | Set to configure the endpoint used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                   |
 | `backrest_aws_s3_region`          |             | Set to configure the region used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
 | `backrest_storage`                | storage1    | Set to configure which storage definition to use when creating volumes used by pgBackRest on all newly created clusters.                                                         |
-| `badger`                          | false       | Set to true enable pgBadger capabilities on all newly created clusters.                                                                                                          |
+| `badger`                          | false       | Set to true enable pgBadger capabilities on all newly created clusters.  This can be disabled by the client.                                                                     |
 | `ccp_image_prefix`                | crunchydata | Configures the image prefix used when creating containers from Crunchy Container Suite.                                                                                          |
 | `ccp_image_tag`                   |             | Configures the image tag (version) used when creating containers from Crunchy Container Suite.                                                                                   |
 | `cleanup`                         | false       | Set to configure the playbooks to delete all objects when deprovisioning Operator.  Note: this will delete all objects related to the Operator (including clusters provisioned). |
@@ -83,7 +83,7 @@ The following are the variables available for configuration:
 | `grafana_volume_size`             |             | Set to the size of persistent volume to create for Grafana.                                                                                                                      |
 | `kubernetes_context`              |             | When deploying to Kubernetes, set to configure the context name of the kubeconfig to be used for authentication.                                                                 |
 | `log_statement`                   | none        | Set to `none`, `ddl`, `mod`, or `all` to configure the statements that will be logged in PostgreSQL's logs on all newly created clusters.                                        |
-| `metrics`                         | false       | Set to true enable performance metrics on all newly created clusters.                                                                                                            |
+| `metrics`                         | false       | Set to true enable performance metrics on all newly created clusters.  This can be disabled by the client.                                                                       |
 | `metrics_namespace`               | metrics     | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
 | `namespace`                       |             | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
 | `openshift_host`                  |             | When deploying to OpenShift, set to configure the hostname of the OpenShift cluster to connect to.                                                                               |
@@ -96,13 +96,12 @@ The following are the variables available for configuration:
 | `pgo_client_install`              | true        | Configures the playbooks to install the `pgo` client if set to true.                                                                                                             |
 | `pgo_image_prefix`                | crunchydata | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc).                                             |
 | `pgo_image_tag`                   |             | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
-| `pgo_operator_namespace`                   |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
+| `pgo_operator_namespace`          |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
 | `pgo_tls_no_verify`               |             | Set to configure Operator to verify TLS certificates.                                                                                                                            |
 | `primary_storage`                 | storage2    | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
 | `prometheus_install`              | true        | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
 | `prometheus_storage_access_mode`  |             | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |
 | `prometheus_storage_class_name`   |             | Set to the name of the storage class used when creating Prometheus persistent volumes.                                                                                           |
-| `grafana_volume_size`             |             | Set to the size of persistent volume to create for Grafana.                                                                                                                      |
 | `replica_storage`                 | storage3    | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
 | `scheduler_timeout`               | 3600        | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
 | `service_type`                    | ClusterIP   | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
@@ -121,6 +120,42 @@ kubectl config current-context
 ```
 {{% /notice %}}
 
+### Minimal Variable Requirements
+
+The following variables should be configured at a minimum to deploy the Crunchy 
+PostgreSQL Operator:
+
+* `backrest_storage`
+* `ccp_image_prefix`
+* `ccp_image_tag`
+* `kubernetes_context`
+* `namespace`
+* `openshift_host`
+* `openshift_password`
+* `openshift_skip_tls_verify`
+* `openshift_token`
+* `openshift_user`
+* `pgo_admin_username`
+* `pgo_admin_password`
+* `pgo_client_install`
+* `pgo_image_prefix`
+* `pgo_image_tag`
+* `pgo_operator_namespace`
+* `pgo_tls_no_verify`
+* `primary_storage`
+* `replica_storage`
+* `storage<ID>_access_mode`
+* `storage<ID>_class`
+* `storage<ID>_fs_group`
+* `storage<ID>_size`
+* `storage<ID>_supplemental_groups`
+* `storage<ID>_type`
+
+{{% notice tip %}}
+Users should remove or comment out the `kubernetes` or `openshift` variables if they're not being used 
+from the inventory file.  Both sets of variables cannot be used at the same time.
+{{% /notice %}}
+
 ## Storage
 
 Kubernetes and OpenShift offer support for a variety of storage types.  The Crunchy 
@@ -128,7 +163,8 @@ PostgreSQL Operator must be configured to utilize the storage options available 
 configuring the `storage` options included in the inventory file.
 
 {{% notice tip %}}
-At this time the Crunchy PostgreSQL Operator Playbooks only support storage classes.
+At this time the Crunchy PostgreSQL Operator Playbooks only support storage classes.  
+For more information on storage classes see the [official Kubernetes documentation](https://kubernetes.io/docs/concepts/storage/storage-classes/).
 {{% /notice %}}
 
 ### Considerations for Multi-Zone Cloud Environments
