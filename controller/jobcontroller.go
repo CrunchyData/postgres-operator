@@ -172,6 +172,19 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}
 
+		// if job was successful, cleanup backup pod
+		if job.Status.Succeeded == 1 {
+
+			selector := util.LABEL_JOB_NAME + "=" + job.ObjectMeta.Name
+			pods, _ := kubeapi.GetPods(c.JobClientset, selector, c.Namespace)
+
+			for _, p := range pods.Items {
+				kubeapi.DeletePod(c.JobClientset, p.Name, c.Namespace)
+
+			}
+
+		}
+
 		return
 	}
 
