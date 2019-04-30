@@ -13,6 +13,95 @@ metadata:
     olm.targetNamespaces: pgouser1,pgouser2
     repository: https://github.com/CrunchyData/postgres-operator
     support: crunchydata.com
+    alm-examples: |-
+      [{
+    "apiVersion": "crunchydata.com/v1",
+    "kind": "Pgcluster",
+    "metadata": {
+        "labels": {
+            "archive": "false",
+            "archive-timeout": "60",
+            "crunchy-pgbadger": "false",
+            "crunchy_collect": "false",
+            "current-primary": "fromcrd",
+            "deployment-name": "fromcrd",
+            "name": "fromcrd",
+            "pg-cluster": "fromcrd",
+            "pgo-backrest": "false",
+	    "pgo-version": "4.0.0-rc8",
+            "primary": "true"
+        },
+        "name": "fromcrd",
+        "namespace": "pgouser1"
+    },
+    "spec": {
+        "BackrestStorage": {
+            "accessmode": "ReadWriteOnce",
+            "fsgroup": "26",
+            "matchLabels": "",
+            "name": "",
+            "size": "1G",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
+            "supplementalgroups": ""
+        },
+        "ContainerResources": {
+            "limitscpu": "",
+            "limitsmemory": "",
+            "requestscpu": "",
+            "requestsmemory": ""
+        },
+        "PrimaryStorage": {
+            "accessmode": "ReadWriteOnce",
+            "fsgroup": "26",
+            "matchLabels": "",
+            "name": "fromcrd",
+            "size": "1G",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
+            "supplementalgroups": ""
+        },
+        "ReplicaStorage": {
+            "accessmode": "ReadWriteOnce",
+            "fsgroup": "26",
+            "matchLabels": "",
+            "name": "",
+            "size": "1G",
+            "storageclass": "fast",
+            "storagetype": "dynamic",
+            "supplementalgroups": ""
+        },
+        "backuppath": "",
+        "backuppvcname": "",
+	"ccpimage":"crunchy-postgres",
+        "ccpimagetag": "rhel7-9.6.12-2.4.0-rc6",
+        "clustername": "fromcrd",
+        "customconfig": "",
+        "database": "userdb",
+        "name": "fromcrd",
+	"namespace":"pgouser1",
+        "nodename": "",
+        "policies": "",
+        "port": "5432",
+        "primaryhost": "fromcrd",
+        "primarysecretname": "fromcrd-primaryuser-secret",
+        "replicas": "0",
+        "rootsecretname": "fromcrd-postgres-secret",
+        "secretfrom": "",
+        "status": "",
+        "strategy": "1",
+        "user": "testuser",
+        "userlabels": {
+            "archive": "false",
+            "archive-timeout": "60",
+            "crunchy-pgbadger": "false",
+            "crunchy_collect": "false",
+            "pgo-backrest": "false",
+	    "pgo-version": "4.0.0-rc8"
+        },
+        "usersecretname": "fromcrd-testuser-secret"
+    }
+      }]
   name: postgresoperator.v4.0.0-rc8
   namespace: pgo
 spec:
