@@ -1,0 +1,5 @@
+#! package-manifest: deploy/chart/catalog_resources/certified-operators/postgres-operator-4.0.0.csv.yaml
+packageName: crunchy-postgres-operator
+channels:
+- name: database
+  currentCSV: postgresoperator.v4.0.0-rc8
