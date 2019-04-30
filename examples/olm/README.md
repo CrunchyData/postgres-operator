@@ -9,6 +9,7 @@ OLM.
   - cd postgres-operator
   - git checkout develop
   - source examples/olm/envs.sh
+  - make cleannamespaces
   - make setupnamespaces
   - make installrbac
   - cd examples/olm/bundle
@@ -53,3 +54,10 @@ The operator install assumes the following namespaces:
   - pgopclusterbinding-pgo created in pgo namespace
   - pgopclusterbindingcrd-pgo  created in pgo namespace
   - pgopclusterbindingsecret-pgo  created in pgo namespace
+
+# Teardown
+  - oc project pgo
+  - oc delete configmap  dev-operators
+  - oc delete subscription --all
+  - oc delete catalogsource dev-operators
+  - oc delete operatorgroup dev-operators
