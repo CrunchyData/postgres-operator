@@ -3,11 +3,15 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     categories: Database
+    capabilities: Full Lifecycle
+    certified: "true"
     containerImage: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0-rc8
+    createdAt: 04/30/2019
     description: A Postgres Operator from Crunchydata.com
     olm.operatorGroup: dev-operators
     olm.operatorNamespace: pgo
     olm.targetNamespaces: pgouser1,pgouser2
+    repository: https://github.com/CrunchyData/postgres-operator
     support: crunchydata.com
   name: postgresoperator.v4.0.0-rc8
   namespace: pgo
