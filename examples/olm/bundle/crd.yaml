@@ -1,0 +1,84 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: pgbackups.crunchydata.com
+spec:
+  group: crunchydata.com
+  names:
+    kind: Pgbackup
+    listKind: PgbackupList
+    plural: pgbackups
+    singular: pgbackup
+  scope: Namespaced
+  version: v1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: pgclusters.crunchydata.com
+spec:
+  group: crunchydata.com
+  names:
+    kind: Pgcluster
+    listKind: PgclusterList
+    plural: pgclusters
+    singular: pgcluster
+  scope: Namespaced
+  version: v1
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'foo goes here'
+          type: string
+        kind:
+          description: 'doo goes here'
+          type: string
+        metadata:
+          type: object
+        spec:
+          type: object
+        status:
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: pgpolicies.crunchydata.com
+spec:
+  group: crunchydata.com
+  names:
+    kind: Pgpolicy
+    listKind: PgpolicyList
+    plural: pgpolicies
+    singular: pgpolicy
+  scope: Namespaced
+  version: v1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: pgreplicas.crunchydata.com
+spec:
+  group: crunchydata.com
+  names:
+    kind: Pgreplica
+    listKind: PgreplicaList
+    plural: pgreplicas
+    singular: pgreplica
+  scope: Namespaced
+  version: v1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: pgtasks.crunchydata.com
+spec:
+  group: crunchydata.com
+  names:
+    kind: Pgtask
+    listKind: PgtaskList
+    plural: pgtasks
+    singular: pgtask
+  scope: Namespaced
+  version: v1
