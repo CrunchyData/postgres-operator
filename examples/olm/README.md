@@ -6,9 +6,12 @@ OLM.
   - mkdir -p $HOME/odev/src/github.com/crunchydata
   - cd $HOME/odev/src/github.com/crunchydata
   - git clone https://github.com/crunchydata/postgres-operator
+  - sudo yum install epel-release
+  - sudo yum install golang
   - cd postgres-operator
   - git checkout develop
   - source examples/olm/envs.sh
+  - go get github.com/blang/expenv
   - make cleannamespaces
   - make setupnamespaces
   - make installrbac
