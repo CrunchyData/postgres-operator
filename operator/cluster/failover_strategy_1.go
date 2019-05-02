@@ -20,14 +20,17 @@ package cluster
 
 import (
 	"errors"
+	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 // AddCluster ...
@@ -173,6 +176,10 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 	log.Debugf("deleting deployment %s", deploymentToDelete)
 	err = kubeapi.DeleteDeployment(clientset, deploymentToDelete, namespace)
 
+	pod := pods.Items[0]
+
+	err = waitForDelete(deploymentToDelete, pod.Name, clientset, namespace)
+
 	return err
 }
 
@@ -194,4 +201,25 @@ func promote(
 	}
 
 	return err
+}
+
+func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Clientset, namespace string) error {
+	var tries = 10
+
+	for i := 0; i < tries; i++ {
+		pod, _, err := kubeapi.GetPod(clientset, podName, namespace)
+		if kerrors.IsNotFound(err) {
+			log.Debugf("%s deployment %s pod not found so its safe to proceed on failover", deploymentToDelete, podName)
+			return nil
+		} else if err != nil {
+			log.Error(err)
+			log.Error("error getting pod when evaluating old primary in failover %s %s", deploymentToDelete, podName)
+			return err
+		}
+		log.Debugf("waitinf for %s to delete", pod.Name)
+		time.Sleep(time.Second * time.Duration(9))
+	}
+
+	return errors.New(fmt.Sprintf("timeout waiting for %s %s to delete", deploymentToDelete, podName))
+
 }

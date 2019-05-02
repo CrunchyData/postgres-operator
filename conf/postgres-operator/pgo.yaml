@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.2-2.4.0-rc5
+  CCPImageTag:  centos7-11.2-2.4.0-rc6
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -57,7 +57,7 @@ Storage:
     StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  1Gi
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
