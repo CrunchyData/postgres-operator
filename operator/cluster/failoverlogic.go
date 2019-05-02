@@ -20,6 +20,7 @@ package cluster
 
 import (
 	"errors"
+	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -27,8 +28,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
@@ -158,11 +161,19 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 		return errors.New("more than 1 primary pod found in delete primary logic")
 	}
 
-	deploymentToDelete := pods.Items[0].ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
+	//update the label to 'fenced' on the pod to fence off traffic from
+	//any client or replica using the primary, this effectively
+	//stops traffic from the Primary service to the primary pod
+	//we are about to delete
+	pod := pods.Items[0]
+
+	deploymentToDelete := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 
 	//delete the deployment with pg-cluster=clusterName,primary=true
 	log.Debugf("deleting deployment %s", deploymentToDelete)
 	err = kubeapi.DeleteDeployment(clientset, deploymentToDelete, namespace)
+
+	err = waitForDelete(deploymentToDelete, pod.Name, clientset, namespace)
 
 	return err
 }
@@ -185,4 +196,25 @@ func promote(
 	}
 
 	return err
+}
+
+func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Clientset, namespace string) error {
+	var tries = 10
+
+	for i := 0; i < tries; i++ {
+		pod, _, err := kubeapi.GetPod(clientset, podName, namespace)
+		if kerrors.IsNotFound(err) {
+			log.Debugf("%s deployment %s pod not found so its safe to proceed on failover", deploymentToDelete, podName)
+			return nil
+		} else if err != nil {
+			log.Error(err)
+			log.Error("error getting pod when evaluating old primary in failover %s %s", deploymentToDelete, podName)
+			return err
+		}
+		log.Debugf("waitinf for %s to delete", pod.Name)
+		time.Sleep(time.Second * time.Duration(9))
+	}
+
+	return errors.New(fmt.Sprintf("timeout waiting for %s %s to delete", deploymentToDelete, podName))
+
 }
