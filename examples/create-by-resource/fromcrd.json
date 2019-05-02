@@ -68,7 +68,7 @@
         "backuppath": "",
         "backuppvcname": "",
 	"ccpimage":"crunchy-postgres",
-        "ccpimagetag": "centos7-11.2-2.4.0-rc6",
+        "ccpimagetag": "rhel7-9.6.12-2.4.0-rc6",
         "clustername": "fromcrd",
         "customconfig": "",
         "database": "userdb",
