@@ -57,7 +57,7 @@ Storage:
     AccessMode:  ReadWriteOnce
     Size:  300M
     StorageType:  dynamic
-    StorageClass:  fast
+    StorageClass:  fast-nocache
     Fsgroup:  26
   gce:
     AccessMode:  ReadWriteOnce
@@ -94,5 +94,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.0.0-rc8
+  PGOImageTag:  centos7-4.0.0-rc10
 

@@ -1,5 +1,2 @@
 username:password:pgoadmin:
-pgouser1:password:pgoadmin:pgouser1
-pgouser2:password:pgoadmin:pgouser2
-pgouser3:password:pgoadmin:pgouser1,pgouser2
 readonlyuser:password:pgoreader:
