@@ -14,7 +14,8 @@ COPY redhat/atomic/pgo_rmdata/help.1 /help.1
 COPY redhat/atomic/pgo_rmdata/help.md /help.md
 COPY redhat/licenses /licenses
 
-RUN yum -y update && yum -y clean all
+RUN yum -y --enablerepo=rhel-7-server-ose-3.9-rpms --disablerepo=crunchy* update \
+ && yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin
 ADD bin/pgo-rmdata/ /opt/cpm/bin
