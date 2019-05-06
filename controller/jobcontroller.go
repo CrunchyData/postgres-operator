@@ -172,6 +172,11 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		}
 
+		// if job was successful, cleanup the job (and pod)
+		if job.Status.Succeeded == 1 {
+			kubeapi.DeleteJob(c.JobClientset, job.ObjectMeta.Name, c.Namespace)
+		}
+
 		return
 	}
 

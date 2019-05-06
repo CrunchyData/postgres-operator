@@ -16,11 +16,11 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
@@ -149,9 +149,13 @@ func getNotReady(ns string) []string {
 		return agg
 	}
 	for _, p := range pods.Items {
-		for _, stat := range p.Status.ContainerStatuses {
-			if !stat.Ready {
-				agg = append(agg, p.ObjectMeta.Name)
+		if p.ObjectMeta.Labels["job-name"] != "" {
+			log.Debugf("status - skipping job pod in getNotReady %s", p.ObjectMeta.Name)
+		} else {
+			for _, stat := range p.Status.ContainerStatuses {
+				if !stat.Ready {
+					agg = append(agg, p.ObjectMeta.Name)
+				}
 			}
 		}
 	}
