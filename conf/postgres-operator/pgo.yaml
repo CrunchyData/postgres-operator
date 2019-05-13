@@ -57,7 +57,7 @@ Storage:
     StorageType:  create
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  1G
+    Size:  1Gi
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
