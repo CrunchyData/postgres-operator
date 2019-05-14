@@ -14,6 +14,11 @@ COPY redhat/atomic/pgo_rmdata/help.1 /help.1
 COPY redhat/atomic/pgo_rmdata/help.md /help.md
 COPY redhat/licenses /licenses
 
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
+
+
 RUN yum -y update && yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin

@@ -170,8 +170,13 @@ the Secret keys at runtime, if the pgo.tls Secret does not exit
 when the Operator starts, a new TLS Secret will be generated.
 In this scenario, you can extract the generated Secret TLS keys using:
 
-u   kubectl cp pgo/postgres-operator-585584f57d-ntwr5:/tmp/server.key /tmp/server.key -c apiserver
-u   kubectl cp pgo/postgres-operator-585584f57d-ntwr5:/tmp/server.crt /tmp/server.crt -c apiserver
+    kubectl cp <pgo-namespace>/<pgo-pod>:/tmp/server.key /tmp/server.key -c apiserver
+    kubectl cp <pgo-namespace>/<pgo-pod>:/tmp/server.crt /tmp/server.crt -c apiserver
+    
+example of the command below:
+    
+    kubectl cp pgo/postgres-operator-585584f57d-ntwr5:tmp/server.key /tmp/server.key -c apiserver
+    kubectl cp pgo/postgres-operator-585584f57d-ntwr5:tmp/server.crt /tmp/server.crt -c apiserver
 
 This server.key and server.crt can then be used to access the *pgo-apiserver*
 from the pgo CLI by setting the following variables in your client environment:
@@ -184,6 +189,7 @@ You can view the TLS secret using:
 
     kubectl get secret pgo.tls -n pgo
 or
+
     oc get secret pgo.tls -n pgo
 
 If you create the Secret outside of the Operator, for example using
