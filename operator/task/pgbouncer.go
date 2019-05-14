@@ -24,7 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//	"time"
 )
 
 // Update authorizations for pgbouncer user in postgres database

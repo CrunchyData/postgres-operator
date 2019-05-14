@@ -145,7 +145,6 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 
 	// add necessary fields from task to the cluster for pgbouncer specifics
 	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_USER] = task.Spec.Parameters[config.LABEL_PGBOUNCER_USER]
-	// pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS] = task.Spec.Parameters[config.LABEL_PGBOUNCER_PASS]
 
 	err = AddPgbouncer(clientset, restclient, &pgcluster, namespace, true, true)
 	if err != nil {
