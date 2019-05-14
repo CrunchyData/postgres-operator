@@ -145,7 +145,7 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 
 	// add necessary fields from task to the cluster for pgbouncer specifics
 	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_USER] = task.Spec.Parameters[config.LABEL_PGBOUNCER_USER]
-	pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS] = task.Spec.Parameters[config.LABEL_PGBOUNCER_PASS]
+	// pgcluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS] = task.Spec.Parameters[config.LABEL_PGBOUNCER_PASS]
 
 	err = AddPgbouncer(clientset, restclient, &pgcluster, namespace, true, true)
 	if err != nil {
@@ -231,11 +231,6 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	replicaName := cl.Spec.Name + "-replica"
 	clusterName := cl.Spec.Name
 
-	// pgbouncerUser := cl.Spec.UserLabels[config.LABEL_PGBOUNCER_USER]
-	// log.Debugf("userSpecifiedPass: %s", pgbouncerUser)
-	// pgbouncerPass := cl.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS]
-	// log.Debugf("userSpecifiedPass: %s", pgbouncerPass)
-
 	// attempt creation of pgbouncer secret, obtains user and pass from passed in vars, existing secret.
 	err, secretUser, secretPass := createPgbouncerSecret(clientset, cl, primaryName, replicaName, primaryName, secretName, namespace)
 
@@ -251,7 +246,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 		log.Debug("Updating pgbouncer password in secret and database")
 
-		err := UpdatePgBouncerAuthorizations(clientset, namespace, secretUser, secretPass, secretName, clusterName)
+		err := UpdatePgBouncerAuthorizations(clientset, namespace, secretUser, secretPass, secretName, clusterName, "")
 
 		if err != nil {
 			log.Debug("Failed to update existing pgbouncer credentials")
@@ -347,9 +342,9 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, clusterName, namespace str
 
 }
 
-func UpdatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, username, password, secretName, clusterName string) error {
+func UpdatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, username, password, secretName, clusterName, podIP string) error {
 
-	err, databaseNames := getDatabaseListForCredentials(namespace, clusterName, clientset)
+	err, databaseNames := getDatabaseListForCredentials(namespace, clusterName, clientset, podIP)
 
 	if err != nil {
 		log.Debug(err)
@@ -359,6 +354,13 @@ func UpdatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, u
 	for _, dbName := range databaseNames {
 
 		connectionInfo := getDBUserInfo(namespace, clusterName, dbName, clientset)
+
+		log.Debugf("Pod ip %s", podIP)
+
+		if len(podIP) > 0 {
+			log.Debugf("Updating IP address to use pods IP %s ", podIP)
+			connectionInfo.Hostip = podIP
+		}
 
 		log.Debugf("Creating pgbouncer authorization in %s database", dbName)
 
@@ -373,6 +375,11 @@ func UpdatePgBouncerAuthorizations(clientset *kubernetes.Clientset, namespace, u
 
 	// update the password for the pgbouncer user in postgres database
 	connectionInfo := getDBUserInfo(namespace, clusterName, "postgres", clientset)
+
+	if len(podIP) > 0 {
+		connectionInfo.Hostip = podIP
+	}
+
 	err = updatePgBouncerDBPassword(clusterName, connectionInfo, username, password, namespace)
 
 	if err != nil {
@@ -522,9 +529,14 @@ func getDBUserInfo(namespace, clusterName string, targetDB string, clientset *ku
 	return info
 }
 
-func getDatabaseListForCredentials(namespace, clusterName string, clientSet *kubernetes.Clientset) (error, []string) {
+func getDatabaseListForCredentials(namespace, clusterName string, clientSet *kubernetes.Clientset, podIP string) (error, []string) {
 
 	info := getDBUserInfo(namespace, clusterName, "postgres", clientSet)
+
+	if len(podIP) > 0 {
+		log.Debugf("Updating IP address to use pods IP %s for database list request ", podIP)
+		info.Hostip = podIP
+	}
 
 	log.Debug("Getting list of database names to update for pgbouncer")
 
