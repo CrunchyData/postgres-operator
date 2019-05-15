@@ -154,7 +154,7 @@
                     }, {
                         "name": "sshd",
                         "secret": {
-                            "secretName": "pgo-backrest-repo-config",
+                            "secretName": "{{.ClusterName}}-backrest-repo-config",
 			    "defaultMode": 511
                         }
                     }, {

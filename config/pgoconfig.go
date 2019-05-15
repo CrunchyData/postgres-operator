@@ -249,6 +249,7 @@ var log_statement_values = []string{"ddl", "none", "mod", "all"}
 const DEFAULT_LOG_STATEMENT = "none"
 const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
 const DEFAULT_BACKREST_PORT = 2022
+const DEFAULT_BACKREST_SSH_KEY_BITS = 2048
 
 func (c *PgoConfig) Validate() error {
 	var err error

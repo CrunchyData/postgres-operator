@@ -28,9 +28,6 @@ $PGO_CMD --namespace=$1 delete secret pgo-backrest-repo-config
 
 $PGO_CMD --namespace=$1 create secret generic pgo-backrest-repo-config \
 	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
-	--from-file=ssh_host_rsa_key=$PGOROOT/conf/pgo-backrest-repo/ssh_host_rsa_key \
-	--from-file=authorized_keys=$PGOROOT/conf/pgo-backrest-repo/authorized_keys \
-	--from-file=id_rsa=$PGOROOT/conf/pgo-backrest-repo/id_rsa \
 	--from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config \
 	--from-file=aws-s3-credentials.yaml=$PGOROOT/conf/pgo-backrest-repo/aws-s3-credentials.yaml \
 	--from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt

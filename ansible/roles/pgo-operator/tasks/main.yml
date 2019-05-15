@@ -141,16 +141,11 @@
     - name: Create PGO BackRest Repo Secret
       command: |
         {{ kubectl_or_oc }} create secret generic pgo-backrest-repo-config \
-          --from-file=authorized_keys='{{ output_dir }}/authorized_keys' \
           --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
-          --from-file=id_rsa='{{ output_dir }}/id_rsa' \
-          --from-file=ssh_host_rsa_key='{{ output_dir }}/ssh_host_rsa_key' \
           --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
-          --from-file=aws-s3-credentials.yaml='{{ output_dir }}/aws-s3-credentials.yaml' \
           --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
-          -n {{ item }}
-      with_items:
-      - "{{ all_namespaces }}"
+          --from-file=aws-s3-credentials.yaml='{{ output_dir }}/aws-s3-credentials.yaml' \
+          -n {{ pgo_operator_namespace }}
       tags: [install]
 
     - name: Create PGO API Secret

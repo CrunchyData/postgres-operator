@@ -76,7 +76,7 @@
                 "volumes": [{
                 	"name": "sshd",
                 	"secret": {
-                    		"secretName": "{{.SshdSecretsName}}",
+                            "secretName": "{{.ClusterName}}-backrest-repo-config",
                     		"defaultMode": 511
                     	}
                 }, {
