@@ -7,7 +7,7 @@ draft: false
 
  <img width="25%" src="crunchy_logo.png"/>
 
-Latest Release: 3.5.2
+Latest Release: 3.5.3
 
 The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
 

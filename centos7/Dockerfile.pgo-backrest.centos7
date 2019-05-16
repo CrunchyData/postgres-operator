@@ -2,17 +2,20 @@ FROM centos:7
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
-	PostgresFullVersion="11.2" \
+	PostgresFullVersion="11.3" \
 	Version="7.6" \
-	Release="3.5.2" \
+	Release="3.5.3" \
 	summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
 	description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-centos11-11-2.noarch.rpm" BACKREST_VERSION="2.10"
+ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISABLE="pgdg10,pgdg96,pgdg95,pgdg94" \
+    BACKREST_VERSION="2.13"
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
-RUN yum -y update && yum -y install postgresql11-server && yum -y install pgbackrest-"${BACKREST_VERSION}" && yum -y clean all
+RUN yum -y update && yum -y install --disablerepo="${PGDG_REPO_DISABLE}" \
+    postgresql11-server && yum -y install pgbackrest-"${BACKREST_VERSION}" && yum -y clean all
+
 
 RUN mkdir -p /opt/cpm/bin /pgdata /backrestrepo && chown -R 26:26 /opt/cpm
 ADD bin/pgo-backrest/ /opt/cpm/bin
