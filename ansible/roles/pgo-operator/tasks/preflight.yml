@@ -36,3 +36,4 @@
     - storage3_access_mode
     - storage3_size
     - storage3_type
+    - pgo_client_version

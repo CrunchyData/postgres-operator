@@ -50,9 +50,6 @@
 - include_tasks: cleanup.yml
   tags: [deprovision, update]
 
-- include_tasks: deprecated.yml
-  tags: always
-
 - include_tasks: certs.yml
   tags: [install]
 
