@@ -55,6 +55,7 @@ pgo_image_tag='centos7-4.0.0-rc8'
 
 # PGO Client Install
 pgo_client_install='true'
+pgo_client_version='4.0.0-rc10'
 
 # PGO TLS
 pgo_tls_no_verify='false'
