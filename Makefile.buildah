@@ -146,17 +146,17 @@ pgo-scheduler-image: check-go-vars
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
 all:
-	make postgres-operator-image
-	make pgo-apiserver-image
-	make pgo-backrest-repo-image
-	make pgo-backrest-restore-image
-	make pgo
-	make pgo-lspvc-image
-	make pgo-load-image
-	make pgo-rmdata-image
-	make pgo-sqlrunner-image
-	make pgo-backrest-image
-	make pgo-scheduler-image
+	make -f Makefile.buildah postgres-operator-image
+	make -f Makefile.buildah pgo-apiserver-image
+	make -f Makefile.buildah pgo-backrest-repo-image
+	make -f Makefile.buildah pgo-backrest-restore-image
+	make -f Makefile.buildah pgo
+	make -f Makefile.buildah pgo-lspvc-image
+	make -f Makefile.buildah pgo-load-image
+	make -f Makefile.buildah pgo-rmdata-image
+	make -f Makefile.buildah pgo-sqlrunner-image
+	make -f Makefile.buildah pgo-backrest-image
+	make -f Makefile.buildah pgo-scheduler-image
 push:
 	docker push $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)
 	docker push $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)
