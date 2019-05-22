@@ -40,14 +40,14 @@ The Operator should show the new cluster started:
 
     jeffmc@~ > pgo show cluster fromcrd
 
-    cluster : fromcrd (centos7-11.2-2.4.0-rc6)
+    cluster : fromcrd (centos7-11.3-2.4.0-rc8)
     	pod : fromcrd-6b4d69df46-4s7bn (Running) on doppio-kube (1/1) (primary)
 	pvc : fromcrd
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
 	storage : Primary=1G Replica=1G
 	deployment : fromcrd
 	service : fromcrd - ClusterIP (10.97.101.79)
-	labels : pg-cluster=fromcrd pgo-backrest=false primary=true archive=false deployment-name=fromcrd name=fromcrd current-primary=fromcrd pgo-version=4.0.0-rc8 archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false 
+	labels : pg-cluster=fromcrd pgo-backrest=false primary=true archive=false deployment-name=fromcrd name=fromcrd current-primary=fromcrd pgo-version=4.0.0-rc11 archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false 
 
 Notice the user credentials we created:
 

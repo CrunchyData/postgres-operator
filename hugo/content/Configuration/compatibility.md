@@ -1,7 +1,7 @@
 
 ---
 title: "Compatibility Requirements"
-Latest Release: 4.0.0-rc8 {docdate}
+Latest Release: 4.0.0-rc11 {docdate}
 draft: false
 weight: 1
 ---
@@ -13,7 +13,7 @@ version dependencies between the two projects.
 
 | Operator Release   |      Container Release      |
 |:----------|:-------------|
-| 4.0.0-rc8 | 2.4.0-rc6  |
+| 4.0.0-rc11 | 2.4.0-rc6  |
 | 3.5.2 | 2.3.1  |
 
 Features sometimes are added into the underlying Crunchy Containers
