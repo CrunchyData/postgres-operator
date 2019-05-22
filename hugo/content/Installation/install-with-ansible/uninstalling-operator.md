@@ -20,6 +20,16 @@ the following command:
 ansible-playbook -i /path/to/inventory --tags=deprovision main.yml
 ```
 
+If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
+following commands:
+
+```bash
+export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
+
+ansible-playbook -i /path/to/inventory --tags=deprovision \
+    /usr/share/ansible/postgres-operator/playbooks/main.yml
+```
+
 ## Deleting `pgo` Client
 
 To remove the `pgo` client, simply run the following command:

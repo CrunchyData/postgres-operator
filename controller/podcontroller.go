@@ -209,7 +209,8 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 
 					// if this is a pgbouncer enabled cluster, add authorizations to the database.
 					if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-						taskoperator.UpdatePgBouncerAuthorizations(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+						taskoperator.UpdatePgBouncerAuthorizations(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace,
+							newpod.Status.PodIP)
 					}
 
 				}

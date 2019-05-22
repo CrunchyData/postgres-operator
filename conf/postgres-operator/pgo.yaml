@@ -24,10 +24,10 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storageos
-BackupStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: storageos
+PrimaryStorage: primarysite
+BackupStorage: primarysite
+ReplicaStorage: primarysite
+BackrestStorage: primarysite
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -42,11 +42,6 @@ Storage:
     Size:  1G
     StorageType:  create
     SupplementalGroups:  65534
-  backreststorage:
-    AccessMode:  ReadWriteMany
-    Size:  600M
-    StorageType:  create
-    SupplementalGroups:  65534
   nfsstoragered:
     AccessMode:  ReadWriteMany
     Size:  1G
@@ -58,6 +53,18 @@ Storage:
     Size:  300M
     StorageType:  dynamic
     StorageClass:  fast
+    Fsgroup:  26
+  primarysite:
+    AccessMode:  ReadWriteOnce
+    Size:  4G
+    StorageType:  dynamic
+    StorageClass:  primarysite
+    Fsgroup:  26
+  alternatesite:
+    AccessMode:  ReadWriteOnce
+    Size:  4G
+    StorageType:  dynamic
+    StorageClass:  alternatesite
     Fsgroup:  26
   gce:
     AccessMode:  ReadWriteOnce

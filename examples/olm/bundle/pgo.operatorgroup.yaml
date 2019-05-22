@@ -5,4 +5,5 @@ metadata:
   namespace: pgo
 spec:
   targetNamespaces:
-  - pgo
+  - pgouser1
+  - pgouser2

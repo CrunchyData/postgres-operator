@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"text/template"
@@ -248,6 +249,7 @@ var log_statement_values = []string{"ddl", "none", "mod", "all"}
 const DEFAULT_LOG_STATEMENT = "none"
 const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
 const DEFAULT_BACKREST_PORT = 2022
+const DEFAULT_BACKREST_SSH_KEY_BITS = 2048
 
 func (c *PgoConfig) Validate() error {
 	var err error
@@ -521,6 +523,8 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		}
 	}
 
+	c.CheckEnv()
+
 	//load up all the templates
 	BenchmarkJobTemplate, err = c.LoadTemplate(cMap, rootPath, benchmarkJobPath)
 	if err != nil {
@@ -766,4 +770,32 @@ func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) erro
 	c.BackrestStorage = LABEL_PGO_DEFAULT_SC
 
 	return nil
+}
+
+// CheckEnv is mostly used for the OLM deployment use case
+// when someone wants to deploy with OLM, use the baked-in
+// configuration, but use a different set of images, by
+// setting these env vars in the OLM CSV, users can override
+// the baked in images
+func (c *PgoConfig) CheckEnv() {
+	pgoImageTag := os.Getenv("PGO_IMAGE_TAG")
+	if pgoImageTag != "" {
+		c.Pgo.PGOImageTag = pgoImageTag
+		log.Infof("CheckEnv: using PGO_IMAGE_TAG env var: %s", pgoImageTag)
+	}
+	pgoImagePrefix := os.Getenv("PGO_IMAGE_PREFIX")
+	if pgoImagePrefix != "" {
+		c.Pgo.PGOImagePrefix = pgoImagePrefix
+		log.Infof("CheckEnv: using PGO_IMAGE_PREFIX env var: %s", pgoImagePrefix)
+	}
+	ccpImageTag := os.Getenv("CCP_IMAGE_TAG")
+	if ccpImageTag != "" {
+		c.Cluster.CCPImageTag = ccpImageTag
+		log.Infof("CheckEnv: using CCP_IMAGE_TAG env var: %s", ccpImageTag)
+	}
+	ccpImagePrefix := os.Getenv("CCP_IMAGE_PREFIX")
+	if ccpImagePrefix != "" {
+		c.Cluster.CCPImagePrefix = ccpImagePrefix
+		log.Infof("CheckEnv: using CCP_IMAGE_PREFIX env var: %s", ccpImagePrefix)
+	}
 }

@@ -34,6 +34,13 @@ if [ $? -eq 1 ]; then
 	sudo yum -y install golang
 fi
 
+which buildah
+if [ $? -eq 1 ]; then
+	echo "installing buildah"
+	sudo subscription-manager repos --enable=rhel-7-server-extras-rpms
+	sudo yum -y install buildah
+fi
+
 which dep
 if [ $? -eq 1 ]; then
 	echo "installing dep"

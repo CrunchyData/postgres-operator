@@ -1,0 +1,4 @@
+packageName: crunchy-postgres-operator
+channels:
+- name: database
+  currentCSV: postgresoperator.v4.0.0-rc8

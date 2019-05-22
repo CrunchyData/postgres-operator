@@ -42,6 +42,42 @@ can install:
 * Cluster RBAC
 * Create required namespaces
 
+## Obtaining Operator Ansible Role
+
+There are two ways to obtain the Crunchy PostgreSQL Operator Roles:
+
+* Cloning the [postgres-operator project](https://github.com/CrunchyData/postgres-operator)
+* `postgres-operator-playbooks` RPM provided for Crunchy customers via the [Crunchy Access Portal](https://access.crunchydata.com/).
+
+### GitHub Installation
+
+All necessary files (inventory, main playbook and roles) can be found in the `ansible` 
+directory in the  [postgres-operator project](https://github.com/CrunchyData/postgres-operator).
+
+### RPM Installation using Yum
+
+Available to Crunchy customers is an RPM containing all the necessary Ansible roles 
+and files required for installation using Ansible.  The RPM can be found in Crunchy's 
+yum repository.  For information on setting up `yum` to use the Crunchy repoistory, 
+see the [Crunchy Access Portal](https://access.crunchydata.com/).
+
+To install the Crunchy PostgreSQL Operator Ansible roles using `yum`, run the following 
+command on a RHEL or CentOS host:
+
+```bash
+sudo yum install postgres-operator-playbooks
+```
+
+* Ansible roles can be found in: `/usr/share/ansible/roles/crunchydata`
+* Ansible playbooks/inventory files can be found in: `/usr/share/ansible/postgres-operator/playbooks`
+
+Once installed users should take a copy of the `inventory` file included in the installation 
+using the following command:
+
+```bash
+cp /usr/share/ansible/postgres-operator/playbooks/inventory ${HOME?}
+```
+
 ## Configuring the Inventory File
 
 The `inventory` file included with the PostgreSQL Operator Playbooks allows installers 
@@ -94,6 +130,7 @@ The following are the variables available for configuration:
 | `pgo_admin_username`              | admin       | Configures the pgo administrator username.                                                                                                                                       |
 | `pgo_admin_password`              |             | Configures the pgo administrator password.                                                                                                                                       |
 | `pgo_client_install`              | true        | Configures the playbooks to install the `pgo` client if set to true.                                                                                                             |
+| `pgo_client_version`              |             | Configures which version of `pgo` the playbooks should install.                                                                                                                  |
 | `pgo_image_prefix`                | crunchydata | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc).                                             |
 | `pgo_image_tag`                   |             | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
 | `pgo_operator_namespace`          |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
@@ -287,7 +324,7 @@ over time.  The collectors included by the operator are:
 * Node Exporter - Host metrics where the PostgreSQL containers are running
 * PostgreSQL Exporter - PostgreSQL metrics
 
-The operator, however, does not install the neccessary timeseries database (Prometheus) for storing the collected 
+The operator, however, does not install the necessary timeseries database (Prometheus) for storing the collected 
 metrics or the front end visualization (Grafana) of those metrics.
 
 Included in these playbooks are roles for deploying Granfana and/or Prometheus.  See the `inventory` file 
