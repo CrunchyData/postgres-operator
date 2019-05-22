@@ -32,8 +32,12 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/sshutil"
 	"github.com/crunchydata/postgres-operator/util"
+
 	_ "github.com/lib/pq"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -684,6 +688,24 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			return resp
 		}
 
+		// Create Backrest secret for S3/SSH Keys:
+		// We make this regardless if backrest is enabled or not because
+		// the deployment template always tries to mount /sshd volume
+		secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
+		_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
+		if kerrors.IsNotFound(err) {
+			err := createBackrestRepoSecrets(clusterName, request.Namespace)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
+				return resp
+			}
+		} else if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("could not query if backrest repo secret exits: %s", err)
+			return resp
+		}
+
 		//create CRD for new cluster
 		err = kubeapi.Createpgcluster(apiserver.RESTClient,
 			newInstance, ns)
@@ -843,7 +865,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	//override any values from config file
 	str = apiserver.Pgo.Cluster.Port
-	log.Debugf("%d", apiserver.Pgo.Cluster.Port)
+	log.Debugf("%s", apiserver.Pgo.Cluster.Port)
 	if str != "" {
 		spec.Port = str
 	}
@@ -858,7 +880,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Database = str
 	}
 	str = apiserver.Pgo.Cluster.Strategy
-	log.Debugf("%d", apiserver.Pgo.Cluster.Strategy)
+	log.Debugf("%s", apiserver.Pgo.Cluster.Strategy)
 	if str != "" {
 		spec.Strategy = str
 	}
@@ -1407,4 +1429,37 @@ func validateBackrestStorageType(requestBackRestStorageType string, backrestEnab
 	}
 
 	return nil
+}
+
+func createBackrestRepoSecrets(clusterName, namespace string) error {
+	keys, err := sshutil.NewPrivatePublicKeyPair(config.DEFAULT_BACKREST_SSH_KEY_BITS)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve the S3/SSHD configuration files from secret
+	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", namespace)
+	if kerrors.IsNotFound(err) || err != nil {
+		return err
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET),
+			Labels: map[string]string{
+				config.LABEL_PG_CLUSTER:        clusterName,
+				config.LABEL_PGO_BACKREST_REPO: "true",
+			},
+		},
+		Data: map[string][]byte{
+			"authorized_keys":         keys.Public,
+			"aws-s3-ca.crt":           configs.Data["aws-s3-ca.crt"],
+			"aws-s3-credentials.yaml": configs.Data["aws-s3-credentials.yaml"],
+			"config":                  configs.Data["config"],
+			"id_rsa":                  keys.Private,
+			"sshd_config":             configs.Data["sshd_config"],
+			"ssh_host_rsa_key":        keys.Private,
+		},
+	}
+	return kubeapi.CreateSecret(apiserver.Clientset, &secret, namespace)
 }
