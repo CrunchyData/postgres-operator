@@ -48,7 +48,7 @@ home/pgo/odev/src/github.com/crunchydata/postgres-operator/examples/custom-confi
 
 You should see a connection that looks like the following:
 
-psql (11.2)
+psql (11.3)
 SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
 Type "help" for help.
 
