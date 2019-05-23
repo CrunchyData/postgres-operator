@@ -1431,7 +1431,7 @@ func createBackrestRepoSecrets(clusterName, namespace string) error {
 	}
 
 	// Retrieve the S3/SSHD configuration files from secret
-	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", namespace)
+	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", apiserver.PgoNamespace)
 	if kerrors.IsNotFound(err) || err != nil {
 		return err
 	}
