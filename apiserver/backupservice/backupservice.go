@@ -17,11 +17,12 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // ShowBackupHandler ...
@@ -146,5 +147,39 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp = CreateBackup(&request, ns)
 
+	json.NewEncoder(w).Encode(resp)
+}
+
+// RestoreHandler takes a GET request for URL path '/pgbasebackuprestore', calls the required
+// business logic to perform a pg_basebackup restore, and then returns the appropriate response
+func RestoreHandler(w http.ResponseWriter, r *http.Request) {
+	var ns string
+
+	log.Debug("backup.RestoreHandler called")
+
+	var request msgs.PgbasebackupRestoreRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	username, err := apiserver.Authn(apiserver.RESTORE_PGBASEBACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
+	if err != nil {
+		resp := msgs.PgbasebackupRestoreResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp := Restore(&request, ns)
 	json.NewEncoder(w).Encode(resp)
 }

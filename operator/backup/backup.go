@@ -16,9 +16,13 @@ package backup
 */
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
+	"os"
+	"regexp"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -27,12 +31,9 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"strings"
-	"time"
 )
 
 type jobTemplateFields struct {
@@ -202,25 +203,9 @@ func getBackupPath(clientset *kubernetes.Clientset, podName, namespace string) (
 		return "", err
 	}
 
-	//this is what the backup container puts in its log and what
-	//we are looking to parse out of its container log
-	token := "BACKUP_PATH is set to /pgdata/"
-
-	var backupPath string
-	scanner := bufio.NewScanner(strings.NewReader(logs.String()))
-	for scanner.Scan() {
-		rawStr := scanner.Text()
-		rawlen := len(rawStr)
-		idx := strings.Index(rawStr, token)
-		if idx > -1 {
-			log.Debugf("log line of interest %s", scanner.Text())
-			content := rawlen - idx
-			log.Debugf("raw length %d token at %d content at %d\n", rawlen, idx, content)
-			//parsed := rawStr[idx+len(token):]
-			parsed := rawStr[content:]
-			backupPath = parsed[:rawlen-content-5]
-		}
-	}
+	backPathRegEx := regexp.MustCompile(`BACKUP_PATH is set to \/pgdata\/.*\.`)
+	fullBackupPathStr := backPathRegEx.FindString(logs.String())
+	backupPath := strings.TrimSuffix(strings.TrimPrefix(fullBackupPathStr, "BACKUP_PATH is set to /pgdata/"), ".")
 
 	return backupPath, nil
 

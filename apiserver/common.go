@@ -160,3 +160,16 @@ func IsStringOneOf(testVal string, acceptedVals ...string) bool {
 func GetBackrestStorageTypes() []string {
 	return backrestStorageTypes
 }
+
+// IsValidPVC determines if a PVC with the name provided exits
+func IsValidPVC(pvcName, ns string) bool {
+	_, pvcFound, err := kubeapi.GetPVC(Clientset, pvcName, ns)
+	if err != nil {
+		log.Error(err)
+		return false
+	} else if !pvcFound {
+		return false
+	}
+
+	return true
+}

@@ -836,8 +836,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.ClusterName = name
 	spec.Port = apiserver.Pgo.Cluster.Port
 	spec.SecretFrom = ""
-	spec.BackupPath = ""
-	spec.BackupPVCName = ""
 	spec.PrimaryHost = name
 	if request.Policies == "" {
 		spec.Policies = apiserver.Pgo.Cluster.Policies
@@ -887,11 +885,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	//pass along command line flags for a restore
 	if request.SecretFrom != "" {
 		spec.SecretFrom = request.SecretFrom
-	}
-
-	spec.BackupPath = request.BackupPath
-	if request.BackupPVC != "" {
-		spec.BackupPVCName = request.BackupPVC
 	}
 
 	spec.CustomConfig = request.CustomConfig
@@ -1438,7 +1431,7 @@ func createBackrestRepoSecrets(clusterName, namespace string) error {
 	}
 
 	// Retrieve the S3/SSHD configuration files from secret
-	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", namespace)
+	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", apiserver.PgoNamespace)
 	if kerrors.IsNotFound(err) || err != nil {
 		return err
 	}
