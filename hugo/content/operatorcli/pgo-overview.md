@@ -267,7 +267,40 @@ before you do a restore.
 
 #### Restore from pgbasebackup
 
-    pgo create cluster restoredcluster --backup-path=/somebackup/path --backup-pvc=somebackuppvc --secret-from=mycluster -n pgouser1
+You can find available pgbasebackup backups to use for a pgbasebackup restore using the `pgo show backup` command:
+
+```
+$ pgo show backup mycluster --backup-type=pgbasebackup -n pgouser1 | grep "Backup Path"
+        Backup Path:    mycluster-backups/2019-05-21-09-53-20
+        Backup Path:    mycluster-backups/2019-05-21-06-58-50
+        Backup Path:    mycluster-backups/2019-05-21-09-52-52
+```
+
+You can then perform a restore using any available backup path:
+
+    pgo restore mycluster --backup-type=pgbasebackup --backup-path=mycluster/2019-05-21-06-58-50 --backup-pvc=mycluster-backup -n pgouser1
+
+When performing the restore, both the backup path and backup PVC can be omitted, and the Operator will use the last pgbasebackup backup created, along with the PVC utilized for that backup:
+
+    pgo restore mycluster --backup-type=pgbasebackup -n pgouser1
+
+Once the pgbasebackup restore is complete, a new PVC will be available with a randomly generated ID that contains the restored database, e.g. PVC  **mycluster-ieqe** in the output below:
+
+```
+$ pgo show pvc all
+All Operator Labeled PVCs
+        mycluster
+        mycluster-backup
+        mycluster-ieqe
+```
+
+A new cluster can then be created with the same name as the new PVC, as well with the secrets from the original cluster, in order to deploy a new cluster using the restored database:
+
+    pgo create cluster mycluster-ieqe --secret-from=mycluster
+
+If you would like to control the name of the PVC created when performing a pgbasebackup restore, use the `--restore-to-pvc` flag:
+
+    pgo restore mycluster --backup-type=pgbasebackup --restore-to-pvc=mycluster-restored -n pgouser1
 
 #### Restore from pgdump backup
 

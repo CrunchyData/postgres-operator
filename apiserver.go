@@ -121,6 +121,7 @@ func main() {
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
 	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
+	r.HandleFunc("/pgbasebackuprestore", backupservice.RestoreHandler).Methods("POST")
 	r.HandleFunc("/backrestbackup", backrestservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrest/{name}", backrestservice.ShowBackrestHandler).Methods("GET")
 	r.HandleFunc("/restore", backrestservice.RestoreHandler).Methods("POST")

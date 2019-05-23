@@ -184,9 +184,7 @@ func createCluster(args []string, ns string) {
 	r.NodeLabel = NodeLabel
 	r.Password = Password
 	r.SecretFrom = SecretFrom
-	r.BackupPVC = BackupPVC
 	r.UserLabels = UserLabels
-	r.BackupPath = BackupPath
 	r.Policies = PoliciesFlag
 	r.CCPImageTag = CCPImageTag
 	r.CCPImage = CCPImage

@@ -40,6 +40,7 @@ const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"
 const PgtaskWorkflowCreateBenchmarkType = "createbenchmark"
 const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
+const PgtaskWorkflowPgbasebackupRestoreType = "pgbasebackuprestore"
 const PgtaskWorkflowBackupType = "backupworkflow"
 const PgtaskWorkflowSubmittedStatus = "task submitted"
 const PgtaskWorkflowCompletedStatus = "task completed"
@@ -48,6 +49,10 @@ const PgtaskWorkflowID = "workflowid"
 const PgtaskWorkflowBackrestRestorePVCCreatedStatus = "restored PVC created"
 const PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
 const PgtaskWorkflowBackrestRestoreJobCreatedStatus = "restore job created"
+
+const PgtaskWorkflowPgbasebackupRestorePVCCreatedStatus = "restored PVC created"
+const PgtaskWorkflowPgbasebackupRestorePrimaryCreatedStatus = "restored Primary created"
+const PgtaskWorkflowPgbasebackupRestoreJobCreatedStatus = "restore job created"
 
 const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"
@@ -59,6 +64,8 @@ const PgtaskpgDump = "pgdump"
 const PgtaskpgDumpBackup = "pgdumpbackup"
 const PgtaskpgDumpInfo = "pgdumpinfo"
 const PgtaskpgRestore = "pgrestore"
+
+const PgtaskpgBasebackupRestore = "pgbasebackuprestore"
 
 const PgtaskBenchmark = "benchmark"
 

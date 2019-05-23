@@ -46,3 +46,19 @@ type DeleteBackupResponse struct {
 	Results []string
 	Status
 }
+
+// PgbasebackupRestoreRequest ...
+type PgbasebackupRestoreRequest struct {
+	Namespace   string
+	FromCluster string
+	ToPVC       string
+	FromPVC     string
+	BackupPath  string
+	NodeLabel   string
+}
+
+// PgbasebackupRestoreResponse ...
+type PgbasebackupRestoreResponse struct {
+	Results []string
+	Status
+}

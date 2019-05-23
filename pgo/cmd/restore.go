@@ -29,7 +29,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var PITRTarget string
+var PITRTarget, RestoreBackupPath string
+var BackupPath, BackupPVC string
+var RestoreToPVC string
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
@@ -66,8 +68,10 @@ func init() {
 	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling "+
 		"the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.")
 	restoreCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump directory to restore from.")
-	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
+	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump or pgbasebackup backup directory to restore from.")
+	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest, pgdump or pgbasebackup.")
+	restoreCmd.Flags().StringVarP(&RestoreBackupPath, "backup-path", "", "", "The path for the directory containing the pg_basebackup backup to be utilized for the restore. If omitted, defaults to the latest backup.")
+	restoreCmd.Flags().StringVarP(&RestoreToPVC, "restore-to-pvc", "", "", "The name of the PVC to restore into when restoring from a pgbasebackup backup.")
 	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"local\", \"s3\". (default \"local\")")
 }
 
@@ -90,6 +94,23 @@ func restore(args []string, ns string) {
 		request.NodeLabel = NodeLabel
 
 		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
+	} else if BackupType == config.LABEL_BACKUP_TYPE_BASEBACKUP {
+
+		request := new(msgs.PgbasebackupRestoreRequest)
+		request.Namespace = ns
+		request.FromCluster = args[0]
+
+		if RestoreToPVC != "" {
+			request.ToPVC = RestoreToPVC
+		} else {
+			request.ToPVC = args[0] + "-" + util.RandStringBytesRmndr(4)
+		}
+
+		request.FromPVC = BackupPVC
+		request.BackupPath = RestoreBackupPath
+		request.NodeLabel = NodeLabel
+
+		response, err = api.RestorePgbasebackup(httpclient, &SessionCredentials, request)
 	} else {
 
 		request := new(msgs.RestoreRequest)
@@ -105,7 +126,7 @@ func restore(args []string, ns string) {
 	}
 
 	if err != nil {
-		fmt.Println("Error: " + response.Status.Msg)
+		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
 	}
 

@@ -26,9 +26,7 @@ type CreateClusterRequest struct {
 	NodeLabel           string
 	Password            string
 	SecretFrom          string
-	BackupPVC           string
 	UserLabels          string
-	BackupPath          string
 	Policies            string
 	CCPImage            string
 	CCPImageTag         string

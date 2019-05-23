@@ -56,6 +56,7 @@ const CREATE_USER_PERM = "CreateUser"
 
 // RESTORE
 const RESTORE_DUMP_PERM = "RestoreDump"
+const RESTORE_PGBASEBACKUP_PERM = "RestorePgbasebackup"
 
 // DELETE
 const DELETE_BACKUP_PERM = "DeleteBackup"
@@ -125,6 +126,7 @@ func InitializePerms() {
 	PermMap[CREATE_USER_PERM] = "yes"
 	// RESTORE
 	PermMap[RESTORE_DUMP_PERM] = "yes"
+	PermMap[RESTORE_PGBASEBACKUP_PERM] = "yes"
 	// Delete
 	PermMap[DELETE_BACKUP_PERM] = "yes"
 	PermMap[DELETE_BENCHMARK_PERM] = "yes"

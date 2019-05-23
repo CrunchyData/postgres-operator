@@ -409,8 +409,6 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		PVCName:                 util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
 		DeploymentLabels:        operator.GetLabelsFromMap(cluster.Spec.UserLabels),
 		PodLabels:               operator.GetLabelsFromMap(cluster.Spec.UserLabels),
-		BackupPVCName:           util.CreateBackupPVCSnippet(cluster.Spec.BackupPVCName),
-		BackupPath:              cluster.Spec.BackupPath,
 		DataPathOverride:        restoreToName,
 		Database:                cluster.Spec.Database,
 		ArchiveMode:             archiveMode,
