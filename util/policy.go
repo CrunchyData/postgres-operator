@@ -54,7 +54,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 	}
 
 	//lastly, run the psql script
-	log.Debugf("running psql password=%s ip=%s sql=[%s]", password, service.Spec.ClusterIP, sqlString)
+	log.Debugf("running psql ip=%s sql=[%s]", service.Spec.ClusterIP, sqlString)
 	err = RunPsql(password, service.Spec.ClusterIP, sqlString)
 	if err != nil {
 		return err
