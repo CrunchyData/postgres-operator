@@ -1,6 +1,6 @@
 ---
 title: "Upgrade"
-Latest Release: 4.0.0-rc11 {docdate}
+Latest Release: 4.0.0-rc12 {docdate}
 draft: false
 weight: 8
 ---
