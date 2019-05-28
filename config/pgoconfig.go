@@ -28,7 +28,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -87,6 +87,10 @@ const pgbackrestS3EnvVarsPath = "pgbackrest-s3-env-vars.json"
 var JobTemplate *template.Template
 
 const jobPath = "backup-job.json"
+
+var PgBasebackupRestoreJobTemplate *template.Template
+
+const pgBasebackupRestoreJobTemplatePath = "pgbasebackup-restore-job.json"
 
 var PgpoolTemplate *template.Template
 
@@ -587,6 +591,11 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	JobTemplate, err = c.LoadTemplate(cMap, rootPath, jobPath)
+	if err != nil {
+		return err
+	}
+
+	PgBasebackupRestoreJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgBasebackupRestoreJobTemplatePath)
 	if err != nil {
 		return err
 	}

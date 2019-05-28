@@ -68,9 +68,6 @@
                         "name": "PG_LOCALE",
                         "value": "en_US.UTF8"
                     }, {
-                        "name": "BACKUP_PATH",
-                        "value": "{{.BackupPath}}"
-                    }, {
                         "name": "PGDATA_PATH_OVERRIDE",
                         "value": "{{.DataPathOverride}}"
                     }, {
@@ -89,10 +86,6 @@
                             "mountPath": "/pgdata",
                             "name": "pgdata",
                             "readOnly": false
-                        }, {
-                            "mountPath": "/backup",
-                            "name": "backup",
-                            "readOnly": true
                         }, {
                             "mountPath": "/backuprestrepo",
                             "name": "backrestrepo"
@@ -138,9 +131,6 @@
                 "volumes": [{
                         "name": "pgdata",
                         {{.PVCName}}
-                    }, {
-                        "name": "backup",
-                        {{.BackupPVCName}}
                     }, {
                         "name": "user-volume",
                         "secret": {

@@ -95,6 +95,12 @@ const LABEL_PGRESTORE_FROM_PVC = "pgrestore-from-pvc"
 const LABEL_PGRESTORE_OPTS = "pgrestore-opts"
 const LABEL_PGRESTORE_PITR_TARGET = "pgrestore-pitr-target"
 
+const LABEL_PGBASEBACKUP_RESTORE = "pgo-pgbasebackup-restore"
+const LABEL_PGBASEBACKUP_RESTORE_FROM_CLUSTER = "pgbasebackup-restore-from-cluster"
+const LABEL_PGBASEBACKUP_RESTORE_FROM_PVC = "pgbasebackup-restore-from-pvc"
+const LABEL_PGBASEBACKUP_RESTORE_TO_PVC = "pgbasebackup-restore-to-pvc"
+const LABEL_PGBASEBACKUP_RESTORE_BACKUP_PATH = "pgbasebackup-restore-backup-path"
+
 const LABEL_DATA_ROOT = "data-root"
 const LABEL_PVC_NAME = "pvc-name"
 const LABEL_VOLUME_NAME = "volume-name"

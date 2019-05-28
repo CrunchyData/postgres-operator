@@ -265,6 +265,26 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 	}
 
+	if labels[config.LABEL_PGBASEBACKUP_RESTORE] == "true" {
+		log.Debugf("jobController onUpdate pgbasebackup restore job case")
+		log.Debugf("got a pgbasebackup restore job status=%d", job.Status.Succeeded)
+
+		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
+		if job.Status.Succeeded == 0 {
+			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		if job.Status.Failed > 0 {
+			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
+		}
+
+		// patch 'pgbasebackuprestore' pgtask status with job status
+		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", labels[config.LABEL_PGTASK], job.ObjectMeta.Namespace)
+		if err != nil {
+			log.Error("error patching pgtask '" + labels["pg-task"] + "': " + err.Error())
+		}
+	}
+
 	//handle the case of a benchmark job being upddated
 	if labels[config.LABEL_PGO_BENCHMARK] == "true" {
 		log.Debugf("jobController onUpdate benchmark job case")

@@ -104,8 +104,6 @@ type DeploymentTemplateFields struct {
 	XLOGDir                 string
 	BackrestPVCName         string
 	PVCName                 string
-	BackupPVCName           string
-	BackupPath              string
 	RootSecretName          string
 	UserSecretName          string
 	PrimarySecretName       string

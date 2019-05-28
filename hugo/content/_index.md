@@ -25,7 +25,7 @@ Use the postgres-operator to:
 
 ## Deployment Requirements
 
-The Operator deploys on Kubernetes and OpenShift clusters.  Some form of storage is required, NFS, HostPath, and Storage Classes are currently supported.
+The Operator is validated for deployment on Kubernetes, OpenShift, and VMware Enterprise PKS clusters.  Some form of storage is required, NFS, HostPath, and Storage Classes are currently supported.
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed

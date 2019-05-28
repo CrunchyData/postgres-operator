@@ -17,9 +17,11 @@ limitations under the License.
 
 import (
 	"context"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
+	pgbasebackupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
@@ -199,6 +201,10 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskpgRestore:
 		log.Debug("pgDump restore task added")
 		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+
+	case crv1.PgtaskpgBasebackupRestore:
+		log.Debug("pgbasebackup restore task added")
+		pgbasebackupoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
 
 	case crv1.PgtaskAutoFailover:
 		log.Debugf("autofailover task added %s", task.ObjectMeta.Name)

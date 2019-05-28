@@ -36,7 +36,7 @@ var CCPImageTag string
 var Password string
 var PgBouncerPassword string
 var PgBouncerUser string
-var SecretFrom, BackupPath, BackupPVC string
+var SecretFrom string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var UserLabels string
 var ServiceType string
@@ -86,13 +86,6 @@ var createClusterCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		log.Debug("create cluster called")
-
-		if BackupPath != "" || BackupPVC != "" {
-			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
-				fmt.Println(`Error: The --secret-from, --backup-path, and --backup-pvc flags are all required to perform a restore.`)
-				return
-			}
-		}
 
 		// handle pgbouncer username and pass fields if --pgbouncer flag not specified.
 		if !PgbouncerFlag && ((len(PgBouncerUser) > 0) || (len(PgBouncerPassword) > 0)) {
@@ -252,9 +245,7 @@ func init() {
 	//	createClusterCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
 	createClusterCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
-	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
-	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from.")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
