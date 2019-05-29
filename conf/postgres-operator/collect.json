@@ -4,9 +4,6 @@
     "ports": [{
         "containerPort": 9187,
         "protocol": "TCP"
-    }, {
-        "containerPort": 9100,
-        "protocol": "TCP"
     }],
     "env": [{
         "name": "DATA_SOURCE_NAME",
