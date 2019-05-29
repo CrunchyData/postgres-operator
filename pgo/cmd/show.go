@@ -295,6 +295,10 @@ var ShowBenchmarkCmd = &cobra.Command{
 	pgo show benchmark mycluster
 	pgo show benchmark --selector=pg-cluster=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: cluster name or selector are required to show benchmark results.")
 			return
