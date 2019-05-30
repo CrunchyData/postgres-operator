@@ -92,7 +92,7 @@ func main() {
 	//here
 	r.HandleFunc("/policiesdelete/{name}", policyservice.DeletePolicyHandler).Methods("GET")
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
-	r.HandleFunc("/pvc/{pvcname}", pvcservice.ShowPVCHandler).Methods("GET")
+	r.HandleFunc("/showpvc", pvcservice.ShowPVCHandler).Methods("POST")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")

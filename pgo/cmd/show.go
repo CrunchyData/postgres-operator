@@ -112,6 +112,7 @@ func init() {
 	ShowClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPVCCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use")
+	ShowPVCCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "", "", "The PVC directory to list.")
 	ShowScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to show.")
@@ -187,12 +188,13 @@ var ShowPVCCmd = &cobra.Command{
 	Long: `Show PVC information. For example:
 
 	pgo show pvc mycluster
+	pgo show pvc --all
 	pgo show pvc mycluster-backup
 	pgo show pvc mycluster-xlog
 	pgo show pvc a2-backup --pvc-root=a2-backups/2019-01-12-17-09-42`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: PVC name(s) required for this command.")
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: PVC name(s) or --all required for this command.")
 		} else {
 			if Namespace == "" {
 				Namespace = PGONamespace

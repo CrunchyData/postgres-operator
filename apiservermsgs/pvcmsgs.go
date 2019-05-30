@@ -17,6 +17,17 @@ limitations under the License.
 
 import ()
 
+// ShowPVCRequest ...
+type ShowPVCRequest struct {
+	PVCName       string
+	NodeLabel     string
+	PVCRoot       string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	Allflag       string
+}
+
 // ShowPVCResponse ...
 type ShowPVCResponse struct {
 	Results []string
