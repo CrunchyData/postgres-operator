@@ -378,7 +378,7 @@ func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
 	}
 
 	//get the secrets for this cluster
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := "!" + config.LABEL_PGO_BACKREST_REPO + "," + config.LABEL_PG_CLUSTER + "=" + clusterName
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
 	if err != nil {
 		return info, err
