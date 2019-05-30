@@ -19,6 +19,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -873,6 +874,16 @@ func reconfigurePgbouncer(clusterName, ns string) error {
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_RECONFIGURE] = "true"
 
+	//try deleting any previous pgtask for this cluster
+	err = kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, ns)
+	if kerrors.IsNotFound(err) {
+		log.Debugf("pgtask %s is not found prior which is ok", spec.Name)
+	} else if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	//create the pgtask
 	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
 	if err != nil {
 		log.Error(err)
@@ -902,8 +913,17 @@ func reconfigurePgpool(clusterName, ns string) error {
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[config.LABEL_PGPOOL_TASK_RECONFIGURE] = "true"
 
-	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		newInstance, ns)
+	//delete any existing pgtask for this
+	err = kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, ns)
+	if kerrors.IsNotFound(err) {
+		log.Debugf("pgtask %s is not found prior which is ok", spec.Name)
+	} else if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	//create the pgtask
+	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
 	if err != nil {
 		log.Error(err)
 		return err
