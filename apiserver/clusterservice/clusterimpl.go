@@ -109,19 +109,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 }
 
 // ShowCluster ...
-func ShowCluster(name, selector, ccpimagetag, ns string) msgs.ShowClusterResponse {
+func ShowCluster(name, selector, ccpimagetag, ns, allflag string) msgs.ShowClusterResponse {
 	var err error
 
 	response := msgs.ShowClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]msgs.ShowClusterDetail, 0)
 
-	if selector == "" && name == "all" {
+	if selector == "" && allflag == "true" {
+		log.Debugf("allflags set to true")
 	} else {
 		if selector == "" {
 			selector = "name=" + name
 		}
 	}
+
+	log.Debugf("selector on showCluster is %s", selector)
 
 	clusterList := crv1.PgclusterList{}
 

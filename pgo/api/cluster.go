@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	//"strconv"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	log "github.com/sirupsen/logrus"
@@ -29,24 +30,23 @@ const (
 	createClusterURL = "%s/clusters"
 	deleteClusterURL = "%s/clustersdelete/%s?selector=%s&delete-data=%t&delete-backups=%t&version=%s&namespace=%s"
 	updateClusterURL = "%s/clustersupdate/%s?selector=%s&autofail=%s&version=%s&namespace=%s"
-	showClusterURL   = "%s/clusters/%s?selector=%s&version=%s&ccpimagetag=%s&namespace=%s"
+	showClusterURL   = "%s/showclusters"
 )
 
-func ShowCluster(httpclient *http.Client, arg, selector, ccpimagetag string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowClusterResponse, error) {
+func ShowCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowClusterRequest) (msgs.ShowClusterResponse, error) {
 
 	var response msgs.ShowClusterResponse
 
-	url := fmt.Sprintf(showClusterURL, SessionCredentials.APIServerURL, arg, selector, msgs.PGO_VERSION, ccpimagetag, ns)
+	jsonValue, _ := json.Marshal(request)
+	url := fmt.Sprintf(showClusterURL, SessionCredentials.APIServerURL)
+	log.Debugf("showCluster called...[%s]", url)
 
-	log.Debugf("show cluster called [%s]", url)
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
-
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)

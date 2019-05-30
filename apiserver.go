@@ -88,7 +88,7 @@ func main() {
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/health", versionservice.HealthHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
-	r.HandleFunc("/policies/{name}", policyservice.ShowPolicyHandler).Methods("GET")
+	r.HandleFunc("/showpolicies", policyservice.ShowPolicyHandler).Methods("POST")
 	//here
 	r.HandleFunc("/policiesdelete/{name}", policyservice.DeletePolicyHandler).Methods("GET")
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
@@ -104,7 +104,7 @@ func main() {
 	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
-	r.HandleFunc("/clusters/{name}", clusterservice.ShowClusterHandler).Methods("GET")
+	r.HandleFunc("/showclusters", clusterservice.ShowClusterHandler).Methods("POST")
 	//here
 	r.HandleFunc("/clustersdelete/{name}", clusterservice.DeleteClusterHandler).Methods("GET")
 	r.HandleFunc("/clustersupdate/{name}", clusterservice.UpdateClusterHandler).Methods("GET")

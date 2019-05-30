@@ -85,17 +85,20 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
-	vars := mux.Vars(r)
-	log.Debugf("clusterservice.ShowClusterHandler %v\n", vars)
 
-	clustername := vars["name"]
+	var request msgs.ShowClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	selector := r.URL.Query().Get("selector")
-	ccpimagetag := r.URL.Query().Get("ccpimagetag")
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	log.Debugf("clusterservice.ShowClusterHandler %v\n", request)
+	clustername := request.Clustername
 
-	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s]", clustername, selector, ccpimagetag, clientVersion, namespace)
+	selector := request.Selector
+	ccpimagetag := request.Ccpimagetag
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
+	allflag := request.Allflag
+
+	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s] allflag [%s]", clustername, selector, ccpimagetag, clientVersion, namespace, allflag)
 
 	username, err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -126,7 +129,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ShowCluster(clustername, selector, ccpimagetag, ns)
+	resp = ShowCluster(clustername, selector, ccpimagetag, ns, allflag)
 	json.NewEncoder(w).Encode(resp)
 
 }

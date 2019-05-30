@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
@@ -68,14 +69,25 @@ func showCluster(args []string, ns string) {
 	}
 
 	log.Debugf("selector is %s", Selector)
-	if len(args) == 0 && Selector != "" {
-		args = make([]string, 1)
-		args[0] = "all"
+	if len(args) == 0 && !AllFlag && Selector == "" {
+		fmt.Println("Error: ", "--all needs to be set or a cluster name be entered or a --selector be specified")
+		os.Exit(2)
 	}
+	if Selector != "" || AllFlag {
+		args = make([]string, 1)
+		args[0] = ""
+	}
+
+	r := new(msgs.ShowClusterRequest)
+	r.Selector = Selector
+	r.Namespace = ns
+	r.Allflag = strconv.FormatBool(AllFlag)
+	r.ClientVersion = msgs.PGO_VERSION
 
 	for _, v := range args {
 
-		response, err := api.ShowCluster(httpclient, v, Selector, CCPImageTag, &SessionCredentials, ns)
+		r.Clustername = v
+		response, err := api.ShowCluster(httpclient, &SessionCredentials, r)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
