@@ -31,13 +31,21 @@ import (
 func deleteCluster(args []string, ns string) {
 	log.Debugf("deleteCluster called %v", args)
 
-	if len(args) == 0 && Selector != "" {
+	if AllFlag {
 		args = make([]string, 1)
 		args[0] = "all"
 	}
 
+	r := msgs.DeleteClusterRequest{}
+	r.Selector = Selector
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	r.DeleteBackups = DeleteBackups
+	r.DeleteData = DeleteData
+
 	for _, arg := range args {
-		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, ns)
+		r.Clustername = arg
+		response, err := api.DeleteCluster(httpclient, &r, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())

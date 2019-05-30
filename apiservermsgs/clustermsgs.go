@@ -126,6 +126,17 @@ type ShowClusterResponse struct {
 	Status
 }
 
+// DeleteClusterRequest ...
+type DeleteClusterRequest struct {
+	Clustername   string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	Allflag       bool
+	DeleteBackups bool
+	DeleteData    bool
+}
+
 // DeleteClusterResponse ...
 type DeleteClusterResponse struct {
 	Results []string

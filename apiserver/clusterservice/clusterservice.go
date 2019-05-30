@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
+	//	"strconv"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -141,28 +141,22 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var request msgs.DeleteClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
 	var ns string
-	vars := mux.Vars(r)
-	log.Debugf("clusterservice.DeleteClusterHandler %v\n", vars)
+	log.Debugf("clusterservice.DeleteClusterHandler %v\n", request)
 
-	clustername := vars["name"]
+	clustername := request.Clustername
 
-	selector := r.URL.Query().Get("selector")
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	selector := request.Selector
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
 
-	deleteData := false
-	deleteDataStr := r.URL.Query().Get("delete-data")
-	if deleteDataStr != "" {
-		deleteData, _ = strconv.ParseBool(deleteDataStr)
-	}
-	deleteBackups := false
-	deleteBackupsStr := r.URL.Query().Get("delete-backups")
-	if deleteBackupsStr != "" {
-		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
-	}
+	deleteData := request.DeleteData
+	deleteBackups := request.DeleteBackups
 
-	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%s] delete-backups [%s]", namespace, selector, clientVersion, deleteDataStr, deleteBackupsStr)
+	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%t] delete-backups [%t]", namespace, selector, clientVersion, deleteData, deleteBackups)
 
 	username, err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {
