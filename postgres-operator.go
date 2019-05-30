@@ -37,7 +37,6 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
-var PgoNamespace string
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
@@ -49,12 +48,6 @@ func main() {
 		log.Debug("debug flag set to true")
 	} else {
 		log.Info("debug flag set to false")
-	}
-
-	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
-	if PgoNamespace == "" {
-		log.Error("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
-		os.Exit(2)
 	}
 
 	namespaceList := util.GetNamespaces()
@@ -81,7 +74,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	operator.Initialize(Clientset, PgoNamespace)
+	operator.Initialize(Clientset)
 
 	//validate the NAMESPACE env var
 	err = util.ValidateNamespaces(Clientset)
