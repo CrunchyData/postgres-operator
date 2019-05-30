@@ -24,10 +24,10 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: storageos
-BackupStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: storageos
+PrimaryStorage: nfsstorage
+BackupStorage: nfsstorage
+ReplicaStorage: nfsstorage
+BackrestStorage: nfsstorage
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
