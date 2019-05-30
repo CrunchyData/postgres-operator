@@ -367,7 +367,7 @@ func GetPgbackrestS3EnvVars(backrestLabel, backRestStorageTypeLabel string,
 			PgbackrestS3Region:   Pgo.Cluster.BackrestS3Region,
 		}
 
-		secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config", ns)
+		secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config", PgoNamespace)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
