@@ -68,6 +68,15 @@ type ShowPolicyResponse struct {
 	Status
 }
 
+// DeletePolicyRequest ...
+type DeletePolicyRequest struct {
+	Selector      string
+	Namespace     string
+	AllFlag       bool
+	ClientVersion string
+	PolicyName    string
+}
+
 // DeletePolicyResponse ...
 type DeletePolicyResponse struct {
 	Results []string

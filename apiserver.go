@@ -90,7 +90,7 @@ func main() {
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
 	r.HandleFunc("/showpolicies", policyservice.ShowPolicyHandler).Methods("POST")
 	//here
-	r.HandleFunc("/policiesdelete/{name}", policyservice.DeletePolicyHandler).Methods("GET")
+	r.HandleFunc("/policiesdelete", policyservice.DeletePolicyHandler).Methods("POST")
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
 	r.HandleFunc("/showpvc", pvcservice.ShowPVCHandler).Methods("POST")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")

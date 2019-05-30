@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	apiserver "github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"net/http"
@@ -85,11 +84,13 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeletePolicyResponse
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
-	vars := mux.Vars(r)
 
-	policyname := vars["name"]
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	var request msgs.DeletePolicyRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	policyname := request.PolicyName
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
 
 	log.Debugf("DeletePolicyHandler parameters version [%s] name [%s] namespace [%s]", clientVersion, policyname, namespace)
 

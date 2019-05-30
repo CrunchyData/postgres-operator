@@ -208,10 +208,21 @@ func deletePolicy(args []string, ns string) {
 
 	log.Debugf("deletePolicy called %v", args)
 
+	r := msgs.DeletePolicyRequest{}
+	r.Selector = Selector
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	if AllFlag {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
 	for _, arg := range args {
+		r.PolicyName = arg
 		log.Debugf("deleting policy %s", arg)
 
-		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials, ns)
+		response, err := api.DeletePolicy(httpclient, &r, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 		}

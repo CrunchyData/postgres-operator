@@ -107,6 +107,7 @@ func init() {
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -197,8 +198,8 @@ var deletePolicyCmd = &cobra.Command{
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 {
-			fmt.Println("Error: A policy name is required for this command.")
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: A policy name or --all is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args, Namespace)
