@@ -119,6 +119,21 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	updateFailoverStatus(client, task, namespace, clusterName, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
 
+	//update the pgcluster current-primary to new deployment name
+	var found bool
+	cluster := crv1.Pgcluster{}
+	found, err = kubeapi.Getpgcluster(client, &cluster, clusterName, namespace)
+	if !found {
+		log.Errorf("could not find pgcluster %s with labels", clusterName)
+		return err
+	}
+	cluster.Spec.UserLabels[config.LABEL_CURRENT_PRIMARY] = targetDepName
+	err = util.PatchClusterCRD(client, cluster.Spec.UserLabels, &cluster, namespace)
+	if err != nil {
+		log.Errorf("failoverlogic: could not patch pgcluster %s with labels", clusterName)
+		return err
+	}
+
 	return err
 
 }
