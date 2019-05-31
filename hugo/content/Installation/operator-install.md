@@ -32,7 +32,7 @@ The Operator follows a golang project structure, you can create a structure as f
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-	git checkout 4.0.0-rc12
+	git checkout 4.0.0-rc13
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
