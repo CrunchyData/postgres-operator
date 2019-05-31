@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
-	"github.com/crunchydata/postgres-operator/operator"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -367,26 +366,28 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 	cmd = append(cmd, backrestInfoCommand)
 
 	log.Debugf("command is %v ", cmd)
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
-
-	if err != nil {
-		log.Error(err, stderr)
-		return "", err
+	
+	var output string
+	if storageType != "s3" { 
+		outputLocal, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
+		if err != nil {
+			log.Error(err, stderr)
+			return "", err
+		}
+		output = "\nStorage Type: local\n" + outputLocal
 	}
-
-	if operator.IsLocalAndS3Storage(storageType) {
+	
+	if strings.Contains(storageType, "s3") {
 		cmd = append(cmd, repoTypeFlagS3)
 		outputS3, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
 		if err != nil {
 			log.Error(err, stderr)
 			return "", err
 		}
-
-		output = "\nStorage Type: local\n" + output + "\nStorage Type: s3\n" + outputS3
-	}
+		output = output + "\nStorage Type: s3\n" + outputS3
+	} 
 
 	log.Debug("output=[" + output + "]")
-	log.Debug("stderr=[" + stderr + "]")
 
 	log.Debug("backrest info ends")
 	return output, err

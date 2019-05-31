@@ -19,6 +19,16 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+// ShowClusterRequest ...
+type ShowClusterRequest struct {
+	Clustername   string
+	Selector      string
+	Ccpimagetag   string
+	ClientVersion string
+	Namespace     string
+	Allflag       string
+}
+
 // CreateClusterRequest ...
 type CreateClusterRequest struct {
 	Name                string
@@ -114,6 +124,17 @@ type ShowClusterDetail struct {
 type ShowClusterResponse struct {
 	Results []ShowClusterDetail
 	Status
+}
+
+// DeleteClusterRequest ...
+type DeleteClusterRequest struct {
+	Clustername   string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	Allflag       bool
+	DeleteBackups bool
+	DeleteData    bool
 }
 
 // DeleteClusterResponse ...

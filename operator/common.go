@@ -29,6 +29,8 @@ import (
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
+var PgoNamespace string
+
 var Pgo config.PgoConfig
 
 type containerResourcesTemplateFields struct {
@@ -36,7 +38,7 @@ type containerResourcesTemplateFields struct {
 	LimitsMemory, LimitsCPU     string
 }
 
-func Initialize(clientset *kubernetes.Clientset, namespace string) {
+func Initialize(clientset *kubernetes.Clientset) {
 
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	if tmp == "true" {
@@ -53,9 +55,15 @@ func Initialize(clientset *kubernetes.Clientset, namespace string) {
 		log.Error("NAMESPACE env var is set to empty string which pgo intprets as meaning you want it to watch 'all' namespaces.")
 	}
 
+	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
+	if PgoNamespace == "" {
+		log.Error("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
+		os.Exit(2)
+	}
+
 	var err error
 
-	err = Pgo.GetConfig(clientset, namespace)
+	err = Pgo.GetConfig(clientset, PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		log.Error("pgo-config files and templates did not load")

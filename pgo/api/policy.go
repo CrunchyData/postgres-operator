@@ -24,19 +24,21 @@ import (
 	"net/http"
 )
 
-func ShowPolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowPolicyResponse, error) {
+func ShowPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowPolicyRequest) (msgs.ShowPolicyResponse, error) {
 
 	var response msgs.ShowPolicyResponse
 
-	url := SessionCredentials.APIServerURL + "/policies/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/showpolicies"
 	log.Debugf("showPolicy called...[%s]", url)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
+		response.Status.Code = msgs.Error
 		return response, err
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -102,21 +104,22 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 	return resp, err
 }
 
-func DeletePolicy(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeletePolicyResponse, error) {
+func DeletePolicy(httpclient *http.Client, request *msgs.DeletePolicyRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeletePolicyResponse, error) {
 
 	var response msgs.DeletePolicyResponse
 
-	url := SessionCredentials.APIServerURL + "/policiesdelete/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
+	url := SessionCredentials.APIServerURL + "/policiesdelete"
 
 	log.Debugf("delete policy called [%s]", url)
 
-	action := "GET"
-
-	req, err := http.NewRequest(action, url, nil)
+	action := "POST"
+	jsonValue, _ := json.Marshal(request)
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
+		response.Status.Code = msgs.Error
 		return response, err
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)

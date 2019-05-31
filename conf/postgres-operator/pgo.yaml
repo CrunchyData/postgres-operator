@@ -24,10 +24,10 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: primarysite
-BackupStorage: primarysite
-ReplicaStorage: primarysite
-BackrestStorage: primarysite
+PrimaryStorage: storageos
+BackupStorage: storageos
+ReplicaStorage: storageos
+BackrestStorage: storageos
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany

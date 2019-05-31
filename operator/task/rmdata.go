@@ -59,8 +59,10 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 
 	}
 
+	jobName := clusterName + "-rmdata-" + util.RandStringBytesRmndr(4)
+
 	jobFields := rmdatajobTemplateFields{
-		JobName:            task.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4),
+		JobName:            jobName,
 		Name:               task.Spec.Name + "-" + pvcName,
 		ClusterName:        clusterName,
 		PvcName:            pvcName,
@@ -70,7 +72,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		DataRoot:           task.Spec.Parameters[config.LABEL_DATA_ROOT],
 		ContainerResources: cr,
 	}
-	log.Debugf("creating rmdata job for cluster %s pvc %s", task.Spec.Name, pvcName)
+	log.Debugf("creating rmdata job %s for cluster %s pvc %s", jobName, task.Spec.Name, pvcName)
 
 	var doc2 bytes.Buffer
 	err := config.RmdatajobTemplate.Execute(&doc2, jobFields)

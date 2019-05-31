@@ -23,7 +23,7 @@ COPY redhat/atomic/pgo_backrest/help.1 /help.1
 COPY redhat/atomic/pgo_backrest/help.md /help.md
 COPY redhat/licenses /licenses
 
-RUN yum -y --enablerepo=rhel-7-server-ose-3.9-rpms --disablerepo=crunchy* update \
+RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
  && yum -y install postgresql11-server \
  && yum -y install crunchy-backrest-"${BACKREST_VERSION}" \
  && yum -y clean all

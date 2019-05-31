@@ -197,10 +197,7 @@ directory.
 
 You can view policies as following:
 
-    pgo show policy all -n pgouser1
-
-In this example, the special *all* value is used to indicate you
-want to see all policies.
+    pgo show policy --all -n pgouser1
 
 
 #### Apply a Policy

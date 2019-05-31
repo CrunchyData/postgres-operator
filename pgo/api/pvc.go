@@ -16,6 +16,7 @@ package api
 */
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -23,20 +24,24 @@ import (
 	"net/http"
 )
 
-func ShowPVC(httpclient *http.Client, pvcName, pvcRoot string, SessionCredentials *msgs.BasicAuthCredentials, nodeLabel, ns string) (msgs.ShowPVCResponse, error) {
+func ShowPVC(httpclient *http.Client, request *msgs.ShowPVCRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowPVCResponse, error) {
 
 	var response msgs.ShowPVCResponse
 
-	url := SessionCredentials.APIServerURL + "/pvc/" + pvcName + "?pvcroot=" + pvcRoot + "&nodelabel=" + nodeLabel + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
+	url := SessionCredentials.APIServerURL + "/showpvc"
 	log.Debugf("ShowPVC called...[%s]", url)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	jsonValue, _ := json.Marshal(request)
+	log.Debugf("ShowPVC called...[%s]", url)
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
+
 	resp, err := httpclient.Do(req)
 	if err != nil {
 		fmt.Println("Error: Do: ", err)
