@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.3-2.4.0-rc8
+  CCPImageTag:  rhel7-11.3-2.4.0-rc9
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -24,10 +24,10 @@ Cluster:
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
-PrimaryStorage: primarysite
-BackupStorage: primarysite
-ReplicaStorage: primarysite
-BackrestStorage: primarysite
+PrimaryStorage: storageos
+BackupStorage: storageos
+ReplicaStorage: storageos
+BackrestStorage: storageos
 Storage:
   hostpathstorage:
     AccessMode:  ReadWriteMany
@@ -101,5 +101,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.0.0-rc11
+  PGOImageTag:  rhel7-4.0.0-rc12
 

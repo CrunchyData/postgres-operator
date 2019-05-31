@@ -20,7 +20,7 @@ ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN yum -y --enablerepo=rhel-7-server-ose-3.9-rpms --disablerepo=crunchy* update && \
+RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update && \
 yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" hostname pgocps-ng && \
 yum -y clean all
 
