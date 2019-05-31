@@ -22,18 +22,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
 echo ""
-echo "creating pgo-backrest-repo-config in namespace " $1
-
-$PGO_CMD --namespace=$1 delete secret pgo-backrest-repo-config 
-
-$PGO_CMD --namespace=$1 create secret generic pgo-backrest-repo-config \
-	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
-	--from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config \
-	--from-file=aws-s3-credentials.yaml=$PGOROOT/conf/pgo-backrest-repo/aws-s3-credentials.yaml \
-	--from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt
-
-
-echo ""
 echo "creating target rbac role and rolebinding in namespace " $1
 echo "operator is assumed to be deployed into " $2
 
