@@ -7,7 +7,7 @@ LABEL name="crunchydata/pgo-load-" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.3" \
 	Version="7.6" \
-	Release="4.0.0-rc11" \
+	Release="4.0.0-rc12" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Load Data" \
     description="Loads a CSV or JSON file into the database."

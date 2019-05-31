@@ -102,10 +102,12 @@ func init() {
 	deleteLabelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteLabelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The label to delete for any selected or specified clusters.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
+	deleteClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -168,14 +170,14 @@ var deleteClusterCmd = &cobra.Command{
 	Short: "Delete a PostgreSQL cluster",
 	Long: `Delete a PostgreSQL cluster. For example:
 
-    pgo delete cluster all
+    pgo delete cluster --all
     pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: A cluster name or selector is required for this command.")
+		if len(args) == 0 && Selector == "" && !AllFlag {
+			fmt.Println("Error: A cluster name,  selector, or --all is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteCluster(args, Namespace)
@@ -196,8 +198,8 @@ var deletePolicyCmd = &cobra.Command{
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 {
-			fmt.Println("Error: A policy name is required for this command.")
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: A policy name or --all is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args, Namespace)

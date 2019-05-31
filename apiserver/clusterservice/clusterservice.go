@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
+	//	"strconv"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -85,17 +85,20 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
-	vars := mux.Vars(r)
-	log.Debugf("clusterservice.ShowClusterHandler %v\n", vars)
 
-	clustername := vars["name"]
+	var request msgs.ShowClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	selector := r.URL.Query().Get("selector")
-	ccpimagetag := r.URL.Query().Get("ccpimagetag")
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	log.Debugf("clusterservice.ShowClusterHandler %v\n", request)
+	clustername := request.Clustername
 
-	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s]", clustername, selector, ccpimagetag, clientVersion, namespace)
+	selector := request.Selector
+	ccpimagetag := request.Ccpimagetag
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
+	allflag := request.Allflag
+
+	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s] allflag [%s]", clustername, selector, ccpimagetag, clientVersion, namespace, allflag)
 
 	username, err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -126,7 +129,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ShowCluster(clustername, selector, ccpimagetag, ns)
+	resp = ShowCluster(clustername, selector, ccpimagetag, ns, allflag)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -138,28 +141,22 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
+	var request msgs.DeleteClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
 	var ns string
-	vars := mux.Vars(r)
-	log.Debugf("clusterservice.DeleteClusterHandler %v\n", vars)
+	log.Debugf("clusterservice.DeleteClusterHandler %v\n", request)
 
-	clustername := vars["name"]
+	clustername := request.Clustername
 
-	selector := r.URL.Query().Get("selector")
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	selector := request.Selector
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
 
-	deleteData := false
-	deleteDataStr := r.URL.Query().Get("delete-data")
-	if deleteDataStr != "" {
-		deleteData, _ = strconv.ParseBool(deleteDataStr)
-	}
-	deleteBackups := false
-	deleteBackupsStr := r.URL.Query().Get("delete-backups")
-	if deleteBackupsStr != "" {
-		deleteBackups, _ = strconv.ParseBool(deleteBackupsStr)
-	}
+	deleteData := request.DeleteData
+	deleteBackups := request.DeleteBackups
 
-	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%s] delete-backups [%s]", namespace, selector, clientVersion, deleteDataStr, deleteBackupsStr)
+	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%t] delete-backups [%t]", namespace, selector, clientVersion, deleteData, deleteBackups)
 
 	username, err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {

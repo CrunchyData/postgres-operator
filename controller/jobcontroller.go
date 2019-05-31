@@ -342,17 +342,33 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 		log.Error(err)
 	}
 
-	time.Sleep(time.Second * time.Duration(5))
+	MAX_TRIES := 10
+	DURATION := 5
+	removed := false
+	for i := 0; i < MAX_TRIES; i++ {
+		log.Debugf("sleeping while job %s is removed cleanly", job.Name)
+		time.Sleep(time.Second * time.Duration(DURATION))
+		_, found := kubeapi.GetJob(clientset, job.Name, namespace)
+		if !found {
+			removed = true
+			break
+		}
+	}
 
-	//remove the pvc referenced by that job
-	//mycluster
-	//mycluster-xlog
-
-	log.Debugf("deleting pvc %s", claimName)
-	err = pvc.Delete(clientset, claimName, namespace)
-	if err != nil {
-		log.Error(err)
+	if !removed {
+		log.Error("could not remove Job %s for some reason after max tries", job.Name)
 		return err
+	} else {
+		//remove the pvc referenced by that job
+		//mycluster
+		//mycluster-xlog
+
+		log.Debugf("deleting pvc %s", claimName)
+		err = pvc.Delete(clientset, claimName, namespace)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
 	}
 
 	//if a user has specified --archive for a cluster then

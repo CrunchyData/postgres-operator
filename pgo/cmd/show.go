@@ -25,6 +25,7 @@ import (
 const TreeBranch = "\t"
 const TreeTrunk = "\t"
 
+var AllFlag bool
 var ShowPVC bool
 var PVCRoot string
 
@@ -108,7 +109,10 @@ func init() {
 	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
+	ShowPolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPVCCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use")
+	ShowPVCCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPVCCmd.Flags().StringVarP(&PVCRoot, "pvc-root", "", "", "The PVC directory to list.")
 	ShowScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to show.")
@@ -164,10 +168,11 @@ var ShowPolicyCmd = &cobra.Command{
 	Short: "Show policy information",
 	Long: `Show policy information. For example:
 
+	pgo show policy --all
 	pgo show policy policy1`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: Policy name(s) required for this command.")
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: Policy name(s) or --all required for this command.")
 		} else {
 			if Namespace == "" {
 				Namespace = PGONamespace
@@ -183,12 +188,13 @@ var ShowPVCCmd = &cobra.Command{
 	Long: `Show PVC information. For example:
 
 	pgo show pvc mycluster
+	pgo show pvc --all
 	pgo show pvc mycluster-backup
 	pgo show pvc mycluster-xlog
 	pgo show pvc a2-backup --pvc-root=a2-backups/2019-01-12-17-09-42`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: PVC name(s) required for this command.")
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: PVC name(s) or --all required for this command.")
 		} else {
 			if Namespace == "" {
 				Namespace = PGONamespace
@@ -232,14 +238,14 @@ var ShowClusterCmd = &cobra.Command{
 	Short: "Show cluster information",
 	Long: `Show a PostgreSQL cluster. For example:
 
-	pgo show cluster all
+	pgo show cluster --all
 	pgo show cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if Selector == "" && len(args) == 0 {
-			fmt.Println("Error: Cluster name(s) required for this command.")
+		if Selector == "" && len(args) == 0 && !AllFlag {
+			fmt.Println("Error: Cluster name(s), --selector, or --all required for this command.")
 		} else {
 			showCluster(args, Namespace)
 		}
@@ -295,6 +301,10 @@ var ShowBenchmarkCmd = &cobra.Command{
 	pgo show benchmark mycluster
 	pgo show benchmark --selector=pg-cluster=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: cluster name or selector are required to show benchmark results.")
 			return

@@ -21,28 +21,40 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"strconv"
 )
 
 func showPVC(args []string, ns string) {
 	log.Debugf("showPVC called %v", args)
 
-	if args[0] == "all" {
+	// ShowPVCRequest ...
+	r := msgs.ShowPVCRequest{}
+	r.Namespace = ns
+	r.Allflag = strconv.FormatBool(AllFlag)
+	r.ClientVersion = msgs.PGO_VERSION
+	r.NodeLabel = NodeLabel
+	r.PVCRoot = PVCRoot
+
+	if AllFlag {
 		//special case to just list all the PVCs
-		printPVC(args[0], "", NodeLabel, ns)
+		r.PVCName = ""
+		r.PVCRoot = ""
+		printPVC(&r)
 	} else {
 		//args are a list of pvc names...for this case show details
 		for _, arg := range args {
+			r.PVCName = arg
 			log.Debugf("show pvc called for %s", arg)
-			printPVC(arg, PVCRoot, NodeLabel, ns)
+			printPVC(&r)
 
 		}
 	}
 
 }
 
-func printPVC(pvcName, pvcRoot, nodeLabel, ns string) {
+func printPVC(r *msgs.ShowPVCRequest) {
 
-	response, err := api.ShowPVC(httpclient, pvcName, pvcRoot, &SessionCredentials, nodeLabel, ns)
+	response, err := api.ShowPVC(httpclient, r, &SessionCredentials)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -60,12 +72,12 @@ func printPVC(pvcName, pvcRoot, nodeLabel, ns string) {
 	}
 	log.Debugf("response = %v", response)
 
-	if pvcName == "all" {
+	if AllFlag {
 		fmt.Println("All Operator Labeled PVCs")
 	}
 
 	for k, v := range response.Results {
-		if pvcName == "all" {
+		if AllFlag {
 			if v != "" {
 				fmt.Printf("%s%s\n", TreeTrunk, v)
 			}

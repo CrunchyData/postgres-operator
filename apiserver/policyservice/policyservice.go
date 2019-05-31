@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	apiserver "github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"net/http"
@@ -85,11 +84,13 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeletePolicyResponse
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
-	vars := mux.Vars(r)
 
-	policyname := vars["name"]
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	var request msgs.DeletePolicyRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	policyname := request.PolicyName
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
 
 	log.Debugf("DeletePolicyHandler parameters version [%s] name [%s] namespace [%s]", clientVersion, policyname, namespace)
 
@@ -132,12 +133,13 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 
-	vars := mux.Vars(r)
+	var request msgs.ShowPolicyRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	policyname := vars["name"]
+	policyname := request.Policyname
 
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	clientVersion := request.ClientVersion
+	namespace := request.Namespace
 
 	log.Debugf("ShowPolicyHandler parameters version [%s] namespace [%s] name [%s]", clientVersion, namespace, policyname)
 
@@ -150,7 +152,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("policyservice.ShowPolicyHandler GET called")
+	log.Debug("policyservice.ShowPolicyHandler POST called")
 	resp := msgs.ShowPolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -170,7 +172,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname, ns)
+	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname, request.Allflag, ns)
 
 	json.NewEncoder(w).Encode(resp)
 

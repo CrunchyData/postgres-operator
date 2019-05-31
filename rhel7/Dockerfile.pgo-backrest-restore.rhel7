@@ -6,7 +6,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	PostgresFullVersion="11.3" \
 	Version="7.6" \
         run='docker run -d -p 8080:80 --name=web-app web-app' \
-	Release="4.0.0-rc11" \
+	Release="4.0.0-rc12" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 

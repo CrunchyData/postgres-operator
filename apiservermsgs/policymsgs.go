@@ -19,6 +19,15 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+// ShowPolicyRequest ...
+type ShowPolicyRequest struct {
+	Selector      string
+	Namespace     string
+	Allflag       string
+	ClientVersion string
+	Policyname    string
+}
+
 // CreatePolicyRequest ...
 type CreatePolicyRequest struct {
 	Name          string
@@ -57,6 +66,15 @@ type ApplyResults struct {
 type ShowPolicyResponse struct {
 	PolicyList crv1.PgpolicyList
 	Status
+}
+
+// DeletePolicyRequest ...
+type DeletePolicyRequest struct {
+	Selector      string
+	Namespace     string
+	AllFlag       bool
+	ClientVersion string
+	PolicyName    string
 }
 
 // DeletePolicyResponse ...

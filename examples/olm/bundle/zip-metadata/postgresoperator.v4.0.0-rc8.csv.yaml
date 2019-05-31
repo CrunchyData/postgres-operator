@@ -5,7 +5,7 @@ metadata:
     categories: Database
     capabilities: Full Lifecycle
     certified: "true"
-    containerImage: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0-rc11
+    containerImage: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0-rc12
     createdAt: 04/30/2019
     description: A Postgres Operator from Crunchydata.com
     olm.operatorGroup: dev-operators
@@ -28,7 +28,7 @@ metadata:
             "name": "fromcrd",
             "pg-cluster": "fromcrd",
             "pgo-backrest": "false",
-	"pgo-version": "4.0.0-rc11",
+	"pgo-version": "4.0.0-rc12",
             "primary": "true"
         },
         "name": "fromcrd",
@@ -74,7 +74,7 @@ metadata:
         "backuppath": "",
         "backuppvcname": "",
 	"ccpimage":"crunchy-postgres",
-        "ccpimagetag": "rhel7-9.6.13-2.4.0-rc8",
+        "ccpimagetag": "rhel7-9.6.13-2.4.0-rc9",
         "clustername": "fromcrd",
         "customconfig": "",
         "database": "userdb",
@@ -97,12 +97,12 @@ metadata:
             "crunchy-pgbadger": "false",
             "crunchy_collect": "false",
             "pgo-backrest": "false",
-	"pgo-version": "4.0.0-rc11"
+	"pgo-version": "4.0.0-rc12"
         },
         "usersecretname": "fromcrd-testuser-secret"
     }
       }]
-  name: postgresoperator.v4.0.0-rc11
+  name: postgresoperator.v4.0.0-rc12
   namespace: pgo
 spec:
   apiservicedefinitions: {}
@@ -330,7 +330,7 @@ spec:
                     fieldRef:
                       apiVersion: v1
                       fieldPath: metadata.namespace
-                image: registry.connect.redhat.com/crunchydata/pgo-scheduler:rhel7-4.0.0-rc11
+                image: registry.connect.redhat.com/crunchydata/pgo-scheduler:rhel7-4.0.0-rc12
                 imagePullPolicy: IfNotPresent
                 name: scheduler
               - env:
@@ -347,7 +347,7 @@ spec:
                     fieldRef:
                       apiVersion: v1
                       fieldPath: metadata.namespace
-                image: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0-rc11
+                image: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0-rc12
                 imagePullPolicy: IfNotPresent
                 name: operator
               - env:
@@ -366,7 +366,7 @@ spec:
                       fieldPath: metadata.namespace
                 - name: TLS_NO_VERIFY
                   value: "false"
-                image: registry.connect.redhat.com/crunchydata/pgo-apiserver:rhel7-4.0.0-rc11
+                image: registry.connect.redhat.com/crunchydata/pgo-apiserver:rhel7-4.0.0-rc12
                 imagePullPolicy: IfNotPresent
                 name: apiserver
                 ports:
@@ -430,7 +430,7 @@ spec:
   - app
   labels:
     alm-owner-enterprise-app: postgres-operator
-    alm-status-descriptors: postgres-operator.v4.0.0-rc11
+    alm-status-descriptors: postgres-operator.v4.0.0-rc12
   maintainers:
   - email: support@crunchydata.com
     name: Crunchy Data
@@ -438,4 +438,4 @@ spec:
   minKubeVersion: 1.11.0
   provider:
     name: CrunchyData.com
-  version: 4.0.0-rc11
+  version: 4.0.0-rc12
