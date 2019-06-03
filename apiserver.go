@@ -108,7 +108,7 @@ func main() {
 	//here
 	r.HandleFunc("/clustersdelete", clusterservice.DeleteClusterHandler).Methods("POST")
 	r.HandleFunc("/clustersupdate/{name}", clusterservice.UpdateClusterHandler).Methods("GET")
-	r.HandleFunc("/clusters/test/{name}", clusterservice.TestClusterHandler)
+	r.HandleFunc("/testclusters", clusterservice.TestClusterHandler).Methods("POST")
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/scale/{name}", clusterservice.ScaleQueryHandler).Methods("GET")
 	r.HandleFunc("/scaledown/{name}", clusterservice.ScaleDownHandler).Methods("GET")

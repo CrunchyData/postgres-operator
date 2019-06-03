@@ -96,7 +96,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	ccpimagetag := request.Ccpimagetag
 	clientVersion := request.ClientVersion
 	namespace := request.Namespace
-	allflag := request.Allflag
+	allflag := request.AllFlag
 
 	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s] allflag [%s]", clustername, selector, ccpimagetag, clientVersion, namespace, allflag)
 
@@ -193,15 +193,20 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 // TestClusterHandler ...
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
+
+	var request msgs.ClusterTestRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	log.Debugf("clusterservice.TestClusterHandler %v\n", request)
+
 	var ns string
-	vars := mux.Vars(r)
-	clustername := vars["name"]
+	clustername := request.Clustername
 
-	selector := r.URL.Query().Get("selector")
-	namespace := r.URL.Query().Get("namespace")
-	clientVersion := r.URL.Query().Get("version")
+	selector := request.Selector
+	namespace := request.Namespace
+	clientVersion := request.ClientVersion
 
-	log.Debugf("TestClusterHandler parameters name [%s] version [%s] namespace [%s] selector [%s]", clustername, clientVersion, namespace, selector)
+	log.Debugf("TestClusterHandler parameters %v", request)
 
 	username, err := apiserver.Authn(apiserver.TEST_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -228,7 +233,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = TestCluster(clustername, selector, ns)
+	resp = TestCluster(clustername, selector, ns, request.AllFlag)
 	json.NewEncoder(w).Encode(resp)
 }
 

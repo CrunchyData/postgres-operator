@@ -16,6 +16,7 @@ package api
 */
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -23,15 +24,16 @@ import (
 	"net/http"
 )
 
-func ShowTest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterTestResponse, error) {
+func ShowTest(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ClusterTestRequest) (msgs.ClusterTestResponse, error) {
 
 	var response msgs.ClusterTestResponse
 
-	url := SessionCredentials.APIServerURL + "/clusters/test/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/testclusters"
 	log.Debug(url)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

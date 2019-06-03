@@ -109,14 +109,14 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 }
 
 // ShowCluster ...
-func ShowCluster(name, selector, ccpimagetag, ns, allflag string) msgs.ShowClusterResponse {
+func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.ShowClusterResponse {
 	var err error
 
 	response := msgs.ShowClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]msgs.ShowClusterDetail, 0)
 
-	if selector == "" && allflag == "true" {
+	if selector == "" && allflag {
 		log.Debugf("allflags set to true")
 	} else {
 		if selector == "" {
@@ -273,7 +273,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	return output, err
 }
 
-func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
+func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
@@ -281,8 +281,8 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	log.Debugf("selector is %s", selector)
-	if selector == "" && name == "all" {
-		log.Debug("selector is empty and name is all")
+	if selector == "" && allFlag {
+		log.Debug("selector is empty and --all is specified")
 	} else {
 		if selector == "" {
 			selector = "name=" + name
