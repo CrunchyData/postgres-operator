@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
-	"strconv"
 )
 
 var applyCmd = &cobra.Command{
@@ -111,7 +110,7 @@ func showPolicy(args []string, ns string) {
 	r := new(msgs.ShowPolicyRequest)
 	r.Selector = Selector
 	r.Namespace = ns
-	r.Allflag = strconv.FormatBool(AllFlag)
+	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
 
 	if len(args) == 0 && AllFlag {

@@ -26,7 +26,7 @@ type ShowClusterRequest struct {
 	Ccpimagetag   string
 	ClientVersion string
 	Namespace     string
-	Allflag       string
+	AllFlag       bool
 }
 
 // CreateClusterRequest ...
@@ -132,7 +132,7 @@ type DeleteClusterRequest struct {
 	Selector      string
 	ClientVersion string
 	Namespace     string
-	Allflag       bool
+	AllFlag       bool
 	DeleteBackups bool
 	DeleteData    bool
 }
@@ -147,6 +147,15 @@ type DeleteClusterResponse struct {
 type UpdateClusterResponse struct {
 	Results []string
 	Status
+}
+
+// ClusterTestRequest ...
+type ClusterTestRequest struct {
+	Clustername   string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	AllFlag       bool
 }
 
 // ClusterTestDetail ...

@@ -73,7 +73,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Results, err = ShowPVC(request.Allflag, nodeLabel, pvcname, pvcroot, ns)
+	resp.Results, err = ShowPVC(request.AllFlag, nodeLabel, pvcname, pvcroot, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

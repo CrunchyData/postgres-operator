@@ -21,7 +21,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"os"
-	"strconv"
 )
 
 func showPVC(args []string, ns string) {
@@ -30,7 +29,7 @@ func showPVC(args []string, ns string) {
 	// ShowPVCRequest ...
 	r := msgs.ShowPVCRequest{}
 	r.Namespace = ns
-	r.Allflag = strconv.FormatBool(AllFlag)
+	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
 	r.NodeLabel = NodeLabel
 	r.PVCRoot = PVCRoot

@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
@@ -89,7 +88,7 @@ func showCluster(args []string, ns string) {
 	r := new(msgs.ShowClusterRequest)
 	r.Selector = Selector
 	r.Namespace = ns
-	r.Allflag = strconv.FormatBool(AllFlag)
+	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
 
 	for _, v := range args {
