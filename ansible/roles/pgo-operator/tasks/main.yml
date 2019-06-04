@@ -186,6 +186,7 @@
         url: "{{ pgo_client_url }}/pgo"
         dest: "/usr/local/bin/pgo"
         mode: 0755
+        force: yes
       when: uname_result.stdout == "Linux" and pgo_client_install == "true"
       tags: [install, update]
 

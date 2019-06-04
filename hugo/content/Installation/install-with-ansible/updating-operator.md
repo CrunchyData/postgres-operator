@@ -14,6 +14,7 @@ of the service.  Using the `update` flag will:
 * Recreate configuration maps used by operator
 * Remove any deprecated objects
 * Allow administrators to change settings configured in the `inventory`
+* Reinstall the `pgo` client if a new version is specified
 
 The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
 we can now update the PostgreSQL Operator.

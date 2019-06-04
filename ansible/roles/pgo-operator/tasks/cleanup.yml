@@ -154,6 +154,14 @@
   no_log: false
   tags: deprovision
 
+- name: Delete Custom Resource Definitions
+  shell: |
+    {{ kubectl_or_oc }} delete crds pgbackups.crunchydata.com pgclusters.crunchydata.com \
+        pgpolicies.crunchydata.com pgreplicas.crunchydata.com pgtasks.crunchydata.com
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision
+
 - name: Check for output directory
   stat:
     path: "{{ output_dir }}"
@@ -177,3 +185,14 @@
     state: directory
     mode: 0700
   tags: always
+
+- name: Delete PGO client
+  become: yes
+  become_method: sudo
+  file:
+    state: absent
+    path: "/usr/local/bin/pgo"
+  when: pgo_client_install == "true"
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision
