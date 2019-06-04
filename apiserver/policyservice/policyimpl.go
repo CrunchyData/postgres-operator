@@ -74,10 +74,10 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 }
 
 // ShowPolicy ...
-func ShowPolicy(RESTClient *rest.RESTClient, name, allflags, ns string) crv1.PgpolicyList {
+func ShowPolicy(RESTClient *rest.RESTClient, name string, allflags bool, ns string) crv1.PgpolicyList {
 	policyList := crv1.PgpolicyList{}
 
-	if allflags == "true" {
+	if allflags {
 		//get a list of all policies
 		err := kubeapi.Getpgpolicies(RESTClient,
 			&policyList,

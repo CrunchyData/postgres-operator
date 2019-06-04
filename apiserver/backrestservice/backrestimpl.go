@@ -134,7 +134,8 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 
 			//remove any previous backup job
 
-			selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
+			//selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
+			selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," + config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 			err = kubeapi.DeleteJobs(apiserver.Clientset, selector, ns)
 			if err != nil {
 				log.Error(err)
@@ -366,9 +367,9 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 	cmd = append(cmd, backrestInfoCommand)
 
 	log.Debugf("command is %v ", cmd)
-	
+
 	var output string
-	if storageType != "s3" { 
+	if storageType != "s3" {
 		outputLocal, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
 		if err != nil {
 			log.Error(err, stderr)
@@ -376,7 +377,7 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 		}
 		output = "\nStorage Type: local\n" + outputLocal
 	}
-	
+
 	if strings.Contains(storageType, "s3") {
 		cmd = append(cmd, repoTypeFlagS3)
 		outputS3, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
@@ -385,7 +386,7 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 			return "", err
 		}
 		output = output + "\nStorage Type: s3\n" + outputS3
-	} 
+	}
 
 	log.Debug("output=[" + output + "]")
 

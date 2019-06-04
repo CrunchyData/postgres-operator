@@ -10,6 +10,7 @@ IMAGES=(
     crunchy-collect
     crunchy-pgbadger
     crunchy-pgbouncer
+    crunchy-pgbasebackup-restore
     crunchy-pgpool
     crunchy-pgdump
     crunchy-pgrestore

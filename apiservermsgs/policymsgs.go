@@ -23,7 +23,7 @@ import (
 type ShowPolicyRequest struct {
 	Selector      string
 	Namespace     string
-	Allflag       string
+	AllFlag       bool
 	ClientVersion string
 	Policyname    string
 }

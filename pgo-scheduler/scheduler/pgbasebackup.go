@@ -76,7 +76,7 @@ func (b BaseBackupJob) Run() {
 		return
 	}
 
-	taskName := fmt.Sprintf("backup-%s", b.cluster)
+	taskName := fmt.Sprintf("%s", b.cluster)
 
 	result := crv1.Pgbackup{}
 	found, err = kubeapi.Getpgbackup(restClient, &result, taskName, b.namespace)
