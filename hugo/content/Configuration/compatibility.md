@@ -13,7 +13,7 @@ version dependencies between the two projects.
 
 | Operator Release   |      Container Release      |
 |:----------|:-------------|
-| 4.0.0 | 2.4.0-rc10  |
+| 4.0.0 | 2.4.0  |
 | 3.5.2 | 2.3.1  |
 
 Features sometimes are added into the underlying Crunchy Containers
