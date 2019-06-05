@@ -59,7 +59,7 @@ type containerResourcesTemplateFields struct {
 }
 
 // ShowPVC ...
-func ShowPVC(allflag, nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
+func ShowPVC(allflag bool, nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) {
 	pvcList := make([]string, 1)
 
 	if nodeLabel != "" {
@@ -69,7 +69,7 @@ func ShowPVC(allflag, nodeLabel, pvcName, PVCRoot, ns string) ([]string, error) 
 		}
 	}
 
-	if allflag == "true" {
+	if allflag {
 		selector := config.LABEL_PGREMOVE + "=true"
 
 		pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, ns)

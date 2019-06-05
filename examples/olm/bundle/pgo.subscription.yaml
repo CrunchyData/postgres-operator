@@ -7,4 +7,4 @@ spec:
   sourceNamespace: pgo
   channel: stable
   name: postgresql
-  startingCSV: postgresoperator.v4.0.0-rc12
+  startingCSV: postgresoperator.v4.0.0

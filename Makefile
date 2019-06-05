@@ -118,15 +118,15 @@ pgo-scheduler-image: check-go-vars
 all:
 	make postgres-operator-image
 	make pgo-apiserver-image
-	make pgo-backrest-repo-image
-	make pgo-backrest-restore-image
+	make pgo-scheduler-image
 	make pgo
+	make pgo-backrest-repo-image
+	make pgo-backrest-image
+	make pgo-rmdata-image
+	make pgo-backrest-restore-image
 	make pgo-lspvc-image
 	make pgo-load-image
-	make pgo-rmdata-image
 	make pgo-sqlrunner-image
-	make pgo-backrest-image
-	make pgo-scheduler-image
 push:
 	docker push $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)
 	docker push $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)

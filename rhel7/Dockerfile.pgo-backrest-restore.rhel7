@@ -6,7 +6,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	PostgresFullVersion="11.3" \
 	Version="7.6" \
         run='docker run -d -p 8080:80 --name=web-app web-app' \
-	Release="4.0.0-rc12" \
+	Release="4.0.0" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
@@ -20,7 +20,7 @@ ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN yum -y --enablerepo=rhel-7-server-ose-3.9-rpms --disablerepo=crunchy* update \
+RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
  && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng \
  && yum -y clean all
 

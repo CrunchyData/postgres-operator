@@ -172,7 +172,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname, request.Allflag, ns)
+	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname, request.AllFlag, ns)
 
 	json.NewEncoder(w).Encode(resp)
 

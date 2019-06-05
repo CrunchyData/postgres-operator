@@ -51,6 +51,15 @@ var kubeClient *kubernetes.Clientset
 func init() {
 	var err error
 	log.SetLevel(log.InfoLevel)
+
+	debugFlag := os.Getenv("CRUNCHY_DEBUG")
+	if debugFlag == "true" {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("debug flag set to true")
+	} else {
+		log.Info("debug flag set to false")
+	}
+
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",

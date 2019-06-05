@@ -25,7 +25,7 @@ type ShowPVCRequest struct {
 	Selector      string
 	ClientVersion string
 	Namespace     string
-	Allflag       string
+	AllFlag       bool
 }
 
 // ShowPVCResponse ...

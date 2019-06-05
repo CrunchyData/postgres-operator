@@ -75,11 +75,11 @@ data:
       metadata:
         annotations:
           categories: "Database"
-          containerImage: crunchydata/postgres-operator:centos7-4.0.0-rc12
+          containerImage: crunchydata/postgres-operator:centos7-4.0.0
           createdAt: 2019-01-01T11:59:59Z
           support: crunchydata.com
           description: A Postgres Operator from Crunchydata.com
-        name: postgresoperator.v4.0.0-rc12
+        name: postgresoperator.v4.0.0
         namespace: pgo
       spec:
         provider:
@@ -179,7 +179,7 @@ data:
                               apiVersion: v1
                               fieldPath: metadata.namespace
                         name: scheduler
-                        image: crunchydata/pgo-scheduler:centos7-4.0.0-rc12
+                        image: crunchydata/pgo-scheduler:centos7-4.0.0
                         imagePullPolicy: IfNotPresent
                       - env:
                         - name: CRUNCHY_DEBUG
@@ -196,7 +196,7 @@ data:
                               apiVersion: v1
                               fieldPath: metadata.namespace
                         name: operator
-                        image: crunchydata/postgres-operator:centos7-4.0.0-rc12
+                        image: crunchydata/postgres-operator:centos7-4.0.0
                         imagePullPolicy: IfNotPresent
                       - env:
                         - name: CRUNCHY_DEBUG
@@ -215,7 +215,7 @@ data:
                         - name: TLS_NO_VERIFY
                           value: "false"
                         name: apiserver
-                        image: crunchydata/pgo-apiserver:centos7-4.0.0-rc12
+                        image: crunchydata/pgo-apiserver:centos7-4.0.0
                         imagePullPolicy: IfNotPresent
                         ports:
                         - containerPort: 8443
@@ -383,7 +383,7 @@ data:
           - app
         displayName: Crunchy Postgres Cluster
         maturity: stable
-        version: 4.0.0-rc12
+        version: 4.0.0
         maintainers:
           - email: support@crunchydata.com
             name: Crunchy Data
@@ -391,7 +391,7 @@ data:
         minKubeVersion: 1.11.0
         labels:
           alm-owner-enterprise-app: postgres-operator
-          alm-status-descriptors: postgres-operator.v4.0.0-rc12
+          alm-status-descriptors: postgres-operator.v4.0.0
         installModes:
           - type: OwnNamespace
             supported: true
@@ -564,7 +564,7 @@ data:
           - app
         displayName: Crunchy Postgres Cluster
         maturity: stable
-        version: 4.0.0-rc12
+        version: 4.0.0
         maintainers:
           - email: support@crunchydata.com
             name: Crunchy Data
@@ -572,7 +572,7 @@ data:
         minKubeVersion: 1.11.0
         labels:
           alm-owner-enterprise-app: postgres-operator
-          alm-status-descriptors: postgres-operator.v4.0.0-rc12
+          alm-status-descriptors: postgres-operator.v4.0.0
         installModes:
           - type: OwnNamespace
             supported: true
@@ -590,4 +590,4 @@ data:
     - packageName: postgresql
       channels:
       - name: stable
-        currentCSV: postgresoperator.v4.0.0-rc12
+        currentCSV: postgresoperator.v4.0.0

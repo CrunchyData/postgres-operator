@@ -46,14 +46,9 @@ source $DIR/gen-sshd-keys.sh
 IFS=', ' read -r -a array <<< "$NAMESPACE"
 
 echo ""
-echo "create pgo-backrest-repo-config Secret into each namespace the Operator is watching..."
+echo "create required rbac in each namespace the Operator is watching..."
 for ns in "${array[@]}"
 do
-        $PGO_CMD get secret pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
-        if [ $? -eq 0 ]
-        then
-                $PGO_CMD delete secret  pgo-backrest-repo-config --namespace=$ns > /dev/null 2> /dev/null
-        fi
         $DIR/create-target-rbac.sh $ns $PGO_OPERATOR_NAMESPACE
 done
 
