@@ -141,10 +141,10 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(request.PasswordLength)
 				if request.Password != "" {
-					parts := strings.Split(request.Password, " ")
-					if len(parts) > 1 {
+					err := validPassword(request.Password)
+					if err != nil {
 						resp.Status.Code = msgs.Error
-						resp.Status.Msg = "invalid password format, can not contain spaces"
+						resp.Status.Msg = "invalid password format, can not contain non-alphanumerics or start with numbers"
 						return resp
 					}
 					newPassword = request.Password
@@ -594,6 +594,14 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 		resp.Status.Msg = "user name is required to be lowercase letters and numbers only."
 		return resp
 	}
+	if request.Password != "" {
+		err := validPassword(request.Password)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
 
 	for _, c := range clusterList.Items {
 		info, err := getPostgresUserInfo(ns, c.Name)
@@ -931,16 +939,33 @@ func reconfigurePgpool(clusterName, ns string) error {
 	return err
 }
 
-func validPassword(instr string) error {
-	if len(instr) > 16 {
+func validPassword(psw string) error {
+
+	if len(psw) > 16 {
 		return errors.New("valid passwords are less than 16 chars")
 	}
 
-	matched, err := regexp.MatchString(`^[A-Za-z_][A-Za-z\d_]*$`, instr)
-	log.Debugf("password valid %t", matched)
-	if !matched {
-		return errors.New("the password format was invalid")
+	numbers := "0123456789"
+	isAlpha := regexp.MustCompile(`^[A-Za-z0-9]+$`).MatchString
+
+	if len(psw) < 1 {
+		return errors.New("passwords can not be zero length")
 	}
-	return err
+
+	firstChar := string(psw[0])
+	log.Debugf("1st char is %s", firstChar)
+	if strings.Contains(numbers, firstChar) {
+		//log.Debugf("%s is not valid due to starting with a number", username)
+		return errors.New("passwords can not start with a number")
+	} else if !isAlpha(psw) {
+		//log.Debugf("%q is not valid\n", username)
+		return errors.New("password does not match standard pattern")
+
+	} else {
+		//log.Debugf("%q is valid\n", username)
+		return nil
+	}
+
+	return nil
 
 }
