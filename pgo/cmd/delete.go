@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -25,8 +25,8 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, upgrade, or user",
-	Long: `The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, upgrade, or user. For example:
+	Short: "Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, or user",
+	Long: `The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, or user. For example:
 
 	pgo delete backup mycluster
 	pgo delete benchmark mycluster
@@ -40,7 +40,6 @@ var deleteCmd = &cobra.Command{
 	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 	pgo delete schedule --selector=name=mycluster
 	pgo delete schedule mycluster
-	pgo delete upgrade mycluster
 	pgo delete user testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -53,7 +52,6 @@ var deleteCmd = &cobra.Command{
 	* pgbouncer
 	* pgpool
 	* policy
-	* upgrade
 	* user`)
 		} else {
 			switch args[0] {
@@ -65,7 +63,6 @@ var deleteCmd = &cobra.Command{
 			case "pgpool":
 			case "policy":
 			case "schedule":
-			case "upgrade":
 			case "user":
 				break
 			default:
@@ -77,7 +74,6 @@ var deleteCmd = &cobra.Command{
 	* pgbouncer
 	* pgpool
 	* policy
-	* upgrade
 	* user`)
 			}
 		}
@@ -98,42 +94,25 @@ func init() {
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteLabelCmd)
 	deleteCmd.AddCommand(deleteScheduleCmd)
-	deleteCmd.AddCommand(deleteUpgradeCmd)
 	deleteCmd.AddCommand(deleteUserCmd)
 
+	deleteClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deleteClusterCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
 	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteLabelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteLabelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The label to delete for any selected or specified clusters.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for this cluster to be removed permanently.")
+	deleteClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deletePolicyCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
-	deleteScheduleCmd.Flags().BoolVarP(&NoPrompt, "no-prompt", "n", false, "No command line confirmation.")
+	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-}
 
-var deleteUpgradeCmd = &cobra.Command{
-	Use:   "upgrade",
-	Short: "Delete an upgrade",
-	Long: `Delete an upgrade. For example:
-
-    pgo delete upgrade mydatabase`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: A database or cluster name is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUpgrade(args, Namespace)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-	},
 }
 
 var deleteBackupCmd = &cobra.Command{
@@ -143,6 +122,9 @@ var deleteBackupCmd = &cobra.Command{
     
     pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: A database or cluster name is required for this command.")
 		} else {
@@ -164,6 +146,9 @@ var deleteUserCmd = &cobra.Command{
     pgo delete user someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 {
 			fmt.Println("Error: A user name is required for this command.")
 		} else if Selector == "" {
@@ -185,11 +170,14 @@ var deleteClusterCmd = &cobra.Command{
 	Short: "Delete a PostgreSQL cluster",
 	Long: `Delete a PostgreSQL cluster. For example:
 
-    pgo delete cluster all
+    pgo delete cluster --all
     pgo delete cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: A cluster name or selector is required for this command.")
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 && Selector == "" && !AllFlag {
+			fmt.Println("Error: A cluster name,  selector, or --all is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteCluster(args, Namespace)
@@ -207,8 +195,11 @@ var deletePolicyCmd = &cobra.Command{
 
     pgo delete policy mypolicy`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("Error: A policy name is required for this command.")
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: A policy name or --all is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePolicy(args, Namespace)
@@ -227,6 +218,9 @@ var deletePgbouncerCmd = &cobra.Command{
 
 	pgo delete pgbouncer mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
@@ -241,7 +235,6 @@ var deletePgbouncerCmd = &cobra.Command{
 }
 
 // deletePgpoolCmd ...
-// deletePgpoolCmd ...
 var deletePgpoolCmd = &cobra.Command{
 	Use:   "pgpool",
 	Short: "Delete a pgpool from a cluster",
@@ -249,6 +242,9 @@ var deletePgpoolCmd = &cobra.Command{
     
     pgo delete pgpool mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {
@@ -271,6 +267,9 @@ var deleteScheduleCmd = &cobra.Command{
     pgo delete schedule --selector=env=test
     pgo delete schedule --schedule-name=mycluster-pgbackrest-full`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" && ScheduleName == "" {
 			fmt.Println("Error: cluster name, schedule name or selector is required to delete a schedule.")
 			return
@@ -294,6 +293,9 @@ var deleteLabelCmd = &cobra.Command{
     pgo delete label all --label=env=research
     pgo delete label --selector=group=southwest --label=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A cluster name or selector is required for this command.")
 		} else {

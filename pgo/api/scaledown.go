@@ -1,7 +1,7 @@
 package api
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,9 +18,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 )
@@ -28,7 +28,7 @@ import (
 func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string, DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ScaleDownResponse, error) {
 
 	var response msgs.ScaleDownResponse
-	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + util.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + util.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData) + "&namespace=" + ns
+	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + config.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + config.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData) + "&namespace=" + ns
 	log.Debug(url)
 
 	action := "GET"

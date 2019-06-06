@@ -1,7 +1,7 @@
 package scheduleservice
 
 /*
- Copyright 2017-2019 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -17,15 +17,18 @@ package scheduleservice
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +41,14 @@ type scheduleRequest struct {
 
 func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PGBackRestType)
+
+	err := validateBackrestStorageType(s.Request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE])
+	if err != nil {
+		s.Response.Status.Code = msgs.Error
+		s.Response.Status.Msg = err.Error()
+		return &PgScheduleSpec{}
+	}
+
 	schedule := &PgScheduleSpec{
 		Name:      name,
 		Cluster:   cluster.Name,
@@ -47,9 +58,10 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns stri
 		Type:      s.Request.ScheduleType,
 		Namespace: ns,
 		PGBackRest: PGBackRest{
-			Label:     fmt.Sprintf("pg-cluster=%s,service-name=%s", cluster.Name, cluster.Name),
-			Container: "database",
-			Type:      s.Request.PGBackRestType,
+			Label:       fmt.Sprintf("pg-cluster=%s,name=%s,deployment-name=%s", cluster.Name, cluster.Name, cluster.Name),
+			Container:   "database",
+			Type:        s.Request.PGBackRestType,
+			StorageType: s.Request.BackrestStorageType,
 		},
 	}
 	return schedule
@@ -114,8 +126,8 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string
 			Name:        s.Request.PolicyName,
 			Database:    s.Request.Database,
 			Secret:      s.Request.Secret,
-			ImagePrefix: apiserver.Pgo.Pgo.COImagePrefix,
-			ImageTag:    apiserver.Pgo.Pgo.COImageTag,
+			ImagePrefix: apiserver.Pgo.Pgo.PGOImagePrefix,
+			ImageTag:    apiserver.Pgo.Pgo.PGOImageTag,
 		},
 	}
 	return schedule
@@ -138,7 +150,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 	log.Debug("Getting cluster")
 	var selector string
 	if sr.Request.ClusterName != "" {
-		selector = fmt.Sprintf("%s=%s", util.LABEL_PG_CLUSTER, sr.Request.ClusterName)
+		selector = fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, sr.Request.ClusterName)
 	} else if sr.Request.Selector != "" {
 		selector = sr.Request.Selector
 	}
@@ -349,4 +361,20 @@ func getSchedules(clusterName, selector, ns string) ([]string, error) {
 	}
 
 	return schedules, nil
+}
+
+func validateBackrestStorageType(requestedStorageType, clusterStorageType string) error {
+
+	if requestedStorageType != "" && !apiserver.IsValidBackrestStorageType(requestedStorageType) {
+		return fmt.Errorf("Invalid value provided for --pgbackrest-storage-type. The following values are allowed: %s",
+			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	} else if strings.Contains(requestedStorageType, "s3") && !strings.Contains(clusterStorageType, "s3") {
+		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for pgBackRest in this cluster")
+	} else if (requestedStorageType == "" || strings.Contains(requestedStorageType, "local")) &&
+		(clusterStorageType != "" && !strings.Contains(clusterStorageType, "local")) {
+		return errors.New("Storage type 'local' not allowed. Local storage is not enabled for pgBackRest in this cluster. " +
+			"If this cluster uses S3 storage only, specify 's3' for the pgBackRest storage type.")
+	}
+
+	return nil
 }

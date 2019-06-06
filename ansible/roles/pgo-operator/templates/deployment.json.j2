@@ -1,0 +1,137 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+        "name": "postgres-operator"
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "postgres-operator"
+                }
+            },
+            "spec": {
+                "serviceAccountName": "postgres-operator",
+                "containers": [
+                    {
+                        "name": "apiserver",
+                        "image": "{{ pgo_image_prefix }}/pgo-apiserver:{{ pgo_image_tag }}",
+                        "imagePullPolicy": "IfNotPresent",
+                        "ports": [
+                            {
+                                "containerPort": 8443
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "CRUNCHY_DEBUG",
+                                "value": "{{ crunchy_debug }}"
+                            },
+                            {
+                                "name": "PORT",
+                                "value": "8443"
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "value": "{{ namespace }}"
+                            },
+                            {
+                                "name": "PGO_OPERATOR_NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "TLS_NO_VERIFY",
+                                "value": "{{ pgo_tls_no_verify }}"
+                            }
+                        ],
+                        "volumeMounts": []
+                    },
+                    {
+                        "name": "operator",
+                        "image": "{{ pgo_image_prefix }}/postgres-operator:{{ pgo_image_tag }}",
+                        "imagePullPolicy": "IfNotPresent",
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "ls",
+                                    "/tmp"
+                                ]
+                            },
+                            "initialDelaySeconds": 4,
+                            "periodSeconds": 5
+                        },
+                        "env": [
+                            {
+                                "name": "CRUNCHY_DEBUG",
+                                "value": "{{ crunchy_debug }}"
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "value": "{{ namespace }}"
+                            },
+                            {
+                                "name": "PGO_OPERATOR_NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "MY_POD_NAME",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.name"
+                                    }
+                                }
+                            }
+                        ],
+                        "volumeMounts": []
+                    },
+                    {
+                        "name": "scheduler",
+                        "image": "{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}",
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "ls",
+                                    "/tmp"
+                                ]
+                            },
+                            "initialDelaySeconds": 4,
+                            "periodSeconds": 5
+                        },
+                        "env": [
+                            {
+                                "name": "PGO_OPERATOR_NAMESPACE",
+                                "valueFrom": {
+                                    "fieldRef": {
+                                        "fieldPath": "metadata.namespace"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "value": "{{ namespace }}"
+                            },
+                            {
+                                "name": "TIMEOUT",
+                                "value": "{{ scheduler_timeout }}"
+                            }
+                        ],
+                        "volumeMounts": [],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }
+                ],
+                "volumes": []
+            }
+        }
+    }
+}

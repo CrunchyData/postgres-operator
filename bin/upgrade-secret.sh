@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -32,7 +32,7 @@ kubectl create secret generic $CLUSTER-$USERNAME-secret \
 	--from-literal=username=$USERNAME \
 	--from-literal=password=$POSTGRES_PASSWORD
 
-kubectl label secret $CLUSTER-$USERNAME-secret pg-database=$CLUSTER
+kubectl label secret $CLUSTER-$USERNAME-secret pg-cluster=$CLUSTER
 
 # do the same for the primaryuser
 
@@ -47,7 +47,7 @@ kubectl create secret generic $CLUSTER-$USERNAME-secret \
 	--from-literal=username=$USERNAME \
 	--from-literal=password=$POSTGRES_PASSWORD
 
-kubectl label secret $CLUSTER-$USERNAME-secret pg-database=$CLUSTER
+kubectl label secret $CLUSTER-$USERNAME-secret pg-cluster=$CLUSTER
 
 # do the same for the testuser
 
@@ -62,5 +62,5 @@ kubectl create secret generic $CLUSTER-$USERNAME-secret \
 	--from-literal=username=$USERNAME \
 	--from-literal=password=$POSTGRES_PASSWORD
 
-kubectl label secret $CLUSTER-$USERNAME-secret pg-database=$CLUSTER
+kubectl label secret $CLUSTER-$USERNAME-secret pg-cluster=$CLUSTER
 

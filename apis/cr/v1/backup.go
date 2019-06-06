@@ -1,7 +1,7 @@
 package v1
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -23,6 +23,7 @@ import (
 const PgbackupResourcePlural = "pgbackups"
 
 // Backup job processing states - used by pgdump
+const PgBackupJobReSubmitted = "Backup Job Re-Submitted"
 const PgBackupJobSubmitted = "Backup Job Submitted"
 const PgBackupJobInProgress = "Backup Job In Progress"
 const PgBackupJobCompleted = "Backup Job Completed"
@@ -30,16 +31,17 @@ const PgBackupJobError = "Backup Job Error"
 
 // PgbackupSpec ...
 type PgbackupSpec struct {
-	Namespace        string        `json:"namespace"`
-	Name             string        `json:"name"`
-	StorageSpec      PgStorageSpec `json:"storagespec"`
-	CCPImageTag      string        `json:"ccpimagetag"`
-	BackupHost       string        `json:"backuphost"`
-	BackupUserSecret string        `json:"backupusersecret"`
-	BackupPort       string        `json:"backupport"`
-	BackupStatus     string        `json:"backupstatus"`
-	BackupPVC        string        `json:"backuppvc"`
-	BackupOpts       string        `json:"backupopts"`
+	Namespace        string            `json:"namespace"`
+	Name             string            `json:"name"`
+	StorageSpec      PgStorageSpec     `json:"storagespec"`
+	CCPImageTag      string            `json:"ccpimagetag"`
+	BackupHost       string            `json:"backuphost"`
+	BackupUserSecret string            `json:"backupusersecret"`
+	BackupPort       string            `json:"backupport"`
+	BackupStatus     string            `json:"backupstatus"`
+	BackupPVC        string            `json:"backuppvc"`
+	BackupOpts       string            `json:"backupopts"`
+	Toc              map[string]string `json:"toc"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

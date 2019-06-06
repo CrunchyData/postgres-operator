@@ -1,0 +1,198 @@
+---
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Deployments
+  shell: |
+    {{ kubectl_or_oc }} delete deployment postgres-operator -n {{ pgo_operator_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing ConfigMaps
+  shell: |
+    {{ kubectl_or_oc }} delete configmap pgo-config -n {{ pgo_operator_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing secrets
+  shell: |
+    {{ kubectl_or_oc }} delete secret pgo-backrest-repo-config -n {{ item }}
+  with_items:
+  - "{{ all_namespaces }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+
+- name: Delete existing Secrets
+  shell: |
+    {{ kubectl_or_oc }} delete secret {{ item }} -n {{ pgo_operator_namespace }}
+  with_items:
+  - "pgo.tls"
+  ignore_errors: yes
+  no_log: false
+  tags: 
+  - deprovision
+
+- name: Delete existing Services
+  shell: |
+    {{ kubectl_or_oc }} delete service postgres-operator -n {{ pgo_operator_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Service Account
+  shell: |
+    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ item }}
+  with_items:
+  - "{{ all_namespaces }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Service Account
+  shell: |
+    {{ kubectl_or_oc }} delete serviceaccount pgo-backrest -n {{ item }}
+  with_items:
+  - "{{ namespace.split(',') }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Cluster Role Bindings
+  shell: |
+    {{ kubectl_or_oc }} delete clusterrolebinding {{ pgo_operator_namespace }}{{ item }} -n {{ pgo_operator_namespace }}
+  with_items:
+  - "clusterbinding"
+  - "clusterbindingcrd"
+  - "clusterbindingsecret"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Cluster Roles
+  shell: |
+    {{ kubectl_or_oc }} delete clusterrole {{ pgo_operator_namespace }}{{ item }} -n {{ pgo_operator_namespace }}
+  with_items:
+  - "clusterrole"
+  - "clusterrolecrd"
+  - "clusterrolesecret"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Backrest Role Binding
+  shell: |
+    {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding -n {{ item }}
+  with_items:
+  - "{{ namespace.split(',') }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing PGO Role Binding
+  shell: |
+    {{ kubectl_or_oc }} delete rolebinding pgo-role-binding -n {{ item }}
+  with_items:
+  - "{{ all_namespaces }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Backrest Role
+  shell: |
+    {{ kubectl_or_oc }} delete role pgo-backrest-role -n {{ item }}
+  with_items:
+  - "{{ namespace.split(',') }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing PGO Role
+  shell: |
+    {{ kubectl_or_oc }} delete role pgo-role -n {{ item }}
+  with_items:
+  - "{{ all_namespaces }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+
+- name: Delete existing Custom Objects
+  shell: |
+    {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ item }} --all
+  with_items:
+  - "{{ all_namespaces }}"
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision
+
+- name: Delete Custom Resource Definitions
+  shell: |
+    {{ kubectl_or_oc }} delete crds pgbackups.crunchydata.com pgclusters.crunchydata.com \
+        pgpolicies.crunchydata.com pgreplicas.crunchydata.com pgtasks.crunchydata.com
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision
+
+- name: Check for output directory
+  stat:
+    path: "{{ output_dir }}"
+  register: out_dir
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision
+
+- name: Delete local output directory
+  file:
+    state: absent
+    path: "{{ output_dir }}/"
+  when: out_dir.stat.exists
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision
+
+- name: Ensure output directory exists
+  file:
+    path: "{{ output_dir }}"
+    state: directory
+    mode: 0700
+  tags: always
+
+- name: Delete PGO client
+  become: yes
+  become_method: sudo
+  file:
+    state: absent
+    path: "/usr/local/bin/pgo"
+  when: pgo_client_install == "true"
+  ignore_errors: yes
+  no_log: false
+  tags: deprovision

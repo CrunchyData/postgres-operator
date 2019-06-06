@@ -1,0 +1,107 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+        "name": "{{.JobName}}",
+        "labels": {
+            "name": "{{.JobName}}",
+            "vendor": "crunchydata",
+            "pgo-benchmark": "true",
+            "pg-cluster": "{{.ClusterName}}",
+            "created": "{{.Created}}",
+            "workflowName": "{{.WorkflowName}}"
+        }
+    },
+    "spec": {
+        "backoffLimit": 0,
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgo-benchmark": "true",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "created": "{{.Created}}",
+                    "workflowName": "{{.WorkflowName}}"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "pgbench",
+                        "image": "{{.CCPImagePrefix}}/crunchy-pgbench:{{.CCPImageTag}}",
+                        "env": [
+                            {
+                                "name": "PG_DATABASE",
+                                "value": "{{.PGDatabase}}"
+                            },
+                            {
+                                "name": "PG_HOSTNAME",
+                                "value": "{{.PGHost}}"
+                            },
+                            {
+                                "name": "PG_PORT",
+                                "value": "{{.PGPort}}"
+                            },
+                            {
+                                "name": "PG_PASSWORD",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "{{.PGUserSecret}}",
+                                        "key": "password"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "PG_USERNAME",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "{{.PGUserSecret}}",
+                                        "key": "username"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "PGBENCH_BENCHMARK_OPTS",
+                                "value": "{{.PGBenchOpts}}"
+                            },
+                            {
+                                "name": "PGBENCH_INIT_OPTS",
+                                "value": "{{.PGBenchInitOpts}}"
+                            },
+                            {
+                                "name": "PGBENCH_CLIENTS",
+                                "value": "{{.PGBenchClients}}"
+                            },
+                            {
+                                "name": "PGBENCH_JOBS",
+                                "value": "{{.PGBenchJobs}}"
+                            },
+                            {
+                                "name": "PGBENCH_SCALE",
+                                "value": "{{.PGBenchScale}}"
+                            },
+                            {
+                                "name": "PGBENCH_TRANSACTIONS",
+                                "value": "{{.PGBenchTransactions}}"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/pgconf",
+                                "name": "pgconf-volume"
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "pgconf-volume",
+                        {{.PGBenchConfigMap}}
+                    }
+                ],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

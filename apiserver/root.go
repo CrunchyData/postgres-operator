@@ -1,7 +1,7 @@
 package apiserver
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,32 +18,38 @@ limitations under the License.
 import (
 	"bufio"
 	"bytes"
+	"crypto/rsa"
+	"crypto/x509"
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"text/template"
+	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/tlsutil"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const AffinityTemplatePath = "/pgo-config/affinity.json"
-const lspvcTemplatePath = "/pgo-config/pgo.lspvc-template.json"
-const containerResourcesTemplatePath = "/pgo-config/container-resources.json"
+const rsaKeySize = 2048
+const duration365d = time.Hour * 24 * 365
+const PGOSecretName = "pgo.tls"
 
 // pgouserPath ...
-const pgouserPath = "/pgo-auth-secret/pgouser"
+const pgouserPath = "/default-pgo-config/pgouser"
+const pgouserFile = "pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
@@ -67,6 +73,7 @@ var DebugFlag bool
 var BasicAuth bool
 
 // Namespace comes from the apiserver config in this version
+var PgoNamespace string
 var Namespace string
 
 var CRUNCHY_DEBUG bool
@@ -78,19 +85,14 @@ const TreeTrunk = "└── "
 const TreeBranch = "├── "
 
 type CredentialDetail struct {
-	Username string
-	Password string
-	Role     string
+	Username   string
+	Password   string
+	Role       string
+	Namespaces []string
 }
 
 // Credentials holds the BasicAuth credentials found in the config
 var Credentials map[string]CredentialDetail
-
-var ContainerResourcesTemplate *template.Template
-var LoadTemplate *template.Template
-var LspvcTemplate *template.Template
-var JobTemplate *template.Template
-var AffinityTemplate *template.Template
 
 var Pgo config.PgoConfig
 
@@ -101,20 +103,19 @@ type containerResourcesTemplateFields struct {
 
 func Initialize() {
 
-	Pgo.GetConf()
-	log.Println("CCPImageTag=" + Pgo.Cluster.CCPImageTag)
-	log.Println("PrimaryNodeLabel=" + Pgo.Cluster.PrimaryNodeLabel)
-	err := Pgo.Validate()
-	if err != nil {
-		log.Error(err)
-		log.Error("something did not validate in the pgo.yaml")
+	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
+	if PgoNamespace == "" {
+		log.Info("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
 		os.Exit(2)
 	}
+	log.Info("Pgo Namespace is [" + PgoNamespace + "]")
+
+	namespaceList := util.GetNamespaces()
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
-		log.Error("NAMESPACE environment variable is required")
-		os.Exit(2)
+		log.Error("NAMESPACE environment variable is set to empty string which pgo will interpret as watch 'all' namespaces")
 	}
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	CRUNCHY_DEBUG = false
@@ -129,21 +130,23 @@ func Initialize() {
 
 	log.Infoln("apiserver starts")
 
-	getCredentials()
-	initConfig()
+	ConnectToKube()
 
-	initTemplates()
+	getCredentials()
 
 	InitializePerms()
 
-	err = validateCredentials()
+	err := Pgo.GetConfig(Clientset, PgoNamespace)
 	if err != nil {
+		log.Error("error in Pgo configuration")
 		os.Exit(2)
 	}
 
-	ConnectToKube()
+	initConfig()
 
 	validateWithKube()
+
+	validateUserCredentials()
 }
 
 // ConnectToKube ...
@@ -163,8 +166,6 @@ func ConnectToKube() {
 		panic(err)
 	}
 
-	// make a new config for our extension's API group, using the first config as a baseline
-	//RESTClient, _, err = crdclient.NewClient(RESTConfig)
 	RESTClient, _, err = util.NewClient(RESTConfig)
 	if err != nil {
 		panic(err)
@@ -221,7 +222,7 @@ func initConfig() {
 
 }
 
-func file2lines(filePath string) []string {
+func file2lines(filePath string) ([]string, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		log.Error(err)
@@ -234,11 +235,8 @@ func file2lines(filePath string) []string {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
-		log.Error(err)
-	}
 
-	return lines
+	return lines, scanner.Err()
 }
 
 func parseUserMap(dat string) CredentialDetail {
@@ -246,18 +244,46 @@ func parseUserMap(dat string) CredentialDetail {
 	creds := CredentialDetail{}
 
 	fields := strings.Split(strings.TrimSpace(dat), ":")
-	creds.Username = fields[0]
-	creds.Password = fields[1]
-	creds.Role = fields[2]
+	creds.Username = strings.TrimSpace(fields[0])
+	creds.Password = strings.TrimSpace(fields[1])
+	creds.Role = strings.TrimSpace(fields[2])
+	creds.Namespaces = strings.Split(strings.TrimSpace(fields[3]), ",")
 	return creds
 }
 
 // getCredentials ...
 func getCredentials() {
 
+	var lines []string
+	var err error
 	Credentials = make(map[string]CredentialDetail)
 
-	lines := file2lines(pgouserPath)
+	log.Infof("getCredentials with PgoNamespace=%s", PgoNamespace)
+
+	cm, found := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, PgoNamespace)
+	if found {
+		log.Infof("Config: %s ConfigMap found in ns %s, using config files from the configmap", config.CustomConfigMapName, PgoNamespace)
+		val := cm.Data[pgouserFile]
+		if val == "" {
+			log.Infof("could not find %s in ConfigMap", pgouserFile)
+			log.Error(err)
+			os.Exit(2)
+		}
+		scanner := bufio.NewScanner(strings.NewReader(val))
+		for scanner.Scan() {
+			lines = append(lines, scanner.Text())
+		}
+		err = scanner.Err()
+	} else {
+		log.Infof("No custom %s file found in configmap, using defaults", pgouserFile)
+		lines, err = file2lines(pgouserPath)
+	}
+
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
 	for _, v := range lines {
 		creds := parseUserMap(v)
 		Credentials[creds.Username] = creds
@@ -266,21 +292,34 @@ func getCredentials() {
 
 }
 
-// validateCredentials ...
-func validateCredentials() error {
-
-	var err error
+// validateUserCredentials ...
+func validateUserCredentials() {
 
 	for _, v := range Credentials {
 		log.Infof("validating user %s and role %s", v.Username, v.Role)
 		if RoleMap[v.Role] == nil {
 			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
 			log.Error(errMsg)
-			return errors.New(errMsg)
+			os.Exit(2)
 		}
 	}
 
-	return err
+	//validate the pgouser server config file has valid namespaces
+	for _, v := range Credentials {
+		log.Infof("validating user %s namespaces %v", v.Username, v.Namespaces)
+		for i := 0; i < len(v.Namespaces); i++ {
+			if v.Namespaces[i] == "" {
+			} else {
+				watching := util.WatchingNamespace(Clientset, v.Namespaces[i])
+				if !watching {
+					errMsg := fmt.Sprintf("namespace %s found on pgouser user [%s], but this namespace is not being watched", v.Namespaces[i], v.Username, v.Role)
+					log.Error(errMsg)
+					os.Exit(2)
+				}
+			}
+		}
+	}
+
 }
 
 func BasicAuthCheck(username, password string) bool {
@@ -289,8 +328,10 @@ func BasicAuthCheck(username, password string) bool {
 		return true
 	}
 
-	value := Credentials[username]
-	if (CredentialDetail{}) == value {
+	var value CredentialDetail
+	var ok bool
+	if value, ok = Credentials[username]; ok {
+	} else {
 		return false
 	}
 
@@ -304,27 +345,33 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	creds := Credentials[username]
-	if creds == (CredentialDetail{}) {
-		//this means username not found in pgouser file
-		//should not happen at this point in code!
-		log.Error("%s not found in pgouser file", username)
-		return false
-	}
-
-	log.Infof("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
+	log.Debugf("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
 	return HasPerm(creds.Role, perm)
 
 }
 
 //GetNamespace determines if a user has permission for
-//a namespace they are requesting as well as looks up
-//a default namespace if the requestedNS is empty
-func GetNamespace(username, requestedNS string) (string, error) {
-	var err error
+//a namespace they are requesting
+//a valid requested namespace is required
+func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
-	return Namespace, err
+	if requestedNS == "" {
+		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
+	}
+
+	if !UserIsPermittedInNamespace(username, requestedNS) {
+		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
+		return requestedNS, errors.New(errMsg)
+	}
+
+	if util.WatchingNamespace(clientset, requestedNS) {
+		return requestedNS, nil
+	}
+
+	log.Debugf("GetNamespace did not find the requested namespace %s", requestedNS)
+	return requestedNS, errors.New("requested Namespace was not found to be in the list of Namespaces being watched.")
 }
 
 func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
@@ -506,23 +553,6 @@ func IsValidContainerResourceValues() bool {
 	return true
 }
 
-func initTemplates() {
-	LspvcTemplate = util.LoadTemplate(lspvcTemplatePath)
-
-	LoadTemplatePath := Pgo.Pgo.LoadTemplate
-	if LoadTemplatePath == "" {
-		log.Error("Pgo.LoadTemplate not defined in pgo config 1.")
-		os.Exit(2)
-	}
-
-	AffinityTemplate = util.LoadTemplate(AffinityTemplatePath)
-
-	JobTemplate = util.LoadTemplate(LoadTemplatePath)
-
-	ContainerResourcesTemplate = util.LoadTemplate(containerResourcesTemplatePath)
-
-}
-
 func validateWithKube() {
 	log.Debug("validateWithKube called")
 
@@ -544,6 +574,13 @@ func validateWithKube() {
 			log.Debugf("%s is a valid pgo.yaml node label default", n)
 		}
 	}
+
+	err := util.ValidateNamespaces(Clientset)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
 }
 
 // GetContainerResources ...
@@ -561,15 +598,116 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	fields.LimitsCPU = resources.LimitsCPU
 
 	doc := bytes.Buffer{}
-	err := ContainerResourcesTemplate.Execute(&doc, fields)
+	err := config.ContainerResourcesTemplate.Execute(&doc, fields)
 	if err != nil {
 		log.Error(err.Error())
 		return ""
 	}
 
 	if log.GetLevel() == log.DebugLevel {
-		ContainerResourcesTemplate.Execute(os.Stdout, fields)
+		config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
 	}
 
 	return doc.String()
+}
+
+func UserIsPermittedInNamespace(username, requestedNS string) bool {
+	detail := Credentials[username]
+
+	//handle the case of a user in pgouser with "" (all) namespaces
+	if len(detail.Namespaces) == 1 {
+		if detail.Namespaces[0] == "" {
+			return true
+		}
+	}
+
+	for i := 0; i < len(detail.Namespaces); i++ {
+		if detail.Namespaces[i] == requestedNS {
+			return true
+		}
+	}
+	return false
+}
+
+//validate or generate the TLS keys
+func GetTLS(certPath, keyPath string) error {
+
+	var pgoSecret *v1.Secret
+	var found bool
+	var err error
+
+	pgoSecret, found, err = kubeapi.GetSecret(Clientset, PGOSecretName, PgoNamespace)
+	if found {
+		log.Infof("%s Secret found in namespace %s", PGOSecretName, PgoNamespace)
+		log.Infof("cert key data len is %d", len(pgoSecret.Data[v1.TLSCertKey]))
+		if err := ioutil.WriteFile(certPath, pgoSecret.Data[v1.TLSCertKey], 0644); err != nil {
+			return err
+		}
+		log.Infof("private key data len is %d", len(pgoSecret.Data[v1.TLSPrivateKeyKey]))
+		if err := ioutil.WriteFile(keyPath, pgoSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+			return err
+		}
+	} else {
+		log.Infof("%s Secret NOT found in namespace %s", PGOSecretName, PgoNamespace)
+		err = generateTLS(certPath, keyPath)
+		if err != nil {
+			log.Error("error generating pgo.tls Secret")
+			return err
+		}
+	}
+
+	return nil
+
+}
+
+// generate a self signed cert and the pgo.tls Secret to hold it
+func generateTLS(certPath, keyPath string) error {
+	var err error
+
+	//generate private key
+	var privateKey *rsa.PrivateKey
+	privateKey, err = tlsutil.NewPrivateKey()
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	privateKeyBytes := tlsutil.EncodePrivateKeyPEM(privateKey)
+	log.Debugf("generated privateKeyBytes len %d", len(privateKeyBytes))
+
+	var caCert *x509.Certificate
+	caCert, err = tlsutil.NewSelfSignedCACertificate(privateKey)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	caCertBytes := tlsutil.EncodeCertificatePEM(caCert)
+	log.Debugf("generated caCertBytes len %d", len(caCertBytes))
+
+	// CreateSecret
+	newSecret := v1.Secret{}
+	newSecret.Name = PGOSecretName
+	newSecret.ObjectMeta.Labels = make(map[string]string)
+	newSecret.ObjectMeta.Labels[config.LABEL_VENDOR] = "crunchydata"
+	newSecret.Data = make(map[string][]byte)
+	newSecret.Data[v1.TLSCertKey] = caCertBytes
+	newSecret.Data[v1.TLSPrivateKeyKey] = privateKeyBytes
+	newSecret.Type = v1.SecretTypeTLS
+
+	err = kubeapi.CreateSecret(Clientset, &newSecret, PgoNamespace)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(2)
+	}
+
+	if err := ioutil.WriteFile(certPath, newSecret.Data[v1.TLSCertKey], 0644); err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(keyPath, newSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+		return err
+	}
+
+	return err
+
 }

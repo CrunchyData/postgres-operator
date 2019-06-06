@@ -1,7 +1,7 @@
 package backup
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -52,7 +52,7 @@ func ProcessJobs(clientset *kubernetes.Clientset, restclient *rest.RESTClient, n
 			gotjob := event.Object.(*v1batch.Job)
 			log.Infof("pgbackup job modified=%d\n", gotjob.Status.Succeeded)
 			if gotjob.Status.Succeeded == 1 {
-				dbname := gotjob.ObjectMeta.Labels["pg-database"]
+				dbname := gotjob.ObjectMeta.Labels["pg-cluster"]
 				log.Infoln("pgbackup job " + gotjob.Name + " succeeded" + " marking " + dbname + " completed")
 			}
 		default:

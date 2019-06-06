@@ -1,7 +1,7 @@
 package versionservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -28,16 +28,28 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debug("versionservice.VersionHandler called")
 
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
 	_, err := apiserver.Authn(apiserver.VERSION_PERM, w, r)
 	if err != nil {
 		return
 	}
 
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	resp := Version()
+
+	json.NewEncoder(w).Encode(resp)
+}
+
+// HealthHandler ...
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := Health()
 
 	json.NewEncoder(w).Encode(resp)
 }

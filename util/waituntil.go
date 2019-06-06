@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -73,7 +73,7 @@ func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, time
 	var err error
 	var fw watch.Interface
 
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + podname}
+	lo := meta_v1.ListOptions{LabelSelector: "pg-cluster=" + podname}
 	fw, err = clientset.CoreV1().Pods(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching pods 2 " + err.Error())

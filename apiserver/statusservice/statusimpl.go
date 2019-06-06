@@ -1,7 +1,7 @@
 package statusservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -16,15 +16,18 @@ limitations under the License.
 */
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+	"sort"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
-	"sort"
 )
 
 func Status(ns string) msgs.StatusResponse {
@@ -45,7 +48,7 @@ func Status(ns string) msgs.StatusResponse {
 func getStatus(results *msgs.StatusDetail, ns string) error {
 
 	var err error
-	results.OperatorStartTime = getOperatorStart(ns)
+	results.OperatorStartTime = getOperatorStart(apiserver.PgoNamespace)
 	results.NumBackups = getNumBackups(ns)
 	results.NumClaims = getNumClaims(ns)
 	results.NumDatabases = getNumDatabases(ns)
@@ -58,7 +61,7 @@ func getStatus(results *msgs.StatusDetail, ns string) error {
 }
 
 func getOperatorStart(ns string) string {
-	pods, err := kubeapi.GetPods(apiserver.Clientset, "name="+util.LABEL_OPERATOR, ns)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, "name="+config.LABEL_OPERATOR, ns)
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -76,7 +79,7 @@ func getOperatorStart(ns string) string {
 
 func getNumBackups(ns string) int {
 	//count the number of Jobs with pgbackup=true and completionTime not nil
-	jobs, err := kubeapi.GetJobs(apiserver.Clientset, util.LABEL_PGBACKUP, ns)
+	jobs, err := kubeapi.GetJobs(apiserver.Clientset, config.LABEL_PGBACKUP, ns)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -86,7 +89,7 @@ func getNumBackups(ns string) int {
 
 func getNumClaims(ns string) int {
 	//count number of PVCs with pgremove=true
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, ns)
+	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, config.LABEL_PGREMOVE, ns)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -96,7 +99,7 @@ func getNumClaims(ns string) int {
 
 func getNumDatabases(ns string) int {
 	//count number of Deployments with pg-cluster
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, util.LABEL_PG_CLUSTER, ns)
+	deps, err := kubeapi.GetDeployments(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -106,7 +109,7 @@ func getNumDatabases(ns string) int {
 
 func getVolumeCap(ns string) string {
 	//sum all PVCs storage capacity
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, util.LABEL_PGREMOVE, ns)
+	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, config.LABEL_PGREMOVE, ns)
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -118,14 +121,14 @@ func getVolumeCap(ns string) string {
 		capTotal = capTotal + getClaimCapacity(apiserver.Clientset, &p)
 	}
 	q := resource.NewQuantity(capTotal, resource.BinarySI)
-	log.Infof("capTotal string is %s\n", q.String())
+	//log.Infof("capTotal string is %s\n", q.String())
 	return q.String()
 }
 
 func getDBTags(ns string) map[string]int {
 	results := make(map[string]int)
 	//count all pods with pg-cluster, sum by image tag value
-	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, ns)
+	pods, err := kubeapi.GetPods(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
 	if err != nil {
 		log.Error(err)
 		return results
@@ -140,18 +143,32 @@ func getDBTags(ns string) map[string]int {
 }
 
 func getNotReady(ns string) []string {
-	//show all pods with pg-cluster that have status.Phase of not Running
+	//show all database pods for each pgcluster that are not yet running
 	agg := make([]string, 0)
+	clusterList := crv1.PgclusterList{}
+	kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, ns)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, util.LABEL_PG_CLUSTER, ns)
-	if err != nil {
-		log.Error(err)
-		return agg
-	}
-	for _, p := range pods.Items {
-		for _, stat := range p.Status.ContainerStatuses {
+	for _, cluster := range clusterList.Items {
+
+		selector := fmt.Sprintf("%s=crunchydata,name=%s", config.LABEL_VENDOR, cluster.Spec.ClusterName)
+		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+		if err != nil {
+			log.Error(err)
+			return agg
+		} else if len(pods.Items) > 1 {
+			log.Error(fmt.Errorf("Multiple database pods found with the same name using selector while searching for "+
+				"databases that are not ready using selector %s", selector))
+			return agg
+		} else if len(pods.Items) == 0 {
+			log.Error(fmt.Errorf("No database pods found while searching for database pods that are not ready using "+
+				"selector %s", selector))
+			return agg
+		}
+
+		pod := pods.Items[0]
+		for _, stat := range pod.Status.ContainerStatuses {
 			if !stat.Ready {
-				agg = append(agg, p.ObjectMeta.Name)
+				agg = append(agg, pod.ObjectMeta.Name)
 			}
 		}
 	}

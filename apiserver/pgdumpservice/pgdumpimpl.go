@@ -21,12 +21,13 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,12 +50,21 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 
 	// var newInstance *crv1.Pgtask
 
-	log.Info("CreatePgDump storage config... " + request.StorageConfig)
+	log.Debug("CreatePgDump storage config... " + request.StorageConfig)
 	if request.StorageConfig != "" {
 		if apiserver.IsValidStorageName(request.StorageConfig) == false {
-			log.Info("CreateBackup sc error is found " + request.StorageConfig)
+			log.Debug("CreateBackup sc error is found " + request.StorageConfig)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
+	if request.BackupOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.BackupOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 	}
@@ -250,17 +260,17 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	spec.Name = taskName
 	spec.TaskType = crv1.PgtaskpgDump
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
-	spec.Parameters[util.LABEL_PGDUMP_HOST] = clusterName      // same name as service
-	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName // ??
-	spec.Parameters[util.LABEL_PGDUMP_COMMAND] = action
-	spec.Parameters[util.LABEL_PGDUMP_OPTS] = dumpOpts
-	spec.Parameters[util.LABEL_PGDUMP_DB] = "postgres"
-	spec.Parameters[util.LABEL_PGDUMP_USER] = backupUser
-	spec.Parameters[util.LABEL_PGDUMP_PORT] = apiserver.Pgo.Cluster.Port
-	spec.Parameters[util.LABEL_PGDUMP_ALL] = strconv.FormatBool(dumpAllFlag)
-	spec.Parameters[util.LABEL_PVC_NAME] = pvcName
-	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
+	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_PGDUMP_HOST] = clusterName      // same name as service
+	spec.Parameters[config.LABEL_CONTAINER_NAME] = containerName // ??
+	spec.Parameters[config.LABEL_PGDUMP_COMMAND] = action
+	spec.Parameters[config.LABEL_PGDUMP_OPTS] = dumpOpts
+	spec.Parameters[config.LABEL_PGDUMP_DB] = "postgres"
+	spec.Parameters[config.LABEL_PGDUMP_USER] = backupUser
+	spec.Parameters[config.LABEL_PGDUMP_PORT] = apiserver.Pgo.Cluster.Port
+	spec.Parameters[config.LABEL_PGDUMP_ALL] = strconv.FormatBool(dumpAllFlag)
+	spec.Parameters[config.LABEL_PVC_NAME] = pvcName
+	spec.Parameters[config.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
 	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
@@ -275,7 +285,7 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var depName string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -295,7 +305,7 @@ func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var podname string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -312,7 +322,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 }
 
 func isPrimary(pod *v1.Pod, clusterName string) bool {
-	if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+	if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 		return true
 	}
 	return false
@@ -402,19 +412,19 @@ func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
 
 	backup.Spec.Name = spec.Name
 	backup.Spec.BackupStatus = spec.Status
-	backup.Spec.CCPImageTag = spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY]
-	backup.Spec.BackupHost = spec.Parameters[util.LABEL_PGDUMP_HOST]
-	backup.Spec.BackupUserSecret = spec.Parameters[util.LABEL_PGDUMP_USER]
-	backup.Spec.BackupPort = spec.Parameters[util.LABEL_PGDUMP_PORT]
-	backup.Spec.BackupPVC = spec.Parameters[util.LABEL_PVC_NAME]
+	backup.Spec.CCPImageTag = spec.Parameters[config.LABEL_CCP_IMAGE_TAG_KEY]
+	backup.Spec.BackupHost = spec.Parameters[config.LABEL_PGDUMP_HOST]
+	backup.Spec.BackupUserSecret = spec.Parameters[config.LABEL_PGDUMP_USER]
+	backup.Spec.BackupPort = spec.Parameters[config.LABEL_PGDUMP_PORT]
+	backup.Spec.BackupPVC = spec.Parameters[config.LABEL_PVC_NAME]
 	backup.Spec.StorageSpec.Size = dumpTask.Spec.StorageSpec.Size
 	backup.Spec.StorageSpec.AccessMode = dumpTask.Spec.StorageSpec.AccessMode
 
 	// if dump-all flag is set, prepend it to options string since it was separated out before processing.
-	if spec.Parameters[util.LABEL_PGDUMP_ALL] == "true" {
-		backup.Spec.BackupOpts = "--dump-all " + spec.Parameters[util.LABEL_PGDUMP_OPTS]
+	if spec.Parameters[config.LABEL_PGDUMP_ALL] == "true" {
+		backup.Spec.BackupOpts = "--dump-all " + spec.Parameters[config.LABEL_PGDUMP_OPTS]
 	} else {
-		backup.Spec.BackupOpts = spec.Parameters[util.LABEL_PGDUMP_OPTS]
+		backup.Spec.BackupOpts = spec.Parameters[config.LABEL_PGDUMP_OPTS]
 	}
 
 	return &backup
@@ -432,6 +442,15 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 	taskName := "restore-" + request.FromCluster + pgDumpTaskExtension
 
 	log.Debugf("Restore %v\n", request)
+
+	if request.RestoreOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.RestoreOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
 
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, ns)
@@ -465,7 +484,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		log.Debugf("deleting prior pgtask %s", pgtask.Name)
 		err = kubeapi.Deletepgtask(apiserver.RESTClient,
 			pgtask.Name,
-			apiserver.Namespace)
+			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -476,7 +495,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 	//create a pgtask for the restore workflow
 	err = kubeapi.Createpgtask(apiserver.RESTClient,
 		pgtask,
-		apiserver.Namespace)
+		ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -502,19 +521,19 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 	spec.Namespace = request.Namespace
 	spec.TaskType = crv1.PgtaskpgRestore
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_PGRESTORE_DB] = "postgres"
-	spec.Parameters[util.LABEL_PGRESTORE_HOST] = request.FromCluster
-	spec.Parameters[util.LABEL_PGRESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[util.LABEL_PGRESTORE_FROM_PVC] = request.FromPVC
-	spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
-	spec.Parameters[util.LABEL_PGRESTORE_OPTS] = request.RestoreOpts
-	spec.Parameters[util.LABEL_PGRESTORE_USER] = backupUser
-	spec.Parameters[util.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
+	spec.Parameters[config.LABEL_PGRESTORE_DB] = "postgres"
+	spec.Parameters[config.LABEL_PGRESTORE_HOST] = request.FromCluster
+	spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] = request.FromCluster
+	spec.Parameters[config.LABEL_PGRESTORE_FROM_PVC] = request.FromPVC
+	spec.Parameters[config.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
+	spec.Parameters[config.LABEL_PGRESTORE_OPTS] = request.RestoreOpts
+	spec.Parameters[config.LABEL_PGRESTORE_USER] = backupUser
+	spec.Parameters[config.LABEL_PGRESTORE_PITR_TARGET] = request.PITRTarget
 
-	spec.Parameters[util.LABEL_PGRESTORE_COMMAND] = action
+	spec.Parameters[config.LABEL_PGRESTORE_COMMAND] = action
 
-	spec.Parameters[util.LABEL_PGRESTORE_PORT] = apiserver.Pgo.Cluster.Port
-	spec.Parameters[util.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
+	spec.Parameters[config.LABEL_PGRESTORE_PORT] = apiserver.Pgo.Cluster.Port
+	spec.Parameters[config.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
 
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
@@ -524,8 +543,8 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 		}
 
 		parts := strings.Split(request.NodeLabel, "=")
-		spec.Parameters[util.LABEL_NODE_LABEL_KEY] = parts[0]
-		spec.Parameters[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+		spec.Parameters[config.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.Parameters[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 
 		log.Debug("Restore node labels used from user entered flag")
 	}

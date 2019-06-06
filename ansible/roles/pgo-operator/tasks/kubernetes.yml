@@ -1,0 +1,17 @@
+---
+- name: Get Namespace Details
+  shell: "kubectl get namespace {{ item }}"
+  with_items: "{{ all_namespaces }}"
+  register: namespace_details
+  ignore_errors: yes
+  tags:
+  - install
+  - update
+
+- name: Create PGO Namespace
+  shell: "kubectl create namespace {{ item.item }}"
+  with_items: "{{ namespace_details.results }}"
+  when: item.rc != 0
+  tags:
+  - install
+  - update

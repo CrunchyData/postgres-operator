@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -36,7 +36,7 @@ var CCPImageTag string
 var Password string
 var PgBouncerPassword string
 var PgBouncerUser string
-var SecretFrom, BackupPath, BackupPVC string
+var SecretFrom string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var UserLabels string
 var ServiceType string
@@ -82,13 +82,10 @@ var createClusterCmd = &cobra.Command{
 
     pgo create cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Debug("create cluster called")
-		if BackupPath != "" || BackupPVC != "" {
-			if SecretFrom == "" || BackupPath == "" || BackupPVC == "" {
-				fmt.Println(`Error: The --secret-from, --backup-path, and --backup-pvc flags are all required to perform a restore.`)
-				return
-			}
+		if Namespace == "" {
+			Namespace = PGONamespace
 		}
+		log.Debug("create cluster called")
 
 		// handle pgbouncer username and pass fields if --pgbouncer flag not specified.
 		if !PgbouncerFlag && ((len(PgBouncerUser) > 0) || (len(PgBouncerPassword) > 0)) {
@@ -96,8 +93,8 @@ var createClusterCmd = &cobra.Command{
 			return
 		}
 
-		if len(args) == 0 {
-			fmt.Println(`Error: A cluster name is required for this command.`)
+		if len(args) != 1 {
+			fmt.Println(`Error: A single cluster name is required for this command.`)
 		} else {
 			createCluster(args, Namespace)
 		}
@@ -112,9 +109,11 @@ var createPolicyCmd = &cobra.Command{
 
     pgo create policy mypolicy --in-file=/tmp/mypolicy.sql`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create policy called ")
 		if PolicyFile == "" && PolicyURL == "" {
-			//log.Error("--in-file or --url is required to create a policy")
 			fmt.Println(`Error: The --in-file or --url flags are required to create a policy.`)
 			return
 		}
@@ -135,6 +134,10 @@ var createPgbouncerCmd = &cobra.Command{
 
 	pgo create pgbouncer mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create pgbouncer called ")
 
 		if len(args) == 0 && Selector == "" {
@@ -153,6 +156,10 @@ var createPgpoolCmd = &cobra.Command{
 
     pgo create pgpool mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create pgpool called ")
 
 		if len(args) == 0 && Selector == "" {
@@ -171,6 +178,10 @@ var createScheduleCmd = &cobra.Command{
 
     pgo create schedule --schedule="* * * * *" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create schedule called ")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
@@ -189,6 +200,10 @@ var createUserCmd = &cobra.Command{
     pgo create user manageduser --managed --selector=name=mycluster
     pgo create user user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("create user called ")
 		if Selector == "" {
 			fmt.Println(`Error: The --selector flag is required to create a user.`)
@@ -212,12 +227,12 @@ func init() {
 	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
-	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", false, "Enables a pgBackRest volume for the database pod.")
-	//createClusterCmd.Flags().StringVarP(&BackrestRestoreFrom, "pgbackrest-restore-from", "", "", "specifies the cluster name from where the restore is from, used to restore from a pgbackrest restore")
+	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", true, "Enables a pgBackRest volume for the database pod.")
+	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
-	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "Enables archive logging for the database cluster.")
+	//	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "Enables archive logging for the database cluster.")
 	createClusterCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&AutofailFlag, "autofail", "", false, "If set, will cause autofailover to be enabled on this cluster.")
@@ -230,9 +245,7 @@ func init() {
 	//	createClusterCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
 	createClusterCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
-	createClusterCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "p", "", "The backup archive PVC to restore from.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
-	createClusterCmd.Flags().StringVarP(&BackupPath, "backup-path", "x", "", "The backup archive path to restore from.")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
@@ -246,6 +259,7 @@ func init() {
 	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
 	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest, pgbasebackup or policy).")
 	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full or diff).")
+	createScheduleCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createScheduleCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The name of the backup PVC to use (only used in pgbasebackup schedules).")
 	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")
@@ -264,4 +278,6 @@ func init() {
 
 	// createPgbouncerCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
 	createPgbouncerCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
+	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+
 }

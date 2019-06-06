@@ -1,0 +1,10 @@
+---
+- name: Deploy Crunchy PostgreSQL Operator 
+  hosts: all
+  vars:
+    all_namespaces: []
+  gather_facts: true
+  roles:
+    - pgo-preflight 
+    - pgo-operator
+    - pgo-metrics

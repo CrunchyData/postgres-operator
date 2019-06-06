@@ -1,0 +1,12 @@
+---
+- name: Get Namespace Details
+  shell: "kubectl get namespace {{ metrics_namespace }}" 
+  register: namespace_details
+  ignore_errors: yes
+  no_log: true
+  tags: install-metrics
+
+- name: Create Namespace {{ metrics_namespace }}
+  shell: "kubectl create namespace {{ metrics_namespace }}"
+  when: namespace_details.rc != 0
+  tags: install-metrics

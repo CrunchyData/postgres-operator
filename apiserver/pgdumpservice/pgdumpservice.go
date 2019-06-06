@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -46,7 +46,7 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.CreatepgDumpBackupResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -63,11 +63,11 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 	var ns string
 	vars := mux.Vars(r)
 
-	clustername := vars[util.LABEL_NAME]
+	clustername := vars[config.LABEL_NAME]
 
-	clientVersion := r.URL.Query().Get(util.LABEL_VERSION)
-	namespace := r.URL.Query().Get(util.LABEL_NAMESPACE)
-	selector := r.URL.Query().Get(util.LABEL_SELECTOR)
+	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
+	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
+	selector := r.URL.Query().Get(config.LABEL_SELECTOR)
 
 	log.Debugf("ShowDumpHandler parameters version [%s] namespace [%s] selector [%s] name [%s]", clientVersion, namespace, selector, clustername)
 
@@ -90,7 +90,7 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	ns, err = apiserver.GetNamespace(username, namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
@@ -124,7 +124,7 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.PgRestoreResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

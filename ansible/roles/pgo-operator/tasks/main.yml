@@ -1,0 +1,201 @@
+---
+- fail:
+    msg: "Only set one of kubernetes_context or openshift_host"
+  when: openshift_host is defined and kubernetes_context is defined
+  tags: always
+
+- name: Set output directory fact
+  set_fact:
+    output_dir: "{{ ansible_env.HOME }}/.pgo/{{ pgo_operator_namespace }}/output"
+  tags: always
+
+- name: Ensure output directory exists
+  file: 
+    path: "{{ output_dir }}"
+    state: directory
+    mode: 0700
+  tags: always
+
+- name: Get all namespaces
+  set_fact:
+    all_namespaces: "{{ all_namespaces }} + [ '{{ item }}' ]"
+  with_items: 
+  - "{{ namespace.split(',') }}"
+  - "{{ pgo_operator_namespace }}"
+  tags: always
+
+- name: Set namespace unique list
+  set_fact:
+    all_namespaces: "{{ all_namespaces | list | unique }}"
+  tags: always
+
+- include_tasks: "{{ tasks }}"
+  with_items:
+    - openshift_auth.yml
+    - openshift.yml
+  loop_control:
+    loop_var: tasks
+  when: openshift_host is defined
+  tags: always
+
+- include_tasks: "{{ tasks }}"
+  with_items:
+    - kubernetes_auth.yml
+    - kubernetes.yml
+  loop_control:
+    loop_var: tasks
+  when: kubernetes_context is defined
+  tags: always
+
+- include_tasks: cleanup.yml
+  tags: [deprovision, update]
+
+- include_tasks: certs.yml
+  tags: [install]
+
+- include_tasks: ssh_keys.yml
+  tags: [install]
+
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags: always
+
+- name: Deploy PostgreSQL Operator
+  block:
+    - include_tasks: crds.yml
+      tags: [install]
+
+    - name: Template Cluster RBAC
+      template:
+        src: cluster-rbac.yaml.j2
+        dest: "{{ output_dir }}/cluster-rbac.yaml"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Create Cluster RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
+      tags: [install, update]
+    
+    - name: Template PGO RBAC
+      template:
+        src: pgo-role-rbac.yaml.j2
+        dest: "{{ output_dir }}/pgo-role-rbac-{{ item }}.yaml"
+        mode: '0600'
+      with_items: 
+      - "{{ all_namespaces }}"
+      tags: [install, update]
+
+    - name: Create PGO RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-role-rbac-{{ item }}.yaml"
+      with_items: 
+      - "{{ all_namespaces }}"
+      tags: [install, update]
+
+    - name: Template PGO Backrest RBAC
+      template:
+        src: pgo-backrest-role-rbac.yaml.j2
+        dest: "{{ output_dir }}/pgo-backrest-role-rbac-{{ item }}.yaml"
+        mode: '0600'
+      with_items:
+      - "{{ namespace.split(',') }}"
+      tags: [install, update]
+
+    - name: Create PGO Backrest RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-backrest-role-rbac-{{ item }}.yaml"
+      with_items:
+      - "{{ namespace.split(',') }}"
+      tags: [install, update]
+
+    - name: Template PGO User
+      template:
+        src: pgouser.j2
+        dest: "{{ output_dir }}/pgouser"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Template Local PGO User
+      template:
+        src: pgouser.local.j2
+        dest: "{{ pgo_keys_dir }}/pgouser"
+        mode: '0400'
+      tags: [install, update]
+
+    - name: Template PGO Configuration
+      template:
+        src: pgo.yaml.j2
+        dest: "{{ output_dir }}/pgo.yaml"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Template BackRest AWS S3 Configuration
+      template:
+        src: aws-s3-credentials.yaml.j2
+        dest: "{{ output_dir }}/aws-s3-credentials.yaml"
+        mode: '0600'
+      tags: [install]
+
+    - name: Create PGO BackRest Repo Secret
+      command: |
+        {{ kubectl_or_oc }} create secret generic pgo-backrest-repo-config \
+          --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
+          --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
+          --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
+          --from-file=aws-s3-credentials.yaml='{{ output_dir }}/aws-s3-credentials.yaml' \
+          -n {{ pgo_operator_namespace }}
+      tags: [install]
+
+    - name: Create PGO API Secret
+      command: |
+        {{ kubectl_or_oc }} create secret tls pgo.tls \
+          --cert='{{ output_dir }}/server.crt' \
+          --key='{{ output_dir }}/server.pem' \
+          -n {{ pgo_operator_namespace }}
+      tags: [install]
+
+    - name: Create PGO ConfigMap
+      command: |
+        {{ kubectl_or_oc }} create configmap pgo-config \
+          --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
+          --from-file=pgouser='{{ output_dir }}/pgouser' \
+          --from-file='{{ role_path }}/files/pgo-configs' \
+          -n {{ pgo_operator_namespace }}
+      tags: [install, update]
+
+    - name: Create PGO Service
+      command: |
+        {{ kubectl_or_oc }} create --filename='{{ role_path }}/files/service.json' -n {{ pgo_operator_namespace }}
+      tags: [install, update]
+
+    - name: Template PGO Deployment
+      template:
+        src: deployment.json.j2
+        dest: "{{ output_dir }}/deployment.json"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Deploy PGO
+      command: |
+        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
+      tags: [install, update]
+
+    - name: Download PGO Linux Client
+      become: yes
+      become_method: sudo
+      get_url:
+        url: "{{ pgo_client_url }}/pgo"
+        dest: "/usr/local/bin/pgo"
+        mode: 0755
+        force: yes
+      when: uname_result.stdout == "Linux" and pgo_client_install == "true"
+      tags: [install, update]
+
+    - name: Download PGO MacOS Client
+      become: yes
+      become_method: sudo
+      get_url:
+        url: "{{ pgo_client_url }}/pgo-mac"
+        dest: "/usr/local/bin/pgo"
+        mode: 0755
+      when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
+      tags: [install, update]

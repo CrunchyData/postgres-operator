@@ -1,0 +1,23 @@
+---
+- fail:
+    msg: "Please specify the a tag: deprovision, deprovision-metrics, install, install-metrics or update"
+  tags: always
+  when: ansible_run_tags[0] == "all"
+
+- name: Check Operating System
+  shell: uname
+  register: uname_result
+  tags: [install, update]
+
+- name: Check if required Kube or OpenShift variables are defined
+  fail: msg="Please specify either OpenShift or Kubernetes variables in inventory"
+  when: openshift_user is undefined and openshift_token is undefined and kubernetes_context is undefined
+  tags: always
+
+- include_tasks: check_openshift.yml
+  when: openshift_host is defined and openshift_host != ''
+  tags: always
+
+- include_tasks: check_kubernetes.yml
+  when: kubernetes_context is defined and kubernetes_context != ''
+  tags: always

@@ -1,5 +1,4 @@
-
- ---
+---
 title: "Crunchy Data Postgres Operator"
 date:
 draft: false
@@ -7,7 +6,7 @@ draft: false
 
  <img width="25%" src="crunchy_logo.png"/>
 
-Latest Release: 3.5.2
+Latest Release: 4.0.0
 
 The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
 
@@ -26,7 +25,7 @@ Use the postgres-operator to:
 
 ## Deployment Requirements
 
-The Operator deploys on Kubernetes and OpenShift clusters.  Some form of storage is required, NFS, HostPath, and Storage Classes are currently supported.
+The Operator is validated for deployment on Kubernetes, OpenShift, and VMware Enterprise PKS clusters.  Some form of storage is required, NFS, HostPath, and Storage Classes are currently supported.
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed

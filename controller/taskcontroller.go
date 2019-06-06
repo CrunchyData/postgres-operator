@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,22 +17,21 @@ limitations under the License.
 
 import (
 	"context"
-	//	"time"
 
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
+	pgbasebackupoperator "github.com/crunchydata/postgres-operator/operator/backup"
+	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
+	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/kubeapi"
-	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
-	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
-	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
-	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 )
 
 // PgtaskController holds connections for the controller
@@ -41,7 +40,7 @@ type PgtaskController struct {
 	PgtaskClient    *rest.RESTClient
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
-	Namespace       string
+	Namespace       []string
 }
 
 // Run starts an pgtask resource controller
@@ -49,7 +48,7 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 	log.Debug("Watch Pgtask objects")
 
 	// Watch Example objects
-	_, err := c.watchPgtasks(ctx)
+	err := c.watchPgtasks(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
 		return err
@@ -60,33 +59,36 @@ func (c *PgtaskController) Run(ctx context.Context) error {
 }
 
 // watchPgtasks watches the pgtask resource catching events
-func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		c.PgtaskClient,
-		crv1.PgtaskResourcePlural,
-		c.Namespace,
-		fields.Everything())
+func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
+	for i := 0; i < len(c.Namespace); i++ {
+		log.Infof("starting pgtask controller on ns [%s]", c.Namespace[i])
+		source := cache.NewListWatchFromClient(
+			c.PgtaskClient,
+			crv1.PgtaskResourcePlural,
+			c.Namespace[i],
+			fields.Everything())
 
-	_, controller := cache.NewInformer(
-		source,
+		_, controller := cache.NewInformer(
+			source,
 
-		// The object type.
-		&crv1.Pgtask{},
+			// The object type.
+			&crv1.Pgtask{},
 
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
+			// resyncPeriod
+			// Every resyncPeriod, all resources in the cache will retrigger events.
+			// Set to 0 to disable the resync.
+			0,
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
+			// Your custom resource event handlers.
+			cache.ResourceEventHandlerFuncs{
+				AddFunc:    c.onAdd,
+				UpdateFunc: c.onUpdate,
+				DeleteFunc: c.onDelete,
+			})
 
-	go controller.Run(ctx.Done())
-	return controller, nil
+		go controller.Run(ctx.Done())
+	}
+	return nil
 }
 
 // onAdd is called when a pgtask is added
@@ -155,6 +157,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 	//process the incoming task
 	switch task.Spec.TaskType {
+	case crv1.PgtaskMinorUpgrade:
+		log.Debug("delete minor upgrade task added")
+		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
 	case crv1.PgtaskDeletePgbouncer:
 		log.Debug("delete pgbouncer task added")
 		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
@@ -197,6 +202,10 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		log.Debug("pgDump restore task added")
 		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
 
+	case crv1.PgtaskpgBasebackupRestore:
+		log.Debug("pgbasebackup restore task added")
+		pgbasebackupoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
+
 	case crv1.PgtaskAutoFailover:
 		log.Debugf("autofailover task added %s", task.ObjectMeta.Name)
 	case crv1.PgtaskWorkflow:
@@ -205,6 +214,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	case crv1.PgtaskBenchmark:
 		log.Debug("benchmark task added")
 		benchmarkoperator.Create(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
+
+	case crv1.PgtaskUpdatePgbouncerAuths:
+		log.Debug("Pgbouncer update credential task was found...will be handled by pod controller when ready")
 
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", task.Spec.TaskType)

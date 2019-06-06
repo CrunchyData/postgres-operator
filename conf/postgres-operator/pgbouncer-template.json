@@ -1,0 +1,83 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "name": "{{.Name}}",
+            "crunchy-pgbouncer": "true",
+            "pg-cluster": "{{.ClusterName}}",
+            "service-name": "{{.Name}}",
+            "vendor": "crunchydata"
+        }
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+		"matchLabels": {
+            		"name": "{{.Name}}",
+            		"crunchy-pgbouncer": "true",
+            		"pg-cluster": "{{.ClusterName}}",
+            		"service-name": "{{.Name}}",
+            		"vendor": "crunchydata"
+		}
+	},
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{.Name}}",
+                    "crunchy-pgbouncer": "true",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "service-name": "{{.Name}}",
+            	    "vendor": "crunchydata"
+                }
+            },
+            "spec": {
+
+                "containers": [{
+                    "name": "pgbouncer",
+                    "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
+                    "ports": [{
+                        "containerPort": {{.Port}},
+                        "protocol": "TCP"
+                    }],
+		    {{.ContainerResources }}
+                    "env": [{
+                        "name": "PG_USERNAME",
+                        "value": "{{.PgBouncerUser}}"
+                    }, {
+                        "name": "PG_PASSWORD",
+                        "value": "{{.PgBouncerPass}}"
+                    }, {
+                        "name": "PG_PRIMARY_SERVICE_NAME",
+                        "value": "{{.PrimaryServiceName}}"
+                    }, {
+                        "name": "PG_REPLICA_SERVICE_NAME",
+                        "value": "{{.ReplicaServiceName}}"
+                    }],
+                    "volumeMounts": [{
+                        "name": "pgbouncer-conf",
+                        "mountPath": "/pgconf/",
+                        "readOnly": false
+                    }]
+                }],
+                "volumes": [{
+                "name": "pgbouncer-conf",
+                "secret": {
+                    "secretName": "{{.SecretsName}}",
+                    "defaultMode": 511
+                    }
+                }],
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

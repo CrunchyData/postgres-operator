@@ -1,0 +1,4 @@
+---
+- name: Set the Kubernetes Context
+  shell: "kubectl config set-context {{ kubernetes_context }}"
+  tags: always

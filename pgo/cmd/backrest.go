@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,10 +18,11 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"os"
+	log "github.com/sirupsen/logrus"
 )
 
 // createBackrestBackup ....
@@ -33,6 +34,7 @@ func createBackrestBackup(args []string, ns string) {
 	request.Args = args
 	request.Selector = Selector
 	request.BackupOpts = BackupOpts
+	request.BackrestStorageType = BackrestStorageType
 
 	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
 	if err != nil {

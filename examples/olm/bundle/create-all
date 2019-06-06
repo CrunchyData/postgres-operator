@@ -1,0 +1,4 @@
+oc create -f pgo.configmap.yaml
+oc create -f pgo.catalogsource.yaml	
+oc create -f pgo.operatorgroup.yaml
+oc create -f pgo.subscription.yaml

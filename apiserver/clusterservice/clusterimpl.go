@@ -1,7 +1,7 @@
 package clusterservice
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -32,8 +32,12 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/sshutil"
 	"github.com/crunchydata/postgres-operator/util"
+
 	_ "github.com/lib/pq"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -76,8 +80,10 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 	for _, cluster := range clusterList.Items {
 
 		if deleteData {
+			log.Debugf("deleting data on cluster %s", cluster.Spec.Name)
 			err := deleteDatabaseSecrets(cluster.Spec.Name, ns)
 			if err != nil {
+				log.Debugf("error on deleting secrets %s", err.Error())
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
@@ -103,19 +109,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 }
 
 // ShowCluster ...
-func ShowCluster(name, selector, ccpimagetag, ns string) msgs.ShowClusterResponse {
+func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.ShowClusterResponse {
 	var err error
 
 	response := msgs.ShowClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]msgs.ShowClusterDetail, 0)
 
-	if selector == "" && name == "all" {
+	if selector == "" && allflag {
+		log.Debugf("allflags set to true")
 	} else {
 		if selector == "" {
 			selector = "name=" + name
 		}
 	}
+
+	log.Debugf("selector on showCluster is %s", selector)
 
 	clusterList := crv1.PgclusterList{}
 
@@ -172,7 +181,7 @@ func ShowCluster(name, selector, ccpimagetag, ns string) msgs.ShowClusterRespons
 func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeployment, error) {
 	output := make([]msgs.ShowClusterDeployment, 0)
 
-	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return output, err
@@ -183,7 +192,7 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 		d.Name = dep.Name
 		d.PolicyLabels = make([]string, 0)
 
-		for k, v := range dep.ObjectMeta.Labels {
+		for k, v := range cluster.ObjectMeta.Labels {
 			if v == "pgpolicy" {
 				d.PolicyLabels = append(d.PolicyLabels, k)
 			}
@@ -200,8 +209,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 	output := make([]msgs.ShowClusterPod, 0)
 
 	//get pods, but exclude pgpool and backup pods and backrest repo
-	//selector := "pgo-backrest-repo!=true," + "name!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-	selector := util.LABEL_BACKREST_JOB + "!=true," + util.LABEL_BACKREST_RESTORE + "!=true," + util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_NAME + "!=lspvc," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGBACKUP + "!=false," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_NAME + "!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -215,7 +223,6 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus, d.Ready = getReadyStatus(&p)
 		d.PVCName = apiserver.GetPVCName(&p)
-		log.Infof("after getPVCName call")
 
 		d.Primary = false
 		d.Type = getType(&p, cluster.Spec.Name)
@@ -233,7 +240,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService, error) {
 
 	output := make([]msgs.ShowClusterService, 0)
-	selector := util.LABEL_PGO_BACKREST_REPO + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	services, err := kubeapi.GetServices(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -266,7 +273,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	return output, err
 }
 
-func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
+func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
@@ -274,8 +281,8 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	log.Debugf("selector is %s", selector)
-	if selector == "" && name == "all" {
-		log.Debug("selector is empty and name is all")
+	if selector == "" && allFlag {
+		log.Debug("selector is empty and --all is specified")
 	} else {
 		if selector == "" {
 			selector = "name=" + name
@@ -340,7 +347,7 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 		}
 
 		//get the secrets for this cluster
-		secrets, err := apiserver.GetSecrets(&c)
+		secrets, err := apiserver.GetSecrets(&c, ns)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -357,7 +364,6 @@ func TestCluster(name, selector, ns string) msgs.ClusterTestResponse {
 				//dont include backrest repo service
 			} else if service.Pgbouncer {
 				databases = append(databases, service.ClusterName)
-				//databases = append(databases, service.ClusterName+"-replica")
 			} else {
 				databases = append(databases, "postgres")
 				databases = append(databases, c.Spec.Database)
@@ -517,25 +523,17 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 				return resp
 			}
 			//add a label for the custom config
-			userLabelsMap[util.LABEL_CUSTOM_CONFIG] = request.CustomConfig
+			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 		}
 		//set the metrics flag with the global setting first
-		userLabelsMap[util.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
-		if err != nil {
-			log.Error(err)
-		}
-		//set the badger flag with the global setting first
-		userLabelsMap[util.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
+		userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//if metrics is chosen on the pgo command, stick it into the user labels
 		if request.MetricsFlag {
-			userLabelsMap[util.LABEL_COLLECT] = "true"
-		}
-		if request.BadgerFlag {
-			userLabelsMap[util.LABEL_BADGER] = "true"
+			userLabelsMap[config.LABEL_COLLECT] = "true"
 		}
 		if request.ServiceType != "" {
 			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
@@ -544,42 +542,20 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 				return resp
 			}
-			userLabelsMap[util.LABEL_SERVICE_TYPE] = request.ServiceType
+			userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
 		}
 
-		if request.ArchiveFlag && request.BackrestFlag {
+		err = validateBackrestStorageType(request.BackrestStorageType, request.BackrestFlag)
+		if err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "error --archive and --pgbackrest flags are mutually exclusive, use one or the other."
-
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 
-		if request.ArchiveFlag {
-			userLabelsMap[util.LABEL_ARCHIVE] = "true"
-			log.Debug("archive set to true in user labels")
-		} else {
-			log.Debug("using ArchiveMode from pgo.yaml")
-			userLabelsMap[util.LABEL_ARCHIVE] = apiserver.Pgo.Cluster.ArchiveMode
+		if request.BackrestStorageType != "" {
+			log.Debug("using backrest storage type provided by user")
+			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 		}
-		if request.BackrestFlag {
-			userLabelsMap[util.LABEL_BACKREST] = "true"
-			log.Debug("backrest set to true in user labels")
-		} else {
-			log.Debug("using Backrest from pgo.yaml")
-			userLabelsMap[util.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
-		}
-
-		//if request.BackrestRestoreFrom != "" {
-		//	log.Info("TODO validate the restore from value")
-		//	userLabelsMap[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.BackrestRestoreFrom
-		//		}
-
-		//add archive if backrest is requested and figure out map
-		if userLabelsMap[util.LABEL_BACKREST] == "true" {
-			userLabelsMap[util.LABEL_ARCHIVE] = "true"
-		}
-
-		userLabelsMap[util.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
 
 		//validate --pgpool-secret
 		if request.PgpoolSecret != "" {
@@ -593,8 +569,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		}
 
 		if request.PgpoolFlag {
-			userLabelsMap[util.LABEL_PGPOOL] = "true"
-			userLabelsMap[util.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
+			userLabelsMap[config.LABEL_PGPOOL] = "true"
+			userLabelsMap[config.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
 			log.Debug("userLabelsMap")
 			log.Debugf("%v", userLabelsMap)
 			if request.ReplicaCount < 1 {
@@ -605,24 +581,25 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		}
 
 		if request.PgbouncerFlag {
-			userLabelsMap[util.LABEL_PGBOUNCER] = "true"
+			// set flag at cluster level later
+			// userLabelsMap[config.LABEL_PGBOUNCER] = "true"
 
 			// need to create password to be added to postgres container and pgbouncer credential...
 			if !(len(request.PgbouncerPass) > 0) {
-				userLabelsMap[util.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
+				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
 			} else {
-				userLabelsMap[util.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
 			}
 
 			// default pgbouncer user to "pgbouncer" - request should be empty until configurable user is implemented.
 			if !(len(request.PgbouncerUser) > 0) {
-				userLabelsMap[util.LABEL_PGBOUNCER_USER] = "pgbouncer"
+				userLabelsMap[config.LABEL_PGBOUNCER_USER] = "pgbouncer"
 			} else {
 
-				userLabelsMap[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+				userLabelsMap[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
 			}
 
-			userLabelsMap[util.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
+			userLabelsMap[config.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
 
 		}
 
@@ -630,7 +607,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		log.Debugf("%v", userLabelsMap)
 
 		if existsGlobalConfig(ns) {
-			userLabelsMap[util.LABEL_CUSTOM_CONFIG] = util.GLOBAL_CUSTOM_CONFIGMAP
+			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP
 		}
 
 		if request.StorageConfig != "" {
@@ -644,8 +621,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		if apiserver.Pgo.Cluster.PrimaryNodeLabel != "" {
 			//already should be validate at apiserver startup
 			parts := strings.Split(apiserver.Pgo.Cluster.PrimaryNodeLabel, "=")
-			userLabelsMap[util.LABEL_NODE_LABEL_KEY] = parts[0]
-			userLabelsMap[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+			userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
+			userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 			log.Debug("primary node labels used from pgo.yaml")
 		}
 
@@ -659,8 +636,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			}
 
 			parts := strings.Split(request.NodeLabel, "=")
-			userLabelsMap[util.LABEL_NODE_LABEL_KEY] = parts[0]
-			userLabelsMap[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+			userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
+			userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 
 			log.Debug("primary node labels used from user entered flag")
 		}
@@ -711,6 +688,24 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns)
 		if err != nil {
 			resp.Results = append(resp.Results, err.Error())
+			return resp
+		}
+
+		// Create Backrest secret for S3/SSH Keys:
+		// We make this regardless if backrest is enabled or not because
+		// the deployment template always tries to mount /sshd volume
+		secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
+		_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
+		if kerrors.IsNotFound(err) {
+			err := createBackrestRepoSecrets(clusterName, request.Namespace)
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
+				return resp
+			}
+		} else if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("could not query if backrest repo secret exits: %s", err)
 			return resp
 		}
 
@@ -782,7 +777,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 	spec.Name = clusterName + "-policies"
 	spec.Namespace = ns
 	labels := make(map[string]string)
-	labels[util.LABEL_PG_CLUSTER] = clusterName
+	labels[config.LABEL_PG_CLUSTER] = clusterName
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -801,8 +796,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec := crv1.PgclusterSpec{}
 
-	if userLabelsMap[util.LABEL_CUSTOM_CONFIG] != "" {
-		spec.CustomConfig = userLabelsMap[util.LABEL_CUSTOM_CONFIG]
+	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
+		spec.CustomConfig = userLabelsMap[config.LABEL_CUSTOM_CONFIG]
 	}
 
 	if request.ContainerResources != "" {
@@ -844,8 +839,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.ClusterName = name
 	spec.Port = apiserver.Pgo.Cluster.Port
 	spec.SecretFrom = ""
-	spec.BackupPath = ""
-	spec.BackupPVCName = ""
 	spec.PrimaryHost = name
 	if request.Policies == "" {
 		spec.Policies = apiserver.Pgo.Cluster.Policies
@@ -869,11 +862,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 	spec.Strategy = "1"
 	spec.UserLabels = userLabelsMap
-	spec.UserLabels[util.LABEL_PGO_VERSION] = msgs.PGO_VERSION
+	spec.UserLabels[config.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 
 	//override any values from config file
 	str = apiserver.Pgo.Cluster.Port
-	log.Debugf("%d", apiserver.Pgo.Cluster.Port)
+	log.Debugf("%s", apiserver.Pgo.Cluster.Port)
 	if str != "" {
 		spec.Port = str
 	}
@@ -888,7 +881,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Database = str
 	}
 	str = apiserver.Pgo.Cluster.Strategy
-	log.Debugf("%d", apiserver.Pgo.Cluster.Strategy)
+	log.Debugf("%s", apiserver.Pgo.Cluster.Strategy)
 	if str != "" {
 		spec.Strategy = str
 	}
@@ -897,17 +890,32 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.SecretFrom = request.SecretFrom
 	}
 
-	spec.BackupPath = request.BackupPath
-	if request.BackupPVC != "" {
-		spec.BackupPVCName = request.BackupPVC
-	}
-
 	spec.CustomConfig = request.CustomConfig
 
 	labels := make(map[string]string)
-	labels[util.LABEL_NAME] = name
+	labels[config.LABEL_NAME] = name
 	if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
-		labels[util.LABEL_AUTOFAIL] = "true"
+		labels[config.LABEL_AUTOFAIL] = "true"
+	}
+
+	//pgbadger - set with global flag first then check for a user flag
+	labels[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
+	if request.BadgerFlag {
+		labels[config.LABEL_BADGER] = "true"
+	}
+
+	//pgbackrest - set with user request first or look at global flag is not set
+	if request.BackrestFlag {
+		labels[config.LABEL_BACKREST] = "true"
+		log.Debug("backrest set to true in user labels")
+	} else {
+		log.Debug("using Backrest from pgo.yaml")
+		labels[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
+	}
+
+	// pgbouncer
+	if request.PgbouncerFlag {
+		labels[config.LABEL_PGBOUNCER] = "true"
 	}
 
 	newInstance := &crv1.Pgcluster{
@@ -926,7 +934,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 func validateSecretFrom(secretname, ns string) error {
 	var err error
-	selector := util.LABEL_PG_DATABASE + "=" + secretname
+	selector := config.LABEL_PG_CLUSTER + "=" + secretname
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {
 		return err
@@ -982,7 +990,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	var err error
 
 	//dont include pgpool or pgbouncer deployments
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_PGBACKUP + "!=true," + util.LABEL_PGPOOL + "!=true," + util.LABEL_PGBOUNCER + "!=true"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL + "!=true," + config.LABEL_PGBOUNCER + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -1048,8 +1056,29 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 				//by convention, the root directory name
 				//created by the backup job is depName-backups
 				dataRoots := []string{dep.Name + "-backups"}
-				//dataRoots = append(dataRoots, deploymentName+"-backrest-shared-repo")
 				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, dep.Name+"-rmdata-backups", ns)
+				if err != nil {
+					log.Error(err)
+					return err
+				}
+			}
+
+			// check for pgdump backups
+			pgdumpPvcName := "backup-" + dep.Name + "-pgdump-pvc"
+
+			log.Debugf("checking dep %s for pgdump backup pvc %s\n", dep.Name, pgdumpPvcName)
+			_, found, err = kubeapi.GetPVC(apiserver.Clientset, pgdumpPvcName, ns)
+			if !found {
+				log.Debugf("%s pvc was not found when looking for pgdump backups to delete\n", pgdumpPvcName)
+			} else {
+				if err != nil {
+					log.Error(err)
+					return err
+				}
+				//by convention, the root directory name
+				//created by the backup job is depName-backups
+				dataRoots := []string{dep.Name + "-backups"}
+				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pgdumpPvcName, dataRoots, dep.Name+"-rmdata-pgdump", ns)
 				if err != nil {
 					log.Error(err)
 					return err
@@ -1071,7 +1100,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
-	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 
 	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
 	if err != nil {
@@ -1087,7 +1116,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
 	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
@@ -1101,15 +1130,15 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 func getType(pod *v1.Pod, clusterName string) string {
 
 	//log.Debugf("%v\n", pod.ObjectMeta.Labels)
-	if pod.ObjectMeta.Labels[util.LABEL_PGO_BACKREST_REPO] != "" {
+	if pod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] != "" {
 		return msgs.PodTypePgbackrest
-	} else if pod.ObjectMeta.Labels[util.LABEL_PGBOUNCER] != "" {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] != "" {
 		return msgs.PodTypePgbouncer
-	} else if pod.ObjectMeta.Labels[util.LABEL_PGPOOL] != "" {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] != "" {
 		return msgs.PodTypePgpool
-	} else if pod.ObjectMeta.Labels[util.LABEL_PGBACKUP] == "true" {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
-	} else if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+	} else if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 		return msgs.PodTypePrimary
 	} else {
 		return msgs.PodTypeReplica
@@ -1129,7 +1158,7 @@ func validateCustomConfig(configmapname, ns string) (bool, error) {
 }
 
 func existsGlobalConfig(ns string) bool {
-	_, found := kubeapi.GetConfigMap(apiserver.Clientset, util.GLOBAL_CUSTOM_CONFIGMAP, ns)
+	_, found := kubeapi.GetConfigMap(apiserver.Clientset, config.GLOBAL_CUSTOM_CONFIGMAP, ns)
 	return found
 }
 
@@ -1138,7 +1167,7 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 	output := make([]msgs.ShowClusterReplica, 0)
 	replicaList := crv1.PgreplicaList{}
 
-	selector := util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	err := kubeapi.GetpgreplicasBySelector(apiserver.RESTClient,
 		&replicaList, selector, ns)
@@ -1160,11 +1189,11 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 	return output, err
 }
 
-// deleteDatabaseSecrets delete secrets that match pg-database=somecluster
+// deleteDatabaseSecrets delete secrets that match pg-cluster=somecluster
 func deleteDatabaseSecrets(db, ns string) error {
 	var err error
-	//get all that match pg-database=db
-	selector := util.LABEL_PG_DATABASE + "=" + db
+	//get all that match pg-cluster=db
+	selector := config.LABEL_PG_CLUSTER + "=" + db
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {
 		log.Error(err)
@@ -1210,11 +1239,6 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 		Password = request.Password
 		PrimaryPassword = request.Password
 	}
-
-	//	if request.BackrestFlag && request.BackrestRestoreFrom != "" {
-	//		log.Debugf("setting secret-from to the pgbackrest restore from value %s", request.BackrestRestoreFrom)
-	//		request.SecretFrom = request.BackrestRestoreFrom
-	//	}
 
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
@@ -1315,7 +1339,7 @@ func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterRespon
 	for _, cluster := range clusterList.Items {
 
 		//set autofail=true or false on each pgcluster CRD
-		cluster.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = autofail
+		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = autofail
 
 		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
 			&cluster, cluster.Spec.Name, ns)
@@ -1336,7 +1360,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	selector := util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + util.LABEL_DEPLOYMENT_NAME
+	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -1359,7 +1383,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 		output = append(output, d)
 
 	}
-	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + util.LABEL_DEPLOYMENT_NAME
+	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
 	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -1385,4 +1409,53 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	return output, err
 
+}
+
+func validateBackrestStorageType(requestBackRestStorageType string, backrestEnabled bool) error {
+
+	if requestBackRestStorageType != "" && !backrestEnabled {
+		return errors.New("pgBackRest storage type is only applicable if pgBackRest is enabled")
+	} else if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
+		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
+			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	} else if strings.Contains(requestBackRestStorageType, "s3") && (apiserver.Pgo.Cluster.BackrestS3Bucket == "" ||
+		apiserver.Pgo.Cluster.BackrestS3Endpoint == "" || apiserver.Pgo.Cluster.BackrestS3Region == "") {
+		return errors.New("A configuration setting for AWS S3 storage is missing from pgo.yaml. Values must be provided for " +
+			"'BackrestS3Bucket', 'BackrestS3Endpoint' and 'BackrestS3Region' in order to use the 's3' storage type with pgBackRest.")
+	}
+
+	return nil
+}
+
+func createBackrestRepoSecrets(clusterName, namespace string) error {
+	keys, err := sshutil.NewPrivatePublicKeyPair(config.DEFAULT_BACKREST_SSH_KEY_BITS)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve the S3/SSHD configuration files from secret
+	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", apiserver.PgoNamespace)
+	if kerrors.IsNotFound(err) || err != nil {
+		return err
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET),
+			Labels: map[string]string{
+				config.LABEL_PG_CLUSTER:        clusterName,
+				config.LABEL_PGO_BACKREST_REPO: "true",
+			},
+		},
+		Data: map[string][]byte{
+			"authorized_keys":         keys.Public,
+			"aws-s3-ca.crt":           configs.Data["aws-s3-ca.crt"],
+			"aws-s3-credentials.yaml": configs.Data["aws-s3-credentials.yaml"],
+			"config":                  configs.Data["config"],
+			"id_rsa":                  keys.Private,
+			"sshd_config":             configs.Data["sshd_config"],
+			"ssh_host_rsa_key":        keys.Private,
+		},
+	}
+	return kubeapi.CreateSecret(apiserver.Clientset, &secret, namespace)
 }

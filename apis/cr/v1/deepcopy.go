@@ -1,5 +1,20 @@
 package v1
 
+/*
+ Copyright 2019 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 import "k8s.io/apimachinery/pkg/runtime"
 
 // DeepCopyInto copies all properties of this object into another object of the
@@ -18,6 +33,7 @@ func (in *Pgbackup) DeepCopyInto(out *Pgbackup) {
 		BackupOpts:       in.Spec.BackupOpts,
 		BackupStatus:     in.Spec.BackupStatus,
 		BackupPVC:        in.Spec.BackupPVC,
+		Toc:              in.Spec.Toc,
 	}
 	out.Status = in.Status
 }
@@ -38,56 +54,6 @@ func (in *PgbackupList) DeepCopyObject() runtime.Object {
 
 	if in.Items != nil {
 		out.Items = make([]Pgbackup, len(in.Items))
-		for i := range in.Items {
-			in.Items[i].DeepCopyInto(&out.Items[i])
-		}
-	}
-
-	return &out
-}
-
-// DeepCopyInto copies all properties of this object into another object of the
-// same type that is provided as a pointer.
-func (in *Pgupgrade) DeepCopyInto(out *Pgupgrade) {
-	out.TypeMeta = in.TypeMeta
-	out.ObjectMeta = in.ObjectMeta
-	out.Status = in.Status
-
-	out.Spec = PgupgradeSpec{
-		Namespace:       in.Spec.Namespace,
-		Name:            in.Spec.Name,
-		ResourceType:    in.Spec.ResourceType,
-		UpgradeType:     in.Spec.UpgradeType,
-		UpgradeStatus:   in.Spec.UpgradeStatus,
-		StorageSpec:     in.Spec.StorageSpec,
-		CCPImage:        in.Spec.CCPImage,
-		CCPImageTag:     in.Spec.CCPImageTag,
-		OldDatabaseName: in.Spec.OldDatabaseName,
-		NewDatabaseName: in.Spec.NewDatabaseName,
-		OldVersion:      in.Spec.OldVersion,
-		NewVersion:      in.Spec.NewVersion,
-		OldPVCName:      in.Spec.OldPVCName,
-		NewPVCName:      in.Spec.NewPVCName,
-		BackupPVCName:   in.Spec.BackupPVCName,
-	}
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *Pgupgrade) DeepCopyObject() runtime.Object {
-	out := Pgupgrade{}
-	in.DeepCopyInto(&out)
-
-	return &out
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *PgupgradeList) DeepCopyObject() runtime.Object {
-	out := PgupgradeList{}
-	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
-
-	if in.Items != nil {
-		out.Items = make([]Pgupgrade, len(in.Items))
 		for i := range in.Items {
 			in.Items[i].DeepCopyInto(&out.Items[i])
 		}
@@ -162,8 +128,6 @@ func (in *Pgcluster) DeepCopyInto(out *Pgcluster) {
 		Replicas:           in.Spec.Replicas,
 		Strategy:           in.Spec.Strategy,
 		SecretFrom:         in.Spec.SecretFrom,
-		BackupPVCName:      in.Spec.BackupPVCName,
-		BackupPath:         in.Spec.BackupPath,
 		UserSecretName:     in.Spec.UserSecretName,
 		RootSecretName:     in.Spec.RootSecretName,
 		PrimarySecretName:  in.Spec.PrimarySecretName,

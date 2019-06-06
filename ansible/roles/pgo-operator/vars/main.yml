@@ -1,0 +1,3 @@
+---
+pgo_client_url: "https://github.com/CrunchyData/postgres-operator/releases/download/{{ pgo_client_version }}"
+pgo_keys_dir: "~/.pgo/{{ pgo_operator_namespace }}"

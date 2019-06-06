@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -17,9 +17,9 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
@@ -35,6 +35,11 @@ var applyCmd = &cobra.Command{
 	pgo apply mypolicy1 --selector=someotherpolicy --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("apply called")
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		if Selector == "" {
 			fmt.Println("Error: Selector is required to apply a policy.")
 			return
@@ -102,8 +107,20 @@ func applyPolicy(args []string, ns string) {
 }
 func showPolicy(args []string, ns string) {
 
+	r := new(msgs.ShowPolicyRequest)
+	r.Selector = Selector
+	r.Namespace = ns
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
+
+	if len(args) == 0 && AllFlag {
+		args = []string{""}
+	}
+
 	for _, v := range args {
-		response, err := api.ShowPolicy(httpclient, v, &SessionCredentials, ns)
+		r.Policyname = v
+
+		response, err := api.ShowPolicy(httpclient, &SessionCredentials, r)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -140,10 +157,7 @@ func createPolicy(args []string, ns string) {
 		return
 	}
 	var err error
-	//PolicyURL, PolicyFile
-
 	//create the request
-
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
 	r.Namespace = ns
@@ -193,16 +207,26 @@ func deletePolicy(args []string, ns string) {
 
 	log.Debugf("deletePolicy called %v", args)
 
+	r := msgs.DeletePolicyRequest{}
+	r.Selector = Selector
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	if AllFlag {
+		args = make([]string, 1)
+		args[0] = "all"
+	}
+
 	for _, arg := range args {
+		r.PolicyName = arg
 		log.Debugf("deleting policy %s", arg)
 
-		response, err := api.DeletePolicy(httpclient, arg, &SessionCredentials, ns)
+		response, err := api.DeletePolicy(httpclient, &r, &SessionCredentials)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 		}
 
 		if response.Status.Code == msgs.Ok {
-			//fmt.Println("Policy deleted.")
 			for _, v := range response.Results {
 				fmt.Println(v)
 			}

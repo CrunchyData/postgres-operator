@@ -1,6 +1,4 @@
 = postgres-operator (1)
-Jeff McCormick
-August 17, 2018
 
 == NAME
 postgres-operator - Container image for Crunchy Data's PostgreSQL Operator
@@ -33,4 +31,4 @@ The Red Hat Enterprise Linux version from which the container was built. For exa
 
 `Release=`
 
-The specific release number of the container. For example, Release="3.5.2"
+The specific release number of the container. For example, Release="4.0.0"

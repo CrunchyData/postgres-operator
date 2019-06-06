@@ -1,7 +1,7 @@
 package backrestservice
 
 /*
-Copyright 2018 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -17,16 +17,19 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -43,6 +46,15 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
+
+	if request.BackupOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.BackupOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
 
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
@@ -86,9 +98,16 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 			return resp
 		}
 
-		if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+		if cluster.Labels[config.LABEL_BACKREST] != "true" {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " does not have pgbackrest enabled"
+			return resp
+		}
+
+		err = validateBackrestStorageType(request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 
@@ -115,7 +134,8 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 
 			//remove any previous backup job
 
-			selector := util.LABEL_PG_CLUSTER + "=" + clusterName + "," + util.LABEL_BACKREST + "=true"
+			//selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
+			selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," + config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 			err = kubeapi.DeleteJobs(apiserver.Clientset, selector, ns)
 			if err != nil {
 				log.Error(err)
@@ -146,21 +166,12 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 			return resp
 		}
 
-		//get deployment name for this cluster
-		/**
-		deployName, err = getDeployName(&cluster)
-		if err != nil {
-			log.Error(err)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-		*/
-
 		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
 		log.Debugf("setting jobName to %s", jobName)
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, jobName, ns), ns)
+		err = kubeapi.Createpgtask(apiserver.RESTClient,
+			getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, request.BackrestStorageType, jobName, ns),
+			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -173,7 +184,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, jobName, ns string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, backrestStorageType, jobName, ns string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -182,12 +193,13 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_JOB_NAME] = jobName
-	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
-	spec.Parameters[util.LABEL_POD_NAME] = podName
-	spec.Parameters[util.LABEL_CONTAINER_NAME] = containerName
-	spec.Parameters[util.LABEL_BACKREST_COMMAND] = action
-	spec.Parameters[util.LABEL_BACKREST_OPTS] = backupOpts
+	spec.Parameters[config.LABEL_JOB_NAME] = jobName
+	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_POD_NAME] = podName
+	spec.Parameters[config.LABEL_CONTAINER_NAME] = containerName
+	spec.Parameters[config.LABEL_BACKREST_COMMAND] = action
+	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
+	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = backrestStorageType
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -196,7 +208,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	return newInstance
 }
 
@@ -207,7 +219,7 @@ func removeBackupJob(clusterName string) {
 func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var depName string
 
-	selector := util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -243,8 +255,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	primaryReady := false
 
 	//make sure the primary pod is in the ready state
-	//selector = util.LABEL_PGPOOL + "!=true," + util.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-	selector = util.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -264,7 +275,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 }
 
 func isPrimary(pod *v1.Pod, clusterName string) bool {
-	if pod.ObjectMeta.Labels[util.LABEL_SERVICE_NAME] == clusterName {
+	if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 		return true
 	}
 	return false
@@ -329,7 +340,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 		}
 
 		//here is where we would exec to get the backrest info
-		info, err := getInfo(c.Name, podname, ns)
+		info, err := getInfo(c.Name, c.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], podname, ns)
 		if err != nil {
 			detail.Info = err.Error()
 		} else {
@@ -343,26 +354,42 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 
 }
 
-func getInfo(clusterName, podname, ns string) (string, error) {
+func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 
 	var err error
+	const repoTypeFlagS3 = "--repo-type=s3"
 
 	cmd := make([]string, 0)
 
-	log.Info("backrest info command requested")
+	log.Debug("backrest info command requested")
 	//pgbackrest --stanza=db info
 	cmd = append(cmd, backrestCommand)
 	cmd = append(cmd, backrestInfoCommand)
 
-	log.Infof("command is %v ", cmd)
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
-	log.Info("output=[" + output + "]")
-	log.Info("stderr=[" + stderr + "]")
+	log.Debugf("command is %v ", cmd)
 
-	if err != nil {
-		log.Error(err)
-		return "", err
+	var output string
+	if storageType != "s3" {
+		outputLocal, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
+		if err != nil {
+			log.Error(err, stderr)
+			return "", err
+		}
+		output = "\nStorage Type: local\n" + outputLocal
 	}
+
+	if strings.Contains(storageType, "s3") {
+		cmd = append(cmd, repoTypeFlagS3)
+		outputS3, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
+		if err != nil {
+			log.Error(err, stderr)
+			return "", err
+		}
+		output = output + "\nStorage Type: s3\n" + outputS3
+	}
+
+	log.Debug("output=[" + output + "]")
+
 	log.Debug("backrest info ends")
 	return output, err
 
@@ -378,6 +405,15 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 
 	log.Debugf("Restore %v\n", request)
 
+	if request.RestoreOpts != "" {
+		err := backupoptions.ValidateBackupOpts(request.RestoreOpts, request)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, ns)
 	if !found {
@@ -391,9 +427,16 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 	}
 
 	//verify that the cluster we are restoring from has backrest enabled
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
+	if cluster.Labels[config.LABEL_BACKREST] != "true" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"
+		return resp
+	}
+
+	err = validateBackrestStorageType(request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -436,14 +479,15 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToPVC
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
-	spec.Parameters[util.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
-	spec.Parameters[util.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
-	spec.Parameters[util.LABEL_PGBACKREST_STANZA] = "db"
-	spec.Parameters[util.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
-	spec.Parameters[util.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
+	spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
+	spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
+	spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
+	spec.Parameters[config.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
+	spec.Parameters[config.LABEL_PGBACKREST_STANZA] = "db"
+	spec.Parameters[config.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
+	spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
+	spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
+	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
@@ -453,8 +497,8 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 		}
 
 		parts := strings.Split(request.NodeLabel, "=")
-		spec.Parameters[util.LABEL_NODE_LABEL_KEY] = parts[0]
-		spec.Parameters[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+		spec.Parameters[config.LABEL_NODE_LABEL_KEY] = parts[0]
+		spec.Parameters[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 
 		log.Debug("Restore node labels used from user entered flag")
 	}
@@ -493,7 +537,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
-	spec.Parameters[util.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 
 	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
 	if err != nil {
@@ -509,7 +553,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
 	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
@@ -518,4 +562,27 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 		return "", err
 	}
 	return spec.Parameters[crv1.PgtaskWorkflowID], err
+}
+
+func validateBackrestStorageType(requestBackRestStorageType, clusterBackRestStorageType string, restore bool) error {
+
+	if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
+		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
+			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	} else if requestBackRestStorageType != "" && strings.Contains(requestBackRestStorageType, "s3") &&
+		!strings.Contains(clusterBackRestStorageType, "s3") {
+		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for pgBackRest in this cluster")
+	} else if (requestBackRestStorageType == "" || strings.Contains(requestBackRestStorageType, "local")) &&
+		(clusterBackRestStorageType != "" && !strings.Contains(clusterBackRestStorageType, "local")) {
+		return errors.New("Storage type 'local' not allowed. Local storage is not enabled for pgBackRest in this cluster. " +
+			"If this cluster uses S3 storage only, specify 's3' for the pgBackRest storage type.")
+	}
+
+	// storage type validation that is only applicable for restores
+	if restore && requestBackRestStorageType != "" && len(strings.Split(requestBackRestStorageType, ",")) > 1 {
+		return fmt.Errorf("Multiple storage types cannot be selected cannot be select when performing a restore. Please "+
+			"select one of the following: %s", "\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
+	}
+
+	return nil
 }

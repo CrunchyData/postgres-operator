@@ -1,0 +1,83 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "name": "{{.Name}}",
+            "pg-cluster": "{{.ClusterName}}",
+            "crunchy-pgpool-pod": "true",
+            "service-name": "{{.Name}}",
+	    "vendor": "crunchydata"
+        }
+    },
+    "spec": {
+        "replicas": 1,
+	"selector": {
+		"matchLabels": {
+            		"name": "{{.Name}}",
+            		"pg-cluster": "{{.ClusterName}}",
+            		"crunchy-pgpool-pod": "true",
+            		"service-name": "{{.Name}}",
+	    		"vendor": "crunchydata"
+		}
+	},
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{.Name}}",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "crunchy-pgpool-pod": "true",
+                    "service-name": "{{.Name}}",
+	    	    "vendor": "crunchydata"
+                }
+            },
+            "spec": {
+
+                "containers": [{
+                    "name": "pgpool",
+                    "image": "{{.CCPImagePrefix}}/crunchy-pgpool:{{.CCPImageTag}}",
+                    "ports": [{
+                        "containerPort": {{.Port}},
+                        "protocol": "TCP"
+                    }],
+		    {{.ContainerResources }}
+                    "env": [{
+                        "name": "PG_USERNAME",
+                        "value": "testuser"
+                    }, {
+                        "name": "PG_PASSWORD",
+                        "value": "password"
+                    }, {
+                        "name": "PG_PRIMARY_SERVICE_NAME",
+                        "value": "{{.PrimaryServiceName}}"
+                    }, {
+                        "name": "PG_REPLICA_SERVICE_NAME",
+                        "value": "{{.ReplicaServiceName}}"
+                    }],
+                    "volumeMounts": [{
+                        "name": "pgpool-conf",
+                        "mountPath": "/pgconf/pgpoolconfigdir",
+                        "readOnly": false
+                    }]
+                }],
+                "volumes": [{
+                "name": "pgpool-conf",
+                "secret": {
+                    "secretName": "{{.SecretsName}}",
+                    "defaultMode": 511
+                    }
+                }],
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

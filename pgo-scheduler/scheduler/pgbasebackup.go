@@ -1,12 +1,26 @@
 package scheduler
 
+/*
+ Copyright 2019 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import (
 	"fmt"
-	"time"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -62,18 +76,22 @@ func (b BaseBackupJob) Run() {
 		return
 	}
 
-	taskName := fmt.Sprintf("backup-%s", b.cluster)
+	taskName := fmt.Sprintf("%s", b.cluster)
 
 	result := crv1.Pgbackup{}
 	found, err = kubeapi.Getpgbackup(restClient, &result, taskName, b.namespace)
 
 	if found {
-		err := kubeapi.Deletepgbackup(restClient, taskName, b.namespace)
+		//update the status to re-submitted
+		result.Spec.BackupStatus = crv1.PgBackupJobReSubmitted
+
+		err = kubeapi.Updatepgbackup(restClient, &result, taskName, b.namespace)
+
 		if err != nil {
 			contextLogger.WithFields(log.Fields{
 				"task":  taskName,
 				"error": err,
-			}).Error("error deleting pgBackup")
+			}).Error("error updating pgbackup")
 			return
 		}
 	} else if err != nil && !kerrors.IsNotFound(err) {
@@ -85,46 +103,27 @@ func (b BaseBackupJob) Run() {
 
 	}
 
-	job, found := kubeapi.GetJob(kubeClient, taskName, b.namespace)
-	if found {
-		err = kubeapi.DeleteJob(kubeClient, taskName, b.namespace)
+	//if the pgbackup doesn't exist, create it
+	if !found {
+		basebackup := pgBaseBackupTask{
+			clusterName: cluster.Name,
+			taskName:    taskName,
+			ccpImageTag: b.ccpImageTag,
+			hostname:    cluster.Spec.PrimaryHost,
+			port:        cluster.Spec.Port,
+			status:      "initial",
+			pvc:         b.pvc,
+			secret:      cluster.Spec.PrimarySecretName,
+		}
+
+		task := basebackup.NewBaseBackupTask()
+		err = kubeapi.Createpgbackup(restClient, task, b.namespace)
 		if err != nil {
 			contextLogger.WithFields(log.Fields{
 				"task":  taskName,
 				"error": err,
-			}).Error("error deleting backup job")
+			}).Error("error creating backup task")
 			return
 		}
-
-		timeout := time.Second * 60
-		err = kubeapi.IsJobDeleted(kubeClient, b.namespace, job, timeout)
-		if err != nil {
-			contextLogger.WithFields(log.Fields{
-				"task":  taskName,
-				"error": err,
-			}).Error("error waiting for job to delete")
-			return
-		}
-	}
-
-	basebackup := pgBaseBackupTask{
-		clusterName: cluster.Name,
-		taskName:    taskName,
-		ccpImageTag: b.ccpImageTag,
-		hostname:    cluster.Spec.PrimaryHost,
-		port:        cluster.Spec.Port,
-		status:      "initial",
-		pvc:         b.pvc,
-		secret:      cluster.Spec.PrimarySecretName,
-	}
-
-	task := basebackup.NewBaseBackupTask()
-	err = kubeapi.Createpgbackup(restClient, task, b.namespace)
-	if err != nil {
-		contextLogger.WithFields(log.Fields{
-			"task":  taskName,
-			"error": err,
-		}).Error("error creating backup task")
-		return
 	}
 }

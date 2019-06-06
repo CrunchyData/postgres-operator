@@ -1,5 +1,20 @@
 package scheduler
 
+/*
+ Copyright 2019 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import (
 	"time"
 
@@ -17,6 +32,7 @@ type Scheduler struct {
 	CronClient    *cv2.Cron
 	label         string
 	namespace     string
+	namespaceList []string
 	scheduleTypes []string
 }
 
@@ -42,11 +58,12 @@ type PGBaseBackup struct {
 }
 
 type PGBackRest struct {
-	Deployment string    `json:"deployment"`
-	Label      string    `json:"label"`
-	Container  string    `json:"container"`
-	Type       string    `json:"type"`
-	Options    []Options `json:"options"`
+	Deployment  string    `json:"deployment"`
+	Label       string    `json:"label"`
+	Container   string    `json:"container"`
+	Type        string    `json:"type"`
+	StorageType string    `json:"storageType,omitempty"`
+	Options     []Options `json:"options"`
 }
 
 type Policy struct {
@@ -70,8 +87,8 @@ type SecurityContext struct {
 type PolicyTemplate struct {
 	JobName        string
 	ClusterName    string
-	COImagePrefix  string
-	COImageTag     string
+	PGOImagePrefix string
+	PGOImageTag    string
 	PGHost         string
 	PGPort         string
 	PGDatabase     string

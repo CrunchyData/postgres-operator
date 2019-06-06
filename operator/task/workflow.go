@@ -1,7 +1,7 @@
 package task
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -16,9 +16,9 @@ package task
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"time"
@@ -29,6 +29,34 @@ import (
 func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
+
+	task := crv1.Pgtask{}
+	task.Spec = crv1.PgtaskSpec{}
+	task.Spec.Name = taskName
+
+	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
+	if found && err == nil {
+		//mark this workflow as completed
+		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
+
+		log.Debugf("completing workflow %s  id %s", taskName, id)
+		task.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format("2006-01-02.15.04.05")
+
+		//update pgtask
+		err = kubeapi.Updatepgtask(RESTClient, &task, taskName, ns)
+		if err != nil {
+			log.Error(err)
+		}
+	} else {
+		log.Errorf("Error completing  workflow %s  id %s", taskName, task.Spec.Parameters[crv1.PgtaskWorkflowID])
+		log.Error(err)
+	}
+
+}
+
+func CompleteBackupWorkflow(clusterName string, clientSet *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
+
+	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
 
 	task := crv1.Pgtask{}
 	task.Spec = crv1.PgtaskSpec{}

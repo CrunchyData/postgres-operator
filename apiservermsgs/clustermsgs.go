@@ -1,7 +1,7 @@
 package apiservermsgs
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,27 +19,36 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+// ShowClusterRequest ...
+type ShowClusterRequest struct {
+	Clustername   string
+	Selector      string
+	Ccpimagetag   string
+	ClientVersion string
+	Namespace     string
+	AllFlag       bool
+}
+
 // CreateClusterRequest ...
 type CreateClusterRequest struct {
-	Name         string
-	Namespace    string
-	NodeLabel    string
-	Password     string
-	SecretFrom   string
-	BackupPVC    string
-	UserLabels   string
-	BackupPath   string
-	Policies     string
-	CCPImage     string
-	CCPImageTag  string
-	Series       int
-	ReplicaCount int
-	ServiceType  string
-	MetricsFlag  bool
-	BadgerFlag   bool
-	AutofailFlag bool
-	ArchiveFlag  bool
-	BackrestFlag bool
+	Name                string
+	Namespace           string
+	NodeLabel           string
+	Password            string
+	SecretFrom          string
+	UserLabels          string
+	Policies            string
+	CCPImage            string
+	CCPImageTag         string
+	Series              int
+	ReplicaCount        int
+	ServiceType         string
+	MetricsFlag         bool
+	BadgerFlag          bool
+	AutofailFlag        bool
+	ArchiveFlag         bool
+	BackrestFlag        bool
+	BackrestStorageType string
 	//BackrestRestoreFrom  string
 	PgpoolFlag           bool
 	PgbouncerFlag        bool
@@ -117,6 +126,17 @@ type ShowClusterResponse struct {
 	Status
 }
 
+// DeleteClusterRequest ...
+type DeleteClusterRequest struct {
+	Clustername   string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	AllFlag       bool
+	DeleteBackups bool
+	DeleteData    bool
+}
+
 // DeleteClusterResponse ...
 type DeleteClusterResponse struct {
 	Results []string
@@ -127,6 +147,15 @@ type DeleteClusterResponse struct {
 type UpdateClusterResponse struct {
 	Results []string
 	Status
+}
+
+// ClusterTestRequest ...
+type ClusterTestRequest struct {
+	Clustername   string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	AllFlag       bool
 }
 
 // ClusterTestDetail ...

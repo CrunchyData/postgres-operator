@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -16,12 +16,17 @@ package util
 */
 
 import (
-	log "github.com/sirupsen/logrus"
+	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"net/http"
@@ -49,7 +54,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, na
 	}
 
 	//lastly, run the psql script
-	log.Debugf("running psql password=%s ip=%s sql=[%s]", password, service.Spec.ClusterIP, sqlString)
+	log.Debugf("running psql ip=%s sql=[%s]", service.Spec.ClusterIP, sqlString)
 	err = RunPsql(password, service.Spec.ClusterIP, sqlString)
 	if err != nil {
 		return err
@@ -117,4 +122,57 @@ func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName st
 		log.Error("error getting pgpolicy " + policyName + err.Error())
 	}
 	return err
+}
+
+// UpdatePolicyLabels ...
+func UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
+
+	deployment, found, err := kubeapi.GetDeployment(clientset, clusterName, namespace)
+	if !found {
+		return err
+	}
+
+	var patchBytes, newData, origData []byte
+	origData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	accessor, err2 := meta.Accessor(deployment)
+	if err2 != nil {
+		return err2
+	}
+
+	objLabels := accessor.GetLabels()
+	if objLabels == nil {
+		objLabels = make(map[string]string)
+	}
+
+	//update the deployment labels
+	for key, value := range newLabels {
+		objLabels[key] = value
+	}
+	log.Debugf("updated labels are %v\n", objLabels)
+
+	accessor.SetLabels(objLabels)
+	newData, err = json.Marshal(deployment)
+	if err != nil {
+		return err
+	}
+
+	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
+	createdPatch := err == nil
+	if err != nil {
+		return err
+	}
+	if createdPatch {
+		log.Debug("created merge patch")
+	}
+
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
+	if err != nil {
+		log.Debug("error patching deployment " + err.Error())
+	}
+	return err
+
 }

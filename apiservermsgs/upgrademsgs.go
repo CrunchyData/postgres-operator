@@ -1,7 +1,7 @@
 package apiservermsgs
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -15,21 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-)
-
-// ShowUpgradeResponse ...
-type ShowUpgradeResponse struct {
-	UpgradeList crv1.PgupgradeList
-	Status
-}
-
-// DeleteUpgradeResponse ...
-type DeleteUpgradeResponse struct {
-	Results []string
-	Status
-}
+import ()
 
 // CreateUpgradeRequest ...
 type CreateUpgradeRequest struct {
@@ -37,7 +23,6 @@ type CreateUpgradeRequest struct {
 	Selector      string
 	Namespace     string
 	CCPImageTag   string
-	UpgradeType   string
 	ClientVersion string
 }
 

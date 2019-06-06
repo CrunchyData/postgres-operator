@@ -16,44 +16,52 @@ package cluster
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-// AddUpgrade creates a pgupgrade job
-func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string) {
+// AddUpgrade bounces the Deployment with the new image tag
+func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
 	cl := crv1.Pgcluster{}
 
 	//not a db so get the pgcluster CRD
 	_, err := kubeapi.Getpgcluster(restclient, &cl,
-		upgrade.Spec.Name, namespace)
+		upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], namespace)
 	if err != nil {
+		log.Error("cound not find pgcluster for minor upgrade")
+		log.Error(err)
 		return
 	}
 
-	err = AddUpgradeBase(clientset, restclient, upgrade, namespace, &cl)
+	//this effectively bounces the Deployment's pod to pick up
+	//the new image tag
+	err = kubeapi.PatchDeployment(clientset, cl.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.Pgo.Cluster.CCPImagePrefix+"/"+cl.Spec.CCPImage+":"+upgrade.Spec.Parameters["CCPImageTag"])
 	if err != nil {
-		log.Error("error adding upgrade" + err.Error())
-	} else {
-		//update the upgrade CRD status to submitted
-		upgrade.Spec.UpgradeStatus = crv1.UpgradeSubmittedStatus
-		kubeapi.Updatepgupgrade(restclient, upgrade, upgrade.Spec.Name, namespace)
-		//		err = util.Patch(restclient, "/spec/upgradestatus", crv1.UpgradeSubmittedStatus, "pgupgrades", upgrade.Spec.Name, namespace)
-		if err != nil {
-			log.Error("error setting upgrade status " + err.Error())
-		}
+		log.Error(err)
+		log.Error("error in doing minor upgrade")
+		return
 	}
 
-}
+	//update the CRD with the new image tag to maintain the truth
+	log.Info("updating the pg version after cluster upgrade")
+	err = util.Patch(restclient, "/spec/ccpimagetag", upgrade.Spec.Parameters["CCPImageTag"], crv1.PgclusterResourcePlural, upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], namespace)
 
-// DeleteUpgrade deletes a pgupgrade job
-func DeleteUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string) {
-	var jobName = "upgrade-" + upgrade.Spec.Name
-	log.Debugf("deleting Job with Name= %s in namespace %s", jobName, namespace)
+	if err != nil {
+		log.Error("error patching pgcluster in upgrade" + err.Error())
+	}
 
-	//delete the job
-	kubeapi.DeleteJob(clientset, jobName, namespace)
+	//update the upgrade CRD status to completed
+	log.Debug("update pgtask status %s to %s ", upgrade.Spec.Name, crv1.CompletedStatus)
+	upgrade.Spec.Status = crv1.CompletedStatus
+	err = kubeapi.Updatepgtask(restclient, upgrade, upgrade.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in updating minor upgrade pgtask to completed status " + err.Error())
+	}
+
 }

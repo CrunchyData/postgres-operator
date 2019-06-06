@@ -1,7 +1,7 @@
 package pgbouncerservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -97,13 +98,13 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
-		spec.Name = util.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
+		spec.Name = config.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskAddPgbouncer
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
-		spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
-		spec.Parameters[util.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
-		spec.Parameters[util.LABEL_PGBOUNCER_PASS] = pgbouncerpass
+		spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+		spec.Parameters[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -113,11 +114,12 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		}
 
 		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
-		newInstance.ObjectMeta.Labels[util.LABEL_PGBOUNCER_TASK_ADD] = "true"
+		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
+		newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_ADD] = "true"
 
 		//check if this cluster already has a pgbouncer
-		if cluster.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+		// if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+		if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
 			resp.Results = append(resp.Results, cluster.Name+" already has pgbouncer added")
 			resp.Status.Code = msgs.Error
 		} else {
@@ -198,11 +200,11 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 
 		spec := crv1.PgtaskSpec{}
 		spec.Namespace = ns
-		spec.Name = util.LABEL_PGBOUNCER_TASK_DELETE + "-" + cluster.Name
+		spec.Name = config.LABEL_PGBOUNCER_TASK_DELETE + "-" + cluster.Name
 		spec.TaskType = crv1.PgtaskDeletePgbouncer
 		spec.StorageSpec = crv1.PgStorageSpec{}
 		spec.Parameters = make(map[string]string)
-		spec.Parameters[util.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
+		spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
 
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
@@ -212,8 +214,8 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		}
 
 		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[util.LABEL_PG_CLUSTER] = cluster.Name
-		newInstance.ObjectMeta.Labels[util.LABEL_PGBOUNCER_TASK_DELETE] = "true"
+		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
+		newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_DELETE] = "true"
 
 		err := kubeapi.Createpgtask(apiserver.RESTClient,
 			newInstance, ns)

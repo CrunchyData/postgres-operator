@@ -3,7 +3,7 @@
 set -e -u
 
 REGISTRY='us.gcr.io/container-suite'
-VERSION=$CO_IMAGE_TAG
+VERSION=$PGO_IMAGE_TAG
 IMAGES=(
     pgo-backrest-repo
     pgo-backrest-restore

@@ -16,10 +16,10 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "create the test PV and PVC using the NFS dir"
-for i in {161..180}
+for i in {1..180}
 do
    	echo "creating PV crunchy-pv$i"
 	export COUNTER=$i
-	$CO_CMD --namespace=$CO_NAMESPACE delete pv crunchy-pv$i
-	expenv -f $DIR/crunchy-pv-nfs-label.json | $CO_CMD --namespace=$CO_NAMESPACE create -f -
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pv crunchy-pv$i
+	expenv -f $DIR/crunchy-pv-nfs-label.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 done

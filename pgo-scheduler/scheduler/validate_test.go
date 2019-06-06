@@ -1,5 +1,20 @@
 package scheduler
 
+/*
+ Copyright 2019 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import (
 	"testing"
 )
@@ -66,23 +81,26 @@ func TestValidScheduleType(t *testing.T) {
 
 func TestValidBackRestSchedule(t *testing.T) {
 	tests := []struct {
-		schedule, deployment, label, backupType string
-		valid                                   bool
+		schedule, deployment, label, backupType, storageType string
+		valid                                                bool
 	}{
-		{"pgbackrest", "testdeployment", "", "full", true},
-		{"pgbackrest", "", "testlabel=label", "diff", true},
-		{"pgbasebackup", "", "", "", false},
-		{"policy", "", "", "", false},
-		{"pgbackrest", "", "", "", false},
-		{"pgbackrest", "", "", "full", false},
-		{"pgbackrest", "testdeployment", "", "", false},
-		{"pgbackrest", "", "testlabel=label", "", false},
-		{"pgbackrest", "testdeployment", "", "foobar", false},
-		{"pgbackrest", "", "testlabel=label", "foobar", false},
+		{"pgbackrest", "testdeployment", "", "full", "local", true},
+		{"pgbackrest", "", "testlabel=label", "diff", "local", true},
+		{"pgbackrest", "testdeployment", "", "full", "s3", true},
+		{"pgbackrest", "", "testlabel=label", "diff", "s3", true},
+		{"pgbasebackup", "", "", "", "local", false},
+		{"policy", "", "", "", "local", false},
+		{"pgbackrest", "", "", "", "local", false},
+		{"pgbackrest", "", "", "full", "local", false},
+		{"pgbackrest", "testdeployment", "", "", "local", false},
+		{"pgbackrest", "", "testlabel=label", "", "local", false},
+		{"pgbackrest", "testdeployment", "", "foobar", "local", false},
+		{"pgbackrest", "", "testlabel=label", "foobar", "local", false},
+		{"pgbackrest", "", "testlabel=label", "foobar", "", false},
 	}
 
 	for i, test := range tests {
-		err := ValidateBackRestSchedule(test.schedule, test.deployment, test.label, test.backupType)
+		err := ValidateBackRestSchedule(test.schedule, test.deployment, test.label, test.backupType, test.storageType)
 		if test.valid && err != nil {
 			t.Fatalf("tests[%d] - invalid schedule type. expected valid, got invalid: %s",
 				i, err)

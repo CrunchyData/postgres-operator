@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,4 +14,6 @@
 # limitations under the License.
 
 echo [$DATA_ROOT] is data root
-eval rm -rf /pgdata/$DATA_ROOT /pgdata/$DATA_ROOT-spool /pgdata/$DATA_ROOT-wal
+eval rm -rf /pgdata/$DATA_ROOT 
+eval rm -rf /pgdata/$DATA_ROOT-spool 
+eval rm -rf /pgdata/$DATA_ROOT-wal

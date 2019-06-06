@@ -1,0 +1,45 @@
+---
+- fail:
+    msg: "Only set one of kubernetes_context or openshift_host"
+  when: openshift_host is defined and kubernetes_context is defined
+  tags: always
+
+- name: Set output directory fact
+  set_fact:
+    prom_output_dir: "{{ ansible_env.HOME }}/.pgo/{{ metrics_namespace }}/output"
+  tags: always
+
+- name: Ensure output directory exists
+  file: 
+    path: "{{ prom_output_dir }}"
+    state: directory
+    mode: 0700
+  tags: always
+
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags: always
+
+- name: Deploy Prometheus
+  block:
+    - name: Template Prometheus Objects
+      template:
+        src: "{{ item }}"
+        dest: "{{ prom_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: '0600'
+      with_items: 
+      - prometheus-pvc.json.j2
+      - prometheus-rbac.json.j2
+      - prometheus-service.json.j2
+      - prometheus-deployment.json.j2
+      tags: [install-metrics]
+
+    - name: Create Prometheus Objects
+      command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      with_items:
+      - prometheus-pvc.json
+      - prometheus-rbac.json
+      - prometheus-service.json
+      - prometheus-deployment.json
+      tags: [install-metrics]

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 - 2019 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,7 +16,7 @@
 GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
 CCP_IMAGE_PREFIX=crunchydata
-CCP_IMAGE_TAG=centos7-11.2-2.3.1
+CCP_IMAGE_TAG=centos7-11.3-2.4.0
 
 IMAGES=(
 crunchy-prometheus

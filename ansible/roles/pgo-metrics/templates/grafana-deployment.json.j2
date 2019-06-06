@@ -1,0 +1,89 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+        "name": "crunchy-grafana"
+    },
+    "spec": {
+        "replicas": 1,
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{ grafana_service_name }}",
+                    "vendor": "crunchydata"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "grafana",
+                        "image": "{{ ccp_image_prefix }}/crunchy-grafana:{{ ccp_image_tag }}",
+                        "ports": [
+                            {
+                                "containerPort": {{ grafana_port }},
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "tcpSocket": {
+                                "port": {{ grafana_port }}
+                            },
+                            "initialDelaySeconds": 20,
+                            "periodSeconds": 10
+                        },
+                        "livenessProbe": {
+                            "tcpSocket": {
+                                "port": {{ grafana_port }}
+                            },
+                            "initialDelaySeconds": 25,
+                            "periodSeconds": 20
+                        },
+                        "env": [
+                            {
+                                "name": "ADMIN_USER",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "grafana-secret",
+                                        "key": "username"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "ADMIN_PASS",
+                                "valueFrom": {
+                                    "secretKeyRef": {
+                                        "name": "grafana-secret",
+                                        "key": "password"
+                                    }
+                                }
+                            },
+                            {
+                                "name": "PROM_HOST",
+                                "value": "{{ prometheus_service_name }}"
+                            },
+                            {
+                                "name": "PROM_PORT",
+                                "value": "{{ prometheus_port }}"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/data",
+                                "name": "grafanadata",
+                                "readOnly": false
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "grafanadata",
+                        "persistentVolumeClaim": {
+                            "claimName": "grafanadata"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

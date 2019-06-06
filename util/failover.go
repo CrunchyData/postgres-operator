@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,13 +19,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	_ "github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -50,20 +51,19 @@ type ReplicationInfo struct {
 }
 
 // GetBestTarget
-func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (*v1.Pod, *v1beta1.Deployment, error) {
+func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (*v1.Pod, *appsv1.Deployment, error) {
 
 	var err error
 
 	//get all the replica deployment pods for this cluster
 	var pod v1.Pod
-	var deployment v1beta1.Deployment
+	var deployment appsv1.Deployment
 
 	//get all the deployments that are replicas for this clustername
 
 	var pods *v1.PodList
 
-	//selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_PRIMARY + "=false"
-	selector := LABEL_PG_CLUSTER + "=" + clusterName + "," + LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 
 	pods, err = kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
@@ -128,22 +128,25 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	return pod, err
 }
 
-func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *v1beta1.Deployment, namespace, databasePort string) (uint64, uint64, string) {
+func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, dep *appsv1.Deployment, namespace, databasePort string) (uint64, uint64, string, error) {
+	var err error
+
 	var receiveLocation, replayLocation uint64
 
 	var nodeName string
 
 	//get the pods for this deployment
-	selector := "primary=false,replica-name=" + dep.Name
+	selector := config.LABEL_DEPLOYMENT_NAME + "=" + dep.Name
 	podList, err := kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err.Error())
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	if len(podList.Items) != 1 {
 		log.Debugf("no replicas found for dep %s", dep.Name)
-		return receiveLocation, replayLocation, nodeName
+		log.Error(err.Error())
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	pod := podList.Items[0]
@@ -151,10 +154,10 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	//get the crd for this dep
 	cluster := crv1.Pgcluster{}
 	var clusterfound bool
-	clusterfound, err = kubeapi.Getpgcluster(restclient, &cluster, dep.ObjectMeta.Labels[LABEL_PG_CLUSTER], namespace)
+	clusterfound, err = kubeapi.Getpgcluster(restclient, &cluster, dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], namespace)
 	if err != nil || !clusterfound {
 		log.Error("Getpgcluster error: " + err.Error())
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	//get the postgres secret for this dep
@@ -172,10 +175,9 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	if !found {
 		log.Error("postgres secret not found for " + dep.Name)
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, errors.New("postgres secret not found for " + dep.Name)
 	}
 
-	//port := operator.Pgo.Pgo.Cluster.Port
 	port := databasePort
 	databaseName := "postgres"
 	target := getSQLTarget(&pod, pgSecret.Username, pgSecret.Password, port, databaseName)
@@ -183,7 +185,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 	repInfo, err = GetReplicationInfo(target)
 	if err != nil {
 		log.Error(err)
-		return receiveLocation, replayLocation, nodeName
+		return receiveLocation, replayLocation, nodeName, err
 	}
 
 	receiveLocation = repInfo.ReceiveLocation
@@ -191,7 +193,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	nodeName = pod.Spec.NodeName
 
-	return receiveLocation, replayLocation, nodeName
+	return receiveLocation, replayLocation, nodeName, nil
 }
 
 func getSQLTarget(pod *v1.Pod, username, password, port, db string) string {
@@ -278,7 +280,7 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 func getSecrets(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) ([]msgs.ShowUserSecret, error) {
 
 	output := make([]msgs.ShowUserSecret, 0)
-	selector := "pgpool!=true," + LABEL_PG_DATABASE + "=" + cluster.Spec.Name
+	selector := "pgpool!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {

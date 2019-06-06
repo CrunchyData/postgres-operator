@@ -1,0 +1,54 @@
+---
+- fail:
+    msg: "Only set one of kubernetes_context or openshift_host"
+  when: openshift_host is defined and kubernetes_context is defined
+  tags: always
+
+- name: Set output directory fact
+  set_fact:
+    grafana_output_dir: "{{ ansible_env.HOME }}/.pgo/{{ metrics_namespace }}/output"
+  tags: always
+
+- name: Ensure output directory exists
+  file: 
+    path: "{{ grafana_output_dir }}"
+    state: directory
+    mode: 0700
+  tags: always
+
+- name: Use kubectl or oc
+  set_fact:
+    kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
+  tags: always
+
+- name: Deploy Grafana
+  block:
+    - name: Template Grafana Secret
+      template:
+        src: "grafana-secret.json.j2"
+        dest: "{{ grafana_output_dir }}/grafana-secret.json"
+        mode: '0600'
+      tags: [install-metrics]
+
+    - name: Create Grafana Secret
+      command: "{{ kubectl_or_oc }} create -f {{ grafana_output_dir }}/grafana-secret.json -n {{ metrics_namespace }}"
+      tags: [install-metrics]
+
+    - name: Template Grafana Deployment
+      template:
+        src: "{{ item }}"
+        dest: "{{ grafana_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: '0600'
+      with_items: 
+      - grafana-pvc.json.j2
+      - grafana-service.json.j2
+      - grafana-deployment.json.j2
+      tags: [install-metrics]
+
+    - name: Create Grafana Deployment
+      command: "{{ kubectl_or_oc }} create -f {{ grafana_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      with_items:
+      - grafana-pvc.json
+      - grafana-service.json
+      - grafana-deployment.json
+      tags: [install-metrics]

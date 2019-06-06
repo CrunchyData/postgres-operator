@@ -1,7 +1,7 @@
 package loadservice
 
 /*
-Copyright 2017-2019 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -29,7 +29,7 @@ import (
 func LoadHandler(w http.ResponseWriter, r *http.Request) {
 
 	var ns string
-	log.Infoln("loadservice.LoadHandler called")
+	log.Debug("loadservice.LoadHandler called")
 
 	var request msgs.LoadRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -52,7 +52,7 @@ func LoadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(username, request.Namespace)
+	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)

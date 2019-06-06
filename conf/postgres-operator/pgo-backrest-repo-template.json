@@ -1,0 +1,100 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "name": "{{.Name}}",
+            "pg-cluster": "{{.ClusterName}}",
+            "service-name": "{{.Name}}",
+            "pgo-backrest-repo": "true"
+        }
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+            "matchLabels": {
+                    "name": "{{.Name}}",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "service-name": "{{.Name}}",
+           	    "pgo-backrest-repo": "true"
+            }
+        },
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{.Name}}",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "service-name": "{{.Name}}",
+           	    "pgo-backrest-repo": "true"
+                }
+            },
+            "spec": {
+		{{.SecurityContext}}
+
+                "containers": [{
+                    "name": "database",
+                    "image": "{{.PGOImagePrefix}}/pgo-backrest-repo:{{.PGOImageTag}}",
+                    "ports": [{
+                        "containerPort": {{.SshdPort}},
+                        "protocol": "TCP"
+                    }],
+		    {{.ContainerResources }}
+                    "env": [{
+            {{.PgbackrestS3EnvVars}}
+                        "name": "PGBACKREST_STANZA",
+                        "value": "{{.PgbackrestStanza}}"
+                    }, {
+                        "name": "SSHD_PORT",
+                        "value": "{{.SshdPort}}"
+                    }, {
+                        "name": "PGBACKREST_DB_PATH",
+                        "value": "{{.PgbackrestDBPath}}"
+                    }, {
+                        "name": "PGBACKREST_REPO_PATH",
+                        "value": "{{.PgbackrestRepoPath}}"
+                    }, {
+                        "name": "PGBACKREST_PG1_PORT",
+                        "value": "{{.PgbackrestPGPort}}"
+                    }, {
+                        "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
+                    }, {
+                        "name": "PGBACKREST_DB_HOST",
+                        "value": "{{.PGbackrestDBHost}}"
+                    }],
+                    "volumeMounts": [{
+                        "name": "sshd",
+                        "mountPath": "/sshd",
+                        "readOnly": true
+                    }, {
+                        "name": "backrestrepo",
+                        "mountPath": "/backrestrepo",
+                        "readOnly": false
+                    }]
+                }],
+                "volumes": [{
+                	"name": "sshd",
+                	"secret": {
+                    		"secretName": "{{.ClusterName}}-backrest-repo-config",
+                    		"defaultMode": 511
+                    	}
+                }, {
+                	"name": "backrestrepo",
+                	"persistentVolumeClaim": {
+                    		"claimName": "{{.BackrestRepoClaimName}}"
+                    	}
+                }],
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

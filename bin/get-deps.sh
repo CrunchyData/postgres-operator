@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2018 Crunchy Data Solutions, Inc.
+# Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -27,7 +27,18 @@ fi
 which go
 if [ $? -eq 1 ]; then
 	echo "installing golang..."
-	sudo $PM -y install golang
+	cd /tmp
+	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	ls *.rpm
+	sudo rpm -ivh epel*.rpm
+	sudo yum -y install golang
+fi
+
+which buildah
+if [ $? -eq 1 ]; then
+	echo "installing buildah"
+	sudo subscription-manager repos --enable=rhel-7-server-extras-rpms
+	sudo yum -y install buildah
 fi
 
 which dep

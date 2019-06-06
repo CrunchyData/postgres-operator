@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	labelutil "github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +37,10 @@ var backupCmd = &cobra.Command{
 
   pgo backup mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
 		log.Debug("backup called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to backup or a selector flag.`)
@@ -44,9 +48,9 @@ var backupCmd = &cobra.Command{
 
 			exitNow := false // used in switch for early exit.
 
-			switch buSelected := BackupType; buSelected {
+			switch buSelected := backupType; buSelected {
 
-			case labelutil.LABEL_BACKUP_TYPE_BACKREST:
+			case config.LABEL_BACKUP_TYPE_BACKREST:
 
 				// storage config flag invalid for backrest
 				if StorageConfig != "" {
@@ -60,11 +64,11 @@ var backupCmd = &cobra.Command{
 
 				createBackrestBackup(args, Namespace)
 
-			case "", labelutil.LABEL_BACKUP_TYPE_BASEBACKUP:
+			case "", config.LABEL_BACKUP_TYPE_BASEBACKUP:
 
 				createBackup(args, Namespace)
 
-			case labelutil.LABEL_BACKUP_TYPE_PGDUMP:
+			case config.LABEL_BACKUP_TYPE_PGDUMP:
 
 				createpgDumpBackup(args, Namespace)
 
@@ -78,6 +82,8 @@ var backupCmd = &cobra.Command{
 	},
 }
 
+var backupType string
+
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
@@ -85,7 +91,8 @@ func init() {
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.  Only applies to pgbasebackup backups.")
-	backupCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
+	backupCmd.Flags().StringVar(&backupType, "backup-type", "pgbackrest", "The backup type to perform. Default is pgbasebackup. Valid backup types are pgbasebackup, pgbackrest and pgdump.")
+	backupCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 
 }
 
@@ -139,6 +146,10 @@ func printBackupCRD(result *crv1.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "Backup Secret:\t"+result.Spec.BackupUserSecret)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
 
+	for _, v := range result.Spec.Toc {
+		fmt.Printf("%s%s\n", TreeTrunk, "Backup Path:\t"+v)
+	}
+
 }
 
 // deleteBackup ....
@@ -172,7 +183,7 @@ func deleteBackup(args []string, ns string) {
 
 // createBackup ....
 func createBackup(args []string, ns string) {
-	log.Debugf("createBackup called %v", args)
+	log.Debugf("createBackup called %v BackupOpts %s", args, BackupOpts)
 
 	request := new(msgs.CreateBackupRequest)
 	request.Args = args

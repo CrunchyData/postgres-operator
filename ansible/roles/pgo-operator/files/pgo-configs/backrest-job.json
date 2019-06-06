@@ -1,0 +1,80 @@
+{
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgo-backrest": "true",
+                    "pgo-backrest-job": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
+    },
+    "spec": {
+	"backoffLimit": 0,
+        "template": {
+            "metadata": {
+                "name": "{{.JobName}}",
+                "labels": {
+                    "vendor": "crunchydata",
+                    "pgo-backrest": "true",
+                    "pgo-backrest-job": "true",
+                    "pg-cluster": "{{.ClusterName}}"
+                }
+            },
+            "spec": {
+                "volumes": [
+		{{.PgbackrestRestoreVolumes}}
+			],
+		{{.SecurityContext}}
+                "serviceAccountName": "pgo-backrest",
+                "containers": [{
+                    "name": "backrest",
+                    "image": "{{.PGOImagePrefix}}/pgo-backrest:{{.PGOImageTag}}",
+                    "volumeMounts": [
+		{{.PgbackrestRestoreVolumeMounts}}
+			    ],
+                    "env": [{
+                        "name": "COMMAND",
+                        "value": "{{.Command}}"
+                    }, {
+                        "name": "COMMAND_OPTS",
+                        "value": "{{.CommandOpts}}"
+                    }, {
+                        "name": "PITR_TARGET",
+                        "value": "{{.PITRTarget}}"
+                    }, {
+                        "name": "PODNAME",
+                        "value": "{{.PodName}}"
+                    }, {
+                        "name": "PGBACKREST_STANZA",
+                        "value": "{{.PgbackrestStanza}}"
+                    }, {
+                        "name": "PGBACKREST_DB_PATH",
+                        "value": "{{.PgbackrestDBPath}}"
+                    }, {
+                        "name": "PGBACKREST_REPO_PATH",
+                        "value": "{{.PgbackrestRepoPath}}"
+                    }, {
+                        "name": "PGBACKREST_REPO_TYPE",
+                        "value": "{{.PgbackrestRepoType}}"
+                    }, {
+                        "name": "BACKREST_LOCAL_AND_S3_STORAGE",
+                        "value": "{{.BackrestLocalAndS3Storage}}"
+                    }, {
+                        "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
+                    }, {
+                        "name": "NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    }]
+                }],
+                "restartPolicy": "Never"
+            }
+        }
+    }
+}

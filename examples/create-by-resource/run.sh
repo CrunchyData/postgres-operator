@@ -15,19 +15,22 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# A namespace that exists in NAMESPACE env var - see examples/envs.sh
+export NS=pgouser1
+
 # remove any existing resources from a previous run
-$CO_CMD $NS delete secret \
+$PGO_CMD delete secret -n $NS \
 	fromcrd-postgresuser-secret \
 	fromcrd-primaryuser-secret \
 	fromcrd-testuser-secret	> /dev/null
-$CO_CMD $NS delete pgcluster fromcrd
-$CO_CMD $NS delete pvc fromcrd
+$PGO_CMD delete pgcluster fromcrd -n $NS
+$PGO_CMD delete pvc fromcrd -n $NS
 
 # create the required postgres credentials for the fromcrd cluster
-$CO_CMD $NS create -f $DIR/postgres-secret.yaml
-$CO_CMD $NS create -f $DIR/primaryuser-secret.yaml
-$CO_CMD $NS create -f $DIR/testuser-secret.yaml
+$PGO_CMD -n $NS create -f $DIR/postgres-secret.yaml
+$PGO_CMD -n $NS create -f $DIR/primaryuser-secret.yaml
+$PGO_CMD -n $NS create -f $DIR/testuser-secret.yaml
 
 # create the pgcluster CRD for the fromcrd cluster
-$CO_CMD $NS create -f $DIR/fromcrd.json
+$PGO_CMD -n $NS create -f $DIR/fromcrd.json
 

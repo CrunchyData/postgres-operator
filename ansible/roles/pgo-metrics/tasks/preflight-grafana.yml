@@ -1,0 +1,17 @@
+---
+- name: Check if inventory file variables are defined for Grafana
+  tags: always
+  fail:
+    msg: "Please specify the value of {{item}} in your inventory file"
+  when: '{{ item }} is undefined or {{ item }} == ""'
+  with_items:
+  - metrics_namespace
+  - grafana_install
+  - grafana_admin_username
+  - grafana_admin_password
+  - grafana_port
+  - grafana_service_name
+  - grafana_default_dashboards
+  - grafana_storage_access_mode
+  - grafana_storage_class_name
+  - grafana_volume_size

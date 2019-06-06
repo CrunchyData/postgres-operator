@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,23 +20,31 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
+	log "github.com/sirupsen/logrus"
 )
 
 // deleteCluster ...
 func deleteCluster(args []string, ns string) {
 	log.Debugf("deleteCluster called %v", args)
 
-	if len(args) == 0 && Selector != "" {
+	if AllFlag {
 		args = make([]string, 1)
 		args[0] = "all"
 	}
 
+	r := msgs.DeleteClusterRequest{}
+	r.Selector = Selector
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	r.DeleteBackups = DeleteBackups
+	r.DeleteData = DeleteData
+
 	for _, arg := range args {
-		response, err := api.DeleteCluster(httpclient, arg, Selector, &SessionCredentials, DeleteData, DeleteBackups, ns)
-		//var response msgs.DeleteClusterResponse
+		r.Clustername = arg
+		response, err := api.DeleteCluster(httpclient, &r, &SessionCredentials)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -68,20 +76,29 @@ func showCluster(args []string, ns string) {
 	}
 
 	log.Debugf("selector is %s", Selector)
-	if len(args) == 0 && Selector != "" {
-		args = make([]string, 1)
-		args[0] = "all"
+	if len(args) == 0 && !AllFlag && Selector == "" {
+		fmt.Println("Error: ", "--all needs to be set or a cluster name be entered or a --selector be specified")
+		os.Exit(2)
 	}
+	if Selector != "" || AllFlag {
+		args = make([]string, 1)
+		args[0] = ""
+	}
+
+	r := new(msgs.ShowClusterRequest)
+	r.Selector = Selector
+	r.Namespace = ns
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
 
 	for _, v := range args {
 
-		response, err := api.ShowCluster(httpclient, v, Selector, CCPImageTag, &SessionCredentials, ns)
+		r.Clustername = v
+		response, err := api.ShowCluster(httpclient, &SessionCredentials, r)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
 		}
-
-		//var response msgs.ShowClusterResponse
 
 		if OutputFormat == "json" {
 			b, err := json.MarshalIndent(response, "", "  ")
@@ -169,8 +186,13 @@ func printPolicies(d *msgs.ShowClusterDeployment) {
 func createCluster(args []string, ns string) {
 	var err error
 
-	if len(args) == 0 {
-		fmt.Println("Error: Cluster name argument is required.")
+	if len(args) != 1 {
+		fmt.Println("Error: A single Cluster name argument is required.")
+		return
+	}
+
+	if !util.IsValidForResourceName(args[0]) {
+		fmt.Println("Error: Cluster name specified is not valid name - must be lowercase alphanumeric")
 		return
 	}
 
@@ -181,9 +203,7 @@ func createCluster(args []string, ns string) {
 	r.NodeLabel = NodeLabel
 	r.Password = Password
 	r.SecretFrom = SecretFrom
-	r.BackupPVC = BackupPVC
 	r.UserLabels = UserLabels
-	r.BackupPath = BackupPath
 	r.Policies = PoliciesFlag
 	r.CCPImageTag = CCPImageTag
 	r.CCPImage = CCPImage
@@ -195,9 +215,9 @@ func createCluster(args []string, ns string) {
 	r.PgpoolFlag = PgpoolFlag
 	r.PgbouncerFlag = PgbouncerFlag
 	r.PgbouncerPass = PgBouncerPassword
-	r.ArchiveFlag = ArchiveFlag
+	//r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
-	//r.BackrestRestoreFrom = BackrestRestoreFrom
+	r.BackrestStorageType = BackrestStorageType
 	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

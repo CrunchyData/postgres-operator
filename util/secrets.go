@@ -1,7 +1,7 @@
 package util
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -16,14 +16,10 @@ package util
 */
 
 import (
-	log "github.com/sirupsen/logrus"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-
-	//"k8s.io/client-go/rest"
 	"math/rand"
 	"strings"
 	"time"
@@ -31,8 +27,9 @@ import (
 
 const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 
-const charset = "abcdefghijklmnopqrstuvwxyz" +
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+const charsetNumbers = "0123456789"
 
 var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
@@ -46,7 +43,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels["pg-database"] = db
+	secret.ObjectMeta.Labels["pg-cluster"] = db
 	secret.Data = make(map[string][]byte)
 	secret.Data["username"] = []byte(enUsername)
 	secret.Data["password"] = []byte(password)
@@ -98,7 +95,7 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
 
 	log.Debugf("CopySecrets %s to %s", fromCluster, toCluster)
-	selector := "pg-database=" + fromCluster
+	selector := "pg-cluster=" + fromCluster
 
 	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
 	if err != nil {
@@ -110,7 +107,7 @@ func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster,
 		secret := v1.Secret{}
 		secret.Name = strings.Replace(s.ObjectMeta.Name, fromCluster, toCluster, 1)
 		secret.ObjectMeta.Labels = make(map[string]string)
-		secret.ObjectMeta.Labels["pg-database"] = toCluster
+		secret.ObjectMeta.Labels["pg-cluster"] = toCluster
 		secret.Data = make(map[string][]byte)
 		secret.Data["username"] = s.Data["username"][:]
 		secret.Data["password"] = s.Data["password"][:]

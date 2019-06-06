@@ -18,12 +18,19 @@ package operator
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/util/validation"
+
+	"gopkg.in/yaml.v2"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 // consolidate with cluster.affinityTemplateFields
@@ -54,11 +61,21 @@ type badgerTemplateFields struct {
 }
 
 type PgbackrestEnvVarsTemplateFields struct {
-	PgbackrestStanza    string
-	PgbackrestDBPath    string
-	PgbackrestRepo1Path string
-	PgbackrestRepo1Host string
-	PgbackrestPGPort    string
+	PgbackrestStanza            string
+	PgbackrestDBPath            string
+	PgbackrestRepo1Path         string
+	PgbackrestRepo1Host         string
+	PgbackrestRepo1Type         string
+	PgbackrestLocalAndS3Storage bool
+	PgbackrestPGPort            string
+}
+
+type PgbackrestS3EnvVarsTemplateFields struct {
+	PgbackrestS3Bucket    string
+	PgbackrestS3Endpoint  string
+	PgbackrestS3Region    string
+	PgbackrestS3Key       string
+	PgbackrestS3KeySecret string
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
@@ -87,8 +104,6 @@ type DeploymentTemplateFields struct {
 	XLOGDir                 string
 	BackrestPVCName         string
 	PVCName                 string
-	BackupPVCName           string
-	BackupPath              string
 	RootSecretName          string
 	UserSecretName          string
 	PrimarySecretName       string
@@ -99,8 +114,8 @@ type DeploymentTemplateFields struct {
 	CollectAddon            string
 	BadgerAddon             string
 	PgbackrestEnvVars       string
+	PgbackrestS3EnvVars     string
 	PgmonitorEnvVars        string
-	PgbouncerEnvVars        string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
@@ -109,18 +124,20 @@ type DeploymentTemplateFields struct {
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) string {
+func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port, storageType string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:    "db",
-			PgbackrestRepo1Host: clusterName + "-backrest-shared-repo",
-			PgbackrestRepo1Path: "/backrestrepo/" + clusterName + "-backrest-shared-repo",
-			PgbackrestDBPath:    "/pgdata/" + depName,
-			PgbackrestPGPort:    port,
+			PgbackrestStanza:            "db",
+			PgbackrestRepo1Host:         clusterName + "-backrest-shared-repo",
+			PgbackrestRepo1Path:         "/backrestrepo/" + clusterName + "-backrest-shared-repo",
+			PgbackrestDBPath:            "/pgdata/" + depName,
+			PgbackrestPGPort:            port,
+			PgbackrestRepo1Type:         GetRepoType(storageType),
+			PgbackrestLocalAndS3Storage: IsLocalAndS3Storage(storageType),
 		}
 
 		var doc bytes.Buffer
-		err := PgbackrestEnvVarsTemplate.Execute(&doc, fields)
+		err := config.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
@@ -131,13 +148,15 @@ func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port string) st
 
 }
 
-func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
+func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
 
-	if spec.UserLabels[util.LABEL_BADGER] == "true" {
+	spec := cluster.Spec
+
+	if cluster.Labels[config.LABEL_BADGER] == "true" {
 		log.Debug("crunchy_badger was found as a label on cluster create")
 		badgerTemplateFields := badgerTemplateFields{}
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
-		badgerTemplateFields.BadgerTarget = spec.Name
+		badgerTemplateFields.BadgerTarget = pgbadger_target
 		badgerTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 		badgerTemplateFields.ContainerResources = ""
 
@@ -152,14 +171,14 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 		}
 
 		var badgerDoc bytes.Buffer
-		err := BadgerTemplate1.Execute(&badgerDoc, badgerTemplateFields)
+		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			BadgerTemplate1.Execute(os.Stdout, badgerTemplateFields)
+			config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
 		}
 		return badgerDoc.String()
 	}
@@ -168,7 +187,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, spec *crv
 
 func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels[util.LABEL_COLLECT] == "true" {
+	if spec.UserLabels[config.LABEL_COLLECT] == "true" {
 		log.Debug("crunchy_collect was found as a label on cluster create")
 		_, PrimaryPassword, err3 := util.GetPasswordFromSecret(clientset, namespace, spec.PrimarySecretName)
 		if err3 != nil {
@@ -183,14 +202,14 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 
 		var collectDoc bytes.Buffer
-		err := CollectTemplate1.Execute(&collectDoc, collectTemplateFields)
+		err := config.CollectTemplate.Execute(&collectDoc, collectTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			CollectTemplate1.Execute(os.Stdout, collectTemplateFields)
+			config.CollectTemplate.Execute(os.Stdout, collectTemplateFields)
 		}
 		return collectDoc.String()
 	}
@@ -215,9 +234,9 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	}
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	_, found = kubeapi.GetConfigMap(clientset, util.GLOBAL_CUSTOM_CONFIGMAP, namespace)
+	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
 	if !found {
-		log.Debug(util.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+		log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
 	} else {
 		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
 	}
@@ -234,10 +253,11 @@ func GetLabelsFromMap(labels map[string]string) string {
 	mapLen := len(labels)
 	i := 1
 	for key, value := range labels {
-		if i < mapLen {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\",")
-		} else {
-			output += fmt.Sprintf("\"" + key + "\": \"" + value + "\"")
+		if len(validation.IsQualifiedName(key)) == 0 && len(validation.IsValidLabelValue(value)) == 0 {
+			output += fmt.Sprintf("\"%s\": \"%s\"", key, value)
+			if i < mapLen {
+				output += ","
+			}
 		}
 		i++
 	}
@@ -245,33 +265,29 @@ func GetLabelsFromMap(labels map[string]string) string {
 }
 
 // GetPrimaryLabels ...
+/**
 func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
 	primaryLabels := make(map[string]string)
-	primaryLabels[util.LABEL_PRIMARY] = "true"
 
 	primaryLabels["name"] = serviceName
-	primaryLabels[util.LABEL_PG_CLUSTER] = ClusterName
+	primaryLabels[config.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
-		if key == util.LABEL_PGPOOL || key == util.LABEL_PGBOUNCER {
+		if key == config.LABEL_PGPOOL || key == config.LABEL_PGBOUNCER {
 			//these dont apply to a primary or replica
-		} else if key == util.LABEL_AUTOFAIL || key == util.LABEL_NODE_LABEL_KEY || key == util.LABEL_NODE_LABEL_VALUE {
+		} else if key == config.LABEL_AUTOFAIL || key == config.LABEL_NODE_LABEL_KEY || key == config.LABEL_NODE_LABEL_VALUE ||
+			key == config.LABEL_BACKREST_STORAGE_TYPE {
 			//dont add these since they can break label expression checks
 			//or autofail toggling
 		} else {
+			log.Debugf("JEFF label copying XXX key=%s value=%s", key, value)
 			primaryLabels[key] = value
 		}
 	}
 
-	//now that we have the primary labels, we will overlay with
-	//replica values if this is for a replica
-
-	if replicaFlag {
-		primaryLabels[util.LABEL_PRIMARY] = "false"
-	}
-
 	return primaryLabels
 }
+*/
 
 // GetAffinity ...
 func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {
@@ -287,14 +303,14 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	affinityTemplateFields.OperatorValue = affoperator
 
 	var affinityDoc bytes.Buffer
-	err := AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
+	err := config.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
 	if err != nil {
 		log.Error(err.Error())
 		return output
 	}
 
 	if CRUNCHY_DEBUG {
-		AffinityTemplate1.Execute(os.Stdout, affinityTemplateFields)
+		config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()
@@ -308,16 +324,16 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 	var operator, key, value string
 	log.Debug("GetReplicaAffinity ")
-	if replicaLabels[util.LABEL_NODE_LABEL_KEY] != "" {
+	if replicaLabels[config.LABEL_NODE_LABEL_KEY] != "" {
 		//use the replica labels
 		operator = "In"
-		key = replicaLabels[util.LABEL_NODE_LABEL_KEY]
-		value = replicaLabels[util.LABEL_NODE_LABEL_VALUE]
+		key = replicaLabels[config.LABEL_NODE_LABEL_KEY]
+		value = replicaLabels[config.LABEL_NODE_LABEL_VALUE]
 	} else {
 		//use the cluster labels
 		operator = "NotIn"
-		key = clusterLabels[util.LABEL_NODE_LABEL_KEY]
-		value = clusterLabels[util.LABEL_NODE_LABEL_VALUE]
+		key = clusterLabels[config.LABEL_NODE_LABEL_KEY]
+		value = clusterLabels[config.LABEL_NODE_LABEL_VALUE]
 	}
 	return GetAffinity(key, value, operator)
 }
@@ -329,7 +345,7 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 		}
 
 		var doc bytes.Buffer
-		err := PgmonitorEnvVarsTemplate.Execute(&doc, fields)
+		err := config.PgmonitorEnvVarsTemplate.Execute(&doc, fields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
@@ -340,11 +356,48 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 
 }
 
-func GetPgbouncerEnvVar(psw string) string {
-	if psw == "" {
-		return ""
+func GetPgbackrestS3EnvVars(backrestLabel, backRestStorageTypeLabel string,
+	clientset *kubernetes.Clientset, ns string) string {
+
+	if backrestLabel == "true" && strings.Contains(backRestStorageTypeLabel, "s3") {
+
+		s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
+			PgbackrestS3Bucket:   Pgo.Cluster.BackrestS3Bucket,
+			PgbackrestS3Endpoint: Pgo.Cluster.BackrestS3Endpoint,
+			PgbackrestS3Region:   Pgo.Cluster.BackrestS3Region,
+		}
+
+		secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config", PgoNamespace)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		} else if !secretExists {
+			log.Error("Secret 'pgo-backrest-repo-config' does not exist. Unable to set S3 env vars for pgBackRest")
+			return ""
+		}
+
+		data := struct {
+			Key       string `yaml:"aws-s3-key"`
+			KeySecret string `yaml:"aws-s3-key-secret"`
+		}{}
+
+		err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &data)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+
+		s3EnvVars.PgbackrestS3Key = data.Key
+		s3EnvVars.PgbackrestS3KeySecret = data.KeySecret
+
+		var b bytes.Buffer
+		err = config.PgbackrestS3EnvVarsTemplate.Execute(&b, s3EnvVars)
+		if err != nil {
+			log.Error(err.Error())
+			return ""
+		}
+
+		return b.String()
 	}
-	foo := fmt.Sprintf(`"name": "PGBOUNCER_PASSWORD", "value": "%s" },{`, psw)
-	log.Debugf("pgbouncer str [%s]", foo)
-	return foo
+	return ""
 }

@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -19,12 +19,13 @@ package cluster
 */
 
 import (
-	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -49,22 +50,9 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		return
 	}
 
-	if cluster.Spec.Strategy == "" {
-		cluster.Spec.Strategy = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster failover " + cluster.Spec.Strategy)
-		return
-	}
-
 	//get initial count of replicas --selector=pg-cluster=clusterName
 	replicaList := crv1.PgreplicaList{}
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	err = kubeapi.GetpgreplicasBySelector(client, &replicaList, selector, namespace)
 	if err != nil {
 		log.Error(err)
@@ -72,13 +60,13 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 	log.Debug("replica count before failover is %d", len(replicaList.Items))
 
-	strategy.Failover(clientset, client, clusterName, task, namespace, restconfig)
+	Failover(clientset, client, clusterName, task, namespace, restconfig)
 	//remove the pgreplica CRD for the promoted replica
-	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
+	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[config.LABEL_TARGET], namespace)
 
 	//optionally, scale up the replicas to replace the failover target
 	replaced := false
-	userSelection := task.ObjectMeta.Labels[util.LABEL_AUTOFAIL_REPLACE_REPLICA]
+	userSelection := task.ObjectMeta.Labels[config.LABEL_AUTOFAIL_REPLACE_REPLICA]
 	if userSelection == "true" {
 		log.Debug("replacing replica based on user selection")
 		replaceReplica(client, &cluster, namespace)
@@ -107,8 +95,8 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 
 	//if a backrest-repo exists, bounce it with the new
 	//DB_PATH set to the new primary deployment name
-	if cluster.ObjectMeta.Labels[util.LABEL_BACKREST] == "true" {
-		err = backrest.UpdateDBPath(clientset, &cluster, task.ObjectMeta.Labels[util.LABEL_TARGET], namespace)
+	if cluster.ObjectMeta.Labels[config.LABEL_BACKREST] == "true" {
+		err = backrest.UpdateDBPath(clientset, &cluster, task.ObjectMeta.Labels[config.LABEL_TARGET], namespace)
 		if err != nil {
 			log.Error(err)
 			log.Error("error bouncing backrest-repo during failover")
@@ -134,8 +122,8 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string)
 	for k, v := range cluster.Spec.UserLabels {
 		spec.UserLabels[k] = v
 	}
-	spec.UserLabels[util.LABEL_PRIMARY] = "false"
-	spec.UserLabels[util.LABEL_PG_CLUSTER] = cluster.Spec.Name
+
+	spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.Name
 
 	newInstance := &crv1.Pgreplica{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -152,8 +140,8 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string)
 	for x, y := range cluster.ObjectMeta.Labels {
 		newInstance.ObjectMeta.Labels[x] = y
 	}
-	newInstance.ObjectMeta.Labels[util.LABEL_PRIMARY] = "false"
-	newInstance.ObjectMeta.Labels[util.LABEL_NAME] = uniqueName
+
+	newInstance.ObjectMeta.Labels[config.LABEL_NAME] = uniqueName
 
 	kubeapi.Createpgreplica(client, newInstance, ns)
 

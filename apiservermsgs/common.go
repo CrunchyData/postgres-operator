@@ -17,7 +17,7 @@ limitations under the License.
 
 import ()
 
-const PGO_VERSION = "3.5.2"
+const PGO_VERSION = "4.0.0"
 
 // Ok status
 const Ok = "ok"
@@ -33,4 +33,8 @@ type BasicAuthCredentials struct {
 	Username     string
 	Password     string
 	APIServerURL string
+}
+
+func (b BasicAuthCredentials) HasUsernameAndPassword() bool {
+	return len(b.Username) > 0 && len(b.Password) > 0
 }

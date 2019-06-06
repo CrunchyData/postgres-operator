@@ -2,7 +2,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,22 +21,23 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/crunchydata/postgres-operator/pgo/api"
 )
 
 type schedule struct {
-	schedule     string
-	scheduleType string
-	pvcName      string
-	backrestType string
-	clusterName  string
-	selector     string
-	policy       string
-	database     string
+	schedule            string
+	scheduleType        string
+	pvcName             string
+	backrestType        string
+	backrestStorageType string
+	clusterName         string
+	selector            string
+	policy              string
+	database            string
 }
 
 func createSchedule(args []string, ns string) {
@@ -48,14 +49,15 @@ func createSchedule(args []string, ns string) {
 	}
 
 	s := schedule{
-		clusterName:  clusterName,
-		backrestType: PGBackRestType,
-		pvcName:      PVCName,
-		schedule:     Schedule,
-		selector:     Selector,
-		scheduleType: ScheduleType,
-		policy:       SchedulePolicy,
-		database:     ScheduleDatabase,
+		clusterName:         clusterName,
+		backrestType:        PGBackRestType,
+		backrestStorageType: BackrestStorageType,
+		pvcName:             PVCName,
+		schedule:            Schedule,
+		selector:            Selector,
+		scheduleType:        ScheduleType,
+		policy:              SchedulePolicy,
+		database:            ScheduleDatabase,
 	}
 
 	err := s.validateSchedule()
@@ -65,17 +67,18 @@ func createSchedule(args []string, ns string) {
 	}
 
 	r := &msgs.CreateScheduleRequest{
-		ClusterName:     clusterName,
-		PGBackRestType:  PGBackRestType,
-		PVCName:         PVCName,
-		ScheduleOptions: ScheduleOptions,
-		Schedule:        Schedule,
-		Selector:        Selector,
-		ScheduleType:    strings.ToLower(ScheduleType),
-		PolicyName:      SchedulePolicy,
-		Database:        ScheduleDatabase,
-		Secret:          ScheduleSecret,
-		Namespace:       ns,
+		ClusterName:         clusterName,
+		PGBackRestType:      PGBackRestType,
+		BackrestStorageType: BackrestStorageType,
+		PVCName:             PVCName,
+		ScheduleOptions:     ScheduleOptions,
+		Schedule:            Schedule,
+		Selector:            Selector,
+		ScheduleType:        strings.ToLower(ScheduleType),
+		PolicyName:          SchedulePolicy,
+		Database:            ScheduleDatabase,
+		Secret:              ScheduleSecret,
+		Namespace:           ns,
 	}
 
 	response, err := api.CreateSchedule(httpclient, &SessionCredentials, r)
@@ -201,7 +204,8 @@ func (s *schedule) validateSchedule() error {
 		return err
 	}
 
-	if err := scheduler.ValidateBackRestSchedule(s.scheduleType, s.clusterName, s.selector, s.backrestType); err != nil {
+	if err := scheduler.ValidateBackRestSchedule(s.scheduleType, s.clusterName, s.selector, s.backrestType,
+		s.backrestStorageType); err != nil {
 		return err
 	}
 

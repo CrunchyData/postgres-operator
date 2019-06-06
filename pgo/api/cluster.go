@@ -1,7 +1,7 @@
 package api
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -20,33 +20,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	//"strconv"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	createClusterURL = "%s/clusters"
-	deleteClusterURL = "%s/clustersdelete/%s?selector=%s&delete-data=%t&delete-backups=%t&version=%s&namespace=%s"
+	deleteClusterURL = "%s/clustersdelete"
 	updateClusterURL = "%s/clustersupdate/%s?selector=%s&autofail=%s&version=%s&namespace=%s"
-	showClusterURL   = "%s/clusters/%s?selector=%s&version=%s&ccpimagetag=%s&namespace=%s"
+	showClusterURL   = "%s/showclusters"
 )
 
-func ShowCluster(httpclient *http.Client, arg, selector, ccpimagetag string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowClusterResponse, error) {
+func ShowCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowClusterRequest) (msgs.ShowClusterResponse, error) {
 
 	var response msgs.ShowClusterResponse
 
-	url := fmt.Sprintf(showClusterURL, SessionCredentials.APIServerURL, arg, selector, msgs.PGO_VERSION, ccpimagetag, ns)
+	jsonValue, _ := json.Marshal(request)
+	url := fmt.Sprintf(showClusterURL, SessionCredentials.APIServerURL)
+	log.Debugf("showCluster called...[%s]", url)
 
-	log.Debugf("show cluster called [%s]", url)
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
-
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
@@ -72,20 +72,23 @@ func ShowCluster(httpclient *http.Client, arg, selector, ccpimagetag string, Ses
 
 }
 
-func DeleteCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, deleteData, deleteBackups bool, ns string) (msgs.DeleteClusterResponse, error) {
+func DeleteCluster(httpclient *http.Client, request *msgs.DeleteClusterRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteClusterResponse, error) {
 
 	var response msgs.DeleteClusterResponse
 
-	url := fmt.Sprintf(deleteClusterURL, SessionCredentials.APIServerURL, arg, selector, deleteData, deleteBackups, msgs.PGO_VERSION, ns)
+	jsonValue, _ := json.Marshal(request)
+	url := fmt.Sprintf(deleteClusterURL, SessionCredentials.APIServerURL)
 
 	log.Debugf("delete cluster called %s", url)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
+		response.Status.Code = msgs.Error
 		return response, err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)

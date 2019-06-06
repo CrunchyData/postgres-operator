@@ -1,7 +1,7 @@
 package v1
 
 /*
- Copyright 2017-2018 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -25,6 +25,7 @@ const PgtaskResourcePlural = "pgtasks"
 const PgtaskAddPgbouncer = "add-pgbouncer"
 const PgtaskDeletePgbouncer = "delete-pgbouncer"
 const PgtaskReconfigurePgbouncer = "reconfigure-pgbouncer"
+const PgtaskUpdatePgbouncerAuths = "update-pgbouncer-auths"
 const PgtaskAddPgpool = "add-pgpool"
 const PgtaskDeletePgpool = "delete-pgpool"
 const PgtaskReconfigurePgpool = "reconfigure-pgpool"
@@ -33,11 +34,14 @@ const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"
 const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
+const PgtaskMinorUpgrade = "minorupgradecluster"
 
 const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"
 const PgtaskWorkflowCreateBenchmarkType = "createbenchmark"
 const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
+const PgtaskWorkflowPgbasebackupRestoreType = "pgbasebackuprestore"
+const PgtaskWorkflowBackupType = "backupworkflow"
 const PgtaskWorkflowSubmittedStatus = "task submitted"
 const PgtaskWorkflowCompletedStatus = "task completed"
 const PgtaskWorkflowID = "workflowid"
@@ -45,6 +49,10 @@ const PgtaskWorkflowID = "workflowid"
 const PgtaskWorkflowBackrestRestorePVCCreatedStatus = "restored PVC created"
 const PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
 const PgtaskWorkflowBackrestRestoreJobCreatedStatus = "restore job created"
+
+const PgtaskWorkflowPgbasebackupRestorePVCCreatedStatus = "restored PVC created"
+const PgtaskWorkflowPgbasebackupRestorePrimaryCreatedStatus = "restored Primary created"
+const PgtaskWorkflowPgbasebackupRestoreJobCreatedStatus = "restore job created"
 
 const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"
@@ -56,6 +64,8 @@ const PgtaskpgDump = "pgdump"
 const PgtaskpgDumpBackup = "pgdumpbackup"
 const PgtaskpgDumpInfo = "pgdumpinfo"
 const PgtaskpgRestore = "pgrestore"
+
+const PgtaskpgBasebackupRestore = "pgbasebackuprestore"
 
 const PgtaskBenchmark = "benchmark"
 

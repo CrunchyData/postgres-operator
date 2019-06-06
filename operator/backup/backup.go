@@ -1,7 +1,7 @@
 package backup
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,17 +18,22 @@ package backup
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
+	"os"
+	"regexp"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type jobTemplateFields struct {
@@ -49,7 +54,7 @@ type jobTemplateFields struct {
 func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job *crv1.Pgbackup, namespace string) {
 	var err error
 
-	if job.Spec.BackupStatus == crv1.UpgradeCompletedStatus {
+	if job.Spec.BackupStatus == crv1.CompletedStatus {
 		log.Warn("pgbackup " + job.Spec.Name + " already completed, not recreating it")
 		return
 	}
@@ -103,14 +108,14 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	}
 
 	var doc2 bytes.Buffer
-	err = operator.JobTemplate.Execute(&doc2, jobFields)
+	err = config.JobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		operator.JobTemplate.Execute(os.Stdout, jobFields)
+		config.JobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -126,7 +131,7 @@ func AddBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, job
 	}
 
 	//update the backup CRD status to submitted
-	err = util.Patch(client, "/spec/backupstatus", crv1.UpgradeSubmittedStatus, "pgbackups", job.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/backupstatus", crv1.SubmittedStatus, "pgbackups", job.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -155,4 +160,53 @@ func DeleteBackupBase(clientset *kubernetes.Clientset, client *rest.RESTClient, 
 		log.Debug("waiting for backup job to report being deleted")
 		time.Sleep(time.Second * time.Duration(3))
 	}
+}
+
+func UpdateBackupPaths(clientset *kubernetes.Clientset, jobName, namespace string) string {
+	//its pod has this label job-name=backup-yank-fjus
+	selector := "job-name=" + jobName
+	log.Debugf("looking for pod with selector %s", selector)
+	podList, err := kubeapi.GetPods(clientset, selector, namespace)
+	if err != nil {
+		log.Error(err.Error())
+		return err.Error()
+	}
+
+	if len(podList.Items) != 1 {
+		log.Error("could not find a pod for this job")
+		return "error"
+	}
+
+	podName := podList.Items[0].Name
+	log.Debugf("found pod %s", podName)
+	backupPath, err := getBackupPath(clientset, podName, namespace)
+	if err != nil {
+		log.Error("error in getting logs %s", err.Error())
+		return err.Error()
+	}
+	log.Debugf("backupPath is %s", backupPath)
+
+	return backupPath
+
+}
+
+//this func assumes the pod has completed and its a backup job pod
+func getBackupPath(clientset *kubernetes.Clientset, podName, namespace string) (string, error) {
+	opts := v1.PodLogOptions{
+		Container: "backup",
+	}
+	var logs bytes.Buffer
+
+	err := kubeapi.GetLogs(clientset, opts, &logs, podName, namespace)
+	if err != nil {
+		log.Error("error in getting logs %s", err.Error())
+		return "", err
+	}
+
+	backPathRegEx := regexp.MustCompile(`BACKUP_PATH is set to \/pgdata\/.*\.`)
+	fullBackupPathStr := backPathRegEx.FindString(logs.String())
+	backupPath := strings.TrimSuffix(strings.TrimPrefix(fullBackupPathStr, "BACKUP_PATH is set to /pgdata/"), ".")
+
+	return backupPath, nil
+
 }

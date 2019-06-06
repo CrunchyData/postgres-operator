@@ -1,33 +1,35 @@
 package scheduler
 
+/*
+ Copyright 2019 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
-	"io/ioutil"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
 
 	cv2 "gopkg.in/robfig/cron.v2"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-var PolicyJobTemplate *template.Template
-
-func Init() error {
-	buf, err := ioutil.ReadFile("/pgo-config/pgo.sqlrunner-template.json")
-	if err != nil {
-		return err
-	}
-	PolicyJobTemplate = template.Must(template.New("policy").Parse(string(buf)))
-	return nil
-}
-
-func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
+func New(label, namespace string, nsList []string, client *kubernetes.Clientset) *Scheduler {
 	apiserver.ConnectToKube()
 	restClient = apiserver.RESTClient
 	kubeClient = client
@@ -36,90 +38,62 @@ func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
 	cronClient.AddJob("* * * * *", p)
 
 	return &Scheduler{
-		namespace:  namespace,
-		label:      label,
-		CronClient: cronClient,
-		entries:    make(map[string]cv2.EntryID),
+		namespace:     namespace,
+		label:         label,
+		CronClient:    cronClient,
+		entries:       make(map[string]cv2.EntryID),
+		namespaceList: nsList,
 	}
 }
 
-func (s *Scheduler) AddSchedules() error {
-	configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespace)
-
-	for _, config := range configs.Items {
-		if _, ok := s.entries[string(config.Name)]; ok {
-			continue
-		}
-
-		contextErr := log.WithFields(log.Fields{
-			"configMap": config.Name,
-		})
-
-		if len(config.Data) != 1 {
-			contextErr.WithFields(log.Fields{
-				"error": errors.New("Schedule configmaps should contain only one schedule"),
-			}).Error("Failed reading configMap")
-		}
-
-		var schedule ScheduleTemplate
-		for _, data := range config.Data {
-			if err := json.Unmarshal([]byte(data), &schedule); err != nil {
-				contextErr.WithFields(log.Fields{
-					"error": err,
-				}).Error("Failed unmarshaling configMap")
-				continue
-			}
-		}
-
-		if err := validate(schedule); err != nil {
-			contextErr.WithFields(log.Fields{
-				"error": err,
-			}).Error("Failed to validate schedule")
-			continue
-		}
-
-		id, err := s.schedule(schedule)
-		if err != nil {
-			contextErr.WithFields(log.Fields{
-				"error": err,
-			}).Error("Failed to schedule configMap")
-			continue
-		}
-
-		log.WithFields(log.Fields{
-			"configMap":  string(config.Name),
-			"type":       schedule.Type,
-			"schedule":   schedule.Schedule,
-			"namespace":  schedule.Namespace,
-			"deployment": schedule.Deployment,
-			"label":      schedule.Label,
-			"container":  schedule.Container,
-		}).Info("Added new schedule")
-		s.entries[string(config.Name)] = id
+func (s *Scheduler) AddSchedule(config *v1.ConfigMap) error {
+	name := config.Name + config.Namespace
+	if _, ok := s.entries[name]; ok {
+		return nil
 	}
 
+	if len(config.Data) != 1 {
+		return errors.New("Schedule configmaps should contain only one schedule")
+	}
+
+	var schedule ScheduleTemplate
+	for _, data := range config.Data {
+		if err := json.Unmarshal([]byte(data), &schedule); err != nil {
+			return fmt.Errorf("Failed unmarhsaling configMap: %s", err)
+		}
+	}
+
+	if err := validate(schedule); err != nil {
+		return fmt.Errorf("Failed to validate schedule: %s", err)
+	}
+
+	id, err := s.schedule(schedule)
+	if err != nil {
+		return fmt.Errorf("Failed to schedule configmap: %s", err)
+	}
+
+	log.WithFields(log.Fields{
+		"configMap":  string(config.Name),
+		"type":       schedule.Type,
+		"schedule":   schedule.Schedule,
+		"namespace":  schedule.Namespace,
+		"deployment": schedule.Deployment,
+		"label":      schedule.Label,
+		"container":  schedule.Container,
+	}).Info("Added new schedule")
+
+	s.entries[name] = id
 	return nil
 }
 
-func (s *Scheduler) DeleteSchedules() error {
-	configs, _ := kubeapi.ListConfigMap(kubeClient, s.label, s.namespace)
-	for name := range s.entries {
-		found := false
-		for _, config := range configs.Items {
-			if name == string(config.Name) {
-				found = true
-			}
-		}
+func (s *Scheduler) DeleteSchedule(config *v1.ConfigMap) {
+	log.WithFields(log.Fields{
+		"scheduleName": config.Name,
+	}).Info("Removed schedule")
 
-		if !found {
-			log.WithFields(log.Fields{
-				"scheduleName": name,
-			}).Info("Removed schedule")
-			s.CronClient.Remove(s.entries[name])
-			delete(s.entries, name)
-		}
-	}
-	return nil
+	name := config.Name + config.Namespace
+	s.CronClient.Remove(s.entries[name])
+	delete(s.entries, name)
 }
 
 func (s *Scheduler) schedule(st ScheduleTemplate) (cv2.EntryID, error) {

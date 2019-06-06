@@ -1,0 +1,17 @@
+---
+- name: Get Project Details
+  shell: "{{ openshift_oc_bin}} get project {{ item }}"
+  with_items: "{{ all_namespaces }}"
+  register: namespace_details
+  ignore_errors: yes
+  tags: 
+  - install
+  - update
+
+- name: Create Project {{ item.item }}
+  shell: "{{ openshift_oc_bin}} new-project {{ item.item }}"
+  with_items: "{{ namespace_details.results }}"
+  when: item.rc != 0
+  tags:
+  - install
+  - update

@@ -1,9 +1,9 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 3.5.2 {docdate}
+Latest Release: 4.0.0 {docdate}
 draft: false
-weight: 31
+weight: 3
 ---
 
 # pgo.yaml Configuration
@@ -18,12 +18,12 @@ The *pgo.yaml* file is broken into major sections as described below:
 |PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
-|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-11.2-2.3.1), unless you override it using the --ccp-image-tag command line flag
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-11.3-2.4.0), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |LogStatement        | postgresql.conf log_statement value (required field)
 |LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field)
 |User        | the PostgreSQL normal user name
-|Strategy        | sets the deployment strategy to be used for deploying a cluster, currently there is only strategy *1*
+|Database        | the PostgreSQL normal user database
 |Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well
 |PgmonitorPassword        | the password to use for pgmonitor metrics collection if you specify --metrics when creating a PG cluster
 |Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
@@ -31,8 +31,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
 |PasswordLength        | optional, if set, will determine the password length used when creating passwords, defaults to 8
-|ArchiveMode        | optional, if set to true will enable archive logging for all clusters created, default is false.
-|ArchiveTimeout        | optional, if set, will determine the archive timeout setting used when ArchiveMode is true, defaults to 60 seconds
 |ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |BackrestPort        | currently required to be port 2022
@@ -43,7 +41,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 | Setting|Definition  |
 |---|---|
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
-|XlogStorage    |optional, the value of the storage configuration to use for the pgwal (archive) volume for the Postgres container /pgwal volume, if not set, the PrimaryStorage setting is used
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
@@ -133,8 +130,6 @@ for other access modes it might support.
 | Setting |Definition  |
 |---|---|
 |PreferredFailoverNode        | optional, a label selector (e.g. hosttype=offsite) that if set, will be used to pick the failover target which is running on a host that matches this label if multiple targets are equal in replication status
-|LSPVCTemplate        | the PVC lspvc template file that lists PVC contents
-|LoadTemplate        | the load template file used for load jobs
 |COImagePrefix        | image tag prefix to use for the Operator containers
 |COImageTag        | image tag to use for the Operator containers
 |Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
@@ -165,14 +160,14 @@ The following StorageType values are possible -
 
 The operator will create new PVCs using this naming convention: *dbname* where *dbname* is the database name you have specified.  For example, if you run:
 
-    pgo create cluster example1
+    pgo create cluster example1 -n pgouser1
 
 It will result in a PVC being created named *example1* and in the case of a backup job, the pvc is named *example1-backup*
 
 Note, when Storage Type is *create*, you can specify a storage configuration setting of *MatchLabels*, when set, this will cause a *selector* of *key=value* to be added into the PVC, this will let you target specific PV(s) to be matched for this cluster. Note, if a PV does not match the claim request, then the cluster will not start.  Users
 that want to use this feature have to place labels on their PV resources as part of PG cluster creation before creating the PG cluster.  For example, users would add a label like this to their PV before they create the PG cluster:
 
-    kubectl label pv somepv myzone=somezone
+    kubectl label pv somepv myzone=somezone -n pgouser1
 
 If you do not specify *MatchLabels* in the storage configuration, then no match filter is added and any available PV will be used to satisfy the PVC request.  This option does not apply to *dynamic* storage types.
 
@@ -187,7 +182,7 @@ In the *pgo.yaml* configuration file you have the option to configure a default 
 
 You can also override the default value using the `--resources-config` command flag when creating a new cluster:
 
-    pgo create cluster testcluster --resources-config=large
+    pgo create cluster testcluster --resources-config=large -n pgouser1
 
 Note, if you try to allocate more resources than your
 host or Kube cluster has available then you will see your
@@ -202,17 +197,17 @@ Events:
 ## Overriding Storage Configuration Defaults
  
 
-    pgo create cluster testcluster --storage-config=bigdisk
+    pgo create cluster testcluster --storage-config=bigdisk -n pgouser1
 
  
 
 That example will create a cluster and specify a storage configuration of *bigdisk* to be used for the primary database storage. The replica storage will default to the value of ReplicaStorage as specified in *pgo.yaml*.
 
-    pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk
+    pgo create cluster testcluster2 --storage-config=fastdisk --replica-storage-config=slowdisk -n pgouser1
 
 That example will create a cluster and specify a storage configuration of *fastdisk* to be used for the primary database storage, while the replica storage will use the storage configuration *slowdisk*.
 
-    pgo backup testcluster --storage-config=offsitestorage
+    pgo backup testcluster --storage-config=offsitestorage -n pgouser1
 
 That example will create a backup and use the *offsitestorage* storage configuration for persisting the backup.
 

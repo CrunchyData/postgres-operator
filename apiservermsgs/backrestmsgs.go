@@ -1,7 +1,7 @@
 package apiservermsgs
 
 /*
-Copyright 2017 Crunchy Data Solutions, Inc.
+Copyright 2019 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,10 +23,11 @@ type CreateBackrestBackupResponse struct {
 
 // CreateBackrestBackupRequest ...
 type CreateBackrestBackupRequest struct {
-	Namespace  string
-	Args       []string
-	Selector   string
-	BackupOpts string
+	Namespace           string
+	Args                []string
+	Selector            string
+	BackupOpts          string
+	BackrestStorageType string
 }
 
 type ShowBackrestDetail struct {
@@ -48,10 +49,11 @@ type RestoreResponse struct {
 
 // RestoreRequest ...
 type RestoreRequest struct {
-	Namespace   string
-	FromCluster string
-	ToPVC       string
-	RestoreOpts string
-	PITRTarget  string
-	NodeLabel   string
+	Namespace           string
+	FromCluster         string
+	ToPVC               string
+	RestoreOpts         string
+	PITRTarget          string
+	NodeLabel           string
+	BackrestStorageType string
 }

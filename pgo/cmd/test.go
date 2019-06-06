@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -18,9 +18,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
 )
@@ -32,11 +32,14 @@ var testCmd = &cobra.Command{
 
 	pgo test mycluster
 	pgo test --selector=env=research
-	pgo test all`,
+	pgo test --all`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		log.Debug("test called")
-		if Selector == "" && len(args) == 0 {
-			fmt.Println(`Error: You must specify the name of the clusters to test.`)
+		if Selector == "" && len(args) == 0 && !AllFlag {
+			fmt.Println(`Error: You must specify the name of the clusters to test or --all or a --selector.`)
 		} else {
 			if OutputFormat != "" && OutputFormat != "json" {
 				fmt.Println("Error: Only 'json' is currently supported for the --output flag value.")
@@ -51,6 +54,8 @@ func init() {
 	RootCmd.AddCommand(testCmd)
 	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
+	testCmd.Flags().BoolVar(&AllFlag, "all", false, "test all resources.")
+
 }
 
 func showTest(args []string, ns string) {
@@ -58,13 +63,25 @@ func showTest(args []string, ns string) {
 	log.Debugf("showCluster called %v", args)
 
 	log.Debugf("selector is %s", Selector)
-	if len(args) == 0 && Selector != "" {
+
+	if len(args) == 0 && !AllFlag && Selector == "" {
+		fmt.Println("Error: ", "--all needs to be set or a cluster name be entered or a --selector be specified")
+		os.Exit(2)
+	}
+	if Selector != "" || AllFlag {
 		args = make([]string, 1)
 		args[0] = "all"
 	}
 
+	r := new(msgs.ClusterTestRequest)
+	r.Selector = Selector
+	r.Namespace = ns
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
+
 	for _, arg := range args {
-		response, err := api.ShowTest(httpclient, arg, Selector, &SessionCredentials, ns)
+		r.Clustername = arg
+		response, err := api.ShowTest(httpclient, &SessionCredentials, r)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

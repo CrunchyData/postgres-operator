@@ -21,30 +21,18 @@ package cluster
 import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"strconv"
 	"strings"
 )
-
-// Strategy ....
-type Strategy interface {
-	Scale(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgreplica, string, string, *crv1.Pgcluster) error
-	AddCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string, string) error
-	Failover(*kubernetes.Clientset, *rest.RESTClient, string, *crv1.Pgtask, string, *rest.Config) error
-	DeleteCluster(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, string) error
-	DeleteReplica(*kubernetes.Clientset, *crv1.Pgreplica, string) error
-
-	MinorUpgrade(*kubernetes.Clientset, *rest.RESTClient, *crv1.Pgcluster, *crv1.Pgupgrade, string) error
-	UpdatePolicyLabels(*kubernetes.Clientset, string, string, map[string]string) error
-}
 
 // ServiceTemplateFields ...
 type ServiceTemplateFields struct {
@@ -58,18 +46,11 @@ type ServiceTemplateFields struct {
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
 
-var strategyMap map[string]Strategy
-
-func init() {
-	strategyMap = make(map[string]Strategy)
-	strategyMap["1"] = Strategy1{}
-}
-
 // AddClusterBase ...
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
-	if cl.Spec.Status == crv1.UpgradeCompletedStatus {
+	if cl.Spec.Status == crv1.CompletedStatus {
 		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
 		return
 	}
@@ -91,51 +72,11 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
-	//only allocate an xlog pvc if this is not a backrest
-	if cl.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cl.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
-		pvcName := cl.Spec.Name + "-xlog"
-		_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
-		if found {
-			log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", pvcName)
-		} else {
-			storage := crv1.PgStorageSpec{}
-			pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
-			storage.StorageClass = pgoStorage.StorageClass
-			storage.AccessMode = pgoStorage.AccessMode
-			storage.Size = pgoStorage.Size
-			storage.StorageType = pgoStorage.StorageType
-			storage.MatchLabels = pgoStorage.MatchLabels
-			storage.SupplementalGroups = pgoStorage.SupplementalGroups
-			storage.Fsgroup = pgoStorage.Fsgroup
-			_, err := pvc.CreatePVC(clientset, &storage, pvcName, cl.Spec.Name, namespace)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
-	}
-
-	log.Debugf("creating Pgcluster object strategy is [%s]", cl.Spec.Strategy)
-	//allows user to override with their own passwords
-
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-		return
-	}
-
 	//replaced with ccpimagetag instead of pg version
 
-	strategy.AddCluster(clientset, client, cl, namespace, pvcName)
+	AddCluster(clientset, client, cl, namespace, pvcName)
 
-	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
@@ -144,18 +85,21 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[util.LABEL_PGPOOL])
+	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[config.LABEL_PGPOOL])
 	//add pgpool deployment if requested
-	if cl.Spec.UserLabels[util.LABEL_PGPOOL] == "true" {
+	if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
 		log.Debug("pgpool requested")
 		//create the pgpool deployment using that credential
 		AddPgpool(clientset, cl, namespace, true)
 	}
 	//add pgbouncer deployment if requested
-	if cl.Spec.UserLabels[util.LABEL_PGBOUNCER] == "true" {
+	// if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+	if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
 		log.Debug("pgbouncer requested")
 		//create the pgbouncer deployment using that credential
-		AddPgbouncer(clientset, cl, namespace, true, false)
+		AddPgbouncer(clientset, client, cl, namespace, true, false)
+
+		// create the task to update db authorizations after pg container goes ready....
 	}
 
 	//add replicas if requested
@@ -176,27 +120,27 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			spec.UserLabels = cl.Spec.UserLabels
 
 			//the replica should not use the same node labels as the primary
-			spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = ""
-			spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = ""
+			spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
+			spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
 			//check for replica node label in pgo.yaml
 			if operator.Pgo.Cluster.ReplicaNodeLabel != "" {
 				parts := strings.Split(operator.Pgo.Cluster.ReplicaNodeLabel, "=")
-				spec.UserLabels[util.LABEL_NODE_LABEL_KEY] = parts[0]
-				spec.UserLabels[util.LABEL_NODE_LABEL_VALUE] = parts[1]
+				spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
+				spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 				log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
 			}
 
 			labels := make(map[string]string)
-			labels[util.LABEL_PG_CLUSTER] = cl.Spec.Name
+			labels[config.LABEL_PG_CLUSTER] = cl.Spec.Name
 
 			spec.ClusterName = cl.Spec.Name
 			uniqueName := util.RandStringBytesRmndr(4)
-			labels[util.LABEL_NAME] = cl.Spec.Name + "-" + uniqueName
-			spec.Name = labels[util.LABEL_NAME]
+			labels[config.LABEL_NAME] = cl.Spec.Name + "-" + uniqueName
+			spec.Name = labels[config.LABEL_NAME]
 			newInstance := &crv1.Pgreplica{
 				ObjectMeta: meta_v1.ObjectMeta{
-					Name:   labels[util.LABEL_NAME],
+					Name:   labels[config.LABEL_NAME],
 					Labels: labels,
 				},
 				Spec: spec,
@@ -224,26 +168,14 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 // DeleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
-	log.Debugf("deleteCluster called with strategy %s", cl.Spec.Strategy)
-
 	pgtask := crv1.Pgtask{}
-	found, _ := kubeapi.Getpgtask(restclient, &pgtask, cl.Spec.Name+"-"+util.LABEL_AUTOFAIL, namespace)
+	found, _ := kubeapi.Getpgtask(restclient, &pgtask, cl.Spec.Name+"-"+config.LABEL_AUTOFAIL, namespace)
 	if found {
 		aftask := AutoFailoverTask{}
 		aftask.Clear(restclient, cl.Spec.Name, namespace)
 	}
 
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok == false {
-		log.Error("invalid Strategy requested for cluster creation" + cl.Spec.Strategy)
-		return
-	}
-
-	strategy.DeleteCluster(clientset, restclient, cl, namespace)
+	DeleteCluster(clientset, restclient, cl, namespace)
 
 	//delete any existing pgbackups
 	pgback := crv1.Pgbackup{}
@@ -257,89 +189,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		log.Error(err)
 	}
 
-	//delete any existing jobs
-	/**
-	delJobSelector := util.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
-	err = kubeapi.DeleteJobs(clientset, delJobSelector, namespace)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
-
-	//delete any existing pgupgrades
-	upgrade := crv1.Pgupgrade{}
-	found, _ = kubeapi.Getpgupgrade(restclient, &upgrade, cl.Spec.Name, namespace)
-	if found {
-		err := kubeapi.Deletepgupgrade(restclient, cl.Spec.Name, namespace)
-		if err == nil {
-			log.Debug("deleted pgupgrade " + cl.Spec.Name)
-		} else if kerrors.IsNotFound(err) {
-			log.Debug("will not delete pgupgrade, not found for " + cl.Spec.Name)
-		} else {
-			log.Error("error deleting pgupgrade " + cl.Spec.Name + err.Error())
-		}
-	}
-
-	//delete any remaining pgtasks
-	/**
-	delTaskSelector := util.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
-	log.Debugf("cluster delete delTaskSelector is " + delTaskSelector)
-	err = kubeapi.Deletepgtasks(restclient, delTaskSelector, namespace)
-	if err != nil {
-		log.Error(err)
-	}
-	*/
-
-}
-
-// AddUpgradeBase ...
-func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, upgrade *crv1.Pgupgrade, namespace string, cl *crv1.Pgcluster) error {
-	var err error
-
-	//get the strategy to use
-	if cl.Spec.Strategy == "" {
-		cl.Spec.Strategy = "1"
-		log.Info("using default cluster strategy")
-	}
-
-	strategy, ok := strategyMap[cl.Spec.Strategy]
-	if ok {
-		log.Debug("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for cluster upgrade" + cl.Spec.Strategy)
-		return err
-	}
-
-	//invoke the strategy
-	if upgrade.Spec.UpgradeType == "minor" {
-		err = strategy.MinorUpgrade(clientset, client, cl, upgrade, namespace)
-		if err == nil {
-			/**
-			err = util.Patch(client, "/spec/upgradestatus", crv1.UpgradeCompletedStatus, crv1.PgupgradeResourcePlural, upgrade.Spec.Name, namespace)
-			if err != nil {
-				log.Error(err)
-				log.Error("could not patch the ugpradestatus")
-			}
-			log.Debug("jeff updated pgupgrade to completed")
-			*/
-		} else {
-			log.Error(err)
-			log.Error("error in doing minor upgrade")
-		}
-	} else {
-		log.Error("invalid UPGRADE_TYPE requested for cluster upgrade" + upgrade.Spec.UpgradeType)
-		return err
-	}
-	if err == nil {
-		log.Info("updating the pg version after cluster upgrade")
-		fullVersion := upgrade.Spec.CCPImageTag
-		err = util.Patch(client, "/spec/ccpimagetag", fullVersion, crv1.PgclusterResourcePlural, upgrade.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err.Error())
-		}
-	}
-
-	return err
+	//delete any existing pgtasks ???
 
 }
 
@@ -347,7 +197,7 @@ func AddUpgradeBase(clientset *kubernetes.Clientset, client *rest.RESTClient, up
 func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
 	var err error
 
-	if replica.Spec.Status == crv1.UpgradeCompletedStatus {
+	if replica.Spec.Status == crv1.CompletedStatus {
 		log.Warn("crv1 pgreplica " + replica.Spec.Name + " is already marked complete, will not recreate")
 		return
 	}
@@ -367,38 +217,6 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
-	//dont allocate an xlog PVC if this is a backrest cluster
-	if cluster.Spec.UserLabels[util.LABEL_ARCHIVE] == "true" && cluster.Spec.UserLabels[util.LABEL_BACKREST] != "true" {
-		//_, err := pvc.CreatePVC(clientset, &cluster.Spec.PrimaryStorage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
-		storage := crv1.PgStorageSpec{}
-		pgoStorage := operator.Pgo.Storage[operator.Pgo.XlogStorage]
-		storage.StorageClass = pgoStorage.StorageClass
-		storage.AccessMode = pgoStorage.AccessMode
-		storage.Size = pgoStorage.Size
-		storage.StorageType = pgoStorage.StorageType
-		storage.MatchLabels = pgoStorage.MatchLabels
-		storage.SupplementalGroups = pgoStorage.SupplementalGroups
-		storage.Fsgroup = pgoStorage.Fsgroup
-		_, err := pvc.CreatePVC(clientset, &storage, replica.Spec.Name+"-xlog", cluster.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-	}
-
-	/**
-	//the -backrestrepo pvc is now an emptydir volume to be backward
-	//compatible with the postgres container only, it is not used
-	//with the shared backrest repo design
-	if cluster.Spec.UserLabels[util.LABEL_BACKREST] == "true" {
-		_, err := pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, replica.Spec.Name+"-backrestrepo", cluster.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-	}
-	*/
-
 	log.Debugf("created replica pvc [%s]", pvcName)
 
 	//update the replica CRD pvcname
@@ -407,28 +225,14 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	log.Debugf("creating Pgreplica object strategy is [%s]", cluster.Spec.Strategy)
-
-	if cluster.Spec.Strategy == "" {
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
-		return
-	}
-
 	//create the replica service if it doesnt exist
 
 	st := operator.Pgo.Cluster.ServiceType
 
-	if replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
-		st = replica.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
-	} else if cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE] != "" {
-		st = cluster.Spec.UserLabels[util.LABEL_SERVICE_TYPE]
+	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
+	} else if cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
 	}
 
 	serviceName := replica.Spec.ClusterName + "-replica"
@@ -447,10 +251,10 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//instantiate the replica
-	strategy.Scale(clientset, client, replica, namespace, pvcName, &cluster)
+	Scale(clientset, client, replica, namespace, pvcName, &cluster)
 
 	//update the replica CRD status
-	err = util.Patch(client, "/spec/status", crv1.UpgradeCompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
@@ -469,21 +273,7 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 		return
 	}
 
-	log.Debugf("creating Pgreplica object strategy is [%s]", cluster.Spec.Strategy)
-
-	if cluster.Spec.Strategy == "" {
-		log.Info("using default strategy")
-	}
-
-	strategy, ok := strategyMap[cluster.Spec.Strategy]
-	if ok {
-		log.Info("strategy found")
-	} else {
-		log.Error("invalid Strategy requested for replica creation" + cluster.Spec.Strategy)
-		return
-	}
-
-	strategy.DeleteReplica(clientset, replica, namespace)
+	DeleteReplica(clientset, replica, namespace)
 
 }
 
@@ -505,7 +295,7 @@ func deleteConfigMaps(clientset *kubernetes.Clientset, clusterName, ns string) e
 
 func cleanupPreviousTasks(client *rest.RESTClient, clusterName, namespace string) error {
 
-	selector := util.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	taskList := crv1.PgtaskList{}
 
 	err := kubeapi.GetpgtasksBySelector(client, &taskList, selector, namespace)

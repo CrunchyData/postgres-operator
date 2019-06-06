@@ -1,0 +1,70 @@
+---
+- name: Check if PGBackup CRD Is Installed
+  shell: "{{ kubectl_or_oc }} get crd pgbackups.crunchydata.com"
+  register: crds_result
+  ignore_errors: yes
+  no_log: true
+  tags: [install]
+
+- name: Create PGBackup CRD
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgbackups-crd.yaml -n {{ pgo_operator_namespace }}"
+  when: crds_result.rc == 1
+  ignore_errors: no
+  no_log: false
+  tags: [install]
+
+- name: Check if PGCluster CRD Is Installed
+  shell: "{{ kubectl_or_oc }} get crd pgclusters.crunchydata.com"
+  register: crds_result
+  ignore_errors: yes
+  no_log: true
+  tags: [install]
+
+- name: Create PGClusters CRD
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgclusters-crd.yaml -n {{ pgo_operator_namespace }}"
+  when: crds_result.rc == 1
+  ignore_errors: no
+  no_log: false
+  tags: [install]
+
+- name: Check if PGPolicies CRD Is Installed
+  shell: "{{ kubectl_or_oc }} get crd pgpolicies.crunchydata.com"
+  register: crds_result
+  ignore_errors: yes
+  no_log: true
+  tags: [install]
+
+- name: Create PGPolicies CRD
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgpolicies-crd.yaml -n {{ pgo_operator_namespace }}"
+  when: crds_result.rc == 1
+  ignore_errors: no
+  no_log: false
+  tags: [install]
+
+- name: Check if PGReplicas CRD Is Installed
+  shell: "{{ kubectl_or_oc }} get crd pgreplicas.crunchydata.com"
+  register: crds_result
+  ignore_errors: yes
+  no_log: true
+  tags: [install]
+
+- name: Create PGReplicas CRD
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgreplicas-crd.yaml -n {{ pgo_operator_namespace }}"
+  when: crds_result.rc == 1
+  ignore_errors: no
+  no_log: false
+  tags: [install]
+
+- name: Check if PGTasks CRD Is Installed
+  shell: "{{ kubectl_or_oc }} get crd pgtasks.crunchydata.com"
+  register: crds_result
+  ignore_errors: yes
+  no_log: true
+  tags: [install]
+
+- name: Create PGTasks CRD
+  command: "{{ kubectl_or_oc }} create -f {{ role_path }}/files/crds/pgtasks-crd.yaml -n {{ pgo_operator_namespace }}"
+  when: crds_result.rc == 1
+  ignore_errors: no
+  no_log: false
+  tags: [install]

@@ -46,6 +46,9 @@ var benchmarkCmd = &cobra.Command{
   pgo benchmark mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("benchmark called")
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster or a selector flag to benchmark.`)
 			os.Exit(1)
@@ -55,7 +58,7 @@ var benchmarkCmd = &cobra.Command{
 }
 
 func init() {
-	//RootCmd.AddCommand(benchmarkCmd)
+	RootCmd.AddCommand(benchmarkCmd)
 	benchmarkCmd.Flags().StringVarP(&BenchmarkDatabase, "database", "d", "postgres", "The database where the benchmark should be run.")
 	benchmarkCmd.Flags().StringVarP(&BenchmarkInitOpts, "init-opts", "i", "", "The extra flags passed to pgBench during the initialization of the benchmark.")
 	benchmarkCmd.Flags().StringVarP(&BenchmarkOpts, "benchmark-opts", "b", "", "The extra flags passed to pgBench during the benchmark.")

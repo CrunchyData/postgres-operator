@@ -4,7 +4,7 @@
 package cluster
 
 /*
- Copyright 2017 Crunchy Data Solutions, Inc.
+ Copyright 2019 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -21,11 +21,12 @@ package cluster
 import (
 	"errors"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -60,65 +61,69 @@ const FAILOVER_EVENT_READY = "Ready"
 type AutoFailoverTask struct {
 }
 
-//at operator startup, add a state machine for each primary pod that
-//has autofail enabled
-func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns string) error {
+//at operator startup, check for autofail enabled pods in Not Ready status
+//in each namespace the operator is watching, trigger a failover if found
+func InitializeAutoFailover(clientset *kubernetes.Clientset, restclient *rest.RESTClient, nsList []string) error {
 	var err error
 	aftask := AutoFailoverTask{}
+	selector := config.LABEL_AUTOFAIL + "=true"
 
-	log.Infoln("autofailover Initialize ")
+	for i := 0; i < len(nsList); i++ {
+		ns := nsList[i]
 
-	selector := util.LABEL_AUTOFAIL + "=true"
-	clusterList := crv1.PgclusterList{}
+		log.Infof("autofailover Initialize ns=%s ", ns)
 
-	err = kubeapi.GetpgclustersBySelector(restclient, &clusterList, selector, ns)
-	if err != nil {
-		log.Error(err)
-		log.Error("could not InitializeAutoFailover")
-		return err
-	}
-	log.Debugf("InitializeAutoFailover %d is the pgcluster len", len(clusterList.Items))
+		clusterList := crv1.PgclusterList{}
 
-	for i := 0; i < len(clusterList.Items); i++ {
-		cl := clusterList.Items[i]
-		clusterName := cl.Name
-		selector := "service-name=" + clusterName
-		pods, err := kubeapi.GetPods(clientset, selector, ns)
+		err = kubeapi.GetpgclustersBySelector(restclient, &clusterList, selector, ns)
 		if err != nil {
 			log.Error(err)
 			log.Error("could not InitializeAutoFailover")
 			return err
 		}
-		if len(pods.Items) == 0 {
-			log.Errorf("could not InitializeAutoFailover: zero primary pods were found for cluster %s", cl.Name)
-			return err
-		}
+		log.Debugf("InitializeAutoFailover ns %s  pgclusters %d", ns, len(clusterList.Items))
 
-		p := pods.Items[0]
-		for _, c := range p.Status.ContainerStatuses {
-			if c.Name == "database" {
-				if c.Ready {
-					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, ns)
-				} else {
-					aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
-					secs, _ := strconv.Atoi(operator.Pgo.Pgo.AutofailSleepSeconds)
-					log.Debugf("InitializeAutoFailover: started state machine for cluster %s", clusterName)
-					sm := StateMachine{
-						Clientset:    clientset,
-						RESTClient:   restclient,
-						Namespace:    ns,
-						SleepSeconds: secs,
-						ClusterName:  clusterName,
+		for i := 0; i < len(clusterList.Items); i++ {
+			cl := clusterList.Items[i]
+			clusterName := cl.Name
+			selector := "service-name=" + clusterName
+			pods, err := kubeapi.GetPods(clientset, selector, ns)
+			if err != nil {
+				log.Error(err)
+				log.Error("could not InitializeAutoFailover")
+				return err
+			}
+			if len(pods.Items) == 0 {
+				log.Errorf("could not InitializeAutoFailover: zero primary pods were found for cluster %s", cl.Name)
+				return err
+			}
+
+			p := pods.Items[0]
+			for _, c := range p.Status.ContainerStatuses {
+				if c.Name == "database" {
+					if c.Ready {
+						aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_READY, ns)
+					} else {
+						aftask.AddEvent(restclient, clusterName, FAILOVER_EVENT_NOT_READY, ns)
+						secs, _ := strconv.Atoi(operator.Pgo.Pgo.AutofailSleepSeconds)
+						log.Debugf("InitializeAutoFailover: started state machine for cluster %s", clusterName)
+						sm := StateMachine{
+							Clientset:    clientset,
+							RESTClient:   restclient,
+							Namespace:    ns,
+							SleepSeconds: secs,
+							ClusterName:  clusterName,
+						}
+
+						go sm.Run()
+
 					}
-
-					go sm.Run()
-
 				}
 			}
 		}
-	}
 
-	aftask.Print(restclient, ns)
+		aftask.Print(restclient, ns)
+	}
 	return err
 }
 
@@ -220,7 +225,7 @@ func AutofailBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 func (*AutoFailoverTask) Exists(restclient *rest.RESTClient, clusterName, namespace string) bool {
 	task := crv1.Pgtask{}
-	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	taskName := clusterName + "-" + config.LABEL_AUTOFAIL
 	found, _ := kubeapi.Getpgtask(restclient, &task, taskName, namespace)
 	return found
 }
@@ -229,7 +234,7 @@ func (*AutoFailoverTask) AddEvent(restclient *rest.RESTClient, clusterName, even
 	var err error
 	var found bool
 
-	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	taskName := clusterName + "-" + config.LABEL_AUTOFAIL
 	task := crv1.Pgtask{}
 	found, err = kubeapi.Getpgtask(restclient, &task, taskName, namespace)
 	if !found {
@@ -238,7 +243,7 @@ func (*AutoFailoverTask) AddEvent(restclient *rest.RESTClient, clusterName, even
 		task.Spec.Status = eventType
 		task.Spec.Name = clusterName
 		task.ObjectMeta.Labels = make(map[string]string)
-		task.ObjectMeta.Labels[util.LABEL_AUTOFAIL] = "true"
+		task.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "true"
 		task.Spec.TaskType = crv1.PgtaskAutoFailover
 		task.Spec.Parameters = make(map[string]string)
 		task.Spec.Parameters[time.Now().String()] = eventType
@@ -261,7 +266,7 @@ func (*AutoFailoverTask) Print(restclient *rest.RESTClient, namespace string) {
 
 	tasklist := crv1.PgtaskList{}
 
-	err := kubeapi.GetpgtasksBySelector(restclient, &tasklist, util.LABEL_AUTOFAIL, namespace)
+	err := kubeapi.GetpgtasksBySelector(restclient, &tasklist, config.LABEL_AUTOFAIL, namespace)
 	if err != nil {
 		log.Error(err)
 		return
@@ -278,7 +283,7 @@ func (*AutoFailoverTask) Print(restclient *rest.RESTClient, namespace string) {
 
 func (*AutoFailoverTask) Clear(restclient *rest.RESTClient, clusterName, namespace string) {
 
-	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	taskName := clusterName + "-" + config.LABEL_AUTOFAIL
 	err := kubeapi.Deletepgtask(restclient, taskName, namespace)
 	if err != nil {
 		log.Error(err)
@@ -288,7 +293,7 @@ func (*AutoFailoverTask) Clear(restclient *rest.RESTClient, clusterName, namespa
 
 func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, namespace string) (string, map[string]string) {
 	task := crv1.Pgtask{}
-	taskName := clusterName + "-" + util.LABEL_AUTOFAIL
+	taskName := clusterName + "-" + config.LABEL_AUTOFAIL
 	found, _ := kubeapi.Getpgtask(restclient, &task, taskName, namespace)
 	if found {
 		log.Debugf("autofail GetEvents status %s on task %s events %d", task.Spec.Status, taskName, len(task.Spec.Parameters))
@@ -299,8 +304,7 @@ func (*AutoFailoverTask) GetEvents(restclient *rest.RESTClient, clusterName, nam
 
 func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, ns string) (string, error) {
 
-	//selector := util.LABEL_PRIMARY + "=false," + util.LABEL_PG_CLUSTER + "=" + clusterName
-	selector := util.LABEL_SERVICE_NAME + "=" + clusterName + "-replica" + "," + util.LABEL_PG_CLUSTER + "=" + clusterName
+	selector := config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica" + "," + config.LABEL_PG_CLUSTER + "=" + clusterName
 
 	deployments, err := kubeapi.GetDeployments(clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
@@ -314,14 +318,13 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	//return a deployment target that has a Ready database
 	log.Debugf("autofail deps len %d\n", len(deployments.Items))
 	found := false
-	readyDeps := make([]v1beta1.Deployment, 0)
+	readyDeps := make([]v1.Deployment, 0)
 	for _, dep := range deployments.Items {
 		ready := getPodStatus(clientset, dep.Name, ns)
 		if ready {
 			log.Debug("autofail: found ready deployment " + dep.Name)
 			found = true
 			readyDeps = append(readyDeps, dep)
-			//return dep.Name, err
 		} else {
 			log.Debug("autofail: found not ready deployment " + dep.Name)
 		}
@@ -339,10 +342,13 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	readyTargets := make([]util.ReplicationInfo, 0)
 	for _, d := range readyDeps {
 		target := util.ReplicationInfo{}
-		target.ReceiveLocation, target.ReplayLocation, target.Node = util.GetRepStatus(restclient, clientset, &d, ns, operator.Pgo.Cluster.Port)
+		target.ReceiveLocation, target.ReplayLocation, target.Node, err = util.GetRepStatus(restclient, clientset, &d, ns, operator.Pgo.Cluster.Port)
+		if err != nil {
+			return "", err
+		}
 		target.DeploymentName = d.Name
 		readyTargets = append(readyTargets, target)
-		log.Debug("autofail receive=%d replay=%d dep=%s\n", target.ReceiveLocation, target.ReplayLocation, d.Name)
+		log.Debugf("autofail receive=%d replay=%d dep=%s\n", target.ReceiveLocation, target.ReplayLocation, d.Name)
 	}
 
 	//next see which one is the most up to date, this is the case
@@ -403,7 +409,7 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 func getPodStatus(clientset *kubernetes.Clientset, depname, ns string) bool {
 	//TODO verify this selector is optimal
 	//get pods with replica-name=deployName
-	pods, err := kubeapi.GetPods(clientset, util.LABEL_REPLICA_NAME+"="+depname, ns)
+	pods, err := kubeapi.GetPods(clientset, config.LABEL_REPLICA_NAME+"="+depname, ns)
 	if err != nil {
 		return false
 	}
@@ -433,7 +439,7 @@ func (s *StateMachine) triggerFailover() {
 
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = s.Namespace
-	spec.Name = s.ClusterName + "-" + util.LABEL_FAILOVER
+	spec.Name = s.ClusterName + "-" + config.LABEL_FAILOVER
 
 	//see if task is already present (e.g. a prior failover)
 	priorTask := crv1.Pgtask{}
@@ -460,8 +466,8 @@ func (s *StateMachine) triggerFailover() {
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[s.ClusterName] = s.ClusterName
 	labels := make(map[string]string)
-	labels[util.LABEL_TARGET] = targetDeploy
-	labels[util.LABEL_PG_CLUSTER] = s.ClusterName
+	labels[config.LABEL_TARGET] = targetDeploy
+	labels[config.LABEL_PG_CLUSTER] = s.ClusterName
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   spec.Name,
