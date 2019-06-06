@@ -315,7 +315,7 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		log.Debugf("pgo-backrest-repo pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL] == "true" {
+	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
 		log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
 	}
