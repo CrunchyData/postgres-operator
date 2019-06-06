@@ -110,6 +110,7 @@ const LABEL_USERNAME = "username"
 const LABEL_PASSWORD = "password"
 
 const LABEL_PGPOOL = "crunchy-pgpool"
+const LABEL_PGPOOL_POD = "crunchy-pgpool-pod"
 const LABEL_PGPOOL_SECRET = "pgpool-secret"
 const LABEL_PGPOOL_TASK_ADD = "pgpool-add"
 const LABEL_PGPOOL_TASK_DELETE = "pgpool-delete"
