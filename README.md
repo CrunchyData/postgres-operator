@@ -35,7 +35,7 @@ The Operator is developed and tested on CentOS and RHEL linux platforms but is k
 
  - [Getting Started](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/gettingstarted/)
  - [Installation via Bash](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/operator-install/)
- - - [Installation via Ansible](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/install-with-ansible/)
+ - [Installation via Ansible](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/install-with-ansible/)
  - [PGO CLI Overview](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/operatorcli/pgo-overview/)
  - [Contributing](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/developer-setup/)
 
