@@ -33,17 +33,42 @@ The Operator is developed and tested on CentOS and RHEL linux platforms but is k
 
 ## Documentation 4.0.0
 
- - [Getting Started](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/gettingstarted/)
+If you are new to the Crunchy PostgreSQL Operator and interested in installing the Crunchy PostgreSQL Operator in your environment, please start here:
  - [Installation via Bash](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/operator-install/)
- - [Installation via Ansible](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/install-with-ansible/)
- - [PGO CLI Overview](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/operatorcli/pgo-overview/)
- - [Contributing](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/developer-setup/)
+ - [Installation via Ansible](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/gettingstarted/install-with-ansible/)
+
+If you have the Crunchy PostgreSQL Operator installed in your environment, and are interested in installation of the client interface, please start here:
+[PGO Client Install](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/install-pgo-client/)
+
+If you have the Crunchy PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here: 
+- [PGO CLI Overview](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/operatorcli/pgo-overview/)
+
+Want to contribute to the product find more info here:
+ - [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/installation/developer-setup/)
+   - Development for the 4.0 code base is on the develop branch.
+ - GitHub issues and Pull Request information
+   - [Submitting Issues](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/contributing/issues/)
+   - [Submitting Pull Request](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/contributing/pull-requests/)
 
 ## Documentation 3.5.3
 
- - [Installation](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/installation/)
- - [PGO CLI Overview](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/operator-cli/)
- - [Contributing](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/contributing/)
+If you are new to the Crunchy PostgreSQL Operator and interested in installing the Crunchy PostgreSQL Operator in your environment, please start here:
+ - [Installation via Bash](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/installation/)
+
+If you have the Crunchy PostgreSQL Operator installed in your environment, and are interested in installation of the client interface, please start here:
+[PGO Client Install](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/installation/#pgo-cli-installation)
+
+If you have the Crunchy PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here: 
+- [PGO CLI Overview](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/operator-cli/)
+
+Want to contribute to the product find more info here:
+ - [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/developer-setup/)
+   - Development on 3.5 codebase is on the develop-3.5 branch.
+ - GitHub issues and Pull Request information
+   - [Submitting Issues](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/contributing/issues/)
+   - [Submitting Pull Request](https://access.crunchydata.com/documentation/postgres-operator/3.5.3/contributing/pull-requests/)
+
+
 
 Documentation for previous releases can be found at the [Crunchy Data Access Portal](https://access.crunchydata.com/documentation)
 
