@@ -148,7 +148,7 @@ func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port, storageTy
 
 }
 
-func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster) string {
+func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
 
 	spec := cluster.Spec
 
@@ -156,7 +156,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *
 		log.Debug("crunchy_badger was found as a label on cluster create")
 		badgerTemplateFields := badgerTemplateFields{}
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
-		badgerTemplateFields.BadgerTarget = spec.Name
+		badgerTemplateFields.BadgerTarget = pgbadger_target
 		badgerTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 		badgerTemplateFields.ContainerResources = ""
 

@@ -6,7 +6,7 @@
         "labels": {
             "name": "{{.Name}}",
             "pg-cluster": "{{.ClusterName}}",
-            "crunchy-pgpool": "true",
+            "crunchy-pgpool-pod": "true",
             "service-name": "{{.Name}}",
 	    "vendor": "crunchydata"
         }
@@ -17,7 +17,7 @@
 		"matchLabels": {
             		"name": "{{.Name}}",
             		"pg-cluster": "{{.ClusterName}}",
-            		"crunchy-pgpool": "true",
+            		"crunchy-pgpool-pod": "true",
             		"service-name": "{{.Name}}",
 	    		"vendor": "crunchydata"
 		}
@@ -27,7 +27,7 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "pg-cluster": "{{.ClusterName}}",
-                    "crunchy-pgpool": "true",
+                    "crunchy-pgpool-pod": "true",
                     "service-name": "{{.Name}}",
 	    	    "vendor": "crunchydata"
                 }

@@ -24,15 +24,6 @@
                                 "containerPort": 8443
                             }
                         ],
-                        "livenessProbe": {
-                            "httpGet": {
-                                "port": 8443,
-                                "path": "/health",
-                                "scheme": "HTTPS"
-                            },
-                            "initialDelaySeconds": 4,
-                            "periodSeconds": 5
-                        },
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
