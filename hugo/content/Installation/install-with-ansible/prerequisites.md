@@ -217,7 +217,7 @@ database in a new PostgreSQL cluster is provisioned in the same zone as the node
 containing the PostgreSQL primary pod that will be using it.
 
 For instructions on setting up storage classes for multi-zone environments, see 
-the [PostgreSQL Operator Documentation](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/gettingstarted/design/designoverview/).
+the [PostgreSQL Operator Documentation](/gettingstarted/design/designoverview/).
 
 ### Examples
 
