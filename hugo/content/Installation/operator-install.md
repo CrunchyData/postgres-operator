@@ -14,8 +14,7 @@ A full installation of the Operator includes the following steps:
  - deploy the operator
  - install pgo CLI (end user command tool)
 
-Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.  pgo CLI clients are provided
-on the Github Releases page for Linux, Mac, and Windows clients.
+Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.  pgo CLI clients are provided for Linux, Mac, and Windows clients.
 
 The Operator can be deployed by multiple methods including:
 
@@ -240,7 +239,7 @@ created previously.
 
 
 ## pgo CLI Installation
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
+Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases). Crunchy Enterprise Customer can download the pgo binaries from https://access.crunchydata.com/ on the downloads page. 
 
 The *pgo* client is provided in Mac, Windows, and Linux binary formats, 
 download the appropriate client to your local laptop or workstation to work 
