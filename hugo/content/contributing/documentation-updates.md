@@ -7,8 +7,7 @@ weight: 901
 
 ## Documentation
 
-The [documentation website](https://access.crunchydata.com/documentation/postgres-operator/4.0.0/) is generated using [Hugo](https://gohugo.io/) and
-https://pages.github.com/)[GitHub Pages]().
+The [documentation website](/) is generated using [Hugo](https://gohugo.io/).
 
 ## Hosting Hugo Locally (Optional)
 
