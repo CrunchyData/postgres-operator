@@ -1134,7 +1134,7 @@ func getType(pod *v1.Pod, clusterName string) string {
 		return msgs.PodTypePgbackrest
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] != "" {
 		return msgs.PodTypePgbouncer
-	} else if pod.ObjectMeta.Labels[config.LABEL_PGPOOL] != "" {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] != "" {
 		return msgs.PodTypePgpool
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
