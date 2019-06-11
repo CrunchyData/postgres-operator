@@ -23,6 +23,23 @@
 
 - name: Deploy Prometheus
   block:
+    - name: Template Prometheus RBAC
+      template:
+        src: "{{ item }}"
+        dest: "{{ prom_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: '0600'
+      with_items:
+      - prometheus-rbac.json.j2
+      tags: [install-metrics]
+      when: create_rbac|bool
+
+    - name: Create Prometheus RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      with_items:
+      - prometheus-rbac.json
+      tags: [install-metrics]
+      when: create_rbac|bool
+
     - name: Template Prometheus Objects
       template:
         src: "{{ item }}"
@@ -30,7 +47,6 @@
         mode: '0600'
       with_items: 
       - prometheus-pvc.json.j2
-      - prometheus-rbac.json.j2
       - prometheus-service.json.j2
       - prometheus-deployment.json.j2
       tags: [install-metrics]
@@ -39,7 +55,6 @@
       command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
       with_items:
       - prometheus-pvc.json
-      - prometheus-rbac.json
       - prometheus-service.json
       - prometheus-deployment.json
       tags: [install-metrics]
