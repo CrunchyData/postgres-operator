@@ -63,6 +63,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing Service Account
   shell: |
@@ -74,6 +75,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing Cluster Role Bindings
   shell: |
@@ -87,6 +89,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing Cluster Roles
   shell: |
@@ -100,6 +103,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing Backrest Role Binding
   shell: |
@@ -111,6 +115,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing PGO Role Binding
   shell: |
@@ -122,6 +127,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing Backrest Role
   shell: |
@@ -133,6 +139,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing PGO Role
   shell: |
@@ -144,6 +151,7 @@
   tags:
   - deprovision
   - update
+  when: create_rbac|bool
 
 - name: Delete existing Custom Objects
   shell: |
