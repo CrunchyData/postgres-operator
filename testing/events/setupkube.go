@@ -2,7 +2,7 @@ package eventtest
 
 import (
 	"flag"
-	"fmt"
+	//"fmt"
 	//kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	//"os/exec"
@@ -11,6 +11,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -21,22 +22,38 @@ var (
 	namespace       = flag.String("namespace", "pgouser1", "namespace to test within ")
 	username        = flag.String("username", "pgouser1", "username to test within ")
 	testclustername = flag.String("clustername", "", "cluster name to test with")
+	eventTcpAddress = flag.String("event-tcp-address", "localhost:14150", "tcp port to the event pgo-event port")
 
+	EventTCPAddress = "localhost:14150"
 	Namespace       = "pgouser1"
 	Username        = "pgouser1"
 	TestClusterName = "foo"
 	SLEEP_SECS      = 10
 )
 
+var Topics []string
+
 func SetupKube() (*kubernetes.Clientset, *rest.RESTClient) {
+
+	log.SetLevel(log.DebugLevel)
+	log.Debug("debug flag set to true")
+
+	Topics = make([]string, 1)
+	Topics[0] = "testtopic"
+
 	var RESTClient *rest.RESTClient
 
 	flag.Parse()
 
+	if *eventTcpAddress != "" {
+		EventTCPAddress = *eventTcpAddress
+		log.Infof("connecting to event router at %s\n", EventTCPAddress)
+	}
+
 	if *namespace == "" {
 		val := os.Getenv("PGO_NAMESPACE")
 		if val == "" {
-			fmt.Println("PGO_NAMESPACE env var is required for smoketest")
+			log.Info("PGO_NAMESPACE env var is required for smoketest")
 			os.Exit(2)
 		}
 	} else {
@@ -49,26 +66,26 @@ func SetupKube() (*kubernetes.Clientset, *rest.RESTClient) {
 		Username = *username
 	}
 
-	fmt.Printf("running test in namespace %s\n", Namespace)
-	fmt.Printf("running test as user %s\n", Username)
-	fmt.Printf("running test on cluster %s\n", TestClusterName)
+	log.Infof("running test in namespace %s\n", Namespace)
+	log.Infof("running test as user %s\n", Username)
+	log.Infof("running test on cluster %s\n", TestClusterName)
 	// uses the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
 		os.Exit(2)
 	}
 
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
 		os.Exit(2)
 	}
 
 	RESTClient, _, err = util.NewClient(config)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
 		os.Exit(2)
 	}
 
@@ -90,10 +107,10 @@ func verifyExists(RESTClient *rest.RESTClient) {
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(RESTClient, &cluster, TestClusterName, Namespace)
 	if !found || err != nil {
-		fmt.Printf("test cluster %s deployment not found can not continue", TestClusterName)
+		log.Infof("test cluster %s deployment not found can not continue", TestClusterName)
 		os.Exit(2)
 	}
 
-	fmt.Printf("pgcluster %s is found\n", TestClusterName)
+	log.Infof("pgcluster %s is found\n", TestClusterName)
 
 }

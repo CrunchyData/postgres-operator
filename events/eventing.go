@@ -25,6 +25,7 @@ import (
 func Publish(e EventInterface) error {
 
 	log.Debugf("publishing %s message %s", reflect.TypeOf(e), e.String())
+	log.Debugf("header %s ", e.GetHeader().String())
 
 	b, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
