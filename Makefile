@@ -115,10 +115,14 @@ pgo-scheduler-image: check-go-vars
 	mv $(GOBIN)/pgo-scheduler ./bin/pgo-scheduler/
 	docker build -t pgo-scheduler -f $(PGO_BASEOS)/Dockerfile.pgo-scheduler.$(PGO_BASEOS) .
 	docker tag pgo-scheduler $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
+pgo-event-image: check-go-vars
+	docker build -t pgo-event -f $(PGO_BASEOS)/Dockerfile.pgo-event.$(PGO_BASEOS) .
+	docker tag pgo-event $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG)
 all:
 	make postgres-operator-image
 	make pgo-apiserver-image
 	make pgo-scheduler-image
+	make pgo-event-image
 	make pgo
 	make pgo-backrest-repo-image
 	make pgo-backrest-image

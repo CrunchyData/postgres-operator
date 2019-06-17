@@ -38,6 +38,8 @@ echo "pgo-event starting nsqd"
 
 /usr/local/bin/nsqd --data-path=/tmp --lookupd-tcp-address=127.0.0.1:4160
 
-sleep 30
+echo "pgo-event waiting till sigterm"
+
+wait
 
 echo "end of pgo-event"

@@ -14,8 +14,7 @@
             },
             "spec": {
                 "serviceAccountName": "postgres-operator",
-                "containers": [
-                    {
+                "containers": [{
                         "name": "apiserver",
                         "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
@@ -52,8 +51,7 @@
                         ],
                         "volumeMounts": [
                         ]
-                    },
-                    {
+                    }, {
                         "name": "operator",
                         "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
@@ -95,8 +93,7 @@
                         ],
                         "volumeMounts": [
                         ]
-                    },
-                    {
+                    }, {
                         "name": "scheduler",
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
 			"readinessProbe": {
@@ -122,6 +119,19 @@
                                 "name": "NAMESPACE",
                                 "value": "$NAMESPACE"
                             },
+                            {
+                                "name": "TIMEOUT",
+                                "value": "3600"
+                            }
+                        ],
+                        "volumeMounts": [
+                        ],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }, {
+                        "name": "event",
+                        "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
+                        "env": [
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"
