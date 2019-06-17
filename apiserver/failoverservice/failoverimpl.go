@@ -50,7 +50,15 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateF
 	}
 
 	//get the clusters list
-	_, err = validateClusterName(request.ClusterName, ns)
+	var theCRD *crv1.Pgcluster
+	theCRD, err = validateClusterName(request.ClusterName, ns)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	err = checkAutofail(theCRD)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -118,7 +126,15 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	resp.Targets = make([]msgs.FailoverTargetSpec, 0)
 
 	//get the clusters list
-	_, err = validateClusterName(name, ns)
+	var theCRD *crv1.Pgcluster
+
+	theCRD, err = validateClusterName(name, ns)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+	err = checkAutofail(theCRD)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -240,4 +256,14 @@ func preferredNode(nodes []string, targetNode string) bool {
 		}
 	}
 	return false
+}
+
+func checkAutofail(cluster *crv1.Pgcluster) error {
+	var err error
+	labels := cluster.ObjectMeta.Labels
+	failLabel := labels[config.LABEL_AUTOFAIL]
+	if failLabel == "true" {
+		return errors.New("autofail flag is set to true, manual failover requires autofail to be set to false, use pgo update to disable autofail.")
+	}
+	return err
 }
