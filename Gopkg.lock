@@ -145,6 +145,14 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:6a6322a15aa8e99bd156fbba0aae4e5d67b4bb05251d860b348a45dfdcba9cce"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  pruneopts = ""
+  revision = "2a8bb927dd31d8daada140a5d09578521ce5c36a"
+  version = "v0.0.1"
+
+[[projects]]
   branch = "master"
   digest = "1:1e5b1e14524ed08301977b7b8e10c719ed853cbf3f24ecb66fae783a46f207a6"
   name = "github.com/google/btree"
@@ -306,6 +314,24 @@
   version = "1.0.1"
 
 [[projects]]
+  digest = "1:7a69f6a3a33929f8b66aa39c93868ad1698f06417fe627ae067559beb94504bd"
+  name = "github.com/nsqio/go-nsq"
+  packages = ["."]
+  pruneopts = ""
+  revision = "v1.0.7"
+
+[[projects]]
+  digest = "1:74b1c47e2fd5eee485ba24cf5f470771342cf31efe3fecb6587551bc4dda61ec"
+  name = "github.com/nsqio/nsq"
+  packages = [
+    "internal/app",
+    "internal/version",
+  ]
+  pruneopts = ""
+  revision = "d22e9cf29f4caaef4819a04b93230b3a69a2d84e"
+  version = "v1.1.0"
+
+[[projects]]
   branch = "master"
   digest = "1:c24598ffeadd2762552269271b3b1510df2d83ee6696c1e543a0ff653af494bc"
   name = "github.com/petar/GoLLRB"
@@ -360,7 +386,16 @@
   branch = "master"
   digest = "1:61a86f0be8b466d6e3fbdabb155aaa4006137cb5e3fd3b949329d103fa0ceb0f"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = [
+    "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "internal/chacha20",
+    "internal/subtle",
+    "poly1305",
+    "ssh",
+    "ssh/terminal",
+  ]
   pruneopts = ""
   revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
@@ -602,15 +637,20 @@
     "github.com/fatih/color",
     "github.com/gorilla/mux",
     "github.com/lib/pq",
+    "github.com/nsqio/go-nsq",
+    "github.com/nsqio/nsq/internal/app",
+    "github.com/nsqio/nsq/internal/version",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
+    "github.com/spf13/pflag",
+    "golang.org/x/crypto/ssh",
     "gopkg.in/robfig/cron.v2",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
-    "k8s.io/api/extensions/v1beta1",
+    "k8s.io/api/storage/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/api/resource",

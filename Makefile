@@ -18,31 +18,6 @@ winpgo:	check-go-vars
 	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
 	env GOOS=windows GOARCH=386 go build github.com/blang/expenv && mv expenv.exe $(GOBIN)/expenv.exe
 
-
-gendeps: 
-	godep save \
-	github.com/crunchydata/postgres-operator/apis/cr/v1 \
-	github.com/crunchydata/postgres-operator/util \
-	github.com/crunchydata/postgres-operator/operator \
-	github.com/crunchydata/postgres-operator/operator/backup \
-	github.com/crunchydata/postgres-operator/operator/cluster \
-	github.com/crunchydata/postgres-operator/operator/pvc \
-	github.com/crunchydata/postgres-operator/controller \
-	github.com/crunchydata/postgres-operator/client \
-	github.com/crunchydata/postgres-operator/pgo/cmd \
-	github.com/crunchydata/postgres-operator/apiservermsgs \
-	github.com/crunchydata/postgres-operator/apiserver \
-	github.com/crunchydata/postgres-operator/apiserver/backupservice \
-	github.com/crunchydata/postgres-operator/apiserver/cloneservice \
-	github.com/crunchydata/postgres-operator/apiserver/clusterservice \
-	github.com/crunchydata/postgres-operator/apiserver/labelservice \
-	github.com/crunchydata/postgres-operator/apiserver/loadservice \
-	github.com/crunchydata/postgres-operator/apiserver/policyservice \
-	github.com/crunchydata/postgres-operator/apiserver/pvcservice \
-	github.com/crunchydata/postgres-operator/apiserver/upgradeservice \
-	github.com/crunchydata/postgres-operator/apiserver/userservice \
-	github.com/crunchydata/postgres-operator/apiserver/util \
-	github.com/crunchydata/postgres-operator/apiserver/versionservice 
 installrbac:
 	cd deploy && ./install-rbac.sh
 setup:
