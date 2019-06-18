@@ -22,31 +22,52 @@ import (
 )
 
 const (
-	EventReloadCluster    = 10
-	EventCreateCluster    = 20
-	EventScaleCluster     = 30
-	EventScaleDownCluster = 40
-	EventFailoverCluster  = 50
-	EventUpgradeCluster   = 60
-	EventDeleteCluster    = 70
-	EventTestCluster      = 80
-	EventCreateBackup     = 90
-	EventCreateUser       = 100
-	EventDeleteUser       = 110
-	EventUpdateUser       = 120
-	EventCreateLabel      = 130
-	EventDeleteLabel      = 135
-	EventCreatePolicy     = 140
-	EventApplyPolicy      = 150
-	EventDeletePolicy     = 160
-	EventLoad             = 170
-	EventBenchmark        = 180
-	EventLs               = 190
-	EventCat              = 200
-	EventCreatePgpool     = 210
-	EventDeletePgpool     = 220
-	EventCreatePgbouncer  = 230
-	EventDeletePgbouncer  = 240
+	EventTopicCluster   = "clustertopic"
+	EventTopicBackup    = "backuptopic"
+	EventTopicUser      = "postgresusertopic"
+	EventTopicPolicy    = "policytopic"
+	EventTopicPgpool    = "pgpooltopic"
+	EventTopicPgbouncer = "pgbouncertopio"
+	EventTopicPGO       = "pgotopic"
+	EventTopicPGOUser   = "pgousertopic"
+)
+const (
+	EventReloadCluster = iota
+	EventCreateCluster
+	EventScaleCluster
+	EventScaleDownCluster
+	EventFailoverCluster
+	EventUpgradeCluster
+	EventDeleteCluster
+	EventTestCluster
+	EventCreateLabel
+	EventDeleteLabel
+	EventLoad
+	EventBenchmark
+	EventLs
+	EventCat
+
+	EventCreateBackup
+
+	EventCreateUser
+	EventDeleteUser
+	EventUpdateUser
+
+	EventCreatePolicy
+	EventApplyPolicy
+	EventDeletePolicy
+
+	EventCreatePgpool
+	EventDeletePgpool
+	EventCreatePgbouncer
+	EventDeletePgbouncer
+
+	EventPGOCreateUser
+	EventPGOUpdateUser
+	EventPGODeleteUser
+	EventPGOStart
+	EventPGOStop
+	EventPGOReload
 )
 
 type EventHeader struct {
