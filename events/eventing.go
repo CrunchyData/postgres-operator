@@ -42,5 +42,18 @@ func Publish(e EventInterface) error {
 		return err
 	}
 	log.Debug(string(b))
+
+	var producer *nsq.Producer
+	producer, err = nsq.NewProducer(e.GetHeader().SomeAddress, cfg)
+	if err != nil {
+		log.Errorf("Error: %s", err)
+		return err
+	}
+	err = producer.Publish(e.GetHeader().Topic[0], b)
+	if err != nil {
+		log.Errorf("Error: %s", err)
+		return err
+	}
+
 	return nil
 }

@@ -21,3 +21,4 @@ go test -run TestEventCreate -v --kubeconfig=/home/jeffmc/.kube/config -clustern
 To run all tests:
 
 go test ./... -v --kubeconfig=/home/jeffmc/.kube/config -clustername=foomatic -namespace=pgouser1
+
