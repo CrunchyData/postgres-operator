@@ -62,7 +62,7 @@ pgo_tls_no_verify='false'
 
 # This will set default enhancements for operator deployed PostgreSQL clusters
 auto_failover='false'
-backrest='false'
+backrest='true'
 badger='false'
 metrics='false'
 
