@@ -3,7 +3,6 @@ package eventtest
 import (
 	"github.com/crunchydata/postgres-operator/events"
 	//	log "github.com/sirupsen/logrus"
-	"os"
 	"testing"
 )
 
@@ -23,352 +22,405 @@ func TestEventCreate(t *testing.T) {
 
 	t.Log("starting")
 
-	tryEventCreateCluster(t)
 	tryEventReloadCluster(t)
+	tryEventCreateCluster(t)
+	tryEventCreateClusterCompleted(t)
 	tryEventScaleCluster(t)
 	tryEventScaleDownCluster(t)
 	tryEventFailoverCluster(t)
+	tryEventFailoverClusterCompleted(t)
+	tryEventDeleteCluster(t)
+	tryEventTestCluster(t)
+	tryEventCreateLabel(t)
+	tryEventLoad(t)
+	tryEventLoadCompleted(t)
+	tryEventBenchmark(t)
+	tryEventBenchmarkCompleted(t)
+	tryEventLs(t)
+	tryEventCat(t)
+
+	tryEventCreateBackup(t)
+	tryEventCreateBackupCompleted(t)
+
 	tryEventCreateUser(t)
 	tryEventDeleteUser(t)
 	tryEventUpdateUser(t)
-	tryEventCreateLabel(t)
+
 	tryEventCreatePolicy(t)
 	tryEventApplyPolicy(t)
 	tryEventDeletePolicy(t)
-	tryEventLoad(t)
-	tryEventLs(t)
-	tryEventCat(t)
+
 	tryEventCreatePgpool(t)
 	tryEventDeletePgpool(t)
 	tryEventCreatePgbouncer(t)
 	tryEventDeletePgbouncer(t)
+
+	tryEventPGOCreateUser(t)
+	tryEventPGOUpdateUser(t)
+	tryEventPGODeleteUser(t)
+	tryEventPGOStart(t)
+	tryEventPGOStop(t)
+	tryEventPGOUpdateConfig(t)
 }
 
 func tryEventCreateCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCreateClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: "betavalue",
 	}
 
 	err := events.NewEventCreateCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
-func tryEventReloadCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
+func tryEventCreateClusterCompleted(t *testing.T) {
+	f := events.EventCreateClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Clustername: "betavalue",
 	}
 
+	err := events.NewEventCreateClusterCompleted(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventReloadCluster(t *testing.T) {
+
 	f := events.EventReloadClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventReloadCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventScaleCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventScaleClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventScaleCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventScaleDownCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventScaleDownClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventScaleDownCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventFailoverCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventFailoverClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventFailoverCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
-func tryEventUpgradeCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
+
+func tryEventFailoverClusterCompleted(t *testing.T) {
+
+	f := events.EventFailoverClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Clustername: TestClusterName,
 	}
 
+	err := events.NewEventFailoverClusterCompleted(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventUpgradeCluster(t *testing.T) {
+
 	f := events.EventUpgradeClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventUpgradeCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventDeleteCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventDeleteClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventDeleteCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventTestCluster(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventTestClusterFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventTestCluster(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventCreateBackup(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCreateBackupFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventCreateBackup(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
-func tryEventCreateUser(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
+func tryEventCreateBackupCompleted(t *testing.T) {
+
+	f := events.EventCreateBackupCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Clustername: TestClusterName,
 	}
 
+	err := events.NewEventCreateBackupCompleted(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+
+func tryEventCreateUser(t *testing.T) {
+
 	f := events.EventCreateUserFormat{
-		EventHeader:      someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername:      TestClusterName,
-		PostgresUsername: Username,
+		PostgresUsername: TestUsername,
 	}
 
 	err := events.NewEventCreateUser(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventDeleteUser(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventDeleteUserFormat{
-		EventHeader:      someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername:      TestClusterName,
-		PostgresUsername: Username,
+		PostgresUsername: TestUsername,
 	}
 
 	err := events.NewEventDeleteUser(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventUpdateUser(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventUpdateUserFormat{
-		EventHeader:      someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername:      TestClusterName,
-		PostgresUsername: Username,
+		PostgresUsername: TestUsername,
 	}
 
 	err := events.NewEventUpdateUser(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventCreateLabel(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCreateLabelFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 		Label:       "somelabel",
 	}
@@ -376,26 +428,24 @@ func tryEventCreateLabel(t *testing.T) {
 	err := events.NewEventCreateLabel(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
+
 func tryEventCreatePolicy(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCreatePolicyFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
 	}
@@ -403,26 +453,23 @@ func tryEventCreatePolicy(t *testing.T) {
 	err := events.NewEventCreatePolicy(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventApplyPolicy(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventApplyPolicyFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
 	}
@@ -430,26 +477,23 @@ func tryEventApplyPolicy(t *testing.T) {
 	err := events.NewEventApplyPolicy(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventDeletePolicy(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventDeletePolicyFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
 	}
@@ -457,26 +501,24 @@ func tryEventDeletePolicy(t *testing.T) {
 	err := events.NewEventDeletePolicy(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
+
 func tryEventLoad(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventLoadFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 		Loadconfig:  "someloadconfig",
 	}
@@ -484,195 +526,356 @@ func tryEventLoad(t *testing.T) {
 	err := events.NewEventLoad(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
-func tryEventBenchmark(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
+func tryEventLoadCompleted(t *testing.T) {
+
+	f := events.EventLoadCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Clustername: TestClusterName,
+		Loadconfig:  "someloadconfig",
 	}
 
+	err := events.NewEventLoadCompleted(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+
+func tryEventBenchmark(t *testing.T) {
+
 	f := events.EventBenchmarkFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventBenchmark(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
-func tryEventLs(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
+func tryEventBenchmarkCompleted(t *testing.T) {
+
+	f := events.EventBenchmarkCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Clustername: TestClusterName,
 	}
 
+	err := events.NewEventBenchmarkCompleted(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventLs(t *testing.T) {
+
 	f := events.EventLsFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventLs(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventCat(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCatFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventCat(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventCreatePgpool(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCreatePgpoolFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventCreatePgpool(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventCreatePgbouncer(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventCreatePgbouncerFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventCreatePgbouncer(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventDeletePgbouncer(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventDeletePgbouncerFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventDeletePgbouncer(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
 }
 func tryEventDeletePgpool(t *testing.T) {
-	someheader := events.EventHeader{
-		Namespace:   Namespace,
-		Username:    Username,
-		Topic:       Topics,
-		SomeAddress: EventTCPAddress,
-	}
 
 	f := events.EventDeletePgpoolFormat{
-		EventHeader: someheader,
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
 		Clustername: TestClusterName,
 	}
 
 	err := events.NewEventDeletePgpool(&f)
 	if err != nil {
 		t.Fatal(err.Error())
-		os.Exit(2)
 	}
 
 	err = events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
-	} else {
-		t.Log(f.String())
 	}
+	t.Log(f.String())
+}
+func tryEventPGOCreateUser(t *testing.T) {
+
+	f := events.EventPGOCreateUserFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Username: TestUsername,
+	}
+
+	err := events.NewEventPGOCreateUser(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGOUpdateUser(t *testing.T) {
+
+	f := events.EventPGOUpdateUserFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Username: TestUsername,
+	}
+
+	err := events.NewEventPGOUpdateUser(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGODeleteUser(t *testing.T) {
+
+	f := events.EventPGODeleteUserFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+		Username: TestUsername,
+	}
+
+	err := events.NewEventPGODeleteUser(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGOStart(t *testing.T) {
+
+	f := events.EventPGOStartFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+	}
+
+	err := events.NewEventPGOStart(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGOStop(t *testing.T) {
+
+	f := events.EventPGOStopFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+	}
+
+	err := events.NewEventPGOStop(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+
+func tryEventPGOUpdateConfig(t *testing.T) {
+
+	f := events.EventPGOUpdateConfigFormat{
+		EventHeader: events.EventHeader{
+			Namespace:   Namespace,
+			Username:    TestUsername,
+			Topic:       Topics,
+			SomeAddress: EventTCPAddress,
+		},
+	}
+
+	err := events.NewEventPGOUpdateConfig(&f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
 }

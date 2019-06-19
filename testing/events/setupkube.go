@@ -26,7 +26,7 @@ var (
 
 	EventTCPAddress = "localhost:14150"
 	Namespace       = "pgouser1"
-	Username        = "pgouser1"
+	TestUsername    = "pgouser1"
 	TestClusterName = "foo"
 	SLEEP_SECS      = 10
 )
@@ -63,11 +63,11 @@ func SetupKube() (*kubernetes.Clientset, *rest.RESTClient) {
 		TestClusterName = *testclustername
 	}
 	if *username != "" {
-		Username = *username
+		TestUsername = *username
 	}
 
 	log.Infof("running test in namespace %s\n", Namespace)
-	log.Infof("running test as user %s\n", Username)
+	log.Infof("running test as user %s\n", TestUsername)
 	log.Infof("running test on cluster %s\n", TestClusterName)
 	// uses the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)

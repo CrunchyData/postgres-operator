@@ -34,20 +34,25 @@ const (
 const (
 	EventReloadCluster = iota
 	EventCreateCluster
+	EventCreateClusterCompleted
 	EventScaleCluster
 	EventScaleDownCluster
 	EventFailoverCluster
+	EventFailoverClusterCompleted
 	EventUpgradeCluster
+	EventUpgradeClusterCompleted
 	EventDeleteCluster
 	EventTestCluster
 	EventCreateLabel
-	EventDeleteLabel
 	EventLoad
+	EventLoadCompleted
 	EventBenchmark
+	EventBenchmarkCompleted
 	EventLs
 	EventCat
 
 	EventCreateBackup
+	EventCreateBackupCompleted
 
 	EventCreateUser
 	EventDeleteUser
@@ -67,7 +72,7 @@ const (
 	EventPGODeleteUser
 	EventPGOStart
 	EventPGOStop
-	EventPGOReload
+	EventPGOUpdateConfig
 )
 
 type EventHeader struct {
@@ -88,13 +93,17 @@ func (lvl EventHeader) Validate() error {
 	switch lvl.EventType {
 	case EventReloadCluster,
 		EventCreateCluster,
+		EventCreateClusterCompleted,
 		EventScaleCluster,
 		EventScaleDownCluster,
 		EventFailoverCluster,
+		EventFailoverClusterCompleted,
 		EventUpgradeCluster,
+		EventUpgradeClusterCompleted,
 		EventDeleteCluster,
 		EventTestCluster,
 		EventCreateBackup,
+		EventCreateBackupCompleted,
 		EventCreateUser,
 		EventDeleteUser,
 		EventUpdateUser,
@@ -103,13 +112,20 @@ func (lvl EventHeader) Validate() error {
 		EventApplyPolicy,
 		EventDeletePolicy,
 		EventLoad,
+		EventLoadCompleted,
 		EventBenchmark,
 		EventLs,
 		EventCat,
 		EventCreatePgpool,
 		EventDeletePgpool,
 		EventCreatePgbouncer,
-		EventDeletePgbouncer:
+		EventDeletePgbouncer,
+		EventPGOCreateUser,
+		EventPGOUpdateUser,
+		EventPGODeleteUser,
+		EventPGOStart,
+		EventPGOStop,
+		EventPGOUpdateConfig:
 	default:
 		msg := fmt.Sprintf("Event %d - not valid", lvl.EventType)
 		return errors.New("could not validate event: invalid event type" + msg)
@@ -199,6 +215,31 @@ func (lvl EventCreateClusterFormat) String() string {
 }
 
 //----------------------------
+type EventCreateClusterCompletedFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (EventCreateClusterCompletedFormat) GetEventType() int {
+	return EventCreateClusterCompleted
+}
+func NewEventCreateClusterCompleted(p *EventCreateClusterCompletedFormat) error {
+	if p.Clustername == "" {
+		return errors.New("required fields missing")
+	}
+	p.EventHeader.EventType = p.GetEventType()
+	return p.EventHeader.Validate()
+}
+
+func (p EventCreateClusterCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+func (lvl EventCreateClusterCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (create cluster completed) clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
 type EventScaleClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
@@ -274,6 +315,31 @@ func (lvl EventFailoverClusterFormat) String() string {
 }
 
 //----------------------------
+type EventFailoverClusterCompletedFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (EventFailoverClusterCompletedFormat) GetEventType() int {
+	return EventFailoverClusterCompleted
+}
+func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+func NewEventFailoverClusterCompleted(p *EventFailoverClusterCompletedFormat) error {
+	if p.Clustername == "" {
+		return errors.New("clustername field missing")
+	}
+	p.EventHeader.EventType = p.GetEventType()
+	return p.EventHeader.Validate()
+}
+
+func (lvl EventFailoverClusterCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (failover completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
 type EventUpgradeClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
@@ -295,6 +361,31 @@ func (p EventUpgradeClusterFormat) GetHeader() EventHeader {
 
 func (lvl EventUpgradeClusterFormat) String() string {
 	msg := fmt.Sprintf("Event %s (upgrade) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventUpgradeClusterCompletedFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (EventUpgradeClusterCompletedFormat) GetEventType() int {
+	return EventUpgradeClusterCompleted
+}
+func NewEventUpgradeClusterCompleted(p *EventUpgradeClusterCompletedFormat) error {
+	if p.Clustername == "" {
+		return errors.New("clustername field missing")
+	}
+	p.EventHeader.EventType = p.GetEventType()
+	return p.EventHeader.Validate()
+}
+func (p EventUpgradeClusterCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventUpgradeClusterCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (upgrade completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
@@ -370,6 +461,31 @@ func (p EventCreateBackupFormat) GetHeader() EventHeader {
 
 func (lvl EventCreateBackupFormat) String() string {
 	msg := fmt.Sprintf("Event %s (create backup) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventCreateBackupCompletedFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (EventCreateBackupCompletedFormat) GetEventType() int {
+	return EventCreateBackupCompleted
+}
+func NewEventCreateBackupCompleted(p *EventCreateBackupCompletedFormat) error {
+	if p.Clustername == "" {
+		return errors.New("clustername field missing")
+	}
+	p.EventHeader.EventType = p.GetEventType()
+	return p.EventHeader.Validate()
+}
+func (p EventCreateBackupCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventCreateBackupCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (create backup completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
@@ -607,6 +723,35 @@ func (lvl EventLoadFormat) String() string {
 }
 
 //----------------------------
+type EventLoadCompletedFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Loadconfig  string `json:"loadconfig"`
+}
+
+func (EventLoadCompletedFormat) GetEventType() int {
+	return EventLoadCompleted
+}
+func (p EventLoadCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+func NewEventLoadCompleted(p *EventLoadCompletedFormat) error {
+	if p.Clustername == "" {
+		return errors.New("Clustername fields missing")
+	}
+	if p.Loadconfig == "" {
+		return errors.New("Loadconfig fields missing")
+	}
+	p.EventHeader.EventType = p.GetEventType()
+	return p.EventHeader.Validate()
+}
+
+func (lvl EventLoadCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (load completed) - clustername %s - load config [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig)
+	return msg
+}
+
+//----------------------------
 type EventBenchmarkFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
@@ -628,6 +773,31 @@ func NewEventBenchmark(p *EventBenchmarkFormat) error {
 
 func (lvl EventBenchmarkFormat) String() string {
 	msg := fmt.Sprintf("Event %s (benchmark) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventBenchmarkCompletedFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (EventBenchmarkCompletedFormat) GetEventType() int {
+	return EventBenchmarkCompleted
+}
+func (p EventBenchmarkCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+func NewEventBenchmarkCompleted(p *EventBenchmarkCompletedFormat) error {
+	if p.Clustername == "" {
+		return errors.New("Clustername fields missing")
+	}
+	p.EventHeader.EventType = p.GetEventType()
+	return p.EventHeader.Validate()
+}
+
+func (lvl EventBenchmarkCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (benchmark completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 

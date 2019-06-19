@@ -18,17 +18,7 @@ package events
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 )
-
-/**
-EventPGOCreateUser
-EventPGOUpdateUser
-EventPGODeleteUser
-EventPGOStart
-EventPGOStop
-EventPGOReload
-*/
 
 //--------
 type EventPGOCreateUserFormat struct {
@@ -45,7 +35,7 @@ func (p EventPGOCreateUserFormat) GetHeader() EventHeader {
 
 func NewEventPGOCreateUser(p *EventPGOCreateUserFormat) error {
 	if p.Username == "" {
-		return errors.New("required fields missing")
+		return errors.New("username field missing")
 	}
 	p.EventHeader.EventType = p.GetEventType()
 	return p.EventHeader.Validate()
@@ -71,7 +61,7 @@ func (p EventPGOUpdateUserFormat) GetHeader() EventHeader {
 
 func NewEventPGOUpdateUser(p *EventPGOUpdateUserFormat) error {
 	if p.Username == "" {
-		return errors.New("required fields missing")
+		return errors.New("username field missing")
 	}
 	p.EventHeader.EventType = p.GetEventType()
 	return p.EventHeader.Validate()
@@ -97,7 +87,7 @@ func (p EventPGODeleteUserFormat) GetHeader() EventHeader {
 
 func NewEventPGODeleteUser(p *EventPGODeleteUserFormat) error {
 	if p.Username == "" {
-		return errors.New("required fields missing")
+		return errors.New("username field missing")
 	}
 	p.EventHeader.EventType = p.GetEventType()
 	return p.EventHeader.Validate()
@@ -153,23 +143,23 @@ func (lvl EventPGOStopFormat) String() string {
 }
 
 //--------
-type EventPGOReloadFormat struct {
+type EventPGOUpdateConfigFormat struct {
 	EventHeader `json:"eventheader"`
 }
 
-func (EventPGOReloadFormat) GetEventType() int {
-	return EventPGOReload
+func (EventPGOUpdateConfigFormat) GetEventType() int {
+	return EventPGOUpdateConfig
 }
-func (p EventPGOStopFormat) GetHeader() EventHeader {
+func (p EventPGOUpdateConfigFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
 
-func NewEventPGOStop(p *EventPGOStopFormat) error {
+func NewEventPGOUpdateConfig(p *EventPGOUpdateConfigFormat) error {
 	p.EventHeader.EventType = p.GetEventType()
 	return p.EventHeader.Validate()
 }
 
-func (lvl EventPGOStopFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (pgo stop) ", lvl.EventHeader)
+func (lvl EventPGOUpdateConfigFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (pgo update config) ", lvl.EventHeader)
 	return msg
 }
