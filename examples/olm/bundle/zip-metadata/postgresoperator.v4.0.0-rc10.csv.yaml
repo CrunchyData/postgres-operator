@@ -17,7 +17,7 @@ metadata:
                   "name": "fromcrd",
                   "pg-cluster": "fromcrd",
                   "pgo-backrest": "false",
-	"pgo-version": "4.0.0",
+	"pgo-version": "4.0.1",
                   "primary": "true"
               },
               "name": "fromcrd",
@@ -73,7 +73,7 @@ metadata:
               "backuppath": "",
               "backuppvcname": "",
               "ccpimage":"crunchy-postgres",
-              "ccpimagetag": "rhel7-9.6.13-2.4.0",
+              "ccpimagetag": "rhel7-9.6.14-2.4.1",
               "clustername": "fromcrd",
               "customconfig": "",
               "database": "userdb",
@@ -96,7 +96,7 @@ metadata:
                   "crunchy-pgbadger": "false",
                   "crunchy_collect": "false",
                   "pgo-backrest": "false",
-	"pgo-version": "4.0.0"
+	"pgo-version": "4.0.1"
               },
               "usersecretname": "fromcrd-testuser-secret"
           }
@@ -136,12 +136,12 @@ metadata:
     categories: Database
     capabilities: Full Lifecycle
     certified: "true"
-    containerImage: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0
+    containerImage: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.1
     createdAt: 04/30/2019
     description: A Postgres Operator from Crunchydata.com
     repository: https://github.com/CrunchyData/postgres-operator
     support: crunchydata.com
-  name: postgresoperator.v4.0.0
+  name: postgresoperator.v4.0.1
   namespace: pgo
 spec:
   apiservicedefinitions: {}
@@ -379,7 +379,7 @@ spec:
                 - name: PGO_IMAGE_PREFIX
                   value: "registry.connect.redhat.com/crunchydata"
                 - name: PGO_IMAGE_TAG
-                  value: "rhel7-4.0.0"
+                  value: "rhel7-4.0.1"
                 - name: NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -389,7 +389,7 @@ spec:
                     fieldRef:
                       apiVersion: v1
                       fieldPath: metadata.namespace
-                image: registry.connect.redhat.com/crunchydata/pgo-scheduler:rhel7-4.0.0
+                image: registry.connect.redhat.com/crunchydata/pgo-scheduler:rhel7-4.0.1
                 imagePullPolicy: IfNotPresent
                 name: scheduler
               - env:
@@ -402,7 +402,7 @@ spec:
                 - name: PGO_IMAGE_PREFIX
                   value: "registry.connect.redhat.com/crunchydata"
                 - name: PGO_IMAGE_TAG
-                  value: "rhel7-4.0.0"
+                  value: "rhel7-4.0.1"
                 - name: PORT
                   value: "8443"
                 - name: NAMESPACE
@@ -414,7 +414,7 @@ spec:
                     fieldRef:
                       apiVersion: v1
                       fieldPath: metadata.namespace
-                image: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.0
+                image: registry.connect.redhat.com/crunchydata/postgres-operator:rhel7-4.0.1
                 imagePullPolicy: IfNotPresent
                 name: operator
               - env:
@@ -427,7 +427,7 @@ spec:
                 - name: PGO_IMAGE_PREFIX
                   value: "registry.connect.redhat.com/crunchydata"
                 - name: PGO_IMAGE_TAG
-                  value: "rhel7-4.0.0"
+                  value: "rhel7-4.0.1"
                 - name: PORT
                   value: "8443"
                 - name: NAMESPACE
@@ -441,7 +441,7 @@ spec:
                       fieldPath: metadata.namespace
                 - name: TLS_NO_VERIFY
                   value: "false"
-                image: registry.connect.redhat.com/crunchydata/pgo-apiserver:rhel7-4.0.0
+                image: registry.connect.redhat.com/crunchydata/pgo-apiserver:rhel7-4.0.1
                 imagePullPolicy: IfNotPresent
                 name: apiserver
                 ports:
@@ -515,7 +515,7 @@ spec:
   - app
   labels:
     alm-owner-enterprise-app: postgres-operator
-    alm-status-descriptors: postgres-operator.v4.0.0
+    alm-status-descriptors: postgres-operator.v4.0.1
   links:
     - name: Crunchy Data
       url: https://crunchydata.com
@@ -528,4 +528,4 @@ spec:
   minKubeVersion: 1.11.0
   provider:
     name: CrunchyData.com
-  version: 4.0.0
+  version: 4.0.1

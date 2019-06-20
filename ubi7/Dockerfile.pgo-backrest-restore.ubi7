@@ -3,10 +3,10 @@ FROM ubi7
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
 	name="pgo-backrest-restore" \
-	PostgresFullVersion="11.3" \
+	PostgresFullVersion="11.4" \
 	Version="7.6" \
         run='docker run -d -p 8080:80 --name=web-app web-app' \
-	Release="4.2.0-rc1" \
+	Release="4.0.1" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
