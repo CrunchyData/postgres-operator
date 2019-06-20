@@ -905,9 +905,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	//pgbackrest - set with user request first or look at global flag is not set
-	if request.BackrestFlag {
-		labels[config.LABEL_BACKREST] = "true"
-		log.Debug("backrest set to true in user labels")
+	if !request.BackrestFlag {
+		labels[config.LABEL_BACKREST] = "false"
+		log.Debug("backrest set to false in user labels")
 	} else {
 		log.Debug("using Backrest from pgo.yaml")
 		labels[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
@@ -990,7 +990,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	var err error
 
 	//dont include pgpool or pgbouncer deployments
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL + "!=true," + config.LABEL_PGBOUNCER + "!=true"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL_POD + "!=true," + config.LABEL_PGBOUNCER + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
