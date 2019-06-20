@@ -49,7 +49,23 @@ func Publish(e EventInterface) error {
 		log.Errorf("Error: %s", err)
 		return err
 	}
-	err = producer.Publish(e.GetHeader().Topic[0], b)
+
+	topics := e.GetHeader().Topic
+	if len(topics) == 0 {
+		log.Errorf("Error: topics list is empty and is required to publish")
+		return err
+	}
+
+	for i := 0; i < len(topics); i++ {
+		err = producer.Publish(topics[i], b)
+		if err != nil {
+			log.Errorf("Error: %s", err)
+			return err
+		}
+	}
+
+	//always publish to the All topic
+	err = producer.Publish(EventTopicAll, b)
 	if err != nil {
 		log.Errorf("Error: %s", err)
 		return err

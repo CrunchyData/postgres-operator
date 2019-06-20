@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	EventTopicAll       = "alltopic"
 	EventTopicCluster   = "clustertopic"
 	EventTopicBackup    = "backuptopic"
 	EventTopicLoad      = "loadtopic"
