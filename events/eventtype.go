@@ -22,6 +22,7 @@ import (
 const (
 	EventTopicCluster   = "clustertopic"
 	EventTopicBackup    = "backuptopic"
+	EventTopicLoad      = "loadtopic"
 	EventTopicUser      = "postgresusertopic"
 	EventTopicPolicy    = "policytopic"
 	EventTopicPgpool    = "pgpooltopic"

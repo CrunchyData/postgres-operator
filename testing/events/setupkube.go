@@ -31,15 +31,10 @@ var (
 	SLEEP_SECS      = 10
 )
 
-var Topics []string
-
 func SetupKube() (*kubernetes.Clientset, *rest.RESTClient) {
 
 	log.SetLevel(log.DebugLevel)
 	log.Debug("debug flag set to true")
-
-	Topics = make([]string, 1)
-	Topics[0] = "testtopic"
 
 	var RESTClient *rest.RESTClient
 
