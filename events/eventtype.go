@@ -16,9 +16,7 @@ package events
 */
 
 import (
-	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -48,8 +46,6 @@ const (
 	EventLoadCompleted
 	EventBenchmark
 	EventBenchmarkCompleted
-	EventLs
-	EventCat
 
 	EventCreateBackup
 	EventCreateBackupCompleted
@@ -88,77 +84,7 @@ func (lvl EventHeader) String() string {
 	return msg
 }
 
-func (lvl EventHeader) Validate() error {
-	log.Debugf("Validate called header %s ", lvl.String())
-	switch lvl.EventType {
-	case EventReloadCluster,
-		EventCreateCluster,
-		EventCreateClusterCompleted,
-		EventScaleCluster,
-		EventScaleDownCluster,
-		EventFailoverCluster,
-		EventFailoverClusterCompleted,
-		EventUpgradeCluster,
-		EventUpgradeClusterCompleted,
-		EventDeleteCluster,
-		EventTestCluster,
-		EventCreateBackup,
-		EventCreateBackupCompleted,
-		EventCreateUser,
-		EventDeleteUser,
-		EventUpdateUser,
-		EventCreateLabel,
-		EventCreatePolicy,
-		EventApplyPolicy,
-		EventDeletePolicy,
-		EventLoad,
-		EventLoadCompleted,
-		EventBenchmark,
-		EventLs,
-		EventCat,
-		EventCreatePgpool,
-		EventDeletePgpool,
-		EventCreatePgbouncer,
-		EventDeletePgbouncer,
-		EventPGOCreateUser,
-		EventPGOUpdateUser,
-		EventPGODeleteUser,
-		EventPGOStart,
-		EventPGOStop,
-		EventPGOUpdateConfig:
-	default:
-		msg := fmt.Sprintf("Event %d - not valid", lvl.EventType)
-		return errors.New("could not validate event: invalid event type" + msg)
-	}
-
-	incomplete := false
-	var errMsg string
-	if lvl.Username == "" {
-		incomplete = true
-		errMsg = "username is not set"
-	}
-	if lvl.Namespace == "" {
-		incomplete = true
-		errMsg = "namespace is not set"
-	}
-	if len(lvl.Topic) == 0 {
-		errMsg = "topic is not set"
-		incomplete = true
-	}
-	if lvl.SomeAddress == "" {
-		errMsg = "SomeAddress is not set"
-		incomplete = true
-	}
-
-	if incomplete {
-		return errors.New(errMsg + lvl.String())
-	}
-
-	return nil
-}
-
 type EventInterface interface {
-	GetEventType() int
 	GetHeader() EventHeader
 	String() string
 }
@@ -169,19 +95,8 @@ type EventReloadClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventReloadClusterFormat) GetEventType() int {
-	return EventReloadCluster
-}
 func (p EventReloadClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventReloadCluster(p *EventReloadClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventReloadClusterFormat) String() string {
@@ -195,20 +110,10 @@ type EventCreateClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventCreateClusterFormat) GetEventType() int {
-	return EventCreateCluster
-}
-func NewEventCreateCluster(p *EventCreateClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
-
 func (p EventCreateClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
+
 func (lvl EventCreateClusterFormat) String() string {
 	msg := fmt.Sprintf("Event %s - (create cluster) clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
@@ -218,17 +123,6 @@ func (lvl EventCreateClusterFormat) String() string {
 type EventCreateClusterCompletedFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
-}
-
-func (EventCreateClusterCompletedFormat) GetEventType() int {
-	return EventCreateClusterCompleted
-}
-func NewEventCreateClusterCompleted(p *EventCreateClusterCompletedFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (p EventCreateClusterCompletedFormat) GetHeader() EventHeader {
@@ -245,18 +139,8 @@ type EventScaleClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventScaleClusterFormat) GetEventType() int {
-	return EventScaleCluster
-}
 func (p EventScaleClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventScaleCluster(p *EventScaleClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventScaleClusterFormat) String() string {
@@ -270,18 +154,8 @@ type EventScaleDownClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventScaleDownClusterFormat) GetEventType() int {
-	return EventScaleDownCluster
-}
 func (p EventScaleDownClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventScaleDownCluster(p *EventScaleDownClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventScaleDownClusterFormat) String() string {
@@ -295,18 +169,8 @@ type EventFailoverClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventFailoverClusterFormat) GetEventType() int {
-	return EventFailoverCluster
-}
 func (p EventFailoverClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventFailoverCluster(p *EventFailoverClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventFailoverClusterFormat) String() string {
@@ -320,18 +184,8 @@ type EventFailoverClusterCompletedFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventFailoverClusterCompletedFormat) GetEventType() int {
-	return EventFailoverClusterCompleted
-}
 func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventFailoverClusterCompleted(p *EventFailoverClusterCompletedFormat) error {
-	if p.Clustername == "" {
-		return errors.New("clustername field missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventFailoverClusterCompletedFormat) String() string {
@@ -345,16 +199,6 @@ type EventUpgradeClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventUpgradeClusterFormat) GetEventType() int {
-	return EventUpgradeCluster
-}
-func NewEventUpgradeCluster(p *EventUpgradeClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventUpgradeClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -370,16 +214,6 @@ type EventUpgradeClusterCompletedFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventUpgradeClusterCompletedFormat) GetEventType() int {
-	return EventUpgradeClusterCompleted
-}
-func NewEventUpgradeClusterCompleted(p *EventUpgradeClusterCompletedFormat) error {
-	if p.Clustername == "" {
-		return errors.New("clustername field missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventUpgradeClusterCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -395,16 +229,6 @@ type EventDeleteClusterFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventDeleteClusterFormat) GetEventType() int {
-	return EventDeleteCluster
-}
-func NewEventDeleteCluster(p *EventDeleteClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventDeleteClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -418,17 +242,6 @@ func (lvl EventDeleteClusterFormat) String() string {
 type EventTestClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
-}
-
-func (EventTestClusterFormat) GetEventType() int {
-	return EventTestCluster
-}
-func NewEventTestCluster(p *EventTestClusterFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (p EventTestClusterFormat) GetHeader() EventHeader {
@@ -445,16 +258,6 @@ type EventCreateBackupFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventCreateBackupFormat) GetEventType() int {
-	return EventCreateBackup
-}
-func NewEventCreateBackup(p *EventCreateBackupFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventCreateBackupFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -470,16 +273,6 @@ type EventCreateBackupCompletedFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventCreateBackupCompletedFormat) GetEventType() int {
-	return EventCreateBackupCompleted
-}
-func NewEventCreateBackupCompleted(p *EventCreateBackupCompletedFormat) error {
-	if p.Clustername == "" {
-		return errors.New("clustername field missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventCreateBackupCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -494,20 +287,6 @@ type EventCreateUserFormat struct {
 	EventHeader      `json:"eventheader"`
 	Clustername      string `json:"clustername"`
 	PostgresUsername string `json:"postgresusername"`
-}
-
-func (EventCreateUserFormat) GetEventType() int {
-	return EventCreateUser
-}
-func NewEventCreateUser(p *EventCreateUserFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername required fields missing")
-	}
-	if p.PostgresUsername == "" {
-		return errors.New("PostgresUsername required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (p EventCreateUserFormat) GetHeader() EventHeader {
@@ -526,21 +305,8 @@ type EventDeleteUserFormat struct {
 	PostgresUsername string `json:"postgresusername"`
 }
 
-func (EventDeleteUserFormat) GetEventType() int {
-	return EventDeleteUser
-}
 func (p EventDeleteUserFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventDeleteUser(p *EventDeleteUserFormat) error {
-	p.EventHeader.EventType = p.GetEventType()
-	if p.Clustername == "" {
-		return errors.New("Clustername required fields missing")
-	}
-	if p.PostgresUsername == "" {
-		return errors.New("PostgresUsername required fields missing")
-	}
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventDeleteUserFormat) String() string {
@@ -555,21 +321,8 @@ type EventUpdateUserFormat struct {
 	PostgresUsername string `json:"postgresusername"`
 }
 
-func (EventUpdateUserFormat) GetEventType() int {
-	return EventUpdateUser
-}
 func (p EventUpdateUserFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventUpdateUser(p *EventUpdateUserFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.PostgresUsername == "" {
-		return errors.New("PostgresUsername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventUpdateUserFormat) String() string {
@@ -584,19 +337,6 @@ type EventCreateLabelFormat struct {
 	Label       string `json:"label"`
 }
 
-func (EventCreateLabelFormat) GetEventType() int {
-	return EventCreateLabel
-}
-func NewEventCreateLabel(p *EventCreateLabelFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.Label == "" {
-		return errors.New("Label fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventCreateLabelFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -613,19 +353,6 @@ type EventCreatePolicyFormat struct {
 	Policyname  string `json:"policyname"`
 }
 
-func (EventCreatePolicyFormat) GetEventType() int {
-	return EventCreatePolicy
-}
-func NewEventCreatePolicy(p *EventCreatePolicyFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.Policyname == "" {
-		return errors.New("Policyname fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventCreatePolicyFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -642,19 +369,6 @@ type EventDeletePolicyFormat struct {
 	Policyname  string `json:"policyname"`
 }
 
-func (EventDeletePolicyFormat) GetEventType() int {
-	return EventDeletePolicy
-}
-func NewEventDeletePolicy(p *EventDeletePolicyFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.Policyname == "" {
-		return errors.New("Policyname fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
 func (p EventDeletePolicyFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
@@ -671,21 +385,8 @@ type EventApplyPolicyFormat struct {
 	Policyname  string `json:"policyname"`
 }
 
-func (EventApplyPolicyFormat) GetEventType() int {
-	return EventApplyPolicy
-}
 func (p EventApplyPolicyFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventApplyPolicy(p *EventApplyPolicyFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.Policyname == "" {
-		return errors.New("Policyname fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventApplyPolicyFormat) String() string {
@@ -700,21 +401,8 @@ type EventLoadFormat struct {
 	Loadconfig  string `json:"loadconfig"`
 }
 
-func (EventLoadFormat) GetEventType() int {
-	return EventLoad
-}
 func (p EventLoadFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventLoad(p *EventLoadFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.Loadconfig == "" {
-		return errors.New("Loadconfig fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventLoadFormat) String() string {
@@ -729,21 +417,8 @@ type EventLoadCompletedFormat struct {
 	Loadconfig  string `json:"loadconfig"`
 }
 
-func (EventLoadCompletedFormat) GetEventType() int {
-	return EventLoadCompleted
-}
 func (p EventLoadCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventLoadCompleted(p *EventLoadCompletedFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	if p.Loadconfig == "" {
-		return errors.New("Loadconfig fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventLoadCompletedFormat) String() string {
@@ -757,18 +432,8 @@ type EventBenchmarkFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventBenchmarkFormat) GetEventType() int {
-	return EventBenchmark
-}
 func (p EventBenchmarkFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventBenchmark(p *EventBenchmarkFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventBenchmarkFormat) String() string {
@@ -782,72 +447,12 @@ type EventBenchmarkCompletedFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventBenchmarkCompletedFormat) GetEventType() int {
-	return EventBenchmarkCompleted
-}
 func (p EventBenchmarkCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventBenchmarkCompleted(p *EventBenchmarkCompletedFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventBenchmarkCompletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s (benchmark completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
-	return msg
-}
-
-//----------------------------
-type EventLsFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (EventLsFormat) GetEventType() int {
-	return EventLs
-}
-func (p EventLsFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-func NewEventLs(p *EventLsFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
-
-func (lvl EventLsFormat) String() string {
-	msg := fmt.Sprintf("Event %s (ls) - clustername %s", lvl.EventHeader, lvl.Clustername)
-	return msg
-}
-
-//----------------------------
-type EventCatFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (EventCatFormat) GetEventType() int {
-	return EventLs
-}
-func (p EventCatFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-func NewEventCat(p *EventCatFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
-}
-
-func (lvl EventCatFormat) String() string {
-	msg := fmt.Sprintf("Event %s (cat) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
@@ -857,18 +462,8 @@ type EventCreatePgpoolFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventCreatePgpoolFormat) GetEventType() int {
-	return EventCreatePgpool
-}
 func (p EventCreatePgpoolFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventCreatePgpool(p *EventCreatePgpoolFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventCreatePgpoolFormat) String() string {
@@ -882,18 +477,8 @@ type EventDeletePgpoolFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventDeletePgpoolFormat) GetEventType() int {
-	return EventDeletePgpool
-}
 func (p EventDeletePgpoolFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventDeletePgpool(p *EventDeletePgpoolFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventDeletePgpoolFormat) String() string {
@@ -907,18 +492,8 @@ type EventCreatePgbouncerFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventCreatePgbouncerFormat) GetEventType() int {
-	return EventCreatePgbouncer
-}
 func (p EventCreatePgbouncerFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventCreatePgbouncer(p *EventCreatePgbouncerFormat) error {
-	if p.Clustername == "" {
-		return errors.New("Clustername fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventCreatePgbouncerFormat) String() string {
@@ -932,18 +507,8 @@ type EventDeletePgbouncerFormat struct {
 	Clustername string `json:"clustername"`
 }
 
-func (EventDeletePgbouncerFormat) GetEventType() int {
-	return EventDeletePgbouncer
-}
 func (p EventDeletePgbouncerFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-func NewEventDeletePgbouncer(p *EventDeletePgbouncerFormat) error {
-	if p.Clustername == "" {
-		return errors.New("required fields missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventDeletePgbouncerFormat) String() string {

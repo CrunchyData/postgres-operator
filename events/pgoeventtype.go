@@ -16,7 +16,6 @@ package events
 */
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -26,19 +25,8 @@ type EventPGOCreateUserFormat struct {
 	Username    string `json:"username"`
 }
 
-func (EventPGOCreateUserFormat) GetEventType() int {
-	return EventPGOCreateUser
-}
 func (p EventPGOCreateUserFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventPGOCreateUser(p *EventPGOCreateUserFormat) error {
-	if p.Username == "" {
-		return errors.New("username field missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventPGOCreateUserFormat) String() string {
@@ -52,19 +40,8 @@ type EventPGOUpdateUserFormat struct {
 	Username    string `json:"username"`
 }
 
-func (EventPGOUpdateUserFormat) GetEventType() int {
-	return EventPGOUpdateUser
-}
 func (p EventPGOUpdateUserFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventPGOUpdateUser(p *EventPGOUpdateUserFormat) error {
-	if p.Username == "" {
-		return errors.New("username field missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventPGOUpdateUserFormat) String() string {
@@ -78,19 +55,8 @@ type EventPGODeleteUserFormat struct {
 	Username    string `json:"username"`
 }
 
-func (EventPGODeleteUserFormat) GetEventType() int {
-	return EventPGODeleteUser
-}
 func (p EventPGODeleteUserFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventPGODeleteUser(p *EventPGODeleteUserFormat) error {
-	if p.Username == "" {
-		return errors.New("username field missing")
-	}
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventPGODeleteUserFormat) String() string {
@@ -103,16 +69,8 @@ type EventPGOStartFormat struct {
 	EventHeader `json:"eventheader"`
 }
 
-func (EventPGOStartFormat) GetEventType() int {
-	return EventPGOStart
-}
 func (p EventPGOStartFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventPGOStart(p *EventPGOStartFormat) error {
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventPGOStartFormat) String() string {
@@ -125,16 +83,8 @@ type EventPGOStopFormat struct {
 	EventHeader `json:"eventheader"`
 }
 
-func (EventPGOStopFormat) GetEventType() int {
-	return EventPGOStop
-}
 func (p EventPGOStopFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventPGOStop(p *EventPGOStopFormat) error {
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventPGOStopFormat) String() string {
@@ -147,16 +97,8 @@ type EventPGOUpdateConfigFormat struct {
 	EventHeader `json:"eventheader"`
 }
 
-func (EventPGOUpdateConfigFormat) GetEventType() int {
-	return EventPGOUpdateConfig
-}
 func (p EventPGOUpdateConfigFormat) GetHeader() EventHeader {
 	return p.EventHeader
-}
-
-func NewEventPGOUpdateConfig(p *EventPGOUpdateConfigFormat) error {
-	p.EventHeader.EventType = p.GetEventType()
-	return p.EventHeader.Validate()
 }
 
 func (lvl EventPGOUpdateConfigFormat) String() string {

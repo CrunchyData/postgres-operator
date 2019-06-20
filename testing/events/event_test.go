@@ -36,8 +36,6 @@ func TestEventCreate(t *testing.T) {
 	tryEventLoadCompleted(t)
 	tryEventBenchmark(t)
 	tryEventBenchmarkCompleted(t)
-	tryEventLs(t)
-	tryEventCat(t)
 
 	tryEventCreateBackup(t)
 	tryEventCreateBackupCompleted(t)
@@ -71,16 +69,12 @@ func tryEventCreateCluster(t *testing.T) {
 			Username:    TestUsername,
 			Topic:       Topics,
 			SomeAddress: EventTCPAddress,
+			EventType:   events.EventCreateCluster,
 		},
 		Clustername: "betavalue",
 	}
 
-	err := events.NewEventCreateCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -93,16 +87,12 @@ func tryEventCreateClusterCompleted(t *testing.T) {
 			Username:    TestUsername,
 			Topic:       Topics,
 			SomeAddress: EventTCPAddress,
+			EventType:   events.EventCreateClusterCompleted,
 		},
 		Clustername: "betavalue",
 	}
 
-	err := events.NewEventCreateClusterCompleted(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -115,17 +105,13 @@ func tryEventReloadCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventReloadCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventReloadCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -138,17 +124,13 @@ func tryEventScaleCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventScaleCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventScaleCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -161,17 +143,13 @@ func tryEventScaleDownCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventScaleDownCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventScaleDownCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -184,17 +162,13 @@ func tryEventFailoverCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventFailoverCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventFailoverCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -208,17 +182,13 @@ func tryEventFailoverClusterCompleted(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventFailoverClusterCompleted,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventFailoverClusterCompleted(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -231,17 +201,13 @@ func tryEventUpgradeCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventUpgradeCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventUpgradeCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -254,17 +220,13 @@ func tryEventDeleteCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventDeleteCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventDeleteCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -277,17 +239,13 @@ func tryEventTestCluster(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventTestCluster,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventTestCluster(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -300,17 +258,13 @@ func tryEventCreateBackup(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreateBackup,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventCreateBackup(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -323,17 +277,13 @@ func tryEventCreateBackupCompleted(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreateBackupCompleted,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventCreateBackupCompleted(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -347,18 +297,14 @@ func tryEventCreateUser(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreateUser,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
 	}
 
-	err := events.NewEventCreateUser(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -371,18 +317,14 @@ func tryEventDeleteUser(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventDeleteUser,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
 	}
 
-	err := events.NewEventDeleteUser(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -395,18 +337,14 @@ func tryEventUpdateUser(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventUpdateUser,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
 	}
 
-	err := events.NewEventUpdateUser(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -419,18 +357,14 @@ func tryEventCreateLabel(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreateLabel,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 		Label:       "somelabel",
 	}
 
-	err := events.NewEventCreateLabel(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -444,18 +378,14 @@ func tryEventCreatePolicy(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreatePolicy,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
 	}
 
-	err := events.NewEventCreatePolicy(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -468,18 +398,14 @@ func tryEventApplyPolicy(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventApplyPolicy,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
 	}
 
-	err := events.NewEventApplyPolicy(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -492,18 +418,14 @@ func tryEventDeletePolicy(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventDeletePolicy,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
 	}
 
-	err := events.NewEventDeletePolicy(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -517,18 +439,14 @@ func tryEventLoad(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventLoad,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 		Loadconfig:  "someloadconfig",
 	}
 
-	err := events.NewEventLoad(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -541,18 +459,14 @@ func tryEventLoadCompleted(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventLoadCompleted,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 		Loadconfig:  "someloadconfig",
 	}
 
-	err := events.NewEventLoadCompleted(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -566,17 +480,13 @@ func tryEventBenchmark(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventBenchmark,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventBenchmark(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -589,68 +499,19 @@ func tryEventBenchmarkCompleted(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventBenchmarkCompleted,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventBenchmarkCompleted(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 	t.Log(f.String())
 }
-func tryEventLs(t *testing.T) {
 
-	f := events.EventLsFormat{
-		EventHeader: events.EventHeader{
-			Namespace:   Namespace,
-			Username:    TestUsername,
-			Topic:       Topics,
-			SomeAddress: EventTCPAddress,
-		},
-		Clustername: TestClusterName,
-	}
-
-	err := events.NewEventLs(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
-func tryEventCat(t *testing.T) {
-
-	f := events.EventCatFormat{
-		EventHeader: events.EventHeader{
-			Namespace:   Namespace,
-			Username:    TestUsername,
-			Topic:       Topics,
-			SomeAddress: EventTCPAddress,
-		},
-		Clustername: TestClusterName,
-	}
-
-	err := events.NewEventCat(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
 func tryEventCreatePgpool(t *testing.T) {
 
 	f := events.EventCreatePgpoolFormat{
@@ -658,17 +519,13 @@ func tryEventCreatePgpool(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreatePgpool,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventCreatePgpool(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -681,17 +538,13 @@ func tryEventCreatePgbouncer(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventCreatePgbouncer,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventCreatePgbouncer(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -704,17 +557,13 @@ func tryEventDeletePgbouncer(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventDeletePgbouncer,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventDeletePgbouncer(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -727,17 +576,13 @@ func tryEventDeletePgpool(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventDeletePgpool,
 			SomeAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
 	}
 
-	err := events.NewEventDeletePgpool(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -750,17 +595,13 @@ func tryEventPGOCreateUser(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventPGOCreateUser,
 			SomeAddress: EventTCPAddress,
 		},
 		Username: TestUsername,
 	}
 
-	err := events.NewEventPGOCreateUser(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -773,17 +614,13 @@ func tryEventPGOUpdateUser(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventPGOUpdateUser,
 			SomeAddress: EventTCPAddress,
 		},
 		Username: TestUsername,
 	}
 
-	err := events.NewEventPGOUpdateUser(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -796,17 +633,13 @@ func tryEventPGODeleteUser(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventPGODeleteUser,
 			SomeAddress: EventTCPAddress,
 		},
 		Username: TestUsername,
 	}
 
-	err := events.NewEventPGODeleteUser(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -819,16 +652,12 @@ func tryEventPGOStart(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventPGOStart,
 			SomeAddress: EventTCPAddress,
 		},
 	}
 
-	err := events.NewEventPGOStart(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -841,16 +670,12 @@ func tryEventPGOStop(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventPGOStop,
 			SomeAddress: EventTCPAddress,
 		},
 	}
 
-	err := events.NewEventPGOStop(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -864,16 +689,12 @@ func tryEventPGOUpdateConfig(t *testing.T) {
 			Namespace:   Namespace,
 			Username:    TestUsername,
 			Topic:       Topics,
+			EventType:   events.EventPGOUpdateConfig,
 			SomeAddress: EventTCPAddress,
 		},
 	}
 
-	err := events.NewEventPGOUpdateConfig(&f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	err = events.Publish(f)
+	err := events.Publish(f)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
