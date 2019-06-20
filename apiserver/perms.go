@@ -27,6 +27,7 @@ import (
 )
 
 // MISC
+const WATCH_PERM = "Watch"
 const CAT_PERM = "Cat"
 const LS_PERM = "Ls"
 const APPLY_POLICY_PERM = "ApplyPolicy"
@@ -104,6 +105,7 @@ func InitializePerms() {
 	PermMap[LABEL_PERM] = "yes"
 	PermMap[LOAD_PERM] = "yes"
 	PermMap[CAT_PERM] = "yes"
+	PermMap[WATCH_PERM] = "yes"
 	PermMap[LS_PERM] = "yes"
 	PermMap[RELOAD_PERM] = "yes"
 	PermMap[RESTORE_PERM] = "yes"

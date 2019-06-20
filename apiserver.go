@@ -47,6 +47,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
+	"github.com/crunchydata/postgres-operator/apiserver/watchservice"
 	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -93,6 +94,7 @@ func main() {
 	r.HandleFunc("/policiesdelete", policyservice.DeletePolicyHandler).Methods("POST")
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
 	r.HandleFunc("/showpvc", pvcservice.ShowPVCHandler).Methods("POST")
+	r.HandleFunc("/watch", watchservice.WatchHandler).Methods("POST")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
