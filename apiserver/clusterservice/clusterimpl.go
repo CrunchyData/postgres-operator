@@ -1002,7 +1002,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	if deleteBackups {
 		log.Debug("deleteBackups is called")
 		log.Debug("check for backrest-shared-repo PVC to delete")
-		pvcName := clusterName + "-backrest-shared-repo"
+		pvcName := clusterName + "-pgbr-repo"
 		_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
 		if found {
 			log.Debugf("creating rmdata job for %s", pvcName)

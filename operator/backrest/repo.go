@@ -61,11 +61,12 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 
 	var b bytes.Buffer
 
-	repoName := cluster.Name + "-backrest-shared-repo"
+	repoName := cluster.Name + "-pgbr-repo"
+	serviceName := cluster.Name + "-backrest-shared-repo"
 
 	//create backrest repo service
 	serviceFields := RepoServiceTemplateFields{
-		Name:        repoName,
+		Name:        serviceName,
 		ClusterName: cluster.Name,
 		Port:        "2022",
 	}
@@ -98,7 +99,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",
 		PGbackrestDBHost:      cluster.Name,
-		PgbackrestRepoPath:    "/backrestrepo/" + repoName,
+		PgbackrestRepoPath:    "/backrestrepo/" + serviceName,
 		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
 		PgbackrestPGPort:      cluster.Spec.Port,
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
@@ -106,7 +107,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		PgbackrestRepoType:    operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
 			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
-		Name:            repoName,
+		Name:            serviceName,
 		ClusterName:     cluster.Name,
 		SecurityContext: util.CreateSecContext(cluster.Spec.PrimaryStorage.Fsgroup, cluster.Spec.PrimaryStorage.SupplementalGroups),
 	}
