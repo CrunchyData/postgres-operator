@@ -23,7 +23,8 @@ var (
 	totalMessages = flag.Int("n", 0, "total messages to show (will wait if starved)")
 	printTopic    = flag.Bool("print-topic", false, "print topic name where message was received")
 
-	nsqdTCPAddr = flag.String("nsqd-tcp-address", "", "NSQ tcp address")
+	nsqdTCPAddr    = flag.String("nsqd-tcp-address", "", "NSQ tcp address")
+	lookupHTTPAddr = flag.String("lookup-http-address", "", "NSQ lookup http address")
 )
 
 type TailHandler struct {
@@ -71,8 +72,8 @@ func TestEventRead(t *testing.T) {
 		*channel = fmt.Sprintf("tail%06d#ephemeral", rand.Int()%999999)
 	}
 
-	if *nsqdTCPAddr == "" {
-		log.Fatal("--nsqd-tcp-address required")
+	if *nsqdTCPAddr == "" && *lookupHTTPAddr == "" {
+		log.Fatal("--nsqd-tcp-address or --lookup-http-address required")
 	}
 	if *topic == "" {
 		log.Fatal("--topic required")
@@ -100,10 +101,21 @@ func TestEventRead(t *testing.T) {
 	consumer.AddHandler(&TailHandler{topicName: *topic, totalMessages: *totalMessages})
 
 	addrs := make([]string, 1)
-	addrs[0] = *nsqdTCPAddr
-	err = consumer.ConnectToNSQDs(addrs)
-	if err != nil {
-		log.Fatal(err)
+	if *nsqdTCPAddr != "" {
+		addrs[0] = *nsqdTCPAddr
+		err = consumer.ConnectToNSQDs(addrs)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if *lookupHTTPAddr != "" {
+		addrs = make([]string, 1)
+		addrs[0] = *lookupHTTPAddr
+		err = consumer.ConnectToNSQLookupds(addrs)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	consumers = append(consumers, consumer)
