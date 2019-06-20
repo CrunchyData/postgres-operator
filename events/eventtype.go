@@ -72,15 +72,15 @@ const (
 )
 
 type EventHeader struct {
-	EventType   int      `json:eventtype`
-	Namespace   string   `json:"namespace"`
-	Username    string   `json:"username"`
-	Topic       []string `json:"topic"`
-	SomeAddress string   `json:"someaddress"`
+	EventType     int      `json:eventtype`
+	Namespace     string   `json:"namespace"`
+	Username      string   `json:"username"`
+	Topic         []string `json:"topic"`
+	BrokerAddress string   `json:"brokeraddress"`
 }
 
 func (lvl EventHeader) String() string {
-	msg := fmt.Sprintf("Event %d - ns [%s] - user [%s] topics [%v] tcp-address [%s]", lvl.EventType, lvl.Namespace, lvl.Username, lvl.Topic, lvl.SomeAddress)
+	msg := fmt.Sprintf("Event %d - ns [%s] - user [%s] topics [%v] tcp-address [%s]", lvl.EventType, lvl.Namespace, lvl.Username, lvl.Topic, lvl.BrokerAddress)
 	return msg
 }
 

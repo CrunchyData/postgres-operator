@@ -44,7 +44,7 @@ func Publish(e EventInterface) error {
 	log.Debug(string(b))
 
 	var producer *nsq.Producer
-	producer, err = nsq.NewProducer(e.GetHeader().SomeAddress, cfg)
+	producer, err = nsq.NewProducer(e.GetHeader().BrokerAddress, cfg)
 	if err != nil {
 		log.Errorf("Error: %s", err)
 		return err
