@@ -20,6 +20,7 @@ import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
@@ -124,6 +125,27 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
 
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
+
+	//capture the cluster creation event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventCreateClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace:     cluster.ObjectMeta.Namespace,
+			Username:      "TODO unknown",
+			Topic:         topics,
+			BrokerAddress: "localhost:4150",
+			EventType:     events.EventCreateCluster,
+		},
+		Clustername: cluster.ObjectMeta.Name,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }
 
 // onUpdate is called when a pgcluster is updated

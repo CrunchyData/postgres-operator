@@ -30,6 +30,7 @@ var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
 var PgoNamespace string
+var EventTCPAddress = "localhost:4150"
 
 var Pgo config.PgoConfig
 
@@ -94,6 +95,12 @@ func Initialize(clientset *kubernetes.Clientset) {
 		log.Error("pgo.yaml PGOImageTag not set, required ")
 		os.Exit(2)
 	}
+
+	tmp = os.Getenv("EVENT_TCP_ADDRESS")
+	if tmp != "" {
+		EventTCPAddress = tmp
+	}
+	log.Info("EventTCPAddress set to " + EventTCPAddress)
 }
 
 // GetContainerResources ...

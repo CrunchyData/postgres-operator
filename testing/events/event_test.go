@@ -132,6 +132,7 @@ func tryEventScaleCluster(t *testing.T) {
 			BrokerAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
+		Replicaname: "somereplicaname",
 	}
 
 	err := events.Publish(f)
@@ -154,6 +155,7 @@ func tryEventScaleDownCluster(t *testing.T) {
 			BrokerAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
+		Replicaname: "somereplicaname",
 	}
 
 	err := events.Publish(f)
@@ -176,6 +178,7 @@ func tryEventFailoverCluster(t *testing.T) {
 			BrokerAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
+		Target:      "sometarget",
 	}
 
 	err := events.Publish(f)

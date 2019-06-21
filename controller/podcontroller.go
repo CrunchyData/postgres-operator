@@ -19,6 +19,7 @@ import (
 	"context"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
@@ -199,6 +200,11 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+
+					//publish event for cluster complete
+					publishClusterComplete(clusterName, newpod.ObjectMeta.Namespace)
+					//
+
 					if cluster.Labels[config.LABEL_BACKREST] == "true" {
 						tmptask := crv1.Pgtask{}
 						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
@@ -324,4 +330,29 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		return false
 	}
 	return true
+}
+
+func publishClusterComplete(clusterName, namespace string) error {
+	//capture the cluster creation event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventCreateClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:     namespace,
+			Username:      "TODO unknown",
+			Topic:         topics,
+			BrokerAddress: "localhost:4150",
+			EventType:     events.EventCreateClusterCompleted,
+		},
+		Clustername: clusterName,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	return err
+
 }

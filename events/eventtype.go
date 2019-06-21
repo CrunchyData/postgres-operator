@@ -139,6 +139,7 @@ func (lvl EventCreateClusterCompletedFormat) String() string {
 type EventScaleClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	Replicaname string `json:"replicaname"`
 }
 
 func (p EventScaleClusterFormat) GetHeader() EventHeader {
@@ -146,7 +147,7 @@ func (p EventScaleClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventScaleClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (scale) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s (scale) - clustername %s - replicaname %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname)
 	return msg
 }
 
@@ -154,6 +155,7 @@ func (lvl EventScaleClusterFormat) String() string {
 type EventScaleDownClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	Replicaname string `json:"replicaname"`
 }
 
 func (p EventScaleDownClusterFormat) GetHeader() EventHeader {
@@ -161,7 +163,7 @@ func (p EventScaleDownClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventScaleDownClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (scaledown) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s (scaledown) - clustername %s - replicaname %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname)
 	return msg
 }
 
@@ -169,6 +171,7 @@ func (lvl EventScaleDownClusterFormat) String() string {
 type EventFailoverClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	Target      string `json:"target"`
 }
 
 func (p EventFailoverClusterFormat) GetHeader() EventHeader {
@@ -176,7 +179,7 @@ func (p EventFailoverClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventFailoverClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (failover) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s (failover) - clustername %s - target %s", lvl.EventHeader, lvl.Clustername, lvl.Target)
 	return msg
 }
 
@@ -184,6 +187,7 @@ func (lvl EventFailoverClusterFormat) String() string {
 type EventFailoverClusterCompletedFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	Target      string `json:"target"`
 }
 
 func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
@@ -191,7 +195,7 @@ func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventFailoverClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (failover completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s (failover completed) - clustername %s - target %s", lvl.EventHeader, lvl.Clustername, lvl.Target)
 	return msg
 }
 

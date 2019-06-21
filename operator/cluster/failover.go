@@ -21,6 +21,7 @@ package cluster
 import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
@@ -59,6 +60,27 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		return
 	}
 	log.Debug("replica count before failover is %d", len(replicaList.Items))
+
+	//publish event for failover
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventFailoverClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace:     namespace,
+			Username:      "TODO",
+			Topic:         topics,
+			EventType:     events.EventFailoverCluster,
+			BrokerAddress: "localhost:4150",
+		},
+		Clustername: clusterName,
+		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err)
+	}
 
 	Failover(clientset, client, clusterName, task, namespace, restconfig)
 	//remove the pgreplica CRD for the promoted replica
@@ -102,6 +124,27 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 			log.Error("error bouncing backrest-repo during failover")
 			return
 		}
+	}
+
+	//publish event for failover completed
+	topics = make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	g := events.EventFailoverClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace:     namespace,
+			Username:      "TODO",
+			Topic:         topics,
+			EventType:     events.EventFailoverClusterCompleted,
+			BrokerAddress: "localhost:4150",
+		},
+		Clustername: clusterName,
+		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
+	}
+
+	err = events.Publish(g)
+	if err != nil {
+		log.Error(err)
 	}
 
 }

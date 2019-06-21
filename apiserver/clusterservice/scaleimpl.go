@@ -323,7 +323,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		}
 	}
 
-	//delete the pgreplica CRD which will case the replica to be
+	//delete the pgreplica CRD which will cause the replica to be
 	//deleted
 	err = kubeapi.Deletepgreplica(apiserver.RESTClient, replicaName, ns)
 	if err != nil {
@@ -333,12 +333,15 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	}
 
 	//delete the replica deployment
+	log.Debugf("JEFF - verify that scale down deletes the replica deployment")
+	/**
 	err = kubeapi.DeleteDeployment(apiserver.Clientset, replicaName, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
 	}
+	*/
 
 	//clusteroperator.ScaleDownBase(apiserver.Clientset, apiserver.RESTClient, &replica, ns)
 
