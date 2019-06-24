@@ -22,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -35,7 +36,7 @@ import (
 // Label ... 2 forms ...
 // pgo label  myucluser yourcluster --label=env=prod
 // pgo label  --label=env=prod --selector=name=mycluster
-func Label(request *msgs.LabelRequest, ns string) msgs.LabelResponse {
+func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 	var err error
 	var labelsMap map[string]string
 	resp := msgs.LabelResponse{}
@@ -110,13 +111,13 @@ func Label(request *msgs.LabelRequest, ns string) msgs.LabelResponse {
 		resp.Results = append(resp.Results, c.Spec.Name)
 	}
 
-	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, ns)
+	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, ns, pgouser)
 
 	return resp
 
 }
 
-func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns string) {
+func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns, pgouser string) {
 	for i := 0; i < len(items); i++ {
 		if DryRun {
 			log.Debug("dry run only")
@@ -126,6 +127,28 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 			if err != nil {
 				log.Error(err.Error())
 			}
+
+			//publish event for create label
+			topics := make([]string, 1)
+			topics[0] = events.EventTopicCluster
+
+			f := events.EventCreateLabelFormat{
+				EventHeader: events.EventHeader{
+					Namespace:     ns,
+					Username:      pgouser,
+					Topic:         topics,
+					EventType:     events.EventCreateLabel,
+					BrokerAddress: "localhost:4150",
+				},
+				Clustername: items[i].Spec.Name,
+				Label:       LabelCmdLabel,
+			}
+
+			err = events.Publish(f)
+			if err != nil {
+				log.Error(err.Error())
+			}
+
 		}
 	}
 

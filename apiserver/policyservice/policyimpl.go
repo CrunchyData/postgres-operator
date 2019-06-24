@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -151,7 +152,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.Delet
 
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
-func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyResponse {
+func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.ApplyPolicyResponse {
 	var err error
 
 	resp := msgs.ApplyPolicyResponse{}
@@ -249,6 +250,27 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 		}
 
 		resp.Name = append(resp.Name, d.ObjectMeta.Name)
+
+		//publish event
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicPolicy
+
+		f := events.EventApplyPolicyFormat{
+			EventHeader: events.EventHeader{
+				Namespace:     ns,
+				Username:      pgouser,
+				Topic:         topics,
+				EventType:     events.EventApplyPolicy,
+				BrokerAddress: "localhost:4150",
+			},
+			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
+			Policyname:  request.Name,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
 
 	}
 	return resp

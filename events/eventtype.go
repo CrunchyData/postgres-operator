@@ -32,49 +32,49 @@ const (
 	EventTopicPGOUser   = "pgousertopic"
 )
 const (
-	EventReloadCluster = iota
-	EventCreateCluster
-	EventCreateClusterCompleted
-	EventScaleCluster
-	EventScaleDownCluster
-	EventFailoverCluster
-	EventFailoverClusterCompleted
-	EventUpgradeCluster
-	EventUpgradeClusterCompleted
-	EventDeleteCluster
-	EventTestCluster
-	EventCreateLabel
-	EventLoad
-	EventLoadCompleted
-	EventBenchmark
-	EventBenchmarkCompleted
+	EventReloadCluster            = "ReloadCluster"
+	EventCreateCluster            = "CreateCluster"
+	EventCreateClusterCompleted   = "CreateClusterCompleted"
+	EventScaleCluster             = "ScaleCluster"
+	EventScaleDownCluster         = "ScaleDownCluster"
+	EventFailoverCluster          = "FailoverCluster"
+	EventFailoverClusterCompleted = "FailoverClusterCompleted"
+	EventUpgradeCluster           = "UpgradeCluster"
+	EventUpgradeClusterCompleted  = "UpgradeClusterCompleted"
+	EventDeleteCluster            = "DeleteCluster"
+	EventTestCluster              = "TestCluster"
+	EventCreateLabel              = "CreateLabel"
+	EventLoad                     = "Load"
+	EventLoadCompleted            = "LoadCompleted"
+	EventBenchmark                = "Benchmark"
+	EventBenchmarkCompleted       = "BenchmarkCompleted"
 
-	EventCreateBackup
-	EventCreateBackupCompleted
+	EventCreateBackup          = "CreateBackup"
+	EventCreateBackupCompleted = "CreateBackupCompleted"
 
-	EventCreateUser
-	EventDeleteUser
-	EventUpdateUser
+	EventCreateUser         = "CreateUser"
+	EventDeleteUser         = "DeleteUser"
+	EventChangePasswordUser = "ChangePasswordUser"
 
-	EventCreatePolicy
-	EventApplyPolicy
-	EventDeletePolicy
+	EventCreatePolicy = "CreatePolicy"
+	EventApplyPolicy  = "ApplyPolicy"
+	EventDeletePolicy = "DeletePolicy"
 
-	EventCreatePgpool
-	EventDeletePgpool
-	EventCreatePgbouncer
-	EventDeletePgbouncer
+	EventCreatePgpool    = "CreatePgpool"
+	EventDeletePgpool    = "DeletePgpool"
+	EventCreatePgbouncer = "CreatePgbouncer"
+	EventDeletePgbouncer = "DeletePgbouncer"
 
-	EventPGOCreateUser
-	EventPGOUpdateUser
-	EventPGODeleteUser
-	EventPGOStart
-	EventPGOStop
-	EventPGOUpdateConfig
+	EventPGOCreateUser   = "PGOCreateUser"
+	EventPGOUpdateUser   = "PGOUpdateUser"
+	EventPGODeleteUser   = "PGODeleteUser"
+	EventPGOStart        = "PGOStart"
+	EventPGOStop         = "PGOStop"
+	EventPGOUpdateConfig = "PGOUpdateConfig"
 )
 
 type EventHeader struct {
-	EventType     int      `json:eventtype`
+	EventType     string   `json:eventtype`
 	Namespace     string   `json:"namespace"`
 	Username      string   `json:"username"`
 	Topic         []string `json:"topic"`
@@ -82,7 +82,7 @@ type EventHeader struct {
 }
 
 func (lvl EventHeader) String() string {
-	msg := fmt.Sprintf("Event %d - ns [%s] - user [%s] topics [%v] tcp-address [%s]", lvl.EventType, lvl.Namespace, lvl.Username, lvl.Topic, lvl.BrokerAddress)
+	msg := fmt.Sprintf("Event %s - ns [%s] - user [%s] topics [%v] tcp-address [%s]", lvl.EventType, lvl.Namespace, lvl.Username, lvl.Topic, lvl.BrokerAddress)
 	return msg
 }
 
@@ -262,6 +262,7 @@ func (lvl EventTestClusterFormat) String() string {
 type EventCreateBackupFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	BackupType  string `json:"backuptype"`
 }
 
 func (p EventCreateBackupFormat) GetHeader() EventHeader {
@@ -269,7 +270,7 @@ func (p EventCreateBackupFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateBackupFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create backup) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s (create backup) - clustername %s - backuptype %s", lvl.EventHeader, lvl.Clustername, lvl.BackupType)
 	return msg
 }
 
@@ -293,6 +294,8 @@ type EventCreateUserFormat struct {
 	EventHeader      `json:"eventheader"`
 	Clustername      string `json:"clustername"`
 	PostgresUsername string `json:"postgresusername"`
+	PostgresPassword string `json:"postgrespassword"`
+	Managed          bool   `json:"managed"`
 }
 
 func (p EventCreateUserFormat) GetHeader() EventHeader {
@@ -309,6 +312,7 @@ type EventDeleteUserFormat struct {
 	EventHeader      `json:"eventheader"`
 	Clustername      string `json:"clustername"`
 	PostgresUsername string `json:"postgresusername"`
+	Managed          bool   `json:"managed"`
 }
 
 func (p EventDeleteUserFormat) GetHeader() EventHeader {
@@ -321,18 +325,19 @@ func (lvl EventDeleteUserFormat) String() string {
 }
 
 //----------------------------
-type EventUpdateUserFormat struct {
+type EventChangePasswordUserFormat struct {
 	EventHeader      `json:"eventheader"`
 	Clustername      string `json:"clustername"`
 	PostgresUsername string `json:"postgresusername"`
+	PostgresPassword string `json:"postgrespassword"`
 }
 
-func (p EventUpdateUserFormat) GetHeader() EventHeader {
+func (p EventChangePasswordUserFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
 
-func (lvl EventUpdateUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s (update user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
+func (lvl EventChangePasswordUserFormat) String() string {
+	msg := fmt.Sprintf("Event %s (change password user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
 	return msg
 }
 
@@ -355,7 +360,6 @@ func (lvl EventCreateLabelFormat) String() string {
 //----------------------------
 type EventCreatePolicyFormat struct {
 	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
 	Policyname  string `json:"policyname"`
 }
 
@@ -364,7 +368,7 @@ func (p EventCreatePolicyFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreatePolicyFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create policy) - clustername %s - policy [%s]", lvl.EventHeader, lvl.Clustername, lvl.Policyname)
+	msg := fmt.Sprintf("Event %s (create policy) - policy [%s]", lvl.EventHeader, lvl.Policyname)
 	return msg
 }
 

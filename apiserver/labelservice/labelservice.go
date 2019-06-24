@@ -58,7 +58,7 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = Label(&request, ns)
+	resp = Label(&request, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 }

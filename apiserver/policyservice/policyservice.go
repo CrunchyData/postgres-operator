@@ -207,6 +207,6 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ApplyPolicy(&request, ns)
+	resp = ApplyPolicy(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }

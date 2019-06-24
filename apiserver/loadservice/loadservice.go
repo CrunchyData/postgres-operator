@@ -59,6 +59,6 @@ func LoadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = Load(&request, ns)
+	resp = Load(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }

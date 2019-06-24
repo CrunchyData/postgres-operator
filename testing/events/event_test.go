@@ -35,7 +35,7 @@ func TestEventCreate(t *testing.T) {
 
 	tryEventCreateUser(t)
 	tryEventDeleteUser(t)
-	tryEventUpdateUser(t)
+	tryEventChangePasswordUser(t)
 
 	tryEventCreatePolicy(t)
 	tryEventApplyPolicy(t)
@@ -290,6 +290,7 @@ func tryEventCreateBackup(t *testing.T) {
 			BrokerAddress: EventTCPAddress,
 		},
 		Clustername: TestClusterName,
+		BackupType:  "pgbackrest",
 	}
 
 	err := events.Publish(f)
@@ -336,6 +337,8 @@ func tryEventCreateUser(t *testing.T) {
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
+		PostgresPassword: "somepassword",
+		Managed:          true,
 	}
 
 	err := events.Publish(f)
@@ -359,6 +362,7 @@ func tryEventDeleteUser(t *testing.T) {
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
+		Managed:          true,
 	}
 
 	err := events.Publish(f)
@@ -367,21 +371,22 @@ func tryEventDeleteUser(t *testing.T) {
 	}
 	t.Log(f.String())
 }
-func tryEventUpdateUser(t *testing.T) {
+func tryEventChangePasswordUser(t *testing.T) {
 
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicUser
 
-	f := events.EventUpdateUserFormat{
+	f := events.EventChangePasswordUserFormat{
 		EventHeader: events.EventHeader{
 			Namespace:     Namespace,
 			Username:      TestUsername,
 			Topic:         topics,
-			EventType:     events.EventUpdateUser,
+			EventType:     events.EventChangePasswordUser,
 			BrokerAddress: EventTCPAddress,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
+		PostgresPassword: "somepassword",
 	}
 
 	err := events.Publish(f)
@@ -427,8 +432,7 @@ func tryEventCreatePolicy(t *testing.T) {
 			EventType:     events.EventCreatePolicy,
 			BrokerAddress: EventTCPAddress,
 		},
-		Clustername: TestClusterName,
-		Policyname:  "somepolicy",
+		Policyname: "somepolicy",
 	}
 
 	err := events.Publish(f)
@@ -473,8 +477,7 @@ func tryEventDeletePolicy(t *testing.T) {
 			EventType:     events.EventDeletePolicy,
 			BrokerAddress: EventTCPAddress,
 		},
-		Clustername: TestClusterName,
-		Policyname:  "somepolicy",
+		Policyname: "somepolicy",
 	}
 
 	err := events.Publish(f)

@@ -22,6 +22,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -94,5 +95,28 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	}
 
 	kubeapi.CreateJob(clientset, &newjob, namespace)
+
+	//publish backrest backup event
+	if cmd == "backup" {
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicBackup
+
+		f := events.EventCreateBackupFormat{
+			EventHeader: events.EventHeader{
+				Namespace:     namespace,
+				Username:      "TODO",
+				Topic:         topics,
+				EventType:     events.EventCreateBackup,
+				BrokerAddress: "localhost:4150",
+			},
+			Clustername: jobFields.ClusterName,
+			BackupType:  "pgbackrest",
+		}
+
+		err := events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}
 
 }

@@ -233,7 +233,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = TestCluster(clustername, selector, ns, request.AllFlag)
+	resp = TestCluster(clustername, selector, ns, username, request.AllFlag)
 	json.NewEncoder(w).Encode(resp)
 }
 

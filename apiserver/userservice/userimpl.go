@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
@@ -63,7 +64,7 @@ var defaultPasswordLength = 8
 // pgo user --change-password=bob --db=userdb
 //  --expired=7 --selector=env=research --update-passwords=true
 //  --valid-days=30
-func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
+func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 	var err error
 	resp := msgs.UserResponse{}
 	resp.Status.Code = msgs.Ok
@@ -154,6 +155,31 @@ func User(request *msgs.UserRequest, ns string) msgs.UserResponse {
 				pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 
 				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
+				if err != nil {
+					log.Error(err.Error())
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
+				}
+
+				//publish event for password change
+				topics := make([]string, 1)
+				topics[0] = events.EventTopicUser
+
+				f := events.EventChangePasswordUserFormat{
+					EventHeader: events.EventHeader{
+						Namespace:     ns,
+						Username:      pgouser,
+						Topic:         topics,
+						EventType:     events.EventChangePasswordUser,
+						BrokerAddress: "localhost:4150",
+					},
+					Clustername:      cluster.Spec.Name,
+					PostgresUsername: request.ChangePasswordForUser,
+					PostgresPassword: newPassword,
+				}
+
+				err = events.Publish(f)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -552,7 +578,7 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 
 // CreateUser ...
 // pgo create user user1
-func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserResponse {
+func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.CreateUserResponse {
 	var err error
 	resp := msgs.CreateUserResponse{}
 	resp.Status.Code = msgs.Ok
@@ -642,13 +668,38 @@ func CreateUser(request *msgs.CreateUserRequest, ns string) msgs.CreateUserRespo
 			return resp
 		}
 
+		//publish event for create user
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicUser
+
+		f := events.EventCreateUserFormat{
+			EventHeader: events.EventHeader{
+				Namespace:     ns,
+				Username:      pgouser,
+				Topic:         topics,
+				EventType:     events.EventCreateUser,
+				BrokerAddress: "localhost:4150",
+			},
+			PostgresUsername: request.Name,
+			PostgresPassword: newPassword,
+			Managed:          request.ManagedUser,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
 	}
 	return resp
 
 }
 
 // DeleteUser ...
-func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
+func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 	var err error
 
 	response := msgs.DeleteUserResponse{}
@@ -736,6 +787,31 @@ func DeleteUser(name, selector, ns string) msgs.DeleteUserResponse {
 					return response
 				}
 			}
+		}
+
+		//publish event for delete user
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicUser
+
+		f := events.EventDeleteUserFormat{
+			EventHeader: events.EventHeader{
+				Namespace:     ns,
+				Username:      pgouser,
+				Topic:         topics,
+				EventType:     events.EventDeleteUser,
+				BrokerAddress: "localhost:4150",
+			},
+			Clustername:      clusterName,
+			PostgresUsername: name,
+			Managed:          managed,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err)
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
 		}
 
 	}

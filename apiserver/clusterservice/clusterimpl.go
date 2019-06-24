@@ -31,6 +31,7 @@ import (
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/sshutil"
 	"github.com/crunchydata/postgres-operator/util"
@@ -273,7 +274,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	return output, err
 }
 
-func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestResponse {
+func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
@@ -397,6 +398,29 @@ func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestRespon
 
 		}
 		response.Results = append(response.Results, result)
+
+		//publish event for cluster test
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicCluster
+
+		f := events.EventTestClusterFormat{
+			EventHeader: events.EventHeader{
+				Namespace:     ns,
+				Username:      pgouser,
+				Topic:         topics,
+				EventType:     events.EventTestCluster,
+				BrokerAddress: "localhost:4150",
+			},
+			Clustername: c.Name,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 	}
 
 	return response
