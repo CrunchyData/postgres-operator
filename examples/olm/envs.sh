@@ -17,7 +17,7 @@ export PGOROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 # the version of the Operator you run is set by these vars
 export PGO_IMAGE_PREFIX=registry.connect.redhat.com/crunchydata
 export PGO_BASEOS=rhel7
-export PGO_VERSION=4.0.0
+export PGO_VERSION=4.0.1
 export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 
 # for the pgo CLI to authenticate with using TLS
