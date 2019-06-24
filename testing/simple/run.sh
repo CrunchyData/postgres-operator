@@ -53,25 +53,3 @@ else
   go test -run ${TESTS[runme]} -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
 fi
 
-
-
-#for testname in "${TESTS[@]}"
-#do
-#    go test -run ${testname?} -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#done
-
-#go test -run TestBackrestBackup -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestBenchmark -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestDf -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestReload -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestCreateLabel -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestLs -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestCat -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestCreatePolicy -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestShowPolicy -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestScale -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestStatus -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestShowConfig -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-#go test -run TestVersion -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
-
-#go test ./... -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1

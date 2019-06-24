@@ -29,7 +29,7 @@ func TestPool(t *testing.T) {
 		cmdoutput string
 	}{
 		{"pgo pool create", []string{"create", "pgpool", TestClusterName}, "", "pgpool added"},
-		{"pgo pool delete", []string{"delete", "pgpool", TestClusterName}, "", "pgpool deleted"},
+		{"pgo pool delete", []string{"delete", "pgpool", TestClusterName, "--no-prompt"}, "", "pgpool deleted"},
 	}
 
 	selector := config.LABEL_PG_CLUSTER + "=" + TestClusterName
@@ -37,13 +37,17 @@ func TestPool(t *testing.T) {
 	var err error
 	var SLEEP_SECS = 5
 	var output []byte
+	beforeDepCount := 0
+	afterDepCount := 0
 
 	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
 		deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
 		if err != nil {
 			t.Error(err.Error())
 		}
-		beforeDepCount := len(deps.Items)
+		beforeDepCount = len(deps.Items)
 		if beforeDepCount == 0 {
 			t.Error("deps before was zero")
 		}
@@ -57,31 +61,41 @@ func TestPool(t *testing.T) {
 
 		actual := string(output)
 
-		t.Logf("actual %s- ", actual)
+		t.Logf("actual command response: %s- ", actual)
 		found := strings.Contains(actual, tt.cmdoutput)
 		if !found {
 			t.Error(tt.name+" string not found in output")
 		}
 
-		time.Sleep(time.Second * time.Duration(SLEEP_SECS))
-		deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
-		if err != nil {
-			t.Error(err.Error())
+		MAX_TRIES := 10
+		complete := false
+		for i := 1; i <= MAX_TRIES; i++ {
+			time.Sleep(time.Second * time.Duration(SLEEP_SECS))
+			t.Logf("sleeping while job completes, attempt #%d", i)
+			deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
+			if err != nil {
+				t.Error(err.Error())
+			}
+			afterDepCount = len(deps.Items)
+			//should have more deps after create
+			if (afterDepCount > beforeDepCount && strings.Contains(tt.name, "create")) {
+				t.Log(tt.name+" complete!")
+				complete = true
+				break
+			}
+			//should have less deps after delete
+			if (afterDepCount < beforeDepCount && strings.Contains(tt.name, "delete")) {
+				t.Log(tt.name+" complete!")
+				complete = true
+				break
+			}
 		}
-		afterDepCount := len(deps.Items)
-		//should have more deps after create
-		if (afterDepCount <= beforeDepCount && tt.name == "pgo pool create") {
-			t.Errorf("deps after was %d", afterDepCount)
-		}
-		//should have less deps after delete
-		if (afterDepCount >= beforeDepCount && tt.name == "pgo pool delete") {
-			t.Errorf("deps after was %d", afterDepCount)
+		if !complete {
+			t.Errorf("%v job did not succeed after retries. Deps after was %d", tt.name, afterDepCount)
 		}
 		t.Logf("deps after %d", afterDepCount)
+		
+		})
+
 	}
-
-	t.Run("teardown", func(t *testing.T) {
-		t.Log("some teardown code")
-	})
-
 }
