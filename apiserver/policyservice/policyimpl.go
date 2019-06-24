@@ -31,15 +31,14 @@ import (
 )
 
 // CreatePolicy ...
-func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile, ns string) (bool, error) {
+func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile, ns, pgouser string) (bool, error) {
 
 	var found bool
 	log.Debugf("create policy called for %s", policyName)
 	result := crv1.Pgpolicy{}
 
 	// error if it already exists
-	found, err := kubeapi.Getpgpolicy(RESTClient,
-		&result, policyName, ns)
+	found, err := kubeapi.Getpgpolicy(RESTClient, &result, policyName, ns)
 	if err == nil {
 		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
 		return true, err
@@ -56,9 +55,13 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 	spec.URL = policyURL
 	spec.SQL = policyFile
 
+	myLabels := make(map[string]string)
+	myLabels[config.LABEL_PGOUSER] = pgouser
+
 	newInstance := &crv1.Pgpolicy{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: policyName,
+			Name:   policyName,
+			Labels: myLabels,
 		},
 		Spec: spec,
 	}

@@ -28,7 +28,7 @@ import (
 // CreatePgpool ...
 // pgo create pgpool mycluster
 // pgo create pgpool --selector=name=mycluster
-func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoolResponse {
+func CreatePgpool(request *msgs.CreatePgpoolRequest, ns, pgouser string) msgs.CreatePgpoolResponse {
 	var err error
 	resp := msgs.CreatePgpoolResponse{}
 	resp.Status.Code = msgs.Ok
@@ -116,6 +116,7 @@ func CreatePgpool(request *msgs.CreatePgpoolRequest, ns string) msgs.CreatePgpoo
 		}
 
 		newInstance.ObjectMeta.Labels = make(map[string]string)
+		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
 		newInstance.ObjectMeta.Labels[config.LABEL_PGPOOL_TASK_ADD] = "true"
 

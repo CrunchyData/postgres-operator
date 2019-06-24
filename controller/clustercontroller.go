@@ -127,13 +127,14 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 
 	//capture the cluster creation event
+	pgouser := cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
 	f := events.EventCreateClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace:     cluster.ObjectMeta.Namespace,
-			Username:      "TODO unknown",
+			Username:      pgouser,
 			Topic:         topics,
 			BrokerAddress: "localhost:4150",
 			EventType:     events.EventCreateCluster,

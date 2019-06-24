@@ -72,7 +72,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType, ns)
+	resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 }

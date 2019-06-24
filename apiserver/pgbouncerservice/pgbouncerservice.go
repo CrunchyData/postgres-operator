@@ -58,7 +58,7 @@ func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = CreatePgbouncer(&request, ns)
+	resp = CreatePgbouncer(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }

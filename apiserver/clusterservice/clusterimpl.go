@@ -45,7 +45,7 @@ import (
 )
 
 // DeleteCluster ...
-func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns string) msgs.DeleteClusterResponse {
+func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pgouser string) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -470,7 +470,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 
 // CreateCluster ...
 // pgo create cluster mycluster
-func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClusterResponse {
+func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.CreateClusterResponse {
 	var id string
 	resp := msgs.CreateClusterResponse{}
 	resp.Status.Code = msgs.Ok
@@ -549,6 +549,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			//add a label for the custom config
 			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 		}
+
+		userLabelsMap[config.LABEL_PGOUSER] = pgouser
+
 		//set the metrics flag with the global setting first
 		userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
@@ -741,7 +744,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		} else {
 			resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
 		}
-		id, err = createWorkflowTask(clusterName, ns)
+		id, err = createWorkflowTask(clusterName, ns, pgouser)
 		if err != nil {
 			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
@@ -1114,7 +1117,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	return err
 }
 
-func createWorkflowTask(clusterName, ns string) (string, error) {
+func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
@@ -1140,6 +1143,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
