@@ -28,6 +28,8 @@ TESTS=(
     TestStatus
     TestShowConfig
     TestVersion
+    TestBouncer
+    TestPool
 )
 
 echo "TESTS: "
