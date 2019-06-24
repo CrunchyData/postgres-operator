@@ -17,20 +17,28 @@ package cmd
 
 import (
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
+	"math/rand"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
+
+type TailHandler struct {
+	topicName     string
+	totalMessages int
+	messagesShown int
+}
 
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Print watch information for the PostgreSQL Operator",
 	Long: `WATCH allows you to watch event information for the postgres-operator. For example:
-				        pgo watch EventAll
-				        pgo watch EventCluster EventPolicy`,
+		pgo watch --pgo-event-address=localhost:14150  alltopic
+		pgo watch alltopic`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
@@ -41,39 +49,89 @@ var watchCmd = &cobra.Command{
 	},
 }
 
+var PGOEventAddress string
+
 func init() {
 	RootCmd.AddCommand(watchCmd)
+
+	watchCmd.Flags().StringVarP(&PGOEventAddress, "pgo-event-address", "a", "localhost:14150", "The address (host:port) where the event stream is.")
 }
 
 func watch(args []string, ns string) {
 	log.Debugf("watch called %v", args)
 
-	r := msgs.WatchRequest{}
-	r.Namespace = ns
-	r.ClientVersion = msgs.PGO_VERSION
-	//r.Topics = make([]string, 1)
-	r.Topics = args
+	if len(args) == 0 {
+		log.Fatal("topic is required")
+	}
 
-	response, err := api.Watch(httpclient, &r, &SessionCredentials)
+	topic := args[0]
 
+	var totalMessages = 0
+
+	var channel string
+	rand.Seed(time.Now().UnixNano())
+	channel = fmt.Sprintf("tail%06d#ephemeral", rand.Int()%999999)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	cfg := nsq.NewConfig()
+	cfg.MaxInFlight = 200
+
+	consumers := []*nsq.Consumer{}
+	log.Printf("Adding consumer for topic: %s", topic)
+
+	consumer, err := nsq.NewConsumer(topic, channel, cfg)
 	if err != nil {
-		fmt.Println("Error: " + err.Error())
-		os.Exit(2)
+		log.Fatal(err)
 	}
 
-	if response.Status.Code == msgs.Error {
-		fmt.Println("Error: " + response.Status.Msg)
-		return
+	consumer.AddHandler(&TailHandler{topicName: topic, totalMessages: totalMessages})
+
+	addrs := make([]string, 1)
+	if PGOEventAddress != "" {
+		addrs[0] = PGOEventAddress
+		err = consumer.ConnectToNSQDs(addrs)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	if len(response.Results) == 0 {
-		fmt.Println("No Watch Results")
-		return
-	}
-	log.Debugf("response = %v", response)
+	consumers = append(consumers, consumer)
 
-	for _, v := range response.Results {
-		fmt.Printf("%s%s\n", TreeTrunk, "/"+v)
+	<-sigChan
+
+	for _, consumer := range consumers {
+		consumer.Stop()
+	}
+	for _, consumer := range consumers {
+		<-consumer.StopChan
 	}
 
+}
+
+func (th *TailHandler) HandleMessage(m *nsq.Message) error {
+	th.messagesShown++
+
+	_, err := os.Stdout.WriteString(th.topicName)
+	if err != nil {
+		log.Fatalf("ERROR: failed to write to os.Stdout - %s", err)
+	}
+	_, err = os.Stdout.WriteString(" | ")
+	if err != nil {
+		log.Fatalf("ERROR: failed to write to os.Stdout - %s", err)
+	}
+
+	_, err = os.Stdout.Write(m.Body)
+	if err != nil {
+		log.Fatalf("ERROR: failed to write to os.Stdout - %s", err)
+	}
+	_, err = os.Stdout.WriteString("\n")
+	if err != nil {
+		log.Fatalf("ERROR: failed to write to os.Stdout - %s", err)
+	}
+	if th.totalMessages > 0 && th.messagesShown >= th.totalMessages {
+		os.Exit(0)
+	}
+	return nil
 }
