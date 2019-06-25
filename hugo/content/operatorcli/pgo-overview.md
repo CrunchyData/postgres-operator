@@ -81,8 +81,8 @@ cluster as follows:
 
     pgo create cluster mycluster -n pgouser1
 
-This command creates a Postgres cluster in the *pgouser1* namespace 
-that has a single Postgres primary container. 
+This command creates a Postgres cluster in the *pgouser1* namespace
+that has a single Postgres primary container.
 
 You can see the Postgres cluster using the following:
 
@@ -103,14 +103,14 @@ You can create a Postgres cluster initially with a Postgres replica as follows:
 
 To view the Postgres logs, you can enter commands such as:
 
-    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log 
+    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log
     pgo cat mycluster -n pgouser1 /pgdata/mycluster/pg_log/postgresql-Mon.log | tail -3
 
 
 #### Backups
 
 By default the Operator deploys pgbackrest for a Postgres cluster to
-hold database backup data.  
+hold database backup data.
 
 You can create a pgbackrest backup job as follows:
 
@@ -127,7 +127,7 @@ command as follows:
 
 See pgbackrest.org for command flag descriptions.
 
-You can create a Postgres cluster that does not include pgbackrest 
+You can create a Postgres cluster that does not include pgbackrest
 if you specify the following:
 
     pgo create cluster mycluster --pgbackrest=false -n pgouser1
@@ -229,11 +229,11 @@ To see what namespaces exist and if you have access to them, enter:
 
 #### Perform a pgdump backup
 
-	pgo backup mycluster --backup-type=pgdump -n pgouser1
-	pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose" -n pgouser1
-	pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema" -n pgouser1
+    pgo backup mycluster --backup-type=pgdump -n pgouser1
+    pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose" -n pgouser1
+    pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema" -n pgouser1
 
-Note: To run `pgdump_all` instead of `pgdump`, pass `--dump-all` flag in --backup-opts as shown above. All `--backup-opts` should be space delimited.
+Note: To run `pgdump_all` instead of `pgdump`, pass `--dump-all` flag in `--backup-opts` as shown above. All `--backup-opts` should be space delimited.
 
 #### Perform a pgbackrest restore
 
@@ -255,8 +255,8 @@ Here are some steps to test PITR:
 
  * `pgo create cluster mycluster`
  * Create a table on the new cluster called *beforebackup*
- * `pgo backup mycluster -n pgouser1`
- * Create a table on the cluster called *afterbackup*
+ * pgo backup mycluster -n pgouser1
+ * create a table on the cluster called *afterbackup*
  * Execute *select now()* on the database to get the time, use this timestamp minus a couple of minutes when you perform the restore
  * `pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info" -n pgouser1`
  * Wait for the database to be restored
@@ -304,12 +304,12 @@ If you would like to control the name of the PVC created when performing a pgbas
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25" -n pgouser1
-	
+    pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25" -n pgouser1
+
 To restore the most recent pgdump at the default path, leave off a timestamp:
-	
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc -n pgouser1
-	
+
+    pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc -n pgouser1
+
 
 ### Fail-over Operations
 
@@ -349,7 +349,7 @@ To add a pgbouncer Deployment to your Postgres cluster, enter:
 You can add pgbouncer after a Postgres cluster is created as follows:
 
     pgo create pgbouncer mycluster
-	pgo create pgbouncer --selector=name=mycluster
+    pgo create pgbouncer --selector=name=mycluster
 
 You can also specify a pgbouncer password as follows:
 
@@ -386,15 +386,15 @@ into your Postgres cluster pod as follows:
 
     pgo create cluster mycluster --metrics -n pgouser1
 
-Note: backend metric storage such as Prometheus and front end 
-visualization software such as Grafana are not created automatically 
-by the PostgreSQL Operator.  For instructions on installing Grafana and 
+Note: backend metric storage such as Prometheus and front end
+visualization software such as Grafana are not created automatically
+by the PostgreSQL Operator.  For instructions on installing Grafana and
 Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.1/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
 There is a cron based scheduler included into the Operator Deployment
-by default.  
+by default.
 
 You can create automated full pgBackRest backups every Sunday at 1 am
 as follows:
@@ -483,7 +483,7 @@ Likewise, you can create a Replica using a Preferred Node as follows:
 This command will cause the Postgres Service to be of a specific
 type instead of the default ClusterIP service type.
 
-#### Miscellaneous 
+#### Miscellaneous
 
 Create a cluster using the Crunchy Postgres + PostGIS container image:
 
