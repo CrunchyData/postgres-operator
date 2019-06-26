@@ -1,0 +1,49 @@
+FROM ubi7
+
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="crunchydata/pgo-load-" \
+    vendor="crunchydata.com" \
+	PostgresVersion="11" \
+	PostgresFullVersion="11.4" \
+	Version="7.6" \
+	Release="4.0.1" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
+    summary="Crunchy Data PostgreSQL Operator - Load Data" \
+    description="Loads a CSV or JSON file into the database."
+
+ENV PGVERSION="11"
+
+COPY redhat/atomic/pgo_load/help.1 /help.1
+COPY redhat/atomic/pgo_load/help.md /help.md
+COPY redhat/licenses /licenses
+
+# Crunchy PostgreSQL repository
+
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
+
+RUN yum -y update && yum install -y \
+	gettext \
+	hostname \
+	procps-ng \
+ && yum -y install postgresql${PGVERSION} \
+ && yum clean all -y
+
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
+ADD bin/pgo-load/ /opt/cpm/bin
+ADD bin/uid_postgres.sh /opt/cpm/bin
+ADD conf/pgo-load/ /opt/cpm/conf
+RUN chown -R 26:26 /opt/cpm
+
+VOLUME /pgdata
+
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
+ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
+
+USER 26
+
+CMD ["/opt/cpm/bin/start.sh"]

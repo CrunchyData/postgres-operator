@@ -1,0 +1,36 @@
+FROM ubi7
+
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="pgo-apiserver-" \
+	vendor="crunchydata.com" \
+	PostgresVersion="11" \
+	PostgresFullVersion="11.4" \
+	Version="7.6" \
+	Release="4.0.1" \
+	run='docker run -d -p 8080:80 --name=web-app web-app' \
+	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
+	description="Crunchy Data PostgreSQL Operator - Apiserver"
+
+ENV PGVERSION="11"
+
+COPY redhat/atomic/pgo_apiserver/help.1 /help.1
+COPY redhat/atomic/pgo_apiserver/help.md /help.md
+COPY redhat/licenses /licenses
+
+# Crunchy PostgreSQL repository
+
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
+
+RUN yum -y update && yum -y install postgresql${PGVERSION} hostname \
+ && yum -y clean all
+
+ADD bin/apiserver /usr/local/bin
+ADD bin/postgres-operator/runpsql.sh /usr/local/bin
+ADD conf/postgres-operator /default-pgo-config
+
+USER daemon
+
+ENTRYPOINT ["/usr/local/bin/apiserver"]

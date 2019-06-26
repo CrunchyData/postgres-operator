@@ -905,9 +905,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	//pgbackrest - set with user request first or look at global flag is not set
-	if request.BackrestFlag {
-		labels[config.LABEL_BACKREST] = "true"
-		log.Debug("backrest set to true in user labels")
+	// Note: validateBackrestStorageType called earlier in CreateCluster will generate 
+	// and return error to user if BackrestFlag is not true or false
+	if request.BackrestFlag == "true" || request.BackrestFlag == "false" {
+		labels[config.LABEL_BACKREST] = request.BackrestFlag
+		log.Debug("backrest set in user labels")
 	} else {
 		log.Debug("using Backrest from pgo.yaml")
 		labels[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
@@ -989,8 +991,8 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 
 	var err error
 
-	//dont include pgpool or pgbouncer deployments
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL + "!=true," + config.LABEL_PGBOUNCER + "!=true"
+	//dont include pgpool, pgbouncer, or pgbackrest_repo deployments
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL_POD + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PGBOUNCER + "!=true"
 	log.Debugf("selector for delete is %s", selector)
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -1002,7 +1004,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	if deleteBackups {
 		log.Debug("deleteBackups is called")
 		log.Debug("check for backrest-shared-repo PVC to delete")
-		pvcName := clusterName + "-backrest-shared-repo"
+		pvcName := clusterName + "-pgbr-repo"
 		_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
 		if found {
 			log.Debugf("creating rmdata job for %s", pvcName)
@@ -1411,7 +1413,21 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 }
 
-func validateBackrestStorageType(requestBackRestStorageType string, backrestEnabled bool) error {
+func validateBackrestStorageType(requestBackRestStorageType string, backrestEnabledFlag string) error {
+
+	var backrestEnabled bool
+	var parseError error
+
+	// backrestEnabled looks for override from command line, otherwise use pgo.yaml value
+	if backrestEnabledFlag != "" {
+		backrestEnabled, parseError = strconv.ParseBool(backrestEnabledFlag)
+	} else {
+		backrestEnabled = apiserver.Pgo.Cluster.Backrest
+	}
+
+	if parseError != nil {
+		return errors.New("valid values for --pgbackrest are true or false")
+	}
 
 	if requestBackRestStorageType != "" && !backrestEnabled {
 		return errors.New("pgBackRest storage type is only applicable if pgBackRest is enabled")

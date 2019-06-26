@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.3-2.4.0
+  CCPImageTag:  centos7-11.4-2.4.1
   Port:  5432
   User:  testuser
   Database:  userdb
@@ -15,7 +15,7 @@ Cluster:
   ArchiveMode:  false
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
-  Backrest:  false
+  Backrest:  true
   BackrestPort:  2022
   BackrestS3Bucket:
   BackrestS3Endpoint:
@@ -101,5 +101,5 @@ Pgo:
   PreferredFailoverNode:  
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.0.0
+  PGOImageTag:  centos7-4.0.1
 

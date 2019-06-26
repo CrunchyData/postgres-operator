@@ -105,13 +105,16 @@ func init() {
 	deleteClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for this cluster to be removed permanently.")
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deletePgbouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deletePgpoolCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteUserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 
 }
 

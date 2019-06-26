@@ -1,0 +1,30 @@
+FROM ubi7
+
+LABEL Vendor="Crunchy Data Solutions" \
+	Version="7.6" \
+	name="pgo-scheduler" \
+	Release="4.0.1" \
+	summary="Crunchy Data PostgreSQL Operator - Scheduler" \
+	description="Crunchy Data PostgreSQL Operator - Scheduler"
+
+# Crunchy Postgres repo
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
+
+COPY redhat/atomic/pgo_scheduler/help.1 /help.1
+COPY redhat/atomic/pgo_scheduler/help.md /help.md
+COPY redhat/licenses /licenses
+
+RUN yum -y update && yum clean all -y
+
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
+ && chown -R 2:2 /opt/cpm /pgo-config
+
+ADD bin/pgo-scheduler /opt/cpm/bin
+ADD conf/postgres-operator /default-pgo-config
+
+
+USER 2
+
+CMD ["/opt/cpm/bin/start.sh"]

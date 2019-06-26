@@ -1,0 +1,36 @@
+FROM ubi7
+
+LABEL Vendor="Crunchy Data Solutions" \
+	Version="7.6" \
+	Release="4.0.1" \
+	name="pgo-sqlrunner" \
+	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
+	description="Crunchy Data PostgreSQL Operator - SQL Runner"
+
+ENV PGVERSION="11"
+ENV PGROOT="/usr/pgsql-${PGVERSION}"
+
+COPY redhat/atomic/pgo_sqlrunner/help.1 /help.1
+COPY redhat/atomic/pgo_sqlrunner/help.md /help.md
+COPY redhat/licenses /licenses
+
+# Crunchy PostgreSQL repository
+
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
+
+RUN yum -y update \
+ && yum -y install postgresql${PGVERSION} \
+ && yum -y clean all
+
+RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \
+ && chown -R 26:26 /opt/cpm /pgconf
+
+ADD bin/pgo-sqlrunner /opt/cpm/bin
+
+VOLUME ["/pgconf"]
+
+USER 26
+
+CMD ["/opt/cpm/bin/start.sh"]

@@ -1,0 +1,34 @@
+FROM ubi7
+
+MAINTAINER jeff.mccormick@crunchydata.com
+
+LABEL name="pgo-lspvc" \
+    vendor="crunchydata.com" \
+	Version="7.6" \
+	Release="4.0.1" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
+    summary="Crunchy Data PostgreSQL Operator - Display PVC" \
+    description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
+
+COPY redhat/atomic/pgo_lspvc/help.1 /help.1
+COPY redhat/atomic/pgo_lspvc/help.md /help.md
+COPY redhat/licenses /licenses
+
+#ADD conf/RPM-GPG-KEY-crunchydata  /
+#ADD conf/crunchypg11.repo /etc/yum.repos.d/
+#RUN rpm --import RPM-GPG-KEY-crunchydata
+
+
+RUN yum -y update && yum -y clean all
+
+#RUN mkdir -p /opt/cpm/bin && chown -R 26:26 /opt/cpm
+#RUN mkdir /pgdata && chmod -R g=u /pgdata
+#ADD bin/pgo-lspvc /opt/cpm/bin
+
+#RUN chmod g=u /etc/passwd && \
+#        chmod g=u /etc/group
+
+USER 26
+#ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+VOLUME ["/pgdata"]
+CMD ["sh", "-c", "find /pgdata/${BACKUP_ROOT}"]

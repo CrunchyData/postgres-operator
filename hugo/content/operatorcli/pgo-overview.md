@@ -19,7 +19,6 @@ Use the following syntax to run  `pgo`  commands from your terminal window:
 Where *command* is a verb like:
 
  * show
- * get
  * create
  * delete
 
@@ -222,7 +221,7 @@ To see the Operator server configuration, enter:
 
 To see what namespaces exist and if you have access to them, enter:
 
-    pgo show namespaces -n pgouser1
+    pgo show namespace -n pgouser1
 
 #### Perform a pgdump backup
 
@@ -284,7 +283,7 @@ When performing the restore, both the backup path and backup PVC can be omitted,
 Once the pgbasebackup restore is complete, a new PVC will be available with a randomly generated ID that contains the restored database, e.g. PVC  **mycluster-ieqe** in the output below:
 
 ```
-$ pgo show pvc all
+$ pgo show pvc --all
 All Operator Labeled PVCs
         mycluster
         mycluster-backup
@@ -386,7 +385,7 @@ into your Postgres cluster pod as follows:
 Note: backend metric storage such as Prometheus and front end 
 visualization software such as Grafana are not created automatically 
 by the PostgreSQL Operator.  For instructions on installing Grafana and 
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.0/examples/metrics/metrics/).
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.1/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
