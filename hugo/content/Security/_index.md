@@ -46,9 +46,9 @@ on the same Kube cluster.
 
 ## Operator RBAC
 
-The *conf/postgresql-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
+The *conf/postgres-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
 
-The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
+The *conf/postgres-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
 
     username:password:pgoadmin:
     pgouser1:password:pgoadmin:pgouser1
@@ -67,7 +67,7 @@ namespace that the Operator is watching.
 
 A user creates a *.pgouser* file in their $HOME directory to identify
 themselves to the Operator.  An entry in .pgouser will need to match
-entries in the *conf/postgresql-operator/pgouser* file.  A sample
+entries in the *conf/postgres-operator/pgouser* file.  A sample
 *.pgouser* file contains the following:
 
     username:password
