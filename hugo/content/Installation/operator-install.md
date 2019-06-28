@@ -106,7 +106,7 @@ When you install the Operator you must make choices as to what kind of storage t
 Here are some common examples of configuration changes most installers would make:
 
 ### Storage
-Inside `conf/postgresql-operator/pgo.yaml` there are various storage configurations defined.  
+Inside `conf/postgres-operator/pgo.yaml` there are various storage configurations defined.  
 
     PrimaryStorage: gce
     XlogStorage: gce
