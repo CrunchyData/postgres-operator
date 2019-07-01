@@ -27,7 +27,6 @@ import (
 )
 
 // MISC
-const ECHO_PERM = "Echo"
 const CAT_PERM = "Cat"
 const LS_PERM = "Ls"
 const APPLY_POLICY_PERM = "ApplyPolicy"
@@ -104,7 +103,6 @@ func InitializePerms() {
 	PermMap[DF_CLUSTER_PERM] = "yes"
 	PermMap[LABEL_PERM] = "yes"
 	PermMap[LOAD_PERM] = "yes"
-	PermMap[ECHO_PERM] = "yes"
 	PermMap[CAT_PERM] = "yes"
 	PermMap[LS_PERM] = "yes"
 	PermMap[RELOAD_PERM] = "yes"
