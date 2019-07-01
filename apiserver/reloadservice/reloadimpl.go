@@ -20,6 +20,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -32,7 +33,7 @@ import (
 // pgo reload mycluster
 // pgo reload all
 // pgo reload --selector=name=mycluster
-func Reload(request *msgs.ReloadRequest, ns string) msgs.ReloadResponse {
+func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadResponse {
 	resp := msgs.ReloadResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -102,6 +103,28 @@ func Reload(request *msgs.ReloadRequest, ns string) msgs.ReloadResponse {
 				resp.Status.Msg = err.Error()
 				return resp
 			}
+		}
+
+		//capture the cluster creation event
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicCluster
+
+		f := events.EventReloadClusterFormat{
+			EventHeader: events.EventHeader{
+				Namespace: ns,
+				Username:  username,
+				Topic:     topics,
+				EventType: events.EventReloadCluster,
+			},
+			Clustername: cluster.Spec.Name,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 		}
 
 		resp.Results = append(resp.Results, "reload performed on "+arg)

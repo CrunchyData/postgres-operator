@@ -125,6 +125,8 @@ const LABEL_PGBOUNCER_TASK_RECONFIGURE = "pgbouncer-reconfigure"
 const LABEL_PGBOUNCER_USER = "pgbouncer-user"
 const LABEL_PGBOUNCER_PASS = "pgbouncer-password"
 
+const LABEL_PGO_LOAD = "pgo-load"
+
 const LABEL_JOB_NAME = "job-name"
 const LABEL_PGBACKREST_STANZA = "pgbackrest-stanza"
 const LABEL_PGBACKREST_DB_PATH = "pgbackrest-db-path"
@@ -140,6 +142,8 @@ const LABEL_SERVICE_NAME = "service-name"
 const LABEL_CURRENT_PRIMARY = "current-primary"
 
 const LABEL_CLAIM_NAME = "claimName"
+
+const LABEL_PGOUSER = "pgouser"
 
 const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"

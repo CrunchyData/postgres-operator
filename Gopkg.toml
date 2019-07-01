@@ -11,5 +11,9 @@ name = "k8s.io/api"
 version = "kubernetes-1.9.0"
 
 [[constraint]]
-  branch = "v2"
-  name = "gopkg.in/robfig/cron.v2"
+branch = "v2"
+name = "gopkg.in/robfig/cron.v2"
+
+[[constraint]]
+  name = "github.com/nsqio/go-nsq"
+  revision = "v1.0.7"

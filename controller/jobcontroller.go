@@ -21,6 +21,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
@@ -305,6 +306,38 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 
 		benchmarkoperator.UpdateWorkflow(c.JobClient, labels["workflowName"], job.ObjectMeta.Namespace, crv1.JobCompletedStatus)
+
+		//publish event benchmark completed
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicCluster
+
+		f := events.EventBenchmarkCompletedFormat{
+			EventHeader: events.EventHeader{
+				Namespace: job.ObjectMeta.Namespace,
+				Username:  "TODO",
+				Topic:     topics,
+				EventType: events.EventBenchmarkCompleted,
+			},
+			Clustername: labels[config.LABEL_PG_CLUSTER],
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+		return
+	}
+
+	//handle the case of a load job being upddated
+	if labels[config.LABEL_PGO_LOAD] == "true" {
+		log.Debugf("jobController onUpdate load job case")
+		log.Debugf("got a load job status=%d", job.Status.Succeeded)
+
+		if job.Status.Succeeded == 1 {
+			log.Debugf("load job succeeded=%d", job.Status.Succeeded)
+		}
+
 		return
 	}
 }

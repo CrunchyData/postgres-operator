@@ -71,7 +71,7 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	resp = CreateCluster(&request, ns)
+	resp = CreateCluster(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -185,7 +185,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, ns)
+	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -233,7 +233,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = TestCluster(clustername, selector, ns, request.AllFlag)
+	resp = TestCluster(clustername, selector, ns, username, request.AllFlag)
 	json.NewEncoder(w).Encode(resp)
 }
 

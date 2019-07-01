@@ -14,8 +14,7 @@
             },
             "spec": {
                 "serviceAccountName": "postgres-operator",
-                "containers": [
-                    {
+                "containers": [{
                         "name": "apiserver",
                         "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
@@ -48,12 +47,15 @@
                             {
                                 "name": "TLS_NO_VERIFY",
                                 "value": "false"
-                            }
+                            },
+			    {
+				"name": "EVENT_ADDR",
+                        	"value": "localhost:4150"
+			    }
                         ],
                         "volumeMounts": [
                         ]
-                    },
-                    {
+                    }, {
                         "name": "operator",
                         "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
@@ -91,12 +93,15 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
-                            }
+                            },
+			    {
+				"name": "EVENT_ADDR",
+                        	"value": "localhost:4150"
+			    }
                         ],
                         "volumeMounts": [
                         ]
-                    },
-                    {
+                    }, {
                         "name": "scheduler",
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
 			"readinessProbe": {
@@ -122,6 +127,23 @@
                                 "name": "NAMESPACE",
                                 "value": "$NAMESPACE"
                             },
+                            {
+                                "name": "TIMEOUT",
+                                "value": "3600"
+                            },
+			    {
+				"name": "EVENT_ADDR",
+                        	"value": "localhost:4150"
+			    }
+                        ],
+                        "volumeMounts": [
+                        ],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }, {
+                        "name": "event",
+                        "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
+                        "env": [
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"

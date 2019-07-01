@@ -54,7 +54,7 @@ func ReloadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reloadResponse := Reload(&request, ns)
+	reloadResponse := Reload(&request, ns, username)
 	if err != nil {
 		resp := msgs.ReloadResponse{}
 		resp.Status.Code = msgs.Error

@@ -41,7 +41,7 @@ const containername = "database"
 //  CreateBackup ...
 // pgo backup mycluster
 // pgo backup --selector=name=mycluster
-func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.CreateBackrestBackupResponse {
+func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string) msgs.CreateBackrestBackupResponse {
 	resp := msgs.CreateBackrestBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -170,7 +170,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 		log.Debugf("setting jobName to %s", jobName)
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient,
-			getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, request.BackrestStorageType, jobName, ns),
+			getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, request.BackrestStorageType, jobName, ns, pgouser),
 			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -184,7 +184,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, backrestStorageType, jobName, ns string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, backrestStorageType, jobName, ns, pgouser string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -209,6 +209,7 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	return newInstance
 }
 

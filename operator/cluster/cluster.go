@@ -22,6 +22,7 @@ import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
@@ -191,6 +192,24 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 
 	//delete any existing pgtasks ???
 
+	//publish delete cluster event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventDeleteClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventDeleteCluster,
+		},
+		Clustername: cl.Spec.Name,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // ScaleBase ...
@@ -274,6 +293,26 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 	}
 
 	DeleteReplica(clientset, replica, namespace)
+
+	//publish event for scale down
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventScaleDownClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventScaleDownCluster,
+		},
+		Clustername: replica.Spec.ClusterName,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
 
 }
 

@@ -59,7 +59,7 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = CreateFailover(&request, ns)
+	resp = CreateFailover(&request, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 }

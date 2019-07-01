@@ -21,23 +21,18 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"os"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
-
-	//jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/apps/v1"
-
-	//"k8s.io/apimachinery/pkg/api/meta"
-	//"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 // AddCluster ...
@@ -370,6 +365,26 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	}
 
 	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
+
+	//publish event for replica creation
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventScaleClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  "TODO unknown",
+			Topic:     topics,
+			EventType: events.EventScaleCluster,
+		},
+		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 	return err
 }

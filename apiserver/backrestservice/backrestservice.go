@@ -55,7 +55,7 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = CreateBackup(&request, ns)
+	resp = CreateBackup(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }
 

@@ -31,6 +31,7 @@ import (
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/sshutil"
 	"github.com/crunchydata/postgres-operator/util"
@@ -44,7 +45,7 @@ import (
 )
 
 // DeleteCluster ...
-func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns string) msgs.DeleteClusterResponse {
+func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pgouser string) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -273,7 +274,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	return output, err
 }
 
-func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestResponse {
+func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
@@ -397,6 +398,28 @@ func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestRespon
 
 		}
 		response.Results = append(response.Results, result)
+
+		//publish event for cluster test
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicCluster
+
+		f := events.EventTestClusterFormat{
+			EventHeader: events.EventHeader{
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventTestCluster,
+			},
+			Clustername: c.Name,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 	}
 
 	return response
@@ -446,7 +469,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 
 // CreateCluster ...
 // pgo create cluster mycluster
-func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClusterResponse {
+func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.CreateClusterResponse {
 	var id string
 	resp := msgs.CreateClusterResponse{}
 	resp.Status.Code = msgs.Ok
@@ -525,6 +548,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			//add a label for the custom config
 			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 		}
+
+		userLabelsMap[config.LABEL_PGOUSER] = pgouser
+
 		//set the metrics flag with the global setting first
 		userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
@@ -717,7 +743,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 		} else {
 			resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
 		}
-		id, err = createWorkflowTask(clusterName, ns)
+		id, err = createWorkflowTask(clusterName, ns, pgouser)
 		if err != nil {
 			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
@@ -1092,7 +1118,7 @@ func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, d
 	return err
 }
 
-func createWorkflowTask(clusterName, ns string) (string, error) {
+func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
@@ -1118,6 +1144,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 

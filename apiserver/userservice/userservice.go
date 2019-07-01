@@ -59,7 +59,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = User(&request, ns)
+	resp = User(&request, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -98,7 +98,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = CreateUser(&request, ns)
+	resp = CreateUser(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -145,7 +145,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeleteUser(name, selector, ns)
+	resp = DeleteUser(name, selector, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }

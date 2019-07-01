@@ -33,7 +33,7 @@ import (
 // pgo failover mycluster
 // pgo failover all
 // pgo failover --selector=name=mycluster
-func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateFailoverResponse {
+func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msgs.CreateFailoverResponse {
 	var err error
 	resp := msgs.CreateFailoverResponse{}
 	resp.Status.Code = msgs.Ok
@@ -82,6 +82,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns string) msgs.CreateF
 	labels := make(map[string]string)
 	labels["target"] = request.Target
 	labels[config.LABEL_PG_CLUSTER] = request.ClusterName
+	labels[config.LABEL_PGOUSER] = pgouser
 
 	if request.AutofailReplaceReplica != "" {
 		if request.AutofailReplaceReplica == "true" ||

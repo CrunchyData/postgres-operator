@@ -1,6 +1,6 @@
 FROM registry.access.redhat.com/rhel7
 
-MAINTAINER jeff.mccormick@crunchydata.com
+MAINTAINER support@crunchydata.com
 
 LABEL name="crunchydata/pgo-backrest-" \
     vendor="crunchydata.com" \
