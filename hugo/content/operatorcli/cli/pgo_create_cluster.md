@@ -27,7 +27,7 @@ pgo create cluster [flags]
       --metrics                          Adds the crunchy-collect container to the database pod.
       --node-label string                The node label (key=value) to use in placing the primary database. If not set, any node is used.
   -w, --password string                  The password to use for initial database users.
-      --pgbackrest                       Enables a pgBackRest volume for the database pod. (default true)
+      --pgbackrest string                Enables/disables a pgBackRest volume for the database pod when set to "true" or "false", respectively. This overrides the "default" setting specified in the pgo.yaml file.
       --pgbackrest-storage-type string   The type of storage to use with pgBackRest. Either "local", "s3" or both, comma separated. (default "local")
       --pgbadger                         Adds the crunchy-pgbadger container to the database pod.
       --pgbouncer                        Adds a crunchy-pgbouncer deployment to the cluster.

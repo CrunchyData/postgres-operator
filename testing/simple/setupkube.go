@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var (
@@ -22,7 +23,7 @@ var (
 	testclustername = flag.String("clustername", "", "cluster name to test with")
 
 	Namespace       = "pgouser1"
-	TestClusterName = "foo"
+	TestClusterName = "foomatic"
 	SLEEP_SECS      = 10
 )
 

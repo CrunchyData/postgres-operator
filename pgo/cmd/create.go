@@ -27,8 +27,8 @@ var ManagedUser bool
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
-var BackrestFlag, ArchiveFlag, AutofailFlag, PgpoolFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
-var BackrestRestoreFrom string
+var ArchiveFlag, AutofailFlag, PgpoolFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
+var BackrestFlag, BackrestRestoreFrom string
 var PgpoolSecret string
 var PgbouncerSecret string
 var CCPImage string
@@ -227,7 +227,7 @@ func init() {
 	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
-	createClusterCmd.Flags().BoolVarP(&BackrestFlag, "pgbackrest", "", true, "Enables a pgBackRest volume for the database pod.")
+	createClusterCmd.Flags().StringVarP(&BackrestFlag, "pgbackrest", "", "", "Enables a pgBackRest volume for the database pod, \"true\" or \"false\". Default from pgo.yaml, command line overrides default.")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")

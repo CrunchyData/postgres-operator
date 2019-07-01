@@ -15,7 +15,7 @@ Cluster:
   ArchiveMode:  false
   ArchiveTimeout:  60
   ServiceType:  ClusterIP
-  Backrest:  false
+  Backrest:  true
   BackrestPort:  2022
   BackrestS3Bucket:
   BackrestS3Endpoint:
