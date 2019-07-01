@@ -19,7 +19,6 @@ Use the following syntax to run  `pgo`  commands from your terminal window:
 Where *command* is a verb like:
 
  * show
- * get
  * create
  * delete
 
