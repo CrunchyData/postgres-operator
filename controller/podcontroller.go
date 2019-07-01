@@ -339,11 +339,10 @@ func publishClusterComplete(clusterName, namespace string) error {
 
 	f := events.EventCreateClusterCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO unknown",
-			Topic:         topics,
-			BrokerAddress: "localhost:4150",
-			EventType:     events.EventCreateClusterCompleted,
+			Namespace: namespace,
+			Username:  "TODO unknown",
+			Topic:     topics,
+			EventType: events.EventCreateClusterCompleted,
 		},
 		Clustername: clusterName,
 	}

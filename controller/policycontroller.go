@@ -125,11 +125,10 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 
 	f := events.EventCreatePolicyFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     policy.ObjectMeta.Namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventCreatePolicy,
-			BrokerAddress: "locahost:4150",
+			Namespace: policy.ObjectMeta.Namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventCreatePolicy,
 		},
 		Policyname: policy.ObjectMeta.Name,
 	}
@@ -158,11 +157,10 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 
 	f := events.EventDeletePolicyFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     policy.ObjectMeta.Namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventDeletePolicy,
-			BrokerAddress: "localhost:4150",
+			Namespace: policy.ObjectMeta.Namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventDeletePolicy,
 		},
 		Policyname: policy.ObjectMeta.Name,
 	}

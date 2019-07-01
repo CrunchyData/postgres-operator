@@ -198,11 +198,10 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 
 	f := events.EventDeleteClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventDeleteCluster,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventDeleteCluster,
 		},
 		Clustername: cl.Spec.Name,
 	}
@@ -301,11 +300,10 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 
 	f := events.EventScaleDownClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventScaleDownCluster,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventScaleDownCluster,
 		},
 		Clustername: replica.Spec.ClusterName,
 	}

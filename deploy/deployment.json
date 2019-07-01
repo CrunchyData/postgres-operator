@@ -47,7 +47,11 @@
                             {
                                 "name": "TLS_NO_VERIFY",
                                 "value": "false"
-                            }
+                            },
+			    {
+				"name": "EVENT_ADDR",
+                        	"value": "localhost:4150"
+			    }
                         ],
                         "volumeMounts": [
                         ]
@@ -89,7 +93,11 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
-                            }
+                            },
+			    {
+				"name": "EVENT_ADDR",
+                        	"value": "localhost:4150"
+			    }
                         ],
                         "volumeMounts": [
                         ]
@@ -122,7 +130,11 @@
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"
-                            }
+                            },
+			    {
+				"name": "EVENT_ADDR",
+                        	"value": "localhost:4150"
+			    }
                         ],
                         "volumeMounts": [
                         ],

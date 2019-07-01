@@ -118,11 +118,10 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 
 	f := events.EventBenchmarkFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventBenchmark,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventBenchmark,
 		},
 		Clustername: jobFields.ClusterName,
 	}

@@ -168,11 +168,10 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 
 				f := events.EventChangePasswordUserFormat{
 					EventHeader: events.EventHeader{
-						Namespace:     ns,
-						Username:      pgouser,
-						Topic:         topics,
-						EventType:     events.EventChangePasswordUser,
-						BrokerAddress: "localhost:4150",
+						Namespace: ns,
+						Username:  pgouser,
+						Topic:     topics,
+						EventType: events.EventChangePasswordUser,
 					},
 					Clustername:      cluster.Spec.Name,
 					PostgresUsername: request.ChangePasswordForUser,
@@ -674,11 +673,10 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 
 		f := events.EventCreateUserFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     ns,
-				Username:      pgouser,
-				Topic:         topics,
-				EventType:     events.EventCreateUser,
-				BrokerAddress: "localhost:4150",
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventCreateUser,
 			},
 			PostgresUsername: request.Name,
 			PostgresPassword: newPassword,
@@ -795,11 +793,10 @@ func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 
 		f := events.EventDeleteUserFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     ns,
-				Username:      pgouser,
-				Topic:         topics,
-				EventType:     events.EventDeleteUser,
-				BrokerAddress: "localhost:4150",
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventDeleteUser,
 			},
 			Clustername:      clusterName,
 			PostgresUsername: name,

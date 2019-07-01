@@ -103,11 +103,10 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 
 		f := events.EventCreateBackupFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     namespace,
-				Username:      "TODO",
-				Topic:         topics,
-				EventType:     events.EventCreateBackup,
-				BrokerAddress: "localhost:4150",
+				Namespace: namespace,
+				Username:  "TODO",
+				Topic:     topics,
+				EventType: events.EventCreateBackup,
 			},
 			Clustername: jobFields.ClusterName,
 			BackupType:  "pgbackrest",

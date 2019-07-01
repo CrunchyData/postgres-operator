@@ -372,11 +372,10 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	f := events.EventScaleClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO unknown",
-			Topic:         topics,
-			BrokerAddress: "localhost:4150",
-			EventType:     events.EventScaleCluster,
+			Namespace: namespace,
+			Username:  "TODO unknown",
+			Topic:     topics,
+			EventType: events.EventScaleCluster,
 		},
 		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
 		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],

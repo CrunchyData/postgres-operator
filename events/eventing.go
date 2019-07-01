@@ -17,16 +17,21 @@ package events
 
 import (
 	"encoding/json"
-	"github.com/nsqio/go-nsq"
-	//"github.com/nsqio/nsq/internal/app"
-	//"github.com/nsqio/nsq/internal/version"
+	"errors"
 	"fmt"
+	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"reflect"
 )
 
 // String returns the string form for a given LogLevel
 func Publish(e EventInterface) error {
+	eventAddr := os.Getenv("EVENT_ADDR")
+	if eventAddr == "" {
+		return errors.New("EVENT_ADDR not set")
+	}
+
 	cfg := nsq.NewConfig()
 	if cfg == nil {
 	}
@@ -44,7 +49,7 @@ func Publish(e EventInterface) error {
 	log.Debug(string(b))
 
 	var producer *nsq.Producer
-	producer, err = nsq.NewProducer(e.GetHeader().BrokerAddress, cfg)
+	producer, err = nsq.NewProducer(eventAddr, cfg)
 	if err != nil {
 		log.Errorf("Error: %s", err)
 		return err

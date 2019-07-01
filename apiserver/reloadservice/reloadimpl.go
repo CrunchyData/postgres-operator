@@ -111,11 +111,10 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 
 		f := events.EventReloadClusterFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     ns,
-				Username:      username,
-				Topic:         topics,
-				BrokerAddress: "localhost:4150",
-				EventType:     events.EventReloadCluster,
+				Namespace: ns,
+				Username:  username,
+				Topic:     topics,
+				EventType: events.EventReloadCluster,
 			},
 			Clustername: cluster.Spec.Name,
 		}

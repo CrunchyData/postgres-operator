@@ -181,11 +181,10 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 
 		f := events.EventLoadFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     ns,
-				Username:      pgouser,
-				Topic:         topics,
-				EventType:     events.EventLoad,
-				BrokerAddress: "localhost:4150",
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventLoad,
 			},
 			Clustername: arg,
 			Loadconfig:  LoadCfg.TableToLoad,

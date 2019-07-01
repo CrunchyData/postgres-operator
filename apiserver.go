@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/configservice"
 	"github.com/crunchydata/postgres-operator/apiserver/dfservice"
+	"github.com/crunchydata/postgres-operator/apiserver/echoservice"
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
@@ -134,6 +135,7 @@ func main() {
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
 	r.HandleFunc("/ls", lsservice.LsHandler).Methods("POST")
 	r.HandleFunc("/cat", catservice.CatHandler).Methods("POST")
+	r.HandleFunc("/echo", echoservice.EchoHandler).Methods("POST")
 	r.HandleFunc("/failover", failoverservice.CreateFailoverHandler).Methods("POST")
 	r.HandleFunc("/failover/{name}", failoverservice.QueryFailoverHandler).Methods("GET")
 	r.HandleFunc("/pgbouncer", pgbouncerservice.CreatePgbouncerHandler).Methods("POST")

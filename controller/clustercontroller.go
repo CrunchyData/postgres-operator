@@ -133,11 +133,10 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 
 	f := events.EventCreateClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     cluster.ObjectMeta.Namespace,
-			Username:      pgouser,
-			Topic:         topics,
-			BrokerAddress: "localhost:4150",
-			EventType:     events.EventCreateCluster,
+			Namespace: cluster.ObjectMeta.Namespace,
+			Username:  pgouser,
+			Topic:     topics,
+			EventType: events.EventCreateCluster,
 		},
 		Clustername: cluster.ObjectMeta.Name,
 	}

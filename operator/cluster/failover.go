@@ -67,11 +67,10 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 
 	f := events.EventFailoverClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventFailoverCluster,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventFailoverCluster,
 		},
 		Clustername: clusterName,
 		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
@@ -132,11 +131,10 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 
 	g := events.EventFailoverClusterCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventFailoverClusterCompleted,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventFailoverClusterCompleted,
 		},
 		Clustername: clusterName,
 		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],

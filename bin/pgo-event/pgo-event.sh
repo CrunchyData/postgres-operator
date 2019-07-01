@@ -24,19 +24,32 @@ function trap_sigterm() {
     then
         kill -9 $(pidof nsqd)
     fi
+    if ! pgrep nsqadmin > /dev/null
+    then
+        kill -9 $(pidof nsqadmin)
+    fi
 }
 
 echo "pgo-event starting"
 
 trap 'trap_sigterm' SIGINT SIGTERM
 
-/usr/local/bin/nsqlookupd &
+
+echo "pgo-event starting nsqlookupd"
+
+#/usr/local/bin/nsqlookupd &
+
+sleep 2
+
+echo "pgo-event starting nsqadminy"
+
+/usr/local/bin/nsqadmin  --http-address=0.0.0.0:4171  --nsqd-http-address=0.0.0.0:4151 &
 
 sleep 3
 
 echo "pgo-event starting nsqd"
 
-/usr/local/bin/nsqd --data-path=/tmp --lookupd-tcp-address=127.0.0.1:4160
+/usr/local/bin/nsqd --data-path=/tmp --http-address=0.0.0.0:4151 --tcp-address=0.0.0.0:4150
 
 echo "pgo-event waiting till sigterm"
 

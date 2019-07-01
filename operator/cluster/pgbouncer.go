@@ -176,11 +176,10 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 
 	f := events.EventCreatePgbouncerFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventCreatePgbouncer,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventCreatePgbouncer,
 		},
 		Clustername: clusterName,
 	}
@@ -245,11 +244,10 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 
 	f := events.EventDeletePgbouncerFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     namespace,
-			Username:      "TODO",
-			Topic:         topics,
-			EventType:     events.EventDeletePgbouncer,
-			BrokerAddress: "localhost:4150",
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventDeletePgbouncer,
 		},
 		Clustername: clusterName,
 	}

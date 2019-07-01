@@ -134,11 +134,10 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 
 			f := events.EventCreateLabelFormat{
 				EventHeader: events.EventHeader{
-					Namespace:     ns,
-					Username:      pgouser,
-					Topic:         topics,
-					EventType:     events.EventCreateLabel,
-					BrokerAddress: "localhost:4150",
+					Namespace: ns,
+					Username:  pgouser,
+					Topic:     topics,
+					EventType: events.EventCreateLabel,
 				},
 				Clustername: items[i].Spec.Name,
 				Label:       LabelCmdLabel,

@@ -405,11 +405,10 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 
 		f := events.EventTestClusterFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     ns,
-				Username:      pgouser,
-				Topic:         topics,
-				EventType:     events.EventTestCluster,
-				BrokerAddress: "localhost:4150",
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventTestCluster,
 			},
 			Clustername: c.Name,
 		}

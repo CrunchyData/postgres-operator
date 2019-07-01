@@ -16,6 +16,7 @@
 GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
 IMAGES=(
+pgo-event
 pgo-backrest-repo
 pgo-backrest-restore
 pgo-scheduler

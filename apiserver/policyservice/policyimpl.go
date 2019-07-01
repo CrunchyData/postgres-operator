@@ -260,11 +260,10 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		f := events.EventApplyPolicyFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     ns,
-				Username:      pgouser,
-				Topic:         topics,
-				EventType:     events.EventApplyPolicy,
-				BrokerAddress: "localhost:4150",
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventApplyPolicy,
 			},
 			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
 			Policyname:  request.Name,

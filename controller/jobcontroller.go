@@ -313,11 +313,10 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 		f := events.EventBenchmarkCompletedFormat{
 			EventHeader: events.EventHeader{
-				Namespace:     job.ObjectMeta.Namespace,
-				Username:      "TODO",
-				Topic:         topics,
-				EventType:     events.EventBenchmarkCompleted,
-				BrokerAddress: "localhost:4150",
+				Namespace: job.ObjectMeta.Namespace,
+				Username:  "TODO",
+				Topic:     topics,
+				EventType: events.EventBenchmarkCompleted,
 			},
 			Clustername: labels[config.LABEL_PG_CLUSTER],
 		}
