@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +13,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Getting project dependencies..."
+echo "Ensuring project dependencies..."
 
-if [ $(command -v apt-get) ]; then
-	echo "using apt-get as package manager..."
-	PM="apt-get"
-elif [ $(command -v yum) ]; then
-	echo "using yum as package manager..."
-	PM="yum"
+# Precondition checks
+if [ "$GOPATH" = "" ]; then
+	echo "GOPATH not defined, exiting..." >&2
+	exit
+fi
+if ! (echo $PATH | egrep -q "$GOPATH/bin") ; then
+	echo '$GOPATH/bin not part of $PATH, exiting...' >&2
+	exit
 fi
 
-#sudo yum -y install mercurial golang
-which go
-if [ $? -eq 1 ]; then
-	echo "installing golang..."
-	cd /tmp
-	wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	ls *.rpm
-	sudo rpm -ivh epel*.rpm
+
+# Idempotent installations
+if (yum repolist | egrep -q '^epel/') ; then
+	echo "Confirmed EPEL repo exists..."
+else
+	echo "= Installing EPEL ="
+	sudo yum -y install epel-release
+	#cd /tmp
+	#wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	#ls *.rpm
+	#sudo rpm -ivh epel*.rpm
+fi
+
+if which go; then
+	echo -n "  Found: " && go version
+else
+	echo "= Installing golang ="
 	sudo yum -y install golang
 fi
 
@@ -41,33 +52,26 @@ cp /tmp/$NSQ/bin/* $PGOROOT/bin/pgo-event/
 rm -rf /tmp/$NSQ*
 rm $NSQ.tar.gz
 
-which buildah
-if [ $? -eq 1 ]; then
-	echo "installing buildah"
-	sudo subscription-manager repos --enable=rhel-7-server-extras-rpms
+if which buildah; then
+	echo -n "  Found: " && buildah --version
+else
+	echo "= Installing buildah ="
+	#sudo subscription-manager repos --enable=rhel-7-server-extras-rpms
 	sudo yum -y install buildah
 fi
 
-which dep
-if [ $? -eq 1 ]; then
-	echo "installing dep"
+if which dep; then
+	echo -n "  Found: " && (dep version | egrep '^ version')
+else
+	echo "= Installing dep ="
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
 
 
-echo "getting expenv go library..."
-go get github.com/blang/expenv
+#echo "getting expenv go library..."
+#go get github.com/blang/expenv
+#
+#echo "getting go dependencies for cli markdown generation"
+#go get github.com/cpuguy83/go-md2man/md2man
 
-echo "getting go dependencies for cli markdown generation"
-go get github.com/cpuguy83/go-md2man/md2man
-go get github.com/spf13/cobra
 
-
-# uncomment only if you want to develop on the project
-#echo "getting all libraries for project..."
-#dep ensure
-
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-#echo "pre-pulling container suite images used by the operator..."
-#$DIR/pre-pull-crunchy-containers.sh
