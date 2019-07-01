@@ -60,11 +60,10 @@ func tryEventCreateCluster(t *testing.T) {
 
 	f := events.EventCreateClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			BrokerAddress: EventTCPAddress,
-			EventType:     events.EventCreateCluster,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreateCluster,
 		},
 		Clustername: "betavalue",
 	}
@@ -81,11 +80,10 @@ func tryEventCreateClusterCompleted(t *testing.T) {
 
 	f := events.EventCreateClusterCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			BrokerAddress: EventTCPAddress,
-			EventType:     events.EventCreateClusterCompleted,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreateClusterCompleted,
 		},
 		Clustername: "betavalue",
 	}
@@ -103,11 +101,10 @@ func tryEventReloadCluster(t *testing.T) {
 
 	f := events.EventReloadClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventReloadCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventReloadCluster,
 		},
 		Clustername: TestClusterName,
 	}
@@ -125,11 +122,10 @@ func tryEventScaleCluster(t *testing.T) {
 
 	f := events.EventScaleClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventScaleCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventScaleCluster,
 		},
 		Clustername: TestClusterName,
 		Replicaname: "somereplicaname",
@@ -148,11 +144,10 @@ func tryEventScaleDownCluster(t *testing.T) {
 
 	f := events.EventScaleDownClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventScaleDownCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventScaleDownCluster,
 		},
 		Clustername: TestClusterName,
 		Replicaname: "somereplicaname",
@@ -171,11 +166,10 @@ func tryEventFailoverCluster(t *testing.T) {
 
 	f := events.EventFailoverClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventFailoverCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventFailoverCluster,
 		},
 		Clustername: TestClusterName,
 		Target:      "sometarget",
@@ -195,11 +189,10 @@ func tryEventFailoverClusterCompleted(t *testing.T) {
 
 	f := events.EventFailoverClusterCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventFailoverClusterCompleted,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventFailoverClusterCompleted,
 		},
 		Clustername: TestClusterName,
 	}
@@ -217,11 +210,10 @@ func tryEventUpgradeCluster(t *testing.T) {
 
 	f := events.EventUpgradeClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventUpgradeCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventUpgradeCluster,
 		},
 		Clustername: TestClusterName,
 	}
@@ -239,11 +231,10 @@ func tryEventDeleteCluster(t *testing.T) {
 
 	f := events.EventDeleteClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventDeleteCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventDeleteCluster,
 		},
 		Clustername: TestClusterName,
 	}
@@ -261,11 +252,10 @@ func tryEventTestCluster(t *testing.T) {
 
 	f := events.EventTestClusterFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventTestCluster,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventTestCluster,
 		},
 		Clustername: TestClusterName,
 	}
@@ -283,11 +273,10 @@ func tryEventCreateBackup(t *testing.T) {
 
 	f := events.EventCreateBackupFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreateBackup,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreateBackup,
 		},
 		Clustername: TestClusterName,
 		BackupType:  "pgbackrest",
@@ -306,11 +295,10 @@ func tryEventCreateBackupCompleted(t *testing.T) {
 
 	f := events.EventCreateBackupCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreateBackupCompleted,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreateBackupCompleted,
 		},
 		Clustername: TestClusterName,
 	}
@@ -329,11 +317,10 @@ func tryEventCreateUser(t *testing.T) {
 
 	f := events.EventCreateUserFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreateUser,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreateUser,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
@@ -354,11 +341,10 @@ func tryEventDeleteUser(t *testing.T) {
 
 	f := events.EventDeleteUserFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventDeleteUser,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventDeleteUser,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
@@ -378,11 +364,10 @@ func tryEventChangePasswordUser(t *testing.T) {
 
 	f := events.EventChangePasswordUserFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventChangePasswordUser,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventChangePasswordUser,
 		},
 		Clustername:      TestClusterName,
 		PostgresUsername: TestUsername,
@@ -402,11 +387,10 @@ func tryEventCreateLabel(t *testing.T) {
 
 	f := events.EventCreateLabelFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreateLabel,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreateLabel,
 		},
 		Clustername: TestClusterName,
 		Label:       "somelabel",
@@ -426,11 +410,10 @@ func tryEventCreatePolicy(t *testing.T) {
 
 	f := events.EventCreatePolicyFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreatePolicy,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreatePolicy,
 		},
 		Policyname: "somepolicy",
 	}
@@ -448,11 +431,10 @@ func tryEventApplyPolicy(t *testing.T) {
 
 	f := events.EventApplyPolicyFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventApplyPolicy,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventApplyPolicy,
 		},
 		Clustername: TestClusterName,
 		Policyname:  "somepolicy",
@@ -471,11 +453,10 @@ func tryEventDeletePolicy(t *testing.T) {
 
 	f := events.EventDeletePolicyFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventDeletePolicy,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventDeletePolicy,
 		},
 		Policyname: "somepolicy",
 	}
@@ -494,11 +475,10 @@ func tryEventLoad(t *testing.T) {
 
 	f := events.EventLoadFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventLoad,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventLoad,
 		},
 		Clustername: TestClusterName,
 		Loadconfig:  "someloadconfig",
@@ -518,11 +498,10 @@ func tryEventLoadCompleted(t *testing.T) {
 
 	f := events.EventLoadCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventLoadCompleted,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventLoadCompleted,
 		},
 		Clustername: TestClusterName,
 		Loadconfig:  "someloadconfig",
@@ -542,11 +521,10 @@ func tryEventBenchmark(t *testing.T) {
 
 	f := events.EventBenchmarkFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventBenchmark,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventBenchmark,
 		},
 		Clustername: TestClusterName,
 	}
@@ -564,11 +542,10 @@ func tryEventBenchmarkCompleted(t *testing.T) {
 
 	f := events.EventBenchmarkCompletedFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventBenchmarkCompleted,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventBenchmarkCompleted,
 		},
 		Clustername: TestClusterName,
 	}
@@ -587,11 +564,10 @@ func tryEventCreatePgpool(t *testing.T) {
 
 	f := events.EventCreatePgpoolFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreatePgpool,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreatePgpool,
 		},
 		Clustername: TestClusterName,
 	}
@@ -609,11 +585,10 @@ func tryEventCreatePgbouncer(t *testing.T) {
 
 	f := events.EventCreatePgbouncerFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventCreatePgbouncer,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventCreatePgbouncer,
 		},
 		Clustername: TestClusterName,
 	}
@@ -631,11 +606,10 @@ func tryEventDeletePgbouncer(t *testing.T) {
 
 	f := events.EventDeletePgbouncerFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventDeletePgbouncer,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventDeletePgbouncer,
 		},
 		Clustername: TestClusterName,
 	}
@@ -653,11 +627,10 @@ func tryEventDeletePgpool(t *testing.T) {
 
 	f := events.EventDeletePgpoolFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventDeletePgpool,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventDeletePgpool,
 		},
 		Clustername: TestClusterName,
 	}
@@ -675,11 +648,10 @@ func tryEventPGOCreateUser(t *testing.T) {
 
 	f := events.EventPGOCreateUserFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventPGOCreateUser,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOCreateUser,
 		},
 		Username: TestUsername,
 	}
@@ -697,11 +669,10 @@ func tryEventPGOUpdateUser(t *testing.T) {
 
 	f := events.EventPGOUpdateUserFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventPGOUpdateUser,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOUpdateUser,
 		},
 		Username: TestUsername,
 	}
@@ -719,11 +690,10 @@ func tryEventPGODeleteUser(t *testing.T) {
 
 	f := events.EventPGODeleteUserFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventPGODeleteUser,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGODeleteUser,
 		},
 		Username: TestUsername,
 	}
@@ -741,11 +711,10 @@ func tryEventPGOStart(t *testing.T) {
 
 	f := events.EventPGOStartFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventPGOStart,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOStart,
 		},
 	}
 
@@ -762,11 +731,10 @@ func tryEventPGOStop(t *testing.T) {
 
 	f := events.EventPGOStopFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventPGOStop,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOStop,
 		},
 	}
 
@@ -784,11 +752,10 @@ func tryEventPGOUpdateConfig(t *testing.T) {
 
 	f := events.EventPGOUpdateConfigFormat{
 		EventHeader: events.EventHeader{
-			Namespace:     Namespace,
-			Username:      TestUsername,
-			Topic:         topics,
-			EventType:     events.EventPGOUpdateConfig,
-			BrokerAddress: EventTCPAddress,
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOUpdateConfig,
 		},
 	}
 

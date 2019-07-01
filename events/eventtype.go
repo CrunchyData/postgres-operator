@@ -27,7 +27,7 @@ const (
 	EventTopicUser      = "postgresusertopic"
 	EventTopicPolicy    = "policytopic"
 	EventTopicPgpool    = "pgpooltopic"
-	EventTopicPgbouncer = "pgbouncertopio"
+	EventTopicPgbouncer = "pgbouncertopic"
 	EventTopicPGO       = "pgotopic"
 	EventTopicPGOUser   = "pgousertopic"
 )
