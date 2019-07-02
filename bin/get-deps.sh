@@ -30,18 +30,19 @@ fi
 if (yum repolist | egrep -q '^epel/') ; then
 	echo "Confirmed EPEL repo exists..."
 else
-	echo "= Installing EPEL ="
-	sudo yum -y install epel-release
-	#cd /tmp
-	#wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	#ls *.rpm
-	#sudo rpm -ivh epel*.rpm
+	echo "=== Installing EPEL ==="
+	# Prefer distro-managed epel-release if it exists (e.g. CentOS)
+	if (yum -q list epel-release 2>/dev/null); then
+		sudo yum -y install epel-release
+	else
+		sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+	fi
 fi
 
 if which go; then
 	echo -n "  Found: " && go version
 else
-	echo "= Installing golang ="
+	echo "=== Installing golang ==="
 	sudo yum -y install golang
 fi
 
@@ -55,15 +56,18 @@ rm $NSQ.tar.gz
 if which buildah; then
 	echo -n "  Found: " && buildah --version
 else
-	echo "= Installing buildah ="
-	#sudo subscription-manager repos --enable=rhel-7-server-extras-rpms
-	sudo yum -y install buildah
+	echo "=== Installing buildah ==="
+	if [ -f /etc/centos-release ]; then
+		sudo yum -y install buildah
+	else
+		sudo yum -y install buildah --enablerepo=rhel-7-server-extras-rpms
+	fi
 fi
 
 if which dep; then
 	echo -n "  Found: " && (dep version | egrep '^ version')
 else
-	echo "= Installing dep ="
+	echo "=== Installing dep ==="
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
 
