@@ -14,6 +14,8 @@
 # limitations under the License.
 
 echo "Ensuring project dependencies..."
+BINDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+EVTDIR="$BINDIR/pgo-event"
 
 # Precondition checks
 if [ "$GOPATH" = "" ]; then
@@ -46,12 +48,12 @@ else
 	sudo yum -y install golang
 fi
 
-NSQ=nsq-1.1.0.linux-amd64.go1.10.3
-wget https://s3.amazonaws.com/bitly-downloads/nsq/$NSQ.tar.gz
-tar xvf $NSQ.tar.gz -C /tmp
-cp /tmp/$NSQ/bin/* $PGOROOT/bin/pgo-event/
-rm -rf /tmp/$NSQ*
-rm $NSQ.tar.gz
+if ! [ -f $EVTDIR/nsqd -a -f $EVTDIR/nsqadmin ]; then
+	echo "=== Installing NSQ binaries ==="
+	NSQ=nsq-1.1.0.linux-amd64.go1.10.3
+	curl -S https://s3.amazonaws.com/bitly-downloads/nsq/$NSQ.tar.gz | \
+		tar xz --strip=2 -C $EVTDIR/ '*/bin/*'
+fi
 
 if which buildah; then
 	echo -n "  Found: " && buildah --version
@@ -71,11 +73,10 @@ else
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
 
-
-#echo "getting expenv go library..."
-#go get github.com/blang/expenv
-#
-#echo "getting go dependencies for cli markdown generation"
-#go get github.com/cpuguy83/go-md2man/md2man
-
-
+if which expenv; then
+	echo "  Found expenv"
+else
+	echo "=== Installing expenv ==="
+	# TODO: expenv uses Go modules, could retrieve specific version
+	go get github.com/blang/expenv
+fi
