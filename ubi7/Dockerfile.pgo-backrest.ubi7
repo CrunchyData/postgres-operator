@@ -1,13 +1,13 @@
 FROM ubi7
 
-MAINTAINER jeff.mccormick@crunchydata.com
+MAINTAINER support@crunchydata.com
 
 LABEL name="crunchydata/pgo-backrest-" \
     vendor="crunchydata.com" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.4" \
 	Version="7.6" \
-	Release="4.0.1" \
+	Release="4.1.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
