@@ -19,12 +19,13 @@ EVTDIR="$BINDIR/pgo-event"
 
 # Precondition checks
 if [ "$GOPATH" = "" ]; then
+	# Alternatively, take dep approach of go env GOPATH later in the process
 	echo "GOPATH not defined, exiting..." >&2
-	exit
+	exit 1
 fi
 if ! (echo $PATH | egrep -q "$GOPATH/bin") ; then
 	echo '$GOPATH/bin not part of $PATH, exiting...' >&2
-	exit
+	exit 2
 fi
 
 
@@ -70,7 +71,7 @@ if which dep; then
 	echo -n "  Found: " && (dep version | egrep '^ version')
 else
 	echo "=== Installing dep ==="
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+	curl -S https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
 
 if which expenv; then
