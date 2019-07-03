@@ -144,6 +144,7 @@ const LABEL_CURRENT_PRIMARY = "current-primary"
 const LABEL_CLAIM_NAME = "claimName"
 
 const LABEL_PGOUSER = "pgouser"
+const LABEL_WORKFLOW_ID = "workflow-id"
 
 const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"

@@ -202,7 +202,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 
 					//publish event for cluster complete
-					publishClusterComplete(clusterName, newpod.ObjectMeta.Namespace)
+					publishClusterComplete(clusterName, newpod.ObjectMeta.Namespace, cluster)
 					//
 
 					if cluster.Labels[config.LABEL_BACKREST] == "true" {
@@ -332,7 +332,7 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 	return true
 }
 
-func publishClusterComplete(clusterName, namespace string) error {
+func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgcluster) error {
 	//capture the cluster creation event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
@@ -340,11 +340,12 @@ func publishClusterComplete(clusterName, namespace string) error {
 	f := events.EventCreateClusterCompletedFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO unknown",
+			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
 			Topic:     topics,
 			EventType: events.EventCreateClusterCompleted,
 		},
 		Clustername: clusterName,
+		WorkflowID:  cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err := events.Publish(f)

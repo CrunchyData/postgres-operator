@@ -47,7 +47,6 @@ type ServiceTemplateFields struct {
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
 
-// AddClusterBase ...
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
@@ -84,6 +83,28 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	err = util.Patch(client, "/spec/PrimaryStorage/name", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
+	}
+
+	//publish create cluster event
+	//capture the cluster creation event
+	pgouser := cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventCreateClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: cl.ObjectMeta.Namespace,
+			Username:  pgouser,
+			Topic:     topics,
+			EventType: events.EventCreateCluster,
+		},
+		Clustername: cl.ObjectMeta.Name,
+		WorkflowID:  cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
 	}
 
 	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[config.LABEL_PGPOOL])
