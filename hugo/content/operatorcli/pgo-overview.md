@@ -62,7 +62,7 @@ The following table shows the *pgo* operations currently implemented:
 | show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule).                   |
 | status      | `pgo status`                                                 | Display Operator status.                                                                        |
 | test        | `pgo test mycluster`                                         | Perform a SQL test on a Postgres cluster(s).                                                    |
-| update      | `pgo update cluster --label=autofail=false`                  | Update a Postgres cluster(s).                                                                   |
+| update      | `pgo update cluster mycluster --autofail=false`                  | Update a Postgres cluster(s).                                                                   |
 | upgrade     | `pgo upgrade mycluster`                                      | Perform a minor upgrade to a Postgres cluster(s).                                               |
 | user        | `pgo user --selector=name=mycluster --update-passwords`      | Perform Postgres user maintenance on a Postgres cluster(s).                                     |
 | version     | `pgo version`                                                | Display Operator version information.                                                           |

@@ -143,6 +143,16 @@ type DeleteClusterResponse struct {
 	Status
 }
 
+// UpdateClusterRequest ...
+type UpdateClusterRequest struct {
+	Clustername   []string
+	Selector      string
+	ClientVersion string
+	Namespace     string
+	AllFlag       bool
+	Autofail      bool
+}
+
 // UpdateClusterResponse ...
 type UpdateClusterResponse struct {
 	Results []string

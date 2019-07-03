@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // updateCmd represents the update command
@@ -28,8 +27,8 @@ var updateCmd = &cobra.Command{
 	Short: "Update a cluster",
 	Long: `The update command allows you to update a cluster. For example:
 
-	pgo update cluster mycluster --autofail=false
-	pgo update cluster mycluster --autofail=true`,
+	pgo update cluster --selector=name=mycluster --autofail=false
+	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
@@ -48,15 +47,14 @@ var updateCmd = &cobra.Command{
 	},
 }
 
-var AutofailStringFlag string
-
 func init() {
 	RootCmd.AddCommand(updateCmd)
 	updateCmd.AddCommand(updateClusterCmd)
 
 	updateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	updateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	updateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
 	updateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	updateClusterCmd.Flags().StringVarP(&AutofailStringFlag, "autofail", "", "", "If set, will cause the autofail label on the pgcluster CRD for this cluster to be updated to either true or false, valid values are true or false.")
 
 }
 
@@ -66,20 +64,17 @@ var updateClusterCmd = &cobra.Command{
 	Short: "Update a PostgreSQL cluster",
 	Long: `Update a PostgreSQL cluster. For example:
 
-    pgo update cluster all --autofail=false
-    pgo update cluster mycluster --autofail=true`,
+    pgo update cluster mycluster --autofail=false
+    pgo update cluster mycluster myothercluster --autofail=false
+    pgo update cluster --selector=name=mycluster --autofail=false
+    pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if AutofailStringFlag == "true" || AutofailStringFlag == "false" {
-		} else {
-			fmt.Println("Error: --autofail=true or --autofail=false is required.")
-			os.Exit(2)
-		}
 
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: A cluster name or selector is required for this command.")
+		if len(args) == 0 && Selector == "" && !AllFlag {
+			fmt.Println("Error: A cluster name(s) or selector or --all is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				updateCluster(args, Namespace)

@@ -931,7 +931,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	//pgbackrest - set with user request first or look at global flag is not set
-	// Note: validateBackrestStorageType called earlier in CreateCluster will generate 
+	// Note: validateBackrestStorageType called earlier in CreateCluster will generate
 	// and return error to user if BackrestFlag is not true or false
 	if request.BackrestFlag == "true" || request.BackrestFlag == "false" {
 		labels[config.LABEL_BACKREST] = request.BackrestFlag
@@ -1334,29 +1334,44 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 }
 
 // UpdateCluster ...
-func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterResponse {
+func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterResponse {
 	var err error
 
 	response := msgs.UpdateClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
-	if name != "all" {
-		if selector == "" {
-			selector = "name=" + name
-		}
-	}
-	log.Debugf("autofail is [%v]\n", autofail)
+	log.Debugf("autofail is [%t]\n", request.Autofail)
 
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
+	if request.AllFlag {
+		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else {
+		for _, v := range request.Clustername {
+			cl := crv1.Pgcluster{}
+
+			_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cl, v, request.Namespace)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+			clusterList.Items = append(clusterList.Items, cl)
+		}
 	}
 
 	if len(clusterList.Items) == 0 {
@@ -1368,10 +1383,10 @@ func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterRespon
 	for _, cluster := range clusterList.Items {
 
 		//set autofail=true or false on each pgcluster CRD
-		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = autofail
+		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = strconv.FormatBool(request.Autofail)
 
 		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
-			&cluster, cluster.Spec.Name, ns)
+			&cluster, cluster.Spec.Name, request.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
