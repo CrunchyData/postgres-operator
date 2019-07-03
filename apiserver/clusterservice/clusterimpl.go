@@ -735,6 +735,15 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			return resp
 		}
 
+		//create a workflow for this new cluster
+		id, err = createWorkflowTask(clusterName, ns, pgouser)
+		if err != nil {
+			log.Error(err)
+			resp.Results = append(resp.Results, err.Error())
+			return resp
+		}
+		newInstance.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = id
+
 		//create CRD for new cluster
 		err = kubeapi.Createpgcluster(apiserver.RESTClient,
 			newInstance, ns)
@@ -742,12 +751,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Results = append(resp.Results, err.Error())
 		} else {
 			resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
-		}
-		id, err = createWorkflowTask(clusterName, ns, pgouser)
-		if err != nil {
-			log.Error(err)
-			resp.Results = append(resp.Results, err.Error())
-			return resp
 		}
 		resp.Results = append(resp.Results, "workflow id "+id)
 	}

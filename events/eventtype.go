@@ -109,6 +109,7 @@ func (lvl EventReloadClusterFormat) String() string {
 type EventCreateClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	WorkflowID  string `json:"workflowid"`
 }
 
 func (p EventCreateClusterFormat) GetHeader() EventHeader {
@@ -116,7 +117,7 @@ func (p EventCreateClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (create cluster) clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s - (create cluster) clustername %s workflow %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID)
 	return msg
 }
 
@@ -124,13 +125,14 @@ func (lvl EventCreateClusterFormat) String() string {
 type EventCreateClusterCompletedFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	WorkflowID  string `json:"workflowid"`
 }
 
 func (p EventCreateClusterCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
 func (lvl EventCreateClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (create cluster completed) clustername %s", lvl.EventHeader, lvl.Clustername)
+	msg := fmt.Sprintf("Event %s - (create cluster completed) clustername %s workflow %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID)
 	return msg
 }
 
