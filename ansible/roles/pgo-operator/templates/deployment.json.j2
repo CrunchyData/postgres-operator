@@ -38,6 +38,10 @@
                                 "value": "{{ namespace }}"
                             },
                             {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            },
+                            {
                                 "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
@@ -74,6 +78,10 @@
                             {
                                 "name": "NAMESPACE",
                                 "value": "{{ namespace }}"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
                             },
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
@@ -125,11 +133,28 @@
                                 "value": "{{ scheduler_timeout }}"
                             },
                             {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            },
+                            {
                                 "name": "CRUNCHY_DEBUG",
                                 "value": "{{ crunchy_debug }}"
                             }
                         ],
                         "volumeMounts": [],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }, {
+                        "name": "event",
+                        "image": "{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}",
+                        "env": [
+                            {
+                                "name": "TIMEOUT",
+                                "value": "3600"
+                            }
+                        ],
+                        "volumeMounts": [
+                        ],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }
