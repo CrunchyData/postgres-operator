@@ -25,6 +25,13 @@ crunchy_debug='false'
 # ==================
 # kubernetes_context=''
 
+# Create RBAC
+# ==================
+# Note: you may disable creating RBAC resources if they where already
+# provisoned by a cluster admin.
+# ==================
+create_rbac='true'
+
 # ===================
 # PGO Settings
 # The following settings configure the Crunchy PostgreSQL Operator 

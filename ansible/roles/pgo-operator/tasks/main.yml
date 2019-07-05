@@ -72,10 +72,12 @@
         dest: "{{ output_dir }}/cluster-rbac.yaml"
         mode: '0600'
       tags: [install, update]
+      when: create_rbac|bool
 
     - name: Create Cluster RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
       tags: [install, update]
+      when: create_rbac|bool
     
     - name: Template PGO RBAC
       template:
@@ -85,12 +87,14 @@
       with_items: 
       - "{{ all_namespaces }}"
       tags: [install, update]
+      when: create_rbac|bool
 
     - name: Create PGO RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-role-rbac-{{ item }}.yaml"
       with_items: 
       - "{{ all_namespaces }}"
       tags: [install, update]
+      when: create_rbac|bool
 
     - name: Template PGO Backrest RBAC
       template:
@@ -100,12 +104,14 @@
       with_items:
       - "{{ namespace.split(',') }}"
       tags: [install, update]
+      when: create_rbac|bool
 
     - name: Create PGO Backrest RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-backrest-role-rbac-{{ item }}.yaml"
       with_items:
       - "{{ namespace.split(',') }}"
       tags: [install, update]
+      when: create_rbac|bool
 
     - name: Template PGO User
       template:
