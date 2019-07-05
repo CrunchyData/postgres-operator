@@ -94,6 +94,11 @@ func showPgouser(args []string, ns string) {
 
 func createPgouser(args []string, ns string) {
 
+	if PgouserPassword == "" {
+		fmt.Println("Error: pgouser-password or generate-password flag is required.")
+		return
+	}
+
 	if len(args) == 0 {
 		fmt.Println("Error: A pgouser username argument is required.")
 		return

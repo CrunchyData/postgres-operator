@@ -60,7 +60,7 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "invalid pgouser name format " + errs[0]
 	} else {
-		resp = CreatePgouser(apiserver.RESTClient, &request)
+		resp = CreatePgouser(apiserver.Clientset, username, &request)
 	}
 
 	json.NewEncoder(w).Encode(resp)
@@ -100,7 +100,7 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeletePgouser(apiserver.RESTClient, &request)
+	resp = DeletePgouser(apiserver.RESTClient, username, &request)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -174,6 +174,6 @@ func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = UpdatePgouser(&request)
+	resp = UpdatePgouser(username, &request)
 	json.NewEncoder(w).Encode(resp)
 }

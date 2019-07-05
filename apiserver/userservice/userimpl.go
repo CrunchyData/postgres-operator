@@ -75,7 +75,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 
 	log.Debugf("in User with password [%]", request.Password)
 	if request.Password != "" {
-		err = validPassword(request.Password)
+		err = ValidPassword(request.Password)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "invalid password format"
@@ -142,7 +142,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(request.PasswordLength)
 				if request.Password != "" {
-					err := validPassword(request.Password)
+					err := ValidPassword(request.Password)
 					if err != nil {
 						resp.Status.Code = msgs.Error
 						resp.Status.Msg = "invalid password format, can not contain non-alphanumerics or start with numbers"
@@ -272,7 +272,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	var err error
 	var conn *sql.DB
 
-	err = validPassword(newPassword)
+	err = ValidPassword(newPassword)
 	if err != nil {
 		return err
 	}
@@ -620,7 +620,7 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 		return resp
 	}
 	if request.Password != "" {
-		err := validPassword(request.Password)
+		err := ValidPassword(request.Password)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -1012,7 +1012,7 @@ func reconfigurePgpool(clusterName, ns string) error {
 	return err
 }
 
-func validPassword(psw string) error {
+func ValidPassword(psw string) error {
 
 	if len(psw) > 16 {
 		return errors.New("valid passwords are less than 16 chars")

@@ -65,7 +65,6 @@ var UpdateCmd = &cobra.Command{
 	},
 }
 
-var PgouserPassword string
 var PgouserChangePassword bool
 
 // UpdateClusterCmd ...

@@ -143,6 +143,7 @@ const LABEL_CURRENT_PRIMARY = "current-primary"
 
 const LABEL_CLAIM_NAME = "claimName"
 
+const LABEL_PGO_AUTH = "pgo-auth"
 const LABEL_PGOUSER = "pgouser"
 const LABEL_WORKFLOW_ID = "workflow-id"
 
