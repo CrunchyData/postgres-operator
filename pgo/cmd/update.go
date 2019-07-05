@@ -21,26 +21,44 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// updateCmd represents the update command
-var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update a cluster",
-	Long: `The update command allows you to update a cluster. For example:
+func init() {
+	RootCmd.AddCommand(UpdateCmd)
+	UpdateCmd.AddCommand(UpdatePgouserCmd)
+	UpdateCmd.AddCommand(UpdateClusterCmd)
 
+	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	UpdateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
+	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "password", "", "", "The password to use for updating the pgouser password.")
+	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
+
+}
+
+// UpdateCmd represents the update command
+var UpdateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update a pgouser or cluster",
+	Long: `The update command allows you to update a pgouser or cluster. For example:
+
+	pgo update pgouser someuser --change-password
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
+	* pgouser
 	* cluster`)
 		} else {
 			switch args[0] {
-			case "cluster":
+			case "cluster", "pgouser":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
-	* cluster`)
+	* cluster
+	* pgouser`)
 			}
 		}
 
@@ -50,23 +68,8 @@ var updateCmd = &cobra.Command{
 var PgouserPassword string
 var PgouserChangePassword bool
 
-func init() {
-	RootCmd.AddCommand(updateCmd)
-	updateCmd.AddCommand(updateClusterCmd)
-	updateCmd.AddCommand(updatePgouserCmd)
-
-	updateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	updateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
-	updateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
-	updateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	updatePgouserCmd.Flags().StringVarP(&PgouserPassword, "password", "", "", "The password to use for updating the pgouser password.")
-	updatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	updatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
-
-}
-
-// updateClusterCmd ...
-var updateClusterCmd = &cobra.Command{
+// UpdateClusterCmd ...
+var UpdateClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Update a PostgreSQL cluster",
 	Long: `Update a PostgreSQL cluster. For example:
@@ -92,8 +95,8 @@ var updateClusterCmd = &cobra.Command{
 	},
 }
 
-var updatePgouserCmd = &cobra.Command{
-	Use:   "update",
+var UpdatePgouserCmd = &cobra.Command{
+	Use:   "pgouser",
 	Short: "Update a pgouser",
 	Long: `UPDATE allows you to update a pgo user. For example:
 		pgo update pgouser myuser --change-password

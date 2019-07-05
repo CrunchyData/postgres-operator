@@ -157,7 +157,7 @@ var deletePgouserCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		if len(args) == 0 {
-			fmt.Println("Error: A pgouser(s) is required for this command.")
+			fmt.Println("Error: A pgouser username is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgouser(args, Namespace)

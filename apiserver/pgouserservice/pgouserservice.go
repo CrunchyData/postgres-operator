@@ -25,7 +25,6 @@ import (
 )
 
 func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
-	var ns string
 
 	resp := msgs.CreatePgouserResponse{}
 	resp.Status.Code = msgs.Ok
@@ -40,7 +39,7 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debugf("pgouserservice.CreatePgouserHandler got request %s", request.Name)
+	log.Debugf("pgouserservice.CreatePgouserHandler got request %v", request)
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
@@ -48,7 +47,7 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -56,29 +55,18 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errs := validation.IsDNS1035Label(request.Name)
+	errs := validation.IsDNS1035Label(request.PgouserName)
 	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "invalid pgouser name format " + errs[0]
 	} else {
-
-		err := CreatePgouser(apiserver.RESTClient, &request)
-		if err != nil {
-			log.Error(err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-		}
-		if found {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "pgouser already exists with that name"
-		}
+		resp = CreatePgouser(apiserver.RESTClient, &request)
 	}
 
 	json.NewEncoder(w).Encode(resp)
 }
 
 func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
-	var ns string
 
 	var request msgs.DeletePgouserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -97,14 +85,14 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
-	if clientVersion != msgs.PGO_VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -119,7 +107,6 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
-	var ns string
 
 	var request msgs.ShowPgouserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
@@ -140,14 +127,14 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
-	if clientVersion != msgs.PGO_VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -163,7 +150,6 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 
 func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 
-	var ns string
 	log.Debug("pgouserservice.UpdatePgouserHandler called")
 
 	var request msgs.UpdatePgouserRequest
@@ -178,16 +164,16 @@ func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	resp := msgs.ApplyPgouserResponse{}
+	resp := msgs.UpdatePgouserResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	resp = ApplyPgouser(&request)
+	resp = UpdatePgouser(&request)
 	json.NewEncoder(w).Encode(resp)
 }

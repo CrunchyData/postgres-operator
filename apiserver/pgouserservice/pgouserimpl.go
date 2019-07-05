@@ -38,7 +38,6 @@ func ShowPgouser(RESTClient *rest.RESTClient, request *msgs.ShowPgouserRequest) 
 	resp := msgs.ShowPgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
-	resp.Results = make([]string, 0)
 
 	return resp
 
@@ -58,7 +57,6 @@ func DeletePgouser(RESTClient *rest.RESTClient, request *msgs.DeletePgouserReque
 func UpdatePgouser(request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
 
 	resp := msgs.UpdatePgouserResponse{}
-	resp.Name = make([]string, 0)
 	resp.Status.Msg = ""
 	resp.Status.Code = msgs.Ok
 

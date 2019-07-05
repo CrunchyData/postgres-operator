@@ -64,7 +64,7 @@ var CreateCmd = &cobra.Command{
     pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
-		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") && args[0] != "user" {
+		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
     * pgbouncer
@@ -72,6 +72,20 @@ var CreateCmd = &cobra.Command{
     * pgouser
     * policy
     * user`)
+		} else {
+			switch args[0] {
+			case "cluster", "pgbouncer", "pgpool", "pgouser",
+				"policy", "user":
+				break
+			default:
+				fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
+    * cluster
+    * pgbouncer
+    * pgpool
+    * pgouser
+    * policy
+    * user`)
+			}
 		}
 	},
 }
@@ -226,6 +240,7 @@ func init() {
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
+	CreateCmd.AddCommand(createPgouserCmd)
 	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 
