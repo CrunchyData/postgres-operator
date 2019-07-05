@@ -59,6 +59,7 @@ var CreateCmd = &cobra.Command{
     pgo create cluster
     pgo create pgbouncer
     pgo create pgpool
+    pgo create pgouser
     pgo create policy
     pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -68,6 +69,7 @@ var CreateCmd = &cobra.Command{
     * cluster
     * pgbouncer
     * pgpool
+    * pgouser
     * policy
     * user`)
 		}
@@ -280,4 +282,25 @@ func init() {
 	createPgbouncerCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
+}
+
+// createPgouserCmd ...
+var createPgouserCmd = &cobra.Command{
+	Use:   "pgouser",
+	Short: "Create a pgouser",
+	Long: `Create a pgouser. For example:
+
+    pgo create pgouser someuser`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		log.Debug("create pgouser called ")
+
+		if len(args) == 0 {
+			fmt.Println(`Error: A pgouser username is required for this command.`)
+		} else {
+			createPgouser(args, Namespace)
+		}
+	},
 }

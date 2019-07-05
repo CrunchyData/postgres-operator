@@ -47,14 +47,21 @@ var updateCmd = &cobra.Command{
 	},
 }
 
+var PgouserPassword string
+var PgouserChangePassword bool
+
 func init() {
 	RootCmd.AddCommand(updateCmd)
 	updateCmd.AddCommand(updateClusterCmd)
+	updateCmd.AddCommand(updatePgouserCmd)
 
 	updateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	updateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	updateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
 	updateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	updatePgouserCmd.Flags().StringVarP(&PgouserPassword, "password", "", "", "The password to use for updating the pgouser password.")
+	updatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	updatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
 
 }
 
@@ -81,6 +88,26 @@ var updateClusterCmd = &cobra.Command{
 			} else {
 				fmt.Println("Aborting...")
 			}
+		}
+	},
+}
+
+var updatePgouserCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update a pgouser",
+	Long: `UPDATE allows you to update a pgo user. For example:
+		pgo update pgouser myuser --change-password
+		pgo update pgouser myuser --change-password --password=somepassword --no-prompt`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
+		if len(args) == 0 {
+			fmt.Println("Error: You must specify the name of a pgouser.")
+		} else {
+			updatePgouser(args, Namespace)
 		}
 	},
 }

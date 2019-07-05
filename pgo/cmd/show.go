@@ -39,6 +39,7 @@ var ShowCmd = &cobra.Command{
 	pgo show benchmark mycluster
 	pgo show cluster mycluster
 	pgo show config
+	pgo show pgouser someuser
 	pgo show policy policy1
 	pgo show pvc mycluster
 	pgo show namespace
@@ -52,6 +53,7 @@ Valid resource types include:
 	* benchmark
 	* cluster
 	* config
+	* pgouser
 	* policy
 	* pvc
 	* namespace
@@ -64,6 +66,7 @@ Valid resource types include:
 			case "benchmark":
 			case "cluster":
 			case "config":
+			case "pgouser":
 			case "policy":
 			case "pvc":
 			case "schedule":
@@ -78,6 +81,7 @@ Valid resource types include:
 	* benchmark
 	* cluster
 	* config
+	* pgouser
 	* policy
 	* pvc
 	* namespace
@@ -98,6 +102,7 @@ func init() {
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowNamespaceCmd)
+	ShowCmd.AddCommand(ShowPgouserCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
@@ -119,6 +124,7 @@ func init() {
 	ShowScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowUserCmd.Flags().StringVarP(&Expired, "expired", "", "", "Shows passwords that will expire in X days.")
+	ShowPgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 }
 
 var ShowConfigCmd = &cobra.Command{
@@ -132,6 +138,20 @@ var ShowConfigCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		showConfig(args, Namespace)
+	},
+}
+
+var ShowPgouserCmd = &cobra.Command{
+	Use:   "pgouser",
+	Short: "Show pgouser information",
+	Long: `Show pgouser information for an Operator user. For example:
+
+	pgo show pgouser someuser`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		showPgouser(args, Namespace)
 	},
 }
 

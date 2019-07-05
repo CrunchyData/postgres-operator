@@ -38,6 +38,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/namespaceservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgouserservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
@@ -93,6 +94,10 @@ func main() {
 	r.HandleFunc("/policiesdelete", policyservice.DeletePolicyHandler).Methods("POST")
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
 	r.HandleFunc("/showpvc", pvcservice.ShowPVCHandler).Methods("POST")
+	r.HandleFunc("/pgouserupdate", pgouserservice.UpdatePgouserHandler).Methods("POST")
+	r.HandleFunc("/pgouserdelete", pgouserservice.DeletePgouserHandler).Methods("POST")
+	r.HandleFunc("/pgousercreate", pgouserservice.CreatePgouserHandler).Methods("POST")
+	r.HandleFunc("/pgousershow", pgouserservice.ShowPgouserHandler).Methods("POST")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
