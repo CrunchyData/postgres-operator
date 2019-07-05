@@ -100,7 +100,7 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeletePgouser(apiserver.RESTClient, username, &request)
+	resp = DeletePgouser(apiserver.Clientset, username, &request)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -142,7 +142,7 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ShowPgouser(apiserver.RESTClient, &request)
+	resp = ShowPgouser(apiserver.Clientset, &request)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -174,6 +174,6 @@ func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = UpdatePgouser(username, &request)
+	resp = UpdatePgouser(apiserver.Clientset, username, &request)
 	json.NewEncoder(w).Encode(resp)
 }

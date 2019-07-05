@@ -30,7 +30,7 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	UpdateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "password", "", "", "The password to use for updating the pgouser password.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "The password to use for updating the pgouser password.")
 	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
 

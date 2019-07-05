@@ -24,7 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // CreatePgouser ...
@@ -54,31 +53,96 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 }
 
 // ShowPgouser ...
-func ShowPgouser(RESTClient *rest.RESTClient, request *msgs.ShowPgouserRequest) msgs.ShowPgouserResponse {
+func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserRequest) msgs.ShowPgouserResponse {
 	resp := msgs.ShowPgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
+
+	if request.AllFlag {
+		secrets, err := kubeapi.GetSecrets(clientset, "pgo-auth=true", apiserver.PgoNamespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		for _, s := range secrets.Items {
+			resp.PgouserName = append(resp.PgouserName, s.Name)
+		}
+	} else {
+		for _, v := range request.PgouserName {
+			secretName := "pgouser-" + v
+			_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+			if !found || err != nil {
+				resp.PgouserName = append(resp.PgouserName, v+" was not found")
+			} else {
+				resp.PgouserName = append(resp.PgouserName, v)
+			}
+		}
+	}
 
 	return resp
 
 }
 
 // DeletePgouser ...
-func DeletePgouser(RESTClient *rest.RESTClient, createdBy string, request *msgs.DeletePgouserRequest) msgs.DeletePgouserResponse {
+func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeletePgouserRequest) msgs.DeletePgouserResponse {
 	resp := msgs.DeletePgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
+	for _, v := range request.PgouserName {
+		secretName := "pgouser-" + v
+		log.Debugf("DeletePgouser %s deleted by %s", secretName, deletedBy)
+		_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+		if !found {
+			resp.Results = append(resp.Results, secretName+" not found")
+		} else {
+			err = kubeapi.DeleteSecret(clientset, secretName, apiserver.PgoNamespace)
+			if err != nil {
+				resp.Results = append(resp.Results, "error deleting secret "+secretName)
+			} else {
+				resp.Results = append(resp.Results, "deleted secret "+secretName)
+			}
+
+		}
+	}
+
 	return resp
 
 }
 
-func UpdatePgouser(createdBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
+func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
 
 	resp := msgs.UpdatePgouserResponse{}
 	resp.Status.Msg = ""
 	resp.Status.Code = msgs.Ok
+
+	err := userservice.ValidPassword(request.PgouserPassword)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	secretName := "pgouser-" + request.PgouserName
+
+	secret, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+	if !found {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	secret.ObjectMeta.Labels[config.LABEL_PGOUSER] = updatedBy
+	secret.Data["password"] = []byte(request.PgouserPassword)
+
+	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
 
 	return resp
 
