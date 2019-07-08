@@ -107,6 +107,7 @@ const LABEL_VOLUME_NAME = "volume-name"
 
 const LABEL_SESSION_ID = "sessionid"
 const LABEL_USERNAME = "username"
+const LABEL_ROLENAME = "rolename"
 const LABEL_PASSWORD = "password"
 
 const LABEL_PGPOOL = "crunchy-pgpool"
@@ -144,6 +145,7 @@ const LABEL_CURRENT_PRIMARY = "current-primary"
 const LABEL_CLAIM_NAME = "claimName"
 
 const LABEL_PGO_PGOUSER = "pgo-pgouser"
+const LABEL_PGO_PGOROLE = "pgo-pgorole"
 const LABEL_PGOUSER = "pgouser"
 const LABEL_WORKFLOW_ID = "workflow-id"
 

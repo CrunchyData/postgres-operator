@@ -1,4 +1,4 @@
-package pgouserservice
+package pgoroleservice
 
 /*
 Copyright 2019 Crunchy Data Solutions, Inc.
@@ -24,22 +24,22 @@ import (
 	"net/http"
 )
 
-func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
+func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 
-	resp := msgs.CreatePgouserResponse{}
+	resp := msgs.CreatePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
-	log.Debug("pgouserservice.CreatePgouserHandler called")
+	log.Debug("pgoroleservice.CreatePgoroleHandler called")
 
-	var request msgs.CreatePgouserRequest
+	var request msgs.CreatePgoroleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	username, err := apiserver.Authn(apiserver.CREATE_PGOUSER_PERM, w, r)
+	rolename, err := apiserver.Authn(apiserver.CREATE_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	log.Debugf("pgouserservice.CreatePgouserHandler got request %v", request)
+	log.Debugf("pgoroleservice.CreatePgoroleHandler got request %v", request)
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
@@ -47,33 +47,33 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errs := validation.IsDNS1035Label(request.PgouserName)
+	errs := validation.IsDNS1035Label(request.PgoroleName)
 	if len(errs) > 0 {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "invalid pgouser name format " + errs[0]
+		resp.Status.Msg = "invalid pgorole name format " + errs[0]
 	} else {
-		resp = CreatePgouser(apiserver.Clientset, username, &request)
+		resp = CreatePgorole(apiserver.Clientset, rolename, &request)
 	}
 
 	json.NewEncoder(w).Encode(resp)
 }
 
-func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
+func DeletePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 
-	var request msgs.DeletePgouserRequest
+	var request msgs.DeletePgoroleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Debugf("DeletePgouserHandler parameters [%v]", request)
+	log.Debugf("DeletePgoroleHandler parameters [%v]", request)
 
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	username, err := apiserver.Authn(apiserver.DELETE_PGOUSER_PERM, w, r)
+	rolename, err := apiserver.Authn(apiserver.DELETE_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
-	resp := msgs.DeletePgouserResponse{}
+	resp := msgs.DeletePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
@@ -84,18 +84,18 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeletePgouser(apiserver.Clientset, username, &request)
+	resp = DeletePgorole(apiserver.Clientset, rolename, &request)
 
 	json.NewEncoder(w).Encode(resp)
 
 }
 
-func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
+func ShowPgoroleHandler(w http.ResponseWriter, r *http.Request) {
 
-	var request msgs.ShowPgouserRequest
+	var request msgs.ShowPgoroleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Debugf("ShowPgouserHandler parameters [%v]", request)
+	log.Debugf("ShowPgoroleHandler parameters [%v]", request)
 
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
@@ -106,8 +106,8 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("pgouserservice.ShowPgouserHandler POST called")
-	resp := msgs.ShowPgouserResponse{}
+	log.Debug("pgoroleservice.ShowPgoroleHandler POST called")
+	resp := msgs.ShowPgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
@@ -118,20 +118,20 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ShowPgouser(apiserver.Clientset, &request)
+	resp = ShowPgorole(apiserver.Clientset, &request)
 
 	json.NewEncoder(w).Encode(resp)
 
 }
 
-func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
+func UpdatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 
-	log.Debug("pgouserservice.UpdatePgouserHandler called")
+	log.Debug("pgoroleservice.UpdatePgoroleHandler called")
 
-	var request msgs.UpdatePgouserRequest
+	var request msgs.UpdatePgoroleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	username, err := apiserver.Authn(apiserver.UPDATE_PGOUSER_PERM, w, r)
+	rolename, err := apiserver.Authn(apiserver.UPDATE_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -140,9 +140,9 @@ func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	resp := msgs.UpdatePgouserResponse{}
+	resp := msgs.UpdatePgoroleResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	resp = UpdatePgouser(apiserver.Clientset, username, &request)
+	resp = UpdatePgorole(apiserver.Clientset, rolename, &request)
 	json.NewEncoder(w).Encode(resp)
 }

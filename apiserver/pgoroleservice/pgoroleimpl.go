@@ -1,4 +1,4 @@
-package pgouserservice
+package pgoroleservice
 
 /*
 Copyright 2019 Crunchy Data Solutions, Inc.
@@ -16,8 +16,8 @@ limitations under the License.
 */
 
 import (
+	"errors"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -25,24 +25,25 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"strings"
 )
 
-// CreatePgouser ...
-func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgouserRequest) msgs.CreatePgouserResponse {
+// CreatePgorole ...
+func CreatePgorole(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgoroleRequest) msgs.CreatePgoroleResponse {
 
-	log.Debugf("CreatePgouser %v", request)
-	resp := msgs.CreatePgouserResponse{}
+	log.Debugf("CreatePgorole %v", request)
+	resp := msgs.CreatePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
-	err := userservice.ValidPassword(request.PgouserPassword)
+	err := validPermissions(request.PgorolePermissions)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	err = createSecret(clientset, createdBy, request.PgouserName, request.PgouserPassword)
+	err = createSecret(clientset, createdBy, request.PgoroleName, request.PgorolePermissions)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -53,14 +54,14 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
 
-	f := events.EventPGOCreateUserFormat{
+	f := events.EventPGOCreateRoleFormat{
 		EventHeader: events.EventHeader{
 			Namespace: apiserver.PgoNamespace,
 			Username:  createdBy,
 			Topic:     topics,
-			EventType: events.EventPGOCreateUser,
+			EventType: events.EventPGOCreateRole,
 		},
-		CreatedUsername: request.PgouserName,
+		CreatedRolename: request.PgoroleName,
 	}
 
 	err = events.Publish(f)
@@ -74,13 +75,14 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 
 }
 
-// ShowPgouser ...
-func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserRequest) msgs.ShowPgouserResponse {
-	resp := msgs.ShowPgouserResponse{}
+// ShowPgorole ...
+func ShowPgorole(clientset *kubernetes.Clientset, request *msgs.ShowPgoroleRequest) msgs.ShowPgoroleResponse {
+	resp := msgs.ShowPgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
+	resp.RoleInfo = make([]msgs.PgoroleInfo, 0)
 
-	selector := config.LABEL_PGO_PGOUSER + "=true"
+	selector := config.LABEL_PGO_PGOROLE + "=true"
 	if request.AllFlag {
 		secrets, err := kubeapi.GetSecrets(clientset, selector, apiserver.PgoNamespace)
 		if err != nil {
@@ -89,17 +91,24 @@ func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserReque
 			return resp
 		}
 		for _, s := range secrets.Items {
-			resp.PgouserName = append(resp.PgouserName, s.ObjectMeta.Labels[config.LABEL_USERNAME])
+			info := msgs.PgoroleInfo{}
+			info.Name = s.ObjectMeta.Labels[config.LABEL_ROLENAME]
+			info.Permissions = string(s.Data["permissions"])
+			resp.RoleInfo = append(resp.RoleInfo, info)
 		}
 	} else {
-		for _, v := range request.PgouserName {
-			secretName := "pgouser-" + v
-			_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+		for _, v := range request.PgoroleName {
+			info := msgs.PgoroleInfo{}
+			secretName := "pgorole-" + v
+			s, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
 			if !found || err != nil {
-				resp.PgouserName = append(resp.PgouserName, v+" was not found")
+				info.Name = v + " was not found"
+				info.Permissions = ""
 			} else {
-				resp.PgouserName = append(resp.PgouserName, v)
+				info.Name = v
+				info.Permissions = string(s.Data["permissions"])
 			}
+			resp.RoleInfo = append(resp.RoleInfo, info)
 		}
 	}
 
@@ -107,16 +116,16 @@ func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserReque
 
 }
 
-// DeletePgouser ...
-func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeletePgouserRequest) msgs.DeletePgouserResponse {
-	resp := msgs.DeletePgouserResponse{}
+// DeletePgorole ...
+func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeletePgoroleRequest) msgs.DeletePgoroleResponse {
+	resp := msgs.DeletePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	for _, v := range request.PgouserName {
-		secretName := "pgouser-" + v
-		log.Debugf("DeletePgouser %s deleted by %s", secretName, deletedBy)
+	for _, v := range request.PgoroleName {
+		secretName := "pgorole-" + v
+		log.Debugf("DeletePgorole %s deleted by %s", secretName, deletedBy)
 		_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
 		if !found {
 			resp.Results = append(resp.Results, secretName+" not found")
@@ -130,14 +139,14 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 				topics := make([]string, 1)
 				topics[0] = events.EventTopicPGOUser
 
-				f := events.EventPGODeleteUserFormat{
+				f := events.EventPGODeleteRoleFormat{
 					EventHeader: events.EventHeader{
 						Namespace: apiserver.PgoNamespace,
 						Username:  deletedBy,
 						Topic:     topics,
-						EventType: events.EventPGODeleteUser,
+						EventType: events.EventPGODeleteRole,
 					},
-					DeletedUsername: v,
+					DeletedRolename: v,
 				}
 
 				err = events.Publish(f)
@@ -156,20 +165,20 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 
 }
 
-func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
+func UpdatePgorole(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgoroleRequest) msgs.UpdatePgoroleResponse {
 
-	resp := msgs.UpdatePgouserResponse{}
+	resp := msgs.UpdatePgoroleResponse{}
 	resp.Status.Msg = ""
 	resp.Status.Code = msgs.Ok
 
-	err := userservice.ValidPassword(request.PgouserPassword)
+	err := validPermissions(request.PgorolePermissions)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	secretName := "pgouser-" + request.PgouserName
+	secretName := "pgorole-" + request.PgoroleName
 
 	secret, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
 	if !found {
@@ -179,8 +188,8 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 	}
 
 	secret.ObjectMeta.Labels[config.LABEL_PGO_UPDATED_BY] = updatedBy
-	secret.Data["username"] = []byte(request.PgouserName)
-	secret.Data["password"] = []byte(request.PgouserPassword)
+	secret.Data["rolename"] = []byte(request.PgoroleName)
+	secret.Data["permissions"] = []byte(request.PgorolePermissions)
 
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
 	if err != nil {
@@ -193,14 +202,14 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
 
-	f := events.EventPGOUpdateUserFormat{
+	f := events.EventPGOUpdateRoleFormat{
 		EventHeader: events.EventHeader{
 			Namespace: apiserver.PgoNamespace,
 			Username:  updatedBy,
 			Topic:     topics,
-			EventType: events.EventPGOUpdateUser,
+			EventType: events.EventPGOUpdateRole,
 		},
-		UpdatedUsername: request.PgouserName,
+		UpdatedRolename: request.PgoroleName,
 	}
 
 	err = events.Publish(f)
@@ -214,11 +223,11 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 }
 
-func createSecret(clientset *kubernetes.Clientset, createdBy, pgousername, password string) error {
+func createSecret(clientset *kubernetes.Clientset, createdBy, pgorolename, permissions string) error {
 
-	var enUsername = pgousername
+	var enRolename = pgorolename
 
-	secretName := "pgouser-" + pgousername
+	secretName := "pgorole-" + pgorolename
 
 	_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
 	if found {
@@ -229,15 +238,28 @@ func createSecret(clientset *kubernetes.Clientset, createdBy, pgousername, passw
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels[config.LABEL_PGO_CREATED_BY] = createdBy
-	secret.ObjectMeta.Labels[config.LABEL_USERNAME] = pgousername
-	secret.ObjectMeta.Labels[config.LABEL_PGO_PGOUSER] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_ROLENAME] = pgorolename
+	secret.ObjectMeta.Labels[config.LABEL_PGO_PGOROLE] = "true"
 	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = "crunchydata"
 	secret.Data = make(map[string][]byte)
-	secret.Data["username"] = []byte(enUsername)
-	secret.Data["password"] = []byte(password)
+	secret.Data["rolename"] = []byte(enRolename)
+	secret.Data["permissions"] = []byte(permissions)
 
 	err = kubeapi.CreateSecret(clientset, &secret, apiserver.PgoNamespace)
 
 	return err
 
+}
+
+func validPermissions(perms string) error {
+	var err error
+	fields := strings.Split(perms, ",")
+
+	for _, v := range fields {
+		if apiserver.PermMap[strings.TrimSpace(v)] == "" {
+			return errors.New(v + " not a valid Permission")
+		}
+	}
+
+	return err
 }

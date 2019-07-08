@@ -103,6 +103,7 @@ func init() {
 	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowNamespaceCmd)
 	ShowCmd.AddCommand(ShowPgouserCmd)
+	ShowCmd.AddCommand(ShowPgoroleCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
@@ -125,6 +126,7 @@ func init() {
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowUserCmd.Flags().StringVarP(&Expired, "expired", "", "", "Shows passwords that will expire in X days.")
 	ShowPgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
+	ShowPgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 }
 
 var ShowConfigCmd = &cobra.Command{
@@ -152,6 +154,20 @@ var ShowPgouserCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		showPgouser(args, Namespace)
+	},
+}
+
+var ShowPgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Show pgorole information",
+	Long: `Show pgorole information . For example:
+
+	pgo show pgorole somerole`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		showPgorole(args, Namespace)
 	},
 }
 

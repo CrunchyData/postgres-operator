@@ -37,6 +37,7 @@ var deleteCmd = &cobra.Command{
 	pgo delete pgbouncer mycluster
 	pgo delete pgpool mycluster
 	pgo delete pgouser someuser
+	pgo delete pgorole somerole
 	pgo delete policy mypolicy
 	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 	pgo delete schedule --selector=name=mycluster
@@ -53,6 +54,7 @@ var deleteCmd = &cobra.Command{
 	* pgbouncer
 	* pgpool
 	* pgouser
+	* pgorole
 	* policy
 	* user`)
 		} else {
@@ -64,6 +66,7 @@ var deleteCmd = &cobra.Command{
 			case "pgbouncer":
 			case "pgpool":
 			case "pgouser":
+			case "pgorole":
 			case "policy":
 			case "schedule":
 			case "user":
@@ -77,6 +80,7 @@ var deleteCmd = &cobra.Command{
 	* pgbouncer
 	* pgpool
 	* pgouser
+	* pgorole
 	* policy
 	* user`)
 			}
@@ -94,6 +98,7 @@ func init() {
 	deleteCmd.AddCommand(deleteBenchmarkCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
 	deleteCmd.AddCommand(deletePgouserCmd)
+	deleteCmd.AddCommand(deletePgoroleCmd)
 	deleteCmd.AddCommand(deletePgbouncerCmd)
 	deleteCmd.AddCommand(deletePgpoolCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
@@ -117,6 +122,8 @@ func init() {
 	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deletePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deletePgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	deletePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deletePgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -161,6 +168,28 @@ var deletePgouserCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgouser(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+var deletePgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Delete a pgorole",
+	Long: `Delete a pgorole. For example:
+    
+    pgo delete pgorole somerole`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 {
+			fmt.Println("Error: A pgorole role name is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgorole(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}

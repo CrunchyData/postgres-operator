@@ -52,6 +52,9 @@ func TestEventCreate(t *testing.T) {
 	tryEventPGOStart(t)
 	tryEventPGOStop(t)
 	tryEventPGOUpdateConfig(t)
+	tryEventPGOCreateRole(t)
+	tryEventPGOUpdateRole(t)
+	tryEventPGODeleteRole(t)
 }
 
 func tryEventCreateCluster(t *testing.T) {
@@ -757,6 +760,69 @@ func tryEventPGOUpdateConfig(t *testing.T) {
 			Topic:     topics,
 			EventType: events.EventPGOUpdateConfig,
 		},
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGOCreateRole(t *testing.T) {
+
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPGOUser
+
+	f := events.EventPGOCreateRoleFormat{
+		EventHeader: events.EventHeader{
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOCreateRole,
+		},
+		CreatedRolename: TestRolename,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGOUpdateRole(t *testing.T) {
+
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPGOUser
+
+	f := events.EventPGOUpdateRoleFormat{
+		EventHeader: events.EventHeader{
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGOUpdateRole,
+		},
+		UpdatedRolename: TestRolename,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	t.Log(f.String())
+}
+func tryEventPGODeleteRole(t *testing.T) {
+
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPGOUser
+
+	f := events.EventPGODeleteRoleFormat{
+		EventHeader: events.EventHeader{
+			Namespace: Namespace,
+			Username:  TestUsername,
+			Topic:     topics,
+			EventType: events.EventPGODeleteRole,
+		},
+		DeletedRolename: TestRolename,
 	}
 
 	err := events.Publish(f)

@@ -21,9 +21,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var PgoroleChangePermissions bool
+
 func init() {
 	RootCmd.AddCommand(UpdateCmd)
 	UpdateCmd.AddCommand(UpdatePgouserCmd)
+	UpdateCmd.AddCommand(UpdatePgoroleCmd)
 	UpdateCmd.AddCommand(UpdateClusterCmd)
 
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -33,6 +36,9 @@ func init() {
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "The password to use for updating the pgouser password.")
 	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
+	UpdatePgoroleCmd.Flags().StringVarP(&PgorolePermissions, "pgorole-permissions", "", "", "The permissions to use for updating the pgorole permissions.")
+	UpdatePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdatePgoroleCmd.Flags().BoolVar(&PgoroleChangePermissions, "change-permissions", false, "change permissions (default is false).")
 
 }
 
@@ -110,6 +116,24 @@ var UpdatePgouserCmd = &cobra.Command{
 			fmt.Println("Error: You must specify the name of a pgouser.")
 		} else {
 			updatePgouser(args, Namespace)
+		}
+	},
+}
+var UpdatePgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Update a pgorole",
+	Long: `UPDATE allows you to update a pgo role. For example:
+		pgo update pgorole somerole --change-permissions=true --permissions="Cat,Ls`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
+		if len(args) == 0 {
+			fmt.Println("Error: You must specify the name of a pgorole.")
+		} else {
+			updatePgorole(args, Namespace)
 		}
 	},
 }

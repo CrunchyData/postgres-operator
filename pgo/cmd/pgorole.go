@@ -23,22 +23,22 @@ import (
 	"os"
 )
 
-func updatePgouser(args []string, ns string) {
+func updatePgorole(args []string, ns string) {
 	var err error
 
 	if len(args) == 0 {
-		fmt.Println("Error: A pgouser name argument is required.")
+		fmt.Println("Error: A pgorole name argument is required.")
 		return
 	}
 
-	r := new(msgs.UpdatePgouserRequest)
-	r.PgouserName = args[0]
+	r := new(msgs.UpdatePgoroleRequest)
+	r.PgoroleName = args[0]
 	r.Namespace = ns
-	r.ChangePassword = PgouserChangePassword
-	r.PgouserPassword = PgouserPassword
+	r.ChangePermissions = PgoroleChangePermissions
+	r.PgorolePermissions = PgorolePermissions
 	r.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.UpdatePgouser(httpclient, &SessionCredentials, r)
+	response, err := api.UpdatePgorole(httpclient, &SessionCredentials, r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -46,7 +46,7 @@ func updatePgouser(args []string, ns string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("pgouser updated ")
+		fmt.Println("pgorole updated ")
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
@@ -54,23 +54,23 @@ func updatePgouser(args []string, ns string) {
 
 }
 
-func showPgouser(args []string, ns string) {
+func showPgorole(args []string, ns string) {
 
-	r := new(msgs.ShowPgouserRequest)
-	r.PgouserName = args
+	r := new(msgs.ShowPgoroleRequest)
+	r.PgoroleName = args
 	r.Namespace = ns
 	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
 
 	if len(args) == 0 && !AllFlag {
-		fmt.Println("Error: either a pgouser name or --all flag is required")
+		fmt.Println("Error: either a pgorole name or --all flag is required")
 		os.Exit(2)
 	}
 	if len(args) == 0 && AllFlag {
 		args = []string{""}
 	}
 
-	response, err := api.ShowPgouser(httpclient, &SessionCredentials, r)
+	response, err := api.ShowPgorole(httpclient, &SessionCredentials, r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -82,40 +82,41 @@ func showPgouser(args []string, ns string) {
 		os.Exit(2)
 	}
 
-	if len(response.PgouserName) == 0 {
-		fmt.Println("No pgousers found.")
+	if len(response.RoleInfo) == 0 {
+		fmt.Println("No pgoroles found.")
 		return
 	}
 
 	log.Debugf("response = %v", response)
 
-	for _, pgouser := range response.PgouserName {
+	for _, pgorole := range response.RoleInfo {
 		fmt.Println("")
-		fmt.Println("pgouser : " + pgouser)
+		fmt.Println("pgorole : " + pgorole.Name)
+		fmt.Println("permissions : " + pgorole.Permissions)
 	}
 
 }
 
-func createPgouser(args []string, ns string) {
+func createPgorole(args []string, ns string) {
 
-	if PgouserPassword == "" {
-		fmt.Println("Error: pgouser-password flag is required.")
+	if PgorolePermissions == "" {
+		fmt.Println("Error: pgorole-permissions flag is required.")
 		return
 	}
 
 	if len(args) == 0 {
-		fmt.Println("Error: A pgouser username argument is required.")
+		fmt.Println("Error: A pgorole name argument is required.")
 		return
 	}
 	var err error
 	//create the request
-	r := new(msgs.CreatePgouserRequest)
-	r.PgouserName = args[0]
-	r.PgouserPassword = PgouserPassword
+	r := new(msgs.CreatePgoroleRequest)
+	r.PgoroleName = args[0]
+	r.PgorolePermissions = PgorolePermissions
 	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
-	response, err := api.CreatePgouser(httpclient, &SessionCredentials, r)
+	response, err := api.CreatePgorole(httpclient, &SessionCredentials, r)
 
 	log.Debugf("response is %v", response)
 	if err != nil {
@@ -124,7 +125,7 @@ func createPgouser(args []string, ns string) {
 	}
 
 	if response.Status.Code == msgs.Ok {
-		fmt.Println("Created pgouser.")
+		fmt.Println("Created pgorole.")
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
@@ -132,12 +133,12 @@ func createPgouser(args []string, ns string) {
 
 }
 
-func deletePgouser(args []string, ns string) {
+func deletePgorole(args []string, ns string) {
 
-	log.Debugf("deletePgouser called %v", args)
+	log.Debugf("deletePgorole called %v", args)
 
-	r := msgs.DeletePgouserRequest{}
-	r.PgouserName = args
+	r := msgs.DeletePgoroleRequest{}
+	r.PgoroleName = args
 	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns
@@ -147,9 +148,9 @@ func deletePgouser(args []string, ns string) {
 		args[0] = "all"
 	}
 
-	log.Debugf("deleting pgouser %v", args)
+	log.Debugf("deleting pgorole %v", args)
 
-	response, err := api.DeletePgouser(httpclient, &r, &SessionCredentials)
+	response, err := api.DeletePgorole(httpclient, &r, &SessionCredentials)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	}
