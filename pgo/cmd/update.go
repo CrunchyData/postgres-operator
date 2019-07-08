@@ -36,7 +36,7 @@ func init() {
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "The password to use for updating the pgouser password.")
 	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
-	UpdatePgoroleCmd.Flags().StringVarP(&PgorolePermissions, "pgorole-permissions", "", "", "The permissions to use for updating the pgorole permissions.")
+	UpdatePgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "The permissions to use for updating the pgorole permissions.")
 	UpdatePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgoroleCmd.Flags().BoolVar(&PgoroleChangePermissions, "change-permissions", false, "change permissions (default is false).")
 
@@ -45,10 +45,11 @@ func init() {
 // UpdateCmd represents the update command
 var UpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update a pgouser or cluster",
-	Long: `The update command allows you to update a pgouser or cluster. For example:
+	Short: "Update a pgouser, pgorole, or cluster",
+	Long: `The update command allows you to update a pgouser, pgorole, or cluster. For example:
 
 	pgo update pgouser someuser --change-password
+	pgo update pgorole somerole --change-permission --pgorole-permission="Cat"
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -56,14 +57,16 @@ var UpdateCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* pgouser
+	* pgorole
 	* cluster`)
 		} else {
 			switch args[0] {
-			case "cluster", "pgouser":
+			case "cluster", "pgouser", "pgorole":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* cluster
+	* pgorole
 	* pgouser`)
 			}
 		}

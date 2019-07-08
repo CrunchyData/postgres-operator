@@ -26,6 +26,11 @@ import (
 func updatePgorole(args []string, ns string) {
 	var err error
 
+	if Permissions == "" {
+		fmt.Println("Error: --permissions flag is required.")
+		return
+	}
+
 	if len(args) == 0 {
 		fmt.Println("Error: A pgorole name argument is required.")
 		return
@@ -35,7 +40,7 @@ func updatePgorole(args []string, ns string) {
 	r.PgoroleName = args[0]
 	r.Namespace = ns
 	r.ChangePermissions = PgoroleChangePermissions
-	r.PgorolePermissions = PgorolePermissions
+	r.PgorolePermissions = Permissions
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.UpdatePgorole(httpclient, &SessionCredentials, r)
@@ -99,8 +104,8 @@ func showPgorole(args []string, ns string) {
 
 func createPgorole(args []string, ns string) {
 
-	if PgorolePermissions == "" {
-		fmt.Println("Error: pgorole-permissions flag is required.")
+	if Permissions == "" {
+		fmt.Println("Error: permissions flag is required.")
 		return
 	}
 
@@ -112,7 +117,7 @@ func createPgorole(args []string, ns string) {
 	//create the request
 	r := new(msgs.CreatePgoroleRequest)
 	r.PgoroleName = args[0]
-	r.PgorolePermissions = PgorolePermissions
+	r.PgorolePermissions = Permissions
 	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 

@@ -134,7 +134,7 @@ func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *m
 			if err != nil {
 				resp.Results = append(resp.Results, "error deleting secret "+secretName)
 			} else {
-				resp.Results = append(resp.Results, "deleted secret "+secretName)
+				resp.Results = append(resp.Results, "deleted role "+v)
 				//publish event
 				topics := make([]string, 1)
 				topics[0] = events.EventTopicPGOUser
