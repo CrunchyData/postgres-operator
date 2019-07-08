@@ -20,6 +20,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -48,6 +49,27 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 		return resp
 	}
 
+	//publish event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPGOUser
+
+	f := events.EventPGOCreateUserFormat{
+		EventHeader: events.EventHeader{
+			Namespace: apiserver.PgoNamespace,
+			Username:  createdBy,
+			Topic:     topics,
+			EventType: events.EventPGOCreateUser,
+		},
+		CreatedUsername: request.PgouserName,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	return resp
 
 }
@@ -58,15 +80,16 @@ func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserReque
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
+	selector := config.LABEL_PGO_PGOUSER + "=true"
 	if request.AllFlag {
-		secrets, err := kubeapi.GetSecrets(clientset, "pgo-auth=true", apiserver.PgoNamespace)
+		secrets, err := kubeapi.GetSecrets(clientset, selector, apiserver.PgoNamespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
 		for _, s := range secrets.Items {
-			resp.PgouserName = append(resp.PgouserName, s.Name)
+			resp.PgouserName = append(resp.PgouserName, s.ObjectMeta.Labels[config.LABEL_USERNAME])
 		}
 	} else {
 		for _, v := range request.PgouserName {
@@ -103,6 +126,27 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 				resp.Results = append(resp.Results, "error deleting secret "+secretName)
 			} else {
 				resp.Results = append(resp.Results, "deleted secret "+secretName)
+				//publish event
+				topics := make([]string, 1)
+				topics[0] = events.EventTopicPGOUser
+
+				f := events.EventPGODeleteUserFormat{
+					EventHeader: events.EventHeader{
+						Namespace: apiserver.PgoNamespace,
+						Username:  deletedBy,
+						Topic:     topics,
+						EventType: events.EventPGODeleteUser,
+					},
+					DeletedUsername: v,
+				}
+
+				err = events.Publish(f)
+				if err != nil {
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
+				}
+
 			}
 
 		}
@@ -134,10 +178,31 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 		return resp
 	}
 
-	secret.ObjectMeta.Labels[config.LABEL_PGOUSER] = updatedBy
+	secret.ObjectMeta.Labels[config.LABEL_PGO_UPDATED_BY] = updatedBy
 	secret.Data["password"] = []byte(request.PgouserPassword)
 
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	//publish event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPGOUser
+
+	f := events.EventPGOUpdateUserFormat{
+		EventHeader: events.EventHeader{
+			Namespace: apiserver.PgoNamespace,
+			Username:  updatedBy,
+			Topic:     topics,
+			EventType: events.EventPGOUpdateUser,
+		},
+		UpdatedUsername: request.PgouserName,
+	}
+
+	err = events.Publish(f)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -162,8 +227,10 @@ func createSecret(clientset *kubernetes.Clientset, createdBy, pgousername, passw
 	secret := v1.Secret{}
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
-	secret.ObjectMeta.Labels[config.LABEL_PGOUSER] = createdBy
-	secret.ObjectMeta.Labels[config.LABEL_PGO_AUTH] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_PGO_CREATED_BY] = createdBy
+	secret.ObjectMeta.Labels[config.LABEL_USERNAME] = pgousername
+	secret.ObjectMeta.Labels[config.LABEL_PGO_PGOUSER] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = "crunchydata"
 	secret.Data = make(map[string][]byte)
 	secret.Data["username"] = []byte(enUsername)
 	secret.Data["password"] = []byte(password)

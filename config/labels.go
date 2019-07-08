@@ -143,7 +143,7 @@ const LABEL_CURRENT_PRIMARY = "current-primary"
 
 const LABEL_CLAIM_NAME = "claimName"
 
-const LABEL_PGO_AUTH = "pgo-auth"
+const LABEL_PGO_PGOUSER = "pgo-pgouser"
 const LABEL_PGOUSER = "pgouser"
 const LABEL_WORKFLOW_ID = "workflow-id"
 
@@ -152,6 +152,8 @@ const LABEL_FALSE = "false"
 
 const LABEL_NAMESPACE = "namespace"
 const LABEL_VENDOR = "vendor"
+const LABEL_PGO_CREATED_BY = "pgo-created-by"
+const LABEL_PGO_UPDATED_BY = "pgo-updated-by"
 
 const LABEL_PGO_DEFAULT_SC = "pgo-default-sc"
 

@@ -47,6 +47,7 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/**
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -54,6 +55,7 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
+	*/
 
 	errs := validation.IsDNS1035Label(request.PgouserName)
 	if len(errs) > 0 {
@@ -92,6 +94,7 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/**
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -99,6 +102,7 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
+	*/
 
 	resp = DeletePgouser(apiserver.Clientset, username, &request)
 
@@ -117,7 +121,7 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	username, err := apiserver.Authn(apiserver.SHOW_PGOUSER_PERM, w, r)
+	_, err := apiserver.Authn(apiserver.SHOW_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -134,6 +138,7 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/**
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -141,6 +146,7 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
+	*/
 
 	resp = ShowPgouser(apiserver.Clientset, &request)
 
@@ -167,12 +173,14 @@ func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.UpdatePgouserResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
+	/**
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
+	*/
 
 	resp = UpdatePgouser(apiserver.Clientset, username, &request)
 	json.NewEncoder(w).Encode(resp)

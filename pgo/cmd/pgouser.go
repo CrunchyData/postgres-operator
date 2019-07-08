@@ -62,6 +62,10 @@ func showPgouser(args []string, ns string) {
 	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
 
+	if len(args) == 0 && !AllFlag {
+		fmt.Println("Error: either a pgouser name or --all flag is required")
+		os.Exit(2)
+	}
 	if len(args) == 0 && AllFlag {
 		args = []string{""}
 	}

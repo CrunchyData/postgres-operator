@@ -653,7 +653,7 @@ func tryEventPGOCreateUser(t *testing.T) {
 			Topic:     topics,
 			EventType: events.EventPGOCreateUser,
 		},
-		Username: TestUsername,
+		CreatedUsername: TestUsername,
 	}
 
 	err := events.Publish(f)
@@ -674,7 +674,7 @@ func tryEventPGOUpdateUser(t *testing.T) {
 			Topic:     topics,
 			EventType: events.EventPGOUpdateUser,
 		},
-		Username: TestUsername,
+		UpdatedUsername: TestUsername,
 	}
 
 	err := events.Publish(f)
@@ -695,7 +695,7 @@ func tryEventPGODeleteUser(t *testing.T) {
 			Topic:     topics,
 			EventType: events.EventPGODeleteUser,
 		},
-		Username: TestUsername,
+		DeletedUsername: TestUsername,
 	}
 
 	err := events.Publish(f)
