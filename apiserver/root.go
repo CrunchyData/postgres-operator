@@ -328,6 +328,7 @@ func BasicAuthCheck(username, password string) bool {
 		return true
 	}
 
+	/**
 	var value CredentialDetail
 	var ok bool
 	if value, ok = Credentials[username]; ok {
@@ -338,15 +339,70 @@ func BasicAuthCheck(username, password string) bool {
 	if value.Password != password {
 		return false
 	}
+	*/
+
+	//see if there is a pgouser Secret for this username
+	secretName := "pgouser-" + username
+	secret, found, _ := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+	if !found {
+		log.Errorf("%s username Secret is not found", username)
+		return false
+	}
+
+	psw := string(secret.Data["password"])
+	if psw != password {
+		log.Errorf("%s  %s password does not match for user %s ", psw, password, username)
+		return false
+	}
 
 	return true
 }
 
 func BasicAuthzCheck(username, perm string) bool {
 
-	creds := Credentials[username]
-	log.Debugf("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
-	return HasPerm(creds.Role, perm)
+	secretName := "pgouser-" + username
+	secret, found, _ := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+	if !found {
+		log.Errorf("%s username Secret is not found", username)
+		return false
+	}
+
+	//get the roles for this user
+	rolesString := string(secret.Data["roles"])
+	roles := strings.Split(rolesString, ",")
+	if len(roles) == 0 {
+		log.Errorf("%s user has no roles ", username)
+		return false
+	}
+
+	//venture thru each role this user has looking for a perm match
+	for _, r := range roles {
+
+		//get the pgorole
+		roleSecretName := "pgorole-" + r
+		rolesecret, found, _ := kubeapi.GetSecret(Clientset, roleSecretName, PgoNamespace)
+		if !found {
+			log.Errorf("%s pgorole Secret is not found for user %s", r, username)
+			return false
+		}
+
+		permsString := string(rolesecret.Data["permissions"])
+		perms := strings.Split(permsString, ",")
+
+		for _, p := range perms {
+			pp := strings.TrimSpace(p)
+			if pp == perm {
+				log.Debugf("%s perm found in role %s for username %s", pp, r, username)
+				return true
+			}
+		}
+
+	}
+
+	//creds := Credentials[username]
+	//log.Debugf("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
+	//return HasPerm(creds.Role, perm)
+	return false
 
 }
 
@@ -612,20 +668,30 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 }
 
 func UserIsPermittedInNamespace(username, requestedNS string) bool {
-	detail := Credentials[username]
+
+	//get the pgouser Secret for this username
+	userSecretName := "pgouser-" + username
+	userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
+	if !found {
+		log.Error(err)
+		log.Errorf("could not find pgouser Secret for username %s", username)
+		return false
+	}
+
+	nsstring := string(userSecret.Data["namespaces"])
+	nsList := strings.Split(nsstring, ",")
+	for _, v := range nsList {
+		ns := strings.TrimSpace(v)
+		if ns == requestedNS {
+			return true
+		}
+	}
 
 	//handle the case of a user in pgouser with "" (all) namespaces
-	if len(detail.Namespaces) == 1 {
-		if detail.Namespaces[0] == "" {
-			return true
-		}
+	if len(nsList) == 1 {
+		return true
 	}
 
-	for i := 0; i < len(detail.Namespaces); i++ {
-		if detail.Namespaces[i] == requestedNS {
-			return true
-		}
-	}
 	return false
 }
 

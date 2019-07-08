@@ -39,6 +39,10 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	log.Debugf("pgouserservice.CreatePgouserHandler got request %v", request)
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
@@ -65,14 +69,15 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("DeletePgouserHandler parameters [%v]", request)
 
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
 	username, err := apiserver.Authn(apiserver.DELETE_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	resp := msgs.DeletePgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -97,14 +102,14 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("ShowPgouserHandler parameters [%v]", request)
 
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
 	_, err := apiserver.Authn(apiserver.SHOW_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("pgouserservice.ShowPgouserHandler POST called")
 	resp := msgs.ShowPgouserResponse{}

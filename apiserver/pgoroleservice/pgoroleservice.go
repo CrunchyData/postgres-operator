@@ -39,6 +39,10 @@ func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	log.Debugf("pgoroleservice.CreatePgoroleHandler got request %v", request)
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
@@ -65,14 +69,15 @@ func DeletePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("DeletePgoroleHandler parameters [%v]", request)
 
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
 	rolename, err := apiserver.Authn(apiserver.DELETE_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	resp := msgs.DeletePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -97,14 +102,14 @@ func ShowPgoroleHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugf("ShowPgoroleHandler parameters [%v]", request)
 
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
 	_, err := apiserver.Authn(apiserver.SHOW_PGOUSER_PERM, w, r)
 	if err != nil {
 		return
 	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
 	log.Debug("pgoroleservice.ShowPgoroleHandler POST called")
 	resp := msgs.ShowPgoroleResponse{}
