@@ -54,6 +54,7 @@ const CREATE_SCHEDULE_PERM = "CreateSchedule"
 const CREATE_UPGRADE_PERM = "CreateUpgrade"
 const CREATE_USER_PERM = "CreateUser"
 const CREATE_PGOUSER_PERM = "CreatePgouser"
+const CREATE_PGOROLE_PERM = "CreatePgorole"
 
 // RESTORE
 const RESTORE_DUMP_PERM = "RestoreDump"
@@ -70,6 +71,7 @@ const DELETE_POLICY_PERM = "DeletePolicy"
 const DELETE_SCHEDULE_PERM = "DeleteSchedule"
 const DELETE_USER_PERM = "DeleteUser"
 const DELETE_PGOUSER_PERM = "DeletePgouser"
+const DELETE_PGOROLE_PERM = "DeletePgorole"
 
 // SHOW
 const SHOW_BACKUP_PERM = "ShowBackup"
@@ -84,10 +86,12 @@ const SHOW_WORKFLOW_PERM = "ShowWorkflow"
 const SHOW_SCHEDULE_PERM = "ShowSchedule"
 const SHOW_SECRETS_PERM = "ShowSecrets"
 const SHOW_PGOUSER_PERM = "ShowPgouser"
+const SHOW_PGOROLE_PERM = "ShowPgorole"
 
 // UPDATE
 const UPDATE_CLUSTER_PERM = "UpdateCluster"
 const UPDATE_PGOUSER_PERM = "UpdatePgouser"
+const UPDATE_PGOROLE_PERM = "UpdatePgorole"
 
 // SCALE
 const SCALE_CLUSTER_PERM = "ScaleCluster"
@@ -129,6 +133,7 @@ func InitializePerms() {
 	PermMap[CREATE_UPGRADE_PERM] = "yes"
 	PermMap[CREATE_USER_PERM] = "yes"
 	PermMap[CREATE_PGOUSER_PERM] = "yes"
+	PermMap[CREATE_PGOROLE_PERM] = "yes"
 	// RESTORE
 	PermMap[RESTORE_DUMP_PERM] = "yes"
 	PermMap[RESTORE_PGBASEBACKUP_PERM] = "yes"
@@ -143,6 +148,7 @@ func InitializePerms() {
 	PermMap[DELETE_SCHEDULE_PERM] = "yes"
 	PermMap[DELETE_USER_PERM] = "yes"
 	PermMap[DELETE_PGOUSER_PERM] = "yes"
+	PermMap[DELETE_PGOROLE_PERM] = "yes"
 	// Show
 	PermMap[SHOW_BACKUP_PERM] = "yes"
 	PermMap[SHOW_BENCHMARK_PERM] = "yes"
@@ -156,6 +162,7 @@ func InitializePerms() {
 	PermMap[SHOW_SCHEDULE_PERM] = "yes"
 	PermMap[SHOW_SECRETS_PERM] = "yes"
 	PermMap[SHOW_PGOUSER_PERM] = "yes"
+	PermMap[SHOW_PGOROLE_PERM] = "yes"
 
 	// Scale
 	PermMap[SCALE_CLUSTER_PERM] = "yes"
@@ -163,6 +170,7 @@ func InitializePerms() {
 	// Update
 	PermMap[UPDATE_CLUSTER_PERM] = "yes"
 	PermMap[UPDATE_PGOUSER_PERM] = "yes"
+	PermMap[UPDATE_PGOROLE_PERM] = "yes"
 
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
