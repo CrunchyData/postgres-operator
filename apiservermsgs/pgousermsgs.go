@@ -25,12 +25,26 @@ type ShowPgouserRequest struct {
 	PgouserName   []string
 }
 
+type PgouserInfo struct {
+	Username  string
+	Role      []string
+	Namespace []string
+}
+
+// ShowPgouserResponse ...
+type ShowPgouserResponse struct {
+	UserInfo []PgouserInfo
+	Status
+}
+
 // CreatePgouserRequest ...
 type CreatePgouserRequest struct {
-	PgouserName     string
-	PgouserPassword string
-	Namespace       string
-	ClientVersion   string
+	PgouserName       string
+	PgouserPassword   string
+	PgouserRoles      string
+	PgouserNamespaces string
+	Namespace         string
+	ClientVersion     string
 }
 
 // CreatePgouserResponse ...
@@ -40,22 +54,18 @@ type CreatePgouserResponse struct {
 
 // UpdatePgouserRequest ...
 type UpdatePgouserRequest struct {
-	Name            string
-	PgouserPassword string
-	PgouserName     string
-	ChangePassword  bool
-	Namespace       string
-	ClientVersion   string
+	Name              string
+	PgouserRoles      string
+	PgouserNamespaces string
+	PgouserPassword   string
+	PgouserName       string
+	ChangePassword    bool
+	Namespace         string
+	ClientVersion     string
 }
 
 // ApplyPgouserResponse ...
 type UpdatePgouserResponse struct {
-	Status
-}
-
-// ShowPgouserResponse ...
-type ShowPgouserResponse struct {
-	PgouserName []string
 	Status
 }
 

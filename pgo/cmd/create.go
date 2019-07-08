@@ -48,7 +48,7 @@ var ScheduleDatabase string
 var ScheduleSecret string
 var PGBackRestType string
 var Secret string
-var PgouserPassword string
+var PgouserPassword, PgouserRoles, PgouserNamespaces string
 var Permissions string
 
 var Series int
@@ -251,6 +251,8 @@ func init() {
 
 	createClusterCmd.Flags().StringVarP(&BackrestFlag, "pgbackrest", "", "", "Enables a pgBackRest volume for the database pod, \"true\" or \"false\". Default from pgo.yaml, command line overrides default.")
 	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
+	createPgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "specify a comma separated list of Roles for a pgouser")
+	createPgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "specify a comma separated list of Namespaces for a pgouser")
 	createPgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "specify a comma separated list of permissions for a pgorole")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")

@@ -16,16 +16,25 @@ limitations under the License.
 */
 
 import (
+	"errors"
+	"fmt"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"strings"
 )
+
+const MAP_KEY_USERNAME = "roles"
+const MAP_KEY_PASSWORD = "password"
+const MAP_KEY_ROLES = "roles"
+const MAP_KEY_NAMESPACES = "namespaces"
 
 // CreatePgouser ...
 func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgouserRequest) msgs.CreatePgouserResponse {
@@ -42,7 +51,20 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 		return resp
 	}
 
-	err = createSecret(clientset, createdBy, request.PgouserName, request.PgouserPassword)
+	err = validRoles(clientset, request.PgouserRoles)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+	err = validNamespaces(request.PgouserNamespaces)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	err = createSecret(clientset, createdBy, request)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -89,17 +111,33 @@ func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserReque
 			return resp
 		}
 		for _, s := range secrets.Items {
-			resp.PgouserName = append(resp.PgouserName, s.ObjectMeta.Labels[config.LABEL_USERNAME])
+			info := msgs.PgouserInfo{}
+			info.Username = s.ObjectMeta.Labels[config.LABEL_USERNAME]
+			info.Role = make([]string, 0)
+			info.Role = append(info.Role, string(s.Data[MAP_KEY_ROLES]))
+			info.Namespace = make([]string, 0)
+			info.Namespace = append(info.Namespace, string(s.Data[MAP_KEY_NAMESPACES]))
+
+			resp.UserInfo = append(resp.UserInfo, info)
 		}
 	} else {
 		for _, v := range request.PgouserName {
 			secretName := "pgouser-" + v
-			_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+
+			info := msgs.PgouserInfo{}
+			info.Username = v
+			info.Role = make([]string, 0)
+			info.Namespace = make([]string, 0)
+
+			s, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
 			if !found || err != nil {
-				resp.PgouserName = append(resp.PgouserName, v+" was not found")
+				info.Username = v + " was not found"
 			} else {
-				resp.PgouserName = append(resp.PgouserName, v)
+				info.Username = v
+				info.Role = append(info.Role, string(s.Data[MAP_KEY_ROLES]))
+				info.Namespace = append(info.Namespace, string(s.Data[MAP_KEY_NAMESPACES]))
 			}
+			resp.UserInfo = append(resp.UserInfo, info)
 		}
 	}
 
@@ -179,8 +217,8 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 	}
 
 	secret.ObjectMeta.Labels[config.LABEL_PGO_UPDATED_BY] = updatedBy
-	secret.Data["username"] = []byte(request.PgouserName)
-	secret.Data["password"] = []byte(request.PgouserPassword)
+	secret.Data[MAP_KEY_USERNAME] = []byte(request.PgouserName)
+	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
 
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
 	if err != nil {
@@ -214,11 +252,9 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 }
 
-func createSecret(clientset *kubernetes.Clientset, createdBy, pgousername, password string) error {
+func createSecret(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgouserRequest) error {
 
-	var enUsername = pgousername
-
-	secretName := "pgouser-" + pgousername
+	secretName := "pgouser-" + request.PgouserName
 
 	_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
 	if found {
@@ -229,15 +265,57 @@ func createSecret(clientset *kubernetes.Clientset, createdBy, pgousername, passw
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels[config.LABEL_PGO_CREATED_BY] = createdBy
-	secret.ObjectMeta.Labels[config.LABEL_USERNAME] = pgousername
+	secret.ObjectMeta.Labels[config.LABEL_USERNAME] = request.PgouserName
 	secret.ObjectMeta.Labels[config.LABEL_PGO_PGOUSER] = "true"
 	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = "crunchydata"
 	secret.Data = make(map[string][]byte)
-	secret.Data["username"] = []byte(enUsername)
-	secret.Data["password"] = []byte(password)
+	secret.Data[MAP_KEY_USERNAME] = []byte(request.PgouserName)
+	secret.Data[MAP_KEY_ROLES] = []byte(request.PgouserRoles)
+	secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
+	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
 
 	err = kubeapi.CreateSecret(clientset, &secret, apiserver.PgoNamespace)
 
 	return err
 
+}
+
+func validRoles(clientset *kubernetes.Clientset, roles string) error {
+	var err error
+	fields := strings.Split(roles, ",")
+	for _, v := range fields {
+		r := strings.TrimSpace(v)
+		secretName := "pgorole-" + r
+		_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+		if !found || err != nil {
+			return errors.New(v + " pgorole was not found")
+		}
+
+	}
+
+	return err
+}
+
+func validNamespaces(namespaces string) error {
+
+	var err error
+	watchedNamespaces := util.GetNamespaces()
+
+	fields := strings.Split(namespaces, ",")
+	for _, v := range fields {
+		ns := strings.TrimSpace(v)
+
+		found := false
+		for i := 0; i < len(watchedNamespaces); i++ {
+			if watchedNamespaces[i] == ns {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.New(fmt.Sprintf("%s was not found in the watched namespaces %v", ns, watchedNamespaces))
+		}
+
+	}
+	return err
 }

@@ -82,16 +82,18 @@ func showPgouser(args []string, ns string) {
 		os.Exit(2)
 	}
 
-	if len(response.PgouserName) == 0 {
+	if len(response.UserInfo) == 0 {
 		fmt.Println("No pgousers found.")
 		return
 	}
 
 	log.Debugf("response = %v", response)
 
-	for _, pgouser := range response.PgouserName {
+	for _, pgouser := range response.UserInfo {
 		fmt.Println("")
-		fmt.Println("pgouser : " + pgouser)
+		fmt.Println("pgouser : " + pgouser.Username)
+		fmt.Printf("roles : %v\n", pgouser.Role)
+		fmt.Printf("namespaces : %v\n", pgouser.Namespace)
 	}
 
 }
@@ -100,6 +102,14 @@ func createPgouser(args []string, ns string) {
 
 	if PgouserPassword == "" {
 		fmt.Println("Error: pgouser-password flag is required.")
+		return
+	}
+	if PgouserRoles == "" {
+		fmt.Println("Error: pgouser-roles flag is required.")
+		return
+	}
+	if PgouserNamespaces == "" {
+		fmt.Println("Error: pgouser-namespaces flag is required.")
 		return
 	}
 
@@ -112,6 +122,8 @@ func createPgouser(args []string, ns string) {
 	r := new(msgs.CreatePgouserRequest)
 	r.PgouserName = args[0]
 	r.PgouserPassword = PgouserPassword
+	r.PgouserRoles = PgouserRoles
+	r.PgouserNamespaces = PgouserNamespaces
 	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
