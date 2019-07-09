@@ -12,13 +12,34 @@ This guide is intended for those wanting to build the Operator from source or co
 
 # Prerequisites
 The target development host for these instructions is a CentOS 7 or RHEL 7 host. Others operating systems
-are possible, however we do not support building or running the Operator on other operating systems at this time.
+are possible, however we do not support building or running the Operator on others at this time.
+
+## Environment Variables
+
+The following environment variables are expected by the steps in this guide:
+
+Variable | Example | Description
+-------- | ------- | -----------
+`GOPATH` | $HOME/odev | Golang project directory 
+`PGOROOT` | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location 
+`PGO_BASEOS` | centos7 | Base OS for container images 
+`PGO_CMD` | kubectl | Cluster management tool executable
+`PGO_IMAGE_PREFIX` | crunchydata | Container image prefix 
+`PGO_OPERATOR_NAMESPACE` | pgo | Kubernetes namespace for the operator 
+`PGO_VERSION` | 4.0.0 | Operator version 
+
+{{% notice tip %}}
+`examples/envs.sh` contains the above variable definitions as well as others used by postgres-operator tools
+{{% /notice %}}
+
+
+## Other requirements
 
 * The development host has been created, has access to `yum` updates, and has a regular user account with `sudo` rights to run `yum`.
-* The development host has `git` installed and has cloned the postgres-operator repository. `make` targets below are run from the repository directory.
-* The development host has a `GOPATH` environment variable defined, pointing to a directory containing `src`,`pkg`, and `bin` directories.
-* The development host has `$GOPATH/bin` added to its `PATH` environment variable. Development tools will be installed to this path.
-* Deploying the Operator will require access to a Kubernetes cluster. Clusters built on OpenShift Container Platform (OCP) or built using `kubeadm` are the validation targets for Pull Requests and thus recommended for devleopment. Instructions for setting up these clusters are outside the scope of this guide.
+* `GOPATH` points to a directory containing `src`,`pkg`, and `bin` directories.
+* The development host has `$GOPATH/bin` added to its `PATH` environment variable. Development tools will be installed to this path. Defining a `GOBIN` environment variable other than `$GOPATH/bin` may yield unexpected results.
+* The development host has `git` installed and has cloned the postgres-operator repository to `$GOPATH/src/github.com/crunchydata/postgres-operator`. Makefile targets below are run from the repository directory.
+* Deploying the Operator will require deployment access to a Kubernetes cluster. Clusters built on OpenShift Container Platform (OCP) or built using `kubeadm` are the validation targets for Pull Requests and thus recommended for devleopment. Instructions for setting up these clusters are outside the scope of this guide.
 
 
 # Building
