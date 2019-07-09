@@ -57,7 +57,7 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 		resp.Status.Msg = err.Error()
 		return resp
 	}
-	err = validNamespaces(request.PgouserNamespaces)
+	err = validNamespaces(request.PgouserNamespaces, request.AllNamespaces)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -219,6 +219,12 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 	secret.ObjectMeta.Labels[config.LABEL_PGO_UPDATED_BY] = updatedBy
 	secret.Data[MAP_KEY_USERNAME] = []byte(request.PgouserName)
 	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
+	if request.PgouserRoles != "" {
+		secret.Data[MAP_KEY_ROLES] = []byte(request.PgouserRoles)
+	}
+	if request.PgouserNamespaces != "" {
+		secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
+	}
 
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
 	if err != nil {
@@ -296,9 +302,14 @@ func validRoles(clientset *kubernetes.Clientset, roles string) error {
 	return err
 }
 
-func validNamespaces(namespaces string) error {
+func validNamespaces(namespaces string, allnamespaces bool) error {
 
 	var err error
+
+	if allnamespaces {
+		return err
+	}
+
 	watchedNamespaces := util.GetNamespaces()
 
 	fields := strings.Split(namespaces, ",")

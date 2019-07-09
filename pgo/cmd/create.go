@@ -24,6 +24,7 @@ import (
 
 var ClusterReplicaCount int
 var ManagedUser bool
+var AllNamespaces bool
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
@@ -253,6 +254,7 @@ func init() {
 	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
 	createPgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "specify a comma separated list of Roles for a pgouser")
 	createPgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "specify a comma separated list of Namespaces for a pgouser")
+	createPgouserCmd.Flags().BoolVarP(&AllNamespaces, "all-namespaces", "", false, "specifies this user will have access to all namespaces.")
 	createPgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "specify a comma separated list of permissions for a pgorole")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
@@ -335,7 +337,7 @@ var createPgoroleCmd = &cobra.Command{
 	Short: "Create a pgorole",
 	Long: `Create a pgorole. For example:
 
-    pgo create pgorole somerole --pgorole-permissions="Cat,Ls"`,
+    pgo create pgorole somerole --permissions="Cat,Ls"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace

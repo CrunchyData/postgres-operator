@@ -688,7 +688,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) bool {
 	}
 
 	//handle the case of a user in pgouser with "" (all) namespaces
-	if len(nsList) == 1 {
+	if nsstring == "" {
 		return true
 	}
 

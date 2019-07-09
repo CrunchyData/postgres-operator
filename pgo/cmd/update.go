@@ -33,12 +33,11 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	UpdateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "The roles to use for updating the pgouser roles.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "The password to use for updating the pgouser password.")
 	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	UpdatePgouserCmd.Flags().BoolVar(&PgouserChangePassword, "change-password", false, "change password (default is false).")
 	UpdatePgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "The permissions to use for updating the pgorole permissions.")
 	UpdatePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	UpdatePgoroleCmd.Flags().BoolVar(&PgoroleChangePermissions, "change-permissions", false, "change permissions (default is false).")
 
 }
 
@@ -48,8 +47,9 @@ var UpdateCmd = &cobra.Command{
 	Short: "Update a pgouser, pgorole, or cluster",
 	Long: `The update command allows you to update a pgouser, pgorole, or cluster. For example:
 
-	pgo update pgouser someuser --change-password
-	pgo update pgorole somerole --change-permission --pgorole-permission="Cat"
+	pgo update pgouser someuser --pgouser-password=somenewpassword
+	pgo update pgouser someuser --pgouser-roles="role1,role2"
+	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -126,7 +126,7 @@ var UpdatePgoroleCmd = &cobra.Command{
 	Use:   "pgorole",
 	Short: "Update a pgorole",
 	Long: `UPDATE allows you to update a pgo role. For example:
-		pgo update pgorole somerole --change-permissions=true --permissions="Cat,Ls`,
+		pgo update pgorole somerole  --permissions="Cat,Ls`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {

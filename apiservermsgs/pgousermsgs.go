@@ -42,6 +42,7 @@ type CreatePgouserRequest struct {
 	PgouserName       string
 	PgouserPassword   string
 	PgouserRoles      string
+	AllNamespaces     bool
 	PgouserNamespaces string
 	Namespace         string
 	ClientVersion     string
@@ -57,9 +58,9 @@ type UpdatePgouserRequest struct {
 	Name              string
 	PgouserRoles      string
 	PgouserNamespaces string
+	AllNamespaces     bool
 	PgouserPassword   string
 	PgouserName       string
-	ChangePassword    bool
 	Namespace         string
 	ClientVersion     string
 }

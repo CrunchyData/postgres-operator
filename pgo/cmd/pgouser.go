@@ -34,8 +34,9 @@ func updatePgouser(args []string, ns string) {
 	r := new(msgs.UpdatePgouserRequest)
 	r.PgouserName = args[0]
 	r.Namespace = ns
-	r.ChangePassword = PgouserChangePassword
+	r.AllNamespaces = AllNamespaces
 	r.PgouserPassword = PgouserPassword
+	r.PgouserRoles = PgouserRoles
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.UpdatePgouser(httpclient, &SessionCredentials, r)
@@ -108,8 +109,8 @@ func createPgouser(args []string, ns string) {
 		fmt.Println("Error: pgouser-roles flag is required.")
 		return
 	}
-	if PgouserNamespaces == "" {
-		fmt.Println("Error: pgouser-namespaces flag is required.")
+	if PgouserNamespaces == "" && !AllNamespaces {
+		fmt.Println("Error: pgouser-namespaces flag or --all-namespaces flag is required.")
 		return
 	}
 
@@ -122,6 +123,7 @@ func createPgouser(args []string, ns string) {
 	r := new(msgs.CreatePgouserRequest)
 	r.PgouserName = args[0]
 	r.PgouserPassword = PgouserPassword
+	r.AllNamespaces = AllNamespaces
 	r.PgouserRoles = PgouserRoles
 	r.PgouserNamespaces = PgouserNamespaces
 	r.Namespace = ns

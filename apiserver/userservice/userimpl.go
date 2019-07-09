@@ -1026,7 +1026,7 @@ func ValidPassword(psw string) error {
 	}
 
 	firstChar := string(psw[0])
-	log.Debugf("1st char is %s", firstChar)
+	//log.Debugf("1st char is %s", firstChar)
 	if strings.Contains(numbers, firstChar) {
 		//log.Debugf("%s is not valid due to starting with a number", username)
 		return errors.New("passwords can not start with a number")
