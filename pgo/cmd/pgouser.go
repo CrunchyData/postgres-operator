@@ -31,6 +31,11 @@ func updatePgouser(args []string, ns string) {
 		return
 	}
 
+	if PgouserNamespaces != "" && AllNamespaces {
+		fmt.Println("Error: pgouser-namespaces flag and --all-namespaces flag are mutually exclusive, choose one or the other.")
+		return
+	}
+
 	r := new(msgs.UpdatePgouserRequest)
 	r.PgouserName = args[0]
 	r.Namespace = ns
@@ -111,6 +116,11 @@ func createPgouser(args []string, ns string) {
 	}
 	if PgouserNamespaces == "" && !AllNamespaces {
 		fmt.Println("Error: pgouser-namespaces flag or --all-namespaces flag is required.")
+		return
+	}
+
+	if PgouserNamespaces != "" && AllNamespaces {
+		fmt.Println("Error: pgouser-namespaces flag and --all-namespaces flag are mutually exclusive, choose one or the other.")
 		return
 	}
 

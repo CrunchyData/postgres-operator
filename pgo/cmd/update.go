@@ -33,6 +33,8 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	UpdateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
+	UpdatePgouserCmd.Flags().BoolVar(&AllNamespaces, "all-namespaces", false, "all namespaces.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "The roles to use for updating the pgouser roles.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "The password to use for updating the pgouser password.")
 	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -49,6 +51,7 @@ var UpdateCmd = &cobra.Command{
 
 	pgo update pgouser someuser --pgouser-password=somenewpassword
 	pgo update pgouser someuser --pgouser-roles="role1,role2"
+	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
 	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,

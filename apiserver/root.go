@@ -436,7 +436,7 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 
 	username, password, authOK := r.BasicAuth()
 	if AuditFlag {
-		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s]", perm, username, r.Method, r.RemoteAddr)
+		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s] ok=[%t] ", perm, username, r.Method, r.RemoteAddr, authOK)
 	}
 
 	log.Debugf("Authentication Attempt %s username=[%s]", perm, username)

@@ -71,6 +71,12 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 		return resp
 	}
 
+	if request.AllNamespaces && request.PgouserNamespaces != "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "--all-namespaces and --pgouser-namespaces are mutually exclusive."
+		return resp
+	}
+
 	//publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
@@ -224,6 +230,8 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 	}
 	if request.PgouserNamespaces != "" {
 		secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
+	} else if request.AllNamespaces {
+		secret.Data[MAP_KEY_NAMESPACES] = []byte("")
 	}
 
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
