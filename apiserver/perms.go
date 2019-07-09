@@ -16,13 +16,6 @@ limitations under the License.
 */
 
 import (
-	"bufio"
-	"errors"
-	"os"
-	"strings"
-
-	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -174,7 +167,6 @@ func InitializePerms() {
 
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
-	readRoles()
 }
 
 func HasPerm(role string, perm string) bool {
@@ -182,77 +174,4 @@ func HasPerm(role string, perm string) bool {
 		return true
 	}
 	return false
-}
-
-func readRoles() {
-	var err error
-	var lines []string
-	var scanner *bufio.Scanner
-
-	cm, found := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, PgoNamespace)
-	if found {
-		log.Infof("Config: %s ConfigMap found in ns %s, using config files from the configmap", config.CustomConfigMapName, PgoNamespace)
-
-		val := cm.Data[pgoroleFile]
-		if val == "" {
-			log.Infof("could not find %s in ConfigMap", pgoroleFile)
-			os.Exit(2)
-		}
-
-		log.Infof("Custom %s file found in configmap", pgoroleFile)
-		scanner = bufio.NewScanner(strings.NewReader(val))
-		for scanner.Scan() {
-			lines = append(lines, scanner.Text())
-		}
-		err = scanner.Err()
-	} else {
-		log.Infof("No custom %s file found in configmap, using defaults", pgoroleFile)
-		f, err := os.Open(pgorolePath)
-		if err != nil {
-			log.Error(err)
-			os.Exit(2)
-		}
-		defer f.Close()
-
-		scanner = bufio.NewScanner(f)
-		for scanner.Scan() {
-			lines = append(lines, scanner.Text())
-		}
-		err = scanner.Err()
-	}
-
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-
-	for _, line := range lines {
-		if len(line) == 0 {
-
-		} else {
-			fields := strings.Split(strings.TrimSpace(line), ":")
-			if len(fields) != 2 {
-				log.Infoln("rolename:permission format not followed")
-				log.Error(errors.New("invalid format found in pgorole - rolename:permission format must be followed"))
-				log.Errorf("bad line is %s\n", fields)
-				os.Exit(2)
-			} else {
-				roleName := fields[0]
-				permsArray := fields[1]
-				perms := strings.Split(strings.TrimSpace(permsArray), ",")
-				permMap := make(map[string]string)
-				for _, v := range perms {
-					cleanPerm := strings.TrimSpace(v)
-					if PermMap[cleanPerm] == "" {
-						log.Errorf(" [%s] not a valid permission for role [%s]", cleanPerm, roleName)
-						os.Exit(2)
-					}
-					permMap[cleanPerm] = "yes"
-				}
-				RoleMap[roleName] = permMap
-				log.Infof("loaded Role [%s] Perms Ct [%d] Perms [%v]", roleName, len(permMap), permMap)
-			}
-		}
-	}
-
 }
