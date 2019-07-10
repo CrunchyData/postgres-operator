@@ -23,6 +23,9 @@ if [ $? -eq 1 ]; then
 	$PGO_CMD create -f $DIR/crd.yaml
 fi
 
+# create the initial pgo admin credential
+$DIR/install-bootstrap-creds.sh
+
 # create the cluster roles one time for the entire Kube cluster
 expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
 

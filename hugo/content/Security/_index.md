@@ -46,48 +46,37 @@ on the same Kube cluster.
 
 ## Operator RBAC
 
-The *conf/postgresql-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
+Operator roles are defined as Secrets starting in version 4.1 of the 
+Operator.  Likewise, Operator users are also defined as Secrets.
 
-The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
+The bootstrap Operator credential is created when you run:
 
-    username:password:pgoadmin:
-    pgouser1:password:pgoadmin:pgouser1
-    pgouser2:password:pgoadmin:pgouser2
-    pgouser3:password:pgoadmin:pgouser1,pgouser2
-    readonlyuser:password:pgoreader:
+    make installrbac
 
-The format of the pgouser server file is:
+This creates an Operator role and user with the following
+names:
+    
+    pgoadmin
 
-    <username>:<password>:<role>:<namespace,namespace>
+The roles and user Secrets are created in the PGO_OPERATOR_NAMESPACE.
 
-The namespace is a comma separated list of namespaces that
-user has access to.  If you do not specify a namespace, then
-all namespaces is assumed, meaning this user can access any
-namespace that the Operator is watching.
+The default roles, role name, user name, and password are defined in the following script and should be modified for a production environment:
 
-A user creates a *.pgouser* file in their $HOME directory to identify
-themselves to the Operator.  An entry in .pgouser will need to match
-entries in the *conf/postgresql-operator/pgouser* file.  A sample
-*.pgouser* file contains the following:
+    deploy/install-bootstrap-creds.sh
+ 
+These Secrets (pgouser/pgorole) control access to the Operator API.
 
-    username:password
+### Managing Operator Roles
 
-The format of the .pgouser client file is:
+After installation, users can create additional Operator roles
+as follows:
 
-    <username>:<password>
+    pgo create pgorole somerole --permissions="Cat,Ls"
 
-The users pgouser file can also be located at:
-*/etc/pgo/pgouser* or it can be found at a path specified by the
-PGOUSER environment variable.
+The above command creates a role named *somerole* with permissions to
+execute the *cat* and *ls* API commands.  Permissions are comma separated.
 
-If the user tries to access a namespace that they are not
-configured for within the server side *pgouser* file then they
-will get an error message as follows:
-
-    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
-
-
-The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
+The full set of permissions that can be used in a role are as follows:
 
 |Permission|Description  |
 |---|---|
@@ -99,6 +88,8 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
+|CreatePgouser | allow *pgo create pgouser*|
+|CreatePgorole | allow *pgo create pgorole*|
 |CreatePgpool | allow *pgo create pgpool*|
 |CreatePolicy | allow *pgo create policy*|
 |CreateSchedule | allow *pgo create schedule*|
@@ -108,6 +99,8 @@ The following list shows the current complete list of possible pgo permissions t
 |DeleteBenchmark | allow *pgo delete benchmark*|
 |DeleteCluster | allow *pgo delete cluster*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
+|DeletePgouser | allow *pgo delete pgouser*|
+|DeletePgorole | allow *pgo delete pgorole*|
 |DeletePgpool | allow *pgo delete pgpool*|
 |DeletePolicy | allow *pgo delete policy*|
 |DeleteSchedule | allow *pgo delete schedule*|
@@ -125,6 +118,8 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
 |ShowPolicy | allow *pgo show policy*|
+|ShowPgouser | allow *pgo show pgouser*|
+|ShowPgorole | allow *pgo show pgorole*|
 |ShowPVC | allow *pgo show pvc*|
 |ShowSchedule | allow *pgo show schedule*|
 |ShowNamespace | allow *pgo show namespace*|
@@ -133,21 +128,57 @@ The following list shows the current complete list of possible pgo permissions t
 |Status | allow *pgo status*|
 |TestCluster | allow *pgo test*|
 |UpdateCluster | allow *pgo update cluster*|
+|UpdatePgouser | allow *pgo update pgouser*|
+|UpdatePgorole | allow *pgo update pgorole*|
 |User | allow *pgo user*|
 |Version | allow *pgo version*|
 
+
+Roles can be viewed with the following command:
+
+    pgo show pgorole --all
+
+Roles can be removed with the following command:
+
+    pgo delete pgorole somerole
+
+Roles can be updated with the following command:
+
+    pgo update pgorole somerole --permissions="Cat,Ls,ShowPolicy"
+
+### Managing Operator Users
+
+After installation, users can create additional Operator users
+as follows:
+
+    pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password=somepassword --pgouser-roles="somerole,someotherrole"
+
+Mutliple roles and namespaces can be associated with a user by
+specifying a comma separated list of values.
+
+The namespace is a comma separated list of namespaces that
+user has access to.  If you specify the flag "--all-namespaces", then
+all namespaces is assumed, meaning this user can access any
+namespace that the Operator is watching.
+
+A user creates a *.pgouser* file in their $HOME directory to identify
+themselves to the Operator.  A sample *.pgouser* file contains the following:
+
+    pgoadmin:examplepassword
+
+The format of the .pgouser client file is:
+
+    <username>:<password>
+
+If the user tries to access a namespace that they are not
+configured for they will get an error message as follows:
+
+    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
 
 If the user is unauthorized for a pgo command, the user will
 get back this response:
 
     Error:  Authentication Failed: 401 
-
-## Making Security Changes
-The Operator today requires you to make Operator user security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
-
-    make deployoperator
-
-This will recreate the *pgo-config* ConfigMap that stores these files and is mounted by the Operator during its initialization.
 
 ## API Security
 

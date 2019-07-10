@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
@@ -46,10 +45,6 @@ import (
 const rsaKeySize = 2048
 const duration365d = time.Hour * 24 * 365
 const PGOSecretName = "pgo.tls"
-
-// pgouserPath ...
-const pgouserPath = "/default-pgo-config/pgouser"
-const pgouserFile = "pgouser"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
@@ -91,9 +86,6 @@ type CredentialDetail struct {
 	Namespaces []string
 }
 
-// Credentials holds the BasicAuth credentials found in the config
-var Credentials map[string]CredentialDetail
-
 var Pgo config.PgoConfig
 
 type containerResourcesTemplateFields struct {
@@ -132,8 +124,6 @@ func Initialize() {
 
 	ConnectToKube()
 
-	getCredentials()
-
 	InitializePerms()
 
 	err := Pgo.GetConfig(Clientset, PgoNamespace)
@@ -146,7 +136,7 @@ func Initialize() {
 
 	validateWithKube()
 
-	validateUserCredentials()
+	//validateUserCredentials()
 }
 
 // ConnectToKube ...
@@ -222,120 +212,23 @@ func initConfig() {
 
 }
 
-func file2lines(filePath string) ([]string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-	defer f.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	return lines, scanner.Err()
-}
-
-func parseUserMap(dat string) CredentialDetail {
-
-	creds := CredentialDetail{}
-
-	fields := strings.Split(strings.TrimSpace(dat), ":")
-	creds.Username = strings.TrimSpace(fields[0])
-	creds.Password = strings.TrimSpace(fields[1])
-	creds.Role = strings.TrimSpace(fields[2])
-	creds.Namespaces = strings.Split(strings.TrimSpace(fields[3]), ",")
-	return creds
-}
-
-// getCredentials ...
-func getCredentials() {
-
-	var lines []string
-	var err error
-	Credentials = make(map[string]CredentialDetail)
-
-	log.Infof("getCredentials with PgoNamespace=%s", PgoNamespace)
-
-	cm, found := kubeapi.GetConfigMap(Clientset, config.CustomConfigMapName, PgoNamespace)
-	if found {
-		log.Infof("Config: %s ConfigMap found in ns %s, using config files from the configmap", config.CustomConfigMapName, PgoNamespace)
-		val := cm.Data[pgouserFile]
-		if val == "" {
-			log.Infof("could not find %s in ConfigMap", pgouserFile)
-			log.Error(err)
-			os.Exit(2)
-		}
-		scanner := bufio.NewScanner(strings.NewReader(val))
-		for scanner.Scan() {
-			lines = append(lines, scanner.Text())
-		}
-		err = scanner.Err()
-	} else {
-		log.Infof("No custom %s file found in configmap, using defaults", pgouserFile)
-		lines, err = file2lines(pgouserPath)
-	}
-
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-
-	for _, v := range lines {
-		creds := parseUserMap(v)
-		Credentials[creds.Username] = creds
-	}
-	log.Debugf("pgouser has %v", Credentials)
-
-}
-
-// validateUserCredentials ...
-func validateUserCredentials() {
-
-	for _, v := range Credentials {
-		log.Infof("validating user %s and role %s", v.Username, v.Role)
-		if RoleMap[v.Role] == nil {
-			errMsg := fmt.Sprintf("role not found on pgouser user [%s], invalid role was [%s]", v.Username, v.Role)
-			log.Error(errMsg)
-			os.Exit(2)
-		}
-	}
-
-	//validate the pgouser server config file has valid namespaces
-	for _, v := range Credentials {
-		log.Infof("validating user %s namespaces %v", v.Username, v.Namespaces)
-		for i := 0; i < len(v.Namespaces); i++ {
-			if v.Namespaces[i] == "" {
-			} else {
-				watching := util.WatchingNamespace(Clientset, v.Namespaces[i])
-				if !watching {
-					errMsg := fmt.Sprintf("namespace %s found on pgouser user [%s], but this namespace is not being watched", v.Namespaces[i], v.Username, v.Role)
-					log.Error(errMsg)
-					os.Exit(2)
-				}
-			}
-		}
-	}
-
-}
-
 func BasicAuthCheck(username, password string) bool {
 
 	if BasicAuth == false {
 		return true
 	}
 
-	var value CredentialDetail
-	var ok bool
-	if value, ok = Credentials[username]; ok {
-	} else {
+	//see if there is a pgouser Secret for this username
+	secretName := "pgouser-" + username
+	secret, found, _ := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+	if !found {
+		log.Errorf("%s username Secret is not found", username)
 		return false
 	}
 
-	if value.Password != password {
+	psw := string(secret.Data["password"])
+	if psw != password {
+		log.Errorf("%s  %s password does not match for user %s ", psw, password, username)
 		return false
 	}
 
@@ -344,9 +237,46 @@ func BasicAuthCheck(username, password string) bool {
 
 func BasicAuthzCheck(username, perm string) bool {
 
-	creds := Credentials[username]
-	log.Debugf("BasicAuthzCheck %s %s %v", creds.Role, perm, HasPerm(creds.Role, perm))
-	return HasPerm(creds.Role, perm)
+	secretName := "pgouser-" + username
+	secret, found, _ := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+	if !found {
+		log.Errorf("%s username Secret is not found", username)
+		return false
+	}
+
+	//get the roles for this user
+	rolesString := string(secret.Data["roles"])
+	roles := strings.Split(rolesString, ",")
+	if len(roles) == 0 {
+		log.Errorf("%s user has no roles ", username)
+		return false
+	}
+
+	//venture thru each role this user has looking for a perm match
+	for _, r := range roles {
+
+		//get the pgorole
+		roleSecretName := "pgorole-" + r
+		rolesecret, found, _ := kubeapi.GetSecret(Clientset, roleSecretName, PgoNamespace)
+		if !found {
+			log.Errorf("%s pgorole Secret is not found for user %s", r, username)
+			return false
+		}
+
+		permsString := string(rolesecret.Data["permissions"])
+		perms := strings.Split(permsString, ",")
+
+		for _, p := range perms {
+			pp := strings.TrimSpace(p)
+			if pp == perm {
+				log.Debugf("%s perm found in role %s for username %s", pp, r, username)
+				return true
+			}
+		}
+
+	}
+
+	return false
 
 }
 
@@ -380,7 +310,7 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 
 	username, password, authOK := r.BasicAuth()
 	if AuditFlag {
-		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s]", perm, username, r.Method, r.RemoteAddr)
+		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s] ok=[%t] ", perm, username, r.Method, r.RemoteAddr, authOK)
 	}
 
 	log.Debugf("Authentication Attempt %s username=[%s]", perm, username)
@@ -612,20 +542,30 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 }
 
 func UserIsPermittedInNamespace(username, requestedNS string) bool {
-	detail := Credentials[username]
+
+	//get the pgouser Secret for this username
+	userSecretName := "pgouser-" + username
+	userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
+	if !found {
+		log.Error(err)
+		log.Errorf("could not find pgouser Secret for username %s", username)
+		return false
+	}
+
+	nsstring := string(userSecret.Data["namespaces"])
+	nsList := strings.Split(nsstring, ",")
+	for _, v := range nsList {
+		ns := strings.TrimSpace(v)
+		if ns == requestedNS {
+			return true
+		}
+	}
 
 	//handle the case of a user in pgouser with "" (all) namespaces
-	if len(detail.Namespaces) == 1 {
-		if detail.Namespaces[0] == "" {
-			return true
-		}
+	if nsstring == "" {
+		return true
 	}
 
-	for i := 0; i < len(detail.Namespaces); i++ {
-		if detail.Namespaces[i] == requestedNS {
-			return true
-		}
-	}
 	return false
 }
 

@@ -21,45 +21,66 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// updateCmd represents the update command
-var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update a cluster",
-	Long: `The update command allows you to update a cluster. For example:
+var PgoroleChangePermissions bool
 
+func init() {
+	RootCmd.AddCommand(UpdateCmd)
+	UpdateCmd.AddCommand(UpdatePgouserCmd)
+	UpdateCmd.AddCommand(UpdatePgoroleCmd)
+	UpdateCmd.AddCommand(UpdateClusterCmd)
+
+	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	UpdateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
+	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
+	UpdatePgouserCmd.Flags().BoolVar(&AllNamespaces, "all-namespaces", false, "all namespaces.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "The roles to use for updating the pgouser roles.")
+	UpdatePgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "The password to use for updating the pgouser password.")
+	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdatePgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "The permissions to use for updating the pgorole permissions.")
+	UpdatePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+
+}
+
+// UpdateCmd represents the update command
+var UpdateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update a pgouser, pgorole, or cluster",
+	Long: `The update command allows you to update a pgouser, pgorole, or cluster. For example:
+
+	pgo update pgouser someuser --pgouser-password=somenewpassword
+	pgo update pgouser someuser --pgouser-roles="role1,role2"
+	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
+	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
+	* pgouser
+	* pgorole
 	* cluster`)
 		} else {
 			switch args[0] {
-			case "cluster":
+			case "cluster", "pgouser", "pgorole":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
-	* cluster`)
+	* cluster
+	* pgorole
+	* pgouser`)
 			}
 		}
 
 	},
 }
 
-func init() {
-	RootCmd.AddCommand(updateCmd)
-	updateCmd.AddCommand(updateClusterCmd)
+var PgouserChangePassword bool
 
-	updateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	updateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
-	updateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
-	updateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-
-}
-
-// updateClusterCmd ...
-var updateClusterCmd = &cobra.Command{
+// UpdateClusterCmd ...
+var UpdateClusterCmd = &cobra.Command{
 	Use:   "cluster",
 	Short: "Update a PostgreSQL cluster",
 	Long: `Update a PostgreSQL cluster. For example:
@@ -81,6 +102,44 @@ var updateClusterCmd = &cobra.Command{
 			} else {
 				fmt.Println("Aborting...")
 			}
+		}
+	},
+}
+
+var UpdatePgouserCmd = &cobra.Command{
+	Use:   "pgouser",
+	Short: "Update a pgouser",
+	Long: `UPDATE allows you to update a pgo user. For example:
+		pgo update pgouser myuser --change-password
+		pgo update pgouser myuser --change-password --password=somepassword --no-prompt`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
+		if len(args) == 0 {
+			fmt.Println("Error: You must specify the name of a pgouser.")
+		} else {
+			updatePgouser(args, Namespace)
+		}
+	},
+}
+var UpdatePgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Update a pgorole",
+	Long: `UPDATE allows you to update a pgo role. For example:
+		pgo update pgorole somerole  --permissions="Cat,Ls`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
+		if len(args) == 0 {
+			fmt.Println("Error: You must specify the name of a pgorole.")
+		} else {
+			updatePgorole(args, Namespace)
 		}
 	},
 }

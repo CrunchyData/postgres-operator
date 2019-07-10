@@ -1,3 +1,18 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: pgopclusterrolesecret
+rules:
+  - verbs:
+      - get
+      - list
+      - create
+      - delete
+    apiGroups:
+      - '*'
+    resources:
+      - secrets
+
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -11,7 +26,9 @@ rules:
       - '*'
     resources:
       - nodes
+      - pods
       - namespaces
+      - configmaps
       - storageclasses
 
 ---

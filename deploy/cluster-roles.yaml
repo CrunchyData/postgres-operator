@@ -7,6 +7,8 @@ rules:
       - get
       - list
       - create
+      - update
+      - delete
     apiGroups:
       - '*'
     resources:

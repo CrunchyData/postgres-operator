@@ -21,8 +21,8 @@ import (
 
 //--------
 type EventPGOCreateUserFormat struct {
-	EventHeader `json:"eventheader"`
-	Username    string `json:"username"`
+	EventHeader     `json:"eventheader"`
+	CreatedUsername string `json:"createdusername"`
 }
 
 func (p EventPGOCreateUserFormat) GetHeader() EventHeader {
@@ -30,14 +30,14 @@ func (p EventPGOCreateUserFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventPGOCreateUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (pgo create user) %s", lvl.EventHeader, lvl.Username)
+	msg := fmt.Sprintf("Event %s - (pgo create user) %s - created by %s", lvl.EventHeader, lvl.CreatedUsername, lvl.EventHeader.Username)
 	return msg
 }
 
 //--------
 type EventPGOUpdateUserFormat struct {
-	EventHeader `json:"eventheader"`
-	Username    string `json:"username"`
+	EventHeader     `json:"eventheader"`
+	UpdatedUsername string `json:"updatedusername"`
 }
 
 func (p EventPGOUpdateUserFormat) GetHeader() EventHeader {
@@ -45,14 +45,14 @@ func (p EventPGOUpdateUserFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventPGOUpdateUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (pgo update user) %s", lvl.EventHeader, lvl.Username)
+	msg := fmt.Sprintf("Event %s - (pgo update user) %s - updated by %s", lvl.EventHeader, lvl.UpdatedUsername, lvl.EventHeader.Username)
 	return msg
 }
 
 //--------
 type EventPGODeleteUserFormat struct {
-	EventHeader `json:"eventheader"`
-	Username    string `json:"username"`
+	EventHeader     `json:"eventheader"`
+	DeletedUsername string `json:"deletedusername"`
 }
 
 func (p EventPGODeleteUserFormat) GetHeader() EventHeader {
@@ -60,7 +60,7 @@ func (p EventPGODeleteUserFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventPGODeleteUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (pgo delete user) %s", lvl.EventHeader, lvl.Username)
+	msg := fmt.Sprintf("Event %s - (pgo delete user) %s - deleted by %s", lvl.EventHeader, lvl.DeletedUsername, lvl.EventHeader.Username)
 	return msg
 }
 
@@ -103,5 +103,50 @@ func (p EventPGOUpdateConfigFormat) GetHeader() EventHeader {
 
 func (lvl EventPGOUpdateConfigFormat) String() string {
 	msg := fmt.Sprintf("Event %s - (pgo update config) ", lvl.EventHeader)
+	return msg
+}
+
+//--------
+type EventPGOCreateRoleFormat struct {
+	EventHeader     `json:"eventheader"`
+	CreatedRolename string `json:"createdrolename"`
+}
+
+func (p EventPGOCreateRoleFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPGOCreateRoleFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (pgo create role) %s - created by %s", lvl.EventHeader, lvl.CreatedRolename, lvl.EventHeader.Username)
+	return msg
+}
+
+//--------
+type EventPGOUpdateRoleFormat struct {
+	EventHeader     `json:"eventheader"`
+	UpdatedRolename string `json:"updatedrolename"`
+}
+
+func (p EventPGOUpdateRoleFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPGOUpdateRoleFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (pgo update role) %s - updated by %s", lvl.EventHeader, lvl.UpdatedRolename, lvl.EventHeader.Username)
+	return msg
+}
+
+//--------
+type EventPGODeleteRoleFormat struct {
+	EventHeader     `json:"eventheader"`
+	DeletedRolename string `json:"deletedRolename"`
+}
+
+func (p EventPGODeleteRoleFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPGODeleteRoleFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (pgo delete role) %s - deleted by %s", lvl.EventHeader, lvl.DeletedRolename, lvl.EventHeader.Username)
 	return msg
 }
