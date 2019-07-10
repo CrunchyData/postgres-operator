@@ -27,3 +27,31 @@ type ShowNamespaceResponse struct {
 	Results []NamespaceResult
 	Status
 }
+
+// CreateNamespaceRequest ...
+type CreateNamespaceRequest struct {
+	Args          []string
+	Namespace     string
+	ClientVersion string
+}
+
+// CreateNamespaceResponse ...
+type CreateNamespaceResponse struct {
+	Results []string
+	Status
+}
+
+// DeleteNamespaceRequest ...
+type DeleteNamespaceRequest struct {
+	Args          []string
+	Selector      string
+	Namespace     string
+	AllFlag       bool
+	ClientVersion string
+}
+
+// DeletePgouserResponse ...
+type DeleteNamespaceResponse struct {
+	Results []string
+	Status
+}

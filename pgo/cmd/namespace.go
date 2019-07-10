@@ -68,3 +68,60 @@ func showNamespace(args []string, ns string) {
 	}
 
 }
+
+func createNamespace(args []string, ns string) {
+	log.Debugf("createNamespace called %v [%s]", args, Selector)
+
+	r := msgs.CreateNamespaceRequest{}
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	r.Args = args
+
+	if len(args) == 0 {
+		fmt.Println("Error: namespace names are required")
+		os.Exit(2)
+	}
+
+	response, err := api.CreateNamespace(httpclient, &SessionCredentials, &r)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+	}
+
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println("Error: " + response.Status.Msg)
+	}
+}
+
+func deleteNamespace(args []string, ns string) {
+	log.Debugf("deleteNamespace called %v [%s]", args, Selector)
+
+	r := msgs.DeleteNamespaceRequest{}
+	r.Selector = Selector
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	r.Args = args
+
+	if Selector != "" && len(args) > 0 {
+		fmt.Println("Error: can not specify both arguments and --selector")
+		os.Exit(2)
+	}
+
+	response, err := api.DeleteNamespace(httpclient, &r, &SessionCredentials)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+	}
+
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println("Error: " + response.Status.Msg)
+	}
+
+}

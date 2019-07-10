@@ -60,3 +60,66 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	resp = ShowNamespace(username)
 	json.NewEncoder(w).Encode(resp)
 }
+
+func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
+
+	resp := msgs.CreateNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	log.Debug("namespaceservice.CreateNamespaceHandler called")
+
+	var request msgs.CreateNamespaceRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	username, err := apiserver.Authn(apiserver.CREATE_NAMESPACE_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	log.Debugf("namespaceservice.CreateNamespaceHandler got request %v", request)
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = CreateNamespace(apiserver.Clientset, username, &request)
+	json.NewEncoder(w).Encode(resp)
+}
+
+func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
+
+	var request msgs.DeleteNamespaceRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	log.Debugf("DeleteNamespaceHandler parameters [%v]", request)
+
+	username, err := apiserver.Authn(apiserver.DELETE_NAMESPACE_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	resp := msgs.DeleteNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = DeleteNamespace(apiserver.Clientset, username, &request)
+	json.NewEncoder(w).Encode(resp)
+
+}

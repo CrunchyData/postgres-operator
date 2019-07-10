@@ -48,6 +48,7 @@ const CREATE_UPGRADE_PERM = "CreateUpgrade"
 const CREATE_USER_PERM = "CreateUser"
 const CREATE_PGOUSER_PERM = "CreatePgouser"
 const CREATE_PGOROLE_PERM = "CreatePgorole"
+const CREATE_NAMESPACE_PERM = "CreateNamespace"
 
 // RESTORE
 const RESTORE_DUMP_PERM = "RestoreDump"
@@ -65,6 +66,7 @@ const DELETE_SCHEDULE_PERM = "DeleteSchedule"
 const DELETE_USER_PERM = "DeleteUser"
 const DELETE_PGOUSER_PERM = "DeletePgouser"
 const DELETE_PGOROLE_PERM = "DeletePgorole"
+const DELETE_NAMESPACE_PERM = "DeleteNamespace"
 
 // SHOW
 const SHOW_BACKUP_PERM = "ShowBackup"
@@ -127,6 +129,7 @@ func InitializePerms() {
 	PermMap[CREATE_USER_PERM] = "yes"
 	PermMap[CREATE_PGOUSER_PERM] = "yes"
 	PermMap[CREATE_PGOROLE_PERM] = "yes"
+	PermMap[CREATE_NAMESPACE_PERM] = "yes"
 	// RESTORE
 	PermMap[RESTORE_DUMP_PERM] = "yes"
 	PermMap[RESTORE_PGBASEBACKUP_PERM] = "yes"
@@ -142,6 +145,7 @@ func InitializePerms() {
 	PermMap[DELETE_USER_PERM] = "yes"
 	PermMap[DELETE_PGOUSER_PERM] = "yes"
 	PermMap[DELETE_PGOROLE_PERM] = "yes"
+	PermMap[DELETE_NAMESPACE_PERM] = "yes"
 	// Show
 	PermMap[SHOW_BACKUP_PERM] = "yes"
 	PermMap[SHOW_BENCHMARK_PERM] = "yes"

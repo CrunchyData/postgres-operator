@@ -18,8 +18,11 @@ limitations under the License.
 import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 )
 
 func ShowNamespace(username string) msgs.ShowNamespaceResponse {
@@ -39,4 +42,89 @@ func ShowNamespace(username string) msgs.ShowNamespaceResponse {
 	}
 
 	return response
+}
+
+// CreateNamespace ...
+func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreateNamespaceRequest) msgs.CreateNamespaceResponse {
+
+	log.Debugf("CreateNamespace %v", request)
+	resp := msgs.CreateNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	//iterate thru all the args (namespace names)
+	for i := 0; i < len(request.Args); i++ {
+		//validate the list of args (namespaces)
+		errs := validation.IsDNS1035Label(request.Args[i])
+		if len(errs) > 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "invalid namespace name format " + errs[0] + " namespace name " + request.Args[i]
+			return resp
+		}
+
+		log.Debugf("CreateNamespace %s created by %s", request.Args[i], createdBy)
+		resp.Results = append(resp.Results, "created namespace "+request.Args[i])
+		//publish event
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicPGO
+
+		f := events.EventPGOCreateNamespaceFormat{
+			EventHeader: events.EventHeader{
+				Namespace: apiserver.PgoNamespace,
+				Username:  createdBy,
+				Topic:     topics,
+				EventType: events.EventPGOCreateNamespace,
+			},
+			CreatedNamespace: request.Args[i],
+		}
+
+		err := events.Publish(f)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
+	return resp
+
+}
+
+// DeleteNamespace ...
+func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeleteNamespaceRequest) msgs.DeleteNamespaceResponse {
+	resp := msgs.DeleteNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	for i := 0; i < len(request.Args); i++ {
+		log.Debugf("DeleteNamespace %s deleted by %s", request.Args[i], deletedBy)
+		resp.Results = append(resp.Results, "deleted namespace "+request.Args[i])
+
+		//publish the namespace delete event
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicPGO
+
+		f := events.EventPGODeleteNamespaceFormat{
+			EventHeader: events.EventHeader{
+				Namespace: apiserver.PgoNamespace,
+				Username:  deletedBy,
+				Topic:     topics,
+				EventType: events.EventPGODeleteNamespace,
+			},
+			DeletedNamespace: request.Args[i],
+		}
+
+		err := events.Publish(f)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+	}
+
+	return resp
+
 }
