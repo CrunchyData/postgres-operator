@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"errors"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/pgouserservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -156,6 +157,13 @@ func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *m
 					return resp
 				}
 
+				//delete this role from all pgousers
+				err = deleteRoleFromUsers(clientset, v)
+				if err != nil {
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
+				}
 			}
 
 		}
@@ -261,5 +269,53 @@ func validPermissions(perms string) error {
 		}
 	}
 
+	return err
+}
+
+func deleteRoleFromUsers(clientset *kubernetes.Clientset, roleName string) error {
+
+	//get pgouser Secrets
+
+	selector := config.LABEL_PGO_PGOUSER + "=true"
+	pgouserSecrets, err := kubeapi.GetSecrets(clientset, selector, apiserver.PgoNamespace)
+	if err != nil {
+		log.Error("could not get pgouser Secrets")
+		return err
+	}
+
+	for _, s := range pgouserSecrets.Items {
+		rolesString := string(s.Data[pgouserservice.MAP_KEY_ROLES])
+		roles := strings.Split(rolesString, ",")
+		resultRoles := make([]string, 0)
+
+		var rolesUpdated bool
+		for _, r := range roles {
+			if r != roleName {
+				resultRoles = append(resultRoles, r)
+			} else {
+				rolesUpdated = true
+			}
+		}
+
+		//update the pgouser Secret removing any roles as necessary
+		if rolesUpdated {
+			var resultingRoleString string
+
+			for i := 0; i < len(resultRoles); i++ {
+				if i == len(resultRoles)-1 {
+					resultingRoleString = resultingRoleString + resultRoles[i]
+				} else {
+					resultingRoleString = resultingRoleString + resultRoles[i] + ","
+				}
+			}
+
+			s.Data[pgouserservice.MAP_KEY_ROLES] = []byte(resultingRoleString)
+			err = kubeapi.UpdateSecret(clientset, &s, apiserver.PgoNamespace)
+			if err != nil {
+				return err
+			}
+
+		}
+	}
 	return err
 }

@@ -31,7 +31,7 @@ import (
 	"strings"
 )
 
-const MAP_KEY_USERNAME = "roles"
+const MAP_KEY_USERNAME = "username"
 const MAP_KEY_PASSWORD = "password"
 const MAP_KEY_ROLES = "roles"
 const MAP_KEY_NAMESPACES = "namespaces"
@@ -169,7 +169,7 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 			if err != nil {
 				resp.Results = append(resp.Results, "error deleting secret "+secretName)
 			} else {
-				resp.Results = append(resp.Results, "deleted secret "+secretName)
+				resp.Results = append(resp.Results, "deleted pgouser "+v)
 				//publish event
 				topics := make([]string, 1)
 				topics[0] = events.EventTopicPGOUser
