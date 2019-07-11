@@ -56,29 +56,37 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 	resp.Results = make([]string, 0)
 
 	//iterate thru all the args (namespace names)
-	for i := 0; i < len(request.Args); i++ {
+	for _, ns := range request.Args {
 		//validate the list of args (namespaces)
-		errs := validation.IsDNS1035Label(request.Args[i])
+		errs := validation.IsDNS1035Label(ns)
 		if len(errs) > 0 {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "invalid namespace name format " + errs[0] + " namespace name " + request.Args[i]
+			resp.Status.Msg = "invalid namespace name format " + errs[0] + " namespace name " + ns
 			return resp
 		}
 
-		_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
+		_, found, _ := kubeapi.GetNamespace(clientset, ns)
 		if found {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "namespace " + request.Args[i] + " already exists"
+			resp.Status.Msg = "namespace " + ns + " already exists"
 			return resp
 		}
 
 		//define the new namespace
 		ns := v1.Namespace{}
-		ns.Name = request.Args[i]
+		ns.Name = ns
 
 		err := kubeapi.CreateNamespace(clientset, &ns)
-		log.Debugf("CreateNamespace %s created by %s", request.Args[i], createdBy)
-		resp.Results = append(resp.Results, "created namespace "+request.Args[i])
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace create error " + ns + err.Error()
+			return resp
+		}
+
+		log.Debugf("CreateNamespace %s created by %s", ns)
+		//apply targeted rbac rules here
+
+		resp.Results = append(resp.Results, "created namespace "+ns)
 		//publish event
 		topics := make([]string, 1)
 		topics[0] = events.EventTopicPGO
@@ -90,7 +98,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 				Topic:     topics,
 				EventType: events.EventPGOCreateNamespace,
 			},
-			CreatedNamespace: request.Args[i],
+			CreatedNamespace: ns,
 		}
 
 		err = events.Publish(f)
@@ -112,23 +120,24 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	for i := 0; i < len(request.Args); i++ {
-		_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
+	for _, ns := range request.Args {
+
+		_, found, _ := kubeapi.GetNamespace(clientset, ns)
 		if !found {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "namespace " + request.Args[i] + " not found"
+			resp.Status.Msg = "namespace " + ns + " not found"
 			return resp
 		}
 
-		err := kubeapi.DeleteNamespace(clientset, request.Args[i])
+		err := kubeapi.DeleteNamespace(clientset, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
 
-		log.Debugf("DeleteNamespace %s deleted by %s", request.Args[i], deletedBy)
-		resp.Results = append(resp.Results, "deleted namespace "+request.Args[i])
+		log.Debugf("DeleteNamespace %s deleted by %s", ns)
+		resp.Results = append(resp.Results, "deleted namespace "+ns)
 
 		//publish the namespace delete event
 		topics := make([]string, 1)
@@ -141,7 +150,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 				Topic:     topics,
 				EventType: events.EventPGODeleteNamespace,
 			},
-			DeletedNamespace: request.Args[i],
+			DeletedNamespace: ns,
 		}
 
 		err = events.Publish(f)
@@ -155,4 +164,12 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 
 	return resp
 
+}
+
+func installTargetRBAC() {
+	//Role pgo-role (conf/postgres-operator/pgo-role.json)
+	//RoleBinding pgo-role-binding (conf/postgres-operator/pgo-role-binding.json)
+	//Role pgo-backrest-role (conf/postgres-operator/pgo-backrest-role.json)
+	//ServiceAccount pgo-backrest (conf/postgres-operator/pgo-backrest-sa.json)
+	//RoleBinding pgo-backrest-role-binding (conf/postgres-operator/pgo-backrest-role-binding.json)
 }
