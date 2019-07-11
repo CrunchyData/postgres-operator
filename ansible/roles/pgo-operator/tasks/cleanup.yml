@@ -79,11 +79,11 @@
 
 - name: Delete existing Cluster Role Bindings
   shell: |
-    {{ kubectl_or_oc }} delete clusterrolebinding {{ pgo_operator_namespace }}{{ item }} -n {{ pgo_operator_namespace }}
+    {{ kubectl_or_oc }} delete clusterrolebinding {{ item }}{{ pgo_operator_namespace }} -n {{ pgo_operator_namespace }}
   with_items:
-  - "clusterbinding"
-  - "clusterbindingcrd"
-  - "clusterbindingsecret"
+  - "pgopclusterbinding-"
+  - "pgopclusterbindingcrd-"
+  - "pgopclusterbindingsecret-"
   ignore_errors: yes
   no_log: false
   tags:
@@ -93,11 +93,11 @@
 
 - name: Delete existing Cluster Roles
   shell: |
-    {{ kubectl_or_oc }} delete clusterrole {{ pgo_operator_namespace }}{{ item }} -n {{ pgo_operator_namespace }}
+    {{ kubectl_or_oc }} delete clusterrole {{ item }}{{ pgo_operator_namespace }} -n {{ pgo_operator_namespace }}
   with_items:
-  - "clusterrole"
-  - "clusterrolecrd"
-  - "clusterrolesecret"
+  - "pgopclusterrole-"
+  - "pgopclusterrolecrd-"
+  - "pgopclusterrolesecret-"
   ignore_errors: yes
   no_log: false
   tags:
