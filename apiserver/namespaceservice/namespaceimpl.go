@@ -19,8 +19,10 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/events"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
@@ -63,6 +65,18 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 			return resp
 		}
 
+		_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
+		if found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace " + request.Args[i] + " already exists"
+			return resp
+		}
+
+		//define the new namespace
+		ns := v1.Namespace{}
+		ns.Name = request.Args[i]
+
+		err := kubeapi.CreateNamespace(clientset, &ns)
 		log.Debugf("CreateNamespace %s created by %s", request.Args[i], createdBy)
 		resp.Results = append(resp.Results, "created namespace "+request.Args[i])
 		//publish event
@@ -79,7 +93,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 			CreatedNamespace: request.Args[i],
 		}
 
-		err := events.Publish(f)
+		err = events.Publish(f)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -99,6 +113,20 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 	resp.Results = make([]string, 0)
 
 	for i := 0; i < len(request.Args); i++ {
+		_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
+		if !found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace " + request.Args[i] + " not found"
+			return resp
+		}
+
+		err := kubeapi.DeleteNamespace(clientset, request.Args[i])
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
 		log.Debugf("DeleteNamespace %s deleted by %s", request.Args[i], deletedBy)
 		resp.Results = append(resp.Results, "deleted namespace "+request.Args[i])
 
@@ -116,7 +144,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 			DeletedNamespace: request.Args[i],
 		}
 
-		err := events.Publish(f)
+		err = events.Publish(f)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()

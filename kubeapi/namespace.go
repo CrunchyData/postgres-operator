@@ -49,3 +49,30 @@ func GetNamespace(clientset *kubernetes.Clientset, name string) (*v1.Namespace, 
 
 	return ns, true, err
 }
+
+// DeleteNamespace
+func DeleteNamespace(clientset *kubernetes.Clientset, name string) error {
+
+	err := clientset.CoreV1().Namespaces().Delete(name, &meta_v1.DeleteOptions{})
+	if err != nil {
+		log.Error(err)
+		log.Error("error deleting namespace " + name)
+	} else {
+		log.Debugf("deleted namespace %s", name)
+	}
+
+	return err
+}
+
+// CreateNamespace
+func CreateNamespace(clientset *kubernetes.Clientset, ns *v1.Namespace) error {
+
+	_, err := clientset.CoreV1().Namespaces().Create(ns)
+	if err != nil {
+		log.Error(err)
+		log.Error("error creating namespace " + ns.Name)
+	}
+	log.Debugf("created namespace %s", ns.Name)
+
+	return err
+}
