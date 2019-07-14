@@ -3,7 +3,7 @@
     "kind": "Role",
     "metadata": {
         "name": "pgo-role",
-        "namespace": "{{.TargetNamespace}}",
+        "namespace": "{{.TargetNamespace}}"
     },
     "rules": [
         {

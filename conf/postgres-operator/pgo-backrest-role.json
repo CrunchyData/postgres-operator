@@ -3,7 +3,7 @@
     "kind": "Role",
     "metadata": {
         "name": "pgo-backrest-role",
-        "namespace": "{{.TargetNamespace}}",
+        "namespace": "{{.TargetNamespace}}"
     },
     "rules": [
         {

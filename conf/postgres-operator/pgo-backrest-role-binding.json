@@ -3,7 +3,7 @@
     "kind": "RoleBinding",
     "metadata": {
         "name": "pgo-backrest-role-binding",
-        "namespace": "{{.TargetNamespace}}",
+        "namespace": "{{.TargetNamespace}}"
     },
     "roleRef": {
         "apiGroup": "rbac.authorization.k8s.io",
