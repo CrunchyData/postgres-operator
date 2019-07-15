@@ -73,10 +73,10 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 		}
 
 		//define the new namespace
-		ns := v1.Namespace{}
-		ns.Name = ns
+		newns := v1.Namespace{}
+		newns.Name = ns
 
-		err := kubeapi.CreateNamespace(clientset, &ns)
+		err := kubeapi.CreateNamespace(clientset, &newns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "namespace create error " + ns + err.Error()
