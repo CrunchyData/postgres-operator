@@ -236,9 +236,14 @@ func CreatePGORoleBinding(clientset *kubernetes.Clientset, targetNamespace, oper
 	//check for rolebinding existing
 	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_ROLE_BINDING, targetNamespace)
 	if found {
-		log.Infof("rolebinding %s already exists, will not create", PGO_ROLE_BINDING)
-		return nil
+		log.Infof("rolebinding %s already exists, will delete and re-create", PGO_ROLE_BINDING)
+		err := kubeapi.DeleteRoleBinding(clientset, PGO_ROLE_BINDING, targetNamespace)
+		if err != nil {
+			log.Errorf("error deleting rolebinding %s %s", PGO_ROLE_BINDING, err.Error())
+			return err
+		}
 	}
+
 	var buffer bytes.Buffer
 	err := config.PgoRoleBindingTemplate.Execute(&buffer,
 		PgoRoleBinding{
@@ -271,8 +276,12 @@ func CreatePGOBackrestRole(clientset *kubernetes.Clientset, targetNamespace stri
 	//check for role existing
 	_, found, _ := kubeapi.GetRole(clientset, PGO_BACKREST_ROLE, targetNamespace)
 	if found {
-		log.Infof("role %s already exists, will not create", PGO_BACKREST_ROLE)
-		return nil
+		log.Infof("role %s already exists, will delete and re-create", PGO_BACKREST_ROLE)
+		err := kubeapi.DeleteRole(clientset, PGO_BACKREST_ROLE, targetNamespace)
+		if err != nil {
+			log.Errorf("error deleting role %s %s", PGO_BACKREST_ROLE, err.Error())
+			return err
+		}
 	}
 
 	var buffer bytes.Buffer
@@ -304,8 +313,12 @@ func CreatePGORole(clientset *kubernetes.Clientset, targetNamespace string) erro
 	//check for role existing
 	_, found, _ := kubeapi.GetRole(clientset, PGO_ROLE, targetNamespace)
 	if found {
-		log.Infof("role %s already exists, will not create", PGO_ROLE)
-		return nil
+		log.Infof("role %s already exists, will delete and re-create", PGO_ROLE)
+		err := kubeapi.DeleteRole(clientset, PGO_ROLE, targetNamespace)
+		if err != nil {
+			log.Errorf("error deleting role %s %s", PGO_ROLE, err.Error())
+			return err
+		}
 	}
 
 	var buffer bytes.Buffer
@@ -338,8 +351,12 @@ func CreatePGOBackrestRoleBinding(clientset *kubernetes.Clientset, targetNamespa
 	//check for rolebinding existing
 	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_BACKREST_ROLE_BINDING, targetNamespace)
 	if found {
-		log.Infof("rolebinding %s already exists, will not create", PGO_BACKREST_ROLE_BINDING)
-		return nil
+		log.Infof("rolebinding %s already exists, will delete and re-create", PGO_BACKREST_ROLE_BINDING)
+		err := kubeapi.DeleteRoleBinding(clientset, PGO_BACKREST_ROLE_BINDING, targetNamespace)
+		if err != nil {
+			log.Errorf("error deleting rolebinding %s %s", PGO_BACKREST_ROLE_BINDING, err.Error())
+			return err
+		}
 	}
 	var buffer bytes.Buffer
 	err := config.PgoBackrestRoleBindingTemplate.Execute(&buffer,
@@ -364,4 +381,59 @@ func CreatePGOBackrestRoleBinding(clientset *kubernetes.Clientset, targetNamespa
 		return err
 	}
 	return err
+}
+
+// UpdateNamespace ...
+func UpdateNamespace(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdateNamespaceRequest) msgs.UpdateNamespaceResponse {
+
+	log.Debugf("UpdateNamespace %v", request)
+	resp := msgs.UpdateNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	resp.Results = make([]string, 0)
+
+	//iterate thru all the args (namespace names)
+	for _, ns := range request.Args {
+
+		_, found, _ := kubeapi.GetNamespace(clientset, ns)
+		if !found {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace " + ns + " doesn't exist"
+			return resp
+		}
+
+		//apply targeted rbac rules here
+		err := installTargetRBAC(apiserver.Clientset, apiserver.PgoNamespace, ns)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace RBAC create error " + ns + err.Error()
+			return resp
+		}
+
+		resp.Results = append(resp.Results, "updated namespace "+ns)
+
+		//publish event
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicPGO
+
+		f := events.EventPGOCreateNamespaceFormat{
+			EventHeader: events.EventHeader{
+				Namespace: apiserver.PgoNamespace,
+				Username:  updatedBy,
+				Topic:     topics,
+				EventType: events.EventPGOCreateNamespace,
+			},
+			CreatedNamespace: ns,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
+	return resp
+
 }

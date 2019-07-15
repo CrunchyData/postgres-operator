@@ -87,6 +87,7 @@ const SHOW_PGOROLE_PERM = "ShowPgorole"
 const UPDATE_CLUSTER_PERM = "UpdateCluster"
 const UPDATE_PGOUSER_PERM = "UpdatePgouser"
 const UPDATE_PGOROLE_PERM = "UpdatePgorole"
+const UPDATE_NAMESPACE_PERM = "UpdateNamespace"
 
 // SCALE
 const SCALE_CLUSTER_PERM = "ScaleCluster"
@@ -168,6 +169,7 @@ func InitializePerms() {
 	PermMap[UPDATE_CLUSTER_PERM] = "yes"
 	PermMap[UPDATE_PGOUSER_PERM] = "yes"
 	PermMap[UPDATE_PGOROLE_PERM] = "yes"
+	PermMap[UPDATE_NAMESPACE_PERM] = "yes"
 
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 

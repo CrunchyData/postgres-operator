@@ -28,6 +28,18 @@ type ShowNamespaceResponse struct {
 	Status
 }
 
+// UpdateNamespaceRequest ...
+type UpdateNamespaceRequest struct {
+	Args          []string
+	ClientVersion string
+}
+
+// UpdateNamespaceResponse ...
+type UpdateNamespaceResponse struct {
+	Results []string
+	Status
+}
+
 // CreateNamespaceRequest ...
 type CreateNamespaceRequest struct {
 	Args          []string

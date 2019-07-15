@@ -123,3 +123,33 @@ func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 
 }
+func UpdateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
+
+	resp := msgs.UpdateNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	log.Debug("namespaceservice.UpdateNamespaceHandler called")
+
+	var request msgs.UpdateNamespaceRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	username, err := apiserver.Authn(apiserver.UPDATE_NAMESPACE_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	log.Debugf("namespaceservice.UpdateNamespaceHandler got request %v", request)
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+
+	resp = UpdateNamespace(apiserver.Clientset, username, &request)
+	json.NewEncoder(w).Encode(resp)
+}
