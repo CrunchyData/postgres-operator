@@ -28,7 +28,6 @@ func GetRole(clientset *kubernetes.Clientset, name, namespace string) (*v1.Role,
 
 	role, err := clientset.Rbac().Roles(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
-		log.Error("role " + name + " not found")
 		return role, false, err
 	}
 

@@ -16,16 +16,46 @@ limitations under the License.
 */
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
+
+const PGO_ROLE = "pgo-role"
+const PGO_ROLE_BINDING = "pgo-role-binding"
+const PGO_BACKREST_ROLE = "pgo-backrest-role"
+const PGO_BACKREST_ROLE_BINDING = "pgo-backrest-role-binding"
+
+//pgo-role-binding.json
+type PgoRoleBinding struct {
+	TargetNamespace      string
+	PgoOperatorNamespace string
+}
+
+//pgo-backrest-role.json
+type PgoBackrestRole struct {
+	TargetNamespace string
+}
+
+//pgo-backrest-role-binding.json
+type PgoBackrestRoleBinding struct {
+	TargetNamespace string
+}
+
+//pgo-role.json
+type PgoRole struct {
+	TargetNamespace string
+}
 
 func ShowNamespace(username string) msgs.ShowNamespaceResponse {
 	log.Debug("ShowNamespace called")
@@ -84,7 +114,14 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 		}
 
 		log.Debugf("CreateNamespace %s created by %s", ns)
+
 		//apply targeted rbac rules here
+		err = installTargetRBAC(apiserver.Clientset, apiserver.PgoNamespace, ns)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace RBAC create error " + ns + err.Error()
+			return resp
+		}
 
 		resp.Results = append(resp.Results, "created namespace "+ns)
 		//publish event
@@ -166,10 +203,165 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 
 }
 
-func installTargetRBAC() {
-	//Role pgo-role (conf/postgres-operator/pgo-role.json)
-	//RoleBinding pgo-role-binding (conf/postgres-operator/pgo-role-binding.json)
-	//Role pgo-backrest-role (conf/postgres-operator/pgo-backrest-role.json)
-	//ServiceAccount pgo-backrest (conf/postgres-operator/pgo-backrest-sa.json)
-	//RoleBinding pgo-backrest-role-binding (conf/postgres-operator/pgo-backrest-role-binding.json)
+func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targetNamespace string) error {
+
+	err := CreatePGORole(clientset, targetNamespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	err = CreatePGORoleBinding(clientset, targetNamespace, operatorNamespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	err = CreatePGOBackrestRole(clientset, targetNamespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	err = CreatePGOBackrestRoleBinding(clientset, targetNamespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
+
+}
+
+func CreatePGORoleBinding(clientset *kubernetes.Clientset, targetNamespace, operatorNamespace string) error {
+	//check for rolebinding existing
+	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_ROLE_BINDING, targetNamespace)
+	if found {
+		log.Infof("rolebinding %s already exists, will not create", PGO_ROLE_BINDING)
+		return nil
+	}
+	var buffer bytes.Buffer
+	err := config.PgoRoleBindingTemplate.Execute(&buffer,
+		PgoRoleBinding{
+			TargetNamespace:      targetNamespace,
+			PgoOperatorNamespace: operatorNamespace,
+		})
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	log.Info(buffer.String())
+
+	rb := rbacv1.RoleBinding{}
+	err = json.Unmarshal(buffer.Bytes(), &rb)
+	if err != nil {
+		log.Error("error unmarshalling " + config.PGORoleBindingPath + " json RoleBinding " + err.Error())
+		return err
+	}
+
+	err = kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+func CreatePGOBackrestRole(clientset *kubernetes.Clientset, targetNamespace string) error {
+	//check for role existing
+	_, found, _ := kubeapi.GetRole(clientset, PGO_BACKREST_ROLE, targetNamespace)
+	if found {
+		log.Infof("role %s already exists, will not create", PGO_BACKREST_ROLE)
+		return nil
+	}
+
+	var buffer bytes.Buffer
+	err := config.PgoBackrestRoleTemplate.Execute(&buffer,
+		PgoBackrestRole{
+			TargetNamespace: targetNamespace,
+		})
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	log.Info(buffer.String())
+	r := rbacv1.Role{}
+	err = json.Unmarshal(buffer.Bytes(), &r)
+	if err != nil {
+		log.Error("error unmarshalling " + config.PGOBackrestRolePath + " json Role " + err.Error())
+		return err
+	}
+
+	err = kubeapi.CreateRole(clientset, &r, targetNamespace)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+func CreatePGORole(clientset *kubernetes.Clientset, targetNamespace string) error {
+	//check for role existing
+	_, found, _ := kubeapi.GetRole(clientset, PGO_ROLE, targetNamespace)
+	if found {
+		log.Infof("role %s already exists, will not create", PGO_ROLE)
+		return nil
+	}
+
+	var buffer bytes.Buffer
+	err := config.PgoRoleTemplate.Execute(&buffer,
+		PgoRole{
+			TargetNamespace: targetNamespace,
+		})
+
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	log.Info(buffer.String())
+	r := rbacv1.Role{}
+	err = json.Unmarshal(buffer.Bytes(), &r)
+	if err != nil {
+		log.Error("error unmarshalling " + config.PGORolePath + " json Role " + err.Error())
+		return err
+	}
+
+	err = kubeapi.CreateRole(clientset, &r, targetNamespace)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func CreatePGOBackrestRoleBinding(clientset *kubernetes.Clientset, targetNamespace string) error {
+
+	//check for rolebinding existing
+	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_BACKREST_ROLE_BINDING, targetNamespace)
+	if found {
+		log.Infof("rolebinding %s already exists, will not create", PGO_BACKREST_ROLE_BINDING)
+		return nil
+	}
+	var buffer bytes.Buffer
+	err := config.PgoBackrestRoleBindingTemplate.Execute(&buffer,
+		PgoBackrestRoleBinding{
+			TargetNamespace: targetNamespace,
+		})
+	if err != nil {
+		log.Error(err.Error() + " on " + config.PGOBackrestRoleBindingPath)
+		return err
+	}
+	log.Info(buffer.String())
+
+	rb := rbacv1.RoleBinding{}
+	err = json.Unmarshal(buffer.Bytes(), &rb)
+	if err != nil {
+		log.Error("error unmarshalling " + config.PGOBackrestRoleBindingPath + " json RoleBinding " + err.Error())
+		return err
+	}
+
+	err = kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
+	if err != nil {
+		return err
+	}
+	return err
 }

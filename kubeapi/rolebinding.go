@@ -28,7 +28,6 @@ func GetRoleBinding(clientset *kubernetes.Clientset, name, namespace string) (*v
 
 	roleBinding, err := clientset.Rbac().RoleBindings(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
-		log.Error("roleBinding " + name + " not found")
 		return roleBinding, false, err
 	}
 
