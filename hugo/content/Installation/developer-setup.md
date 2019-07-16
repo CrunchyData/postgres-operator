@@ -57,8 +57,11 @@ The setup target ensures the presence of:
 * golang compiler
 * `dep` dependency manager
 * NSQ messaging binaries
+* `docker` container tool
 * `buildah` OCI image building tool
 * `expenv` config tool 
+
+By default, docker is not configured to run its daemon. Refer to the [docker post-installation instructions](https://docs.docker.com/install/linux/linux-postinstall/) to configure it to run once or at system startup. This is not done automatically.
 
 ## Compile
 
