@@ -56,6 +56,20 @@ if ! [ -f $EVTDIR/nsqd -a -f $EVTDIR/nsqadmin ]; then
 		tar xz --strip=2 -C $EVTDIR/ '*/bin/*'
 fi
 
+if which docker; then
+	# Suppress errors for this call, as docker returns non-zero when it can't talk to the daemon
+	set +e
+	echo -n "  Found: " && docker version --format '{{.Client.Version}}' 2>/dev/null
+	set -e
+else
+	echo "=== Installing docker ==="
+	if [ -f /etc/centos-release ]; then
+		sudo yum -y install docker
+	else
+		sudo yum -y install docker --enablerepo=rhel-7-server-extras-rpms
+	fi
+fi
+
 if which buildah; then
 	echo -n "  Found: " && buildah --version
 else
