@@ -143,3 +143,41 @@ func DeleteNamespace(httpclient *http.Client, request *msgs.DeleteNamespaceReque
 	return response, err
 
 }
+func UpdateNamespace(httpclient *http.Client, request *msgs.UpdateNamespaceRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.UpdateNamespaceResponse, error) {
+
+	var response msgs.UpdateNamespaceResponse
+
+	url := SessionCredentials.APIServerURL + "/namespaceupdate"
+
+	log.Debugf("UpdateNamespace called [%s]", url)
+
+	jsonValue, _ := json.Marshal(request)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		response.Status.Code = msgs.Error
+		return response, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		return response, err
+	}
+	defer resp.Body.Close()
+	log.Debugf("%v", resp)
+	err = StatusCheck(resp)
+	if err != nil {
+		return response, err
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		fmt.Println("Error: ", err)
+		log.Println(err)
+		return response, err
+	}
+
+	return response, err
+
+}

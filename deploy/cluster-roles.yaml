@@ -21,10 +21,7 @@ metadata:
   name: pgopclusterrole
 rules:
   - verbs:
-      - get
-      - list
-      - create
-      - delete
+      - '*'
     apiGroups:
       - '*'
     resources:
@@ -33,6 +30,37 @@ rules:
       - namespaces
       - configmaps
       - storageclasses
+      - roles
+      - rolebindings
+  - verbs:
+      - '*'
+    apiGroups:
+      - '*'
+    resources:
+      - pods/exec
+      - pods/log
+      - secrets
+      - services
+      - deployments
+      - replicasets
+      - endpoints
+      - events
+      - persistentvolumeclaims
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'apps'
+    resources:
+      - deployments
+      - replicasets
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'batch'
+      - 'extensions'
+    resources:
+      - jobs
+      - deployments
 
 ---
 kind: ClusterRole

@@ -84,7 +84,6 @@ func main() {
 	}
 
 	// start a controller on instances of our custom resource
-
 	pgTaskcontroller := controller.PgtaskController{
 		PgtaskConfig:    config,
 		PgtaskClient:    crdClient,
@@ -122,6 +121,10 @@ func main() {
 		PodClient:    crdClient,
 		Namespace:    namespaceList,
 	}
+	nscontroller := controller.NamespaceController{
+		NamespaceClientset: Clientset,
+		NamespaceClient:    crdClient,
+	}
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
@@ -136,6 +139,7 @@ func main() {
 	go pgBackupcontroller.Run(ctx)
 	go pgPolicycontroller.Run(ctx)
 	go podcontroller.Run(ctx)
+	go nscontroller.Run(ctx)
 	go jobcontroller.Run(ctx)
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
