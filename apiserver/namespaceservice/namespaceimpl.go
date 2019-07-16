@@ -98,12 +98,17 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 		_, found, _ := kubeapi.GetNamespace(clientset, ns)
 		if found {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "namespace " + ns + " already exists"
+			resp.Status.Msg = "namespace " + ns + " already exists on this Kube cluster"
 			return resp
 		}
 
 		//define the new namespace
 		newns := v1.Namespace{}
+		newns.ObjectMeta.Labels = make(map[string]string)
+		newns.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+		newns.ObjectMeta.Labels[config.LABEL_PGO_CREATED_BY] = createdBy
+		newns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = apiserver.Pgo.Pgo.InstallationName
+
 		newns.Name = ns
 
 		err := kubeapi.CreateNamespace(clientset, &newns)
@@ -159,10 +164,16 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 
 	for _, ns := range request.Args {
 
-		_, found, _ := kubeapi.GetNamespace(clientset, ns)
+		theNs, found, _ := kubeapi.GetNamespace(clientset, ns)
 		if !found {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "namespace " + ns + " not found"
+			return resp
+		}
+
+		if theNs.ObjectMeta.Labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != apiserver.Pgo.Pgo.InstallationName {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace " + ns + " not owned by crunchy data or not part of Operator installation " + apiserver.Pgo.Pgo.InstallationName
 			return resp
 		}
 
@@ -395,10 +406,16 @@ func UpdateNamespace(clientset *kubernetes.Clientset, updatedBy string, request 
 	//iterate thru all the args (namespace names)
 	for _, ns := range request.Args {
 
-		_, found, _ := kubeapi.GetNamespace(clientset, ns)
+		theNs, found, _ := kubeapi.GetNamespace(clientset, ns)
 		if !found {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "namespace " + ns + " doesn't exist"
+			return resp
+		}
+
+		if theNs.ObjectMeta.Labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != apiserver.Pgo.Pgo.InstallationName {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace " + ns + " not owned by crunchy data or not part of Operator installation " + apiserver.Pgo.Pgo.InstallationName
 			return resp
 		}
 

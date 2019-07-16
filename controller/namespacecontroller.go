@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"context"
 	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	//"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/config"
 	//"github.com/crunchydata/postgres-operator/events"
 	//"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
@@ -88,15 +88,14 @@ func (c *NamespaceController) watchNamespaces(ctx context.Context) error {
 func (c *NamespaceController) onAdd(obj interface{}) {
 	newNs := obj.(*v1.Namespace)
 
-	/**
-	labels := newNs.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("NamespaceController: onAdd skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
-		return
-	}
-	*/
-
 	log.Debugf("[NamespaceController] OnAdd ns=%s", newNs.ObjectMeta.SelfLink)
+	labels := newNs.GetObjectMeta().GetLabels()
+	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
+		log.Debugf("NamespaceController: onAdd skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
+		return
+	} else {
+		log.Debugf("NamespaceController: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
+	}
 
 }
 
@@ -104,29 +103,28 @@ func (c *NamespaceController) onAdd(obj interface{}) {
 func (c *NamespaceController) onUpdate(oldObj, newObj interface{}) {
 	//oldNs := oldObj.(*v1.Namespace)
 	newNs := newObj.(*v1.Namespace)
-
-	/**
-	labels := newpod.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("NamespaceController: onUpdate skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
-		return
-	}
-	*/
-
 	log.Debugf("[NamespaceController] onUpdate ns=%s", newNs.ObjectMeta.SelfLink)
+
+	labels := newNs.GetObjectMeta().GetLabels()
+	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
+		log.Debugf("NamespaceController: onUpdate skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
+		return
+	} else {
+		log.Debugf("NamespaceController: onUpdate crunchy namespace updated %s", newNs.ObjectMeta.SelfLink)
+	}
 
 }
 
 func (c *NamespaceController) onDelete(obj interface{}) {
 	ns := obj.(*v1.Namespace)
 
-	/**
-	labels := pod.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("NamespaceController: onDelete skipping pod that is not crunchydata %s", pod.ObjectMeta.SelfLink)
-		return
-	}
-	*/
-
 	log.Debugf("[NamespaceController] onDelete ns=%s", ns.ObjectMeta.SelfLink)
+	labels := ns.GetObjectMeta().GetLabels()
+	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
+		log.Debugf("NamespaceController: onDelete skipping namespace that is not crunchydata %s", ns.ObjectMeta.SelfLink)
+		return
+	} else {
+		log.Debugf("NamespaceController: onDelete crunchy operator namespace %s is deleted", ns.ObjectMeta.SelfLink)
+	}
+
 }

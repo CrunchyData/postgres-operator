@@ -102,4 +102,5 @@ Pgo:
   Audit:  false
   PGOImagePrefix:  crunchydata
   PGOImageTag:  centos7-4.1.0-rc1
+  InstallationName:  devtest
 
