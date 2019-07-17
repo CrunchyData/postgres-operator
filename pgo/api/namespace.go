@@ -24,42 +24,43 @@ import (
 	"net/http"
 )
 
-func ShowNamespace(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowNamespaceResponse, error) {
+func ShowNamespace(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowNamespaceRequest) (msgs.ShowNamespaceResponse, error) {
 
-	var response msgs.ShowNamespaceResponse
+	var resp msgs.ShowNamespaceResponse
+	resp.Status.Code = msgs.Ok
 
-	url := SessionCredentials.APIServerURL + "/namespace?version=" + msgs.PGO_VERSION + "&namespace=" + ns
-	log.Debug(url)
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/namespace"
+	log.Debugf("ShowNamespace called...[%s]", url)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		return response, err
+		resp.Status.Code = msgs.Error
+		return resp, err
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
-
-	resp, err := httpclient.Do(req)
-	if err != nil {
-		return response, err
+	r, err2 := httpclient.Do(req)
+	if err2 != nil {
+		return resp, err2
 	}
-	defer resp.Body.Close()
+	defer r.Body.Close()
 
-	log.Debugf("%v", resp)
-	err = StatusCheck(resp)
+	log.Debugf("%v", r)
+	err = StatusCheck(r)
 	if err != nil {
-		return response, err
+		return resp, err
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
+	if err := json.NewDecoder(r.Body).Decode(&resp); err != nil {
+		log.Printf("%v\n", r.Body)
 		fmt.Print("Error: ")
 		fmt.Println(err)
 		log.Println(err)
-		return response, err
+		return resp, err
 	}
 
-	return response, err
+	return resp, err
 
 }
 

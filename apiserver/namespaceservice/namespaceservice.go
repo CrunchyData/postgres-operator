@@ -27,10 +27,15 @@ import (
 // pgo show namespace
 func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 
-	clientVersion := r.URL.Query().Get("version")
-	namespace := r.URL.Query().Get("namespace")
+	resp := msgs.ShowNamespaceResponse{}
+	resp.Status.Code = msgs.Ok
+	resp.Status.Msg = ""
+	log.Debug("namespaceservice.ShowNamespaceHandler called")
 
-	log.Debugf("ShowNamespaceHandler parameters version [%s] namespace [%s]", clientVersion, namespace)
+	var request msgs.ShowNamespaceRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	log.Debugf("ShowNamespaceHandler called [%v]", request)
 
 	username, err := apiserver.Authn(apiserver.SHOW_NAMESPACE_PERM, w, r)
 	if err != nil {
@@ -41,23 +46,14 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	resp := msgs.ShowNamespaceResponse{}
-	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-
-	if clientVersion != msgs.PGO_VERSION {
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	_, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
-	if err != nil {
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	resp = ShowNamespace(username)
+	resp = ShowNamespace(apiserver.Clientset, username, &request)
 	json.NewEncoder(w).Encode(resp)
 }
 

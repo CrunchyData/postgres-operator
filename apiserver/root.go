@@ -291,8 +291,13 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
 	}
 
-	if !UserIsPermittedInNamespace(username, requestedNS) {
+	iAccess, uAccess := UserIsPermittedInNamespace(username, requestedNS)
+	if uAccess == false {
 		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
+		return requestedNS, errors.New(errMsg)
+	}
+	if iAccess == false {
+		errMsg := fmt.Sprintf("namespace [%s] is not part of the Operator installation", requestedNS)
 		return requestedNS, errors.New(errMsg)
 	}
 
@@ -541,15 +546,36 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	return doc.String()
 }
 
-func UserIsPermittedInNamespace(username, requestedNS string) bool {
+//returns installation access and user access
+//installation access means a namespace belongs to this Operator installation
+//user access means this user has access to a namespace
+func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
+
+	iAccess := false
+	uAccess := false
+
+	ns, found, err := kubeapi.GetNamespace(Clientset, requestedNS)
+	if !found {
+		log.Error(err)
+		log.Errorf("could not find namespace %s ", requestedNS)
+		return iAccess, uAccess
+	}
+
+	if ns.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+
+		ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == Pgo.Pgo.InstallationName {
+		iAccess = true
+
+	}
 
 	//get the pgouser Secret for this username
 	userSecretName := "pgouser-" + username
 	userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
 	if !found {
+		uAccess = false
 		log.Error(err)
 		log.Errorf("could not find pgouser Secret for username %s", username)
-		return false
+		return iAccess, uAccess
 	}
 
 	nsstring := string(userSecret.Data["namespaces"])
@@ -557,16 +583,19 @@ func UserIsPermittedInNamespace(username, requestedNS string) bool {
 	for _, v := range nsList {
 		ns := strings.TrimSpace(v)
 		if ns == requestedNS {
-			return true
+			uAccess = true
+			return iAccess, uAccess
 		}
 	}
 
 	//handle the case of a user in pgouser with "" (all) namespaces
 	if nsstring == "" {
-		return true
+		uAccess = true
+		return iAccess, uAccess
 	}
 
-	return false
+	uAccess = false
+	return iAccess, uAccess
 }
 
 //validate or generate the TLS keys

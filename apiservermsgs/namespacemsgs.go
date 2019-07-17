@@ -18,8 +18,16 @@ limitations under the License.
 import ()
 
 type NamespaceResult struct {
-	Namespace  string
-	UserAccess bool
+	Namespace          string
+	InstallationAccess bool
+	UserAccess         bool
+}
+
+// ShowNamespaceRequest ...
+type ShowNamespaceRequest struct {
+	Args          []string
+	AllFlag       bool
+	ClientVersion string
 }
 
 // ShowNamespaceResponse ...

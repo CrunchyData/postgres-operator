@@ -125,7 +125,7 @@ func main() {
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
-	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler)
+	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler).Methods("POST")
 	r.HandleFunc("/namespacedelete", namespaceservice.DeleteNamespaceHandler).Methods("POST")
 	r.HandleFunc("/namespacecreate", namespaceservice.CreateNamespaceHandler).Methods("POST")
 

@@ -23,7 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	//"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -57,23 +57,57 @@ type PgoRole struct {
 	TargetNamespace string
 }
 
-func ShowNamespace(username string) msgs.ShowNamespaceResponse {
+func ShowNamespace(clientset *kubernetes.Clientset, username string, request *msgs.ShowNamespaceRequest) msgs.ShowNamespaceResponse {
 	log.Debug("ShowNamespace called")
-	response := msgs.ShowNamespaceResponse{}
-	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	resp := msgs.ShowNamespaceResponse{}
+	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	resp.Results = make([]msgs.NamespaceResult, 0)
 
-	response.Results = make([]msgs.NamespaceResult, 0)
-	namespaceList := util.GetNamespaces()
+	//namespaceList := util.GetNamespaces()
 
-	for i := 0; i < len(namespaceList); i++ {
-		r := msgs.NamespaceResult{
-			Namespace:  namespaceList[i],
-			UserAccess: apiserver.UserIsPermittedInNamespace(username, namespaceList[i]),
+	nsList := make([]string, 0)
+
+	if request.AllFlag {
+		namespaceList, err := kubeapi.GetNamespaces(clientset)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 		}
-		response.Results = append(response.Results, r)
+		for _, v := range namespaceList.Items {
+			nsList = append(nsList, v.Name)
+		}
+	} else {
+		if len(request.Args) == 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "namespace names or --all flag is required for this command"
+			return resp
+		}
+
+		for i := 0; i < len(request.Args); i++ {
+			_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
+			if found == false {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "namespace " + request.Args[i] + " not found"
+
+				return resp
+			} else {
+				nsList = append(nsList, request.Args[i])
+			}
+		}
 	}
 
-	return response
+	for i := 0; i < len(nsList); i++ {
+		iaccess, uaccess := apiserver.UserIsPermittedInNamespace(username, nsList[i])
+		r := msgs.NamespaceResult{
+			Namespace:          nsList[i],
+			InstallationAccess: iaccess,
+			UserAccess:         uaccess,
+		}
+		resp.Results = append(resp.Results, r)
+	}
+
+	return resp
 }
 
 // CreateNamespace ...

@@ -24,11 +24,20 @@ import (
 	"os"
 )
 
-func showNamespace(args []string, ns string) {
+func showNamespace(args []string) {
+	r := msgs.ShowNamespaceRequest{}
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Args = args
+	r.AllFlag = AllFlag
+
+	if len(args) == 0 && AllFlag == false {
+		fmt.Println("Error: namespace args or --all is required")
+		os.Exit(2)
+	}
 
 	log.Debugf("showNamespace called %v", args)
 
-	response, err := api.ShowNamespace(httpclient, &SessionCredentials, ns)
+	response, err := api.ShowNamespace(httpclient, &SessionCredentials, &r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -58,13 +67,17 @@ func showNamespace(args []string, ns string) {
 		return
 	}
 
-	var accessible string
+	var accessible, iAccessible string
 	for _, result := range response.Results {
 		accessible = GREEN("accessible")
 		if !result.UserAccess {
 			accessible = RED("no access")
 		}
-		fmt.Printf("namespace: %s (%s)\n", result.Namespace, accessible)
+		iAccessible = GREEN("accessible")
+		if !result.InstallationAccess {
+			iAccessible = RED("no access")
+		}
+		fmt.Printf("namespace: %s userAccess (%s) installationAccess (%s)\n", result.Namespace, accessible, iAccessible)
 	}
 
 }
