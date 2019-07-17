@@ -50,9 +50,6 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	namespaceList := util.GetNamespaces()
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
-
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
@@ -75,6 +72,9 @@ func main() {
 	}
 
 	operator.Initialize(Clientset)
+
+	namespaceList := util.GetNamespaces(Clientset, operator.Pgo.Pgo.InstallationName)
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	//validate the NAMESPACE env var
 	err = util.ValidateNamespaces(Clientset)

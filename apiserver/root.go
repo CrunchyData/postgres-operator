@@ -102,8 +102,8 @@ func Initialize() {
 	}
 	log.Info("Pgo Namespace is [" + PgoNamespace + "]")
 
-	namespaceList := util.GetNamespaces()
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+	//namespaceList := util.GetNamespaces()
+	//log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	Namespace = os.Getenv("NAMESPACE")
 	if Namespace == "" {
@@ -301,7 +301,7 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New(errMsg)
 	}
 
-	if util.WatchingNamespace(clientset, requestedNS) {
+	if util.WatchingNamespace(clientset, requestedNS, Pgo.Pgo.InstallationName) {
 		return requestedNS, nil
 	}
 

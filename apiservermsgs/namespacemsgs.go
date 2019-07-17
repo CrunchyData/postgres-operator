@@ -32,7 +32,8 @@ type ShowNamespaceRequest struct {
 
 // ShowNamespaceResponse ...
 type ShowNamespaceResponse struct {
-	Results []NamespaceResult
+	Username string
+	Results  []NamespaceResult
 	Status
 }
 

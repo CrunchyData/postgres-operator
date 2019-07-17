@@ -61,6 +61,7 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 	log.Debug("ShowNamespace called")
 	resp := msgs.ShowNamespaceResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
+	resp.Username = username
 	resp.Results = make([]msgs.NamespaceResult, 0)
 
 	//namespaceList := util.GetNamespaces()

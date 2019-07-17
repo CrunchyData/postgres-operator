@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -406,23 +407,32 @@ func ValidateNamespaces(clientset *kubernetes.Clientset) error {
 
 }
 
-func GetNamespaces() []string {
-	raw := os.Getenv("NAMESPACE")
+func GetNamespaces(clientset *kubernetes.Clientset, installationName string) []string {
+	ns := make([]string, 0)
 
-	//the case of 'all' namespaces
-	if raw == "" {
-		return []string{""}
+	nsList, err := kubeapi.GetNamespaces(clientset)
+	if err != nil {
+		log.Error(err.Error())
+		return ns
 	}
 
-	return strings.Split(raw, ",")
+	for _, v := range nsList.Items {
+		labels := v.ObjectMeta.Labels
+		if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+			labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
+			ns = append(ns, v.Name)
+		}
+	}
+
+	return ns
 
 }
 
-func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS string) bool {
+func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS, installationName string) bool {
 
 	log.Debugf("WatchingNamespace [%s]", requestedNS)
 
-	nsList := GetNamespaces()
+	nsList := GetNamespaces(clientset, installationName)
 
 	//handle the case where we are watching all namespaces but
 	//the user might enter an invalid namespace not on the kube

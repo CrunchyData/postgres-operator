@@ -67,6 +67,8 @@ func showNamespace(args []string) {
 		return
 	}
 
+	fmt.Printf("pgo username: %s\n", response.Username)
+
 	var accessible, iAccessible string
 	for _, result := range response.Results {
 		accessible = GREEN("accessible")

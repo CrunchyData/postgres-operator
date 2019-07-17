@@ -85,9 +85,6 @@ func init() {
 		}
 	}
 
-	namespaceList = util.GetNamespaces()
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
-
 	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
 	timeout = time.Second * time.Duration(seconds)
 
@@ -100,6 +97,8 @@ func init() {
 	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
 		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
+	namespaceList = util.GetNamespaces(kubeClient, Pgo.Pgo.InstallationName)
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 }
 

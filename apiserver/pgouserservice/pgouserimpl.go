@@ -318,7 +318,7 @@ func validNamespaces(namespaces string, allnamespaces bool) error {
 		return err
 	}
 
-	watchedNamespaces := util.GetNamespaces()
+	watchedNamespaces := util.GetNamespaces(apiserver.Clientset, apiserver.Pgo.Pgo.InstallationName)
 
 	fields := strings.Split(namespaces, ",")
 	for _, v := range fields {
