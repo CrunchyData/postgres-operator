@@ -89,11 +89,11 @@ auto_failover_sleep_secs=9
 scheduler_timeout=3600
 
 # pgBackRest S3 Settings
-#backrest_aws_s3_key=""
-#backrest_aws_s3_secret=""
-#backrest_aws_s3_bucket=""
-#backrest_aws_s3_endpoint=""
-#backrest_aws_s3_region=""
+#backrest_aws_s3_key=''
+#backrest_aws_s3_secret=''
+#backrest_aws_s3_bucket=''
+#backrest_aws_s3_endpoint=''
+#backrest_aws_s3_region=''
 
 # ===================
 # PostgreSQL Settings
