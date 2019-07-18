@@ -59,7 +59,9 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
 	for i := 0; i < len(nsList); i++ {
 
 		log.Infof("starting pgreplica controller on ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 
+		/**
 		source := cache.NewListWatchFromClient(
 			c.PgreplicaClient,
 			crv1.PgreplicaResourcePlural,
@@ -85,6 +87,7 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
 			})
 
 		go controller.Run(ctx.Done())
+		*/
 	}
 	return nil
 }
@@ -143,4 +146,32 @@ func (c *PgreplicaController) onDelete(obj interface{}) {
 	log.Debugf("[PgreplicaController] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//	clusteroperator.DeleteReplica(c.PgreplicaClientset, replica, replica.ObjectMeta.Namespace)
+}
+
+func (c *PgreplicaController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgreplicaClient,
+		crv1.PgreplicaResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgreplica{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

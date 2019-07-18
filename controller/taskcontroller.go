@@ -66,6 +66,9 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pgtask controller on ns [%s]", nsList[i])
+
+		c.SetupWatch(nsList[i])
+		/**
 		source := cache.NewListWatchFromClient(
 			c.PgtaskClient,
 			crv1.PgtaskResourcePlural,
@@ -91,6 +94,7 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
 			})
 
 		go controller.Run(ctx.Done())
+		*/
 	}
 	return nil
 }
@@ -238,4 +242,32 @@ func (c *PgtaskController) onUpdate(oldObj, newObj interface{}) {
 func (c *PgtaskController) onDelete(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
 	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+}
+
+func (c *PgtaskController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgtaskClient,
+		crv1.PgtaskResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgtask{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

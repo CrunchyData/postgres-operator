@@ -62,6 +62,8 @@ func (c *PodController) watchPods(ctx context.Context) error {
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pod controller on ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
+		/**
 		source := cache.NewListWatchFromClient(
 			c.PodClientset.CoreV1().RESTClient(),
 			"pods",
@@ -87,6 +89,7 @@ func (c *PodController) watchPods(ctx context.Context) error {
 			})
 
 		go controller.Run(ctx.Done())
+		*/
 	}
 	return nil
 }
@@ -360,4 +363,32 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 	}
 	return err
 
+}
+
+func (c *PodController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PodClientset.CoreV1().RESTClient(),
+		"pods",
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&apiv1.Pod{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

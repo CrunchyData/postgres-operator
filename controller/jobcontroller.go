@@ -65,7 +65,9 @@ func (c *JobController) watchJobs(ctx context.Context) error {
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting job controller for ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 
+		/**
 		source := cache.NewListWatchFromClient(
 			c.JobClientset.BatchV1().RESTClient(),
 			"jobs",
@@ -91,6 +93,7 @@ func (c *JobController) watchJobs(ctx context.Context) error {
 			})
 
 		go controller.Run(ctx.Done())
+		*/
 	}
 	return nil
 }
@@ -442,4 +445,32 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	}
 
 	return err
+}
+
+func (c *JobController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.JobClientset.BatchV1().RESTClient(),
+		"jobs",
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&apiv1.Job{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

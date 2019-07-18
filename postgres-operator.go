@@ -123,15 +123,22 @@ func main() {
 		PodClient:    crdClient,
 		Ctx:          ctx,
 	}
-	nscontroller := controller.NamespaceController{
-		NamespaceClientset: Clientset,
-		NamespaceClient:    crdClient,
-		Ctx:                ctx,
-	}
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
 		Ctx:          ctx,
+	}
+	nscontroller := controller.NamespaceController{
+		NamespaceClientset:     Clientset,
+		NamespaceClient:        crdClient,
+		Ctx:                    ctx,
+		ThePodController:       podcontroller,
+		TheJobController:       jobcontroller,
+		ThePgpolicyController:  pgPolicycontroller,
+		ThePgbackupController:  pgBackupcontroller,
+		ThePgreplicaController: pgReplicacontroller,
+		ThePgclusterController: pgClustercontroller,
+		ThePgtaskController:    pgTaskcontroller,
 	}
 
 	defer cancelFunc()

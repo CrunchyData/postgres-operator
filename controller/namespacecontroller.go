@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -28,9 +29,16 @@ import (
 
 // NamespaceController holds the connections for the controller
 type NamespaceController struct {
-	NamespaceClient    *rest.RESTClient
-	NamespaceClientset *kubernetes.Clientset
-	Ctx                context.Context
+	NamespaceClient        *rest.RESTClient
+	NamespaceClientset     *kubernetes.Clientset
+	Ctx                    context.Context
+	ThePodController       PodController
+	TheJobController       JobController
+	ThePgpolicyController  PgpolicyController
+	ThePgbackupController  PgbackupController
+	ThePgreplicaController PgreplicaController
+	ThePgclusterController PgclusterController
+	ThePgtaskController    PgtaskController
 }
 
 // Run starts an pod resource controller
@@ -87,11 +95,19 @@ func (c *NamespaceController) onAdd(obj interface{}) {
 
 	log.Debugf("[NamespaceController] OnAdd ns=%s", newNs.ObjectMeta.SelfLink)
 	labels := newNs.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
-		log.Debugf("NamespaceController: onAdd skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
+	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.Pgo.Pgo.InstallationName {
+		log.Debugf("NamespaceController: onAdd skipping namespace that is not crunchydata or not belonging to this Operator installation %s", newNs.ObjectMeta.SelfLink)
 		return
 	} else {
 		log.Debugf("NamespaceController: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
+		c.ThePodController.SetupWatch(newNs.Name)
+		c.ThePodController.SetupWatch(newNs.Name)
+		c.TheJobController.SetupWatch(newNs.Name)
+		c.ThePgpolicyController.SetupWatch(newNs.Name)
+		c.ThePgbackupController.SetupWatch(newNs.Name)
+		c.ThePgreplicaController.SetupWatch(newNs.Name)
+		c.ThePgclusterController.SetupWatch(newNs.Name)
+		c.ThePgtaskController.SetupWatch(newNs.Name)
 	}
 
 }
