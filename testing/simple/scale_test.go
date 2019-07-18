@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestScale(t *testing.T) {
@@ -44,39 +43,35 @@ func TestScale(t *testing.T) {
 	var myreplica string
 
 	for _, tt := range tests {
+		// For pgo scaledown query
 		if (tt.name == "pgo scaledown query") {
-			t.Log("In IF")
 			time.Sleep(time.Second * time.Duration(20))
-			t.Run(tt.name, func(t *testing.T) {
-				cmd := exec.Command("pgo", tt.args...)
-				output, err = cmd.CombinedOutput()
-				if err != nil {
-					//t.Fatal(err)
-				}
-				actual := string(output)
-				t.Logf("actual command response: %s- ", actual)
-				
+			t.Run(tt.name, func(t *testing.T) {				
 				MAX_TRIES := 10
-				for i := 2; i <= MAX_TRIES; i++ {
-					t.Logf("sleeping while job completes, attempt #%d", i)
-					time.Sleep(time.Second * time.Duration(SLEEP_SECS))
+				complete := false
+				for i := 1; i <= MAX_TRIES; i++ {
+					cmd := exec.Command("pgo", tt.args...)
+                    output, err = cmd.CombinedOutput()
+                    if err != nil {
+                   		//t.Fatal(err)
+                	}
+                    actual := string(output)
+                    t.Logf("actual command response: %s- ", actual)
 					found := strings.Contains(actual, myreplica+" (Ready)")
 					if !found {
-						t.Error(tt.name+" string not found in output")
-						cmd = exec.Command("pgo", tt.args...)
-						output, err = cmd.CombinedOutput()
-						if err != nil {
-							//t.Fatal(err)
-						}
-						actual = string(output)
-						t.Logf("actual command response: %s- ", actual)
+						t.Logf("sleeping while job completes, attempt #%d", i)
+						time.Sleep(time.Second * time.Duration(SLEEP_SECS))
 					} else {
+						complete = true
 						break
 					}
 				}
+				if !complete {
+                    t.Errorf("%v job failed. Ready replica not found in output", tt.name)
+                }
 			})
+		// For pgo scale and pgo scaledown	
 		} else {
-			t.Log("IN ELSE")
 			t.Run(tt.name, func(t *testing.T) {
 				deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
 				if err != nil {
@@ -90,8 +85,6 @@ func TestScale(t *testing.T) {
 
 				if tt.name == "pgo scaledown" {
 					tt.args[2] = tt.args[2] + myreplica
-					fmt.Println("TT ARGES")
-					fmt.Println(tt.args)
 				}
 
 				cmd := exec.Command("pgo", tt.args...)
@@ -105,7 +98,6 @@ func TestScale(t *testing.T) {
 				if tt.name == "pgo scale" {
 					//pull out replica name from returned results
 					myreplica = strings.TrimSpace(strings.Split(actual, "Pgreplica")[1])
-					fmt.Println("woot"+myreplica+"woot")
 				}
 
 				t.Logf("actual command response: %s- ", actual)
@@ -131,7 +123,7 @@ func TestScale(t *testing.T) {
 						break
 					}
 					//should have less deps after delete
-					if (afterDepCount < beforeDepCount && strings.Contains(tt.name, "deleted Pgreplica")) {
+					if (afterDepCount < beforeDepCount && strings.Contains(tt.cmdoutput, "deleted Pgreplica")) {
 						t.Log(tt.name+" complete!")
 						complete = true
 						break
