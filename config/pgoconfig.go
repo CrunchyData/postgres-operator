@@ -40,6 +40,10 @@ var PgoRoleBindingTemplate *template.Template
 
 const PGORoleBindingPath = "pgo-role-binding.json"
 
+var PgoBackrestServiceAccountTemplate *template.Template
+
+const PGOBackrestServiceAccountPath = "pgo-backrest-sa.json"
+
 var PgoBackrestRoleTemplate *template.Template
 
 const PGOBackrestRolePath = "pgo-backrest-role.json"
@@ -550,6 +554,10 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	c.CheckEnv()
 
 	//load up all the templates
+	PgoBackrestServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestServiceAccountPath)
+	if err != nil {
+		return err
+	}
 	PgoRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGORoleBindingPath)
 	if err != nil {
 		return err

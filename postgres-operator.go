@@ -91,7 +91,6 @@ func main() {
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
-		Namespace:       namespaceList,
 		Ctx:             ctx,
 	}
 
@@ -99,34 +98,29 @@ func main() {
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
-		Namespace:          namespaceList,
 		Ctx:                ctx,
 	}
 	pgReplicacontroller := controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
-		Namespace:          namespaceList,
 		Ctx:                ctx,
 	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
-		Namespace:         namespaceList,
 		Ctx:               ctx,
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
 		PgpolicyScheme:    crdScheme,
 		PgpolicyClientset: Clientset,
-		Namespace:         namespaceList,
 		Ctx:               ctx,
 	}
 	podcontroller := controller.PodController{
 		PodClientset: Clientset,
 		PodClient:    crdClient,
-		Namespace:    namespaceList,
 		Ctx:          ctx,
 	}
 	nscontroller := controller.NamespaceController{
@@ -137,7 +131,6 @@ func main() {
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
-		Namespace:    namespaceList,
 		Ctx:          ctx,
 	}
 

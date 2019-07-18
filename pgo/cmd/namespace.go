@@ -84,9 +84,9 @@ func showNamespace(args []string) {
 		if !result.InstallationAccess {
 			iAccessible = RED(util.Rpad("no access", " ", 20))
 		}
-	fmt.Printf("%s", util.Rpad(result.Namespace, " ", 20))
-	fmt.Printf("%s", accessible)
-	fmt.Printf("%s\n", iAccessible)
+		fmt.Printf("%s", util.Rpad(result.Namespace, " ", 20))
+		fmt.Printf("%s", accessible)
+		fmt.Printf("%s\n", iAccessible)
 	}
 
 }

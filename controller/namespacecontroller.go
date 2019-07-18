@@ -17,12 +17,8 @@ limitations under the License.
 
 import (
 	"context"
-	//crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
-	//"github.com/crunchydata/postgres-operator/events"
-	//"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
-	//"k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"

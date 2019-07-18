@@ -42,7 +42,6 @@ import (
 type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
-	Namespace    []string
 	Ctx          context.Context
 }
 
@@ -64,13 +63,13 @@ func (c *JobController) watchJobs(ctx context.Context) error {
 	nsList := util.GetNamespaces(c.JobClientset, operator.Pgo.Pgo.InstallationName)
 	log.Debugf("jobController watching %v namespaces", nsList)
 
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting job controller for ns [%s]", c.Namespace[i])
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting job controller for ns [%s]", nsList[i])
 
 		source := cache.NewListWatchFromClient(
 			c.JobClientset.BatchV1().RESTClient(),
 			"jobs",
-			c.Namespace[i],
+			nsList[i],
 			fields.Everything())
 
 		_, controller := cache.NewInformer(

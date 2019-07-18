@@ -34,7 +34,13 @@ import (
 const PGO_ROLE = "pgo-role"
 const PGO_ROLE_BINDING = "pgo-role-binding"
 const PGO_BACKREST_ROLE = "pgo-backrest-role"
+const PGO_BACKREST_SERVICE_ACCOUNT = "pgo-backrest"
 const PGO_BACKREST_ROLE_BINDING = "pgo-backrest-role-binding"
+
+//pgo-backrest-sa.json
+type PgoBackrestServiceAccount struct {
+	TargetNamespace string
+}
 
 //pgo-role-binding.json
 type PgoRoleBinding struct {
@@ -251,7 +257,12 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 
 func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targetNamespace string) error {
 
-	err := CreatePGORole(clientset, targetNamespace)
+	err := CreatePGOBackrestServiceAccount(clientset, targetNamespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	err = CreatePGORole(clientset, targetNamespace)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -488,4 +499,41 @@ func UpdateNamespace(clientset *kubernetes.Clientset, updatedBy string, request 
 
 	return resp
 
+}
+
+func CreatePGOBackrestServiceAccount(clientset *kubernetes.Clientset, targetNamespace string) error {
+
+	//check for serviceaccount existing
+	_, found, _ := kubeapi.GetServiceAccount(clientset, PGO_BACKREST_SERVICE_ACCOUNT, targetNamespace)
+	if found {
+		log.Infof("serviceaccount %s already exists, will delete and re-create", PGO_BACKREST_SERVICE_ACCOUNT)
+		err := kubeapi.DeleteServiceAccount(clientset, PGO_BACKREST_SERVICE_ACCOUNT, targetNamespace)
+		if err != nil {
+			log.Errorf("error deleting serviceaccount %s %s", PGO_BACKREST_SERVICE_ACCOUNT, err.Error())
+			return err
+		}
+	}
+	var buffer bytes.Buffer
+	err := config.PgoBackrestServiceAccountTemplate.Execute(&buffer,
+		PgoBackrestServiceAccount{
+			TargetNamespace: targetNamespace,
+		})
+	if err != nil {
+		log.Error(err.Error() + " on " + config.PGOBackrestServiceAccountPath)
+		return err
+	}
+	log.Info(buffer.String())
+
+	rb := v1.ServiceAccount{}
+	err = json.Unmarshal(buffer.Bytes(), &rb)
+	if err != nil {
+		log.Error("error unmarshalling " + config.PGOBackrestServiceAccountPath + " json ServiceAccount " + err.Error())
+		return err
+	}
+
+	err = kubeapi.CreateServiceAccount(clientset, &rb, targetNamespace)
+	if err != nil {
+		return err
+	}
+	return err
 }

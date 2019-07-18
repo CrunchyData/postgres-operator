@@ -30,6 +30,7 @@ rules:
       - namespaces
       - configmaps
       - storageclasses
+      - serviceaccounts
       - roles
       - rolebindings
   - verbs:

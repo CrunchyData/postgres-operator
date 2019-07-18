@@ -21,6 +21,9 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
+
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
@@ -37,7 +40,6 @@ import (
 type PodController struct {
 	PodClient    *rest.RESTClient
 	PodClientset *kubernetes.Clientset
-	Namespace    []string
 	Ctx          context.Context
 }
 
@@ -56,12 +58,14 @@ func (c *PodController) Run() error {
 
 // watchPods is the event loop for pod resources
 func (c *PodController) watchPods(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pod controller on ns [%s]", c.Namespace[i])
+	nsList := util.GetNamespaces(c.PodClientset, operator.Pgo.Pgo.InstallationName)
+
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pod controller on ns [%s]", nsList[i])
 		source := cache.NewListWatchFromClient(
 			c.PodClientset.CoreV1().RESTClient(),
 			"pods",
-			c.Namespace[i],
+			nsList[i],
 			fields.Everything())
 
 		_, controller := cache.NewInformer(

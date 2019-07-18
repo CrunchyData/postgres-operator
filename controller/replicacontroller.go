@@ -17,8 +17,11 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -33,7 +36,6 @@ type PgreplicaController struct {
 	PgreplicaClient    *rest.RESTClient
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
-	Namespace          []string
 	Ctx                context.Context
 }
 
@@ -52,14 +54,16 @@ func (c *PgreplicaController) Run() error {
 
 // watchPgreplicas is the event loop for pgreplica resources
 func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
+	nsList := util.GetNamespaces(c.PgreplicaClientset, operator.Pgo.Pgo.InstallationName)
 
-		log.Infof("starting pgreplica controller on ns [%s]", c.Namespace[i])
+	for i := 0; i < len(nsList); i++ {
+
+		log.Infof("starting pgreplica controller on ns [%s]", nsList[i])
 
 		source := cache.NewListWatchFromClient(
 			c.PgreplicaClient,
 			crv1.PgreplicaResourcePlural,
-			c.Namespace[i],
+			nsList[i],
 			fields.Everything())
 
 		_, controller := cache.NewInformer(

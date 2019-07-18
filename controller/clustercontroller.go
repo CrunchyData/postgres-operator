@@ -21,6 +21,9 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
+
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -36,7 +39,6 @@ type PgclusterController struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
-	Namespace          []string
 	Ctx                context.Context
 }
 
@@ -56,12 +58,14 @@ func (c *PgclusterController) Run() error {
 
 // watchPgclusters is the event loop for pgcluster resources
 func (c *PgclusterController) watchPgclusters(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pgcluster controller for ns [%s]", c.Namespace[i])
+	nsList := util.GetNamespaces(c.PgclusterClientset, operator.Pgo.Pgo.InstallationName)
+
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pgcluster controller for ns [%s]", nsList[i])
 		source := cache.NewListWatchFromClient(
 			c.PgclusterClient,
 			crv1.PgclusterResourcePlural,
-			c.Namespace[i],
+			nsList[i],
 			fields.Everything())
 
 		_, controller := cache.NewInformer(

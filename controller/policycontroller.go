@@ -17,6 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +35,6 @@ type PgpolicyController struct {
 	PgpolicyClient    *rest.RESTClient
 	PgpolicyScheme    *runtime.Scheme
 	PgpolicyClientset *kubernetes.Clientset
-	Namespace         []string
 	Ctx               context.Context
 }
 
@@ -53,13 +54,15 @@ func (c *PgpolicyController) Run() error {
 
 // watchPgpolicys watches the pgpolicy resource catching events
 func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pgpolicy controller on ns [%s]", c.Namespace[i])
+	nsList := util.GetNamespaces(c.PgpolicyClientset, operator.Pgo.Pgo.InstallationName)
+
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pgpolicy controller on ns [%s]", nsList[i])
 
 		source := cache.NewListWatchFromClient(
 			c.PgpolicyClient,
 			crv1.PgpolicyResourcePlural,
-			c.Namespace[i],
+			nsList[i],
 			fields.Everything())
 
 		_, controller := cache.NewInformer(
