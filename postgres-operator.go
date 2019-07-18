@@ -84,12 +84,15 @@ func main() {
 	}
 
 	// start a controller on instances of our custom resource
+	ctx, cancelFunc := context.WithCancel(context.Background())
+
 	pgTaskcontroller := controller.PgtaskController{
 		PgtaskConfig:    config,
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
 		Namespace:       namespaceList,
+		Ctx:             ctx,
 	}
 
 	pgClustercontroller := controller.PgclusterController{
@@ -97,50 +100,56 @@ func main() {
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
 		Namespace:          namespaceList,
+		Ctx:                ctx,
 	}
 	pgReplicacontroller := controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
 		Namespace:          namespaceList,
+		Ctx:                ctx,
 	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
 		Namespace:         namespaceList,
+		Ctx:               ctx,
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
 		PgpolicyScheme:    crdScheme,
 		PgpolicyClientset: Clientset,
 		Namespace:         namespaceList,
+		Ctx:               ctx,
 	}
 	podcontroller := controller.PodController{
 		PodClientset: Clientset,
 		PodClient:    crdClient,
 		Namespace:    namespaceList,
+		Ctx:          ctx,
 	}
 	nscontroller := controller.NamespaceController{
 		NamespaceClientset: Clientset,
 		NamespaceClient:    crdClient,
+		Ctx:                ctx,
 	}
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
 		Namespace:    namespaceList,
+		Ctx:          ctx,
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go pgTaskcontroller.Run(ctx)
-	go pgClustercontroller.Run(ctx)
-	go pgReplicacontroller.Run(ctx)
-	go pgBackupcontroller.Run(ctx)
-	go pgPolicycontroller.Run(ctx)
-	go podcontroller.Run(ctx)
-	go nscontroller.Run(ctx)
-	go jobcontroller.Run(ctx)
+	go pgTaskcontroller.Run()
+	go pgClustercontroller.Run()
+	go pgReplicacontroller.Run()
+	go pgBackupcontroller.Run()
+	go pgPolicycontroller.Run()
+	go podcontroller.Run()
+	go nscontroller.Run()
+	go jobcontroller.Run()
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
 

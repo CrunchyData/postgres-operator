@@ -37,20 +37,21 @@ type PgclusterController struct {
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
 	Namespace          []string
+	Ctx                context.Context
 }
 
 // Run starts an pgcluster resource controller
-func (c *PgclusterController) Run(ctx context.Context) error {
+func (c *PgclusterController) Run() error {
 	log.Debug("Watch Pgcluster objects")
 
-	err := c.watchPgclusters(ctx)
+	err := c.watchPgclusters(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgcluster resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgclusters is the event loop for pgcluster resources

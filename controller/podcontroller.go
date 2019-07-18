@@ -38,19 +38,20 @@ type PodController struct {
 	PodClient    *rest.RESTClient
 	PodClientset *kubernetes.Clientset
 	Namespace    []string
+	Ctx          context.Context
 }
 
 // Run starts an pod resource controller
-func (c *PodController) Run(ctx context.Context) error {
+func (c *PodController) Run() error {
 
-	err := c.watchPods(ctx)
+	err := c.watchPods(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for pod resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPods is the event loop for pod resources

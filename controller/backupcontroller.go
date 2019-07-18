@@ -35,20 +35,21 @@ type PgbackupController struct {
 	PgbackupScheme    *runtime.Scheme
 	PgbackupClientset *kubernetes.Clientset
 	Namespace         []string
+	Ctx               context.Context
 }
 
 // Run starts controller
-func (c *PgbackupController) Run(ctx context.Context) error {
+func (c *PgbackupController) Run() error {
 	log.Debugf("Watch Pgbackup objects")
 
-	err := c.watchPgbackups(ctx)
+	err := c.watchPgbackups(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgbackup resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgbackups will watch events for the pgbackups

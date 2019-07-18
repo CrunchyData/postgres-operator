@@ -34,20 +34,21 @@ type PgpolicyController struct {
 	PgpolicyScheme    *runtime.Scheme
 	PgpolicyClientset *kubernetes.Clientset
 	Namespace         []string
+	Ctx               context.Context
 }
 
 // Run starts an pgpolicy resource controller
-func (c *PgpolicyController) Run(ctx context.Context) error {
+func (c *PgpolicyController) Run() error {
 
 	// Watch Example objects
-	err := c.watchPgpolicys(ctx)
+	err := c.watchPgpolicys(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgpolicy resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgpolicys watches the pgpolicy resource catching events

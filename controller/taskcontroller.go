@@ -41,21 +41,22 @@ type PgtaskController struct {
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
 	Namespace       []string
+	Ctx             context.Context
 }
 
 // Run starts an pgtask resource controller
-func (c *PgtaskController) Run(ctx context.Context) error {
+func (c *PgtaskController) Run() error {
 	log.Debug("Watch Pgtask objects")
 
 	// Watch Example objects
-	err := c.watchPgtasks(ctx)
+	err := c.watchPgtasks(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgtasks watches the pgtask resource catching events

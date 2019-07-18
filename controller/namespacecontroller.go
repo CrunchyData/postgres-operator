@@ -34,19 +34,20 @@ import (
 type NamespaceController struct {
 	NamespaceClient    *rest.RESTClient
 	NamespaceClientset *kubernetes.Clientset
+	Ctx                context.Context
 }
 
 // Run starts an pod resource controller
-func (c *NamespaceController) Run(ctx context.Context) error {
+func (c *NamespaceController) Run() error {
 
-	err := c.watchNamespaces(ctx)
+	err := c.watchNamespaces(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for namespace resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchNamespaces is the event loop for namespace resources

@@ -34,19 +34,20 @@ type PgreplicaController struct {
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
 	Namespace          []string
+	Ctx                context.Context
 }
 
 // Run starts an pgreplica resource controller
-func (c *PgreplicaController) Run(ctx context.Context) error {
+func (c *PgreplicaController) Run() error {
 
-	err := c.watchPgreplicas(ctx)
+	err := c.watchPgreplicas(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgreplica resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgreplicas is the event loop for pgreplica resources

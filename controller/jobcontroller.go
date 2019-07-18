@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
@@ -42,23 +43,27 @@ type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
 	Namespace    []string
+	Ctx          context.Context
 }
 
 // Run starts an pod resource controller
-func (c *JobController) Run(ctx context.Context) error {
+func (c *JobController) Run() error {
 
-	err := c.watchJobs(ctx)
+	err := c.watchJobs(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for job resource: %v\n", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchJobs is the event loop for job resources
 func (c *JobController) watchJobs(ctx context.Context) error {
+	nsList := util.GetNamespaces(c.JobClientset, operator.Pgo.Pgo.InstallationName)
+	log.Debugf("jobController watching %v namespaces", nsList)
+
 	for i := 0; i < len(c.Namespace); i++ {
 		log.Infof("starting job controller for ns [%s]", c.Namespace[i])
 

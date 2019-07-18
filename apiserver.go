@@ -128,6 +128,7 @@ func main() {
 	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler).Methods("POST")
 	r.HandleFunc("/namespacedelete", namespaceservice.DeleteNamespaceHandler).Methods("POST")
 	r.HandleFunc("/namespacecreate", namespaceservice.CreateNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespaceupdate", namespaceservice.UpdateNamespaceHandler).Methods("POST")
 
 	// backups / backrest
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
