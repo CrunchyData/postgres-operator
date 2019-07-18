@@ -20,6 +20,7 @@ import (
 	"fmt"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -69,17 +70,23 @@ func showNamespace(args []string) {
 
 	fmt.Printf("pgo username: %s\n", response.Username)
 
+	fmt.Printf("%s", util.Rpad("namespace", " ", 20))
+	fmt.Printf("%s", util.Rpad("useraccess", " ", 20))
+	fmt.Printf("%s\n", util.Rpad("installaccess", " ", 20))
+
 	var accessible, iAccessible string
 	for _, result := range response.Results {
-		accessible = GREEN("accessible")
+		accessible = GREEN(util.Rpad("accessible", " ", 20))
 		if !result.UserAccess {
-			accessible = RED("no access")
+			accessible = RED(util.Rpad("no access", " ", 20))
 		}
-		iAccessible = GREEN("accessible")
+		iAccessible = GREEN(util.Rpad("accessible", " ", 20))
 		if !result.InstallationAccess {
-			iAccessible = RED("no access")
+			iAccessible = RED(util.Rpad("no access", " ", 20))
 		}
-		fmt.Printf("namespace: %s userAccess (%s) installationAccess (%s)\n", result.Namespace, accessible, iAccessible)
+	fmt.Printf("%s", util.Rpad(result.Namespace, " ", 20))
+	fmt.Printf("%s", accessible)
+	fmt.Printf("%s\n", iAccessible)
 	}
 
 }
