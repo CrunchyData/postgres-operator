@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"fmt"
 )
 
 func TestScale(t *testing.T) {
@@ -26,56 +27,122 @@ func TestScale(t *testing.T) {
 		name    string
 		args    []string
 		fixture string
+		cmdoutput string
 	}{
-		{"pgo scale", []string{"scale", TestClusterName, "--no-prompt"}, ""},
+		{"pgo scale", []string{"scale", TestClusterName, "--no-prompt"}, "", "created Pgreplica"},
+		{"pgo scaledown query", []string{"scaledown", "--query", TestClusterName}, "", ""},
+		{"pgo scaledown", []string{"scaledown", TestClusterName, "--target=", "--no-prompt"}, "", "deleted Pgreplica"},
 	}
 
 	selector := config.LABEL_PG_CLUSTER + "=" + TestClusterName
 	var deps *v1.DeploymentList
 	var err error
 	var SLEEP_SECS = 5
-
-	deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
-	if err != nil {
-		t.Error(err.Error())
-	}
-	beforeDepCount := len(deps.Items)
-	if beforeDepCount == 0 {
-		t.Error("deps before was zero")
-	}
-	t.Logf("deps before %d", beforeDepCount)
-
 	var output []byte
+	beforeDepCount := 0
+	afterDepCount := 0
+	var myreplica string
 
 	for _, tt := range tests {
-		cmd := exec.Command("pgo", tt.args...)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			//t.Fatal(err)
-		}
+		if (tt.name == "pgo scaledown query") {
+			t.Log("In IF")
+			time.Sleep(time.Second * time.Duration(20))
+			t.Run(tt.name, func(t *testing.T) {
+				cmd := exec.Command("pgo", tt.args...)
+				output, err = cmd.CombinedOutput()
+				if err != nil {
+					//t.Fatal(err)
+				}
+				actual := string(output)
+				t.Logf("actual command response: %s- ", actual)
+				
+				MAX_TRIES := 10
+				for i := 2; i <= MAX_TRIES; i++ {
+					t.Logf("sleeping while job completes, attempt #%d", i)
+					time.Sleep(time.Second * time.Duration(SLEEP_SECS))
+					found := strings.Contains(actual, myreplica+" (Ready)")
+					if !found {
+						t.Error(tt.name+" string not found in output")
+						cmd = exec.Command("pgo", tt.args...)
+						output, err = cmd.CombinedOutput()
+						if err != nil {
+							//t.Fatal(err)
+						}
+						actual = string(output)
+						t.Logf("actual command response: %s- ", actual)
+					} else {
+						break
+					}
+				}
+			})
+		} else {
+			t.Log("IN ELSE")
+			t.Run(tt.name, func(t *testing.T) {
+				deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
+				if err != nil {
+					t.Error(err.Error())
+				}
+				beforeDepCount = len(deps.Items)
+				if beforeDepCount == 0 {
+					t.Error("deps before was zero")
+				}
+				t.Logf("deps before %d", beforeDepCount)
 
-		actual := string(output)
+				if tt.name == "pgo scaledown" {
+					tt.args[2] = tt.args[2] + myreplica
+					fmt.Println("TT ARGES")
+					fmt.Println(tt.args)
+				}
 
-		t.Logf("actual %s- ", actual)
-		found := strings.Contains(actual, "created")
-		if !found {
-			t.Error("created string not found in output")
-		}
+				cmd := exec.Command("pgo", tt.args...)
+				output, err = cmd.CombinedOutput()
+				if err != nil {
+					//t.Fatal(err)
+				}
 
-		time.Sleep(time.Second * time.Duration(SLEEP_SECS))
-		deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
-		if err != nil {
-			t.Error(err.Error())
+				actual := string(output)
+
+				if tt.name == "pgo scale" {
+					//pull out replica name from returned results
+					myreplica = strings.TrimSpace(strings.Split(actual, "Pgreplica")[1])
+					fmt.Println("woot"+myreplica+"woot")
+				}
+
+				t.Logf("actual command response: %s- ", actual)
+				found := strings.Contains(actual, tt.cmdoutput)
+				if !found {
+					t.Error(tt.name+" string not found in output")
+				}
+
+				MAX_TRIES := 10
+				complete := false
+				for i := 1; i <= MAX_TRIES; i++ {
+					time.Sleep(time.Second * time.Duration(SLEEP_SECS))
+					t.Logf("sleeping while job completes, attempt #%d", i)
+					deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
+					if err != nil {
+						t.Error(err.Error())
+					}
+					afterDepCount = len(deps.Items)
+					//should have more deps after create
+					if (afterDepCount > beforeDepCount && strings.Contains(tt.cmdoutput, "created Pgreplica")) {
+						t.Log(tt.name+" complete!")
+						complete = true
+						break
+					}
+					//should have less deps after delete
+					if (afterDepCount < beforeDepCount && strings.Contains(tt.name, "deleted Pgreplica")) {
+						t.Log(tt.name+" complete!")
+						complete = true
+						break
+					}
+				}
+				if !complete {
+					t.Errorf("%v job did not succeed after retries. Deps after was %d", tt.name, afterDepCount)
+				}
+				t.Logf("deps after %d", afterDepCount)
+			
+			})
 		}
-		afterDepCount := len(deps.Items)
-		if afterDepCount <= beforeDepCount {
-			t.Errorf("deps after was %d", afterDepCount)
-		}
-		t.Logf("deps after %d", afterDepCount)
 	}
-
-	t.Run("teardown", func(t *testing.T) {
-		t.Log("some teardown code")
-	})
-
 }

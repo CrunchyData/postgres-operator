@@ -30,6 +30,10 @@ TESTS=(
     TestVersion
     TestBouncer
     TestPool
+    TestCreateUser
+    TestDeleteUser
+    TestShowCluster
+    TestPGOShowCluster
 )
 
 echo "TESTS: "
@@ -48,7 +52,7 @@ read runme
 
 
 if [ $runme = "all" ]; then
-	go test ./... -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
+	go test ./... -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1 >> output.txt
 else
   go test -run ${TESTS[runme]} -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
 fi
