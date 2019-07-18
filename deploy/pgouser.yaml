@@ -1,0 +1,16 @@
+apiVersion: v1
+data:
+  password: $PGO_PASSWORD
+  username: $PGO_USERNAME
+  roles: $PGO_ROLENAME
+kind: Secret
+metadata:
+  labels:
+    pgo-created-by: upgrade
+    pgo-pgouser: "true"
+    username: $USERNAME
+    vendor: crunchydata
+  name: pgouser-$USERNAME
+  namespace: $PGO_OPERATOR_NAMESPACE
+type: Opaque
+
