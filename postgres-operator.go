@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
@@ -73,11 +74,11 @@ func main() {
 
 	operator.Initialize(Clientset)
 
-	namespaceList := util.GetNamespaces(Clientset, operator.InstallationName)
+	namespaceList := ns.GetNamespaces(Clientset, operator.InstallationName)
 	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	//validate the NAMESPACE env var
-	err = util.ValidateNamespaces(Clientset, operator.InstallationName, operator.PgoNamespace)
+	err = ns.ValidateNamespaces(Clientset, operator.InstallationName, operator.PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)

@@ -17,8 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 
@@ -54,7 +54,7 @@ func (c *PgreplicaController) Run() error {
 
 // watchPgreplicas is the event loop for pgreplica resources
 func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgreplicaClientset, operator.InstallationName)
+	nsList := ns.GetNamespaces(c.PgreplicaClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 

@@ -20,6 +20,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	pgbasebackupoperator "github.com/crunchydata/postgres-operator/operator/backup"
@@ -27,7 +28,6 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -62,7 +62,7 @@ func (c *PgtaskController) Run() error {
 
 // watchPgtasks watches the pgtask resource catching events
 func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgtaskClientset, operator.InstallationName)
+	nsList := ns.GetNamespaces(c.PgtaskClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pgtask controller on ns [%s]", nsList[i])

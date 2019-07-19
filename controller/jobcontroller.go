@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
@@ -60,7 +61,7 @@ func (c *JobController) Run() error {
 
 // watchJobs is the event loop for job resources
 func (c *JobController) watchJobs(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.JobClientset, operator.InstallationName)
+	nsList := ns.GetNamespaces(c.JobClientset, operator.InstallationName)
 	log.Debugf("jobController watching %v namespaces", nsList)
 
 	for i := 0; i < len(nsList); i++ {

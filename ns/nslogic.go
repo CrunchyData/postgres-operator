@@ -27,6 +27,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
+	"os"
+	"strings"
 )
 
 const PGO_ROLE = "pgo-role"
@@ -427,4 +429,115 @@ func CreatePGOBackrestServiceAccount(clientset *kubernetes.Clientset, targetName
 		return err
 	}
 	return err
+}
+
+func ValidateNamespaces(clientset *kubernetes.Clientset, installationName, pgoNamespace string) error {
+	raw := os.Getenv("NAMESPACE")
+
+	//the case of 'all' namespaces
+	if raw == "" {
+		return nil
+	}
+
+	allFound := false
+
+	nsList := strings.Split(raw, ",")
+
+	//check for the invalid case where a user has NAMESPACE=demo1,,demo2
+	if len(nsList) > 1 {
+		for i := 0; i < len(nsList); i++ {
+			if nsList[i] == "" {
+				allFound = true
+			}
+		}
+	}
+
+	if allFound && len(nsList) > 1 {
+		return errors.New("'' (empty string), found within the NAMESPACE environment variable along with other namespaces, this is not an accepted format")
+	}
+
+	//check for the case of a non-existing namespace being used
+	for i := 0; i < len(nsList); i++ {
+		namespace, found, _ := kubeapi.GetNamespace(clientset, nsList[i])
+		if !found {
+			//return errors.New("NAMESPACE environment variable contains a namespace of " + nsList[i] + " but that is not found on this kube system")
+			//create the namespace here
+			err := CreateNamespace(clientset, installationName, pgoNamespace, "operator-bootstrap", nsList[i])
+			if err != nil {
+				return err
+			}
+		} else {
+			//verify the namespace doesn't belong to another
+			//installation, if not, update it to belong to this
+			//installation
+			if namespace.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName {
+				log.Errorf("%s namespace onwed by another installation, will not convert it to this installation", namespace.Name)
+			} else if namespace.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
+				log.Infof("%s namespace already part of this installation", namespace.Name)
+			} else {
+				log.Infof("%s namespace will be updated to be owned by this installation", namespace.Name)
+				namespace.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+				namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
+				err := kubeapi.UpdateNamespace(clientset, namespace)
+				if err != nil {
+					return err
+				}
+				err = UpdateNamespace(clientset, installationName, pgoNamespace, "operator-bootstrap", namespace.Name)
+				if err != nil {
+					return err
+				}
+			}
+
+		}
+	}
+
+	return nil
+
+}
+
+func GetNamespaces(clientset *kubernetes.Clientset, installationName string) []string {
+	ns := make([]string, 0)
+
+	nsList, err := kubeapi.GetNamespaces(clientset)
+	if err != nil {
+		log.Error(err.Error())
+		return ns
+	}
+
+	for _, v := range nsList.Items {
+		labels := v.ObjectMeta.Labels
+		if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+			labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
+			ns = append(ns, v.Name)
+		}
+	}
+
+	return ns
+
+}
+
+func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS, installationName string) bool {
+
+	log.Debugf("WatchingNamespace [%s]", requestedNS)
+
+	nsList := GetNamespaces(clientset, installationName)
+
+	//handle the case where we are watching all namespaces but
+	//the user might enter an invalid namespace not on the kube
+	if nsList[0] == "" {
+		_, found, _ := kubeapi.GetNamespace(clientset, requestedNS)
+		if !found {
+			return false
+		} else {
+			return true
+		}
+	}
+
+	for i := 0; i < len(nsList); i++ {
+		if nsList[i] == requestedNS {
+			return true
+		}
+	}
+
+	return false
 }

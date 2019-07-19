@@ -21,8 +21,8 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
 
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
@@ -58,7 +58,7 @@ func (c *PodController) Run() error {
 
 // watchPods is the event loop for pod resources
 func (c *PodController) watchPods(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PodClientset, operator.InstallationName)
+	nsList := ns.GetNamespaces(c.PodClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pod controller on ns [%s]", nsList[i])

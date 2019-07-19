@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -100,7 +100,7 @@ func init() {
 	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
 		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
-	namespaceList = util.GetNamespaces(kubeClient, installationName)
+	namespaceList = ns.GetNamespaces(kubeClient, installationName)
 	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 }

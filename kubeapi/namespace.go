@@ -76,3 +76,13 @@ func CreateNamespace(clientset *kubernetes.Clientset, ns *v1.Namespace) error {
 
 	return err
 }
+
+func UpdateNamespace(clientset *kubernetes.Clientset, ns *v1.Namespace) error {
+	_, err := clientset.CoreV1().Namespaces().Update(ns)
+	if err != nil {
+		log.Error(err)
+		log.Error("error updating Namespace %s", ns.Name)
+	}
+	return err
+
+}

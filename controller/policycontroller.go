@@ -17,8 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -54,7 +54,7 @@ func (c *PgpolicyController) Run() error {
 
 // watchPgpolicys watches the pgpolicy resource catching events
 func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgpolicyClientset, operator.InstallationName)
+	nsList := ns.GetNamespaces(c.PgpolicyClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pgpolicy controller on ns [%s]", nsList[i])

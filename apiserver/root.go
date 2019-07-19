@@ -32,6 +32,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/tlsutil"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -303,7 +304,7 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New(errMsg)
 	}
 
-	if util.WatchingNamespace(clientset, requestedNS, InstallationName) {
+	if ns.WatchingNamespace(clientset, requestedNS, InstallationName) {
 		return requestedNS, nil
 	}
 
@@ -512,7 +513,7 @@ func validateWithKube() {
 		}
 	}
 
-	err := util.ValidateNamespaces(Clientset, InstallationName, PgoNamespace)
+	err := ns.ValidateNamespaces(Clientset, InstallationName, PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)

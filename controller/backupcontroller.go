@@ -26,9 +26,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
-	"github.com/crunchydata/postgres-operator/util"
 )
 
 // PgbackupController holds connections required by the controller
@@ -55,7 +55,7 @@ func (c *PgbackupController) Run() error {
 
 // watchPgbackups will watch events for the pgbackups
 func (c *PgbackupController) watchPgbackups(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgbackupClientset, operator.InstallationName)
+	nsList := ns.GetNamespaces(c.PgbackupClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pgbackup controller on ns [%s]", nsList[i])
