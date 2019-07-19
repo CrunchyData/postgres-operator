@@ -30,6 +30,10 @@ TESTS=(
     TestVersion
     TestBouncer
     TestPool
+    TestCreateUser
+    TestDeleteUser
+    TestShowCluster
+    TestPGOTestCluster
 )
 
 echo "TESTS: "
@@ -43,7 +47,7 @@ do
   let "var++"
 done
 
-echo "Enter the value of the test you'd like to run, or all to run 'all' tests"
+echo "Enter the value of the test you'd like to run, or 'all' to run all tests"
 read runme
 
 

@@ -25,7 +25,7 @@ func TestCreateUser(t *testing.T) {
 		args    []string
 		fixture string
 	}{
-		{"pgo create user", []string{"create", "user", "test2", "--managed","--selector=name=" + TestClusterName }, ""},
+		{"pgo create user", []string{"create", "user", "testuser1", "--managed","--selector=name=" + TestClusterName }, ""},
 	}
 
 	t.Log("TestCreateUser starts")
@@ -69,7 +69,7 @@ func TestDeleteUser(t *testing.T) {
 		args    []string
 		fixture string
 	}{
-		{"pgo delete user", []string{"delete", "user", "test1", "--selector=name=" + TestClusterName }, ""},
+		{"pgo delete user", []string{"delete", "user", "testuser1", "--selector=name=" + TestClusterName, "--no-prompt" }, ""},
 	}
 
 	t.Log("TestCreateUser starts")
@@ -83,7 +83,7 @@ func TestDeleteUser(t *testing.T) {
 		actual := string(output)
 
 		t.Logf("actual %s- ", actual)
-		found := strings.Contains(actual, "delete")
+		found := strings.Contains(actual, "removed")
 		if !found {
 			t.Error("could not find delete in output")
 		}
