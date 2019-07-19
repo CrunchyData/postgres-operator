@@ -54,39 +54,12 @@ func (c *PgpolicyController) Run() error {
 
 // watchPgpolicys watches the pgpolicy resource catching events
 func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgpolicyClientset, operator.Pgo.Pgo.InstallationName)
+	nsList := util.GetNamespaces(c.PgpolicyClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pgpolicy controller on ns [%s]", nsList[i])
 
 		c.SetupWatch(nsList[i])
-		/**
-		source := cache.NewListWatchFromClient(
-			c.PgpolicyClient,
-			crv1.PgpolicyResourcePlural,
-			nsList[i],
-			fields.Everything())
-
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgpolicy{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
-		*/
 	}
 	return nil
 }

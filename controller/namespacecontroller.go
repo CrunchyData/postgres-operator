@@ -41,7 +41,7 @@ type NamespaceController struct {
 	ThePgtaskController    PgtaskController
 }
 
-// Run starts an pod resource controller
+// Run starts a namespace resource controller
 func (c *NamespaceController) Run() error {
 
 	err := c.watchNamespaces(c.Ctx)
@@ -95,7 +95,7 @@ func (c *NamespaceController) onAdd(obj interface{}) {
 
 	log.Debugf("[NamespaceController] OnAdd ns=%s", newNs.ObjectMeta.SelfLink)
 	labels := newNs.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.Pgo.Pgo.InstallationName {
+	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.InstallationName {
 		log.Debugf("NamespaceController: onAdd skipping namespace that is not crunchydata or not belonging to this Operator installation %s", newNs.ObjectMeta.SelfLink)
 		return
 	} else {

@@ -58,38 +58,11 @@ func (c *PgclusterController) Run() error {
 
 // watchPgclusters is the event loop for pgcluster resources
 func (c *PgclusterController) watchPgclusters(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgclusterClientset, operator.Pgo.Pgo.InstallationName)
+	nsList := util.GetNamespaces(c.PgclusterClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pgcluster controller for ns [%s]", nsList[i])
 		c.SetupWatch(nsList[i])
-		/**
-		source := cache.NewListWatchFromClient(
-			c.PgclusterClient,
-			crv1.PgclusterResourcePlural,
-			nsList[i],
-			fields.Everything())
-
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgcluster{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
-		*/
 	}
 	return nil
 }

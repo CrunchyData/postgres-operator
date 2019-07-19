@@ -60,40 +60,13 @@ func (c *JobController) Run() error {
 
 // watchJobs is the event loop for job resources
 func (c *JobController) watchJobs(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.JobClientset, operator.Pgo.Pgo.InstallationName)
+	nsList := util.GetNamespaces(c.JobClientset, operator.InstallationName)
 	log.Debugf("jobController watching %v namespaces", nsList)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting job controller for ns [%s]", nsList[i])
 		c.SetupWatch(nsList[i])
 
-		/**
-		source := cache.NewListWatchFromClient(
-			c.JobClientset.BatchV1().RESTClient(),
-			"jobs",
-			nsList[i],
-			fields.Everything())
-
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&apiv1.Job{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
-		*/
 	}
 	return nil
 }

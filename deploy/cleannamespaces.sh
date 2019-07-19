@@ -23,12 +23,6 @@ do
 	echo namespace $ns deleted
 done
 
-IFS=', ' read -r -a array <<< "$NAMESPACE"
-
 echo ""
 echo "deleting the watched namespaces..."
-for ns in "${array[@]}"
-do
-	$PGO_CMD delete namespace $ns > /dev/null 2> /dev/null
-	echo namespace $ns deleted
-done
+$PGO_CMD delete namespace --selector="vendor=crunchydata,pgo-installation-name=$PGO_INSTALLATION_NAME"

@@ -54,40 +54,13 @@ func (c *PgreplicaController) Run() error {
 
 // watchPgreplicas is the event loop for pgreplica resources
 func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PgreplicaClientset, operator.Pgo.Pgo.InstallationName)
+	nsList := util.GetNamespaces(c.PgreplicaClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 
 		log.Infof("starting pgreplica controller on ns [%s]", nsList[i])
 		c.SetupWatch(nsList[i])
 
-		/**
-		source := cache.NewListWatchFromClient(
-			c.PgreplicaClient,
-			crv1.PgreplicaResourcePlural,
-			nsList[i],
-			fields.Everything())
-
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgreplica{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
-		*/
 	}
 	return nil
 }

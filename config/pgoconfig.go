@@ -240,7 +240,6 @@ type PgoStruct struct {
 	Audit                     bool   `yaml:"Audit"`
 	PGOImagePrefix            string `yaml:"PGOImagePrefix"`
 	PGOImageTag               string `yaml:"PGOImageTag"`
-	InstallationName          string `yaml:"InstallationName"`
 }
 
 type PgoConfig struct {
@@ -429,9 +428,6 @@ func (c *PgoConfig) Validate() error {
 
 	if c.Cluster.CCPImageTag == "" {
 		return errors.New("Cluster.CCPImageTag is required")
-	}
-	if c.Pgo.InstallationName == "" {
-		return errors.New("Pgo.InstallationName is required")
 	}
 	return err
 }

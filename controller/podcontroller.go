@@ -58,38 +58,11 @@ func (c *PodController) Run() error {
 
 // watchPods is the event loop for pod resources
 func (c *PodController) watchPods(ctx context.Context) error {
-	nsList := util.GetNamespaces(c.PodClientset, operator.Pgo.Pgo.InstallationName)
+	nsList := util.GetNamespaces(c.PodClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
 		log.Infof("starting pod controller on ns [%s]", nsList[i])
 		c.SetupWatch(nsList[i])
-		/**
-		source := cache.NewListWatchFromClient(
-			c.PodClientset.CoreV1().RESTClient(),
-			"pods",
-			nsList[i],
-			fields.Everything())
-
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&apiv1.Pod{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
-		*/
 	}
 	return nil
 }

@@ -73,11 +73,11 @@ func main() {
 
 	operator.Initialize(Clientset)
 
-	namespaceList := util.GetNamespaces(Clientset, operator.Pgo.Pgo.InstallationName)
+	namespaceList := util.GetNamespaces(Clientset, operator.InstallationName)
 	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	//validate the NAMESPACE env var
-	err = util.ValidateNamespaces(Clientset)
+	err = util.ValidateNamespaces(Clientset, operator.InstallationName, operator.PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)

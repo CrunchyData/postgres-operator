@@ -69,7 +69,7 @@ var BasicAuth bool
 
 // Namespace comes from the apiserver config in this version
 var PgoNamespace string
-var Namespace string
+var InstallationName string
 
 var CRUNCHY_DEBUG bool
 
@@ -105,16 +105,18 @@ func Initialize() {
 	//namespaceList := util.GetNamespaces()
 	//log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
-	Namespace = os.Getenv("NAMESPACE")
-	if Namespace == "" {
-		log.Error("NAMESPACE environment variable is set to empty string which pgo will interpret as watch 'all' namespaces")
+	InstallationName = os.Getenv("PGO_INSTALLATION_NAME")
+	if InstallationName == "" {
+		log.Error("PGO_INSTALLATION_NAME environment variable is missng")
+		os.Exit(2)
 	}
+	log.Info("InstallationName is [" + InstallationName + "]")
+
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	CRUNCHY_DEBUG = false
 	if tmp == "true" {
 		CRUNCHY_DEBUG = true
 	}
-	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
 	BadgerFlag = false
@@ -301,7 +303,7 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New(errMsg)
 	}
 
-	if util.WatchingNamespace(clientset, requestedNS, Pgo.Pgo.InstallationName) {
+	if util.WatchingNamespace(clientset, requestedNS, InstallationName) {
 		return requestedNS, nil
 	}
 
@@ -510,7 +512,7 @@ func validateWithKube() {
 		}
 	}
 
-	err := util.ValidateNamespaces(Clientset)
+	err := util.ValidateNamespaces(Clientset, InstallationName, PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
@@ -563,7 +565,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
 
 	if ns.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
 
-		ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == Pgo.Pgo.InstallationName {
+		ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == InstallationName {
 		iAccess = true
 
 	}
