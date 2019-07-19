@@ -109,6 +109,7 @@ func createNamespace(args []string, ns string) {
 		fmt.Println("Error: " + err.Error())
 	}
 
+	log.Debugf("createNamespace response %v", response)
 	if response.Status.Code == msgs.Ok {
 		for _, v := range response.Results {
 			fmt.Println(v)
