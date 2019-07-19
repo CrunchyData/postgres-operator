@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestPGOShowCluster(t *testing.T) {
+func TestPGOTestCluster(t *testing.T) {
 	var clientset *kubernetes.Clientset
 	var cluster string
 

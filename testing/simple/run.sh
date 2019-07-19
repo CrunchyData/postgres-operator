@@ -33,7 +33,7 @@ TESTS=(
     TestCreateUser
     TestDeleteUser
     TestShowCluster
-    TestPGOShowCluster
+    TestPGOTestCluster
 )
 
 echo "TESTS: "
