@@ -47,12 +47,12 @@ do
   let "var++"
 done
 
-echo "Enter the value of the test you'd like to run, or all to run 'all' tests"
+echo "Enter the value of the test you'd like to run, or 'all' to run all tests"
 read runme
 
 
 if [ $runme = "all" ]; then
-	go test ./... -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1 >> output.txt
+	go test ./... -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
 else
   go test -run ${TESTS[runme]} -v --kubeconfig=$HOME/.kube/config -clustername=foomatic -namespace=pgouser1
 fi
