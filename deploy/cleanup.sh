@@ -47,7 +47,6 @@ then
 	do
 		echo "checking for postgres-operator pod..."
 		lines=`$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pod --selector=name=postgres-operator --ignore-not-found=true --no-headers | wc -l`
-		echo lines is $lines
 
 		if [ $lines -eq 0 ]
 		then

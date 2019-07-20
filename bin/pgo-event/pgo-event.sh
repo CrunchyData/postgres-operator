@@ -14,32 +14,14 @@
 # limitations under the License.
 
 function trap_sigterm() {
-    echo "Signal trap triggered, beginning shutdown.."
-
-    if ! pgrep nsqlookupd > /dev/null
-    then
-        kill -9 $(pidof nsqlookupd)
-    fi
-    if ! pgrep nsqd > /dev/null
-    then
+    	echo "Signal trap triggered, beginning shutdown.."
         kill -9 $(pidof nsqd)
-    fi
-    if ! pgrep nsqadmin > /dev/null
-    then
         kill -9 $(pidof nsqadmin)
-    fi
 }
 
 echo "pgo-event starting"
 
 trap 'trap_sigterm' SIGINT SIGTERM
-
-
-echo "pgo-event starting nsqlookupd"
-
-#/usr/local/bin/nsqlookupd &
-
-sleep 2
 
 echo "pgo-event starting nsqadminy"
 
@@ -49,7 +31,7 @@ sleep 3
 
 echo "pgo-event starting nsqd"
 
-/usr/local/bin/nsqd --data-path=/tmp --http-address=0.0.0.0:4151 --tcp-address=0.0.0.0:4150
+/usr/local/bin/nsqd --data-path=/tmp --http-address=0.0.0.0:4151 --tcp-address=0.0.0.0:4150 &
 
 echo "pgo-event waiting till sigterm"
 
