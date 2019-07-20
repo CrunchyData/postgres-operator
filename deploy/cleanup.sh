@@ -27,7 +27,7 @@ then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret pgo.tls
 fi
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get configmap/pgo-config 2> /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get configmap/pgo-config 2> /dev/null > /dev/null
 if [ $? -eq 0 ]
 then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete configmap/pgo-config
@@ -43,6 +43,21 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get deployment/postgres-operator 2>
 if [ $? -eq 0 ]
 then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete deployment/postgres-operator
+	for (( ; ; ))
+	do
+		echo "checking for postgres-operator pod..."
+		lines=`$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pod --selector=name=postgres-operator --ignore-not-found=true --no-headers | wc -l`
+		echo lines is $lines
+
+		if [ $lines -eq 0 ]
+		then
+			echo postgres-operator pod is gone
+			break
+		elif [ $lines -eq 1 ]
+		then
+			echo postgres-operator is out there
+		fi
+		sleep 3
+	done
 fi
 
-sleep 5

@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -50,6 +51,9 @@ func main() {
 	} else {
 		log.Info("debug flag set to false")
 	}
+
+	//give time for pgo-event to start up
+	time.Sleep(time.Duration(5) * time.Second)
 
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
@@ -64,6 +65,9 @@ func main() {
 	if tmp != "" {
 		PORT = tmp
 	}
+
+        //give time for pgo-event to start up
+        time.Sleep(time.Duration(5) * time.Second)
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
