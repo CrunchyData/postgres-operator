@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -318,7 +318,7 @@ func validNamespaces(namespaces string, allnamespaces bool) error {
 		return err
 	}
 
-	watchedNamespaces := util.GetNamespaces()
+	watchedNamespaces := ns.GetNamespaces(apiserver.Clientset, apiserver.InstallationName)
 
 	fields := strings.Split(namespaces, ",")
 	for _, v := range fields {

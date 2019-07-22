@@ -21,6 +21,9 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
+
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -36,52 +39,30 @@ type PgclusterController struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
-	Namespace          []string
+	Ctx                context.Context
 }
 
 // Run starts an pgcluster resource controller
-func (c *PgclusterController) Run(ctx context.Context) error {
+func (c *PgclusterController) Run() error {
 	log.Debug("Watch Pgcluster objects")
 
-	err := c.watchPgclusters(ctx)
+	err := c.watchPgclusters(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgcluster resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgclusters is the event loop for pgcluster resources
 func (c *PgclusterController) watchPgclusters(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pgcluster controller for ns [%s]", c.Namespace[i])
-		source := cache.NewListWatchFromClient(
-			c.PgclusterClient,
-			crv1.PgclusterResourcePlural,
-			c.Namespace[i],
-			fields.Everything())
+	nsList := ns.GetNamespaces(c.PgclusterClientset, operator.InstallationName)
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgcluster{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pgcluster controller for ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 	}
 	return nil
 }
@@ -215,4 +196,32 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 	}
 	return fmt.Sprintf("%d/%d", readyCount, containerCount), equal
 
+}
+
+func (c *PgclusterController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgclusterClient,
+		crv1.PgclusterResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgcluster{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

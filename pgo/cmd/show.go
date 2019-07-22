@@ -115,6 +115,7 @@ func init() {
 	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowNamespaceCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPVCCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use")
@@ -181,7 +182,7 @@ var ShowNamespaceCmd = &cobra.Command{
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		showNamespace(args, Namespace)
+		showNamespace(args)
 	},
 }
 

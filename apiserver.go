@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
@@ -64,6 +65,9 @@ func main() {
 	if tmp != "" {
 		PORT = tmp
 	}
+
+        //give time for pgo-event to start up
+        time.Sleep(time.Duration(5) * time.Second)
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
@@ -125,7 +129,10 @@ func main() {
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
-	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler)
+	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespacedelete", namespaceservice.DeleteNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespacecreate", namespaceservice.CreateNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespaceupdate", namespaceservice.UpdateNamespaceHandler).Methods("POST")
 
 	// backups / backrest
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")

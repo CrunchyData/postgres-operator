@@ -46,8 +46,8 @@ The following table shows the *pgo* operations currently implemented:
 | :---------- | :-------------                                               | :------                                                                                         |
 | apply       | `pgo apply mypolicy --selector=name=mycluster`               | Apply a SQL policy on a Postgres cluster(s) that have a label matching `service-name=mycluster` |
 | backup      | `pgo backup mycluster`                                       | Perform a backup on a Postgres cluster(s)                                                       |
-| create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user)                         |
-| delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule)                         |
+| create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user, namespace, pgouser, pgorole)                         |
+| delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule, namespace, pgouser, pgorole)                         |
 | ls          | `pgo ls mycluster filepath`                                  | Perform a Linux `ls` command on the cluster.                                                    |
 | cat         | `pgo cat mycluster filepath`                                 | Perform a Linux `cat` command on the cluster.                                                   |
 | df          | `pgo df mycluster`                                           | Display the disk status/capacity of a Postgres cluster.                                         |
@@ -59,10 +59,10 @@ The following table shows the *pgo* operations currently implemented:
 | restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest` or `pgdump` restore on a Postgres cluster.                               |
 | scale       | `pgo scale mycluster`                                        | Create a Postgres replica(s) for a given Postgres cluster.                                      |
 | scaledown   | `pgo scaledown mycluster --query`                            | Delete a replica from a Postgres cluster.                                                       |
-| show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule).                   |
+| show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule, namespace, pgouser, pgorole).                   |
 | status      | `pgo status`                                                 | Display Operator status.                                                                        |
 | test        | `pgo test mycluster`                                         | Perform a SQL test on a Postgres cluster(s).                                                    |
-| update      | `pgo update cluster mycluster --autofail=false`                  | Update a Postgres cluster(s).                                                                   |
+| update      | `pgo update cluster mycluster --autofail=false`                  | Update a Postgres cluster(s), pgouser, pgorole, or namespace.                                                                   |
 | upgrade     | `pgo upgrade mycluster`                                      | Perform a minor upgrade to a Postgres cluster(s).                                               |
 | user        | `pgo user --selector=name=mycluster --update-passwords`      | Perform Postgres user maintenance on a Postgres cluster(s).                                     |
 | version     | `pgo version`                                                | Display Operator version information.                                                           |
@@ -482,6 +482,51 @@ Likewise, you can create a Replica using a Preferred Node as follows:
 
 This command will cause the Postgres Service to be of a specific
 type instead of the default ClusterIP service type.
+
+#### Namespace Operations
+
+Create an Operator namespace where Postgres clusters can be created
+and managed by the Operator:
+
+    pgo create namespace mynamespace
+
+Update a Namespace to be able to be used by the Operator:
+
+    pgo update namespace somenamespace
+
+Delete a Namespace:
+
+    pgo delete namespace mynamespace
+
+#### PGO User Operations
+
+PGO users are users defined for authenticating to the PGO REST API.  You
+can manage those users with the following commands:
+
+    pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+    pgo create pgouser otheruser --all-namespaces --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+
+Update a user:
+
+    pgo update pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+    pgo update pgouser otheruser --all-namespaces --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+
+Delete a PGO user:
+
+    pgo delete pgouser someuser
+
+PGO roles are also managed as follows:
+
+    pgo create pgorole somerole --permissions="Cat,Ls"
+
+Delete a PGO role with:
+
+    pgo delete pgorole somerole
+
+Update a PGO role with:
+
+    pgo update pgorole somerole --permissions="Cat,Ls"
+
 
 #### Miscellaneous
 

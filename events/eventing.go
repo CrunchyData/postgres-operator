@@ -31,6 +31,10 @@ func Publish(e EventInterface) error {
 	if eventAddr == "" {
 		return errors.New("EVENT_ADDR not set")
 	}
+	if os.Getenv("DISABLE_EVENTING") == "true" {
+		log.Debugf("eventing disabled")
+		return nil
+	}
 
 	cfg := nsq.NewConfig()
 	if cfg == nil {

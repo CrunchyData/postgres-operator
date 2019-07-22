@@ -32,6 +32,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/tlsutil"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -69,7 +70,7 @@ var BasicAuth bool
 
 // Namespace comes from the apiserver config in this version
 var PgoNamespace string
-var Namespace string
+var InstallationName string
 
 var CRUNCHY_DEBUG bool
 
@@ -102,19 +103,21 @@ func Initialize() {
 	}
 	log.Info("Pgo Namespace is [" + PgoNamespace + "]")
 
-	namespaceList := util.GetNamespaces()
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+	//namespaceList := util.GetNamespaces()
+	//log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
-	Namespace = os.Getenv("NAMESPACE")
-	if Namespace == "" {
-		log.Error("NAMESPACE environment variable is set to empty string which pgo will interpret as watch 'all' namespaces")
+	InstallationName = os.Getenv("PGO_INSTALLATION_NAME")
+	if InstallationName == "" {
+		log.Error("PGO_INSTALLATION_NAME environment variable is missng")
+		os.Exit(2)
 	}
+	log.Info("InstallationName is [" + InstallationName + "]")
+
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	CRUNCHY_DEBUG = false
 	if tmp == "true" {
 		CRUNCHY_DEBUG = true
 	}
-	log.Info("Namespace is [" + Namespace + "]")
 	BasicAuth = true
 	MetricsFlag = false
 	BadgerFlag = false
@@ -291,12 +294,17 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
 	}
 
-	if !UserIsPermittedInNamespace(username, requestedNS) {
+	iAccess, uAccess := UserIsPermittedInNamespace(username, requestedNS)
+	if uAccess == false {
 		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
 		return requestedNS, errors.New(errMsg)
 	}
+	if iAccess == false {
+		errMsg := fmt.Sprintf("namespace [%s] is not part of the Operator installation", requestedNS)
+		return requestedNS, errors.New(errMsg)
+	}
 
-	if util.WatchingNamespace(clientset, requestedNS) {
+	if ns.WatchingNamespace(clientset, requestedNS, InstallationName) {
 		return requestedNS, nil
 	}
 
@@ -505,7 +513,7 @@ func validateWithKube() {
 		}
 	}
 
-	err := util.ValidateNamespaces(Clientset)
+	err := ns.ValidateNamespaces(Clientset, InstallationName, PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
@@ -541,15 +549,36 @@ func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
 	return doc.String()
 }
 
-func UserIsPermittedInNamespace(username, requestedNS string) bool {
+//returns installation access and user access
+//installation access means a namespace belongs to this Operator installation
+//user access means this user has access to a namespace
+func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
+
+	iAccess := false
+	uAccess := false
+
+	ns, found, err := kubeapi.GetNamespace(Clientset, requestedNS)
+	if !found {
+		log.Error(err)
+		log.Errorf("could not find namespace %s ", requestedNS)
+		return iAccess, uAccess
+	}
+
+	if ns.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+
+		ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == InstallationName {
+		iAccess = true
+
+	}
 
 	//get the pgouser Secret for this username
 	userSecretName := "pgouser-" + username
 	userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
 	if !found {
+		uAccess = false
 		log.Error(err)
 		log.Errorf("could not find pgouser Secret for username %s", username)
-		return false
+		return iAccess, uAccess
 	}
 
 	nsstring := string(userSecret.Data["namespaces"])
@@ -557,16 +586,19 @@ func UserIsPermittedInNamespace(username, requestedNS string) bool {
 	for _, v := range nsList {
 		ns := strings.TrimSpace(v)
 		if ns == requestedNS {
-			return true
+			uAccess = true
+			return iAccess, uAccess
 		}
 	}
 
 	//handle the case of a user in pgouser with "" (all) namespaces
 	if nsstring == "" {
-		return true
+		uAccess = true
+		return iAccess, uAccess
 	}
 
-	return false
+	uAccess = false
+	return iAccess, uAccess
 }
 
 //validate or generate the TLS keys

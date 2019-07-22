@@ -5,6 +5,10 @@ export PATH=$PATH:$GOBIN
 # NAMESPACE is the list of namespaces the Operator will watch
 export NAMESPACE=pgouser1,pgouser2
 
+# PGO_INSTALLATION_NAME is the unique name given to this Operator install
+# this supports multi-deployments of the Operator on the same Kube cluster
+export PGO_INSTALLATION_NAME=devtest
+
 # PGO_OPERATOR_NAMESPACE is the namespace the Operator is deployed into
 export PGO_OPERATOR_NAMESPACE=pgo
 

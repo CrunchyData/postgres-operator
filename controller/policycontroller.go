@@ -17,6 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,53 +35,31 @@ type PgpolicyController struct {
 	PgpolicyClient    *rest.RESTClient
 	PgpolicyScheme    *runtime.Scheme
 	PgpolicyClientset *kubernetes.Clientset
-	Namespace         []string
+	Ctx               context.Context
 }
 
 // Run starts an pgpolicy resource controller
-func (c *PgpolicyController) Run(ctx context.Context) error {
+func (c *PgpolicyController) Run() error {
 
 	// Watch Example objects
-	err := c.watchPgpolicys(ctx)
+	err := c.watchPgpolicys(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgpolicy resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgpolicys watches the pgpolicy resource catching events
 func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pgpolicy controller on ns [%s]", c.Namespace[i])
+	nsList := ns.GetNamespaces(c.PgpolicyClientset, operator.InstallationName)
 
-		source := cache.NewListWatchFromClient(
-			c.PgpolicyClient,
-			crv1.PgpolicyResourcePlural,
-			c.Namespace[i],
-			fields.Everything())
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pgpolicy controller on ns [%s]", nsList[i])
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgpolicy{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
+		c.SetupWatch(nsList[i])
 	}
 	return nil
 }
@@ -170,4 +150,31 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 		log.Error(err.Error())
 	}
 
+}
+func (c *PgpolicyController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgpolicyClient,
+		crv1.PgpolicyResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgpolicy{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

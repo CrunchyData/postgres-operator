@@ -22,32 +22,13 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 |  | pgreplicas|
 |  | pgtasks|
 |  | pgupgrades|
-| Cluster Roles (cluster-roles.yaml) | pgopclusterrole|
-|  | pgopclusterrolecrd|
-| Cluster Role Bindings (cluster-roles-bindings.yaml) | pgopclusterbinding|
-|  | pgopclusterbindingcrd|
-| Service Account (service-accounts.yaml) | postgres-operator|
-| | pgo-backrest|
-| Roles (rbac.yaml) | pgo-role|
-| | pgo-backrest-role|
-|Role Bindings  (rbac.yaml) | pgo-backrest-role-binding|
-| | pgo-role-binding|
-
-
-Note that the cluster role bindings have a naming convention of
-pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and
-pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  The PGO_OPERATOR_NAMESPACE
-environment variable is added to make each cluster role binding
-name unique and to support more than a single Operator being deployed
-on the same Kube cluster.
-
-
+| Cluster Roles (cluster-roles.yaml) | pgo-cluster-role|
+| Cluster Role Bindings (cluster-roles-bindings.yaml) | pgo-cluster-role|
 
 
 ## Operator RBAC
 
-Operator roles are defined as Secrets starting in version 4.1 of the 
-Operator.  Likewise, Operator users are also defined as Secrets.
+Operator user roles (pgouser) are defined as Secrets starting in version 4.1 of the Operator.  Likewise, Operator users (pgouser) are also defined as Secrets.
 
 The bootstrap Operator credential is created when you run:
 
@@ -65,6 +46,56 @@ The default roles, role name, user name, and password are defined in the followi
     deploy/install-bootstrap-creds.sh
  
 These Secrets (pgouser/pgorole) control access to the Operator API.
+
+## Target Namespaces
+
+Starting in Operator version 4.1, targeted namespaces are created
+by the Operator itself instead as configuration or user actions
+dictate.
+
+Targeted namespaces are namespaces which are configured for the
+Operator to deploy Postgres clusters into and manage.
+
+Targeted namespaces are those which have the following labels:
+
+    vendor=crunchydata
+    pgo-installation-name=devtest
+
+In the above example, *devtest* is the default name for an Operator
+installation.  This value is specified using the PGO_INSTALLATION_NAME
+environment variable, when installing the Operator, you will
+need to set this environment variable to be unique across your Kube
+cluster.  This setting determines what namespaces an Operator
+installation can access. 
+
+Users can create a new Namespace as follows:
+    pgo create namespace mynamespace
+
+If you want to create the Namespace prior to the Operator using
+them, you can do the following:
+    kubectl create namespace mynamespace
+    pgo update namespace mynamespace
+
+The *update namespace* command will apply the required Operator RBAC
+rules to that namespace.
+
+When you configure the Operator, you can still specify the NAMESPACE
+environment variable with a list of namespaces, if they exist and
+have the correct labels, the Operator will recognize and watch 
+those namespaces.  If the NAMESPACE environment variable has names
+that are not on your Kube system, the Operator will create the namespaces
+at boot up time.
+
+Part of the workflow of the Operator creating namespaces includes applying
+the RBAC rules required for those namespaces.  The RBAC objects created
+in each targeted namespace include:
+
+| Setting |Definition  |
+|---|---|
+| Roles  | pgo-backrest-role|
+| Role Bindings  | pgo-backrest-role-binding|
+| Service Accounts | pgo-backrest |
+
 
 ### Managing Operator Roles
 
@@ -87,6 +118,7 @@ The full set of permissions that can be used in a role are as follows:
 |CreateCluster | allow *pgo create cluster*|
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
+|CreateNamespace | allow *pgo create namespace*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
 |CreatePgouser | allow *pgo create pgouser*|
 |CreatePgorole | allow *pgo create pgorole*|
@@ -98,6 +130,7 @@ The full set of permissions that can be used in a role are as follows:
 |DeleteBackup | allow *pgo delete backup*|
 |DeleteBenchmark | allow *pgo delete benchmark*|
 |DeleteCluster | allow *pgo delete cluster*|
+|DeleteNamespace | allow *pgo delete namespace*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
 |DeletePgouser | allow *pgo delete pgouser*|
 |DeletePgorole | allow *pgo delete pgorole*|
@@ -128,6 +161,7 @@ The full set of permissions that can be used in a role are as follows:
 |Status | allow *pgo status*|
 |TestCluster | allow *pgo test*|
 |UpdateCluster | allow *pgo update cluster*|
+|UpdateNamespace | allow *pgo update namespace*|
 |UpdatePgouser | allow *pgo update pgouser*|
 |UpdatePgorole | allow *pgo update pgorole*|
 |User | allow *pgo user*|

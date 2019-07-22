@@ -57,14 +57,14 @@ var Series int
 var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Postgres Operator resource",
-	Long: `CREATE allows you to create a new Cluster, PGBouncer, PGPool, Policy, Schedule or User. For example: 
-
+	Long: `CREATE allows you to create a new Operator resource. For example: 
     pgo create cluster
     pgo create pgbouncer
     pgo create pgpool
     pgo create pgouser
     pgo create pgorole
     pgo create policy
+    pgo create namespace
     pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
@@ -76,10 +76,11 @@ var CreateCmd = &cobra.Command{
     * pgouser
     * pgorole
     * policy
+    * namespace
     * user`)
 		} else {
 			switch args[0] {
-			case "cluster", "pgbouncer", "pgpool", "pgouser", "pgorole", "policy", "user":
+			case "cluster", "pgbouncer", "pgpool", "pgouser", "pgorole", "policy", "user", "namespace":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
@@ -89,6 +90,7 @@ var CreateCmd = &cobra.Command{
     * pgouser
     * pgorole
     * policy
+    * namespace
     * user`)
 			}
 		}
@@ -249,6 +251,7 @@ func init() {
 	CreateCmd.AddCommand(createPgoroleCmd)
 	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
+	CreateCmd.AddCommand(createNamespaceCmd)
 
 	createClusterCmd.Flags().StringVarP(&BackrestFlag, "pgbackrest", "", "", "Enables a pgBackRest volume for the database pod, \"true\" or \"false\". Default from pgo.yaml, command line overrides default.")
 	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
@@ -348,6 +351,27 @@ var createPgoroleCmd = &cobra.Command{
 			fmt.Println(`Error: A pgouser role name is required for this command.`)
 		} else {
 			createPgorole(args, Namespace)
+		}
+	},
+}
+
+// createNamespaceCmd ...
+var createNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Create a namespace",
+	Long: `Create a namespace. For example:
+
+    pgo create namespace somenamespace`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		log.Debug("create namespace called ")
+
+		if len(args) == 0 {
+			fmt.Println(`Error: A namespace name is required for this command.`)
+		} else {
+			createNamespace(args, Namespace)
 		}
 	},
 }

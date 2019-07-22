@@ -150,3 +150,33 @@ func (lvl EventPGODeleteRoleFormat) String() string {
 	msg := fmt.Sprintf("Event %s - (pgo delete role) %s - deleted by %s", lvl.EventHeader, lvl.DeletedRolename, lvl.EventHeader.Username)
 	return msg
 }
+
+//--------
+type EventPGOCreateNamespaceFormat struct {
+	EventHeader      `json:"eventheader"`
+	CreatedNamespace string `json:"creatednamespace"`
+}
+
+func (p EventPGOCreateNamespaceFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPGOCreateNamespaceFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (pgo create namespace) %s - created by %s", lvl.EventHeader, lvl.CreatedNamespace, lvl.EventHeader.Username)
+	return msg
+}
+
+//--------
+type EventPGODeleteNamespaceFormat struct {
+	EventHeader      `json:"eventheader"`
+	DeletedNamespace string `json:"deletednamespace"`
+}
+
+func (p EventPGODeleteNamespaceFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPGODeleteNamespaceFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (pgo delete namespace) %s - deleted by %s", lvl.EventHeader, lvl.DeletedNamespace, lvl.EventHeader.Username)
+	return msg
+}

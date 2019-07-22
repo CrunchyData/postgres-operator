@@ -28,6 +28,7 @@ func init() {
 	UpdateCmd.AddCommand(UpdatePgouserCmd)
 	UpdateCmd.AddCommand(UpdatePgoroleCmd)
 	UpdateCmd.AddCommand(UpdateClusterCmd)
+	UpdateCmd.AddCommand(UpdateNamespaceCmd)
 
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
@@ -53,6 +54,7 @@ var UpdateCmd = &cobra.Command{
 	pgo update pgouser someuser --pgouser-roles="role1,role2"
 	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
 	pgo update pgorole somerole --pgorole-permission="Cat"
+	pgo update namespace mynamespace 
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -61,15 +63,17 @@ var UpdateCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* pgouser
 	* pgorole
+	* namespace
 	* cluster`)
 		} else {
 			switch args[0] {
-			case "cluster", "pgouser", "pgorole":
+			case "cluster", "pgouser", "pgorole", "namespace":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* cluster
 	* pgorole
+	* namespace
 	* pgouser`)
 			}
 		}
@@ -140,6 +144,21 @@ var UpdatePgoroleCmd = &cobra.Command{
 			fmt.Println("Error: You must specify the name of a pgorole.")
 		} else {
 			updatePgorole(args, Namespace)
+		}
+	},
+}
+
+var UpdateNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Update a namespace, applying Operator RBAC",
+	Long: `UPDATE allows you to update a Namespace. For example:
+		pgo update namespace mynamespace`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if len(args) == 0 {
+			fmt.Println("Error: You must specify the name of a Namespace.")
+		} else {
+			updateNamespace(args)
 		}
 	},
 }

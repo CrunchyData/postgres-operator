@@ -153,7 +153,9 @@ const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"
 
 const LABEL_NAMESPACE = "namespace"
+const LABEL_PGO_INSTALLATION_NAME = "pgo-installation-name"
 const LABEL_VENDOR = "vendor"
+const LABEL_CRUNCHY = "crunchydata"
 const LABEL_PGO_CREATED_BY = "pgo-created-by"
 const LABEL_PGO_UPDATED_BY = "pgo-updated-by"
 

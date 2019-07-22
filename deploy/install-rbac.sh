@@ -43,15 +43,3 @@ source $DIR/gen-api-keys.sh
 # create the sshd keys for pgbackrest repo functionality
 source $DIR/gen-sshd-keys.sh
 
-# create a pgo-backrest-repo-config Secret into each namespace the
-# Operator will be watching
-
-IFS=', ' read -r -a array <<< "$NAMESPACE"
-
-echo ""
-echo "create required rbac in each namespace the Operator is watching..."
-for ns in "${array[@]}"
-do
-        $DIR/create-target-rbac.sh $ns $PGO_OPERATOR_NAMESPACE
-done
-

@@ -1,0 +1,66 @@
+{
+    "apiVersion": "rbac.authorization.k8s.io/v1",
+    "kind": "Role",
+    "metadata": {
+        "name": "pgo-target-role",
+        "namespace": "{{.TargetNamespace}}"
+    },
+    "rules": [
+        {
+            "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "pods",
+                "pods/exec",
+                "pods/log",
+                "services",
+                "endpoints",
+                "persistentvolumeclaims",
+                "configmaps",
+                "secrets"
+            ],
+            "verbs": [
+                "get",
+                "deletecollection",
+                "list",
+                "watch",
+                "create",
+                "update",
+                "patch",
+                "delete"
+            ]
+        },
+        {
+            "apiGroups": [
+                "apps"
+            ],
+            "resources": [
+                "deployments",
+                "replicasets"
+            ],
+            "verbs": [
+                "*"
+            ]
+        },
+        {
+            "apiGroups": [
+                "batch",
+                "extensions"
+            ],
+            "resources": [
+                "jobs"
+            ],
+            "verbs": [
+                "get",
+                "deletecollection",
+                "list",
+                "watch",
+                "create",
+                "update",
+                "patch",
+                "delete"
+            ]
+        }
+    ]
+}

@@ -29,6 +29,7 @@ import (
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
+var InstallationName string
 var PgoNamespace string
 var EventTCPAddress = "localhost:4150"
 
@@ -51,9 +52,16 @@ func Initialize(clientset *kubernetes.Clientset) {
 	}
 
 	NAMESPACE = os.Getenv("NAMESPACE")
-	log.Debugf("setting NAMESPACE to %s", NAMESPACE)
+	log.Infof("NAMESPACE %s", NAMESPACE)
 	if NAMESPACE == "" {
 		log.Error("NAMESPACE env var is set to empty string which pgo intprets as meaning you want it to watch 'all' namespaces.")
+	}
+
+	InstallationName = os.Getenv("PGO_INSTALLATION_NAME")
+	log.Infof("InstallationName %s", InstallationName)
+	if InstallationName == "" {
+		log.Error("PGO_INSTALLATION_NAME env var is required")
+		os.Exit(2)
 	}
 
 	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")

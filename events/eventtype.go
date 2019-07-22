@@ -65,15 +65,17 @@ const (
 	EventCreatePgbouncer = "CreatePgbouncer"
 	EventDeletePgbouncer = "DeletePgbouncer"
 
-	EventPGOCreateUser   = "PGOCreateUser"
-	EventPGOUpdateUser   = "PGOUpdateUser"
-	EventPGODeleteUser   = "PGODeleteUser"
-	EventPGOCreateRole   = "PGOCreateRole"
-	EventPGOUpdateRole   = "PGOUpdateRole"
-	EventPGODeleteRole   = "PGODeleteRole"
-	EventPGOStart        = "PGOStart"
-	EventPGOStop         = "PGOStop"
-	EventPGOUpdateConfig = "PGOUpdateConfig"
+	EventPGOCreateUser      = "PGOCreateUser"
+	EventPGOUpdateUser      = "PGOUpdateUser"
+	EventPGODeleteUser      = "PGODeleteUser"
+	EventPGOCreateRole      = "PGOCreateRole"
+	EventPGOUpdateRole      = "PGOUpdateRole"
+	EventPGODeleteRole      = "PGODeleteRole"
+	EventPGOStart           = "PGOStart"
+	EventPGOStop            = "PGOStop"
+	EventPGOUpdateConfig    = "PGOUpdateConfig"
+	EventPGODeleteNamespace = "PGODeleteNamespace"
+	EventPGOCreateNamespace = "PGOCreateNamespace"
 )
 
 type EventHeader struct {

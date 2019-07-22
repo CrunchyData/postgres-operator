@@ -36,6 +36,30 @@ const CustomConfigMapName = "pgo-config"
 const DefaultConfigsPath = "/default-pgo-config/"
 const CustomConfigsPath = "/pgo-config/"
 
+var PgoTargetRoleBindingTemplate *template.Template
+
+const PGOTargetRoleBindingPath = "pgo-target-role-binding.json"
+
+var PgoBackrestServiceAccountTemplate *template.Template
+
+const PGOBackrestServiceAccountPath = "pgo-backrest-sa.json"
+
+var PgoTargetServiceAccountTemplate *template.Template
+
+const PGOTargetServiceAccountPath = "pgo-target-sa.json"
+
+var PgoBackrestRoleTemplate *template.Template
+
+const PGOBackrestRolePath = "pgo-backrest-role.json"
+
+var PgoBackrestRoleBindingTemplate *template.Template
+
+const PGOBackrestRoleBindingPath = "pgo-backrest-role-binding.json"
+
+var PgoTargetRoleTemplate *template.Template
+
+const PGOTargetRolePath = "pgo-target-role.json"
+
 var BenchmarkJobTemplate *template.Template
 
 const benchmarkJobPath = "pgbench-job.json"
@@ -530,6 +554,31 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	c.CheckEnv()
 
 	//load up all the templates
+	PgoBackrestServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestServiceAccountPath)
+	if err != nil {
+		return err
+	}
+	PgoTargetServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOTargetServiceAccountPath)
+	if err != nil {
+		return err
+	}
+	PgoTargetRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOTargetRoleBindingPath)
+	if err != nil {
+		return err
+	}
+	PgoBackrestRoleTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestRolePath)
+	if err != nil {
+		return err
+	}
+	PgoBackrestRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestRoleBindingPath)
+	if err != nil {
+		return err
+	}
+	PgoTargetRoleTemplate, err = c.LoadTemplate(cMap, rootPath, PGOTargetRolePath)
+	if err != nil {
+		return err
+	}
+
 	BenchmarkJobTemplate, err = c.LoadTemplate(cMap, rootPath, benchmarkJobPath)
 	if err != nil {
 		return err

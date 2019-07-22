@@ -23,6 +23,8 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
@@ -41,52 +43,31 @@ import (
 type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
-	Namespace    []string
+	Ctx          context.Context
 }
 
 // Run starts an pod resource controller
-func (c *JobController) Run(ctx context.Context) error {
+func (c *JobController) Run() error {
 
-	err := c.watchJobs(ctx)
+	err := c.watchJobs(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for job resource: %v\n", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchJobs is the event loop for job resources
 func (c *JobController) watchJobs(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting job controller for ns [%s]", c.Namespace[i])
+	nsList := ns.GetNamespaces(c.JobClientset, operator.InstallationName)
+	log.Debugf("jobController watching %v namespaces", nsList)
 
-		source := cache.NewListWatchFromClient(
-			c.JobClientset.BatchV1().RESTClient(),
-			"jobs",
-			c.Namespace[i],
-			fields.Everything())
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting job controller for ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&apiv1.Job{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
 	}
 	return nil
 }
@@ -438,4 +419,32 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	}
 
 	return err
+}
+
+func (c *JobController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.JobClientset.BatchV1().RESTClient(),
+		"jobs",
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&apiv1.Job{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }
