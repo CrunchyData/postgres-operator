@@ -19,22 +19,21 @@ import (
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
 // UserHandler ...
 // pgo user XXXX
-func UserHandler(w http.ResponseWriter, r *http.Request) {
+func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	log.Debug("userservice.UserHandler called")
+	log.Debug("userservice.UpdateUserHandler called")
 
-	var request msgs.UserRequest
+	var request msgs.UpdateUserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	resp := msgs.UserResponse{}
-	username, err := apiserver.Authn(apiserver.USER_PERM, w, r)
+	resp := msgs.UpdateUserResponse{}
+	username, err := apiserver.Authn(apiserver.UPDATE_USER_PERM, w, r)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		json.NewEncoder(w).Encode(resp)
@@ -51,15 +50,14 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ns string
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	resp = User(&request, ns, username)
+	resp = UpdateUser(&request, username)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -109,16 +107,21 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // parameters selector
 // returns a DeleteUserResponse
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
 
-	name := vars["name"]
-	selector := r.URL.Query().Get("selector")
-	namespace := r.URL.Query().Get("namespace")
-	clientVersion := r.URL.Query().Get("version")
+	var request msgs.DeleteUserRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	log.Debugf("DeleteUserHandler parameters selector [%s] namespace [%s] version [%s] name [%s]", selector, namespace, clientVersion, name)
+	resp := msgs.DeleteUserResponse{}
+	if request.ClientVersion != msgs.PGO_VERSION {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
 
-	username, err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
+	log.Debugf("DeleteUserHandler parameters %v", request)
+
+	pgouser, err := apiserver.Authn(apiserver.DELETE_USER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -127,10 +130,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	resp := msgs.DeleteUserResponse{}
-
-	var ns string
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, pgouser, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -138,14 +138,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if clientVersion != msgs.PGO_VERSION {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
-		return
-	}
-
-	resp = DeleteUser(name, selector, ns, username)
+	resp = DeleteUser(&request, pgouser)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -155,14 +148,11 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 // parameters selector
 // returns a ShowUserResponse
 func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
 
-	clustername := vars["name"]
-	selector := r.URL.Query().Get("selector")
-	namespace := r.URL.Query().Get("namespace")
-	expired := r.URL.Query().Get("expired")
-	clientVersion := r.URL.Query().Get("version")
-	log.Debugf("ShowUserHandler parameters expired [%s] selector [%s] namespace [%s] expired [%s] version [%s]", expired, selector, namespace, clientVersion, clustername)
+	var request msgs.ShowUserRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	log.Debugf("ShowUserHandler parameters [%v]", request)
 
 	username, err := apiserver.Authn(apiserver.SHOW_SECRETS_PERM, w, r)
 	if err != nil {
@@ -174,15 +164,14 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	resp := msgs.ShowUserResponse{}
-	if clientVersion != msgs.PGO_VERSION {
+	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
 		resp.Results = make([]msgs.ShowUserDetail, 0)
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	var ns string
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]msgs.ShowUserDetail, 0)
@@ -190,7 +179,7 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ShowUser(clustername, selector, expired, ns)
+	resp = ShowUser(&request)
 	json.NewEncoder(w).Encode(resp)
 
 }

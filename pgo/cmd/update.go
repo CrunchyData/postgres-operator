@@ -28,6 +28,7 @@ func init() {
 	UpdateCmd.AddCommand(UpdatePgouserCmd)
 	UpdateCmd.AddCommand(UpdatePgoroleCmd)
 	UpdateCmd.AddCommand(UpdateClusterCmd)
+	UpdateCmd.AddCommand(UpdateUserCmd)
 	UpdateCmd.AddCommand(UpdateNamespaceCmd)
 
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -41,6 +42,14 @@ func init() {
 	UpdatePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "The permissions to use for updating the pgorole permissions.")
 	UpdatePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdateUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdateUserCmd.Flags().StringVarP(&Expired, "expired", "", "", "required flag when updating passwords that will expire in X days using --update-passwords flag.")
+	UpdateUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
+	UpdateUserCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "", "", "Updates the password for a user on selective clusters.")
+	UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
+	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
+	UpdateUserCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
+	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
 
 }
 
@@ -53,6 +62,7 @@ var UpdateCmd = &cobra.Command{
 	pgo update pgouser someuser --pgouser-password=somenewpassword
 	pgo update pgouser someuser --pgouser-roles="role1,role2"
 	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
+	pgo update user mycluster
 	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update namespace mynamespace 
 	pgo update cluster --selector=name=mycluster --autofail=false
@@ -63,16 +73,18 @@ var UpdateCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* pgouser
 	* pgorole
+	* user
 	* namespace
 	* cluster`)
 		} else {
 			switch args[0] {
-			case "cluster", "pgouser", "pgorole", "namespace":
+			case "user", "cluster", "pgouser", "pgorole", "namespace":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* cluster
 	* pgorole
+	* user
 	* namespace
 	* pgouser`)
 			}
@@ -106,6 +118,26 @@ var UpdateClusterCmd = &cobra.Command{
 			} else {
 				fmt.Println("Aborting...")
 			}
+		}
+	},
+}
+
+var UpdateUserCmd = &cobra.Command{
+	Use:   "user",
+	Short: "Update a postgres user",
+	Long: `UPDATE allows you to update a pgo user. For example:
+		pgo update user --selector=name=mycluster --update-passwords
+		pgo update user mycluster --change-password=bob --password=somepassword --expired=300`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
+		if !AllFlag && Selector == "" {
+			fmt.Println("Error: You must specify a --selector or --all flag.")
+		} else {
+			updateUser(args, Namespace)
 		}
 	},
 }

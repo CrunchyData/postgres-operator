@@ -19,8 +19,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
-// UserRequest ...
-type UserRequest struct {
+// UpdateUserRequest ...
+type UpdateUserRequest struct {
 	Args                  []string
 	Selector              string
 	Namespace             string
@@ -38,14 +38,22 @@ type UserRequest struct {
 	PasswordLength        int
 }
 
+// DeleteUserRequest ...
+type DeleteUserRequest struct {
+	Selector      string
+	Username      string
+	ClientVersion string
+	Namespace     string
+}
+
 // DeleteUserResponse ...
 type DeleteUserResponse struct {
 	Results []string
 	Status
 }
 
-// UserResponse ...
-type UserResponse struct {
+// UpdateUserResponse ...
+type UpdateUserResponse struct {
 	Results []string
 	Status
 }
@@ -74,6 +82,16 @@ type ShowUserSecret struct {
 	Name     string
 	Username string
 	Password string
+}
+
+// ShowUserRequest ...
+type ShowUserRequest struct {
+	Clusters      []string //list of clusters
+	AllFlag       bool
+	ClientVersion string
+	Selector      string
+	Namespace     string
+	Expired       string
 }
 
 // ShowUsersDetail ...

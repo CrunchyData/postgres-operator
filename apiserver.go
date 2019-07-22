@@ -120,15 +120,15 @@ func main() {
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
-	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
-	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
-	r.HandleFunc("/users/{name}", userservice.ShowUserHandler).Methods("GET")
-	//here
-	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
+
+	r.HandleFunc("/userupdate", userservice.UpdateUserHandler).Methods("POST")
+	r.HandleFunc("/usercreate", userservice.CreateUserHandler).Methods("POST")
+	r.HandleFunc("/usershow", userservice.ShowUserHandler).Methods("POST")
+	r.HandleFunc("/userdelete", userservice.DeleteUserHandler).Methods("POST")
+
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
 	r.HandleFunc("/showclusters", clusterservice.ShowClusterHandler).Methods("POST")
-	//here
 	r.HandleFunc("/clustersdelete", clusterservice.DeleteClusterHandler).Methods("POST")
 	r.HandleFunc("/clustersupdate", clusterservice.UpdateClusterHandler).Methods("POST")
 	r.HandleFunc("/testclusters", clusterservice.TestClusterHandler).Methods("POST")

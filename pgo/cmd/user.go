@@ -23,7 +23,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 )
 
 // PasswordAgeDays password age flag
@@ -50,40 +49,10 @@ var UpdatePasswords bool
 // PasswordLength password length flag
 var PasswordLength int
 
-var userCmd = &cobra.Command{
-	Use:   "user",
-	Short: "Manage PostgreSQL users",
-	Long: `USER allows you to manage users and passwords across a set of clusters. For example:
-
-	pgo user --selector=name=mycluster --update-passwords
-	pgo user --change-password=bob --expired=300 --selector=name=mycluster --password=newpass`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		log.Debug("user called")
-		userManager(Namespace)
-	},
-}
-
-func init() {
-	RootCmd.AddCommand(userCmd)
-
-	userCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	userCmd.Flags().StringVarP(&Expired, "expired", "", "", "required flag when updating passwords that will expire in X days using --update-passwords flag.")
-	userCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
-	userCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "", "", "Updates the password for a user on selective clusters.")
-	userCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
-	userCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
-	userCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
-	userCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
-
-}
-
 // userManager ...
-func userManager(ns string) {
+func updateUser(args []string, ns string) {
 
-	request := msgs.UserRequest{}
+	request := msgs.UpdateUserRequest{}
 	request.Namespace = ns
 	request.Selector = Selector
 	request.Password = Password
@@ -98,7 +67,7 @@ func userManager(ns string) {
 	request.ClientVersion = msgs.PGO_VERSION
 	request.PasswordLength = PasswordLength
 
-	response, err := api.UserManager(httpclient, &SessionCredentials, &request)
+	response, err := api.UpdateUser(httpclient, &SessionCredentials, &request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -161,7 +130,14 @@ func deleteUser(username string, ns string) {
 	log.Debugf("deleteUser called %v", username)
 
 	log.Debugf("deleting user %s selector=%s", username, Selector)
-	response, err := api.DeleteUser(httpclient, username, Selector, &SessionCredentials, ns)
+
+	r := new(msgs.DeleteUserRequest)
+	r.Username = username
+	r.Selector = Selector
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+
+	response, err := api.DeleteUser(httpclient, &SessionCredentials, r)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
@@ -189,36 +165,40 @@ func showUser(args []string, ns string) {
 		args[0] = "all"
 	}
 
-	for _, v := range args {
+	r := msgs.ShowUserRequest{}
+	r.Clusters = args
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Selector = Selector
+	r.Namespace = ns
+	r.Expired = Expired
+	r.AllFlag = AllFlag
 
-		response, err := api.ShowUser(httpclient, v, Selector, Expired, &SessionCredentials, ns)
+	response, err := api.ShowUser(httpclient, &SessionCredentials, &r)
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+		os.Exit(2)
+	}
+
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(2)
+	}
+	if len(response.Results) == 0 {
+		fmt.Println("No clusters found.")
+		return
+	}
+
+	if OutputFormat == "json" {
+		b, err := json.MarshalIndent(response, "", "  ")
 		if err != nil {
-			fmt.Println("Error: ", err.Error())
-			os.Exit(2)
+			fmt.Println("Error: ", err)
 		}
+		fmt.Println(string(b))
+		return
+	}
 
-		if response.Status.Code != msgs.Ok {
-			fmt.Println("Error: " + response.Status.Msg)
-			os.Exit(2)
-		}
-		if len(response.Results) == 0 {
-			fmt.Println("No clusters found.")
-			return
-		}
-
-		if OutputFormat == "json" {
-			b, err := json.MarshalIndent(response, "", "  ")
-			if err != nil {
-				fmt.Println("Error: ", err)
-			}
-			fmt.Println(string(b))
-			return
-		}
-
-		for _, clusterDetail := range response.Results {
-			printUsers(&clusterDetail)
-		}
-
+	for _, clusterDetail := range response.Results {
+		printUsers(&clusterDetail)
 	}
 
 }

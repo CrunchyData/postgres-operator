@@ -64,16 +64,16 @@ var defaultPasswordLength = 8
 // pgo user --change-password=bob --db=userdb
 //  --expired=7 --selector=env=research --update-passwords=true
 //  --valid-days=30
-func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
+func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUserResponse {
 	var err error
-	resp := msgs.UserResponse{}
+	resp := msgs.UpdateUserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
 	getDefaults()
 
-	log.Debugf("in User with password [%]", request.Password)
+	log.Debugf("UpdateUser [%]", request.Password)
 	if request.Password != "" {
 		err = ValidPassword(request.Password)
 		if err != nil {
@@ -105,7 +105,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 	//get the clusters list
 	clusterList := crv1.PgclusterList{}
 	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, sel, ns)
+		&clusterList, sel, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -120,7 +120,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 
 	for _, cluster := range clusterList.Items {
 		selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, request.Namespace)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -129,7 +129,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 
 		for _, d := range deployments.Items {
 			//info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
-			info, err := getPostgresUserInfo(ns, cluster.Spec.Name)
+			info, err := getPostgresUserInfo(request.Namespace, cluster.Spec.Name)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
@@ -154,7 +154,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 				pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 				pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 
-				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
+				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -168,7 +168,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 
 				f := events.EventChangePasswordUserFormat{
 					EventHeader: events.EventHeader{
-						Namespace: ns,
+						Namespace: request.Namespace,
 						Username:  pgouser,
 						Topic:     topics,
 						EventType: events.EventChangePasswordUser,
@@ -199,7 +199,7 @@ func User(request *msgs.UserRequest, ns, pgouser string) msgs.UserResponse {
 							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 							pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 							pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
-							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
+							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
 							if err != nil {
 								log.Error("error in updating password")
 								resp.Status.Code = msgs.Error
@@ -697,19 +697,19 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 }
 
 // DeleteUser ...
-func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
+func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUserResponse {
 	var err error
 
 	response := msgs.DeleteUserResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
-	log.Debugf("DeleteUser called name=%s", name)
+	log.Debugf("DeleteUser called name=%s", request.Username)
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
 	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
+		&clusterList, request.Selector, request.Namespace)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -724,7 +724,7 @@ func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 	}
 
 	re := regexp.MustCompile("^[a-z0-9.-]*$")
-	if !re.MatchString(name) {
+	if !re.MatchString(request.Username) {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = "user name is required to be lowercase letters and numbers only."
 		return response
@@ -735,25 +735,25 @@ func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 
 	for _, cluster := range clusterList.Items {
 		clusterName = cluster.Spec.Name
-		info, err := getPostgresUserInfo(ns, clusterName)
+		info, err := getPostgresUserInfo(request.Namespace, clusterName)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
 
-		secretName := clusterName + "-" + name + "-secret"
+		secretName := clusterName + "-" + request.Username + "-secret"
 
-		managed, err = isManaged(secretName, ns)
+		managed, err = isManaged(secretName, request.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
 
-		log.Debugf("DeleteUser %s managed %t", name, managed)
+		log.Debugf("DeleteUser %s managed %t", request.Username, managed)
 
-		err = deleteUser(ns, clusterName, info, name, managed)
+		err = deleteUser(request.Namespace, clusterName, info, request.Username, managed)
 		if err != nil {
 			log.Error(err)
 			response.Status.Code = msgs.Error
@@ -761,14 +761,14 @@ func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 			return response
 		}
 
-		msg = name + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
+		msg = request.Username + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
 		log.Debug(msg)
 		response.Results = append(response.Results, msg)
 
 		//see if any pooler needs to be reconfigured
 		if managed {
 			if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
-				err := reconfigurePgbouncer(clusterName, ns)
+				err := reconfigurePgbouncer(clusterName, request.Namespace)
 				if err != nil {
 					log.Error(err)
 					response.Status.Code = msgs.Error
@@ -777,7 +777,7 @@ func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 				}
 			}
 			if cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
-				err := reconfigurePgpool(clusterName, ns)
+				err := reconfigurePgpool(clusterName, request.Namespace)
 				if err != nil {
 					log.Error(err)
 					response.Status.Code = msgs.Error
@@ -793,13 +793,13 @@ func DeleteUser(name, selector, ns, pgouser string) msgs.DeleteUserResponse {
 
 		f := events.EventDeleteUserFormat{
 			EventHeader: events.EventHeader{
-				Namespace: ns,
+				Namespace: request.Namespace,
 				Username:  pgouser,
 				Topic:     topics,
 				EventType: events.EventDeleteUser,
 			},
 			Clustername:      clusterName,
-			PostgresUsername: name,
+			PostgresUsername: request.Username,
 			Managed:          managed,
 		}
 
@@ -834,34 +834,45 @@ func isManaged(secretName, ns string) (bool, error) {
 }
 
 // ShowUser ...
-func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
+func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 	var err error
 
 	response := msgs.ShowUserResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]msgs.ShowUserDetail, 0)
 
-	if selector == "" && name == "all" {
+	clusterList := crv1.PgclusterList{}
+	if request.AllFlag {
+		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 	} else {
-		if selector == "" {
-			selector = "name=" + name
+		for i := 0; i < len(request.Clusters); i++ {
+			cluster := crv1.Pgcluster{}
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
+			if !found {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+			clusterList.Items = append(clusterList.Items, cluster)
 		}
 	}
 
-	clusterList := crv1.PgclusterList{}
-
-	//get a list of all clusters
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
-
 	var expiredInt int
-	if expired != "" {
-		expiredInt, err = strconv.Atoi(expired)
+	if request.Expired != "" {
+		expiredInt, err = strconv.Atoi(request.Expired)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = "--expired is not a valid integer"
@@ -881,9 +892,9 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 		detail.Cluster = c
 		detail.ExpiredMsgs = make([]string, 0)
 
-		if expired != "" {
+		if request.Expired != "" {
 			selector := config.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
-			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, request.Namespace)
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -891,15 +902,15 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 			}
 
 			for _, d := range deployments.Items {
-				info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
+				info, err := getPostgresUserInfo(request.Namespace, d.ObjectMeta.Name)
 				if err != nil {
 					response.Status.Code = msgs.Error
 					response.Status.Msg = err.Error()
 					return response
 				}
 
-				if expired != "" {
-					results := callDB(info, d.ObjectMeta.Name, expired)
+				if request.Expired != "" {
+					results := callDB(info, d.ObjectMeta.Name, request.Expired)
 					if len(results) > 0 {
 						log.Debug("expired passwords...")
 						for _, v := range results {
@@ -913,7 +924,7 @@ func ShowUser(name, selector, expired, ns string) msgs.ShowUserResponse {
 			}
 		}
 
-		detail.Secrets, err = apiserver.GetSecrets(&c, ns)
+		detail.Secrets, err = apiserver.GetSecrets(&c, request.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

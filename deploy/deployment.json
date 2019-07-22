@@ -3,7 +3,9 @@
     "kind": "Deployment",
     "metadata": {
         "name": "postgres-operator",
-        "vendor": "crunchydata"
+	"labels": {
+		"vendor": "crunchydata"
+	}
     },
     "spec": {
         "replicas": 1,
