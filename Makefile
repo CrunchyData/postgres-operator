@@ -76,7 +76,6 @@ pgo-apiserver-image:	check-go-vars pgo-apiserver
 postgres-operator:	check-go-vars
 	go install postgres-operator.go
 postgres-operator-image:	check-go-vars postgres-operator
-	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
 	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.postgres-operator.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)

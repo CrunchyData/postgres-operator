@@ -81,3 +81,8 @@ NSQ looks for events currently at port 4150.  The Operator sends
 events to the NSQ address as defined in the EVENT_ADDR environment
 variable.
 
+If you want to disable eventing, set the following environment
+variable in the Operator Deployment:
+    "name": "DISABLE_EVENTING"
+    "value": "true"
+

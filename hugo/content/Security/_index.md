@@ -28,8 +28,7 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 
 ## Operator RBAC
 
-Operator roles are defined as Secrets starting in version 4.1 of the 
-Operator.  Likewise, Operator users are also defined as Secrets.
+Operator user roles (pgouser) are defined as Secrets starting in version 4.1 of the Operator.  Likewise, Operator users (pgouser) are also defined as Secrets.
 
 The bootstrap Operator credential is created when you run:
 
@@ -94,9 +93,7 @@ in each targeted namespace include:
 | Setting |Definition  |
 |---|---|
 | Roles  | pgo-backrest-role|
-|  | pgo-role|
 | Role Bindings  | pgo-backrest-role-binding|
-|  | pgo-role-binding|
 | Service Accounts | pgo-backrest |
 
 
