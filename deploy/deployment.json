@@ -2,14 +2,16 @@
     "apiVersion": "extensions/v1beta1",
     "kind": "Deployment",
     "metadata": {
-        "name": "postgres-operator"
+        "name": "postgres-operator",
+        "vendor": "crunchydata"
     },
     "spec": {
         "replicas": 1,
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "postgres-operator"
+                    "name": "postgres-operator",
+        	    "vendor": "crunchydata"
                 }
             },
             "spec": {
