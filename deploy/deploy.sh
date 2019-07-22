@@ -17,10 +17,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrole 2> /dev/null
+$PGO_CMD get clusterrole pgo-cluster-role 2> /dev/null
 if [ $? -ne 0 ]
 then
-	echo ERROR: pgopclusterrole was not found in $PGO_OPERATOR_NAMESPACE namespace
+	echo ERROR: pgo-cluster-role was not found 
 	echo Verify you ran install-rbac.sh
 	exit
 fi

@@ -70,7 +70,7 @@ func showNamespace(args []string) {
 
 	fmt.Printf("pgo username: %s\n", response.Username)
 
-	fmt.Printf("%s", util.Rpad("namespace", " ", 20))
+	fmt.Printf("%s", util.Rpad("namespace", " ", 25))
 	fmt.Printf("%s", util.Rpad("useraccess", " ", 20))
 	fmt.Printf("%s\n", util.Rpad("installaccess", " ", 20))
 
@@ -84,7 +84,7 @@ func showNamespace(args []string) {
 		if !result.InstallationAccess {
 			iAccessible = RED(util.Rpad("no access", " ", 20))
 		}
-		fmt.Printf("%s", util.Rpad(result.Namespace, " ", 20))
+		fmt.Printf("%s", util.Rpad(result.Namespace, " ", 25))
 		fmt.Printf("%s", accessible)
 		fmt.Printf("%s\n", iAccessible)
 	}

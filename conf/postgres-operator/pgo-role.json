@@ -17,7 +17,6 @@
                 "services",
                 "endpoints",
                 "persistentvolumeclaims",
-                "events",
                 "configmaps",
                 "secrets"
             ],
@@ -50,8 +49,7 @@
                 "extensions"
             ],
             "resources": [
-                "jobs",
-                "deployments"
+                "jobs"
             ],
             "verbs": [
                 "get",
