@@ -66,8 +66,8 @@ func main() {
 		PORT = tmp
 	}
 
-        //give time for pgo-event to start up
-        time.Sleep(time.Duration(5) * time.Second)
+	//give time for pgo-event to start up
+	time.Sleep(time.Duration(5) * time.Second)
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
@@ -85,6 +85,15 @@ func main() {
 		log.Debug("TLS_NO_VERIFY set to false")
 	}
 	tlsNoVerify, _ := strconv.ParseBool(tmp)
+
+	tmp = os.Getenv("DISABLE_TLS")
+	if tmp == "true" {
+		log.Debug("DISABLE_TLS set to true")
+	} else {
+		tmp = "false"
+		log.Debug("DISABLE_TLS set to false")
+	}
+	disableTLS, _ := strconv.ParseBool(tmp)
 
 	log.Infoln("postgres-operator apiserver starts")
 
@@ -185,6 +194,7 @@ func main() {
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
+
 	cfg := &tls.Config{
 		ClientAuth: tls.RequireAndVerifyClientCert,
 		//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
@@ -196,12 +206,6 @@ func main() {
 
 	log.Info("listening on port " + PORT)
 
-	srv := &http.Server{
-		Addr:      ":" + PORT,
-		Handler:   r,
-		TLSConfig: cfg,
-	}
-
 	_, err = ioutil.ReadFile(serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
@@ -209,5 +213,20 @@ func main() {
 		os.Exit(2)
 	}
 
-	log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
+	var srv *http.Server
+	if !disableTLS {
+		srv = &http.Server{
+			Addr:      ":" + PORT,
+			Handler:   r,
+			TLSConfig: cfg,
+		}
+		log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
+	} else {
+		srv = &http.Server{
+			Addr:    ":" + PORT,
+			Handler: r,
+		}
+		log.Fatal(srv.ListenAndServe())
+	}
+
 }
