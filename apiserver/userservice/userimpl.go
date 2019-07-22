@@ -38,6 +38,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+var alterRole = "DO $_$BEGIN EXECUTE $$ALTER USER $$ || quote_ident($$%s$$) || $$ PASSWORD $$ || quote_literal($$%s$$); END$_$;"
+
 // connInfo ....
 type connInfo struct {
 	Username string
@@ -58,7 +60,7 @@ type pswResult struct {
 var defaultPasswordAgeDays = 365
 
 // defaultPasswordLength password length
-var defaultPasswordLength = 8
+var defaultPasswordLength = 32
 
 //  User ...
 // pgo user --change-password=bob --db=userdb
@@ -72,16 +74,6 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	resp.Results = make([]string, 0)
 
 	getDefaults()
-
-	log.Debugf("UpdateUser [%]", request.Password)
-	if request.Password != "" {
-		err = ValidPassword(request.Password)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "invalid password format"
-			return resp
-		}
-	}
 
 	//set up the selector
 	var sel string
@@ -142,12 +134,6 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(request.PasswordLength)
 				if request.Password != "" {
-					err := ValidPassword(request.Password)
-					if err != nil {
-						resp.Status.Code = msgs.Error
-						resp.Status.Msg = "invalid password format, can not contain non-alphanumerics or start with numbers"
-						return resp
-					}
 					newPassword = request.Password
 				}
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
@@ -272,11 +258,6 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	var err error
 	var conn *sql.DB
 
-	err = ValidPassword(newPassword)
-	if err != nil {
-		return err
-	}
-
 	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
 	if err != nil {
 		log.Debug(err.Error())
@@ -292,6 +273,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 		return err
 	}
 
+	/**
 	var md5Password string
 	for rows.Next() {
 		err = rows.Scan(&md5Password)
@@ -300,15 +282,25 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 			return err
 		}
 	}
+	*/
 
 	//querystr = "ALTER user " + username + " PASSWORD '" + newPassword + "'"
-	querystr = "ALTER user " + username + " PASSWORD '" + md5Password + "'"
+	//alterRole(username, md5Password)
+	_, err = AlterRole(conn, username, newPassword)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	//querystr = "ALTER user " + username + " PASSWORD '" + md5Password + "'"
 	//log.Debug(querystr)
+	/**
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
 	}
+	*/
 	querystr = "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
@@ -357,6 +349,10 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	}
 
 	return err
+}
+
+func AlterRole(conn *sql.DB, username, password string) (sql.Result, error) {
+	return conn.Exec(fmt.Sprintf(alterRole, username, password))
 }
 
 // GeneratePasswordExpireDate ...
@@ -612,22 +608,6 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 	}
 
 	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
-
-	re := regexp.MustCompile("^[a-z0-9.-]*$")
-	if !re.MatchString(request.Name) {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "user name is required to be lowercase letters and numbers only."
-		return resp
-	}
-	if request.Password != "" {
-		err := ValidPassword(request.Password)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	}
-
 	for _, c := range clusterList.Items {
 		info, err := getPostgresUserInfo(ns, c.Name)
 		if err != nil {
@@ -1021,35 +1001,4 @@ func reconfigurePgpool(clusterName, ns string) error {
 		return err
 	}
 	return err
-}
-
-func ValidPassword(psw string) error {
-
-	if len(psw) > 16 {
-		return errors.New("valid passwords are less than 16 chars")
-	}
-
-	numbers := "0123456789"
-	isAlpha := regexp.MustCompile(`^[A-Za-z0-9]+$`).MatchString
-
-	if len(psw) < 1 {
-		return errors.New("passwords can not be zero length")
-	}
-
-	firstChar := string(psw[0])
-	//log.Debugf("1st char is %s", firstChar)
-	if strings.Contains(numbers, firstChar) {
-		//log.Debugf("%s is not valid due to starting with a number", username)
-		return errors.New("passwords can not start with a number")
-	} else if !isAlpha(psw) {
-		//log.Debugf("%q is not valid\n", username)
-		return errors.New("password does not match standard pattern")
-
-	} else {
-		//log.Debugf("%q is valid\n", username)
-		return nil
-	}
-
-	return nil
-
 }
