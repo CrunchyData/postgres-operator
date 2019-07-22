@@ -11,6 +11,9 @@ Various Operator releases will require action by the Operator administrator of y
 This section of the documentation shows specific steps required to the
 latest version from the previous version.
 
+### Upgrading to Version 4.1.0 From Previous Versions
+* The pgouser and pgorole files are no longer used for authentication with the server. The users and roles are now created using Kubernetes secrets and commands that are built into the operator. To migrate the users and roles that are currently setup in the operator you can run the upgrade script. The `upgrade-creds.sh` script in the `$PGOROOT/deploy` directory and will use the pgouser and pgorole files that are in `$PGOROOT/conf/postgres-operator` directory by default. You can also pass in the path to the files as command line arguments by running `$PGOROOT/deploy/upgrade-creds.sh /path/to/pgorole /path/to/pgouser`. The new secrets can be see by running `kubectl get secrets -n $PGO_OPERATOR_NAMESPACE`.
+
 ### Upgrading to Version 3.5.0 From Previous Versions
  * For clusters created in prior versions that used pgbackrest, you
 will be required to first create a pgbasebackup for those clusters,
