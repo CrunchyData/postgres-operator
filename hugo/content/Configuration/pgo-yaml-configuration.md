@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 3.5.4 {docdate}
+Latest Release: 3.5.5 {docdate}
 draft: false
 weight: 31
 ---
@@ -18,7 +18,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
-|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-11.4-2.3.3), unless you override it using the --ccp-image-tag command line flag
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-11.4-2.4.2), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |LogStatement        | postgresql.conf log_statement value (required field)
 |LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field)

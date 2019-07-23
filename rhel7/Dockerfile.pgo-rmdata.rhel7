@@ -5,7 +5,7 @@ MAINTAINER jeff.mccormick@crunchydata.com
 LABEL name="pgo-rmdata" \
     vendor="crunchydata.com" \
 	Version="7.6" \
-	Release="3.5.4" \
+	Release="3.5.5" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Remove Data" \
     description="Crunchy Data PostgreSQL Operator - Remove Data"
