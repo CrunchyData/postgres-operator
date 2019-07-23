@@ -204,16 +204,20 @@ func printUsers(detail *msgs.ShowUserDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name)
 
-	for _, s := range detail.Secrets {
+	if detail.ExpiredOutput == false {
+		for _, s := range detail.Secrets {
+			fmt.Println("")
+			fmt.Println("secret : " + s.Name)
+			fmt.Println(TreeBranch + "username: " + s.Username)
+			fmt.Println(TreeTrunk + "password: " + s.Password)
+		}
+	} else {
+		fmt.Printf("\nuser passwords expiring within %d days:\n", detail.ExpiredDays)
 		fmt.Println("")
-		fmt.Println("secret : " + s.Name)
-		fmt.Println(TreeBranch + "username: " + s.Username)
-		fmt.Println(TreeTrunk + "password: " + s.Password)
-	}
-	if len(detail.ExpiredMsgs) > 0 {
-		fmt.Printf("\nexpired passwords: \n")
-		for _, e := range detail.ExpiredMsgs {
-			fmt.Println(e)
+		if len(detail.ExpiredMsgs) > 0 {
+			for _, e := range detail.ExpiredMsgs {
+				fmt.Println(e)
+			}
 		}
 	}
 

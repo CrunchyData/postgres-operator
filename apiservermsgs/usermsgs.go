@@ -101,9 +101,11 @@ type ShowUserRequest struct {
 
 // ShowUsersDetail ...
 type ShowUserDetail struct {
-	Cluster     crv1.Pgcluster
-	Secrets     []ShowUserSecret
-	ExpiredMsgs []string
+	Cluster       crv1.Pgcluster
+	Secrets       []ShowUserSecret
+	ExpiredOutput bool
+	ExpiredDays   int
+	ExpiredMsgs   []string
 }
 
 // ShowUsersResponse ...

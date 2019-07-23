@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
@@ -37,6 +38,11 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+const charset = "!@#~$%^&*{_+=-;}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456890"
+
+var seededRand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
 
 var alterRole = "DO $_$BEGIN EXECUTE $$ALTER USER $$ || quote_ident($$%s$$) || $$ PASSWORD $$ || quote_literal($$%s$$); END$_$;"
 
@@ -205,7 +211,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					log.Debug("expired passwords...")
 					for _, v := range results {
 						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
-						newPassword := util.GeneratePassword(request.PasswordLength)
+						newPassword := GeneratePassword(request.PasswordLength)
 						newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 						pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 						pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
@@ -675,7 +681,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 			request.PasswordLength = defaultPasswordLength
 		}
 
-		newPassword := util.GeneratePassword(request.PasswordLength)
+		newPassword := GeneratePassword(request.PasswordLength)
 		if request.Password != "" {
 			newPassword = request.Password
 		}
@@ -934,9 +940,11 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 	for _, c := range clusterList.Items {
 		detail := msgs.ShowUserDetail{}
 		detail.Cluster = c
+		detail.ExpiredDays = expiredInt
 		detail.ExpiredMsgs = make([]string, 0)
 
 		if request.Expired != "" {
+			detail.ExpiredOutput = true
 			selector := config.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
 			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, request.Namespace)
 			if err != nil {
@@ -1096,4 +1104,18 @@ func setUserValidUntil(p connInfo, username, passwordExpireDate string) error {
 	}()
 
 	return nil
+}
+
+// stringWithCharset returns a generated string value
+func stringWithCharset(length int, charset string) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+// GeneratePassword generate a password of a given length
+func GeneratePassword(length int) string {
+	return stringWithCharset(length, charset)
 }
