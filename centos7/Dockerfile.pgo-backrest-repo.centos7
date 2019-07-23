@@ -4,12 +4,12 @@ LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.4" \
 	Version="7.6" \
-	Release="3.5.4" \
+	Release="3.5.5" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISABLE="pgdg10,pgdg96,pgdg95,pgdg94" \
-    BACKREST_VERSION="2.13"
+    BACKREST_VERSION="2.15"
 
 # PGDG PostgreSQL Repository
 

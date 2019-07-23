@@ -12,7 +12,7 @@
             "name": "fromcrd",
             "pg-cluster": "fromcrd",
             "pgo-backrest": "false",
-	"pgo-version": "3.5.4",
+	"pgo-version": "3.5.5",
             "primary": "true"
         },
         "name": "fromcrd",
@@ -67,7 +67,7 @@
         },
         "backuppath": "",
         "backuppvcname": "",
-        "ccpimagetag": "centos7-11.4-2.3.3",
+        "ccpimagetag": "centos7-11.4-2.4.2",
         "clustername": "fromcrd",
         "customconfig": "",
         "database": "userdb",
@@ -89,7 +89,7 @@
             "crunchy-pgbadger": "false",
             "crunchy_collect": "false",
             "pgo-backrest": "false",
-	"pgo-version": "3.5.4"
+	"pgo-version": "3.5.5"
         },
         "usersecretname": "fromcrd-testuser-secret"
     }
