@@ -21,26 +21,28 @@ import (
 
 // UpdateUserRequest ...
 type UpdateUserRequest struct {
-	Args                  []string
-	Selector              string
-	Namespace             string
-	PasswordAgeDays       int
-	ChangePasswordForUser string
-	Password              string
-	DeleteUser            string
-	ValidDays             string
-	UserDBAccess          string
-	AddUser               string
-	Expired               string
-	UpdatePasswords       bool
-	ManagedUser           bool
-	ClientVersion         string
-	PasswordLength        int
+	Args            []string
+	Selector        string
+	Namespace       string
+	PasswordAgeDays int
+	Username        string
+	Password        string
+	DeleteUser      string
+	ValidDays       string
+	UserDBAccess    string
+	AddUser         string
+	Expired         string
+	UpdatePasswords bool
+	ManagedUser     bool
+	ClientVersion   string
+	PasswordLength  int
 }
 
 // DeleteUserRequest ...
 type DeleteUserRequest struct {
 	Selector      string
+	Clusters      []string
+	AllFlag       bool
 	Username      string
 	ClientVersion string
 	Namespace     string
@@ -60,9 +62,11 @@ type UpdateUserResponse struct {
 
 // CreateUserRequest ...
 type CreateUserRequest struct {
-	Name            string
+	Clusters        []string
+	Username        string
 	Namespace       string
 	Selector        string
+	AllFlag         bool
 	Password        string
 	ManagedUser     bool
 	UserDBAccess    string
@@ -86,7 +90,7 @@ type ShowUserSecret struct {
 
 // ShowUserRequest ...
 type ShowUserRequest struct {
-	Clusters      []string //list of clusters
+	Clusters      []string
 	AllFlag       bool
 	ClientVersion string
 	Selector      string

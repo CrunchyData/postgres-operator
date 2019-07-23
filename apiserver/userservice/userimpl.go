@@ -128,8 +128,8 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				return resp
 			}
 
-			if request.ChangePasswordForUser != "" {
-				msg := "changing password of user " + request.ChangePasswordForUser + " on " + d.ObjectMeta.Name
+			if request.Username != "" {
+				msg := "changing password of user " + request.Username + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
 				newPassword := util.GeneratePassword(request.PasswordLength)
@@ -140,7 +140,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 				pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 
-				err = updatePassword(cluster.Spec.Name, info, request.ChangePasswordForUser, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
+				err = updatePassword(cluster.Spec.Name, info, request.Username, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -160,7 +160,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 						EventType: events.EventChangePasswordUser,
 					},
 					Clustername:      cluster.Spec.Name,
-					PostgresUsername: request.ChangePasswordForUser,
+					PostgresUsername: request.Username,
 					PostgresPassword: newPassword,
 				}
 
@@ -444,8 +444,8 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 	var rows *sql.Rows
 	var querystr string
 
-	if request.Name != "" {
-		parts := strings.Split(request.Name, " ")
+	if request.Username != "" {
+		parts := strings.Split(request.Username, " ")
 		if len(parts) > 1 {
 			return errors.New("invalid user name format, can not container special characters")
 		}
@@ -477,7 +477,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 		}
 	}
 
-	querystr = "create user " + request.Name
+	querystr = "create user " + request.Username
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -486,9 +486,9 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 	}
 
 	if request.UserDBAccess != "" {
-		querystr = "grant all on database " + request.UserDBAccess + " to  " + request.Name
+		querystr = "grant all on database " + request.UserDBAccess + " to  " + request.Username
 	} else {
-		querystr = "grant all on database userdb to  " + request.Name
+		querystr = "grant all on database userdb to  " + request.Username
 	}
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
@@ -511,7 +511,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 		if request.Password != "" {
 			info.Password = request.Password
 		}
-		err = util.CreateUserSecret(apiserver.Clientset, clusterName, request.Name, info.Password, namespace, request.PasswordLength)
+		err = util.CreateUserSecret(apiserver.Clientset, clusterName, request.Username, info.Password, namespace, request.PasswordLength)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -572,8 +572,10 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 }
 
 // CreateUser ...
-// pgo create user user1
-func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.CreateUserResponse {
+// pgo create user mycluster --username=user1
+// pgo create user --username=user1 --managed --all
+// pgo create user --username=user1 --managed --selector=name=mycluster
+func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUserResponse {
 	var err error
 	resp := msgs.CreateUserResponse{}
 	resp.Status.Code = msgs.Ok
@@ -583,46 +585,66 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 	getDefaults()
 
 	log.Debugf("createUser selector is ", request.Selector)
-	if request.Selector == "" {
-		log.Error("--selector value is empty not allowed")
+	if request.Selector == "" && request.AllFlag == false && len(request.Clusters) == 0 {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "error in selector"
+		resp.Status.Msg = "--selector, --all, or list of cluster names is required for this command"
 		return resp
 	}
 
 	clusterList := crv1.PgclusterList{}
 
 	//get a list of all clusters
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, request.Selector, ns)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
+	if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, request.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	} else if request.AllFlag {
+		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	} else {
+		for i := 0; i < len(request.Clusters); i++ {
+			cluster := crv1.Pgcluster{}
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			clusterList.Items = append(clusterList.Items, cluster)
+		}
+
 	}
 
 	if len(clusterList.Items) == 0 {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "no clusters found with that selector"
+		resp.Status.Msg = "no clusters found"
 		return resp
 	}
 
 	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
 	for _, c := range clusterList.Items {
-		info, err := getPostgresUserInfo(ns, c.Name)
+		info, err := getPostgresUserInfo(request.Namespace, c.Name)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
 
-		err = addUser(request, ns, c.Name, info)
+		err = addUser(request, request.Namespace, c.Name, info)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		} else {
-			msg := "adding new user " + request.Name + " to " + c.Name
+			msg := "adding new user " + request.Username + " to " + c.Name
 			log.Debug(msg)
 			resp.Results = append(resp.Results, msg)
 		}
@@ -639,7 +661,7 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 
 		pgbouncer := c.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 		pgpool := c.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
-		err = updatePassword(c.Name, info, request.Name, newPassword, newExpireDate, ns, pgpool, pgbouncer, request.PasswordLength)
+		err = updatePassword(c.Name, info, request.Username, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -653,12 +675,12 @@ func CreateUser(request *msgs.CreateUserRequest, ns, pgouser string) msgs.Create
 
 		f := events.EventCreateUserFormat{
 			EventHeader: events.EventHeader{
-				Namespace: ns,
+				Namespace: request.Namespace,
 				Username:  pgouser,
 				Topic:     topics,
 				EventType: events.EventCreateUser,
 			},
-			PostgresUsername: request.Name,
+			PostgresUsername: request.Username,
 			PostgresPassword: newPassword,
 			Managed:          request.ManagedUser,
 		}
@@ -688,16 +710,36 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, request.Selector, request.Namespace)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
+	if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else if request.AllFlag {
+		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else {
+		for i := 0; i < len(request.Clusters); i++ {
+			cluster := crv1.Pgcluster{}
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
+			if !found {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+			clusterList.Items = append(clusterList.Items, cluster)
+		}
+
 	}
 
 	if len(clusterList.Items) == 0 {
-		log.Debug("no clusters found")
 		response.Status.Code = msgs.Error
 		response.Status.Msg = "no clusters found"
 		return response

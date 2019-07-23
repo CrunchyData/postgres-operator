@@ -45,7 +45,7 @@ func init() {
 	UpdateUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdateUserCmd.Flags().StringVarP(&Expired, "expired", "", "", "required flag when updating passwords that will expire in X days using --update-passwords flag.")
 	UpdateUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
-	UpdateUserCmd.Flags().StringVarP(&ChangePasswordForUser, "change-password", "", "", "Updates the password for a user on selective clusters.")
+	UpdateUserCmd.Flags().StringVarP(&Username, "username", "", "", "Updates the postgres user on selective clusters.")
 	UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	UpdateUserCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
@@ -62,7 +62,7 @@ var UpdateCmd = &cobra.Command{
 	pgo update pgouser someuser --pgouser-password=somenewpassword
 	pgo update pgouser someuser --pgouser-roles="role1,role2"
 	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
-	pgo update user mycluster
+	pgo update user mycluster --username=testuser --selector=name=mycluster --password=somepassword
 	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update namespace mynamespace 
 	pgo update cluster --selector=name=mycluster --autofail=false
@@ -127,7 +127,7 @@ var UpdateUserCmd = &cobra.Command{
 	Short: "Update a postgres user",
 	Long: `UPDATE allows you to update a pgo user. For example:
 		pgo update user --selector=name=mycluster --update-passwords
-		pgo update user mycluster --change-password=bob --password=somepassword --expired=300`,
+		pgo update user mycluster --username=bob --password=somepassword --expired=300`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {

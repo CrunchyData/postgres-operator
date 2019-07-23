@@ -28,8 +28,8 @@ import (
 // PasswordAgeDays password age flag
 var PasswordAgeDays int
 
-// ChangePasswordForUser change password flag
-var ChangePasswordForUser string
+// Username is a postgres username
+var Username string
 
 // DeleteUser delete user flag
 var DeleteUser string
@@ -57,7 +57,7 @@ func updateUser(args []string, ns string) {
 	request.Selector = Selector
 	request.Password = Password
 	request.PasswordAgeDays = PasswordAgeDays
-	request.ChangePasswordForUser = ChangePasswordForUser
+	request.Username = Username
 	request.DeleteUser = DeleteUser
 	request.ValidDays = ValidDays
 	request.UserDBAccess = UserDBAccess
@@ -98,7 +98,7 @@ func createUser(args []string, ns string) {
 	}
 
 	r := new(msgs.CreateUserRequest)
-	r.Name = args[0]
+	r.Username = Username
 	r.Selector = Selector
 	r.Password = Password
 	r.ManagedUser = ManagedUser
@@ -126,13 +126,14 @@ func createUser(args []string, ns string) {
 }
 
 // deleteUser ...
-func deleteUser(username string, ns string) {
-	log.Debugf("deleteUser called %v", username)
+func deleteUser(args []string, ns string) {
 
-	log.Debugf("deleting user %s selector=%s", username, Selector)
+	log.Debugf("deleting user %s selector=%s args=%v", Username, Selector, args)
 
 	r := new(msgs.DeleteUserRequest)
-	r.Username = username
+	r.Username = Username
+	r.Clusters = args
+	r.AllFlag = AllFlag
 	r.Selector = Selector
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns

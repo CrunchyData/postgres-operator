@@ -220,24 +220,22 @@ var createUserCmd = &cobra.Command{
 	Short: "Create a PostgreSQL user",
 	Long: `Create a postgres user. For example:
 
-    pgo create user manageduser --managed --selector=name=mycluster
-    pgo create user user1 --selector=name=mycluster`,
+    pgo create user --all --username=manageduser --managed
+    pgo create user mycluster --username=manageduser --managed
+    pgo create user --username=manageduser --managed --selector=name=mycluster
+    pgo create user --username=user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
 		log.Debug("create user called ")
-		if Selector == "" {
-			fmt.Println(`Error: The --selector flag is required to create a user.`)
+		if Selector == "" && AllFlag == false && len(args) == 0 {
+			fmt.Println(`Error: a cluster name(s), --selector flag, or --all flag is required to create a user.`)
 			return
 		}
 
-		if len(args) == 0 {
-			fmt.Println(`Error: A user name is required for this command.`)
-		} else {
-			createUser(args, Namespace)
-		}
+		createUser(args, Namespace)
 	},
 }
 
@@ -301,6 +299,7 @@ func init() {
 
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
+	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")

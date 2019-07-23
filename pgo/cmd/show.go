@@ -44,7 +44,7 @@ var ShowCmd = &cobra.Command{
 	pgo show pvc mycluster
 	pgo show namespace
 	pgo show workflow 25927091-b343-4017-be4b-71575f0b3eb5
-	pgo show user mycluster`,
+	pgo show user --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to show.
@@ -62,17 +62,9 @@ Valid resource types include:
 	`)
 		} else {
 			switch args[0] {
-			case "backup":
-			case "benchmark":
-			case "cluster":
-			case "config":
-			case "pgouser":
-			case "policy":
-			case "pvc":
-			case "schedule":
-			case "namespace":
-			case "workflow":
-			case "user":
+			case "backup", "benchmark", "cluster", "config", "pgouser",
+				"policy", "pvc", "schedule", "namespace", "workflow",
+				"user":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to show.
@@ -296,13 +288,14 @@ var ShowUserCmd = &cobra.Command{
 	Short: "Show user information",
 	Long: `Show users on a cluster. For example:
 
-	pgo show user mycluster`,
+	pgo show user --all
+	pgo show user --selector=name=nycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if Selector == "" && len(args) == 0 {
-			fmt.Println("Error: Cluster name(s) required for this command.")
+		if Selector == "" && AllFlag == false {
+			fmt.Println("Error: --selector or --all required for this command")
 		} else {
 			showUser(args, Namespace)
 		}
