@@ -1,28 +1,26 @@
 ---
-title: "pgo_show_cluster"
+title: "pgo_show_benchmark"
 ---
-## pgo show cluster
+## pgo show benchmark
 
-Show cluster information
+Show benchmark information
 
 ### Synopsis
 
-Show a PostgreSQL cluster. For example:
+Show benchmark results for clusters. For example:
 
-	pgo show cluster all
-	pgo show cluster mycluster
+	pgo show benchmark mycluster
+	pgo show benchmark --selector=pg-cluster=mycluster
 
 ```
-pgo show cluster [flags]
+pgo show benchmark [flags]
 ```
 
 ### Options
 
 ```
-      --ccp-image-tag string   Filter the results based on the image tag of the cluster.
-  -h, --help                   help for cluster
-  -o, --output string          The output format. Currently, json is the only supported value.
-  -s, --selector string        The selector to use for cluster filtering.
+  -h, --help              help for benchmark
+  -s, --selector string   The selector to use for cluster filtering.
 ```
 
 ### Options inherited from parent commands
