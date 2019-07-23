@@ -136,7 +136,7 @@ curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 $PGO_APISERVER_URL/clustersdelete
 ```
 
-The API server is setup to work with the pgo command line interface so the parameters that are passed to the server can be found by looking at the related flags. For example, the series parameter used in the `create` example is the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.0.1/operatorcli/cli/pgo_create_cluster/).
+The API server is setup to work with the pgo command line interface so the parameters that are passed to the server can be found by looking at the related flags. For example, the series parameter used in the `create` example is the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.1.0/operatorcli/cli/pgo_create_cluster/).
 
 
 ## Node Affinity

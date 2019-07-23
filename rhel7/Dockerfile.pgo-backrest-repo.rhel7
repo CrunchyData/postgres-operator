@@ -5,12 +5,12 @@ LABEL Vendor="Crunchy Data Solutions" \
 	name="pgo-backrest-repo" \
 	PostgresFullVersion="11.4" \
 	Version="7.6" \
-	Release="4.0.1" \
+	Release="4.1.0" \
         run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-repo" \
 	description="Crunchy Data PostgreSQL Operator - pgo-backrest-repo"
 
-ENV PGVERSION="11" BACKREST_VERSION="2.13"
+ENV PGVERSION="11" BACKREST_VERSION="2.15"
 
 COPY redhat/atomic/pgo_backrest_repo/help.1 /help.1
 COPY redhat/atomic/pgo_backrest_repo/help.md /help.md
