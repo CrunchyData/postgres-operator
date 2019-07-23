@@ -1,29 +1,25 @@
 ---
-title: "pgo_show_schedule"
+title: "pgo_show_pgouser"
 ---
-## pgo show schedule
+## pgo show pgouser
 
-Show schedule information
+Show pgouser information
 
 ### Synopsis
 
-Show cron-like schedules.  For example:
+Show pgouser information for an Operator user. For example:
 
-	pgo show schedule mycluster
-	pgo show schedule --selector=pg-cluster=mycluster
-	pgo show schedule --schedule-name=mycluster-pgbackrest-full
+	pgo show pgouser someuser
 
 ```
-pgo show schedule [flags]
+pgo show pgouser [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                   help for schedule
-      --no-prompt              No command line confirmation.
-      --schedule-name string   The name of the schedule to show.
-  -s, --selector string        The selector to use for cluster filtering.
+      --all    show all resources.
+  -h, --help   help for pgouser
 ```
 
 ### Options inherited from parent commands

@@ -1,29 +1,25 @@
 ---
-title: "pgo_show_schedule"
+title: "pgo_show_pgorole"
 ---
-## pgo show schedule
+## pgo show pgorole
 
-Show schedule information
+Show pgorole information
 
 ### Synopsis
 
-Show cron-like schedules.  For example:
+Show pgorole information . For example:
 
-	pgo show schedule mycluster
-	pgo show schedule --selector=pg-cluster=mycluster
-	pgo show schedule --schedule-name=mycluster-pgbackrest-full
+	pgo show pgorole somerole
 
 ```
-pgo show schedule [flags]
+pgo show pgorole [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                   help for schedule
-      --no-prompt              No command line confirmation.
-      --schedule-name string   The name of the schedule to show.
-  -s, --selector string        The selector to use for cluster filtering.
+      --all    show all resources.
+  -h, --help   help for pgorole
 ```
 
 ### Options inherited from parent commands
