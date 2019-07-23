@@ -5,15 +5,15 @@ replicaCount: 1
 
 image:
   repository: crunchydata/postgres-operator
-  tag: centos7-3.5.4
+  tag: centos7-3.5.5
   pullPolicy: IfNotPresent
 
 env:
   debug: "true"
   ccp_image_prefix: "crunchydata"
-  ccp_image_tag: "centos7-11.4-2.3.3"
+  ccp_image_tag: "centos7-11.4-2.4.2"
   co_image_prefix: "crunchydata"
-  co_image_tag: "centos7-3.5.4"
+  co_image_tag: "centos7-3.5.5"
   tls_no_verify: false
 
 service:
