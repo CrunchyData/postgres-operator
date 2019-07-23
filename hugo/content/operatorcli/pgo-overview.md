@@ -62,9 +62,8 @@ The following table shows the *pgo* operations currently implemented:
 | show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule, namespace, pgouser, pgorole).                   |
 | status      | `pgo status`                                                 | Display Operator status.                                                                        |
 | test        | `pgo test mycluster`                                         | Perform a SQL test on a Postgres cluster(s).                                                    |
-| update      | `pgo update cluster mycluster --autofail=false`                  | Update a Postgres cluster(s), pgouser, pgorole, or namespace.                                                                   |
+| update      | `pgo update cluster mycluster --autofail=false`                  | Update a Postgres cluster(s), pgouser, pgorole, user, or namespace.                                                                   |
 | upgrade     | `pgo upgrade mycluster`                                      | Perform a minor upgrade to a Postgres cluster(s).                                               |
-| user        | `pgo user --selector=name=mycluster --update-passwords`      | Perform Postgres user maintenance on a Postgres cluster(s).                                     |
 | version     | `pgo version`                                                | Display Operator version information.                                                           |
 
 ## Common Operations
@@ -526,6 +525,33 @@ Delete a PGO role with:
 Update a PGO role with:
 
     pgo update pgorole somerole --permissions="Cat,Ls"
+
+#### Postgres User Operations
+
+Managed Postgres users can be viewed using the following command:
+
+    pgo show user mycluster
+
+Postgres users can be created using the following command examples:
+
+    pgo create user mycluster --username=somepguser --password=somepassword --managed
+    pgo create user --selector=name=mycluster --username=somepguser --password=somepassword --managed
+
+Those commands are identical in function, and create on the mycluster Postgres cluster, a user named *somepguser*, with a password of *somepassword*, the account is *managed* meaning that 
+these credentials are stored as a Secret on the Kube cluster in the Operator
+namespace.
+
+Postgres users can be deleted using the following command:
+
+    pgo delete user mycluster --username=somepguser
+
+That command deletes the user on the mycluster Postgres cluster.
+
+Postgres users can be updated using the following command:
+
+    pgo update user mycluster --username=somepguser --password=frodo
+
+That command changes the password for the user on the mycluster Postgres cluster.
 
 
 #### Miscellaneous

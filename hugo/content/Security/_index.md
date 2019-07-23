@@ -157,6 +157,7 @@ The full set of permissions that can be used in a role are as follows:
 |ShowSchedule | allow *pgo show schedule*|
 |ShowNamespace | allow *pgo show namespace*|
 |ShowUpgrade | allow *pgo show upgrade*|
+|ShowUser | allow *pgo show user*|
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|
 |TestCluster | allow *pgo test*|
@@ -164,7 +165,7 @@ The full set of permissions that can be used in a role are as follows:
 |UpdateNamespace | allow *pgo update namespace*|
 |UpdatePgouser | allow *pgo update pgouser*|
 |UpdatePgorole | allow *pgo update pgorole*|
-|User | allow *pgo user*|
+|UpdateUser | allow *pgo update user*|
 |Version | allow *pgo version*|
 
 

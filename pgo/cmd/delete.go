@@ -43,7 +43,7 @@ var deleteCmd = &cobra.Command{
 	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 	pgo delete schedule --selector=name=mycluster
 	pgo delete schedule mycluster
-	pgo delete user testuser --selector=name=mycluster`,
+	pgo delete user --username=testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
@@ -133,7 +133,9 @@ func init() {
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to delete.")
 	deleteUserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deleteUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
 
 }
 
@@ -208,19 +210,17 @@ var deleteUserCmd = &cobra.Command{
 	Short: "Delete a user",
 	Long: `Delete a user. For example:
 
-    pgo delete user someuser --selector=name=mycluster`,
+    pgo delete user --username=someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 {
-			fmt.Println("Error: A user name is required for this command.")
-		} else if Selector == "" {
-			fmt.Println("Error: A selector is required for this command.")
+		if len(args) == 0 && AllFlag == false && Selector == "" {
+			fmt.Println("Error: --all, --selector, or a list of clusters is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUser(args[0], Namespace)
+				deleteUser(args, Namespace)
 
 			} else {
 				fmt.Println("Aborting...")

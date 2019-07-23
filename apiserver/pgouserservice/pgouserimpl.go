@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -44,14 +43,7 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 
-	err := userservice.ValidPassword(request.PgouserPassword)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
-	err = validRoles(clientset, request.PgouserRoles)
+	err := validRoles(clientset, request.PgouserRoles)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -205,13 +197,6 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 	resp := msgs.UpdatePgouserResponse{}
 	resp.Status.Msg = ""
 	resp.Status.Code = msgs.Ok
-
-	err := userservice.ValidPassword(request.PgouserPassword)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
 
 	secretName := "pgouser-" + request.PgouserName
 

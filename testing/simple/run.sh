@@ -31,6 +31,8 @@ TESTS=(
     TestBouncer
     TestPool
     TestCreateUser
+    TestUpdateUser
+    TestShowUser
     TestDeleteUser
     TestShowCluster
     TestPGOTestCluster
