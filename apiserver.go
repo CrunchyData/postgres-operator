@@ -52,11 +52,13 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 )
 
 const serverCertPath = "/tmp/server.crt"
 const serverKeyPath = "/tmp/server.key"
+var log *logrus.Entry
 
 func main() {
 
@@ -70,6 +72,7 @@ func main() {
 	time.Sleep(time.Duration(5) * time.Second)
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
+	log = crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
