@@ -1,31 +1,29 @@
 ---
-title: "pgo_update_cluster"
+title: "pgo_update_pgouser"
 ---
-## pgo update cluster
+## pgo update pgouser
 
-Update a PostgreSQL cluster
+Update a pgouser
 
 ### Synopsis
 
-Update a PostgreSQL cluster. For example:
-
-    pgo update cluster mycluster --autofail=false
-    pgo update cluster mycluster myothercluster --autofail=false
-    pgo update cluster --selector=name=mycluster --autofail=false
-    pgo update cluster --all --autofail=true
+UPDATE allows you to update a pgo user. For example:
+		pgo update pgouser myuser --change-password
+		pgo update pgouser myuser --change-password --password=somepassword --no-prompt
 
 ```
-pgo update cluster [flags]
+pgo update pgouser [flags]
 ```
 
 ### Options
 
 ```
-      --all               all resources.
-      --autofail          autofail default is false.
-  -h, --help              help for cluster
-      --no-prompt         No command line confirmation.
-  -s, --selector string   The selector to use for cluster filtering.
+      --all-namespaces              all namespaces.
+  -h, --help                        help for pgouser
+      --no-prompt                   No command line confirmation.
+      --pgouser-namespaces string   The namespaces to use for updating the pgouser roles.
+      --pgouser-password string     The password to use for updating the pgouser password.
+      --pgouser-roles string        The roles to use for updating the pgouser roles.
 ```
 
 ### Options inherited from parent commands
