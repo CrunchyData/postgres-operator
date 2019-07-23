@@ -75,18 +75,18 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	getDefaults()
 
+	if request.Username == "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "--username is required flag"
+		return resp
+	}
+
 	//set up the selector
 	if request.Selector == "" && request.AllFlag == false && len(request.Clusters) == 0 {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "--selector, --all, or list of cluster names  is required"
 		return resp
 
-	}
-
-	if request.UpdatePasswords && request.Expired == "" {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "--expired is required when --update-passwords is specified"
-		return resp
 	}
 
 	clusterList := crv1.PgclusterList{}
@@ -127,6 +127,8 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 		return resp
 	}
 
+	log.Debugf("user UpdateUser %d clusters to work on", len(clusterList.Items))
+
 	for _, cluster := range clusterList.Items {
 		selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, request.Namespace)
@@ -137,7 +139,6 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 		}
 
 		for _, d := range deployments.Items {
-			//info, err := getPostgresUserInfo(ns, d.ObjectMeta.Name)
 			info, err := getPostgresUserInfo(request.Namespace, cluster.Spec.Name)
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -145,19 +146,26 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				return resp
 			}
 
-			if request.Username != "" {
+			if request.ExpireUser {
+				expiredDate := GeneratePasswordExpireDate(-2)
+				err := setUserValidUntil(info, request.Username, expiredDate)
+				if err != nil {
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
+				}
+				log.Debugf("expiring user %s", request.Username)
+			}
+
+			if request.Password != "" {
 				msg := "changing password of user " + request.Username + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
-				newPassword := util.GeneratePassword(request.PasswordLength)
-				if request.Password != "" {
-					newPassword = request.Password
-				}
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 				pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 				pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
 
-				err = updatePassword(cluster.Spec.Name, info, request.Username, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
+				err = updatePassword(cluster.Spec.Name, info, request.Username, request.Password, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -178,7 +186,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					},
 					Clustername:      cluster.Spec.Name,
 					PostgresUsername: request.Username,
-					PostgresPassword: newPassword,
+					PostgresPassword: request.Password,
 				}
 
 				err = events.Publish(f)
@@ -197,19 +205,16 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					log.Debug("expired passwords...")
 					for _, v := range results {
 						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
-						if request.UpdatePasswords {
-							newPassword := util.GeneratePassword(request.PasswordLength)
-							newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-							pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
-							pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
-							err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
-							if err != nil {
-								log.Error("error in updating password")
-								resp.Status.Code = msgs.Error
-								resp.Status.Msg = err.Error()
-								return resp
-							}
-							//log.Debug("new password for %s is %s new expiration is %s\n", v.Rolname, newPassword, newExpireDate)
+						newPassword := util.GeneratePassword(request.PasswordLength)
+						newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
+						pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
+						pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
+						err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
+						if err != nil {
+							log.Error("error in updating password")
+							resp.Status.Code = msgs.Error
+							resp.Status.Msg = err.Error()
+							return resp
 						}
 					}
 				}
@@ -1060,4 +1065,35 @@ func reconfigurePgpool(clusterName, ns string) error {
 		return err
 	}
 	return err
+}
+
+func setUserValidUntil(p connInfo, username, passwordExpireDate string) error {
+	var err error
+	var conn *sql.DB
+	var rows *sql.Rows
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+
+	return nil
 }

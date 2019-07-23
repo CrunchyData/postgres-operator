@@ -22,6 +22,7 @@ import (
 )
 
 var PgoroleChangePermissions bool
+var ExpireUser bool
 
 func init() {
 	RootCmd.AddCommand(UpdateCmd)
@@ -44,13 +45,13 @@ func init() {
 	UpdatePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdateUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdateUserCmd.Flags().StringVarP(&Expired, "expired", "", "", "required flag when updating passwords that will expire in X days using --update-passwords flag.")
+	UpdateUserCmd.Flags().BoolVarP(&ExpireUser, "expire-user", "", false, "Performs expiring a user if set to true.")
 	UpdateUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	UpdateUserCmd.Flags().StringVarP(&Username, "username", "", "", "Updates the postgres user on selective clusters.")
 	UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
-	UpdateUserCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
 	UpdateUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
-	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
+	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 22, "If no password is supplied, this is the length of the auto generated password")
 
 }
 
@@ -127,8 +128,10 @@ var UpdateUserCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Update a postgres user",
 	Long: `UPDATE allows you to update a pgo user. For example:
-		pgo update user --selector=name=mycluster --update-passwords
-		pgo update user mycluster --username=bob --password=somepassword --expired=300`,
+		//change a password
+		pgo update user mycluster --username=someuser --password=foo --update-passwords --expired=200
+		//expire password for a user
+		pgo update user mycluster --username=someuser --expire-user`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {

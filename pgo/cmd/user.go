@@ -43,9 +43,6 @@ var UserDBAccess string
 // Expired expired flag
 var Expired string
 
-// UpdatePasswords update passwords flag
-var UpdatePasswords bool
-
 // PasswordLength password length flag
 var PasswordLength int
 
@@ -54,6 +51,7 @@ func updateUser(args []string, ns string) {
 
 	request := msgs.UpdateUserRequest{}
 	request.Namespace = ns
+	request.ExpireUser = ExpireUser
 	request.Clusters = args
 	request.AllFlag = AllFlag
 	request.Selector = Selector
@@ -64,7 +62,6 @@ func updateUser(args []string, ns string) {
 	request.ValidDays = ValidDays
 	request.UserDBAccess = UserDBAccess
 	request.Expired = Expired
-	request.UpdatePasswords = UpdatePasswords
 	request.ManagedUser = ManagedUser
 	request.ClientVersion = msgs.PGO_VERSION
 	request.PasswordLength = PasswordLength
@@ -95,6 +92,7 @@ func createUser(args []string, ns string) {
 	}
 
 	r := new(msgs.CreateUserRequest)
+	r.Clusters = args
 	r.Username = Username
 	r.Selector = Selector
 	r.Password = Password

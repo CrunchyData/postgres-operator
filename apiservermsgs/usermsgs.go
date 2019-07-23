@@ -24,6 +24,7 @@ type UpdateUserRequest struct {
 	Clusters        []string
 	Selector        string
 	AllFlag         bool
+	ExpireUser      bool
 	Namespace       string
 	PasswordAgeDays int
 	Username        string
@@ -33,7 +34,6 @@ type UpdateUserRequest struct {
 	UserDBAccess    string
 	AddUser         string
 	Expired         string
-	UpdatePasswords bool
 	ManagedUser     bool
 	ClientVersion   string
 	PasswordLength  int
