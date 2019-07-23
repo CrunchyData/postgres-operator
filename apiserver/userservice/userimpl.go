@@ -21,7 +21,6 @@ import (
 	"fmt"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"math/rand"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -777,13 +776,6 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 		return response
 	}
 
-	re := regexp.MustCompile("^[a-z0-9.-]*$")
-	if !re.MatchString(request.Username) {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = "user name is required to be lowercase letters and numbers only."
-		return response
-	}
-
 	var managed bool
 	var msg, clusterName string
 
@@ -922,6 +914,12 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 			}
 			clusterList.Items = append(clusterList.Items, cluster)
 		}
+	}
+
+	if len(clusterList.Items) == 0 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no clusters found"
+		return response
 	}
 
 	var expiredInt int
