@@ -21,8 +21,9 @@ import (
 
 // UpdateUserRequest ...
 type UpdateUserRequest struct {
-	Args            []string
+	Clusters        []string
 	Selector        string
+	AllFlag         bool
 	Namespace       string
 	PasswordAgeDays int
 	Username        string

@@ -49,6 +49,7 @@ func init() {
 	UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	UpdateUserCmd.Flags().BoolVarP(&UpdatePasswords, "update-passwords", "", false, "Performs password updating on expired passwords.")
+	UpdateUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
 	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
 
 }
@@ -134,8 +135,8 @@ var UpdateUserCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 
-		if !AllFlag && Selector == "" {
-			fmt.Println("Error: You must specify a --selector or --all flag.")
+		if !AllFlag && Selector == "" && len(args) == 0 {
+			fmt.Println("Error: You must specify a --selector, --all  or a list of clusters.")
 		} else {
 			updateUser(args, Namespace)
 		}

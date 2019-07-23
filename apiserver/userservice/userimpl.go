@@ -76,12 +76,9 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	getDefaults()
 
 	//set up the selector
-	var sel string
-	if request.Selector != "" {
-		sel = request.Selector + "," + config.LABEL_PG_CLUSTER
-	} else {
+	if request.Selector == "" && request.AllFlag == false && len(request.Clusters) == 0 {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "--selector is required"
+		resp.Status.Msg = "--selector, --all, or list of cluster names  is required"
 		return resp
 
 	}
@@ -92,16 +89,36 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 		return resp
 	}
 
-	log.Debugf("selector string=[%s]", sel)
-
-	//get the clusters list
 	clusterList := crv1.PgclusterList{}
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, sel, request.Namespace)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
+
+	//get a list of all clusters
+	if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
+			&clusterList, request.Selector, request.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	} else if request.AllFlag {
+		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	} else {
+		for i := 0; i < len(request.Clusters); i++ {
+			cluster := crv1.Pgcluster{}
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			clusterList.Items = append(clusterList.Items, cluster)
+		}
+
 	}
 
 	if len(clusterList.Items) == 0 {

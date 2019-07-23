@@ -289,13 +289,14 @@ var ShowUserCmd = &cobra.Command{
 	Long: `Show users on a cluster. For example:
 
 	pgo show user --all
+	pgo show user mycluster
 	pgo show user --selector=name=nycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if Selector == "" && AllFlag == false {
-			fmt.Println("Error: --selector or --all required for this command")
+		if Selector == "" && AllFlag == false && len(args) == 0 {
+			fmt.Println("Error: --selector, --all, or cluster name()s required for this command")
 		} else {
 			showUser(args, Namespace)
 		}

@@ -54,6 +54,8 @@ func updateUser(args []string, ns string) {
 
 	request := msgs.UpdateUserRequest{}
 	request.Namespace = ns
+	request.Clusters = args
+	request.AllFlag = AllFlag
 	request.Selector = Selector
 	request.Password = Password
 	request.PasswordAgeDays = PasswordAgeDays
@@ -87,13 +89,8 @@ func updateUser(args []string, ns string) {
 
 func createUser(args []string, ns string) {
 
-	if Selector == "" {
-		fmt.Println("Error: The --selector flag is required.")
-		return
-	}
-
-	if len(args) == 0 {
-		fmt.Println("Error: A user name argument is required.")
+	if Username == "" {
+		fmt.Println("Error: --username is required")
 		return
 	}
 
