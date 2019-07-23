@@ -48,7 +48,7 @@ func init() {
 	UpdateUserCmd.Flags().BoolVarP(&ExpireUser, "expire-user", "", false, "Performs expiring a user if set to true.")
 	UpdateUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	UpdateUserCmd.Flags().StringVarP(&Username, "username", "", "", "Updates the postgres user on selective clusters.")
-	UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
+	//UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	UpdateUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
 	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 22, "If no password is supplied, this is the length of the auto generated password")

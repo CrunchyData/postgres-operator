@@ -38,7 +38,7 @@ var DeleteUser string
 var ValidDays string
 
 // UserDBAccess user db access flag
-var UserDBAccess string
+//var UserDBAccess string
 
 // Expired expired flag
 var Expired string
@@ -60,7 +60,7 @@ func updateUser(args []string, ns string) {
 	request.Username = Username
 	request.DeleteUser = DeleteUser
 	request.ValidDays = ValidDays
-	request.UserDBAccess = UserDBAccess
+	//request.UserDBAccess = UserDBAccess
 	request.Expired = Expired
 	request.ManagedUser = ManagedUser
 	request.ClientVersion = msgs.PGO_VERSION
@@ -97,7 +97,7 @@ func createUser(args []string, ns string) {
 	r.Selector = Selector
 	r.Password = Password
 	r.ManagedUser = ManagedUser
-	r.UserDBAccess = UserDBAccess
+	//r.UserDBAccess = UserDBAccess
 	r.PasswordAgeDays = PasswordAgeDays
 	r.ClientVersion = msgs.PGO_VERSION
 	r.PasswordLength = PasswordLength

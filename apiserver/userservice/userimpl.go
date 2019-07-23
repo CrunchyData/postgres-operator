@@ -479,6 +479,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 		}
 	}
 	//validate userdb if entered
+	/**
 	if request.UserDBAccess != "" {
 		parts := strings.Split(request.UserDBAccess, " ")
 		if len(parts) > 1 {
@@ -504,6 +505,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 			}
 		}
 	}
+	*/
 
 	querystr = "create user " + request.Username
 	log.Debug(querystr)
@@ -513,6 +515,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 		return err
 	}
 
+	/**
 	if request.UserDBAccess != "" {
 		querystr = "grant all on database " + request.UserDBAccess + " to  " + request.Username
 	} else {
@@ -524,6 +527,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 		log.Error(err.Error())
 		return err
 	}
+	*/
 
 	defer func() {
 		if conn != nil {

@@ -63,14 +63,14 @@ type UpdateUserResponse struct {
 
 // CreateUserRequest ...
 type CreateUserRequest struct {
-	Clusters        []string
-	Username        string
-	Namespace       string
-	Selector        string
-	AllFlag         bool
-	Password        string
-	ManagedUser     bool
-	UserDBAccess    string
+	Clusters    []string
+	Username    string
+	Namespace   string
+	Selector    string
+	AllFlag     bool
+	Password    string
+	ManagedUser bool
+	//UserDBAccess    string
 	PasswordAgeDays int
 	ClientVersion   string
 	PasswordLength  int
