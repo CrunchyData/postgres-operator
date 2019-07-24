@@ -13,8 +13,8 @@
     "subjects": [
         {
             "kind": "ServiceAccount",
-            "name": "pgo-target",
-            "namespace": "{{.TargetNamespace}}"
+            "name": "postgres-operator",
+            "namespace": "{{.OperatorNamespace}}"
         }
     ]
 }

@@ -10,7 +10,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-repo" \
 	description="Crunchy Data PostgreSQL Operator - pgo-backrest-repo"
 
-ENV PGVERSION="11" BACKREST_VERSION="2.13"
+ENV PGVERSION="11" BACKREST_VERSION="2.15.1"
 
 COPY redhat/atomic/pgo_backrest_repo/help.1 /help.1
 COPY redhat/atomic/pgo_backrest_repo/help.md /help.md

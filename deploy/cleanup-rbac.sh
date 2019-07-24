@@ -14,23 +14,36 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount postgres-operator  > /dev/null
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount postgres-operator  > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete serviceaccount postgres-operator
 fi
 
-$PGO_CMD get clusterrole pgo-cluster-role   > /dev/null
+$PGO_CMD get clusterrole pgo-cluster-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
 	$PGO_CMD delete clusterrole pgo-cluster-role 
 fi
 
-$PGO_CMD get clusterrolebinding pgo-cluster-role   > /dev/null
+$PGO_CMD get clusterrolebinding pgo-cluster-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD delete clusterrolebinding pgo-cluster-role  > /dev/null
+	$PGO_CMD delete clusterrolebinding pgo-cluster-role  > /dev/null 2> /dev/null
 fi
+
+$PGO_CMD -n $PGO_OPERATOR_NAMESPACE get role pgo-role   > /dev/null 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE delete role pgo-role 
+fi
+
+$PGO_CMD -n $PGO_OPERATOR_NAMESPACE get rolebinding pgo-role   > /dev/null 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE delete rolebinding pgo-role  > /dev/null
+fi
+
 
 sleep 5
 
