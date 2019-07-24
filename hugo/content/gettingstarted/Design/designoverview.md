@@ -254,7 +254,7 @@ Cluster:
   BackrestS3Region: us-east-1
 ```
 
-You will then need to specify the proper credentials for authenticating into the S3 bucket specified by adding a **key** and **key secret** to the `$PGOROOT/pgo-backrest-repo/aws-s3-credentials.yaml` configuration file:
+You will then need to specify the proper credentials for authenticating into the S3 bucket specified by adding a **key** and **key secret** to the `$PGOROOT/conf/pgo-backrest-repo/aws-s3-credentials.yaml` configuration file:
 
 ```yaml
 ---
@@ -275,13 +275,13 @@ With S3 storage properly configured within your PGO installation, you can now se
 For instance, the following command enables both `local` and `s3` storage in a new cluster:
 
 ```bash
-pgo create cluster mycluster --pgbackrest --pgbackrest-storage-type=local,s3 -n pgouser1
+pgo create cluster mycluster --pgbackrest-storage-type=local,s3 -n pgouser1
 ```
 
 As described above, this will result in pgbackrest pushing archives to both local and S3 storage, while also allowing both local and S3 storage to be utilized for backups and restores.  However, you could also enable S3 storage only when creating the cluster:
 
 ```bash
-pgo create cluster mycluster --pgbackrest --pgbackrest-storage-type=s3 -n pgouser1
+pgo create cluster mycluster --pgbackrest-storage-type=s3 -n pgouser1
 ```
 
 Now all archives for the cluster will be pushed to S3 storage only, and local storage will not be utilized for storing archives (nor can local storage be utilized for backups and restores).
