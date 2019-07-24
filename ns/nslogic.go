@@ -51,7 +51,8 @@ type PgoTargetServiceAccount struct {
 
 //pgo-target-role-binding.json
 type PgoTargetRoleBinding struct {
-	TargetNamespace string
+	TargetNamespace   string
+	OperatorNamespace string
 }
 
 //pgo-backrest-role.json
@@ -189,7 +190,6 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 		return err
 	}
 
-	/**
 	err = CreatePGOTargetRole(clientset, targetNamespace)
 	if err != nil {
 		log.Error(err)
@@ -201,7 +201,6 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 		log.Error(err)
 		return err
 	}
-	*/
 
 	err = CreatePGOBackrestRole(clientset, targetNamespace)
 	if err != nil {
@@ -233,7 +232,8 @@ func CreatePGOTargetRoleBinding(clientset *kubernetes.Clientset, targetNamespace
 	var buffer bytes.Buffer
 	err := config.PgoTargetRoleBindingTemplate.Execute(&buffer,
 		PgoTargetRoleBinding{
-			TargetNamespace: targetNamespace,
+			TargetNamespace:   targetNamespace,
+			OperatorNamespace: operatorNamespace,
 		})
 	if err != nil {
 		log.Error(err.Error())

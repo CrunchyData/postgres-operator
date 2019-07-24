@@ -9,4 +9,44 @@ rules:
     apiGroups:
       - '*'
     resources:
+      - pgclusters
+      - pgpolicies
+      - pgtasks
+      - pgbackups
+      - pgreplicas
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'apps'
+    resources:
+      - deployments
+  - verbs:
+      - '*'
+    apiGroups:
+      - ''
+    resources:
       - secrets
+      - pods
+      - configmaps
+      - pods/exec
+      - pods/log
+      - services
+      - replicasets
+      - endpoints
+      - persistentvolumeclaims
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - ''
+    resources:
+      - nodes
+      - storageclasses
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'batch'
+      - 'extensions'
+    resources:
+      - jobs
+

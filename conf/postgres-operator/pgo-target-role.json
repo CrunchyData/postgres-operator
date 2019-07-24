@@ -8,27 +8,17 @@
     "rules": [
         {
             "apiGroups": [
-                ""
+                "*"
             ],
             "resources": [
-                "pods",
-                "pods/exec",
-                "pods/log",
-                "services",
-                "endpoints",
-                "persistentvolumeclaims",
-                "configmaps",
-                "secrets"
+                "pgclusters",
+                "pgpolicies",
+                "pgtasks",
+                "pgbackups",
+                "pgreplicas"
             ],
             "verbs": [
-                "get",
-                "deletecollection",
-                "list",
-                "watch",
-                "create",
-                "update",
-                "patch",
-                "delete"
+                "*"
             ]
         },
         {
@@ -36,11 +26,42 @@
                 "apps"
             ],
             "resources": [
-                "deployments",
-                "replicasets"
+                "deployments"
             ],
             "verbs": [
                 "*"
+            ]
+        },
+        {
+            "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "secrets",
+                "pods",
+                "configmaps",
+                "pods/exec",
+                "pods/log",
+                "services",
+                "replicasets",
+                "endpoints",
+                "persistentvolumeclaims"
+            ],
+            "verbs": [
+                "*"
+            ]
+        },
+        {
+            "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "nodes",
+                "storageclasses"
+            ],
+            "verbs": [
+                "get",
+                "list"
             ]
         },
         {
@@ -52,14 +73,7 @@
                 "jobs"
             ],
             "verbs": [
-                "get",
-                "deletecollection",
-                "list",
-                "watch",
-                "create",
-                "update",
-                "patch",
-                "delete"
+                "*"
             ]
         }
     ]

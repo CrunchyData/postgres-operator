@@ -24,7 +24,7 @@ export PGOADMIN_PERMS=`echo -n "DeleteNamespace,CreateNamespace,UpdatePgorole,Sh
 export PGOADMIN_ROLENAME=`echo -n $EXAMPLE_ROLENAME | base64 --wrap=0`
 
 # see if the bootstrap pgorole Secret exists or not, deleting it if found
-$PGO_CMD get secret pgorole-$EXAMPLE_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null
+$PGO_CMD get secret pgorole-$EXAMPLE_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null > /dev/null
 if [ $? -eq 0 ]; then
 	$PGO_CMD delete secret pgorole-$EXAMPLE_ROLENAME -n $PGO_OPERATOR_NAMESPACE
 fi
@@ -34,7 +34,7 @@ expenv -f $DIR/pgorole-pgoadmin.yaml | $PGO_CMD create -f -
 # see if the bootstrap pgouser Secret exists or not, deleting it if found
 export PGOADMIN_USERNAME=`echo -n $EXAMPLE_USERNAME | base64 --wrap=0`
 export PGOADMIN_PASSWORD=`echo -n $EXAMPLE_PASSWORD | base64 --wrap=0`
-$PGO_CMD get secret pgouser-$EXAMPLE_USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null
+$PGO_CMD get secret pgouser-$EXAMPLE_USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null > /dev/null
 if [ $? -eq 0 ]; then
 	$PGO_CMD delete secret pgouser-$EXAMPLE_USERNAME -n $PGO_OPERATOR_NAMESPACE
 fi
