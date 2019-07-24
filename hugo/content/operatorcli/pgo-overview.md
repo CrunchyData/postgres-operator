@@ -56,7 +56,7 @@ The following table shows the *pgo* operations currently implemented:
 | label       | `pgo label mycluster --label=environment=prod`               | Create a metadata label for a Postgres cluster(s).                                              |
 | load        | `pgo load --load-config=load.json --selector=name=mycluster` | Perform a data load into a Postgres cluster(s).                                                 |
 | reload      | `pgo reload mycluster`                                       | Perform a `pg_ctl` reload command on a Postgres cluster(s).                                     |
-| restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest` or `pgdump` restore on a Postgres cluster.                               |
+| restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest`, `pgbasebackup` or `pgdump` restore on a Postgres cluster.                               |
 | scale       | `pgo scale mycluster`                                        | Create a Postgres replica(s) for a given Postgres cluster.                                      |
 | scaledown   | `pgo scaledown mycluster --query`                            | Delete a replica from a Postgres cluster.                                                       |
 | show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule, namespace, pgouser, pgorole).                   |
