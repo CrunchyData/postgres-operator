@@ -12,7 +12,7 @@ Install the requisite Operator RBAC resources, *as a Kubernetes cluster admin us
     make installrbac
 
 
-This script creates the following RBAC resources on your Kubernetes cluster:
+This script creates the following RBAC cluster-wide resources on your Kubernetes cluster:
 
 | Setting |Definition  |
 |---|---|
@@ -25,6 +25,34 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 | Cluster Roles (cluster-roles.yaml) | pgo-cluster-role|
 | Cluster Role Bindings (cluster-roles-bindings.yaml) | pgo-cluster-role|
 
+The above cluster role/binding is only necessary if you want to use
+the Operator dynamic namespace CLI commands to create targeted
+namespaces (e.g. pgo create namespace).  You can choose to not
+install the pgo-cluster-role cluster role if you want, you
+then create targeted namespaces via script instead.
+
+This script creates the following RBAC namespace resources in the Operator
+namespace (e.g. pgo namespace):
+
+| Setting |Definition  |
+|---|---|
+| Roles (roles.yaml) | pgo-role|
+| Role Bindings (role-bindings.yaml) | pgo-role|
+| Service Account (service-accounts.yaml) | postgres-operator|
+
+Targeted namespaces (e.g. pgouser1, pgouser2), used by the Operator to run Postgres clusters, include the following RBAC resources:
+
+| Setting |Definition  |
+|---|---|
+| Roles (roles.yaml) | pgo-backrest-role|
+|  | pgo-target-role|
+| Role Bindings (role-bindings.yaml) | pgo-backrest-role-binding|
+|  | pgo-target-role-binding|
+| Service Account (service-accounts.yaml) | pgo-backrest|
+
+These target namespace RBAC resources are created either dynamically
+using the *pgo create namespace* command or via the manual namespace
+setup script.
 
 ## Operator RBAC
 
@@ -79,23 +107,19 @@ them, you can do the following:
 The *update namespace* command will apply the required Operator RBAC
 rules to that namespace.
 
+You can manually create a targeted namespace by running
+the *deploy/add-targeted-namespace.sh* script.  That script
+will create the namespace, add the required labels, and apply
+the necessary RBAC resources into that namespaces.  This can
+be used for installations that do not want to install the
+cluster role/bindings which enable dynamic namespace creation.
+
 When you configure the Operator, you can still specify the NAMESPACE
 environment variable with a list of namespaces, if they exist and
 have the correct labels, the Operator will recognize and watch 
 those namespaces.  If the NAMESPACE environment variable has names
 that are not on your Kube system, the Operator will create the namespaces
 at boot up time.
-
-Part of the workflow of the Operator creating namespaces includes applying
-the RBAC rules required for those namespaces.  The RBAC objects created
-in each targeted namespace include:
-
-| Setting |Definition  |
-|---|---|
-| Roles  | pgo-backrest-role|
-| Role Bindings  | pgo-backrest-role-binding|
-| Service Accounts | pgo-backrest |
-
 
 ### Managing Operator Roles
 
