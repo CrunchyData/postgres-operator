@@ -18,7 +18,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $DIR/cleanup-rbac.sh
 
 # see if CRDs need to be created
-$PGO_CMD get crd pgclusters.crunchydata.com
+$PGO_CMD get crd pgclusters.crunchydata.com > /dev/null
 if [ $? -eq 1 ]; then
 	$PGO_CMD create -f $DIR/crd.yaml
 fi
@@ -29,6 +29,7 @@ $DIR/install-bootstrap-creds.sh
 # create the cluster roles one time for the entire Kube cluster
 expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
 
+
 # create the Operator service accounts
 expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
@@ -36,6 +37,9 @@ expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESP
 # postgres-operator and pgo-backrest, here we are assuming a single
 # Operator in the PGO_OPERATOR_NAMESPACE env variable
 expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+
+expenv -f $DIR/roles.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
+expenv -f $DIR/role-bindings.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
 
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh

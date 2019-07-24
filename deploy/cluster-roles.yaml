@@ -4,57 +4,12 @@ metadata:
   name: pgo-cluster-role
 rules:
   - verbs:
-      - get
-      - list
-    apiGroups:
-      - '*'
-    resources:
-      - nodes
-      - storageclasses
-  - verbs:
       - '*'
     apiGroups:
       - '*'
     resources:
-      - secrets
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
-    resources:
-      - pods
       - namespaces
-      - configmaps
       - serviceaccounts
       - roles
       - rolebindings
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
-    resources:
-      - pods/exec
-      - pods/log
-      - services
-      - deployments
-      - replicasets
-      - endpoints
-      - persistentvolumeclaims
-  - verbs:
-      - '*'
-    apiGroups:
-      - 'batch'
-      - 'extensions'
-    resources:
-      - jobs
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
-    resources:
-      - pgclusters
-      - pgpolicies
-      - pgtasks
-      - pgbackups
-      - pgreplicas
 
