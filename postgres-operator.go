@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"time"
 
-	logrus "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 
 	"k8s.io/client-go/rest"
@@ -40,16 +40,16 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
-var log *logrus.Entry
+//var log *logrus.Entry
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
-	log = crunchylog.CrunchyLogger(crunchylog.SetParameters())
+	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
-		logrus.SetLevel(logrus.DebugLevel)
+		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
 	} else {
 		log.Info("debug flag set to false")
