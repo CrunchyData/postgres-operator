@@ -25,8 +25,8 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a backup, benchmark, cluster, pgbouncer, pgpool, label, policy, or user",
-	Long: `The delete command allows you to delete a backup, benchmark, cluster, label, pgbouncer, pgpool, policy, or user. For example:
+	Short: "Delete an Operator resource",
+	Long: `The delete command allows you to delete an Operator resource. For example:
 
 	pgo delete backup mycluster
 	pgo delete benchmark mycluster
@@ -36,11 +36,14 @@ var deleteCmd = &cobra.Command{
 	pgo delete label mycluster --label=env=research
 	pgo delete pgbouncer mycluster
 	pgo delete pgpool mycluster
+	pgo delete pgouser someuser
+	pgo delete pgorole somerole
 	pgo delete policy mypolicy
+	pgo delete namespace mynamespace
 	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
 	pgo delete schedule --selector=name=mycluster
 	pgo delete schedule mycluster
-	pgo delete user testuser --selector=name=mycluster`,
+	pgo delete user --username=testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
@@ -51,19 +54,25 @@ var deleteCmd = &cobra.Command{
 	* label
 	* pgbouncer
 	* pgpool
+	* pgouser
+	* pgorole
+	* namespace
 	* policy
 	* user`)
 		} else {
 			switch args[0] {
-			case "backup":
-			case "benchmark":
-			case "cluster":
-			case "label":
-			case "pgbouncer":
-			case "pgpool":
-			case "policy":
-			case "schedule":
-			case "user":
+			case "backup",
+				"benchmark",
+				"cluster",
+				"label",
+				"pgbouncer",
+				"pgpool",
+				"pgouser",
+				"pgorole",
+				"policy",
+				"namespace",
+				"schedule",
+				"user":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
@@ -73,7 +82,10 @@ var deleteCmd = &cobra.Command{
 	* label
 	* pgbouncer
 	* pgpool
+	* pgouser
+	* pgorole
 	* policy
+	* namespace
 	* user`)
 			}
 		}
@@ -89,12 +101,15 @@ func init() {
 	deleteCmd.AddCommand(deleteBackupCmd)
 	deleteCmd.AddCommand(deleteBenchmarkCmd)
 	deleteCmd.AddCommand(deleteClusterCmd)
+	deleteCmd.AddCommand(deletePgouserCmd)
+	deleteCmd.AddCommand(deletePgoroleCmd)
 	deleteCmd.AddCommand(deletePgbouncerCmd)
 	deleteCmd.AddCommand(deletePgpoolCmd)
 	deleteCmd.AddCommand(deletePolicyCmd)
 	deleteCmd.AddCommand(deleteLabelCmd)
 	deleteCmd.AddCommand(deleteScheduleCmd)
 	deleteCmd.AddCommand(deleteUserCmd)
+	deleteCmd.AddCommand(deleteNamespaceCmd)
 
 	deleteClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
@@ -110,11 +125,17 @@ func init() {
 	deletePgpoolCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	deletePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deletePgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	deletePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deletePgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
 	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	deleteUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to delete.")
 	deleteUserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	deleteUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
 
 }
 
@@ -139,6 +160,49 @@ var deleteBackupCmd = &cobra.Command{
 		}
 	},
 }
+var deletePgouserCmd = &cobra.Command{
+	Use:   "pgouser",
+	Short: "Delete a pgouser",
+	Long: `Delete a pgouser. For example:
+    
+    pgo delete pgouser someuser`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 {
+			fmt.Println("Error: A pgouser username is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgouser(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+var deletePgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Delete a pgorole",
+	Long: `Delete a pgorole. For example:
+    
+    pgo delete pgorole somerole`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 {
+			fmt.Println("Error: A pgorole role name is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgorole(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
 
 // deleteUserCmd ...
 var deleteUserCmd = &cobra.Command{
@@ -146,19 +210,17 @@ var deleteUserCmd = &cobra.Command{
 	Short: "Delete a user",
 	Long: `Delete a user. For example:
 
-    pgo delete user someuser --selector=name=mycluster`,
+    pgo delete user --username=someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 {
-			fmt.Println("Error: A user name is required for this command.")
-		} else if Selector == "" {
-			fmt.Println("Error: A selector is required for this command.")
+		if len(args) == 0 && AllFlag == false && Selector == "" {
+			fmt.Println("Error: --all, --selector, or a list of clusters is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUser(args[0], Namespace)
+				deleteUser(args, Namespace)
 
 			} else {
 				fmt.Println("Aborting...")
@@ -322,6 +384,27 @@ var deleteBenchmarkCmd = &cobra.Command{
 
 		if util.AskForConfirmation(NoPrompt, "") {
 			deleteBenchmark(args, Namespace)
+		} else {
+			fmt.Println("Aborting...")
+		}
+	},
+}
+
+var deleteNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Delete namespaces",
+	Long: `Delete namespaces. For example:
+
+    pgo delete namespace mynamespace
+    pgo delete namespace --selector=env=test`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: namespace name or selector is required to delete a namespace.")
+			return
+		}
+
+		if util.AskForConfirmation(NoPrompt, "") {
+			deleteNamespace(args, Namespace)
 		} else {
 			fmt.Println("Aborting...")
 		}

@@ -17,10 +17,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrole 2> /dev/null
+$PGO_CMD get clusterrole pgo-cluster-role 2> /dev/null > /dev/null
 if [ $? -ne 0 ]
 then
-	echo ERROR: pgopclusterrole was not found in $PGO_OPERATOR_NAMESPACE namespace
+	echo ERROR: pgo-cluster-role was not found 
 	echo Verify you ran install-rbac.sh
 	exit
 fi
@@ -37,7 +37,11 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-
 #
 # credentials for pgo-apiserver TLS REST API
 #
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret tls pgo.tls
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get secret pgo.tls > /dev/null 2> /dev/null
+if [ $? -eq 0 ]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret pgo.tls
+fi
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret tls pgo.tls --key=$PGOROOT/conf/postgres-operator/server.key --cert=$PGOROOT/conf/postgres-operator/server.crt
 

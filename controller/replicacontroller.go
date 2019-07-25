@@ -17,8 +17,11 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -33,53 +36,31 @@ type PgreplicaController struct {
 	PgreplicaClient    *rest.RESTClient
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
-	Namespace          []string
+	Ctx                context.Context
 }
 
 // Run starts an pgreplica resource controller
-func (c *PgreplicaController) Run(ctx context.Context) error {
+func (c *PgreplicaController) Run() error {
 
-	err := c.watchPgreplicas(ctx)
+	err := c.watchPgreplicas(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgreplica resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgreplicas is the event loop for pgreplica resources
 func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
+	nsList := ns.GetNamespaces(c.PgreplicaClientset, operator.InstallationName)
 
-		log.Infof("starting pgreplica controller on ns [%s]", c.Namespace[i])
+	for i := 0; i < len(nsList); i++ {
 
-		source := cache.NewListWatchFromClient(
-			c.PgreplicaClient,
-			crv1.PgreplicaResourcePlural,
-			c.Namespace[i],
-			fields.Everything())
+		log.Infof("starting pgreplica controller on ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgreplica{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
 	}
 	return nil
 }
@@ -138,4 +119,32 @@ func (c *PgreplicaController) onDelete(obj interface{}) {
 	log.Debugf("[PgreplicaController] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//	clusteroperator.DeleteReplica(c.PgreplicaClientset, replica, replica.ObjectMeta.Namespace)
+}
+
+func (c *PgreplicaController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgreplicaClient,
+		crv1.PgreplicaResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgreplica{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

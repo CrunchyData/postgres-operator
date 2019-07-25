@@ -14,92 +14,36 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount postgres-operator 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount postgres-operator  > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete serviceaccount postgres-operator
 fi
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount pgo-backrest 
+$PGO_CMD get clusterrole pgo-cluster-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete serviceaccount pgo-backrest
+	$PGO_CMD delete clusterrole pgo-cluster-role 
 fi
 
-IFS=', ' read -r -a array <<< "$NAMESPACE"
-
-echo ""
-echo "delete pgo-backrest ServiceAccount from each target namespace"
-
-for ns in "${array[@]}"
-do
-	$PGO_CMD get sa pgo-backrest --namespace=$ns > /dev/null 2> /dev/null
-	if [ $? -eq 0 ]
-	then
-		$PGO_CMD delete sa  pgo-backrest --namespace=$ns > /dev/null 2> /dev/null
-	fi
-done
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrole  
+$PGO_CMD get clusterrolebinding pgo-cluster-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrole 
+	$PGO_CMD delete clusterrolebinding pgo-cluster-role  > /dev/null 2> /dev/null
 fi
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrolesecret
+$PGO_CMD -n $PGO_OPERATOR_NAMESPACE get role pgo-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrolesecret 
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE delete role pgo-role 
 fi
 
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrole pgopclusterrolecrd 
+$PGO_CMD -n $PGO_OPERATOR_NAMESPACE get rolebinding pgo-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrole pgopclusterrolecrd
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE delete rolebinding pgo-role  > /dev/null
 fi
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrolebinding pgopclusterbinding-$PGO_OPERATOR_NAMESPACE  
-if [ $? -eq 0 ]
-then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbinding-$PGO_OPERATOR_NAMESPACE 
-fi
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrolebinding pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE
-if [ $? -eq 0 ]
-then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE
-fi
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get clusterrolebinding pgopclusterbindingsecret-$PGO_OPERATOR_NAMESPACE
-if [ $? -eq 0 ]
-then
-    $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete clusterrolebinding pgopclusterbindingsecret-$PGO_OPERATOR_NAMESPACE
-fi
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get role pgo-role 
-if [ $? -eq 0 ]
-then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete role pgo-role
-fi
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get rolebinding pgo-role-binding 
-if [ $? -eq 0 ]
-then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete rolebinding pgo-role-binding
-fi
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get role pgo-backrest-role 
-if [ $? -eq 0 ]
-then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete role pgo-backrest-role
-fi
-
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get rolebinding pgo-backrest-role-binding 
-if [ $? -eq 0 ]
-then
-	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete rolebinding pgo-backrest-role-binding
-fi
 
 sleep 5
 

@@ -18,13 +18,17 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 $DIR/cleanup-rbac.sh
 
 # see if CRDs need to be created
-$PGO_CMD get crd pgclusters.crunchydata.com
+$PGO_CMD get crd pgclusters.crunchydata.com > /dev/null
 if [ $? -eq 1 ]; then
 	$PGO_CMD create -f $DIR/crd.yaml
 fi
 
+# create the initial pgo admin credential
+$DIR/install-bootstrap-creds.sh
+
 # create the cluster roles one time for the entire Kube cluster
 expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
+
 
 # create the Operator service accounts
 expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
@@ -34,21 +38,12 @@ expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESP
 # Operator in the PGO_OPERATOR_NAMESPACE env variable
 expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
+expenv -f $DIR/roles.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
+expenv -f $DIR/role-bindings.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
+
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh
 
 # create the sshd keys for pgbackrest repo functionality
 source $DIR/gen-sshd-keys.sh
-
-# create a pgo-backrest-repo-config Secret into each namespace the
-# Operator will be watching
-
-IFS=', ' read -r -a array <<< "$NAMESPACE"
-
-echo ""
-echo "create required rbac in each namespace the Operator is watching..."
-for ns in "${array[@]}"
-do
-        $DIR/create-target-rbac.sh $ns $PGO_OPERATOR_NAMESPACE
-done
 

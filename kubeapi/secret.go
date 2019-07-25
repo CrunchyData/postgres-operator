@@ -81,3 +81,13 @@ func DeleteSecret(clientset *kubernetes.Clientset, name, namespace string) error
 
 	return err
 }
+
+func UpdateSecret(clientset *kubernetes.Clientset, sec *v1.Secret, namespace string) error {
+	_, err := clientset.Core().Secrets(namespace).Update(sec)
+	if err != nil {
+		log.Error(err)
+		log.Error("error updating secret %s", sec.Name)
+	}
+	return err
+
+}

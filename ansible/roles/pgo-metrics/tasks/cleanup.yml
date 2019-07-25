@@ -45,6 +45,7 @@
   no_log: false
   tags:
   - deprovision-metrics
+  when: create_rbac|bool
 
 - name: Delete Prometheus Service Account
   shell: |
@@ -53,6 +54,7 @@
   no_log: false
   tags:
   - deprovision-metrics
+  when: create_rbac|bool
 
 - name: Delete Grafana PVC
   shell: |

@@ -22,7 +22,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -71,7 +70,7 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	resp = CreateCluster(&request, ns)
+	resp = CreateCluster(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -185,7 +184,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, ns)
+	resp = DeleteCluster(clustername, selector, deleteData, deleteBackups, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }
@@ -233,7 +232,7 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = TestCluster(clustername, selector, ns, request.AllFlag)
+	resp = TestCluster(clustername, selector, ns, username, request.AllFlag)
 	json.NewEncoder(w).Encode(resp)
 }
 
@@ -242,18 +241,13 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo update cluster --selector=env=research --autofail=false
 // returns a UpdateClusterResponse
 func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
-	var ns string
-	vars := mux.Vars(r)
+	var request msgs.UpdateClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	clustername := vars["name"]
+	log.Debugf("clusterservice.UpdateClusterHandler %v\n", request)
 
-	selector := r.URL.Query().Get("selector")
-	namespace := r.URL.Query().Get("namespace")
-	clientVersion := r.URL.Query().Get("version")
-
-	autofailStr := r.URL.Query().Get("autofail")
-
-	log.Debugf("UpdateClusterHandler parameters name [%s] version [%s] selector [%s] namespace [%s] autofail [%s]", clustername, clientVersion, selector, namespace, autofailStr)
+	namespace := request.Namespace
+	clientVersion := request.ClientVersion
 
 	username, err := apiserver.Authn(apiserver.UPDATE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -276,7 +270,7 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
+	_, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
 		resp.Results = make([]string, 0)
@@ -284,19 +278,7 @@ func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if autofailStr != "" {
-		if autofailStr == "true" || autofailStr == "false" {
-		} else {
-			resp.Status = msgs.Status{
-				Code: msgs.Error,
-				Msg:  "autofail parameter is not true or false, boolean is required"}
-			resp.Results = make([]string, 0)
-			json.NewEncoder(w).Encode(resp)
-			return
-		}
-	}
-
-	resp = UpdateCluster(clustername, selector, autofailStr, ns)
+	resp = UpdateCluster(&request)
 	json.NewEncoder(w).Encode(resp)
 
 }

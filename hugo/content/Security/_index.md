@@ -12,7 +12,7 @@ Install the requisite Operator RBAC resources, *as a Kubernetes cluster admin us
     make installrbac
 
 
-This script creates the following RBAC resources on your Kubernetes cluster:
+This script creates the following RBAC cluster-wide resources on your Kubernetes cluster:
 
 | Setting |Definition  |
 |---|---|
@@ -22,72 +22,124 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 |  | pgreplicas|
 |  | pgtasks|
 |  | pgupgrades|
-| Cluster Roles (cluster-roles.yaml) | pgopclusterrole|
-|  | pgopclusterrolecrd|
-| Cluster Role Bindings (cluster-roles-bindings.yaml) | pgopclusterbinding|
-|  | pgopclusterbindingcrd|
+| Cluster Roles (cluster-roles.yaml) (cluster-roles-readonly.yaml) | pgo-cluster-role|
+| Cluster Role Bindings (cluster-roles-bindings.yaml) | pgo-cluster-role|
+
+The above cluster role/binding is necessary to list and watch 
+namespaces at a minimum (cluster-roles-readonly.yaml).  This role lets
+the Operator watch namespaces and run the following pgo CLI command:
+    pgo show namespace --all
+
+The default cluster role (cluster-roles.yaml) includes the permission to create and delete namespaces using the following pgo CLI commands:
+    pgo create namespace mynamespace
+    pgo update namespace mynamespace
+    pgo delete namespace mynamespace
+
+If you do not allow create/update of namespaces, you can manually
+create Operator target namespaces using the following script:
+    deploy/add-targeted-namespace.sh
+
+This script creates the following RBAC namespace resources in the Operator
+namespace (e.g. pgo namespace):
+
+| Setting |Definition  |
+|---|---|
+| Roles (roles.yaml) | pgo-role|
+| Role Bindings (role-bindings.yaml) | pgo-role|
 | Service Account (service-accounts.yaml) | postgres-operator|
-| | pgo-backrest|
-| Roles (rbac.yaml) | pgo-role|
-| | pgo-backrest-role|
-|Role Bindings  (rbac.yaml) | pgo-backrest-role-binding|
-| | pgo-role-binding|
 
+Targeted namespaces (e.g. pgouser1, pgouser2), used by the Operator to run Postgres clusters, include the following RBAC resources:
 
-Note that the cluster role bindings have a naming convention of
-pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and
-pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  The PGO_OPERATOR_NAMESPACE
-environment variable is added to make each cluster role binding
-name unique and to support more than a single Operator being deployed
-on the same Kube cluster.
+| Setting |Definition  |
+|---|---|
+| Roles (roles.yaml) | pgo-backrest-role|
+|  | pgo-target-role|
+| Role Bindings (role-bindings.yaml) | pgo-backrest-role-binding|
+|  | pgo-target-role-binding|
+| Service Account (service-accounts.yaml) | pgo-backrest|
 
-
-
+These target namespace RBAC resources are created either dynamically
+using the *pgo create namespace* command or via the manual namespace
+setup script.
 
 ## Operator RBAC
 
-The *conf/postgresql-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
+Operator user roles (pgouser) are defined as Secrets starting in version 4.1 of the Operator.  Likewise, Operator users (pgouser) are also defined as Secrets.
 
-The *conf/postgresql-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
+The bootstrap Operator credential is created when you run:
 
-    username:password:pgoadmin:
-    pgouser1:password:pgoadmin:pgouser1
-    pgouser2:password:pgoadmin:pgouser2
-    pgouser3:password:pgoadmin:pgouser1,pgouser2
-    readonlyuser:password:pgoreader:
+    make installrbac
 
-The format of the pgouser server file is:
+This creates an Operator role and user with the following
+names:
+    
+    pgoadmin
 
-    <username>:<password>:<role>:<namespace,namespace>
+The roles and user Secrets are created in the PGO_OPERATOR_NAMESPACE.
 
-The namespace is a comma separated list of namespaces that
-user has access to.  If you do not specify a namespace, then
-all namespaces is assumed, meaning this user can access any
-namespace that the Operator is watching.
+The default roles, role name, user name, and password are defined in the following script and should be modified for a production environment:
 
-A user creates a *.pgouser* file in their $HOME directory to identify
-themselves to the Operator.  An entry in .pgouser will need to match
-entries in the *conf/postgresql-operator/pgouser* file.  A sample
-*.pgouser* file contains the following:
+    deploy/install-bootstrap-creds.sh
+ 
+These Secrets (pgouser/pgorole) control access to the Operator API.
 
-    username:password
+## Target Namespaces
 
-The format of the .pgouser client file is:
+Starting in Operator version 4.1, targeted namespaces are created
+by the Operator itself instead as configuration or user actions
+dictate.
 
-    <username>:<password>
+Targeted namespaces are namespaces which are configured for the
+Operator to deploy Postgres clusters into and manage.
 
-The users pgouser file can also be located at:
-*/etc/pgo/pgouser* or it can be found at a path specified by the
-PGOUSER environment variable.
+Targeted namespaces are those which have the following labels:
 
-If the user tries to access a namespace that they are not
-configured for within the server side *pgouser* file then they
-will get an error message as follows:
+    vendor=crunchydata
+    pgo-installation-name=devtest
 
-    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
+In the above example, *devtest* is the default name for an Operator
+installation.  This value is specified using the PGO_INSTALLATION_NAME
+environment variable, when installing the Operator, you will
+need to set this environment variable to be unique across your Kube
+cluster.  This setting determines what namespaces an Operator
+installation can access. 
 
+Users can create a new Namespace as follows:
+    pgo create namespace mynamespace
 
-The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
+If you want to create the Namespace prior to the Operator using
+them, you can do the following:
+    kubectl create namespace mynamespace
+    pgo update namespace mynamespace
+
+The *update namespace* command will apply the required Operator RBAC
+rules to that namespace.
+
+You can manually create a targeted namespace by running
+the *deploy/add-targeted-namespace.sh* script.  That script
+will create the namespace, add the required labels, and apply
+the necessary RBAC resources into that namespaces.  This can
+be used for installations that do not want to install the
+cluster role/bindings which enable dynamic namespace creation.
+
+When you configure the Operator, you can still specify the NAMESPACE
+environment variable with a list of namespaces, if they exist and
+have the correct labels, the Operator will recognize and watch 
+those namespaces.  If the NAMESPACE environment variable has names
+that are not on your Kube system, the Operator will create the namespaces
+at boot up time.
+
+### Managing Operator Roles
+
+After installation, users can create additional Operator roles
+as follows:
+
+    pgo create pgorole somerole --permissions="Cat,Ls"
+
+The above command creates a role named *somerole* with permissions to
+execute the *cat* and *ls* API commands.  Permissions are comma separated.
+
+The full set of permissions that can be used in a role are as follows:
 
 |Permission|Description  |
 |---|---|
@@ -98,7 +150,10 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateCluster | allow *pgo create cluster*|
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
+|CreateNamespace | allow *pgo create namespace*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
+|CreatePgouser | allow *pgo create pgouser*|
+|CreatePgorole | allow *pgo create pgorole*|
 |CreatePgpool | allow *pgo create pgpool*|
 |CreatePolicy | allow *pgo create policy*|
 |CreateSchedule | allow *pgo create schedule*|
@@ -107,7 +162,10 @@ The following list shows the current complete list of possible pgo permissions t
 |DeleteBackup | allow *pgo delete backup*|
 |DeleteBenchmark | allow *pgo delete benchmark*|
 |DeleteCluster | allow *pgo delete cluster*|
+|DeleteNamespace | allow *pgo delete namespace*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
+|DeletePgouser | allow *pgo delete pgouser*|
+|DeletePgorole | allow *pgo delete pgorole*|
 |DeletePgpool | allow *pgo delete pgpool*|
 |DeletePolicy | allow *pgo delete policy*|
 |DeleteSchedule | allow *pgo delete schedule*|
@@ -125,29 +183,69 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
 |ShowPolicy | allow *pgo show policy*|
+|ShowPgouser | allow *pgo show pgouser*|
+|ShowPgorole | allow *pgo show pgorole*|
 |ShowPVC | allow *pgo show pvc*|
 |ShowSchedule | allow *pgo show schedule*|
 |ShowNamespace | allow *pgo show namespace*|
 |ShowUpgrade | allow *pgo show upgrade*|
+|ShowUser | allow *pgo show user*|
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|
 |TestCluster | allow *pgo test*|
 |UpdateCluster | allow *pgo update cluster*|
-|User | allow *pgo user*|
+|UpdateNamespace | allow *pgo update namespace*|
+|UpdatePgouser | allow *pgo update pgouser*|
+|UpdatePgorole | allow *pgo update pgorole*|
+|UpdateUser | allow *pgo update user*|
 |Version | allow *pgo version*|
 
+
+Roles can be viewed with the following command:
+
+    pgo show pgorole --all
+
+Roles can be removed with the following command:
+
+    pgo delete pgorole somerole
+
+Roles can be updated with the following command:
+
+    pgo update pgorole somerole --permissions="Cat,Ls,ShowPolicy"
+
+### Managing Operator Users
+
+After installation, users can create additional Operator users
+as follows:
+
+    pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password=somepassword --pgouser-roles="somerole,someotherrole"
+
+Mutliple roles and namespaces can be associated with a user by
+specifying a comma separated list of values.
+
+The namespace is a comma separated list of namespaces that
+user has access to.  If you specify the flag "--all-namespaces", then
+all namespaces is assumed, meaning this user can access any
+namespace that the Operator is watching.
+
+A user creates a *.pgouser* file in their $HOME directory to identify
+themselves to the Operator.  A sample *.pgouser* file contains the following:
+
+    pgoadmin:examplepassword
+
+The format of the .pgouser client file is:
+
+    <username>:<password>
+
+If the user tries to access a namespace that they are not
+configured for they will get an error message as follows:
+
+    Error: user [pgouser1] is not allowed access to namespace [pgouser2]
 
 If the user is unauthorized for a pgo command, the user will
 get back this response:
 
     Error:  Authentication Failed: 401 
-
-## Making Security Changes
-The Operator today requires you to make Operator user security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
-
-    make deployoperator
-
-This will recreate the *pgo-config* ConfigMap that stores these files and is mounted by the Operator during its initialization.
 
 ## API Security
 

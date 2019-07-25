@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -35,12 +35,12 @@ import (
 
 const (
 	schedulerLabel  = "crunchy-scheduler=true"
-	namespaceEnv    = "NAMESPACE"
 	pgoNamespaceEnv = "PGO_OPERATOR_NAMESPACE"
 	timeoutEnv      = "TIMEOUT"
 	inCluster       = true
 )
 
+var installationName string
 var namespace string
 var pgoNamespace string
 var namespaceList []string
@@ -60,15 +60,18 @@ func init() {
 		log.Info("debug flag set to false")
 	}
 
+	installationName = os.Getenv("PGO_INSTALLATION_NAME")
+	if installationName == "" {
+		log.Fatal("PGO_INSTALLATION_NAME env var is not set")
+	} else {
+		log.Info("PGO_INSTALLATION_NAME set to " + installationName)
+	}
+
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 
-	namespace = os.Getenv(namespaceEnv)
-	if namespace == "" {
-		log.WithFields(log.Fields{}).Fatalf("Failed to get NAMESPACE environment: %s", namespaceEnv)
-	}
 	pgoNamespace = os.Getenv(pgoNamespaceEnv)
 	if pgoNamespace == "" {
 		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_OPERATOR_NAMESPACE environment: %s", pgoNamespaceEnv)
@@ -85,9 +88,6 @@ func init() {
 		}
 	}
 
-	namespaceList = util.GetNamespaces()
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
-
 	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
 	timeout = time.Second * time.Duration(seconds)
 
@@ -100,11 +100,16 @@ func init() {
 	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
 		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
+	namespaceList = ns.GetNamespaces(kubeClient, installationName)
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 }
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
+        //give time for pgo-event to start up
+        time.Sleep(time.Duration(5) * time.Second)
+
 
 	scheduler := scheduler.New(schedulerLabel, pgoNamespace, namespaceList, kubeClient)
 	scheduler.CronClient.Start()
@@ -126,42 +131,10 @@ func main() {
 	log.WithFields(log.Fields{}).Infof("Watching namespaces: %s", namespaceList)
 
 	for _, namespace := range namespaceList {
-		watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
-			"configmaps", namespace, fields.Everything())
-
-		_, controller := cache.NewInformer(watchlist, &v1.ConfigMap{}, 0,
-			cache.ResourceEventHandlerFuncs{
-				AddFunc: func(obj interface{}) {
-					cm, ok := obj.(*v1.ConfigMap)
-					if !ok {
-						log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
-					}
-
-					if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
-						return
-					}
-
-					if err := scheduler.AddSchedule(cm); err != nil {
-						log.WithFields(log.Fields{
-							"error": err,
-						}).Error("Failed to add schedules")
-					}
-				},
-				DeleteFunc: func(obj interface{}) {
-					cm, ok := obj.(*v1.ConfigMap)
-					if !ok {
-						log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
-					}
-
-					if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
-						return
-					}
-					scheduler.DeleteSchedule(cm)
-				},
-			},
-		)
-		go controller.Run(stop)
+		SetupWatch(namespace, scheduler, stop)
 	}
+
+	SetupNamespaceWatch(installationName, scheduler, stop)
 
 	for {
 		select {
@@ -189,4 +162,77 @@ func newKubeClient() (*kubernetes.Clientset, error) {
 	}
 
 	return client, nil
+}
+
+func SetupWatch(namespace string, scheduler *scheduler.Scheduler, stop chan struct{}) {
+	watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
+		"configmaps", namespace, fields.Everything())
+
+	_, controller := cache.NewInformer(watchlist, &v1.ConfigMap{}, 0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				cm, ok := obj.(*v1.ConfigMap)
+				if !ok {
+					log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
+				}
+
+				if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
+					return
+				}
+
+				if err := scheduler.AddSchedule(cm); err != nil {
+					log.WithFields(log.Fields{
+						"error": err,
+					}).Error("Failed to add schedules")
+				}
+			},
+			DeleteFunc: func(obj interface{}) {
+				cm, ok := obj.(*v1.ConfigMap)
+				if !ok {
+					log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
+				}
+
+				if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
+					return
+				}
+				scheduler.DeleteSchedule(cm)
+			},
+		},
+	)
+	go controller.Run(stop)
+}
+
+func SetupNamespaceWatch(installationName string, scheduler *scheduler.Scheduler, stop chan struct{}) {
+	watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
+		"namespaces", "", fields.Everything())
+
+	_, controller := cache.NewInformer(watchlist, &v1.Namespace{}, 0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				ns, ok := obj.(*v1.Namespace)
+				if !ok {
+					log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
+				} else {
+					labels := ns.GetObjectMeta().GetLabels()
+					if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
+						log.WithFields(log.Fields{}).Infof("Added namespace: %s", ns.Name)
+						SetupWatch(ns.Name, scheduler, stop)
+					} else {
+						log.WithFields(log.Fields{}).Infof("Not adding namespace since it is not owned by this Operator installation: %s", ns.Name)
+					}
+				}
+
+			},
+			DeleteFunc: func(obj interface{}) {
+				ns, ok := obj.(*v1.Namespace)
+				if !ok {
+					log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
+				} else {
+					log.WithFields(log.Fields{}).Infof("Deleted namespace: %s", ns.Name)
+				}
+
+			},
+		},
+	)
+	go controller.Run(stop)
 }

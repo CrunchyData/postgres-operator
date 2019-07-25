@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -58,7 +59,7 @@ type containerResourcesTemplateFields struct {
 
 // Load ...
 // pgo load  --policies=jsonload --selector=name=mycluster --load-config=./sample-load-config.json
-func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
+func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 
 	var err error
 	resp := msgs.LoadResponse{}
@@ -156,7 +157,7 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 			applyReq.Namespace = ns
 			applyReq.DryRun = false
 			applyReq.Selector = "name=" + arg
-			applyResp := policyservice.ApplyPolicy(&applyReq, ns)
+			applyResp := policyservice.ApplyPolicy(&applyReq, ns, pgouser)
 			if applyResp.Status.Code != msgs.Ok {
 				log.Error("error in applying policy " + applyResp.Status.Msg)
 				resp.Status.Code = msgs.Error
@@ -173,6 +174,27 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 			resp.Status.Msg = err.Error()
 			return resp
 		}
+
+		//publish event for Load
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicLoad
+
+		f := events.EventLoadFormat{
+			EventHeader: events.EventHeader{
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventLoad,
+			},
+			Clustername: arg,
+			Loadconfig:  LoadCfg.TableToLoad,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
 		resp.Results = append(resp.Results, "created Job "+jobName)
 
 	}

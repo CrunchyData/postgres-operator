@@ -25,7 +25,7 @@ func TestCreateUser(t *testing.T) {
 		args    []string
 		fixture string
 	}{
-		{"pgo create user", []string{"create", "user", "test2", "--managed","--selector=name=" + TestClusterName }, ""},
+		{"pgo create user", []string{"create", "user", "--managed", "--selector=name=" + TestClusterName, "--username=testuser1"}, ""},
 	}
 
 	t.Log("TestCreateUser starts")
@@ -51,6 +51,90 @@ func TestCreateUser(t *testing.T) {
 	})
 }
 
+func TestUpdateUser(t *testing.T) {
+	var clientset *kubernetes.Clientset
+
+	// t.Fatal("not implemented")
+	t.Run("setup", func(t *testing.T) {
+		t.Log("some setup code")
+		clientset, _ = SetupKube()
+		if clientset == nil {
+			t.Error("clientset is nil")
+		}
+	})
+
+	tests := []struct {
+		name    string
+		args    []string
+		fixture string
+	}{
+		{"pgo update user", []string{"update", "user", "--username=testuser1", "--selector=name=" + TestClusterName, "--password=fungo"}, ""},
+	}
+
+	t.Log("TestUpdateUser starts")
+	for _, tt := range tests {
+		cmd := exec.Command("pgo", tt.args...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			//t.Fatal(err)
+		}
+
+		actual := string(output)
+
+		t.Logf("actual %s- ", actual)
+		found := strings.Contains(actual, "changing")
+		if !found {
+			t.Error("could not find update in output")
+		}
+
+	}
+
+	t.Run("teardown", func(t *testing.T) {
+		t.Log("some teardown code")
+	})
+}
+func TestShowUser(t *testing.T) {
+	var clientset *kubernetes.Clientset
+
+	// t.Fatal("not implemented")
+	t.Run("setup", func(t *testing.T) {
+		t.Log("some setup code")
+		clientset, _ = SetupKube()
+		if clientset == nil {
+			t.Error("clientset is nil")
+		}
+	})
+
+	tests := []struct {
+		name    string
+		args    []string
+		fixture string
+	}{
+		{"pgo show user", []string{"show", "user", "--selector=name=" + TestClusterName}, ""},
+	}
+
+	t.Log("TestShowUser starts")
+	for _, tt := range tests {
+		cmd := exec.Command("pgo", tt.args...)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			//t.Fatal(err)
+		}
+
+		actual := string(output)
+
+		t.Logf("actual %s- ", actual)
+		found := strings.Contains(actual, "secret")
+		if !found {
+			t.Error("could not find secret in output")
+		}
+
+	}
+
+	t.Run("teardown", func(t *testing.T) {
+		t.Log("some teardown code")
+	})
+}
 
 func TestDeleteUser(t *testing.T) {
 	var clientset *kubernetes.Clientset
@@ -69,7 +153,7 @@ func TestDeleteUser(t *testing.T) {
 		args    []string
 		fixture string
 	}{
-		{"pgo delete user", []string{"delete", "user", "test1", "--selector=name=" + TestClusterName }, ""},
+		{"pgo delete user", []string{"delete", "user", "--username=testuser1", "--selector=name=" + TestClusterName, "--no-prompt"}, ""},
 	}
 
 	t.Log("TestCreateUser starts")
@@ -83,7 +167,7 @@ func TestDeleteUser(t *testing.T) {
 		actual := string(output)
 
 		t.Logf("actual %s- ", actual)
-		found := strings.Contains(actual, "delete")
+		found := strings.Contains(actual, "removed")
 		if !found {
 			t.Error("could not find delete in output")
 		}
@@ -94,4 +178,5 @@ func TestDeleteUser(t *testing.T) {
 		t.Log("some teardown code")
 	})
 }
+
 //TODO: need to add pgo show user

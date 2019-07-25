@@ -8,7 +8,7 @@ weight: 1
 # Crunchy Data PostgreSQL Operator Playbooks
 
 The Crunchy Data PostgreSQL Operator Playbooks contain [Ansible](https://www.ansible.com/) 
-roles for installing and managing the [Crunchy Data PostgreSQL Operator](https://access.crunchydata.com/documentation/postgres-operator/4.0.1/installation/install-with-ansible/).  
+roles for installing and managing the [Crunchy Data PostgreSQL Operator](https://access.crunchydata.com/documentation/postgres-operator/4.1.0/installation/install-with-ansible/).  
 
 ## Features
 

@@ -28,11 +28,11 @@ PostgreSQL Operator.
 
 ## Linux and MacOS
 
-The following will setup the `pgo` client to be used on a Windows system.
+The following will setup the `pgo` client to be used on a Linux or MacOS system.
 
 ### Installing the Client
 
-First, download the `pgo.exe` client from the
+First, download the `pgo` client from the
 [GitHub official releases](https://github.com/CrunchyData/postgres-operator/releases). Crunchy Enterprise Customers can download the pgo binaries from https://access.crunchydata.com/ on the downloads page. 
 
 Next, install `pgo` in `/usr/local/bin` by running the following:
@@ -42,7 +42,7 @@ sudo mv /PATH/TO/pgo /usr/local/bin/pgo
 sudo chmod +x /usr/local/bin/pgo
 ```
 
-Verify the `pgo.exe` client is accessible by running the following in the terminal:
+Verify the `pgo` client is accessible by running the following in the terminal:
 
 ```bash
 pgo --help

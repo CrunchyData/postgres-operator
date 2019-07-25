@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 )
 
@@ -34,53 +36,31 @@ type PgbackupController struct {
 	PgbackupClient    *rest.RESTClient
 	PgbackupScheme    *runtime.Scheme
 	PgbackupClientset *kubernetes.Clientset
-	Namespace         []string
+	Ctx               context.Context
 }
 
 // Run starts controller
-func (c *PgbackupController) Run(ctx context.Context) error {
+func (c *PgbackupController) Run() error {
 	log.Debugf("Watch Pgbackup objects")
 
-	err := c.watchPgbackups(ctx)
+	err := c.watchPgbackups(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgbackup resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgbackups will watch events for the pgbackups
 func (c *PgbackupController) watchPgbackups(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pgbackup controller on ns [%s]", c.Namespace[i])
+	nsList := ns.GetNamespaces(c.PgbackupClientset, operator.InstallationName)
 
-		source := cache.NewListWatchFromClient(
-			c.PgbackupClient,
-			crv1.PgbackupResourcePlural,
-			c.Namespace[i],
-			fields.Everything())
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pgbackup controller on ns [%s]", nsList[i])
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&crv1.Pgbackup{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
+		c.SetupWatch(nsList[i])
 	}
 	return nil
 }
@@ -141,4 +121,32 @@ func (c *PgbackupController) onUpdate(oldObj, newObj interface{}) {
 func (c *PgbackupController) onDelete(obj interface{}) {
 	backup := obj.(*crv1.Pgbackup)
 	log.Debugf("[PgbackupController] ns=%s onDelete %s", backup.ObjectMeta.Namespace, backup.ObjectMeta.SelfLink)
+}
+
+func (c *PgbackupController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgbackupClient,
+		crv1.PgbackupResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgbackup{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }

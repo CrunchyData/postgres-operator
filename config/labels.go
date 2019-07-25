@@ -107,6 +107,7 @@ const LABEL_VOLUME_NAME = "volume-name"
 
 const LABEL_SESSION_ID = "sessionid"
 const LABEL_USERNAME = "username"
+const LABEL_ROLENAME = "rolename"
 const LABEL_PASSWORD = "password"
 
 const LABEL_PGPOOL = "crunchy-pgpool"
@@ -125,6 +126,8 @@ const LABEL_PGBOUNCER_TASK_RECONFIGURE = "pgbouncer-reconfigure"
 const LABEL_PGBOUNCER_USER = "pgbouncer-user"
 const LABEL_PGBOUNCER_PASS = "pgbouncer-password"
 
+const LABEL_PGO_LOAD = "pgo-load"
+
 const LABEL_JOB_NAME = "job-name"
 const LABEL_PGBACKREST_STANZA = "pgbackrest-stanza"
 const LABEL_PGBACKREST_DB_PATH = "pgbackrest-db-path"
@@ -141,11 +144,20 @@ const LABEL_CURRENT_PRIMARY = "current-primary"
 
 const LABEL_CLAIM_NAME = "claimName"
 
+const LABEL_PGO_PGOUSER = "pgo-pgouser"
+const LABEL_PGO_PGOROLE = "pgo-pgorole"
+const LABEL_PGOUSER = "pgouser"
+const LABEL_WORKFLOW_ID = "workflow-id"
+
 const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"
 
 const LABEL_NAMESPACE = "namespace"
+const LABEL_PGO_INSTALLATION_NAME = "pgo-installation-name"
 const LABEL_VENDOR = "vendor"
+const LABEL_CRUNCHY = "crunchydata"
+const LABEL_PGO_CREATED_BY = "pgo-created-by"
+const LABEL_PGO_UPDATED_BY = "pgo-updated-by"
 
 const LABEL_PGO_DEFAULT_SC = "pgo-default-sc"
 

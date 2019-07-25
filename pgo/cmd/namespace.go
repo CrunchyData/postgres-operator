@@ -20,15 +20,25 @@ import (
 	"fmt"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
 
-func showNamespace(args []string, ns string) {
+func showNamespace(args []string) {
+	r := msgs.ShowNamespaceRequest{}
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Args = args
+	r.AllFlag = AllFlag
+
+	if len(args) == 0 && AllFlag == false {
+		fmt.Println("Error: namespace args or --all is required")
+		os.Exit(2)
+	}
 
 	log.Debugf("showNamespace called %v", args)
 
-	response, err := api.ShowNamespace(httpclient, &SessionCredentials, ns)
+	response, err := api.ShowNamespace(httpclient, &SessionCredentials, &r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -58,13 +68,110 @@ func showNamespace(args []string, ns string) {
 		return
 	}
 
-	var accessible string
+	fmt.Printf("pgo username: %s\n", response.Username)
+
+	fmt.Printf("%s", util.Rpad("namespace", " ", 25))
+	fmt.Printf("%s", util.Rpad("useraccess", " ", 20))
+	fmt.Printf("%s\n", util.Rpad("installaccess", " ", 20))
+
+	var accessible, iAccessible string
 	for _, result := range response.Results {
-		accessible = GREEN("accessible")
+		accessible = GREEN(util.Rpad("accessible", " ", 20))
 		if !result.UserAccess {
-			accessible = RED("no access")
+			accessible = RED(util.Rpad("no access", " ", 20))
 		}
-		fmt.Printf("namespace: %s (%s)\n", result.Namespace, accessible)
+		iAccessible = GREEN(util.Rpad("accessible", " ", 20))
+		if !result.InstallationAccess {
+			iAccessible = RED(util.Rpad("no access", " ", 20))
+		}
+		fmt.Printf("%s", util.Rpad(result.Namespace, " ", 25))
+		fmt.Printf("%s", accessible)
+		fmt.Printf("%s\n", iAccessible)
+	}
+
+}
+
+func createNamespace(args []string, ns string) {
+	log.Debugf("createNamespace called %v [%s]", args, Selector)
+
+	r := msgs.CreateNamespaceRequest{}
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	r.Args = args
+
+	if len(args) == 0 {
+		fmt.Println("Error: namespace names are required")
+		os.Exit(2)
+	}
+
+	response, err := api.CreateNamespace(httpclient, &SessionCredentials, &r)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+	}
+
+	log.Debugf("createNamespace response %v", response)
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println("Error: " + response.Status.Msg)
+	}
+}
+
+func deleteNamespace(args []string, ns string) {
+	log.Debugf("deleteNamespace called %v [%s]", args, Selector)
+
+	r := msgs.DeleteNamespaceRequest{}
+	r.Selector = Selector
+	r.AllFlag = AllFlag
+	r.ClientVersion = msgs.PGO_VERSION
+	r.Namespace = ns
+	r.Args = args
+
+	if Selector != "" && len(args) > 0 {
+		fmt.Println("Error: can not specify both arguments and --selector")
+		os.Exit(2)
+	}
+
+	response, err := api.DeleteNamespace(httpclient, &r, &SessionCredentials)
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+	}
+
+	if response.Status.Code == msgs.Ok {
+		for _, v := range response.Results {
+			fmt.Println(v)
+		}
+	} else {
+		fmt.Println("Error: " + response.Status.Msg)
+	}
+
+}
+func updateNamespace(args []string) {
+	var err error
+
+	if len(args) == 0 {
+		fmt.Println("Error: A Namespace name argument is required.")
+		return
+	}
+
+	r := new(msgs.UpdateNamespaceRequest)
+	r.Args = args
+	r.ClientVersion = msgs.PGO_VERSION
+
+	response, err := api.UpdateNamespace(httpclient, r, &SessionCredentials)
+
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
+	}
+
+	if response.Status.Code == msgs.Ok {
+		fmt.Println("namespace updated ")
+	} else {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(2)
 	}
 
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -30,15 +31,14 @@ import (
 )
 
 // CreatePolicy ...
-func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile, ns string) (bool, error) {
+func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile, ns, pgouser string) (bool, error) {
 
 	var found bool
 	log.Debugf("create policy called for %s", policyName)
 	result := crv1.Pgpolicy{}
 
 	// error if it already exists
-	found, err := kubeapi.Getpgpolicy(RESTClient,
-		&result, policyName, ns)
+	found, err := kubeapi.Getpgpolicy(RESTClient, &result, policyName, ns)
 	if err == nil {
 		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
 		return true, err
@@ -55,9 +55,13 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 	spec.URL = policyURL
 	spec.SQL = policyFile
 
+	myLabels := make(map[string]string)
+	myLabels[config.LABEL_PGOUSER] = pgouser
+
 	newInstance := &crv1.Pgpolicy{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: policyName,
+			Name:   policyName,
+			Labels: myLabels,
 		},
 		Spec: spec,
 	}
@@ -151,7 +155,7 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.Delet
 
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
-func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyResponse {
+func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.ApplyPolicyResponse {
 	var err error
 
 	resp := msgs.ApplyPolicyResponse{}
@@ -249,6 +253,26 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns string) msgs.ApplyPolicyRe
 		}
 
 		resp.Name = append(resp.Name, d.ObjectMeta.Name)
+
+		//publish event
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicPolicy
+
+		f := events.EventApplyPolicyFormat{
+			EventHeader: events.EventHeader{
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				EventType: events.EventApplyPolicy,
+			},
+			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
+			Policyname:  request.Name,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
 
 	}
 	return resp

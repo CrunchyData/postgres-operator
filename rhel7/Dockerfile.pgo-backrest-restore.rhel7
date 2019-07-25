@@ -6,11 +6,11 @@ LABEL Vendor="Crunchy Data Solutions" \
 	PostgresFullVersion="11.4" \
 	Version="7.6" \
         run='docker run -d -p 8080:80 --name=web-app web-app' \
-	Release="4.0.1" \
+	Release="4.1.0" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
-ENV PGVERSION="11" BACKREST_VERSION="2.13"
+ENV PGVERSION="11" BACKREST_VERSION="2.15.1"
 
 COPY redhat/atomic/pgo_backrest_restore/help.1 /help.1
 COPY redhat/atomic/pgo_backrest_restore/help.md /help.md

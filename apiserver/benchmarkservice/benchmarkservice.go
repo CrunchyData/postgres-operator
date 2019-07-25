@@ -121,6 +121,6 @@ func CreateBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := CreateBenchmark(&request, ns)
+	resp := CreateBenchmark(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }

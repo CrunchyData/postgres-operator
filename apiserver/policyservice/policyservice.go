@@ -65,7 +65,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status.Msg = "invalid policy name format " + errs[0]
 	} else {
 
-		found, err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL, ns)
+		found, err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL, ns, username)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -207,6 +207,6 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ApplyPolicy(&request, ns)
+	resp = ApplyPolicy(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }

@@ -18,12 +18,61 @@ limitations under the License.
 import ()
 
 type NamespaceResult struct {
-	Namespace  string
-	UserAccess bool
+	Namespace          string
+	InstallationAccess bool
+	UserAccess         bool
+}
+
+// ShowNamespaceRequest ...
+type ShowNamespaceRequest struct {
+	Args          []string
+	AllFlag       bool
+	ClientVersion string
 }
 
 // ShowNamespaceResponse ...
 type ShowNamespaceResponse struct {
-	Results []NamespaceResult
+	Username string
+	Results  []NamespaceResult
+	Status
+}
+
+// UpdateNamespaceRequest ...
+type UpdateNamespaceRequest struct {
+	Args          []string
+	ClientVersion string
+}
+
+// UpdateNamespaceResponse ...
+type UpdateNamespaceResponse struct {
+	Results []string
+	Status
+}
+
+// CreateNamespaceRequest ...
+type CreateNamespaceRequest struct {
+	Args          []string
+	Namespace     string
+	ClientVersion string
+}
+
+// CreateNamespaceResponse ...
+type CreateNamespaceResponse struct {
+	Results []string
+	Status
+}
+
+// DeleteNamespaceRequest ...
+type DeleteNamespaceRequest struct {
+	Args          []string
+	Selector      string
+	Namespace     string
+	AllFlag       bool
+	ClientVersion string
+}
+
+// DeletePgouserResponse ...
+type DeleteNamespaceResponse struct {
+	Results []string
 	Status
 }

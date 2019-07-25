@@ -22,6 +22,7 @@ import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -168,6 +169,25 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		return
 	}
 	log.Debugf("added pgbouncer to cluster [%s]", clusterName)
+
+	//publish event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPgbouncer
+
+	f := events.EventCreatePgbouncerFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventCreatePgbouncer,
+		},
+		Clustername: clusterName,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
 
 func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
@@ -217,6 +237,26 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 		log.Error(err)
 	}
 	log.Debugf("delete pgbouncer from cluster [%s]", clusterName)
+
+	//publish event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPgbouncer
+
+	f := events.EventDeletePgbouncerFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  "TODO",
+			Topic:     topics,
+			EventType: events.EventDeletePgbouncer,
+		},
+		Clustername: clusterName,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }
 
 // ProcessPgbouncer ...

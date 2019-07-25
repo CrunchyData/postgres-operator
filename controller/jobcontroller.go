@@ -21,7 +21,10 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
@@ -40,52 +43,31 @@ import (
 type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
-	Namespace    []string
+	Ctx          context.Context
 }
 
 // Run starts an pod resource controller
-func (c *JobController) Run(ctx context.Context) error {
+func (c *JobController) Run() error {
 
-	err := c.watchJobs(ctx)
+	err := c.watchJobs(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for job resource: %v\n", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchJobs is the event loop for job resources
 func (c *JobController) watchJobs(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting job controller for ns [%s]", c.Namespace[i])
+	nsList := ns.GetNamespaces(c.JobClientset, operator.InstallationName)
+	log.Debugf("jobController watching %v namespaces", nsList)
 
-		source := cache.NewListWatchFromClient(
-			c.JobClientset.BatchV1().RESTClient(),
-			"jobs",
-			c.Namespace[i],
-			fields.Everything())
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting job controller for ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&apiv1.Job{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
 	}
 	return nil
 }
@@ -159,6 +141,8 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			// update pgtask for workflow
 			taskoperator.CompleteBackupWorkflow(clusterName, c.JobClientset, c.JobClient, job.ObjectMeta.Namespace)
 
+			publishBackupComplete(clusterName, "TODO", "pgbasebackup", job.ObjectMeta.Namespace, path)
+
 		}
 
 		//update the pgbackup status
@@ -190,6 +174,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[config.LABEL_PG_CLUSTER],
 				crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
 				labels[config.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
+			publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], "TODO", job.ObjectMeta.Namespace)
 		}
 
 		return
@@ -259,6 +244,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			if err != nil {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 			}
+			publishBackupComplete(labels[config.LABEL_PG_CLUSTER], "TODO", "pgbackrest", job.ObjectMeta.Namespace, "")
 		}
 
 		return
@@ -305,6 +291,38 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 
 		benchmarkoperator.UpdateWorkflow(c.JobClient, labels["workflowName"], job.ObjectMeta.Namespace, crv1.JobCompletedStatus)
+
+		//publish event benchmark completed
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicCluster
+
+		f := events.EventBenchmarkCompletedFormat{
+			EventHeader: events.EventHeader{
+				Namespace: job.ObjectMeta.Namespace,
+				Username:  "TODO",
+				Topic:     topics,
+				EventType: events.EventBenchmarkCompleted,
+			},
+			Clustername: labels[config.LABEL_PG_CLUSTER],
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
+		return
+	}
+
+	//handle the case of a load job being upddated
+	if labels[config.LABEL_PGO_LOAD] == "true" {
+		log.Debugf("jobController onUpdate load job case")
+		log.Debugf("got a load job status=%d", job.Status.Succeeded)
+
+		if job.Status.Succeeded == 1 {
+			log.Debugf("load job succeeded=%d", job.Status.Succeeded)
+		}
+
 		return
 	}
 }
@@ -405,4 +423,76 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	}
 
 	return err
+}
+
+func (c *JobController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.JobClientset.BatchV1().RESTClient(),
+		"jobs",
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&apiv1.Job{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
+}
+
+func publishBackupComplete(clusterName, username, backuptype, namespace, path string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+	topics[1] = events.EventTopicBackup
+
+	f := events.EventCreateBackupCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventCreateBackupCompleted,
+		},
+		Clustername: clusterName,
+		BackupType:  backuptype,
+		Path:        path,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+}
+func publishRestoreComplete(clusterName, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventRestoreClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventRestoreClusterCompleted,
+		},
+		Clustername: clusterName,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }

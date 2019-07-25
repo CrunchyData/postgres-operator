@@ -20,6 +20,8 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	pgbasebackupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
@@ -40,53 +42,32 @@ type PgtaskController struct {
 	PgtaskClient    *rest.RESTClient
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
-	Namespace       []string
+	Ctx             context.Context
 }
 
 // Run starts an pgtask resource controller
-func (c *PgtaskController) Run(ctx context.Context) error {
+func (c *PgtaskController) Run() error {
 	log.Debug("Watch Pgtask objects")
 
 	// Watch Example objects
-	err := c.watchPgtasks(ctx)
+	err := c.watchPgtasks(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPgtasks watches the pgtask resource catching events
 func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pgtask controller on ns [%s]", c.Namespace[i])
-		source := cache.NewListWatchFromClient(
-			c.PgtaskClient,
-			crv1.PgtaskResourcePlural,
-			c.Namespace[i],
-			fields.Everything())
+	nsList := ns.GetNamespaces(c.PgtaskClientset, operator.InstallationName)
 
-		_, controller := cache.NewInformer(
-			source,
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pgtask controller on ns [%s]", nsList[i])
 
-			// The object type.
-			&crv1.Pgtask{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
+		c.SetupWatch(nsList[i])
 	}
 	return nil
 }
@@ -234,4 +215,32 @@ func (c *PgtaskController) onUpdate(oldObj, newObj interface{}) {
 func (c *PgtaskController) onDelete(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
 	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+}
+
+func (c *PgtaskController) SetupWatch(ns string) {
+	source := cache.NewListWatchFromClient(
+		c.PgtaskClient,
+		crv1.PgtaskResourcePlural,
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&crv1.Pgtask{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
 }
