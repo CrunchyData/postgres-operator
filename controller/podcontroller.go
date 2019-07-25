@@ -157,6 +157,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 			if v.Name == "database" {
 				if !v.Ready && oldStatus {
 					log.Debugf("podController autofail enabled pod went from ready to not ready pod name %s", newpod.Name)
+					publishPrimaryNotReady(clusterName, "TODO", newpod.ObjectMeta.Namespace)
 					clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 				}
 				//clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
@@ -364,4 +365,24 @@ func (c *PodController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+}
+
+func publishPrimaryNotReady(clusterName, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventPrimaryNotReadyFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventPrimaryNotReady,
+		},
+		Clustername: clusterName,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
