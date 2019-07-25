@@ -33,6 +33,8 @@ const (
 )
 const (
 	EventReloadCluster            = "ReloadCluster"
+	EventPrimaryNotReady          = "PrimaryNotReady"
+	EventPrimaryDeleted           = "PrimaryDeleted"
 	EventCreateCluster            = "CreateCluster"
 	EventCreateClusterCompleted   = "CreateClusterCompleted"
 	EventCreateClusterFailure     = "CreateClusterFailure"
@@ -599,5 +601,36 @@ func (p EventRestoreClusterCompletedFormat) GetHeader() EventHeader {
 
 func (lvl EventRestoreClusterCompletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s (restore completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventPrimaryNotReadyFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventPrimaryNotReadyFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPrimaryNotReadyFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (primary not ready) clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventPrimaryDeletedFormat struct {
+	EventHeader    `json:"eventheader"`
+	Clustername    string `json:"clustername"`
+	Deploymentname string `json:"deploymentname"`
+}
+
+func (p EventPrimaryDeletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventPrimaryDeletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (primary deleted) clustername %s deployment %s", lvl.EventHeader, lvl.Clustername, lvl.Deploymentname)
 	return msg
 }
