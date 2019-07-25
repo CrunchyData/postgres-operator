@@ -141,6 +141,8 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			// update pgtask for workflow
 			taskoperator.CompleteBackupWorkflow(clusterName, c.JobClientset, c.JobClient, job.ObjectMeta.Namespace)
 
+			publishBackupComplete(clusterName, "TODO", "pgbasebackup", job.ObjectMeta.Namespace, path)
+
 		}
 
 		//update the pgbackup status
@@ -172,6 +174,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[config.LABEL_PG_CLUSTER],
 				crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
 				labels[config.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
+			publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], "TODO", job.ObjectMeta.Namespace)
 		}
 
 		return
@@ -241,6 +244,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			if err != nil {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 			}
+			publishBackupComplete(labels[config.LABEL_PG_CLUSTER], "TODO", "pgbackrest", job.ObjectMeta.Namespace, "")
 		}
 
 		return
@@ -447,4 +451,48 @@ func (c *JobController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+}
+
+func publishBackupComplete(clusterName, username, backuptype, namespace, path string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+	topics[1] = events.EventTopicBackup
+
+	f := events.EventCreateBackupCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventCreateBackupCompleted,
+		},
+		Clustername: clusterName,
+		BackupType:  backuptype,
+		Path:        path,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+}
+func publishRestoreComplete(clusterName, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventRestoreClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventRestoreClusterCompleted,
+		},
+		Clustername: clusterName,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }

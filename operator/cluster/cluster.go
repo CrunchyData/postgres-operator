@@ -51,7 +51,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	var err error
 
 	if cl.Spec.Status == crv1.CompletedStatus {
-		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
+		errorMsg := "crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate"
+		log.Warn(errorMsg)
+		publishClusterCreateFailure(cl, errorMsg)
 		return
 	}
 
@@ -67,6 +69,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		pvcName, err = pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
+			publishClusterCreateFailure(cl, err.Error())
 			return
 		}
 		log.Debugf("created primary pvc [%s]", pvcName)
@@ -129,6 +132,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		replicaCount, err := strconv.Atoi(cl.Spec.Replicas)
 		if err != nil {
 			log.Error("error in replicas value " + err.Error())
+			publishClusterCreateFailure(cl, err.Error())
 			return
 		}
 		//create a CRD for each replica
@@ -180,6 +184,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 				Do().Into(&result)
 			if err != nil {
 				log.Error(" in creating Pgreplica instance" + err.Error())
+				publishClusterCreateFailure(cl, err.Error())
 			}
 
 		}
@@ -370,4 +375,27 @@ func cleanupPreviousTasks(client *rest.RESTClient, clusterName, namespace string
 		}
 	}
 	return err
+}
+
+func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
+	pgouser := cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventCreateClusterFailureFormat{
+		EventHeader: events.EventHeader{
+			Namespace: cl.ObjectMeta.Namespace,
+			Username:  pgouser,
+			Topic:     topics,
+			EventType: events.EventCreateClusterFailure,
+		},
+		Clustername:  cl.ObjectMeta.Name,
+		ErrorMessage: errorMsg,
+		WorkflowID:   cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

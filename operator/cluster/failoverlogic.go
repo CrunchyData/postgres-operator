@@ -23,6 +23,7 @@ import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -77,6 +78,9 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	//trigger the failover on the replica
 	err = promote(pod, clientset, client, namespace, restconfig)
+
+	publishPromoteEvent(namespace, "TODO", clusterName, target)
+
 	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
 	//relabel the deployment with primary labels
@@ -231,5 +235,27 @@ func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Cli
 	}
 
 	return errors.New(fmt.Sprintf("timeout waiting for %s %s to delete", deploymentToDelete, podName))
+
+}
+
+func publishPromoteEvent(namespace, username, clusterName, target string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventFailoverClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventFailoverCluster,
+		},
+		Clustername: clusterName,
+		Target:      target,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 }

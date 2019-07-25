@@ -60,6 +60,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = CreateService(clientset, &serviceFields, namespace)
 	if err != nil {
 		log.Error("error in creating primary service " + err.Error())
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -92,6 +93,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl)
 		if err != nil {
 			log.Error("could not create backrest repo deployment")
+			publishClusterCreateFailure(cl, err.Error())
 			return err
 		}
 	}
@@ -140,6 +142,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -152,12 +155,14 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
 	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
 		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 		if err != nil {
+			publishClusterCreateFailure(cl, err.Error())
 			return err
 		}
 	} else {
@@ -169,6 +174,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, namespace)
 	if err != nil {
 		log.Error("could not patch primary crv1 with labels")
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -220,6 +226,9 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 	//delete any pgtasks for this cluster
 	deletePgtasks(restclient, cl.Spec.Name, namespace)
+
+	publishDeleteCluster(namespace, "TODO", cl.Spec.Name)
+
 	return err
 
 }
@@ -350,6 +359,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	if err != nil {
 		log.Error(err.Error())
+		publishScaleError(namespace, "TODO", cluster)
 		return err
 	}
 
@@ -361,6 +371,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
+		publishScaleError(namespace, "TODO", cluster)
 		return err
 	}
 
@@ -436,4 +447,45 @@ func deletePgtasks(restclient *rest.RESTClient, clusterName, namespace string) {
 		err = kubeapi.Deletepgtask(restclient, r.Spec.Name, namespace)
 	}
 
+}
+
+func publishScaleError(namespace string, username string, cluster *crv1.Pgcluster) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventScaleClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventScaleCluster,
+		},
+		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+}
+
+func publishDeleteCluster(namespace, username, clusterName string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventDeleteClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			EventType: events.EventDeleteCluster,
+		},
+		Clustername: clusterName,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
