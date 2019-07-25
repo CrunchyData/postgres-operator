@@ -22,14 +22,22 @@ This script creates the following RBAC cluster-wide resources on your Kubernetes
 |  | pgreplicas|
 |  | pgtasks|
 |  | pgupgrades|
-| Cluster Roles (cluster-roles.yaml) | pgo-cluster-role|
+| Cluster Roles (cluster-roles.yaml) (cluster-roles-readonly.yaml) | pgo-cluster-role|
 | Cluster Role Bindings (cluster-roles-bindings.yaml) | pgo-cluster-role|
 
-The above cluster role/binding is only necessary if you want to use
-the Operator dynamic namespace CLI commands to create targeted
-namespaces (e.g. pgo create namespace).  You can choose to not
-install the pgo-cluster-role cluster role if you want, you
-then create targeted namespaces via script instead.
+The above cluster role/binding is necessary to list and watch 
+namespaces at a minimum (cluster-roles-readonly.yaml).  This role lets
+the Operator watch namespaces and run the following pgo CLI command:
+    pgo show namespace --all
+
+The default cluster role (cluster-roles.yaml) includes the permission to create and delete namespaces using the following pgo CLI commands:
+    pgo create namespace mynamespace
+    pgo update namespace mynamespace
+    pgo delete namespace mynamespace
+
+If you do not allow create/update of namespaces, you can manually
+create Operator target namespaces using the following script:
+    deploy/add-targeted-namespace.sh
 
 This script creates the following RBAC namespace resources in the Operator
 namespace (e.g. pgo namespace):
