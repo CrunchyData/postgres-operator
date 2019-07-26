@@ -71,13 +71,13 @@ func CrunchyLogger(logDetails LogValues) {
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			filename := f.File
 			function := f.Function
-			re1 := regexp.MustCompile(`crunchydata/postgres-operator/(.*go)`)
+			re1 := regexp.MustCompile(`postgres-operator/(.*go)`)
 			result1 := re1.FindStringSubmatch(f.File)
 			if len(result1) > 1 {
 				filename = result1[1]
 			}
 	
-			re2 := regexp.MustCompile(`crunchydata/postgres-operator/(.*)`)
+			re2 := regexp.MustCompile(`postgres-operator/(.*)`)
 			result2 := re2.FindStringSubmatch(f.Function)
 			if len(result2) > 1 {
 				function = result2[1]
