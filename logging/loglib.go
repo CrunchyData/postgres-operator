@@ -1,13 +1,11 @@
-//Package loglib Functions to set unique fields for use with the log logger
+//Package logging Functions to set unique configuration for use with the logrus logger
 package logging
 
 import (
 	"fmt"
-	//"io/ioutil"
 	"os"
 	"os/user"
 	"runtime"
-	//"strings"
 	"regexp"
 	"strconv"
 
@@ -23,19 +21,11 @@ func SetParameters() LogValues {
 	//logval.host, logval.user = "Unknown", "Unknown"
 	logval.user = "Unknown"
 
-	//set hostname value
-	/*
-	hostname, err := os.Hostname()
-	if err == nil {
-		logval.Hostname = hostname
-	}
-	*/
 	//set username value
 	username, oku := getUsername()
 	if oku {
 		logval.user = username
 	}
-	//log = CrunchyLogger(logval)
 	return logval
 }
 
@@ -65,7 +55,7 @@ func getUsername() (string, bool) {
 	user, err := user.Current()
 	if err != nil {
 		CrunchyLogger(LogValues{"UnknownUser", "UnknownVersion"})
-		log.Warnf("Problem gathering username, will provide User ID instead. Error: %v", err)
+		log.Infof("Problem gathering username, will provide User ID instead. Message: %v", err)
 		//if username not found, return UID
 		return strconv.Itoa(os.Getuid()), true
 	}
@@ -73,7 +63,7 @@ func getUsername() (string, bool) {
 }
 
 //CrunchyLogger adds the customized logging fields to the logrus instance context
-func CrunchyLogger(logDetails LogValues) { //*log.Entry {
+func CrunchyLogger(logDetails LogValues) {
 	//Sets calling method as a field
 	log.SetReportCaller(true)
 
@@ -105,7 +95,6 @@ func CrunchyLogger(logDetails LogValues) { //*log.Entry {
 		fields: log.Fields{
 			"user": logDetails.user,
 			"version":  logDetails.version,
-			//"host": logDetails.host,
 		},
 		lf: crunchyTextFormatter,
 	})
