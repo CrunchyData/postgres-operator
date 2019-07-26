@@ -9,6 +9,7 @@ import (
 	"runtime"
 	//"strings"
 	"regexp"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -63,10 +64,10 @@ func (f *formatter) Format(e *log.Entry) ([]byte, error) {
 func getUsername() (string, bool) {
 	user, err := user.Current()
 	if err != nil {
-		//log := CrunchyLogger(LogValues{"UnknownCodeArea", "UnknownUser", "UnknownVersion", "UnknownHostname"})
-		CrunchyLogger(LogValues{"UnknownUser", "UnknownVersion"})//, "UnknownHostname"})
-		log.Errorf("Problem gathering user data! Error: %v", err)
-		return "", false
+		CrunchyLogger(LogValues{"UnknownUser", "UnknownVersion"})
+		log.Warnf("Problem gathering username, will provide User ID instead. Error: %v", err)
+		//if username not found, return UID
+		return strconv.Itoa(os.Getuid()), true
 	}
 	return user.Username, true
 }
