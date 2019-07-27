@@ -305,7 +305,7 @@ func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var podname string
 
-	selector := config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
