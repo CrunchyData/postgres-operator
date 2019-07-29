@@ -47,6 +47,7 @@ func main() {
 	flag.Parse()
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
+	//add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
