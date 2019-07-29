@@ -23,7 +23,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"reflect"
+	"time"
 )
+
+const TIME_FORMAT = "2006-01-02T15:04:05"
 
 // String returns the string form for a given LogLevel
 func Publish(e EventInterface) error {
@@ -44,6 +47,10 @@ func Publish(e EventInterface) error {
 
 	log.Debugf("publishing %s message %s", reflect.TypeOf(e), e.String())
 	log.Debugf("header %s ", e.GetHeader().String())
+
+	header := e.GetHeader()
+	t := time.Now()
+	header.Timestamp = t.Format(TIME_FORMAT)
 
 	b, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
@@ -81,4 +88,9 @@ func Publish(e EventInterface) error {
 	}
 
 	return nil
+}
+
+func GetTimestamp() string {
+	t := time.Now()
+	return t.Format(TIME_FORMAT)
 }

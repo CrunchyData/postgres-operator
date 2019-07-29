@@ -114,6 +114,7 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 				Namespace: ns,
 				Username:  username,
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventReloadCluster,
 			},
 			Clustername: cluster.Spec.Name,

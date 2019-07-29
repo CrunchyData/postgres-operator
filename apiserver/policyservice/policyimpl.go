@@ -263,6 +263,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventApplyPolicy,
 			},
 			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
