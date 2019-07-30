@@ -17,26 +17,23 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # fill out these variables if you want to change the
 # default pgo bootstrap user and role
-export EXAMPLE_USERNAME=pgoadmin
-export EXAMPLE_PASSWORD=examplepassword
-export EXAMPLE_ROLENAME=pgoadmin
-export PGOADMIN_PERMS=`echo -n "DeleteNamespace,CreateNamespace,UpdatePgorole,ShowPgorole,DeletePgorole,CreatePgorole,UpdatePgouser,ShowPgouser,DeletePgouser,CreatePgouser,Cat,Ls,ShowNamespace,CreateDump,RestoreDump,ScaleCluster,CreateSchedule,DeleteSchedule,ShowSchedule,DeletePgbouncer,CreatePgbouncer,DeletePgpool,CreatePgpool,Restore,RestorePgbasebackup,ShowSecrets,Reload,ShowConfig,Status,DfCluster,DeleteCluster,ShowCluster,CreateCluster,TestCluster,ShowBackup,DeleteBackup,CreateBackup,Label,Load,CreatePolicy,DeletePolicy,ShowPolicy,ApplyPolicy,ShowWorkflow,ShowPVC,CreateUpgrade,CreateUser,DeleteUser,UpdateUser,ShowUser,Version,CreateFailover,UpdateCluster,CreateBenchmark,ShowBenchmark,DeleteBenchmark,UpdateNamespace" | base64 --wrap=0`
-export PGOADMIN_ROLENAME=`echo -n $EXAMPLE_ROLENAME | base64 --wrap=0`
+export PGOADMIN_USERNAME=pgoadmin
+export PGOADMIN_PASSWORD=examplepassword
+export PGOADMIN_ROLENAME=pgoadmin
+export PGOADMIN_PERMS="DeleteNamespace,CreateNamespace,UpdatePgorole,ShowPgorole,DeletePgorole,CreatePgorole,UpdatePgouser,ShowPgouser,DeletePgouser,CreatePgouser,Cat,Ls,ShowNamespace,CreateDump,RestoreDump,ScaleCluster,CreateSchedule,DeleteSchedule,ShowSchedule,DeletePgbouncer,CreatePgbouncer,DeletePgpool,CreatePgpool,Restore,RestorePgbasebackup,ShowSecrets,Reload,ShowConfig,Status,DfCluster,DeleteCluster,ShowCluster,CreateCluster,TestCluster,ShowBackup,DeleteBackup,CreateBackup,Label,Load,CreatePolicy,DeletePolicy,ShowPolicy,ApplyPolicy,ShowWorkflow,ShowPVC,CreateUpgrade,CreateUser,DeleteUser,UpdateUser,ShowUser,Version,CreateFailover,UpdateCluster,CreateBenchmark,ShowBenchmark,DeleteBenchmark,UpdateNamespace"
 
 # see if the bootstrap pgorole Secret exists or not, deleting it if found
-$PGO_CMD get secret pgorole-$EXAMPLE_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null > /dev/null
+$PGO_CMD get secret pgorole-$PGOADMIN_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null > /dev/null
 if [ $? -eq 0 ]; then
-	$PGO_CMD delete secret pgorole-$EXAMPLE_ROLENAME -n $PGO_OPERATOR_NAMESPACE
+	$PGO_CMD delete secret pgorole-$PGOADMIN_ROLENAME -n $PGO_OPERATOR_NAMESPACE
 fi
 
 expenv -f $DIR/pgorole-pgoadmin.yaml | $PGO_CMD create -f -
 
 # see if the bootstrap pgouser Secret exists or not, deleting it if found
-export PGOADMIN_USERNAME=`echo -n $EXAMPLE_USERNAME | base64 --wrap=0`
-export PGOADMIN_PASSWORD=`echo -n $EXAMPLE_PASSWORD | base64 --wrap=0`
-$PGO_CMD get secret pgouser-$EXAMPLE_USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null > /dev/null
+$PGO_CMD get secret pgouser-$PGOADMIN_USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null > /dev/null
 if [ $? -eq 0 ]; then
-	$PGO_CMD delete secret pgouser-$EXAMPLE_USERNAME -n $PGO_OPERATOR_NAMESPACE
+	$PGO_CMD delete secret pgouser-$PGOADMIN_USERNAME -n $PGO_OPERATOR_NAMESPACE
 fi
 expenv -f $DIR/pgouser-admin.yaml | $PGO_CMD create -f -
 
