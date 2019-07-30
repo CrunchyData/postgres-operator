@@ -224,7 +224,7 @@ To see the Operator server configuration, enter:
 
 To see what namespaces exist and if you have access to them, enter:
 
-    pgo show namespace -n pgouser1
+    pgo show namespace pgouser1
 
 #### Perform a pgdump backup
 
