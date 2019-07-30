@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"os"
 	"reflect"
 	"time"
@@ -30,6 +31,8 @@ const TIME_FORMAT = "2006-01-02T15:04:05"
 
 // String returns the string form for a given LogLevel
 func Publish(e EventInterface) error {
+	//Add logging configuration
+	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	eventAddr := os.Getenv("EVENT_ADDR")
 	if eventAddr == "" {
 		return errors.New("EVENT_ADDR not set")
