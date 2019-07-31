@@ -6,6 +6,7 @@
         "labels": {
             "name": "{{.Name}}",
             "pg-cluster": "{{.ClusterName}}",
+            "crunchy-pgpool": "true",
             "service-name": "{{.Name}}"
         }
     },
