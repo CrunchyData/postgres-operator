@@ -84,14 +84,19 @@ func initConfig() {
 
 	GetCredentials()
 
-	generateBashCompletion()
+	if os.Getenv("GENERATE_BASH_COMPLETION") != "" {
+		if err := generateBashCompletion(); err != nil {
+			fmt.Printf("Error generating Bash completion: %v", err)
+		}
+	}
 }
 
-func generateBashCompletion() {
-	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
-	if err2 != nil {
-		fmt.Println("Error: ", err2.Error())
+func generateBashCompletion() error {
+	log.Debugf("generating bash completion script")
+	file, err := os.Create("/tmp/pgo-bash-completion.out")
+	if err != nil {
+		return err
 	}
 	defer file.Close()
-	RootCmd.GenBashCompletion(file)
+	return RootCmd.GenBashCompletion(file)
 }
