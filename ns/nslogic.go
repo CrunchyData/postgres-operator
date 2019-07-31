@@ -19,16 +19,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
+	"strings"
+
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strings"
 )
 
 const PGO_TARGET_ROLE = "pgo-target-role"
@@ -496,6 +497,9 @@ func ValidateNamespaces(clientset *kubernetes.Clientset, installationName, pgoNa
 				log.Infof("%s namespace already part of this installation", namespace.Name)
 			} else {
 				log.Infof("%s namespace will be updated to be owned by this installation", namespace.Name)
+				if namespace.ObjectMeta.Labels == nil {
+					namespace.ObjectMeta.Labels = make(map[string]string)
+				}
 				namespace.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 				namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
 				err := kubeapi.UpdateNamespace(clientset, namespace)
