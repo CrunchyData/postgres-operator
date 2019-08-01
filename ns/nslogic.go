@@ -381,8 +381,17 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 		return errors.New("namespace " + ns + " doesn't exist")
 	}
 
-	if theNs.ObjectMeta.Labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName {
-		return errors.New("namespace " + ns + " not owned by crunchy data or not part of Operator installation " + installationName)
+	//update the labels on the namespace  (own it)
+	if found {
+		if theNs.ObjectMeta.Labels == nil {
+			theNs.ObjectMeta.Labels = make(map[string]string)
+		}
+		theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+		theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
+		err := kubeapi.UpdateNamespace(clientset, theNs)
+		if err != nil {
+			return err
+		}
 	}
 
 	//apply targeted rbac rules here

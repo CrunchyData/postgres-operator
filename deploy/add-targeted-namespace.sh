@@ -31,6 +31,10 @@ else
 	TARGET_NAMESPACE=$1 expenv -f $DIR/target-namespace.yaml | $PGO_CMD create -f -
 fi
 
+# set the labels so that this namespace is owned by this installation
+$PGO_CMD label namespace/$1 vendor=crunchy
+$PGO_CMD label namespace/$1 pgo-installation-name=$PGO_INSTALLATION_NAME
+
 # create RBAC
 $PGO_CMD -n $1 delete sa pgo-backrest-sa 
 $PGO_CMD -n $1 delete sa pgo-target-sa
