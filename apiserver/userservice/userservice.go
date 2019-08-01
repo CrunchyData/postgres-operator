@@ -83,7 +83,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
+		resp.Status.Msg = err.Error()
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
