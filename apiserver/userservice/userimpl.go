@@ -190,9 +190,10 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 						Topic:     topics,
 						EventType: events.EventChangePasswordUser,
 					},
-					Clustername:      cluster.Spec.Name,
-					PostgresUsername: request.Username,
-					PostgresPassword: request.Password,
+					Clustername:       cluster.Spec.Name,
+					Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+					PostgresUsername:  request.Username,
+					PostgresPassword:  request.Password,
 				}
 
 				err = events.Publish(f)
@@ -713,9 +714,11 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 				Timestamp: events.GetTimestamp(),
 				EventType: events.EventCreateUser,
 			},
-			PostgresUsername: request.Username,
-			PostgresPassword: newPassword,
-			Managed:          request.ManagedUser,
+			Clustername:       c.Name,
+			PostgresUsername:  request.Username,
+			PostgresPassword:  newPassword,
+			Managed:           request.ManagedUser,
+			Clusteridentifier: c.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		}
 
 		err = events.Publish(f)
@@ -847,9 +850,10 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 				Timestamp: events.GetTimestamp(),
 				EventType: events.EventDeleteUser,
 			},
-			Clustername:      clusterName,
-			PostgresUsername: request.Username,
-			Managed:          managed,
+			Clustername:       clusterName,
+			PostgresUsername:  request.Username,
+			Managed:           managed,
+			Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		}
 
 		err = events.Publish(f)

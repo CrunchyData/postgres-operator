@@ -105,7 +105,7 @@ func ShowPolicy(RESTClient *rest.RESTClient, name string, allflags bool, ns stri
 }
 
 // DeletePolicy ...
-func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.DeletePolicyResponse {
+func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns, pgouser string) msgs.DeletePolicyResponse {
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -126,6 +126,13 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns string) msgs.Delet
 	log.Debugf("deleting policy %s", policyName)
 	for _, policy := range policyList.Items {
 		if policyName == "all" || policyName == policy.Spec.Name {
+			//update pgpolicy with current pgouser so that
+			//we can create an event holding the pgouser
+			//that deleted the policy
+			policy.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
+			err = kubeapi.Updatepgpolicy(RESTClient, &policy, policy.Spec.Name, ns)
+
+			//ok, now delete the pgpolicy
 			policyFound = true
 			err = kubeapi.Deletepgpolicy(RESTClient,
 				policy.Spec.Name, ns)
@@ -266,8 +273,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 				Timestamp: events.GetTimestamp(),
 				EventType: events.EventApplyPolicy,
 			},
-			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
-			Policyname:  request.Name,
+			Clustername:       d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
+			Clusteridentifier: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			Policyname:        request.Name,
 		}
 
 		err = events.Publish(f)

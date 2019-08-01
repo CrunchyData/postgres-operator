@@ -194,7 +194,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 	log.Debugf("restore workflow: restore job %s created", jobName)
 
-	publishRestore(clusterName, "TODO", namespace)
+	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 
 	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
 	if err != nil {
@@ -470,7 +470,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 }
 
-func publishRestore(clusterName, username, namespace string) {
+func publishRestore(id, clusterName, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -482,7 +482,8 @@ func publishRestore(clusterName, username, namespace string) {
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventRestoreCluster,
 		},
-		Clustername: clusterName,
+		Clustername:       clusterName,
+		Clusteridentifier: id,
 	}
 
 	err := events.Publish(f)

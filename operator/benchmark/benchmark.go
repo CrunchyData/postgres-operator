@@ -92,6 +92,8 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 	}
 
 	log.Debug("Creating benchmark job")
+	newJob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	newJob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	_, err = kubeapi.CreateJob(clientset, &newJob, namespace)
 	if err != nil {
 		return
@@ -119,7 +121,7 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 	f := events.EventBenchmarkFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
 			EventType: events.EventBenchmark,
 		},
