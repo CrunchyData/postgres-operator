@@ -4,10 +4,8 @@ package logging
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"runtime"
 	"regexp"
-	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -17,23 +15,13 @@ func SetParameters() LogValues {
 	var logval LogValues
 
 	logval.version = msgs.PGO_VERSION
-	//set defaults of unknown for each of the remaining log values
-	//logval.host, logval.user = "Unknown", "Unknown"
-	logval.user = "Unknown"
 
-	//set username value
-	username, oku := getUsername()
-	if oku {
-		logval.user = username
-	}
 	return logval
 }
 
 //LogValues holds the standard log value types
 type LogValues struct {
-	user string
 	version  string
-	//host string
 }
 
 // formatter adds default fields to each log entry.
@@ -48,18 +36,6 @@ func (f *formatter) Format(e *log.Entry) ([]byte, error) {
 			e.Data[k] = v
 	}
 	return f.lf.Format(e)
-}
-
-//GetUsername gets the current OS username
-func getUsername() (string, bool) {
-	user, err := user.Current()
-	if err != nil {
-		CrunchyLogger(LogValues{"UnknownUser", "UnknownVersion"})
-		log.Infof("Problem gathering username, will provide User ID instead. Message: %v", err)
-		//if username not found, return UID
-		return strconv.Itoa(os.Getuid()), true
-	}
-	return user.Username, true
 }
 
 //CrunchyLogger adds the customized logging fields to the logrus instance context
@@ -93,7 +69,6 @@ func CrunchyLogger(logDetails LogValues) {
 
 	log.SetFormatter(&formatter{
 		fields: log.Fields{
-			"user": logDetails.user,
 			"version":  logDetails.version,
 		},
 		lf: crunchyTextFormatter,
