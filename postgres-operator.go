@@ -25,6 +25,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -39,12 +40,15 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
+//var log *logrus.Entry
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
+	//add logging configuration
+	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")

@@ -186,6 +186,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					EventHeader: events.EventHeader{
 						Namespace: request.Namespace,
 						Username:  pgouser,
+						Timestamp: events.GetTimestamp(),
 						Topic:     topics,
 						EventType: events.EventChangePasswordUser,
 					},
@@ -709,6 +710,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 				Namespace: request.Namespace,
 				Username:  pgouser,
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventCreateUser,
 			},
 			PostgresUsername: request.Username,
@@ -842,6 +844,7 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 				Namespace: request.Namespace,
 				Username:  pgouser,
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventDeleteUser,
 			},
 			Clustername:      clusterName,

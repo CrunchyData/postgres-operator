@@ -184,6 +184,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventLoad,
 			},
 			Clustername: arg,

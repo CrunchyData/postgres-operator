@@ -106,6 +106,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 				Namespace: namespace,
 				Username:  "TODO",
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventCreateBackup,
 			},
 			Clustername: jobFields.ClusterName,
