@@ -2,14 +2,18 @@
     "apiVersion": "extensions/v1beta1",
     "kind": "Deployment",
     "metadata": {
-        "name": "postgres-operator"
+        "name": "postgres-operator",
+        "labels": {
+        	"vendor": "crunchydata"
+        }
     },
     "spec": {
         "replicas": 1,
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "postgres-operator"
+                    "name": "postgres-operator",
+                    "vendor": "crunchydata"
                 }
             },
             "spec": {
@@ -34,8 +38,8 @@
                                 "value": "8443"
                             },
                             {
-                                "name": "NAMESPACE",
-                                "value": "{{ namespace }}"
+                                "name": "PGO_INSTALLATION_NAME",
+                                "value": "{{ pgo_installation_name }}"
                             },
                             {
                                 "name": "EVENT_ADDR",
@@ -78,6 +82,10 @@
                             {
                                 "name": "NAMESPACE",
                                 "value": "{{ namespace }}"
+                            },
+                            {
+                                "name": "PGO_INSTALLATION_NAME",
+                                "value": "{{ pgo_installation_name }}"
                             },
                             {
                                 "name": "EVENT_ADDR",
@@ -125,8 +133,8 @@
                                 }
                             },
                             {
-                                "name": "NAMESPACE",
-                                "value": "{{ namespace }}"
+                                "name": "PGO_INSTALLATION_NAME",
+                                "value": "{{ pgo_installation_name }}"
                             },
                             {
                                 "name": "TIMEOUT",
