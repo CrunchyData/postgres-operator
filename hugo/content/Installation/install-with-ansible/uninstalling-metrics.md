@@ -7,7 +7,7 @@ weight: 41
 
 # Uninstalling the Metrics Stack
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now deprovision the PostgreSQL Operator Metrics Infrastructure.
 
 First, it is recommended to use the playbooks tagged with the same version
