@@ -24,25 +24,15 @@
   - deprovision
   - update
 
-- name: Delete existing secrets
+- name: Delete existing secrets (Operator Namespace)
   shell: |
-    {{ kubectl_or_oc }} delete secret pgo-backrest-repo-config -n {{ item }}
-  with_items:
-  - "{{ all_namespaces }}"
+    {{ kubectl_or_oc }} delete secret pgo-backrest-repo-config pgorole-{{ pgo_admin_role_name }} \
+      pgouser-{{ pgo_admin_role_name }} -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
   - deprovision
-
-- name: Delete existing Secrets
-  shell: |
-    {{ kubectl_or_oc }} delete secret {{ item }} -n {{ pgo_operator_namespace }}
-  with_items:
-  - "pgo.tls"
-  ignore_errors: yes
-  no_log: false
-  tags: 
-  - deprovision
+  - update
 
 - name: Delete existing Services
   shell: |
@@ -55,9 +45,7 @@
 
 - name: Delete existing Service Account
   shell: |
-    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ item }}
-  with_items:
-  - "{{ all_namespaces }}"
+    {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -79,11 +67,9 @@
 
 - name: Delete existing Cluster Role Bindings
   shell: |
-    {{ kubectl_or_oc }} delete clusterrolebinding {{ item }}{{ pgo_operator_namespace }} -n {{ pgo_operator_namespace }}
+    {{ kubectl_or_oc }} delete clusterrolebinding {{ item }}
   with_items:
-  - "pgopclusterbinding-"
-  - "pgopclusterbindingcrd-"
-  - "pgopclusterbindingsecret-"
+  - "pgo-cluster-role"
   ignore_errors: yes
   no_log: false
   tags:
@@ -93,11 +79,9 @@
 
 - name: Delete existing Cluster Roles
   shell: |
-    {{ kubectl_or_oc }} delete clusterrole {{ item }}{{ pgo_operator_namespace }} -n {{ pgo_operator_namespace }}
+    {{ kubectl_or_oc }} delete clusterrole {{ item }}
   with_items:
-  - "pgopclusterrole-"
-  - "pgopclusterrolecrd-"
-  - "pgopclusterrolesecret-"
+  - "pgo-cluster-role"
   ignore_errors: yes
   no_log: false
   tags:
@@ -117,11 +101,21 @@
   - update
   when: create_rbac|bool
 
-- name: Delete existing PGO Role Binding
+- name: Delete existing PGO Role Binding (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete rolebinding pgo-role-binding -n {{ item }}
+    {{ kubectl_or_oc }} delete rolebinding pgo-target-role-binding -n {{ item }}
   with_items:
-  - "{{ all_namespaces }}"
+  - "{{ namespace.split(',') }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+  when: create_rbac|bool
+
+- name: Delete existing PGO Role Binding (Operator Namespace)
+  shell: |
+    {{ kubectl_or_oc }} delete rolebinding pgo-role -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -141,11 +135,21 @@
   - update
   when: create_rbac|bool
 
-- name: Delete existing PGO Role
+- name: Delete existing PGO Role (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete role pgo-role -n {{ item }}
+    {{ kubectl_or_oc }} delete role pgo-target-role -n {{ item }}
   with_items:
-  - "{{ all_namespaces }}"
+  - "{{ namespace.split(',') }}"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+  when: create_rbac|bool
+
+- name: Delete existing PGO Role Binding (Operator Namespace)
+  shell: |
+    {{ kubectl_or_oc }} delete role pgo-role -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
@@ -169,6 +173,17 @@
   ignore_errors: yes
   no_log: false
   tags: deprovision
+
+- name: Remove Labels from Watched Namespaces
+  shell: |
+    {{ kubectl_or_oc }} label namespace {{ item }} vendor- pgo-created-by- pgo-installation-name-
+  ignore_errors: yes
+  with_items:
+  - "{{ namespace.split(',') }}"
+  no_log: false
+  tags:
+  - deprovision
+  - update
 
 - name: Check for output directory
   stat:

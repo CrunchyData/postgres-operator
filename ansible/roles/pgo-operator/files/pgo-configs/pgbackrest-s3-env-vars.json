@@ -16,3 +16,6 @@
                     "name": "PGBACKREST_REPO1_S3_CA_FILE",
                     "value": "/sshd/aws-s3-ca.crt"
                     }, {
+                    "name": "PGBACKREST_REPO1_HOST_CMD",
+                    "value": "/usr/local/bin/archive-push-s3.sh"
+                    }, {

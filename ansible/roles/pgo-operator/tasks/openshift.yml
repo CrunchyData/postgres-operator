@@ -1,7 +1,6 @@
 ---
 - name: Get Project Details
-  shell: "{{ openshift_oc_bin}} get project {{ item }}"
-  with_items: "{{ all_namespaces }}"
+  shell: "{{ openshift_oc_bin}} get project {{ pgo_operator_namespace }}"
   register: namespace_details
   ignore_errors: yes
   tags: 
@@ -9,9 +8,8 @@
   - update
 
 - name: Create Project {{ item.item }}
-  shell: "{{ openshift_oc_bin}} new-project {{ item.item }}"
-  with_items: "{{ namespace_details.results }}"
-  when: item.rc != 0
+  shell: "{{ openshift_oc_bin}} new-project {{ pgo_operator_namespace }}"
+  when: namespace_details.rc != 0
   tags:
   - install
   - update

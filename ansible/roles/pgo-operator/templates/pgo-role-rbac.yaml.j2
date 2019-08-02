@@ -3,44 +3,63 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: pgo-role
-  namespace: {{ item }}
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  - pods/log
-  - services
-  - endpoints
-  - persistentvolumeclaims
-  - events
-  - configmaps
-  - secrets
-  verbs: ["get", "deletecollection", "list", "watch", "create", "update", "patch", "delete"]
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - replicasets
-  verbs:
-  - "*"
-- apiGroups:
-  - batch
-  - extensions
-  resources: ["jobs", "deployments"]
-  verbs: ["get", "deletecollection", "list", "watch", "create", "update", "patch", "delete"]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: pgo-role-binding
-  namespace: {{ item }}
-subjects:
-- kind: ServiceAccount
-  name: postgres-operator
   namespace: {{ pgo_operator_namespace }}
+rules:
+  - verbs:
+      - '*'
+    apiGroups:
+      - '*'
+    resources:
+      - pgclusters
+      - pgpolicies
+      - pgtasks
+      - pgbackups
+      - pgreplicas
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'apps'
+    resources:
+      - deployments
+  - verbs:
+      - '*'
+    apiGroups:
+      - ''
+    resources:
+      - secrets
+      - pods
+      - configmaps
+      - pods/exec
+      - pods/log
+      - services
+      - replicasets
+      - endpoints
+      - persistentvolumeclaims
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - ''
+    resources:
+      - nodes
+      - storageclasses
+  - verbs:
+      - '*'
+    apiGroups:
+      - 'batch'
+      - 'extensions'
+    resources:
+      - jobs
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: pgo-role
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: pgo-role
-  apiGroup: rbac.authorization.k8s.io
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
