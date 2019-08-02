@@ -8,5 +8,6 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 data:
+  pgo.yaml: {{ include "postgres-operator.config" . | quote }}
 {{ (.Files.Glob "files/postgres-operator/*").AsConfig | indent 2 }}
 {{ (.Files.Glob "files/postgres-operator/cluster/1/*").AsConfig | indent 2 }}
