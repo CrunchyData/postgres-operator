@@ -29,8 +29,6 @@ RUN chmod +x /usr/local/bin/pgo-backrest-repo.sh && mkdir -p /opt/cpm/bin && cho
 
 ADD bin/uid_pgbackrest.sh /opt/cpm/bin
 
-ADD conf/pgo-backrest-repo/.bashrc /
-
 RUN chmod g=u /etc/passwd && \
         chmod g=u /etc/group
 
