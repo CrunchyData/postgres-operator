@@ -16,7 +16,7 @@ of the service.  Using the `update` flag will:
 * Allow administrators to change settings configured in the `inventory`
 * Reinstall the `pgo` client if a new version is specified
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now update the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator 
