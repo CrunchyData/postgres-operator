@@ -66,6 +66,28 @@
     - include_tasks: crds.yml
       tags: [install]
 
+    - name: Template PGO Admin Credentials
+      template:
+        src: pgouser-admin.yaml.j2
+        dest: "{{ output_dir }}/pgouser-admin.yaml"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Create PGO Admin Credentials
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgouser-admin.yaml"
+      tags: [install, update]
+
+    - name: Template PGO Admin Role & Permissions
+      template:
+        src: pgorole-pgoadmin.yaml.j2
+        dest: "{{ output_dir }}/pgorole-pgoadmin.yaml"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Create PGO Admin Role & Permissions
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgorole-pgoadmin.yaml"
+      tags: [install, update]
+
     - name: Template Cluster RBAC
       template:
         src: cluster-rbac.yaml.j2
@@ -82,43 +104,15 @@
     - name: Template PGO RBAC
       template:
         src: pgo-role-rbac.yaml.j2
-        dest: "{{ output_dir }}/pgo-role-rbac-{{ item }}.yaml"
+        dest: "{{ output_dir }}/pgo-role-rbac.yaml"
         mode: '0600'
-      with_items: 
-      - "{{ all_namespaces }}"
       tags: [install, update]
       when: create_rbac|bool
 
     - name: Create PGO RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-role-rbac-{{ item }}.yaml"
-      with_items: 
-      - "{{ all_namespaces }}"
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-role-rbac.yaml  -n {{ pgo_operator_namespace }}"
       tags: [install, update]
       when: create_rbac|bool
-
-    - name: Template PGO Backrest RBAC
-      template:
-        src: pgo-backrest-role-rbac.yaml.j2
-        dest: "{{ output_dir }}/pgo-backrest-role-rbac-{{ item }}.yaml"
-        mode: '0600'
-      with_items:
-      - "{{ namespace.split(',') }}"
-      tags: [install, update]
-      when: create_rbac|bool
-
-    - name: Create PGO Backrest RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}//pgo-backrest-role-rbac-{{ item }}.yaml"
-      with_items:
-      - "{{ namespace.split(',') }}"
-      tags: [install, update]
-      when: create_rbac|bool
-
-    - name: Template PGO User
-      template:
-        src: pgouser.j2
-        dest: "{{ output_dir }}/pgouser"
-        mode: '0600'
-      tags: [install, update]
 
     - name: Template Local PGO User
       template:
@@ -139,7 +133,7 @@
         src: aws-s3-credentials.yaml.j2
         dest: "{{ output_dir }}/aws-s3-credentials.yaml"
         mode: '0600'
-      tags: [install]
+      tags: [install,update]
 
     - name: Create PGO BackRest Repo Secret
       command: |
@@ -149,7 +143,7 @@
           --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
           --from-file=aws-s3-credentials.yaml='{{ output_dir }}/aws-s3-credentials.yaml' \
           -n {{ pgo_operator_namespace }}
-      tags: [install]
+      tags: [install,update]
 
     - name: Create PGO API Secret
       command: |
@@ -163,7 +157,6 @@
       command: |
         {{ kubectl_or_oc }} create configmap pgo-config \
           --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
-          --from-file=pgouser='{{ output_dir }}/pgouser' \
           --from-file='{{ role_path }}/files/pgo-configs' \
           -n {{ pgo_operator_namespace }}
       tags: [install, update]

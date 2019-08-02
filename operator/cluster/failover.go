@@ -68,12 +68,14 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	f := events.EventFailoverClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventFailoverCluster,
 		},
-		Clustername: clusterName,
-		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
+		Clustername:       clusterName,
+		Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		Target:            task.ObjectMeta.Labels[config.LABEL_TARGET],
 	}
 
 	err = events.Publish(f)
@@ -81,7 +83,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		log.Error(err)
 	}
 
-	Failover(clientset, client, clusterName, task, namespace, restconfig)
+	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, client, clusterName, task, namespace, restconfig)
 	//remove the pgreplica CRD for the promoted replica
 	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[config.LABEL_TARGET], namespace)
 
@@ -132,8 +134,9 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	g := events.EventFailoverClusterCompletedFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventFailoverClusterCompleted,
 		},
 		Clustername: clusterName,

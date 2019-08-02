@@ -51,7 +51,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	var err error
 
 	if cl.Spec.Status == crv1.CompletedStatus {
-		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
+		errorMsg := "crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate"
+		log.Warn(errorMsg)
+		publishClusterCreateFailure(cl, errorMsg)
 		return
 	}
 
@@ -67,6 +69,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		pvcName, err = pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
+			publishClusterCreateFailure(cl, err.Error())
 			return
 		}
 		log.Debugf("created primary pvc [%s]", pvcName)
@@ -96,10 +99,12 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			Namespace: cl.ObjectMeta.Namespace,
 			Username:  pgouser,
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreateCluster,
 		},
-		Clustername: cl.ObjectMeta.Name,
-		WorkflowID:  cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+		Clustername:       cl.ObjectMeta.Name,
+		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err = events.Publish(f)
@@ -129,6 +134,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		replicaCount, err := strconv.Atoi(cl.Spec.Replicas)
 		if err != nil {
 			log.Error("error in replicas value " + err.Error())
+			publishClusterCreateFailure(cl, err.Error())
 			return
 		}
 		//create a CRD for each replica
@@ -180,6 +186,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 				Do().Into(&result)
 			if err != nil {
 				log.Error(" in creating Pgreplica instance" + err.Error())
+				publishClusterCreateFailure(cl, err.Error())
 			}
 
 		}
@@ -220,11 +227,13 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 	f := events.EventDeleteClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  cl.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventDeleteCluster,
 		},
-		Clustername: cl.Spec.Name,
+		Clustername:       cl.Spec.Name,
+		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -322,11 +331,13 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 	f := events.EventScaleDownClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventScaleDownCluster,
 		},
-		Clustername: replica.Spec.ClusterName,
+		Clustername:       replica.Spec.ClusterName,
+		Clusteridentifier: replica.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -370,4 +381,29 @@ func cleanupPreviousTasks(client *rest.RESTClient, clusterName, namespace string
 		}
 	}
 	return err
+}
+
+func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
+	pgouser := cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventCreateClusterFailureFormat{
+		EventHeader: events.EventHeader{
+			Namespace: cl.ObjectMeta.Namespace,
+			Username:  pgouser,
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventCreateClusterFailure,
+		},
+		Clustername:       cl.ObjectMeta.Name,
+		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		ErrorMessage:      errorMsg,
+		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

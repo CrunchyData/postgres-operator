@@ -24,20 +24,22 @@ import (
 	"net/http"
 )
 
-func ShowUser(httpclient *http.Client, arg, selector, expired string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowUserResponse, error) {
+func ShowUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowUserRequest) (msgs.ShowUserResponse, error) {
 
 	var response msgs.ShowUserResponse
+	response.Status.Code = msgs.Ok
 
-	url := SessionCredentials.APIServerURL + "/users/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&expired=" + expired + "&namespace=" + ns
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/usershow"
+	log.Debugf("ShowUser called...[%s]", url)
 
-	log.Debugf("show users called [%s]", url)
-
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
+		response.Status.Code = msgs.Error
 		return response, err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)
 	if err != nil {
@@ -65,7 +67,7 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	var response msgs.CreateUserResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := SessionCredentials.APIServerURL + "/users"
+	url := SessionCredentials.APIServerURL + "/usercreate"
 	log.Debugf("createUsers called...[%s]", url)
 
 	action := "POST"
@@ -97,21 +99,20 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	return response, err
 }
 
-func DeleteUser(httpclient *http.Client, username, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DeleteClusterResponse, error) {
+func DeleteUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.DeleteUserRequest) (msgs.DeleteUserResponse, error) {
 
-	var response msgs.DeleteClusterResponse
+	var response msgs.DeleteUserResponse
 
-	url := SessionCredentials.APIServerURL + "/usersdelete/" + username + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/userdelete"
+	log.Debugf("deleteUser called...[%s]", url)
 
-	log.Debugf("delete users called [%s]", url)
-
-	action := "GET"
-
-	req, err := http.NewRequest(action, url, nil)
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
@@ -119,6 +120,7 @@ func DeleteUser(httpclient *http.Client, username, selector string, SessionCrede
 		return response, err
 	}
 	defer resp.Body.Close()
+
 	log.Debugf("%v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
@@ -127,7 +129,6 @@ func DeleteUser(httpclient *http.Client, username, selector string, SessionCrede
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		log.Printf("%v\n", resp.Body)
-		fmt.Println("Error: ", err)
 		log.Println(err)
 		return response, err
 	}
@@ -136,16 +137,15 @@ func DeleteUser(httpclient *http.Client, username, selector string, SessionCrede
 
 }
 
-func UserManager(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.UserRequest) (msgs.UserResponse, error) {
+func UpdateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.UpdateUserRequest) (msgs.UpdateUserResponse, error) {
 
-	var response msgs.UserResponse
+	var response msgs.UpdateUserResponse
 
 	jsonValue, _ := json.Marshal(request)
-	url := SessionCredentials.APIServerURL + "/user"
-	log.Debugf("User Manager called...[%s]", url)
+	url := SessionCredentials.APIServerURL + "/userupdate"
+	log.Debugf("UpdateUser called...[%s]", url)
 
-	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

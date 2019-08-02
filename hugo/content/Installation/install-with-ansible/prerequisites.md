@@ -10,7 +10,7 @@ weight: 10
 The following is required prior to installing Crunchy PostgreSQL Operator using Ansible:
 
 * [postgres-operator playbooks](https://github.com/CrunchyData/postgres-operator/) source code for the target version
-* Ansible 2.4.6+
+* Ansible 2.5+
 
 ## Kubernetes Installs
 
@@ -75,7 +75,7 @@ The following are the variables available for configuration:
 | `backrest_aws_s3_bucket`          |             | Set to configure the bucket used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
 | `backrest_aws_s3_endpoint`        |             | Set to configure the endpoint used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                   |
 | `backrest_aws_s3_region`          |             | Set to configure the region used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
-| `backrest_storage`                | storage1    | Set to configure which storage definition to use when creating volumes used by pgBackRest on all newly created clusters.                                                         |
+| `backrest_storage`                | storageos   | Set to configure which storage definition to use when creating volumes used by pgBackRest on all newly created clusters.                                                         |
 | `badger`                          | false       | Set to true enable pgBadger capabilities on all newly created clusters.  This can be disabled by the client.                                                                     |
 | `ccp_image_prefix`                | crunchydata | Configures the image prefix used when creating containers from Crunchy Container Suite.                                                                                          |
 | `ccp_image_tag`                   |             | Configures the image tag (version) used when creating containers from Crunchy Container Suite.                                                                                   |
@@ -103,6 +103,7 @@ The following are the variables available for configuration:
 | `openshift_skip_tls_verify`       |             | When deploying to Openshift, set to ignore the integrity of TLS certificates for the OpenShift cluster.                                                                          |
 | `openshift_token`                 |             | When deploying to OpenShift, set to configure the token used for login (when not using username/password authentication).                                                        |
 | `openshift_user`                  |             | When deploying to OpenShift, set to configure the username used for login.                                                                                                       |
+| `pgo_installation_name`           |             | The name of the PGO installation.                                                                                                                                                |
 | `pgo_admin_username`              | admin       | Configures the pgo administrator username.                                                                                                                                       |
 | `pgo_admin_password`              |             | Configures the pgo administrator password.                                                                                                                                       |
 | `pgo_client_install`              | true        | Configures the playbooks to install the `pgo` client if set to true.                                                                                                             |
@@ -111,19 +112,13 @@ The following are the variables available for configuration:
 | `pgo_image_tag`                   |             | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
 | `pgo_operator_namespace`          |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
 | `pgo_tls_no_verify`               |             | Set to configure Operator to verify TLS certificates.                                                                                                                            |
-| `primary_storage`                 | storage2    | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
+| `primary_storage`                 | storageos   | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
 | `prometheus_install`              | true        | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
 | `prometheus_storage_access_mode`  |             | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |
 | `prometheus_storage_class_name`   |             | Set to the name of the storage class used when creating Prometheus persistent volumes.                                                                                           |
-| `replica_storage`                 | storage3    | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
+| `replica_storage`                 | storageos   | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
 | `scheduler_timeout`               | 3600        | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
 | `service_type`                    | ClusterIP   | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
-| `storage<ID>_access_mode`         |             | Set to configure the access mode of the volumes created when using this storage definition.                                                                                      |
-| `storage<ID>_class`               |             | Set to configure the storage class name used when creating dynamic volumes.                                                                                                      |
-| `storage<ID>_fs_group`            |             | Set to configure any filesystem groups that should be added to security contexts on newly created clusters.                                                                      |
-| `storage<ID>_size`                |             | Set to configure the size of the volumes created when using this storage definition.                                                                                             |
-| `storage<ID>_supplemental_groups` |             | Set to configure any supplemental groups that should be added to security contexts on newly created clusters.                                                                    |
-| `storage<ID>_type`                |             | Set to either `create` or `dynamic` to configure the operator to create persistent volumes or have them created dynamically by a storage class.                                  |
 
 {{% notice tip %}}
 To retrieve the `kubernetes_context` value for Kubernetes installs, run the following command:
@@ -138,31 +133,43 @@ kubectl config current-context
 The following variables should be configured at a minimum to deploy the Crunchy 
 PostgreSQL Operator:
 
-* `backrest_storage`
-* `ccp_image_prefix`
-* `ccp_image_tag`
-* `kubernetes_context`
-* `namespace`
-* `openshift_host`
-* `openshift_password`
-* `openshift_skip_tls_verify`
-* `openshift_token`
+* `kubernetes_context` 
 * `openshift_user`
+* `openshift_password`
+* `openshift_token`
+* `openshift_host`
+* `openshift_skip_tls_verify`
+* `pgo_installation_name`
 * `pgo_admin_username`
 * `pgo_admin_password`
-* `pgo_client_install`
+* `pgo_admin_role_name`
+* `pgo_admin_perms`
+* `pgo_operator_namespace`
+* `namespace`
 * `pgo_image_prefix`
 * `pgo_image_tag`
-* `pgo_operator_namespace`
+* `ccp_image_prefix`
+* `ccp_image_tag`
+* `pgo_client_version`
 * `pgo_tls_no_verify`
+* `auto_failover`
+* `backrest`
+* `badger`
+* `metrics`
+* `archive_mode`
+* `archive_timeout`
+* `auto_failover_sleep_secs`
+* `db_password_age_days`
+* `db_password_length`
+* `db_port`
+* `db_replicas`
+* `db_user`
 * `primary_storage`
 * `replica_storage`
-* `storage<ID>_access_mode`
-* `storage<ID>_class`
-* `storage<ID>_fs_group`
-* `storage<ID>_size`
-* `storage<ID>_supplemental_groups`
-* `storage<ID>_type`
+* `backrest_storage`
+* `backup_storage`
+
+Additionally, `storage` variables will need to be defined to provide the Crunchy PGO with any required storage configuration.  Guidance for defining `storage` variables can be found in the next section.
 
 {{% notice tip %}}
 Users should remove or comment out the `kubernetes` or `openshift` variables if they're not being used 
@@ -171,14 +178,82 @@ from the inventory file.  Both sets of variables cannot be used at the same time
 
 ## Storage
 
-Kubernetes and OpenShift offer support for a variety of storage types.  The Crunchy 
-PostgreSQL Operator must be configured to utilize the storage options available by 
-configuring the `storage` options included in the inventory file.
+Kubernetes and OpenShift offer support for a wide variety of different storage types, and by default, the `inventory` is 
+pre-populated with storage configurations for some of these storage types.  However, the storage types defined
+in the `inventory` can be modified or removed as needed, while additional storage configurations can also be 
+added to meet the specific storage requirements for your PG clusters.  
 
-{{% notice tip %}}
-At this time the Crunchy PostgreSQL Operator Playbooks only support storage classes.  
-For more information on storage classes see the [official Kubernetes documentation](https://kubernetes.io/docs/concepts/storage/storage-classes/).
-{{% /notice %}}
+The following `storage` variables are utilized to add or modify operator storage configurations in the `inventory`:
+
+| Name                              | Required    | Description                                                                                                                                                                      |
+|-----------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `storage<ID>_name` | Yes | Set to specify a name for the storage configuration. |
+| `storage<ID>_access_mode` | Yes | Set to configure the access mode of the volumes created when using this storage definition. |
+| `storage<ID>_size` | Yes | Set to configure the size of the volumes created when using this storage definition. |
+| `storage<ID>_class` | Required when using the `dynamic` storage type | Set to configure the storage class name used when creating dynamic volumes. |
+| `storage<ID>_fs_group` | Required when using a storage class | Set to configure any filesystem groups that should be added to security contexts on newly created clusters. |
+| `storage<ID>_supplemental_groups` | Required when using NFS storage | Set to configure any supplemental groups that should be added to security contexts on newly created clusters. |
+| `storage<ID>_type` | Yes  | Set to either `create` or `dynamic` to configure the operator to create persistent volumes or have them created dynamically by a storage class. |
+
+The `ID` portion of `storage` prefix for each variable name above should be an integer that is used to group the various `storage` variables into a single storage configuration.  For instance, the following shows a single storage configuration for NFS storage:
+
+```ini
+storage3_name='nfsstorage'
+storage3_access_mode='ReadWriteMany'
+storage3_size='1G'
+storage3_type='create'
+storage3_supplemental_groups=65534
+```
+
+As this example storage configuration shows, integer `3` is used as the ID for each of the `storage` variables, which together form a single storage configuration called `nfsstorage`.  This approach allows different storage configurations to be created by defining the proper `storage` variables with a unique ID for each required storage configuration.
+
+Additionally, once all storage configurations have been defined in the `inventory`, they can then be used to specify the default storage configuration that should be utilized for the various PG pods created by the operator.  This is done using the following variables, which are also defined in the `inventory`:
+
+```ini
+backrest_storage='nfsstorage'
+backup_storage='nfsstorage'
+primary_storage='nfsstorage'
+replica_storage='nfsstorage'
+```
+
+With the configuration shown above, the `nfsstorage` storage configuration would be used by default for the various containers created for a PG cluster (i.e. containers for the primary DB, replica DB's, backups and/or `pgBackRest`).
+
+### Examples
+
+The following are additional examples of storage configurations for various storage types.
+
+#### Generic Storage Class
+
+The following example defines a storageTo setup storage1 to use the storage class `fast`
+
+```ini
+storage5_name='storageos'
+storage5_access_mode='ReadWriteOnce'
+storage5_size='300M'
+storage5_type='dynamic'
+storage5_class='fast'
+storage5_fs_group=26
+```
+
+To assign this storage definition to all `primary` pods created by the Operator, we 
+can configure the `primary_storage=storageos` variable in the inventory file.
+
+#### GKE
+
+The storage class provided by Google Kubernetes Environment (GKE) can be configured 
+to be used by the Operator by setting the following variables in the `inventory` file:
+
+```ini
+storage8_name='gce'
+storage8_access_mode='ReadWriteOnce'
+storage8_size='300M'
+storage8_type='dynamic'
+storage8_class='standard'
+storage8_fs_group=26
+```
+
+To assign this storage definition to all `primary` pods created by the Operator, we 
+can configure the `primary_storage=gce` variable in the inventory file.
 
 ### Considerations for Multi-Zone Cloud Environments
 
@@ -195,44 +270,49 @@ containing the PostgreSQL primary pod that will be using it.
 For instructions on setting up storage classes for multi-zone environments, see 
 the [PostgreSQL Operator Documentation](/gettingstarted/design/designoverview/).
 
-### Examples
+## Resource Configuration
 
-The following are examples on configuring the storage variables for different types 
-of storage classes.
+Kubernetes and OpenShift allow specific resource requirements to be specified for the various containers deployed inside of a pod. 
+This includes defining the required resources for each container, i.e. how much memory and CPU each container will need, while also
+allowing resource limits to be defined, i.e. the maximum amount of memory and CPU a container will be allowed to consume.
+In support of this capability, the Crunchy PGO allows any required resource configurations to be defined in the `inventory`, which 
+can the be utilized by the operator to set any desired resource requirements/limits for the various containers that will
+be deployed by the Crunchy PGO when creating and managing PG clusters.
 
-#### Generic Storage Class
+The following `resource` variables are utilized to add or modify operator resource configurations in the `inventory`:
 
-To setup storage1 to use the storage class `fast`
+| Name                              | Required    | Description                                                                                                                                                                      |
+|-----------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `resource<ID>_requests_memory` | Yes | The amount of memory required by the container. |
+| `resource<ID>_requests_cpu` | Yes | The amount of CPU required by the container. |
+| `resource<ID>_limits_memory` | Yes | The maximum amount of memory that can be consumed by the container. |
+| `resource<ID>_limits_cpu` | Yes  | The maximum amount of CPU that can be consumed by the container. |
 
-```ini
-storage1_access_mode='ReadWriteOnce'
-storage1_size='10G'
-storage1_type='dynamic'
-storage1_class='fast'
-```
-
-To assign this storage definition to all `primary` pods created by the Operator, we 
-can configure the `primary_storage=storage1` variable in the inventory file.
-
-#### GKE
-
-The storage class provided by Google Kubernetes Environment (GKE) can be configured 
-to be used by the Operator by setting the following variables in the `inventory` file:
+The `ID` portion of `resource` prefix for each variable name above should be an integer that is used to group the various `resource` variables into a single resource configuration.  For instance, the following shows a single resource configuration called `small`:
 
 ```ini
-storage1_access_mode='ReadWriteOnce'
-storage1_size='10G'
-storage1_type='dynamic'
-storage1_class='standard'
-storage1_fs_group=26
+resource1_name='small'
+resource1_requests_memory='512Mi'
+resource1_requests_cpu=0.1
+resource1_limits_memory='512Mi'
+resource1_limits_cpu=0.1
 ```
 
-To assign this storage definition to all `primary` pods created by the Operator, we 
-can configure the `primary_storage=storage1` variable in the inventory file.
+As this example resource configuration shows, integer `1` is used as the ID for each of the `resource` variables, which together form a single resource configuration called `small`.  This approach allows different resource configurations to be created by defining the proper `resource` variables with a unique ID for each required resource configuration.
 
-{{% notice tip %}}
-To utitlize mutli-zone deployments, see _Considerations for Multi-Zone Cloud Environments_ above.
-{{% /notice %}}
+Additionally, once all resource configurations have been defined in the `inventory`, they can then be used to specify the default resource configurations that should be utilized for the various PG containers created by the operator.  This is done using the following variables, which are also defined in the  `inventory`:
+
+```ini
+default_container_resources='small'
+default_load_resources='small'
+default_lspvc_resources='small'
+default_rmdata_resources='small'
+default_backup_resources='small'
+default_pgbouncer_resources='small'
+default_pgpool_resources='small'
+```
+
+With the configuration shown above, the `large` resource configuration would be used by default for all database containers, while the `small` resource configuration would then be utilized by default for the various other containers created for a PG cluster.
 
 ## Understanding `pgo_operator_namespace` & `namespace`
 

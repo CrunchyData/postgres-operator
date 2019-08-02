@@ -36,7 +36,7 @@ var RestoreToPVC string
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: "Perform a restore from previous backup",
-	Long: `RESTORE performs a restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  Valid backup types to restore from are pgbackrest and pgdump. For example:
+	Long: `RESTORE performs a restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  Valid backup types to restore from are pgbackrest, pgbasebackup and pgdump. For example:
 
 	pgo restore mycluster `,
 	Run: func(cmd *cobra.Command, args []string) {

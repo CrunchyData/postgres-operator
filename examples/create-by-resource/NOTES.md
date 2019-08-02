@@ -6,7 +6,8 @@ some users require a way to do this with Kube resource definitions
 directly using the kubectl or oc commands or APIs.
 
 This example creates a Postgres cluster called *fromcrd* using
-a pgcluster CRD plus some Secrets.
+a pgcluster CRD plus some Secrets and also configures pgbackrest
+for this Postgres cluster.
 
 ## Postgres Secrets
 

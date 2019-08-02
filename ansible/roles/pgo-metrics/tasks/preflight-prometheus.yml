@@ -8,5 +8,4 @@
   - prometheus_service_name
   - prometheus_port
   - prometheus_storage_access_mode
-  - prometheus_storage_class_name
   - prometheus_volume_size

@@ -408,9 +408,11 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventTestCluster,
 			},
-			Clustername: c.Name,
+			Clustername:       c.Name,
+			Clusteridentifier: c.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		}
 
 		err = events.Publish(f)
@@ -548,8 +550,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			//add a label for the custom config
 			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 		}
-
-		userLabelsMap[config.LABEL_PGOUSER] = pgouser
 
 		//set the metrics flag with the global setting first
 		userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
@@ -695,6 +695,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 
 		//verify that for autofail clusters we have a replica requested
 		if newInstance.Spec.Replicas == "0" {

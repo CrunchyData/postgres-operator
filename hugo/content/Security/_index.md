@@ -12,7 +12,7 @@ Install the requisite Operator RBAC resources, *as a Kubernetes cluster admin us
     make installrbac
 
 
-This script creates the following RBAC resources on your Kubernetes cluster:
+This script creates the following RBAC cluster-wide resources on your Kubernetes cluster:
 
 | Setting |Definition  |
 |---|---|
@@ -22,9 +22,50 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 |  | pgreplicas|
 |  | pgtasks|
 |  | pgupgrades|
-| Cluster Roles (cluster-roles.yaml) | pgo-cluster-role|
+| Cluster Roles (cluster-roles.yaml) (cluster-roles-readonly.yaml) | pgo-cluster-role|
 | Cluster Role Bindings (cluster-roles-bindings.yaml) | pgo-cluster-role|
 
+The above cluster role/binding is necessary to list and watch 
+namespaces at a minimum (cluster-roles-readonly.yaml).  This role lets
+the Operator watch namespaces and run the following pgo CLI command:
+    pgo show namespace --all
+
+The default cluster role (cluster-roles.yaml) includes the permission to create and delete namespaces using the following pgo CLI commands:
+    pgo create namespace mynamespace
+    pgo update namespace mynamespace
+    pgo delete namespace mynamespace
+
+If you do not allow create/update of namespaces, you can manually
+create Operator target namespaces using the following script:
+    deploy/add-targeted-namespace.sh
+
+WARNING:  currently with version 4.1.0 of the Operator when running
+on OCP 3.11, you are REQUIRED to use the deploy/add-targeted-namespace.sh
+script to add new targeted namespaces.  This is a bug that will be
+fixed in a later version of the Operator.
+
+This script creates the following RBAC namespace resources in the Operator
+namespace (e.g. pgo namespace):
+
+| Setting |Definition  |
+|---|---|
+| Roles (roles.yaml) | pgo-role|
+| Role Bindings (role-bindings.yaml) | pgo-role|
+| Service Account (service-accounts.yaml) | postgres-operator|
+
+Targeted namespaces (e.g. pgouser1, pgouser2), used by the Operator to run Postgres clusters, include the following RBAC resources:
+
+| Setting |Definition  |
+|---|---|
+| Roles (roles.yaml) | pgo-backrest-role|
+|  | pgo-target-role|
+| Role Bindings (role-bindings.yaml) | pgo-backrest-role-binding|
+|  | pgo-target-role-binding|
+| Service Account (service-accounts.yaml) | pgo-backrest|
+
+These target namespace RBAC resources are created either dynamically
+using the *pgo create namespace* command or via the manual namespace
+setup script.
 
 ## Operator RBAC
 
@@ -79,23 +120,19 @@ them, you can do the following:
 The *update namespace* command will apply the required Operator RBAC
 rules to that namespace.
 
+You can manually create a targeted namespace by running
+the *deploy/add-targeted-namespace.sh* script.  That script
+will create the namespace, add the required labels, and apply
+the necessary RBAC resources into that namespaces.  This can
+be used for installations that do not want to install the
+cluster role/bindings which enable dynamic namespace creation.
+
 When you configure the Operator, you can still specify the NAMESPACE
 environment variable with a list of namespaces, if they exist and
 have the correct labels, the Operator will recognize and watch 
 those namespaces.  If the NAMESPACE environment variable has names
 that are not on your Kube system, the Operator will create the namespaces
 at boot up time.
-
-Part of the workflow of the Operator creating namespaces includes applying
-the RBAC rules required for those namespaces.  The RBAC objects created
-in each targeted namespace include:
-
-| Setting |Definition  |
-|---|---|
-| Roles  | pgo-backrest-role|
-| Role Bindings  | pgo-backrest-role-binding|
-| Service Accounts | pgo-backrest |
-
 
 ### Managing Operator Roles
 
@@ -157,6 +194,7 @@ The full set of permissions that can be used in a role are as follows:
 |ShowSchedule | allow *pgo show schedule*|
 |ShowNamespace | allow *pgo show namespace*|
 |ShowUpgrade | allow *pgo show upgrade*|
+|ShowUser | allow *pgo show user*|
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|
 |TestCluster | allow *pgo test*|
@@ -164,7 +202,7 @@ The full set of permissions that can be used in a role are as follows:
 |UpdateNamespace | allow *pgo update namespace*|
 |UpdatePgouser | allow *pgo update pgouser*|
 |UpdatePgorole | allow *pgo update pgorole*|
-|User | allow *pgo user*|
+|UpdateUser | allow *pgo update user*|
 |Version | allow *pgo version*|
 
 

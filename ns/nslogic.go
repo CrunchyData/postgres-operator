@@ -19,16 +19,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
+	"strings"
+
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strings"
 )
 
 const PGO_TARGET_ROLE = "pgo-target-role"
@@ -51,7 +52,8 @@ type PgoTargetServiceAccount struct {
 
 //pgo-target-role-binding.json
 type PgoTargetRoleBinding struct {
-	TargetNamespace string
+	TargetNamespace   string
+	OperatorNamespace string
 }
 
 //pgo-backrest-role.json
@@ -116,6 +118,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 			Namespace: pgoNamespace,
 			Username:  createdBy,
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventPGOCreateNamespace,
 		},
 		CreatedNamespace: newNs,
@@ -158,6 +161,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 			Namespace: pgoNamespace,
 			Username:  deletedBy,
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventPGODeleteNamespace,
 		},
 		DeletedNamespace: ns,
@@ -189,7 +193,6 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 		return err
 	}
 
-	/**
 	err = CreatePGOTargetRole(clientset, targetNamespace)
 	if err != nil {
 		log.Error(err)
@@ -201,7 +204,6 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 		log.Error(err)
 		return err
 	}
-	*/
 
 	err = CreatePGOBackrestRole(clientset, targetNamespace)
 	if err != nil {
@@ -233,7 +235,8 @@ func CreatePGOTargetRoleBinding(clientset *kubernetes.Clientset, targetNamespace
 	var buffer bytes.Buffer
 	err := config.PgoTargetRoleBindingTemplate.Execute(&buffer,
 		PgoTargetRoleBinding{
-			TargetNamespace: targetNamespace,
+			TargetNamespace:   targetNamespace,
+			OperatorNamespace: operatorNamespace,
 		})
 	if err != nil {
 		log.Error(err.Error())
@@ -378,8 +381,17 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 		return errors.New("namespace " + ns + " doesn't exist")
 	}
 
-	if theNs.ObjectMeta.Labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName {
-		return errors.New("namespace " + ns + " not owned by crunchy data or not part of Operator installation " + installationName)
+	//update the labels on the namespace  (own it)
+	if found {
+		if theNs.ObjectMeta.Labels == nil {
+			theNs.ObjectMeta.Labels = make(map[string]string)
+		}
+		theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+		theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
+		err := kubeapi.UpdateNamespace(clientset, theNs)
+		if err != nil {
+			return err
+		}
 	}
 
 	//apply targeted rbac rules here
@@ -397,6 +409,7 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 			Namespace: pgoNamespace,
 			Username:  updatedBy,
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventPGOCreateNamespace,
 		},
 		CreatedNamespace: ns,
@@ -493,6 +506,9 @@ func ValidateNamespaces(clientset *kubernetes.Clientset, installationName, pgoNa
 				log.Infof("%s namespace already part of this installation", namespace.Name)
 			} else {
 				log.Infof("%s namespace will be updated to be owned by this installation", namespace.Name)
+				if namespace.ObjectMeta.Labels == nil {
+					namespace.ObjectMeta.Labels = make(map[string]string)
+				}
 				namespace.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 				namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
 				err := kubeapi.UpdateNamespace(clientset, namespace)

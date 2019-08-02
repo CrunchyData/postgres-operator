@@ -30,7 +30,6 @@ const RELOAD_PERM = "Reload"
 const RESTORE_PERM = "Restore"
 const STATUS_PERM = "Status"
 const TEST_CLUSTER_PERM = "TestCluster"
-const USER_PERM = "User"
 const VERSION_PERM = "Version"
 
 // CREATE
@@ -77,6 +76,7 @@ const SHOW_NAMESPACE_PERM = "ShowNamespace"
 const SHOW_INGEST_PERM = "ShowIngest"
 const SHOW_POLICY_PERM = "ShowPolicy"
 const SHOW_PVC_PERM = "ShowPVC"
+const SHOW_USER_PERM = "ShowUser"
 const SHOW_WORKFLOW_PERM = "ShowWorkflow"
 const SHOW_SCHEDULE_PERM = "ShowSchedule"
 const SHOW_SECRETS_PERM = "ShowSecrets"
@@ -86,6 +86,7 @@ const SHOW_PGOROLE_PERM = "ShowPgorole"
 // UPDATE
 const UPDATE_CLUSTER_PERM = "UpdateCluster"
 const UPDATE_PGOUSER_PERM = "UpdatePgouser"
+const UPDATE_USER_PERM = "UpdateUser"
 const UPDATE_PGOROLE_PERM = "UpdatePgorole"
 const UPDATE_NAMESPACE_PERM = "UpdateNamespace"
 
@@ -113,8 +114,8 @@ func InitializePerms() {
 	PermMap[RESTORE_PERM] = "yes"
 	PermMap[STATUS_PERM] = "yes"
 	PermMap[TEST_CLUSTER_PERM] = "yes"
-	PermMap[USER_PERM] = "yes"
 	PermMap[VERSION_PERM] = "yes"
+
 	// Create
 	PermMap[CREATE_BACKUP_PERM] = "yes"
 	PermMap[CREATE_BENCHMARK_PERM] = "yes"
@@ -156,6 +157,7 @@ func InitializePerms() {
 	PermMap[SHOW_INGEST_PERM] = "yes"
 	PermMap[SHOW_POLICY_PERM] = "yes"
 	PermMap[SHOW_PVC_PERM] = "yes"
+	PermMap[SHOW_USER_PERM] = "yes"
 	PermMap[SHOW_WORKFLOW_PERM] = "yes"
 	PermMap[SHOW_SCHEDULE_PERM] = "yes"
 	PermMap[SHOW_SECRETS_PERM] = "yes"
@@ -168,6 +170,7 @@ func InitializePerms() {
 	// Update
 	PermMap[UPDATE_CLUSTER_PERM] = "yes"
 	PermMap[UPDATE_PGOUSER_PERM] = "yes"
+	PermMap[UPDATE_USER_PERM] = "yes"
 	PermMap[UPDATE_PGOROLE_PERM] = "yes"
 	PermMap[UPDATE_NAMESPACE_PERM] = "yes"
 

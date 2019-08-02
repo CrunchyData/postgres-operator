@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -106,8 +107,9 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 	f := events.EventCreatePolicyFormat{
 		EventHeader: events.EventHeader{
 			Namespace: policy.ObjectMeta.Namespace,
-			Username:  "TODO",
+			Username:  policy.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreatePolicy,
 		},
 		Policyname: policy.ObjectMeta.Name,
@@ -138,8 +140,9 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 	f := events.EventDeletePolicyFormat{
 		EventHeader: events.EventHeader{
 			Namespace: policy.ObjectMeta.Namespace,
-			Username:  "TODO",
+			Username:  policy.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventDeletePolicy,
 		},
 		Policyname: policy.ObjectMeta.Name,

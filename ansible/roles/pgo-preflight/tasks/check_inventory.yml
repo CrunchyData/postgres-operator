@@ -1,13 +1,19 @@
 ---
-- name: Check if inventory file variables are defined
-  fail: msg="Please specify the value of {{item}} in your inventory file"
+- name: Check if mandatory inventory file variables are defined
+  fail: 
+    msg: Please specify a value for variable {{ item }} in your inventory file
   tags: always
-  when: "{{item}} is undefined or {{item}} == ''"
-  with_items:
+  when: "lookup('vars', item, default='') == ''"
+  loop: "{{ mandatory_inventory_vars }}"
+  vars:
+    mandatory_inventory_vars:
     - pgo_operator_namespace
     - namespace
+    - pgo_installation_name
     - pgo_admin_username
     - pgo_admin_password
+    - pgo_admin_role_name
+    - pgo_admin_perms
     - ccp_image_prefix
     - ccp_image_tag
     - pgo_image_prefix
@@ -24,16 +30,8 @@
     - db_port
     - db_replicas
     - db_user
+    - backrest_storage
     - backup_storage
     - primary_storage
     - replica_storage
-    - storage1_access_mode
-    - storage1_size
-    - storage1_type
-    - storage2_access_mode
-    - storage2_size
-    - storage2_type
-    - storage3_access_mode
-    - storage3_size
-    - storage3_type
     - pgo_client_version

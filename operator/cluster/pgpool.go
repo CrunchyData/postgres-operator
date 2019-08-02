@@ -166,11 +166,13 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 	f := events.EventCreatePgpoolFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreatePgpool,
 		},
-		Clustername: clusterName,
+		Clustername:       clusterName,
+		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -233,11 +235,13 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 	f := events.EventDeletePgpoolFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
 			EventType: events.EventDeletePgpool,
 		},
-		Clustername: clusterName,
+		Clustername:       clusterName,
+		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)

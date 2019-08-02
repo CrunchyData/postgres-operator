@@ -115,7 +115,7 @@ func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
 // pgo backup mycluster
 // pgo backup all
 // pgo backup --selector=name=mycluster
-func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBackupResponse {
+func CreateBackup(request *msgs.CreateBackupRequest, ns, pgouser string) msgs.CreateBackupResponse {
 	resp := msgs.CreateBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -186,7 +186,7 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 
 		result := crv1.Pgbackup{}
 
-		wfId, err = createBackupWorkflowTask(cluster.Spec.Name, ns)
+		wfId, err = createBackupWorkflowTask(cluster.Spec.Name, cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], pgouser, ns)
 
 		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, ns)
 		if !found {
@@ -206,6 +206,8 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 
 			log.Debugf("CreateBackup BackupOpts=%s", newInstance.Spec.BackupOpts)
 
+			newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
+			newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
 			err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -282,7 +284,7 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 	return newInstance, nil
 }
 
-func createBackupWorkflowTask(clusterName, ns string) (string, error) {
+func createBackupWorkflowTask(clusterName, identifier, pgouser, ns string) (string, error) {
 
 	existingTask := crv1.Pgtask{}
 
@@ -326,6 +328,8 @@ func createBackupWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = identifier
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
@@ -477,15 +481,15 @@ func createRestoreTask(request *msgs.PgbasebackupRestoreRequest, workflowID, ns 
 	if backupPVC == "" {
 		if !pgbackupfound {
 			return nil, fmt.Errorf("unable to find a pgbackup for cluster %s. A backup PVC therefore cannot be determined. Please "+
-				"either specify a existing backup PVC for the request, or ensure the proper pgbackup exists for this cluster.", 
+				"either specify a existing backup PVC for the request, or ensure the proper pgbackup exists for this cluster.",
 				request.FromCluster)
 		} else if backup.Spec.StorageSpec.Name == "" {
 			return nil, fmt.Errorf("a backup PVC is not defined in pgbackup %s. A backup PVC therefore cannot be determined. Please "+
-				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.", 
+				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.",
 				backup.Name)
 		} else if !apiserver.IsValidPVC(backup.Spec.StorageSpec.Name, ns) {
 			return nil, fmt.Errorf("backup PVC %s as defined in pgbackup %s could not be found. Please "+
-				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.", 
+				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.",
 				backup.Spec.StorageSpec.Name, backup.Name)
 		}
 		spec.Parameters[config.LABEL_PGBASEBACKUP_RESTORE_FROM_PVC] = backup.Spec.StorageSpec.Name
@@ -522,7 +526,7 @@ func validateRestoreRequest(request msgs.PgbasebackupRestoreRequest, ns string) 
 		errorMsgs = append(errorMsgs, errMsg)
 	}
 
-	if request.FromPVC != ""  && !apiserver.IsValidPVC(request.FromPVC, ns) {
+	if request.FromPVC != "" && !apiserver.IsValidPVC(request.FromPVC, ns) {
 		errMsg := fmt.Sprintf("A PVC with name %s was not found", request.FromPVC)
 		errorMsgs = append(errorMsgs, errMsg)
 	}

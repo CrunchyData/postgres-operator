@@ -94,6 +94,9 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		return
 	}
 
+	newjob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	newjob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
+
 	kubeapi.CreateJob(clientset, &newjob, namespace)
 
 	//publish backrest backup event
@@ -104,12 +107,14 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		f := events.EventCreateBackupFormat{
 			EventHeader: events.EventHeader{
 				Namespace: namespace,
-				Username:  "TODO",
+				Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
 				EventType: events.EventCreateBackup,
 			},
-			Clustername: jobFields.ClusterName,
-			BackupType:  "pgbackrest",
+			Clustername:       jobFields.ClusterName,
+			Clusteridentifier: task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			BackupType:        "pgbackrest",
 		}
 
 		err := events.Publish(f)

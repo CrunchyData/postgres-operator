@@ -122,7 +122,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeletePolicy(apiserver.RESTClient, policyname, ns)
+	resp = DeletePolicy(apiserver.RESTClient, policyname, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 

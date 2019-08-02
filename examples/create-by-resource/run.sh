@@ -20,8 +20,9 @@ export NS=pgouser1
 
 # remove any existing resources from a previous run
 $PGO_CMD delete secret -n $NS \
-	fromcrd-postgresuser-secret \
+	fromcrd-postgres-secret \
 	fromcrd-primaryuser-secret \
+	fromcrd-backrest-repo-secret \
 	fromcrd-testuser-secret	> /dev/null
 $PGO_CMD delete pgcluster fromcrd -n $NS
 $PGO_CMD delete pvc fromcrd -n $NS
@@ -30,6 +31,7 @@ $PGO_CMD delete pvc fromcrd -n $NS
 $PGO_CMD -n $NS create -f $DIR/postgres-secret.yaml
 $PGO_CMD -n $NS create -f $DIR/primaryuser-secret.yaml
 $PGO_CMD -n $NS create -f $DIR/testuser-secret.yaml
+$PGO_CMD -n $NS create -f $DIR/backrest-repo-config-secret.yaml
 
 # create the pgcluster CRD for the fromcrd cluster
 $PGO_CMD -n $NS create -f $DIR/fromcrd.json
