@@ -26,17 +26,39 @@ import (
 )
 
 func showNamespace(args []string) {
+	// copy arg list to keep track of original cli args
+	nsList := make([]string, len(args))
+	copy(nsList, args)
+
+	defNS := os.Getenv("PGO_NAMESPACE")
+	if defNS != "" {
+		fmt.Printf("current local default namespace: %s\n", defNS)
+		found := false
+		// check if default is already in nsList
+		for _, ns := range nsList {
+			if ns == defNS {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Debugf("adding default namespace [%s] to args", defNS)
+			nsList = append(nsList, defNS)
+		}
+	}
+
 	r := msgs.ShowNamespaceRequest{}
 	r.ClientVersion = msgs.PGO_VERSION
-	r.Args = args
+	r.Args = nsList
 	r.AllFlag = AllFlag
 
-	if len(args) == 0 && AllFlag == false {
+	if len(nsList) == 0 && AllFlag == false {
 		fmt.Println("Error: namespace args or --all is required")
 		os.Exit(2)
 	}
 
-	log.Debugf("showNamespace called %v", args)
+	log.Debugf("showNamespace called %v", nsList)
 
 	response, err := api.ShowNamespace(httpclient, &SessionCredentials, &r)
 
@@ -59,10 +81,6 @@ func showNamespace(args []string) {
 		return
 	}
 
-	defNS := os.Getenv("PGO_NAMESPACE")
-	if defNS != "" {
-		fmt.Printf("current local default namespace: %s\n", defNS)
-	}
 	if len(response.Results) == 0 {
 		fmt.Println("Nothing found.")
 		return
