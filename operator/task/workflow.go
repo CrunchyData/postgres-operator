@@ -21,7 +21,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"time"
 )
 
 // CompleteCreateClusterWorkflow ... update the pgtask for the
@@ -40,10 +39,9 @@ func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Cli
 		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 
 		log.Debugf("completing workflow %s  id %s", taskName, id)
-		task.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format("2006-01-02.15.04.05")
 
 		//update pgtask
-		err = kubeapi.Updatepgtask(RESTClient, &task, taskName, ns)
+		err := kubeapi.PatchpgtaskWorkflowStatus(RESTClient, &task, ns)
 		if err != nil {
 			log.Error(err)
 		}
@@ -68,10 +66,9 @@ func CompleteBackupWorkflow(clusterName string, clientSet *kubernetes.Clientset,
 		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 
 		log.Debugf("completing workflow %s  id %s", taskName, id)
-		task.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format("2006-01-02.15.04.05")
 
 		//update pgtask
-		err = kubeapi.Updatepgtask(RESTClient, &task, taskName, ns)
+		err := kubeapi.PatchpgtaskWorkflowStatus(RESTClient, &task, ns)
 		if err != nil {
 			log.Error(err)
 		}

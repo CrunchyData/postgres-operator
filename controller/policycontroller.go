@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -83,19 +84,9 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 	copyObj := policy.DeepCopyObject()
 	policyCopy := copyObj.(*crv1.Pgpolicy)
 
-	policyCopy.Status = crv1.PgpolicyStatus{
-		State:   crv1.PgpolicyStateProcessed,
-		Message: "Successfully processed Pgpolicy by controller",
-	}
-
-	err := c.PgpolicyClient.Put().
-		Name(policy.ObjectMeta.Name).
-		Namespace(policy.ObjectMeta.Namespace).
-		Resource(crv1.PgpolicyResourcePlural).
-		Body(policyCopy).
-		Do().
-		Error()
-
+	state := crv1.PgpolicyStateProcessed
+	message := "Successfully processed Pgpolicy by controller"
+	err := kubeapi.PatchpgpolicyStatus(c.PgpolicyClient, state, message, policyCopy, policy.ObjectMeta.Namespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())
 	}
