@@ -275,14 +275,14 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 		return newInstance, err
 	}
 
-        labels := make(map[string]string)
+        labelMap := make(map[string]string)
 
 	newInstance = &crv1.Pgbackup{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: name,
+			Labels: labelMap,
 		},
 		Spec: spec,
-		Labels: labels,
 	}
 	return newInstance, nil
 }
