@@ -157,7 +157,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 			if v.Name == "database" {
 				if !v.Ready && oldStatus {
 					log.Debugf("podController autofail enabled pod went from ready to not ready pod name %s", newpod.Name)
-					publishPrimaryNotReady(clusterName, "TODO", newpod.ObjectMeta.Namespace)
+					publishPrimaryNotReady(clusterName, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], newpod.ObjectMeta.Labels[config.LABEL_PGOUSER], newpod.ObjectMeta.Namespace)
 					clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 				}
 				//clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
@@ -327,8 +327,9 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreateClusterCompleted,
 		},
-		Clustername: clusterName,
-		WorkflowID:  cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
+		Clustername:       clusterName,
+		Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		WorkflowID:        cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err := events.Publish(f)
@@ -368,7 +369,7 @@ func (c *PodController) SetupWatch(ns string) {
 	go controller.Run(c.Ctx.Done())
 }
 
-func publishPrimaryNotReady(clusterName, username, namespace string) {
+func publishPrimaryNotReady(clusterName, identifier, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -380,7 +381,8 @@ func publishPrimaryNotReady(clusterName, username, namespace string) {
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventPrimaryNotReady,
 		},
-		Clustername: clusterName,
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

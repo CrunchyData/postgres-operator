@@ -102,8 +102,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreateCluster,
 		},
-		Clustername: cl.ObjectMeta.Name,
-		WorkflowID:  cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+		Clustername:       cl.ObjectMeta.Name,
+		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err = events.Publish(f)
@@ -226,12 +227,13 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 	f := events.EventDeleteClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  cl.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventDeleteCluster,
 		},
-		Clustername: cl.Spec.Name,
+		Clustername:       cl.Spec.Name,
+		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -329,12 +331,13 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 	f := events.EventScaleDownClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO",
+			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventScaleDownCluster,
 		},
-		Clustername: replica.Spec.ClusterName,
+		Clustername:       replica.Spec.ClusterName,
+		Clusteridentifier: replica.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -393,9 +396,10 @@ func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreateClusterFailure,
 		},
-		Clustername:  cl.ObjectMeta.Name,
-		ErrorMessage: errorMsg,
-		WorkflowID:   cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+		Clustername:       cl.ObjectMeta.Name,
+		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		ErrorMessage:      errorMsg,
+		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err := events.Publish(f)

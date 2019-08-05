@@ -8,84 +8,26 @@ metadata:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: pgopclusterrolesecret-{{ pgo_operator_namespace }}
+  name: pgo-cluster-role
 rules:
   - verbs:
-      - get
-      - list
-      - create
+      - '*'
     apiGroups:
       - '*'
     resources:
-      - secrets
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: pgopclusterrole-{{ pgo_operator_namespace }}
-rules:
-  - verbs:
-      - get
-      - list
-    apiGroups:
-      - '*'
-    resources:
-      - nodes
-      - pods
-      - configmaps
       - namespaces
-      - storageclasses
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: pgopclusterrolecrd-{{ pgo_operator_namespace }}
-rules:
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
-    resources:
-      - pgclusters
-      - pgpolicies
-      - pgtasks
-      - pgbackups
-      - pgreplicas
+      - serviceaccounts
+      - roles
+      - rolebindings
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: pgopclusterbinding-{{ pgo_operator_namespace }}
+  name: pgo-cluster-role
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: pgopclusterrole-{{ pgo_operator_namespace }}
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: pgopclusterbindingcrd-{{ pgo_operator_namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: pgopclusterrolecrd-{{ pgo_operator_namespace }}
-subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
----
-apiVersion: rbac.authorization.k8s.io/v1beta1
-kind: ClusterRoleBinding
-metadata:
-  name: pgopclusterbindingsecret-{{ pgo_operator_namespace }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: pgopclusterrolesecret-{{ pgo_operator_namespace }}
+  name: pgo-cluster-role
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User

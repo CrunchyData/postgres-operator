@@ -132,6 +132,6 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = Restore(&request, ns)
+	resp = Restore(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }

@@ -7,7 +7,7 @@ weight: 40
 
 # Uninstalling PostgreSQL Operator
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now deprovision the PostgreSQL Operator.
 
 First, it is recommended to use the playbooks tagged with the same version

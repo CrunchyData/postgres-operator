@@ -49,4 +49,10 @@ rules:
       - 'extensions'
     resources:
       - jobs
+  - verbs:
+      - 'patch'
+    apiGroups:
+      - 'extensions'
+    resources:
+      - deployments
 

@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
@@ -83,19 +84,10 @@ func (c *PgbackupController) onAdd(obj interface{}) {
 	copyObj := backup.DeepCopyObject()
 
 	backupCopy := copyObj.(*crv1.Pgbackup)
-	backupCopy.Status = crv1.PgbackupStatus{
-		State:   crv1.PgbackupStateProcessed,
-		Message: "Successfully processed Pgbackup by controller",
-	}
 
-	err := c.PgbackupClient.Put().
-		Name(backup.ObjectMeta.Name).
-		Namespace(backup.ObjectMeta.Namespace).
-		Resource(crv1.PgbackupResourcePlural).
-		Body(backupCopy).
-		Do().
-		Error()
-
+	state := crv1.PgbackupStateProcessed
+	message := "Successfully processed Pgbackup by controller"
+	err := kubeapi.PatchpgbackupStatus(c.PgbackupClient, state, message, backupCopy, backup.ObjectMeta.Namespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgbackup status: %s", err.Error())
 	}

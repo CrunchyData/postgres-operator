@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
+	"io/ioutil"
 
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
@@ -85,19 +86,11 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	copyObj := cluster.DeepCopyObject()
 	clusterCopy := copyObj.(*crv1.Pgcluster)
 
-	clusterCopy.Status = crv1.PgclusterStatus{
-		State:   crv1.PgclusterStateProcessed,
-		Message: "Successfully processed Pgcluster by controller",
-	}
+	addIdentifier(clusterCopy)
 
-	err := c.PgclusterClient.Put().
-		Name(cluster.ObjectMeta.Name).
-		Namespace(cluster.ObjectMeta.Namespace).
-		Resource(crv1.PgclusterResourcePlural).
-		Body(clusterCopy).
-		Do().
-		Error()
-
+	state := crv1.PgclusterStateProcessed
+	message := "Successfully processed Pgcluster by controller"
+	err := kubeapi.PatchpgclusterStatus(c.PgclusterClient, state, message, clusterCopy, cluster.ObjectMeta.Namespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
 	}
@@ -224,4 +217,13 @@ func (c *PgclusterController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+}
+
+func addIdentifier(clusterCopy *crv1.Pgcluster) {
+	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
+	if err != nil {
+		log.Error(err)
+	}
+
+	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
 }

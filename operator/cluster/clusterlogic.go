@@ -99,6 +99,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	}
 
 	cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
+	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
@@ -227,7 +229,7 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	//delete any pgtasks for this cluster
 	deletePgtasks(restclient, cl.Spec.Name, namespace)
 
-	publishDeleteCluster(namespace, "TODO", cl.Spec.Name)
+	publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name, cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER])
 
 	return err
 
@@ -359,7 +361,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	if err != nil {
 		log.Error(err.Error())
-		publishScaleError(namespace, "TODO", cluster)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
 
@@ -371,7 +373,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
-		publishScaleError(namespace, "TODO", cluster)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
 
@@ -384,13 +386,14 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	f := events.EventScaleClusterFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
-			Username:  "TODO unknown",
+			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventScaleCluster,
 		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Clusteridentifier: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
 	}
 
 	err = events.Publish(f)
@@ -462,8 +465,9 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventScaleCluster,
 		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clusteridentifier: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err := events.Publish(f)
@@ -472,7 +476,7 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 	}
 }
 
-func publishDeleteCluster(namespace, username, clusterName string) {
+func publishDeleteCluster(namespace, username, clusterName, identifier string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -484,7 +488,8 @@ func publishDeleteCluster(namespace, username, clusterName string) {
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventDeleteCluster,
 		},
-		Clustername: clusterName,
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

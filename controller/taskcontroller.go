@@ -114,23 +114,9 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 	}
 
 	//update pgtask
-	tmpTask.Status = crv1.PgtaskStatus{
-		State:   crv1.PgtaskStateProcessed,
-		Message: "Successfully processed Pgtask by controller",
-	}
-
-	err = kubeapi.Updatepgtask(c.PgtaskClient, &tmpTask, task.ObjectMeta.Name, task.ObjectMeta.Namespace)
-
-	/**
-	err = c.PgtaskClient.Put().
-		Name(tmpTask.ObjectMeta.Name).
-		Namespace(tmpTask.ObjectMeta.Namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Body(tmpTask).
-		Do().
-		Error()
-
-	*/
+	state := crv1.PgtaskStateProcessed
+	message := "Successfully processed Pgtask by controller"
+	err = kubeapi.PatchpgtaskStatus(c.PgtaskClient, state, message, taskCopy, task.ObjectMeta.Namespace)
 	if err != nil {
 		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
 		return

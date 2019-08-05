@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -83,19 +84,9 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 	copyObj := replica.DeepCopyObject()
 	replicaCopy := copyObj.(*crv1.Pgreplica)
 
-	replicaCopy.Status = crv1.PgreplicaStatus{
-		State:   crv1.PgreplicaStateProcessed,
-		Message: "Successfully processed Pgreplica by controller",
-	}
-
-	err := c.PgreplicaClient.Put().
-		Name(replica.ObjectMeta.Name).
-		Namespace(replica.ObjectMeta.Namespace).
-		Resource(crv1.PgreplicaResourcePlural).
-		Body(replicaCopy).
-		Do().
-		Error()
-
+	state := crv1.PgreplicaStateProcessed
+	message := "Successfully processed Pgreplica by controller"
+	err := kubeapi.PatchpgreplicaStatus(c.PgreplicaClient, state, message, replicaCopy, replica.ObjectMeta.Namespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgreplica status: %s", err.Error())
 	}

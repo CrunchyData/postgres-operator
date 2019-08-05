@@ -21,3 +21,6 @@
 - include_tasks: check_kubernetes.yml
   when: kubernetes_context is defined and kubernetes_context != ''
   tags: always
+
+- include_tasks: check_inventory.yml
+  tags: always

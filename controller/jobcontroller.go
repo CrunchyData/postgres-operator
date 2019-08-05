@@ -141,7 +141,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			// update pgtask for workflow
 			taskoperator.CompleteBackupWorkflow(clusterName, c.JobClientset, c.JobClient, job.ObjectMeta.Namespace)
 
-			publishBackupComplete(clusterName, "TODO", "pgbasebackup", job.ObjectMeta.Namespace, path)
+			publishBackupComplete(clusterName, job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbasebackup", job.ObjectMeta.Namespace, path)
 
 		}
 
@@ -174,7 +174,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[config.LABEL_PG_CLUSTER],
 				crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
 				labels[config.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
-			publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], "TODO", job.ObjectMeta.Namespace)
+			publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
 		}
 
 		return
@@ -244,7 +244,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			if err != nil {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 			}
-			publishBackupComplete(labels[config.LABEL_PG_CLUSTER], "TODO", "pgbackrest", job.ObjectMeta.Namespace, "")
+			publishBackupComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbackrest", job.ObjectMeta.Namespace, "")
 		}
 
 		return
@@ -299,12 +299,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		f := events.EventBenchmarkCompletedFormat{
 			EventHeader: events.EventHeader{
 				Namespace: job.ObjectMeta.Namespace,
-				Username:  "TODO",
+				Username:  job.ObjectMeta.Labels[config.LABEL_PGOUSER],
 				Topic:     topics,
 				Timestamp: events.GetTimestamp(),
 				EventType: events.EventBenchmarkCompleted,
 			},
-			Clustername: labels[config.LABEL_PG_CLUSTER],
+			Clustername:       labels[config.LABEL_PG_CLUSTER],
+			Clusteridentifier: labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		}
 
 		err = events.Publish(f)
@@ -454,8 +455,8 @@ func (c *JobController) SetupWatch(ns string) {
 	go controller.Run(c.Ctx.Done())
 }
 
-func publishBackupComplete(clusterName, username, backuptype, namespace, path string) {
-	topics := make([]string, 1)
+func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype, namespace, path string) {
+	topics := make([]string, 2)
 	topics[0] = events.EventTopicCluster
 	topics[1] = events.EventTopicBackup
 
@@ -467,9 +468,10 @@ func publishBackupComplete(clusterName, username, backuptype, namespace, path st
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventCreateBackupCompleted,
 		},
-		Clustername: clusterName,
-		BackupType:  backuptype,
-		Path:        path,
+		Clustername:       clusterName,
+		Clusteridentifier: clusterIdentifier,
+		BackupType:        backuptype,
+		Path:              path,
 	}
 
 	err := events.Publish(f)
@@ -478,7 +480,7 @@ func publishBackupComplete(clusterName, username, backuptype, namespace, path st
 	}
 
 }
-func publishRestoreComplete(clusterName, username, namespace string) {
+func publishRestoreComplete(clusterName, identifier, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -490,7 +492,8 @@ func publishRestoreComplete(clusterName, username, namespace string) {
 			Timestamp: events.GetTimestamp(),
 			EventType: events.EventRestoreClusterCompleted,
 		},
-		Clustername: clusterName,
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

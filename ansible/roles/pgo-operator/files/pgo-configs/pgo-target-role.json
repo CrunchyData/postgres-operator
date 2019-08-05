@@ -75,17 +75,6 @@
             "verbs": [
                 "*"
             ]
-        },
-        {
-            "apiGroups": [
-                "extensions"
-            ],
-            "resources": [
-                "deployments"
-            ],
-            "verbs": [
-                "patch"
-            ]
         }
     ]
 }
