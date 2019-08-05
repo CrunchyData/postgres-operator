@@ -86,21 +86,11 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 	copyObj := cluster.DeepCopyObject()
 	clusterCopy := copyObj.(*crv1.Pgcluster)
 
-	clusterCopy.Status = crv1.PgclusterStatus{
-		State:   crv1.PgclusterStateProcessed,
-		Message: "Successfully processed Pgcluster by controller",
-	}
-
 	addIdentifier(clusterCopy)
 
-	err := c.PgclusterClient.Put().
-		Name(cluster.ObjectMeta.Name).
-		Namespace(cluster.ObjectMeta.Namespace).
-		Resource(crv1.PgclusterResourcePlural).
-		Body(clusterCopy).
-		Do().
-		Error()
-
+	state := crv1.PgclusterStateProcessed
+	message := "Successfully processed Pgcluster by controller"
+	err := kubeapi.PatchpgclusterStatus(c.PgclusterClient, state, message, clusterCopy, cluster.ObjectMeta.Namespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
 	}
