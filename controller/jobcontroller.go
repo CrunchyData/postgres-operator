@@ -145,13 +145,10 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 		}
 
-		//update the pgbackup status
-		backup.Spec.BackupStatus = status
-
 		//update the pgbackup
-		err = kubeapi.Updatepgbackup(c.JobClient, &backup, backupName, job.ObjectMeta.Namespace)
+		err = kubeapi.PatchpgbackupBackupStatus(c.JobClient, status, &backup, job.ObjectMeta.Namespace)
 		if err != nil {
-			log.Error("error in updating pgbackup " + labels["pg-cluster"] + err.Error())
+			log.Error("error in patching pgbackup " + labels["pg-cluster"] + err.Error())
 			return
 		}
 
