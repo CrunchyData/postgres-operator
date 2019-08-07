@@ -109,6 +109,7 @@ func main() {
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Ctx:                ctx,
 	}
 	pgReplicacontroller := controller.PgreplicaController{
@@ -158,6 +159,7 @@ func main() {
 	defer cancelFunc()
 	go pgTaskcontroller.Run()
 	go pgClustercontroller.Run()
+	go pgClustercontroller.RunWorker()
 	go pgReplicacontroller.Run()
 	go pgReplicacontroller.RunWorker()
 	go pgBackupcontroller.Run()
