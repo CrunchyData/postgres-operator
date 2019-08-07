@@ -24,11 +24,12 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
+	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/ns"
@@ -40,6 +41,7 @@ import (
 )
 
 var Clientset *kubernetes.Clientset
+
 //var log *logrus.Entry
 
 func main() {
@@ -113,6 +115,7 @@ func main() {
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Ctx:                ctx,
 	}
 	pgBackupcontroller := controller.PgbackupController{
@@ -120,6 +123,8 @@ func main() {
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
 		Ctx:               ctx,
+		Queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		UpdateQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
@@ -154,7 +159,10 @@ func main() {
 	go pgTaskcontroller.Run()
 	go pgClustercontroller.Run()
 	go pgReplicacontroller.Run()
+	go pgReplicacontroller.RunWorker()
 	go pgBackupcontroller.Run()
+	go pgBackupcontroller.RunWorker()
+	go pgBackupcontroller.RunUpdateWorker()
 	go pgPolicycontroller.Run()
 	go podcontroller.Run()
 	go nscontroller.Run()
