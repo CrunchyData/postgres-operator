@@ -5,7 +5,7 @@ MAINTAINER jeff.mccormick@crunchydata.com
 LABEL name="postgres-operator" \
 	vendor="crunchydata.com" \
 	PostgresVersion="11" \
-	PostgresFullVersion="11.4" \
+	PostgresFullVersion="11.5" \
 	Version="7.6" \
 	Release="3.5.5" \
 	run='docker run -d -p 8080:80 --name=web-app web-app' \
