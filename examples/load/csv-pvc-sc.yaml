@@ -6,11 +6,11 @@ metadata:
   labels:
     pgremove: "true"
   name: csv-pvc
-  namespace: pgouser1
+  namespace: $PGO_NAMESPACE
 spec:
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
       storage: 300M
-  storageClassName: fast
+  storageClassName: $PGO_STORAGE_CLASS
