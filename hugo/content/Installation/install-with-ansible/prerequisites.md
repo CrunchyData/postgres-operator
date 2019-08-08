@@ -119,6 +119,10 @@ The following are the variables available for configuration:
 | `replica_storage`                 | storageos   | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
 | `scheduler_timeout`               | 3600        | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
 | `service_type`                    | ClusterIP   | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
+| `delete_operator_namespace`       | false       | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when deprovisioning the PGO.                             |
+| `delete_watched_namespaces`       | false       | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when deprovisioning the PGO.                                         |
+| `delete_metrics_namespace`        | false       | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when deprovisioning the metrics infrastructure                     |
+| `pgo_cluster_admin`               | false       | Determines whether or not the `cluster-admin` role is assigned to the PGO service account. Must be `true` to enable PGO namespace & role creation when installing in OpenShift.  |
 
 {{% notice tip %}}
 To retrieve the `kubernetes_context` value for Kubernetes installs, run the following command:
