@@ -7,7 +7,7 @@ weight: 21
 
 # Installing
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now install the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator

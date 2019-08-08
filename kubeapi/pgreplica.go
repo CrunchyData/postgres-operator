@@ -16,10 +16,13 @@ package kubeapi
 */
 
 import (
-	log "github.com/sirupsen/logrus"
+	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
@@ -140,4 +143,43 @@ func Updatepgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, nam
 
 	log.Debugf("updated pgreplica %s", replica.Name)
 	return err
+}
+
+func PatchpgreplicaStatus(restclient *rest.RESTClient, state crv1.PgreplicaState, message string, oldCrd *crv1.Pgreplica, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Status = crv1.PgreplicaStatus{
+		State:   state,
+		Message: message,
+	}
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgreplicaResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
 }

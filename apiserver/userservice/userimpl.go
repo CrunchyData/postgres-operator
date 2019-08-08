@@ -743,6 +743,12 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 	response.Results = make([]string, 0)
 
 	log.Debugf("DeleteUser called name=%s", request.Username)
+	if request.Username == "" {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "--username is required"
+		return response
+	}
+
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list

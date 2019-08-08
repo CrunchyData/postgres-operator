@@ -125,6 +125,11 @@ func deleteUser(args []string, ns string) {
 
 	log.Debugf("deleting user %s selector=%s args=%v", Username, Selector, args)
 
+	if Username == "" {
+		fmt.Println("Error: --username is required")
+		return
+	}
+
 	r := new(msgs.DeleteUserRequest)
 	r.Username = Username
 	r.Clusters = args
