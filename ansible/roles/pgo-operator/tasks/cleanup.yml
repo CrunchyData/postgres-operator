@@ -27,12 +27,20 @@
 - name: Delete existing secrets (Operator Namespace)
   shell: |
     {{ kubectl_or_oc }} delete secret pgo-backrest-repo-config pgorole-{{ pgo_admin_role_name }} \
-      pgouser-{{ pgo_admin_role_name }} -n {{ pgo_operator_namespace }}
+      pgouser-{{ pgo_admin_username }} -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
   - deprovision
   - update
+
+- name: Delete pgo.tls secret
+  shell: |
+    {{ kubectl_or_oc }} delete secret pgo.tls -n {{ pgo_operator_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
 
 - name: Delete existing Services
   shell: |
@@ -43,7 +51,7 @@
   - deprovision
   - update
 
-- name: Delete existing Service Account
+- name: Delete existing Service Account (Operator Namespace)
   shell: |
     {{ kubectl_or_oc }} delete serviceaccount postgres-operator -n {{ pgo_operator_namespace }}
   ignore_errors: yes
@@ -53,7 +61,7 @@
   - update
   when: create_rbac|bool
 
-- name: Delete existing Service Account
+- name: Delete existing Service Accounts (Watched Namespaces)
   shell: |
     {{ kubectl_or_oc }} delete serviceaccount pgo-backrest -n {{ item }}
   with_items:
@@ -70,6 +78,15 @@
     {{ kubectl_or_oc }} delete clusterrolebinding {{ item }}
   with_items:
   - "pgo-cluster-role"
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - deprovision
+  - update
+  when: create_rbac|bool
+
+- name: Delete cluster-admin Cluster Role Binding for PGO Service Account
+  command: "{{ kubectl_or_oc }} delete clusterrolebinding pgo-cluster-admin"
   ignore_errors: yes
   no_log: false
   tags:
