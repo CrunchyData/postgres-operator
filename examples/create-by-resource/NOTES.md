@@ -41,7 +41,7 @@ The Operator should show the new cluster started:
 
     jeffmc@~ > pgo show cluster fromcrd
 
-    cluster : fromcrd (centos7-11.4-2.4.2)
+    cluster : fromcrd (centos7-11.5-2.4.2)
     	pod : fromcrd-6b4d69df46-4s7bn (Running) on doppio-kube (1/1) (primary)
 	pvc : fromcrd
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
