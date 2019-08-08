@@ -29,8 +29,8 @@ the sample load configuration.
 We test with storageos and it offers a RWO storage class
 that can be used for volume provisioning.
 
-To accomplish this, download the storageos CLI from 
-their github site and ensure you have the following environement 
+To accomplish this, download the storageos CLI from their 
+github site and ensure you have the following environement 
 variables added to ~/.bashrc as follows:
 
 	export PGO_NAMESPACE=pgouser1 (update to match your environment)
@@ -40,7 +40,7 @@ Then execute
 
 	source ~/.bashrc
 
-Also, if not already installed, fetch a Go module for expanding environement 
+Also, if not already installed, fetch a Go module for expanding environment 
 variables with:
 
 	go get github.com/blang/expenv
