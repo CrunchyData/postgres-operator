@@ -17,8 +17,10 @@ limitations under the License.
 
 import (
 	"context"
+	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -34,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
 // PgtaskController holds connections for the controller
@@ -42,12 +45,17 @@ type PgtaskController struct {
 	PgtaskClient    *rest.RESTClient
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
-	Ctx             context.Context
+	Queue           workqueue.RateLimitingInterface
+
+	Ctx context.Context
 }
 
 // Run starts an pgtask resource controller
 func (c *PgtaskController) Run() error {
 	log.Debug("Watch Pgtask objects")
+
+	//shut down the work queue to cause workers to end
+	defer c.Queue.ShutDown()
 
 	// Watch Example objects
 	err := c.watchPgtasks(c.Ctx)
@@ -72,6 +80,123 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
 	return nil
 }
 
+func (c *PgtaskController) RunWorker() {
+
+	//process the 'add' work queue forever
+	for c.processNextItem() {
+	}
+}
+
+func (c *PgtaskController) processNextItem() bool {
+	// Wait until there is a new item in the working queue
+	key, quit := c.Queue.Get()
+	if quit {
+		return false
+	}
+
+	log.Debugf("working on %s", key.(string))
+	keyParts := strings.Split(key.(string), "/")
+	keyNamespace := keyParts[0]
+	keyResourceName := keyParts[1]
+
+	log.Debugf("queue got key ns=[%s] resource=[%s]", keyNamespace, keyResourceName)
+
+	// Tell the queue that we are done with processing this key. This unblocks the key for other workers
+	// This allows safe parallel processing because two pods with the same key are never processed in
+	// parallel.
+	defer c.Queue.Done(key)
+
+	tmpTask := crv1.Pgtask{}
+	found, err := kubeapi.Getpgtask(c.PgtaskClient, &tmpTask, keyResourceName, keyNamespace)
+	if !found {
+		log.Errorf("ERROR onAdd getting pgtask : %s", err.Error())
+		return false
+	}
+
+	//update pgtask
+	state := crv1.PgtaskStateProcessed
+	message := "Successfully processed Pgtask by controller"
+	err = kubeapi.PatchpgtaskStatus(c.PgtaskClient, state, message, &tmpTask, keyNamespace)
+	if err != nil {
+		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
+		return false
+	}
+
+	//process the incoming task
+	switch tmpTask.Spec.TaskType {
+	case crv1.PgtaskMinorUpgrade:
+		log.Debug("delete minor upgrade task added")
+		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskDeletePgbouncer:
+		log.Debug("delete pgbouncer task added")
+		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskReconfigurePgbouncer:
+		log.Debug("Reconfiguredelete pgbouncer task added")
+		clusteroperator.ReconfigurePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskAddPgbouncer:
+		log.Debug("add pgbouncer task added")
+		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskDeletePgpool:
+		log.Debug("delete pgpool task added")
+		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskReconfigurePgpool:
+		log.Debug("Reconfiguredelete pgpool task added")
+		clusteroperator.ReconfigurePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskAddPgpool:
+		log.Debug("add pgpool task added")
+		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+	case crv1.PgtaskFailover:
+		log.Debug("failover task added")
+		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {
+			clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask, c.PgtaskConfig)
+		} else {
+			log.Debug("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
+		}
+
+	case crv1.PgtaskDeleteData:
+		log.Debug("delete data task added")
+		taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, &tmpTask)
+	case crv1.PgtaskDeleteBackups:
+		log.Debug("delete backups task added")
+		taskoperator.RemoveBackups(keyNamespace, c.PgtaskClientset, &tmpTask)
+	case crv1.PgtaskBackrest:
+		log.Debug("backrest task added")
+		backrestoperator.Backrest(keyNamespace, c.PgtaskClientset, &tmpTask)
+	case crv1.PgtaskBackrestRestore:
+		log.Debug("backrest restore task added")
+		backrestoperator.Restore(c.PgtaskClient, keyNamespace, c.PgtaskClientset, &tmpTask)
+
+	case crv1.PgtaskpgDump:
+		log.Debug("pgDump task added")
+		pgdumpoperator.Dump(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+	case crv1.PgtaskpgRestore:
+		log.Debug("pgDump restore task added")
+		pgdumpoperator.Restore(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+
+	case crv1.PgtaskpgBasebackupRestore:
+		log.Debug("pgbasebackup restore task added")
+		pgbasebackupoperator.Restore(c.PgtaskClient, keyNamespace, c.PgtaskClientset, &tmpTask)
+
+	case crv1.PgtaskAutoFailover:
+		log.Debugf("autofailover task added %s", keyResourceName)
+	case crv1.PgtaskWorkflow:
+		log.Debugf("workflow task added [%s] ID [%s]", keyResourceName, tmpTask.Spec.Parameters[crv1.PgtaskWorkflowID])
+
+	case crv1.PgtaskBenchmark:
+		log.Debug("benchmark task added")
+		benchmarkoperator.Create(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+
+	case crv1.PgtaskUpdatePgbouncerAuths:
+		log.Debug("Pgbouncer update credential task was found...will be handled by pod controller when ready")
+
+	default:
+		log.Debugf("unknown task type on pgtask added [%s]", tmpTask.Spec.TaskType)
+	}
+
+	return true
+
+}
+
 // onAdd is called when a pgtask is added
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
@@ -84,109 +209,10 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 		return
 	}
 
-	//time.Sleep(time.Second * time.Duration(2))
-
-	// NEVER modify objects from the store. It's a read-only, local cache.
-	// You can use taskScheme.Copy() to make a deep copy of original object and modify this copy
-	// Or create a copy manually for better performance
-	copyObj := task.DeepCopyObject()
-	taskCopy := copyObj.(*crv1.Pgtask)
-
-	//update the status of the task as processed to prevent reprocessing
-	taskCopy.Status = crv1.PgtaskStatus{
-		State:   crv1.PgtaskStateProcessed,
-		Message: "Successfully processed Pgtask by controller",
-	}
-	task.Status = crv1.PgtaskStatus{
-		State:   crv1.PgtaskStateProcessed,
-		Message: "Successfully processed Pgtask by controller",
-	}
-
-	//Body(taskCopy).
-
-	//get pgtask
-
-	tmpTask := crv1.Pgtask{}
-	found, err := kubeapi.Getpgtask(c.PgtaskClient, &tmpTask, task.ObjectMeta.Name, task.ObjectMeta.Namespace)
-	if !found {
-		log.Errorf("ERROR onAdd getting pgtask : %s", err.Error())
-		return
-	}
-
-	//update pgtask
-	state := crv1.PgtaskStateProcessed
-	message := "Successfully processed Pgtask by controller"
-	err = kubeapi.PatchpgtaskStatus(c.PgtaskClient, state, message, taskCopy, task.ObjectMeta.Namespace)
-	if err != nil {
-		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
-		return
-	}
-
-	//process the incoming task
-	switch task.Spec.TaskType {
-	case crv1.PgtaskMinorUpgrade:
-		log.Debug("delete minor upgrade task added")
-		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskDeletePgbouncer:
-		log.Debug("delete pgbouncer task added")
-		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskReconfigurePgbouncer:
-		log.Debug("Reconfiguredelete pgbouncer task added")
-		clusteroperator.ReconfigurePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskAddPgbouncer:
-		log.Debug("add pgbouncer task added")
-		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskDeletePgpool:
-		log.Debug("delete pgpool task added")
-		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskReconfigurePgpool:
-		log.Debug("Reconfiguredelete pgpool task added")
-		clusteroperator.ReconfigurePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskAddPgpool:
-		log.Debug("add pgpool task added")
-		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, task, task.ObjectMeta.Namespace)
-	case crv1.PgtaskFailover:
-		log.Debug("failover task added")
-		clusteroperator.FailoverBase(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task, c.PgtaskConfig)
-
-	case crv1.PgtaskDeleteData:
-		log.Debug("delete data task added")
-		taskoperator.RemoveData(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
-	case crv1.PgtaskDeleteBackups:
-		log.Debug("delete backups task added")
-		taskoperator.RemoveBackups(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
-	case crv1.PgtaskBackrest:
-		log.Debug("backrest task added")
-		backrestoperator.Backrest(task.ObjectMeta.Namespace, c.PgtaskClientset, task)
-	case crv1.PgtaskBackrestRestore:
-		log.Debug("backrest restore task added")
-		backrestoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
-
-	case crv1.PgtaskpgDump:
-		log.Debug("pgDump task added")
-		pgdumpoperator.Dump(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
-	case crv1.PgtaskpgRestore:
-		log.Debug("pgDump restore task added")
-		pgdumpoperator.Restore(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
-
-	case crv1.PgtaskpgBasebackupRestore:
-		log.Debug("pgbasebackup restore task added")
-		pgbasebackupoperator.Restore(c.PgtaskClient, task.ObjectMeta.Namespace, c.PgtaskClientset, task)
-
-	case crv1.PgtaskAutoFailover:
-		log.Debugf("autofailover task added %s", task.ObjectMeta.Name)
-	case crv1.PgtaskWorkflow:
-		log.Debugf("workflow task added [%s] ID [%s]", task.ObjectMeta.Name, task.Spec.Parameters[crv1.PgtaskWorkflowID])
-
-	case crv1.PgtaskBenchmark:
-		log.Debug("benchmark task added")
-		benchmarkoperator.Create(task.ObjectMeta.Namespace, c.PgtaskClientset, c.PgtaskClient, task)
-
-	case crv1.PgtaskUpdatePgbouncerAuths:
-		log.Debug("Pgbouncer update credential task was found...will be handled by pod controller when ready")
-
-	default:
-		log.Debugf("unknown task type on pgtask added [%s]", task.Spec.TaskType)
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err == nil {
+		log.Debugf("task putting key in queue %s", key)
+		c.Queue.Add(key)
 	}
 
 }
@@ -229,4 +255,23 @@ func (c *PgtaskController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+}
+
+//de-dupe logic for a failover, if the failover started
+//parameter is set, it means a failover has already been
+//started on this
+func dupeFailover(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) bool {
+	tmp := crv1.Pgtask{}
+
+	found, _ := kubeapi.Getpgtask(restClient, &tmp, task.Spec.Name, ns)
+	if !found {
+		//a big time error if this occurs
+		return false
+	}
+
+	if tmp.Spec.Parameters[config.LABEL_FAILOVER_STARTED] == "" {
+		return false
+	}
+
+	return true
 }
