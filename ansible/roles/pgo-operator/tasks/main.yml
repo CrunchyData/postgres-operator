@@ -50,6 +50,14 @@
 - include_tasks: cleanup.yml
   tags: [deprovision, update]
 
+- include_tasks: kubernetes_cleanup.yml
+  when: kubernetes_context is defined
+  tags: [deprovision]
+
+- include_tasks: openshift_cleanup.yml
+  when: openshift_host is defined
+  tags: [deprovision]
+
 - include_tasks: certs.yml
   tags: [install]
 
@@ -100,7 +108,15 @@
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
       tags: [install, update]
       when: create_rbac|bool
-    
+
+    - name: Create cluster-admin Cluster Role Binding for PGO Service Account
+      command: | 
+        {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
+          --clusterrole cluster-admin \
+          --user system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
+      when: create_rbac|bool and pgo_cluster_admin|bool
+      tags: [install, update]
+      
     - name: Template PGO RBAC
       template:
         src: pgo-role-rbac.yaml.j2
@@ -197,4 +213,8 @@
         dest: "/usr/local/bin/pgo"
         mode: 0755
       when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
+      tags: [install, update]
+
+    - include_tasks: openshift_namespace.yml
+      when: openshift_host is defined and not pgo_cluster_admin|bool
       tags: [install, update]

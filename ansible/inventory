@@ -70,10 +70,14 @@ pgo_image_tag='centos7-4.1.0'
 
 # PGO Client Install
 pgo_client_install='true'
-pgo_client_version='4.1.0'
+pgo_client_version='v4.1.0'
 
 # PGO TLS
 pgo_tls_no_verify='false'
+
+# Set to 'true' to assign the cluster-admin role to the PGO service account.  Needed for
+# OCP installs to enable dynamic namespace creation (see the PGO docs for more details).
+#pgo_cluster_admin='false'
 
 # This will set default enhancements for operator deployed PostgreSQL clusters
 auto_failover='false'
@@ -238,3 +242,17 @@ prometheus_install='false'
 #prometheus_volume_size='1G'
 #prometheus_supplemental_groups=65534
 #prometheus_fs_group=26
+
+
+# ==================
+# Namespace Cleanup
+# ==================
+# The following settings determine whether or not the PGO and metrics namespaces (defined using 
+# inventory variables 'pgo_operator_namespace', 'namespace' and 'metrics_namespace') are deleted
+# when deprovisioning. Please note that this will also result in the deletion of any non-PGO
+# resources deployed in these namespaces, and cannot be undone. By default (and unless otherwise 
+# specified using the variables below), all namespaces will be preserved when deprovisioning.
+
+#delete_operator_namespace: 'false'
+#delete_watched_namespaces: 'false'
+#delete_metrics_namespace: 'false'

@@ -36,8 +36,8 @@ $PGO_CMD label namespace/$1 vendor=crunchy
 $PGO_CMD label namespace/$1 pgo-installation-name=$PGO_INSTALLATION_NAME
 
 # create RBAC
-$PGO_CMD -n $1 delete sa pgo-backrest-sa 
-$PGO_CMD -n $1 delete sa pgo-target-sa
+$PGO_CMD -n $1 delete sa pgo-backrest 
+$PGO_CMD -n $1 delete sa pgo-target
 $PGO_CMD -n $1 delete role pgo-target-role pgo-backrest-role
 $PGO_CMD -n $1 delete rolebinding pgo-target-role-binding pgo-backrest-role-binding
 
