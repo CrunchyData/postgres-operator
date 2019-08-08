@@ -1,7 +1,7 @@
 Cluster:
-  PrimaryNodeLabel:  
-  ReplicaNodeLabel: 
-  CCPImagePrefix: $CCP_IMAGE_PREFIX 
+  PrimaryNodeLabel:
+  ReplicaNodeLabel:
+  CCPImagePrefix: $CCP_IMAGE_PREFIX
   Metrics:  false
   Badger:  false
   CCPImageTag:  $CCP_IMAGE_TAG
@@ -39,13 +39,13 @@ Storage:
     StorageType:  dynamic
     StorageClass:  fast
     Fsgroup:  26
-DefaultContainerResources: 
-DefaultLoadResources:  
-DefaultLspvcResources:  
-DefaultRmdataResources:  
-DefaultBackupResources:  
-DefaultPgbouncerResources:  
-DefaultPgpoolResources:   
+DefaultContainerResources:
+DefaultLoadResources:
+DefaultLspvcResources:
+DefaultRmdataResources:
+DefaultBackupResources:
+DefaultPgbouncerResources:
+DefaultPgpoolResources:
 ContainerResources:
   small:
     RequestsMemory:  512Mi
@@ -59,7 +59,7 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   AutofailSleepSeconds:  9
-  PreferredFailoverNode:  
+  PreferredFailoverNode:
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json

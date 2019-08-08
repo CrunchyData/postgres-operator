@@ -67,7 +67,7 @@
         },
         "backuppath": "",
         "backuppvcname": "",
-        "ccpimagetag": "centos7-11.4-2.4.2",
+        "ccpimagetag": "centos7-11.5-2.4.2",
         "clustername": "fromcrd",
         "customconfig": "",
         "database": "userdb",
