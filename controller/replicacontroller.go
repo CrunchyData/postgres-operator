@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -169,7 +170,18 @@ func (c *PgreplicaController) onDelete(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
 	log.Debugf("[PgreplicaController] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
-	clusteroperator.ScaleDownBase(c.PgreplicaClientset, c.PgreplicaClient, replica, replica.ObjectMeta.Namespace)
+	//make sure we are not removing a replica deployment
+	//that is now the primary after a failover
+	dep, found, _ := kubeapi.GetDeployment(c.PgreplicaClientset, replica.Spec.Name, replica.ObjectMeta.Namespace)
+	if found {
+		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
+			//the replica was made a primary at some point
+			//we will not scale down the deployment
+			log.Debugf("[PgreplicaController] OnDelete not scaling down the replica since it is acting as a primary")
+		} else {
+			clusteroperator.ScaleDownBase(c.PgreplicaClientset, c.PgreplicaClient, replica, replica.ObjectMeta.Namespace)
+		}
+	}
 
 }
 

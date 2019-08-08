@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -146,7 +147,11 @@ func (c *PgtaskController) processNextItem() bool {
 		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
-		clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask, c.PgtaskConfig)
+		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {
+			clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask, c.PgtaskConfig)
+		} else {
+			log.Debug("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
+		}
 
 	case crv1.PgtaskDeleteData:
 		log.Debug("delete data task added")
@@ -250,4 +255,23 @@ func (c *PgtaskController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+}
+
+//de-dupe logic for a failover, if the failover started
+//parameter is set, it means a failover has already been
+//started on this
+func dupeFailover(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) bool {
+	tmp := crv1.Pgtask{}
+
+	found, _ := kubeapi.Getpgtask(restClient, &tmp, task.Spec.Name, ns)
+	if !found {
+		//a big time error if this occurs
+		return false
+	}
+
+	if tmp.Spec.Parameters[config.LABEL_FAILOVER_STARTED] == "" {
+		return false
+	}
+
+	return true
 }

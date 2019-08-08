@@ -102,6 +102,7 @@ func main() {
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
+		Queue:           workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Ctx:             ctx,
 	}
 
