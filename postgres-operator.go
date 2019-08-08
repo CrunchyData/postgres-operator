@@ -158,6 +158,7 @@ func main() {
 
 	defer cancelFunc()
 	go pgTaskcontroller.Run()
+	go pgTaskcontroller.RunWorker()
 	go pgClustercontroller.Run()
 	go pgClustercontroller.RunWorker()
 	go pgReplicacontroller.Run()
