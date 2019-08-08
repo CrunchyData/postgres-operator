@@ -131,6 +131,7 @@ func Initialize() {
 
 	err := Pgo.GetConfig(Clientset, PgoNamespace)
 	if err != nil {
+		log.Error(err)
 		log.Error("error in Pgo configuration")
 		os.Exit(2)
 	}
