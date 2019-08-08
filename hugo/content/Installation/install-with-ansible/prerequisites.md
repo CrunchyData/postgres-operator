@@ -79,7 +79,7 @@ The following are the variables available for configuration:
 | `badger`                          | false       | Set to true enable pgBadger capabilities on all newly created clusters.  This can be disabled by the client.                                                                     |
 | `ccp_image_prefix`                | crunchydata | Configures the image prefix used when creating containers from Crunchy Container Suite.                                                                                          |
 | `ccp_image_tag`                   |             | Configures the image tag (version) used when creating containers from Crunchy Container Suite.                                                                                   |
-| `cleanup`                         | false       | Set to configure the playbooks to delete all objects when deprovisioning Operator.  Note: this will delete all objects related to the Operator (including clusters provisioned). |
+| `cleanup`                         | false       | Set to configure the playbooks to delete all objects when uninstalling the Operator.  Note: this will delete all objects related to the Operator (including clusters provisioned). |
 | `crunchy_debug`                   | false       | Set to configure Operator to use debugging mode.  Note: this can cause sensitive data such as passwords to appear in Operator logs.                                              |
 | `db_name`                         | userdb      | Set to a value to configure the default database name on all newly created clusters.                                                                                             |
 | `db_password_age_days`            | 60          | Set to a value in days to configure the expiration age on PostgreSQL role passwords on all newly created clusters.                                                               |
@@ -119,9 +119,9 @@ The following are the variables available for configuration:
 | `replica_storage`                 | storageos   | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
 | `scheduler_timeout`               | 3600        | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
 | `service_type`                    | ClusterIP   | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
-| `delete_operator_namespace`       | false       | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when deprovisioning the PGO.                             |
-| `delete_watched_namespaces`       | false       | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when deprovisioning the PGO.                                         |
-| `delete_metrics_namespace`        | false       | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when deprovisioning the metrics infrastructure                     |
+| `delete_operator_namespace`       | false       | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when uninstalling the PGO.                             |
+| `delete_watched_namespaces`       | false       | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO.                                         |
+| `delete_metrics_namespace`        | false       | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure                     |
 | `pgo_cluster_admin`               | false       | Determines whether or not the `cluster-admin` role is assigned to the PGO service account. Must be `true` to enable PGO namespace & role creation when installing in OpenShift.  |
 
 {{% notice tip %}}

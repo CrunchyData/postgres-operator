@@ -6,4 +6,4 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
