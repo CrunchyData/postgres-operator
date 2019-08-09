@@ -5,6 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "name": "{{.Name}}",
+            "crunchy-pgbouncer": "true",
             "pg-cluster": "{{.ClusterName}}",
             "service-name": "{{.Name}}"
         }
@@ -42,6 +43,9 @@
                     }, {
                         "name": "PG_REPLICA_SERVICE_NAME",
                         "value": "{{.ReplicaServiceName}}"
+                    },{
+                        "name": "PGBOUNCER_PASSWORD",
+                        "value": "{{.PgBouncerPass}}"
                     }],
                     "volumeMounts": [{
                         "name": "pgbouncer-conf",
