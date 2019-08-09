@@ -1,0 +1,58 @@
+{{- define "postgres-operator.config" -}}
+Cluster:
+  PrimaryNodeLabel:  
+  ReplicaNodeLabel:  
+  CCPImagePrefix: {{ .Values.env.ccp_image_prefix }}
+  Metrics:  false
+  Badger:  false
+  CCPImageTag: {{ .Values.env.ccp_image_tag }}
+  Port:  5432
+  User:  testuser
+  Database:  userdb
+  PasswordAgeDays:  60
+  PasswordLength:  8
+  Strategy:  1
+  Replicas:  0
+  ArchiveMode:  false
+  ArchiveTimeout:  60
+  ServiceType:  ClusterIP
+  Backrest:  false
+  BackrestPort:  2022
+  Autofail:  false
+  AutofailReplaceReplica:  false
+  LogStatement:  none
+  LogMinDurationStatement:  60000
+PrimaryStorage: {{ .Values.pgo.PrimaryStorage }}
+XlogStorage: {{ .Values.pgo.XlogStorage }}
+BackupStorage: {{ .Values.pgo.BackupStorage }}
+ReplicaStorage: {{ .Values.pgo.ReplicaStorage }}
+BackrestStorage: {{ .Values.pgo.BackrestStorage }}
+Storage:
+{{ toYaml .Values.pgo.Storage | indent 2 }}
+DefaultContainerResources: 
+DefaultLoadResources:  
+DefaultLspvcResources:  
+DefaultRmdataResources:  
+DefaultBackupResources:  
+DefaultPgbouncerResources:  
+DefaultPgpoolResources:   
+ContainerResources:
+  small:
+    RequestsMemory:  512Mi
+    RequestsCPU:  0.1
+    LimitsMemory:  512Mi
+    LimitsCPU:  0.1
+  large:
+    RequestsMemory:  2Gi
+    RequestsCPU:  2.0
+    LimitsMemory:  2Gi
+    LimitsCPU:  4.0
+Pgo:
+  AutofailSleepSeconds:  9
+  PreferredFailoverNode:  
+  Audit:  false
+  LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
+  LoadTemplate:  /pgo-config/pgo.load-template.json
+  COImagePrefix:  {{ .Values.env.co_image_prefix }}
+  COImageTag:  {{ .Values.env.co_image_tag }}
+{{- end -}}

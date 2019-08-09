@@ -2,12 +2,12 @@
     "apiVersion": "batch/v1",
     "kind": "Job",
     "metadata": {
-        "name": "rmdata-{{.Name}}",
+        "name": "{{.JobName}}",
 	"labels": {
         	"vendor": "crunchydata",
                	"pgrmdata": "true",
 		"pg-cluster": "{{.ClusterName}}",
-                "pg-database": "{{.Name}}",
+                "pg-database": "{{.ClusterName}}",
                 "claimName": "{{.PvcName}}"
 	}
     },
@@ -15,12 +15,12 @@
 	"backoffLimit": 0,
         "template": {
             "metadata": {
-                "name": "rmdata-{{.Name}}",
+                "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
                     "pgrmdata": "true",
                     "pg-cluster": "{{.ClusterName}}",
-                    "pg-database": "{{.Name}}",
+                    "pg-database": "{{.ClusterName}}",
                     "claimName": "{{.PvcName}}"
                 }
             },

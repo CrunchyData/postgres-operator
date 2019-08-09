@@ -5,7 +5,6 @@ replicaCount: 1
 
 image:
   repository: crunchydata/postgres-operator
-  tag: centos7-3.5.5
   pullPolicy: IfNotPresent
 
 env:
@@ -15,6 +14,22 @@ env:
   co_image_prefix: "crunchydata"
   co_image_tag: "centos7-3.5.5"
   tls_no_verify: false
+
+pgo:
+  PrimaryStorage: hostpathstorage
+  XlogStorage: hostpathstorage
+  BackupStorage: hostpathstorage
+  ReplicaStorage: hostpathstorage
+  BackrestStorage: backreststorage
+  Storage:
+    hostpathstorage:
+      AccessMode: ReadWriteOnce
+      Size: 1G
+      StorageType: create
+    backreststorage:
+      AccessMode: ReadWriteOnce
+      Size: 1G
+      StorageType: create
 
 service:
   type: ClusterIP
