@@ -22,6 +22,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -29,13 +35,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"math/rand"
-	"os/exec"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -228,7 +230,12 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 		oldCrd.ObjectMeta.Labels = make(map[string]string)
 	}
 	for k, v := range labelMap {
-		oldCrd.ObjectMeta.Labels[k] = v
+		if len(validation.IsQualifiedName(k)) == 0 && len(validation.IsValidLabelValue(v)) == 0 {
+			oldCrd.ObjectMeta.Labels[k] = v
+		} else {
+			log.Debugf("user label %s:%s does not meet Kubernetes label requirements and will not be used to label "+
+				"pgcluster %s", k, v, oldCrd.Spec.Name)
+		}
 	}
 
 	var newData, patchBytes []byte
