@@ -11,6 +11,10 @@ func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
 
 	if request.RemoveData {
+		//remove pgdata
+		removeData(request)
+		//remove secrets
+		removeUserSecrets(request)
 	}
 
 	removeClusterJobs(request)
@@ -105,4 +109,23 @@ func removeClusterJobs(request Request) {
 }
 
 func removeCluster(request Request) {
+}
+
+func removeUserSecrets(request Request) {
+	//get all that match pg-cluster=db
+	selector := config.LABEL_PG_CLUSTER + "=" + request.RemoveCluster
+
+	secrets, err := kubeapi.GetSecrets(request.Clientset, selector, request.RemoveNamespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for _, s := range secrets.Items {
+		err := kubeapi.DeleteSecret(request.Clientset, s.ObjectMeta.Name, request.RemoveNamespace)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
 }

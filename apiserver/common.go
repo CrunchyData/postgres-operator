@@ -16,16 +16,15 @@ limitations under the License.
 */
 
 import (
-	"strings"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
+	"strings"
 )
 
 var backrestStorageTypes = []string{"local", "s3"}
@@ -92,41 +91,38 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 
 }
 
-func CreateRMDataTask(storageSpec crv1.PgStorageSpec, clusterName, pvcName string, dataRoots []string, taskName, ns string) error {
+func CreateRMDataTask(clusterName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns string) error {
 	var err error
 
-	log.Debugf("a CreateRMDataTask dataRoots=%v ns=%s", dataRoots, ns)
-	//create a pgtask for each root at this volume/pvc
-	for i := 0; i < len(dataRoots); i++ {
+	//create pgtask CRD
+	spec := crv1.PgtaskSpec{}
+	spec.Namespace = ns
+	spec.Name = taskName
+	spec.TaskType = crv1.PgtaskDeleteData
 
-		//create pgtask CRD
-		spec := crv1.PgtaskSpec{}
-		spec.Namespace = ns
-		spec.Name = taskName
-		spec.TaskType = crv1.PgtaskDeleteData
-		spec.StorageSpec = storageSpec
+	spec.Parameters = make(map[string]string)
+	spec.Parameters[config.LABEL_DELETE_DATA] = strconv.FormatBool(deleteData)
+	spec.Parameters[config.LABEL_DELETE_BACKUPS] = strconv.FormatBool(deleteBackups)
+	spec.Parameters[config.LABEL_IS_REPLICA] = strconv.FormatBool(isReplica)
+	spec.Parameters[config.LABEL_IS_BACKUP] = strconv.FormatBool(isBackup)
+	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 
-		spec.Parameters = make(map[string]string)
-		spec.Parameters[config.LABEL_PVC_NAME] = pvcName
-		spec.Parameters[config.LABEL_DATA_ROOT] = dataRoots[i]
-		spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
-
-		newInstance := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: taskName,
-			},
-			Spec: spec,
-		}
-		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
-		newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
-
-		err := kubeapi.Createpgtask(RESTClient, newInstance, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
+	newInstance := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: taskName,
+		},
+		Spec: spec,
 	}
+	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
+
+	err = kubeapi.Createpgtask(RESTClient, newInstance, ns)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
 	return err
 
 }

@@ -82,15 +82,18 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 
 		if deleteData {
 			log.Debugf("deleting data on cluster %s", cluster.Spec.Name)
-			err := deleteDatabaseSecrets(cluster.Spec.Name, ns)
+			taskName := cluster.Spec.Name + "-rmdata"
+			log.Debugf("creating taskName %s", taskName)
+			isBackup := false
+			isReplica := false
+
+			err := apiserver.CreateRMDataTask(cluster.Spec.Name, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 			if err != nil {
-				log.Debugf("error on deleting secrets %s", err.Error())
+				log.Debugf("error on creating rmdata task %s", err.Error())
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
 			}
-
-			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups, ns)
 		}
 
 		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
@@ -1016,109 +1019,12 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
-// removes data and or backup volumes for all pods in a cluster
 func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool, ns string) error {
 
 	var err error
 
-	//dont include pgpool, pgbouncer, or pgbackrest_repo deployments
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL_POD + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PGBOUNCER + "!=true"
-	log.Debugf("selector for delete is %s", selector)
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Debugf("creatingDeleteDataTasks %d deployments for pg-cluster=%s\n", len(deployments.Items), clusterName)
+	log.Debugf("creatingDeleteDataTasks deployments for pg-cluster=%s\n", clusterName)
 
-	if deleteBackups {
-		log.Debug("deleteBackups is called")
-		log.Debug("check for backrest-shared-repo PVC to delete")
-		pvcName := clusterName + "-pgbr-repo"
-		_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
-		if found {
-			log.Debugf("creating rmdata job for %s", pvcName)
-			dataRoots := []string{pvcName}
-			err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, clusterName+"-rmdata-backrest-shared-repo", ns)
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-		}
-	}
-
-	for _, dep := range deployments.Items {
-
-		dataRoots := make([]string, 0)
-		dataRoots = append(dataRoots, dep.Name)
-
-		claimName := dep.Name
-		taskName := dep.Name + "-rmdata-pgdata"
-		log.Debugf("creating taskName %s", taskName)
-
-		err := apiserver.CreateRMDataTask(storageSpec, clusterName, claimName, dataRoots, taskName, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-
-	if deleteBackups {
-		log.Debug("check for backup PVC to delete")
-		//get the deployment names for this cluster
-		//by convention if basebackups are run, a pvc named
-		//deploymentName-backup will be created to hold backups
-		deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-
-		for _, dep := range deps.Items {
-			pvcName := dep.Name + "-backup"
-			log.Debugf("checking dep %s for backup pvc %s\n", dep.Name, pvcName)
-			_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
-			if !found {
-				log.Debugf("%s pvc was not found when looking for backups to delete\n", pvcName)
-			} else {
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-				//by convention, the root directory name
-				//created by the backup job is depName-backups
-				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, dep.Name+"-rmdata-backups", ns)
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-			}
-
-			// check for pgdump backups
-			pgdumpPvcName := "backup-" + dep.Name + "-pgdump-pvc"
-
-			log.Debugf("checking dep %s for pgdump backup pvc %s\n", dep.Name, pgdumpPvcName)
-			_, found, err = kubeapi.GetPVC(apiserver.Clientset, pgdumpPvcName, ns)
-			if !found {
-				log.Debugf("%s pvc was not found when looking for pgdump backups to delete\n", pgdumpPvcName)
-			} else {
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-				//by convention, the root directory name
-				//created by the backup job is depName-backups
-				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pgdumpPvcName, dataRoots, dep.Name+"-rmdata-pgdump", ns)
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-			}
-
-		}
-	}
 	return err
 }
 

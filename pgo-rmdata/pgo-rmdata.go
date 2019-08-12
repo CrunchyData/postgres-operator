@@ -18,18 +18,24 @@ var request rmdata.Request
 
 var Clientset *kubernetes.Clientset
 
-func init() {
-	request = rmdata.Request{}
+func main() {
+	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
+	request = rmdata.Request{
+		RemoveData:      false,
+		IsReplica:       false,
+		IsBackup:        false,
+		RemoveBackup:    false,
+		RemoveCluster:   "",
+		RemoveNamespace: "",
+	}
 	flag.BoolVar(&request.RemoveData, "remove-data", false, "")
+	flag.BoolVar(&request.IsReplica, "is-replica", false, "")
+	flag.BoolVar(&request.IsBackup, "is-backup", false, "")
 	flag.BoolVar(&request.RemoveBackup, "remove-backup", false, "")
 	flag.StringVar(&request.RemoveCluster, "pg-cluster", "", "")
 	flag.StringVar(&request.RemoveNamespace, "namespace", "", "")
-}
-
-func main() {
-	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
-
 	flag.Parse()
+
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if os.Getenv("CRUNCHY_DEBUG") == "true" {
 		log.SetLevel(log.DebugLevel)
@@ -56,7 +62,7 @@ func main() {
 	}
 
 	log.Infoln("pgo-rmdata starts")
-	log.Infof("%s", request.String())
+	log.Infof("request is %s", request.String())
 
 	rmdata.Delete(request)
 

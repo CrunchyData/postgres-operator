@@ -32,20 +32,22 @@ import (
 type rmdatajobTemplateFields struct {
 	JobName            string
 	Name               string
-	PvcName            string
 	ClusterName        string
 	PGOImagePrefix     string
 	PGOImageTag        string
 	SecurityContext    string
-	DataRoot           string
 	ContainerResources string
+	RemoveData         bool
+	RemoveBackup       bool
+	IsBackup           bool
+	IsReplica          bool
 }
 
 // RemoveData ...
 func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
 	//create the Job to remove the data
-	pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
+	//pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
 	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
 
 	cr := ""
@@ -63,16 +65,18 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 
 	jobFields := rmdatajobTemplateFields{
 		JobName:            jobName,
-		Name:               task.Spec.Name + "-" + pvcName,
+		Name:               task.Spec.Name,
 		ClusterName:        clusterName,
-		PvcName:            pvcName,
+		RemoveData:         true,
+		RemoveBackup:       true,
+		IsReplica:          true,
+		IsBackup:           true,
 		PGOImagePrefix:     operator.Pgo.Pgo.PGOImagePrefix,
 		PGOImageTag:        operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
-		DataRoot:           task.Spec.Parameters[config.LABEL_DATA_ROOT],
 		ContainerResources: cr,
 	}
-	log.Debugf("creating rmdata job %s for cluster %s pvc %s", jobName, task.Spec.Name, pvcName)
+	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 
 	var doc2 bytes.Buffer
 	err := config.RmdatajobTemplate.Execute(&doc2, jobFields)

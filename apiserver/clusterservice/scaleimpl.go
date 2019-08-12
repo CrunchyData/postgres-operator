@@ -383,12 +383,12 @@ func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStor
 
 	log.Debugf("inside createDeleteDataTasksForReplica %s", replicaName)
 
-	dataRoots := make([]string, 0)
-	dataRoots = append(dataRoots, replicaName)
-
-	claimName := replicaName
-
-	err = apiserver.CreateRMDataTask(storageSpec, replicaName, claimName, dataRoots, replicaName+"-rmdata-pgdata", ns)
+	deleteData := true
+	deleteBackups := false
+	isReplica := true
+	isBackup := false
+	taskName := replicaName + "-rmdata"
+	err = apiserver.CreateRMDataTask(replicaName, taskName, deleteData, deleteBackups, isReplica, isBackup, ns)
 	if err != nil {
 		return err
 	}

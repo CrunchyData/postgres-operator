@@ -17,8 +17,7 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgrmdata": "true",
-                    "pg-cluster": "{{.ClusterName}}",
-                    "claimName": "{{.PvcName}}"
+                    "pg-cluster": "{{.ClusterName}}"
                 }
             },
             "spec": {
@@ -32,13 +31,19 @@
 		    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_CLUSTER",
-                        "value": "{{.PG_CLUSTER}}"
+                        "value": "{{.ClusterName}}"
                     }, {
                         "name": "REMOVE_DATA",
-                        "value": "{{.REMOVE_DATA}}"
+                        "value": "{{.RemoveData}}"
                     }, {
                         "name": "REMOVE_BACKUP",
-                        "value": "{{.REMOVE_BACKUP}}"
+                        "value": "{{.RemoveBackup}}"
+                    }, {
+                        "name": "IS_BACKUP",
+                        "value": "{{.IsBackup}}"
+                    }, {
+                        "name": "IS_REPLICA",
+                        "value": "{{.IsReplica}}"
                     }, {
                         "name": "NAMESPACE",
 			"valueFrom": {

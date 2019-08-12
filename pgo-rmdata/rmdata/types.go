@@ -12,11 +12,13 @@ type Request struct {
 	Clientset       *kubernetes.Clientset
 	RemoveData      bool
 	RemoveBackup    bool
+	IsBackup        bool
+	IsReplica       bool
 	RemoveCluster   string
 	RemoveNamespace string
 }
 
 func (x Request) String() string {
-	msg := fmt.Sprintf("Request: Cluster [%s] Namespace [%s] RemoveData [%t] RemoveBackup [%t]", x.RemoveCluster, x.RemoveNamespace, x.RemoveData, x.RemoveBackup)
+	msg := fmt.Sprintf("Request: Cluster [%s] Namespace [%s] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]", x.RemoveCluster, x.RemoveNamespace, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
 	return msg
 }
