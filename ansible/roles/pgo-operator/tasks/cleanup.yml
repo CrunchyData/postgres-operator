@@ -31,7 +31,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
 
 - name: Delete PG Cluster Jobs
   shell: |
@@ -43,7 +42,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
 
 - name: Delete PG Cluster Secrets
   shell: |
@@ -55,7 +53,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
 
 - name: Delete Operator Deployment
   shell: |
