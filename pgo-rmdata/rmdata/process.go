@@ -11,18 +11,26 @@ func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
 
 	if request.RemoveData {
-		//remove pgdata
-		removeData(request)
-		//remove secrets
-		removeUserSecrets(request)
-	}
+		if request.IsBackup {
+		} else if request.IsReplica {
+			removeOnlyReplicaData(request)
+		} else {
+			//remove pgdata
+			removeData(request)
 
-	removeClusterJobs(request)
+			//remove secrets only if this is an entire cluster being
+			//removed
+			if request.IsReplica == false && request.IsBackup == false {
+				removeUserSecrets(request)
+			}
+			removeClusterJobs(request)
 
-	removeCluster(request)
+			removeCluster(request)
 
-	if request.RemoveBackup {
-		removeBackups(request)
+			if request.RemoveBackup {
+				removeBackups(request)
+			}
+		}
 	}
 
 }
@@ -30,12 +38,12 @@ func Delete(request Request) {
 func removeBackups(request Request) {
 
 	//see if a pgbasebackup PVC exists
-	backupPVCName := request.RemoveCluster + "-backup"
+	backupPVCName := request.ClusterName + "-backup"
 	log.Infof("pgbasebackup backup pvc: %s", backupPVCName)
-	pvc, found, err := kubeapi.GetPVC(request.Clientset, request.RemoveCluster, request.RemoveNamespace)
+	pvc, found, err := kubeapi.GetPVC(request.Clientset, request.ClusterName, request.Namespace)
 	if found {
 		log.Infof("pgbasebackup backup pvc: found")
-		err = kubeapi.DeletePVC(request.Clientset, pvc.Name, request.RemoveNamespace)
+		err = kubeapi.DeletePVC(request.Clientset, pvc.Name, request.Namespace)
 		if err != nil {
 			log.Errorf("error removing pgbasebackup pvc %s %s", backupPVCName, err.Error())
 		} else {
@@ -47,14 +55,14 @@ func removeBackups(request Request) {
 
 	//delete pgbackrest PVC if it exists
 
-	selector := config.LABEL_PG_CLUSTER + "=" + request.RemoveCluster
+	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 	log.Infof("remove backrest pvc selector [%s]", selector)
 
 	var pvcList *v1.PersistentVolumeClaimList
-	pvcList, err = kubeapi.GetPVCs(request.Clientset, selector, request.RemoveNamespace)
+	pvcList, err = kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
 	if len(pvcList.Items) > 0 {
 		for _, v := range pvcList.Items {
-			err = kubeapi.DeletePVC(request.Clientset, v.Name, request.RemoveNamespace)
+			err = kubeapi.DeletePVC(request.Clientset, v.Name, request.Namespace)
 			if err != nil {
 				log.Errorf("error removing backrest pvc %s %s", v.Name, err.Error())
 			} else {
@@ -67,8 +75,8 @@ func removeBackups(request Request) {
 
 func removeData(request Request) {
 	//get the replicas
-	selector := config.LABEL_PG_CLUSTER + "=" + request.RemoveCluster + "," + config.LABEL_SERVICE_NAME + "=" + request.RemoveCluster + "-replica"
-	pods, err := kubeapi.GetPods(request.Clientset, selector, request.RemoveNamespace)
+	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_SERVICE_NAME + "=" + request.ClusterName + "-replica"
+	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Errorf("error selecting replica pods %s %s", selector, err.Error())
 	}
@@ -82,7 +90,7 @@ func removeData(request Request) {
 			command = append(command, "rm")
 			command = append(command, "-rf")
 			command = append(command, "/pgdata/"+v.ObjectMeta.Labels[config.LABEL_REPLICA_NAME])
-			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, v.Spec.Containers[0].Name, v.Name, request.RemoveNamespace, nil)
+			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, v.Spec.Containers[0].Name, v.Name, request.Namespace, nil)
 			if err != nil {
 				log.Errorf("error execing into remove data pod %s command %s error %s", v.Name, command, err.Error())
 			}
@@ -94,8 +102,8 @@ func removeData(request Request) {
 
 	//primaries should have the label of
 	//the form deployment-name=somedeploymentname and service-name=somecluster
-	selector = config.LABEL_PG_CLUSTER + "=" + request.RemoveCluster + "," + config.LABEL_SERVICE_NAME + "=" + request.RemoveCluster
-	pods, err = kubeapi.GetPods(request.Clientset, selector, request.RemoveNamespace)
+	selector = config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_SERVICE_NAME + "=" + request.ClusterName
+	pods, err = kubeapi.GetPods(request.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Errorf("error selecting primary pod %s %s", selector, err.Error())
 	}
@@ -113,18 +121,49 @@ func removeCluster(request Request) {
 
 func removeUserSecrets(request Request) {
 	//get all that match pg-cluster=db
-	selector := config.LABEL_PG_CLUSTER + "=" + request.RemoveCluster
+	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
-	secrets, err := kubeapi.GetSecrets(request.Clientset, selector, request.RemoveNamespace)
+	secrets, err := kubeapi.GetSecrets(request.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for _, s := range secrets.Items {
-		err := kubeapi.DeleteSecret(request.Clientset, s.ObjectMeta.Name, request.RemoveNamespace)
+		err := kubeapi.DeleteSecret(request.Clientset, s.ObjectMeta.Name, request.Namespace)
 		if err != nil {
 			log.Error(err)
+		}
+	}
+
+}
+
+func removeOnlyReplicaData(request Request) {
+	//get the replica pod only, this is the case where
+	//a user scales down a replica, in this case the DeploymentName
+	//is used to identify the correct pod
+	//in this case, the clustername is the replica deployment name
+	selector := config.LABEL_DEPLOYMENT_NAME + "=" + request.ClusterName
+
+	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
+	if err != nil {
+		log.Errorf("error selecting replica pods %s %s", selector, err.Error())
+	}
+
+	//replicas should have a label on their pod of the
+	//form deployment-name=somedeploymentname
+
+	if len(pods.Items) > 0 {
+		for _, v := range pods.Items {
+			command := make([]string, 0)
+			command = append(command, "rm")
+			command = append(command, "-rf")
+			command = append(command, "/pgdata/"+v.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME])
+			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, v.Spec.Containers[0].Name, v.Name, request.Namespace, nil)
+			if err != nil {
+				log.Errorf("error execing into remove data pod %s command %s error %s", v.Name, command, err.Error())
+			}
+			log.Infof("stdout=[%s] stderr=[%s]", stdout, stderr)
 		}
 	}
 

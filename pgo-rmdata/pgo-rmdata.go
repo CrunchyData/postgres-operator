@@ -21,19 +21,19 @@ var Clientset *kubernetes.Clientset
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	request = rmdata.Request{
-		RemoveData:      false,
-		IsReplica:       false,
-		IsBackup:        false,
-		RemoveBackup:    false,
-		RemoveCluster:   "",
-		RemoveNamespace: "",
+		RemoveData:   false,
+		IsReplica:    false,
+		IsBackup:     false,
+		RemoveBackup: false,
+		ClusterName:  "",
+		Namespace:    "",
 	}
 	flag.BoolVar(&request.RemoveData, "remove-data", false, "")
 	flag.BoolVar(&request.IsReplica, "is-replica", false, "")
 	flag.BoolVar(&request.IsBackup, "is-backup", false, "")
 	flag.BoolVar(&request.RemoveBackup, "remove-backup", false, "")
-	flag.StringVar(&request.RemoveCluster, "pg-cluster", "", "")
-	flag.StringVar(&request.RemoveNamespace, "namespace", "", "")
+	flag.StringVar(&request.ClusterName, "pg-cluster", "", "")
+	flag.StringVar(&request.Namespace, "namespace", "", "")
 	flag.Parse()
 
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
