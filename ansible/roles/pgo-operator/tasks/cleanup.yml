@@ -111,7 +111,7 @@
 
 - name: Delete existing Service Accounts (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete serviceaccount pgo-backrest -n {{ item }}
+    {{ kubectl_or_oc }} delete serviceaccount pgo-target pgo-backrest -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
