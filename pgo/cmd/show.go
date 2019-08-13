@@ -104,7 +104,7 @@ func init() {
 	ShowCmd.AddCommand(ShowScheduleCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
-	ShowBackupCmd.Flags().StringVarP(&showBackupType, "backup-type", "", "pgbackrest", "The backup type output to list. Valid choices are pgbasebackup or pgbackrest (default).")
+	ShowBackupCmd.Flags().StringVarP(&showBackupType, "backup-type", "", "pgbackrest", "The backup type output to list. Valid choices are pgbasebackup or pgbackrest.")
 	ShowBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
