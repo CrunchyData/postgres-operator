@@ -248,13 +248,22 @@ func removeAddons(request Request) {
 
 func removeServices(request Request) {
 
-	//remove the primary service
-	kubeapi.DeleteService(request.Clientset, request.ClusterName, request.Namespace)
+	//remove any service for this cluster
 
-	//remove replica service
-	_, found, _ := kubeapi.GetService(request.Clientset, request.ClusterName+"-replica", request.Namespace)
-	if found {
-		kubeapi.DeleteService(request.Clientset, request.ClusterName+"-replica", request.Namespace)
+	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
+
+	services, err := kubeapi.GetServices(request.Clientset, selector, request.Namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for i := 0; i < len(services.Items); i++ {
+		svc := services.Items[i]
+		err := kubeapi.DeleteService(request.Clientset, svc.Name, request.Namespace)
+		if err != nil {
+			log.Error(err)
+		}
 	}
 
 }
