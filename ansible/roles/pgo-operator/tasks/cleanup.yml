@@ -54,6 +54,28 @@
   tags:
   - uninstall
 
+- name: Delete PG Cluster Services
+  shell: |
+    {{ kubectl_or_oc }} delete services --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete PG PVC's
+  shell: |
+    {{ kubectl_or_oc }} delete pvc --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
 - name: Delete Operator Deployment
   shell: |
     {{ kubectl_or_oc }} delete deployment postgres-operator -n {{ pgo_operator_namespace }}

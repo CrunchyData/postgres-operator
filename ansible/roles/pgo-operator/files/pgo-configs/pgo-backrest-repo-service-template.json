@@ -4,6 +4,7 @@
         "metadata": {
             "name": "{{.Name}}",
             "labels": {
+                "vendor": "crunchydata",
                 "name": "{{.Name}}",
                 "pgo-backrest-repo": "true",
                 "pg-cluster": "{{.ClusterName}}"
