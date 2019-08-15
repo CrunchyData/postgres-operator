@@ -1,6 +1,7 @@
 package rmdata
 
 import (
+	"errors"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -8,6 +9,8 @@ import (
 	"k8s.io/api/core/v1"
 	"time"
 )
+
+const MAX_TRIES = 6
 
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
@@ -20,8 +23,17 @@ func Delete(request Request) {
 
 		if request.IsBackup {
 		} else if request.IsReplica {
+			//this is the case where we scale down
 			removeOnlyReplicaData(request)
 			removeServices(request)
+			pvcList, err := getReplicaPVC(request)
+			if err != nil {
+				log.Error(err)
+			}
+			err = removeReplica(request)
+			if err == nil {
+				removePVCs(pvcList, request)
+			}
 		} else {
 			//remove pgdata
 			removeData(request)
@@ -34,46 +46,30 @@ func Delete(request Request) {
 
 			removeClusterJobs(request)
 
-			tries := 0
-			maxtries := 4
-			found := false
-			for i := 0; i < maxtries; i++ {
-				found = false
-				deployments, err := kubeapi.GetDeployments(request.Clientset,
-					config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
-				if err != nil {
-					log.Error(err)
-				}
-				if len(deployments.Items) > 0 {
-					removeCluster(request)
-					tries++
-					found = true
-				}
-				if found {
-					log.Info("sleeping to wait for Deployments to fully terminate")
-					time.Sleep(time.Second * time.Duration(4))
-				}
+			err := removeCluster(request)
+			if err != nil {
+				log.Error(err)
 			}
-
-			removeServices(request)
-
-			if request.RemoveBackup {
-				removeBackrestRepo(request)
-			}
-
-			removeAddons(request)
-
-			removePgreplicas(request)
-
-			removePgtasks(request)
-
-			if request.RemoveBackup {
-				removeBackups(request)
-			}
-
-			removePVCs(pvcList, request)
-
 		}
+
+		removeServices(request)
+
+		if request.RemoveBackup {
+			removeBackrestRepo(request)
+		}
+
+		removeAddons(request)
+
+		removePgreplicas(request)
+
+		removePgtasks(request)
+
+		if request.RemoveBackup {
+			removeBackups(request)
+		}
+
+		removePVCs(pvcList, request)
+
 	}
 
 }
@@ -184,12 +180,13 @@ func removeClusterJobs(request Request) {
 	}
 }
 
-func removeCluster(request Request) {
+func removeCluster(request Request) error {
 
 	deployments, err := kubeapi.GetDeployments(request.Clientset,
 		config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
 	if err != nil {
 		log.Error(err)
+		return err
 	}
 
 	for _, d := range deployments.Items {
@@ -198,6 +195,57 @@ func removeCluster(request Request) {
 			log.Error(err)
 		}
 	}
+
+	var completed bool
+	for i := 0; i < MAX_TRIES; i++ {
+		deployments, err := kubeapi.GetDeployments(request.Clientset,
+			config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
+		if err != nil {
+			log.Error(err)
+		}
+		if len(deployments.Items) > 0 {
+			log.Info("sleeping to wait for Deployments to fully terminate")
+			time.Sleep(time.Second * time.Duration(4))
+		} else {
+			completed = true
+		}
+	}
+	if !completed {
+		return errors.New("could not terminate all cluster deployments")
+	}
+	return nil
+}
+func removeReplica(request Request) error {
+
+	d, found, err := kubeapi.GetDeployment(request.Clientset,
+		request.ClusterName, request.Namespace)
+	if !found || err != nil {
+		log.Error(err)
+		return err
+	}
+
+	err = kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	//wait for the deployment to go away fully
+	var completed bool
+	for i := 0; i < MAX_TRIES; i++ {
+		_, found, _ := kubeapi.GetDeployment(request.Clientset,
+			request.ClusterName, request.Namespace)
+		if found {
+			log.Info("sleeping to wait for Deployments to fully terminate")
+			time.Sleep(time.Second * time.Duration(4))
+		} else {
+			completed = false
+		}
+	}
+	if !completed {
+		return errors.New("could not delete replica deployment within max tries")
+	}
+	return nil
 }
 
 func removeUserSecrets(request Request) {
@@ -373,6 +421,19 @@ func getPVCs(request Request) ([]string, error) {
 	return pvcList, nil
 
 }
+
+//get the pvc for this replica deployment
+func getReplicaPVC(request Request) ([]string, error) {
+	pvcList := make([]string, 0)
+
+	//at this point, the naming convention is useful
+	//and ClusterName is the replica deployment name
+	//when isReplica=true
+	pvcList = append(pvcList, request.ClusterName)
+	return pvcList, nil
+
+}
+
 func removePVCs(pvcList []string, request Request) error {
 
 	for _, p := range pvcList {
