@@ -150,8 +150,9 @@ var UpdatePgouserCmd = &cobra.Command{
 	Use:   "pgouser",
 	Short: "Update a pgouser",
 	Long: `UPDATE allows you to update a pgo user. For example:
-		pgo update pgouser myuser --change-password
-		pgo update pgouser myuser --change-password --password=somepassword --no-prompt`,
+		pgo update pgouser myuser --pgouser-roles=somerole
+		pgo update pgouser myuser --pgouser-password=somepassword --pgouser-roles=somerole
+		pgo update pgouser myuser --pgouser-password=somepassword --no-prompt`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {
