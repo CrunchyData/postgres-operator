@@ -44,15 +44,40 @@ can install:
 
 ## Obtaining Operator Ansible Role
 
-The Crunchy PostgreSQL Operator Roles are available here:
+There are two ways to obtain the Crunchy PostgreSQL Operator Roles:
 
 * Clone the [postgres-operator project](https://github.com/CrunchyData/postgres-operator)
 
+* `postgres-operator-playbooks` RPM provided for Crunchy customers via the [Crunchy Access Portal](https://access.crunchydata.com/).
 
 ### GitHub Installation
 
 All necessary files (inventory, main playbook and roles) can be found in the `ansible` 
 directory in the  [postgres-operator project](https://github.com/CrunchyData/postgres-operator).
+
+### RPM Installation using Yum
+
+Available to Crunchy customers is an RPM containing all the necessary Ansible roles 
+and files required for installation using Ansible.  The RPM can be found in Crunchy's 
+yum repository.  For information on setting up `yum` to use the Crunchy repoistory, 
+see the [Crunchy Access Portal](https://access.crunchydata.com/).
+
+To install the Crunchy PostgreSQL Operator Ansible roles using `yum`, run the following 
+command on a RHEL or CentOS host:
+
+```bash
+sudo yum install postgres-operator-playbooks
+```
+
+* Ansible roles can be found in: `/usr/share/ansible/roles/crunchydata`
+* Ansible playbooks/inventory files can be found in: `/usr/share/ansible/postgres-operator/playbooks`
+
+Once installed users should take a copy of the `inventory` file included in the installation 
+using the following command:
+
+```bash
+cp /usr/share/ansible/postgres-operator/playbooks/inventory ${HOME?}
+```
 
 ## Configuring the Inventory File
 
