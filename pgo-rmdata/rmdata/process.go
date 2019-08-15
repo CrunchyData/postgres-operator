@@ -15,6 +15,16 @@ const MAX_TRIES = 6
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
 
+	//the user had done something like:
+	//pgo delete cluster mycluster --delete-backups
+	if request.RemoveBackup {
+		removeBackrestRepo(request)
+		removeBackupJobs(request)
+		removeBackups(request)
+	}
+
+	//the user had done something like:
+	//pgo delete cluster mycluster --delete-data
 	if request.RemoveData {
 		pvcList, err := getPVCs(request)
 		if err != nil {
@@ -22,6 +32,15 @@ func Delete(request Request) {
 		}
 
 		if request.IsBackup {
+			//the case of removing a backup using
+			//pgo delete backup, only applies to
+			//backup-type=pgbasebackup
+			//currently we only support removing the PVC
+			//and not the backup contents
+			removeBackupJobs(request)
+			pvcList := make([]string, 0)
+			pvcList = append(pvcList, request.ClusterName+"-backup")
+			removePVCs(pvcList, request)
 		} else if request.IsReplica {
 			//this is the case where we scale down
 			removeOnlyReplicaData(request)
@@ -35,40 +54,19 @@ func Delete(request Request) {
 				removePVCs(pvcList, request)
 			}
 		} else {
-			//remove pgdata
+
+			//this is the case where we delete an entire
+			//pg cluster
 			removeData(request)
-
-			//remove secrets only if this is an entire cluster being
-			//removed
-			if request.IsReplica == false && request.IsBackup == false {
-				removeUserSecrets(request)
-			}
-
+			removeUserSecrets(request)
 			removeClusterJobs(request)
-
-			err := removeCluster(request)
-			if err != nil {
-				log.Error(err)
-			}
+			removeCluster(request)
+			removeServices(request)
+			removeAddons(request)
+			removePgreplicas(request)
+			removePgtasks(request)
+			removePVCs(pvcList, request)
 		}
-
-		removeServices(request)
-
-		if request.RemoveBackup {
-			removeBackrestRepo(request)
-		}
-
-		removeAddons(request)
-
-		removePgreplicas(request)
-
-		removePgtasks(request)
-
-		if request.RemoveBackup {
-			removeBackups(request)
-		}
-
-		removePVCs(pvcList, request)
 
 	}
 
@@ -180,13 +178,13 @@ func removeClusterJobs(request Request) {
 	}
 }
 
-func removeCluster(request Request) error {
+func removeCluster(request Request) {
 
 	deployments, err := kubeapi.GetDeployments(request.Clientset,
 		config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
 	if err != nil {
 		log.Error(err)
-		return err
+		return
 	}
 
 	for _, d := range deployments.Items {
@@ -211,9 +209,8 @@ func removeCluster(request Request) error {
 		}
 	}
 	if !completed {
-		return errors.New("could not terminate all cluster deployments")
+		log.Error("could not terminate all cluster deployments")
 	}
-	return nil
 }
 func removeReplica(request Request) error {
 
@@ -446,4 +443,35 @@ func removePVCs(pvcList []string, request Request) error {
 
 	return nil
 
+}
+
+func removeBackupJobs(request Request) {
+	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_PGBACKUP + "=true"
+	jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	for i := 0; i < len(jobs.Items); i++ {
+		job := jobs.Items[i]
+		err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	var completed bool
+	for i := 0; i < MAX_TRIES; i++ {
+		jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+		if len(jobs.Items) > 0 || err != nil {
+			log.Info("sleeping to wait for backup jobs to fully terminate")
+			time.Sleep(time.Second * time.Duration(4))
+		} else {
+			completed = true
+			break
+		}
+	}
+	if !completed {
+		log.Error("could not remove all backup jobs")
+	}
 }
