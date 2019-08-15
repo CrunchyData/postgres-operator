@@ -6,12 +6,18 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
+	"time"
 )
 
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
 
 	if request.RemoveData {
+		pvcList, err := getPVCs(request)
+		if err != nil {
+			log.Error(err)
+		}
+
 		if request.IsBackup {
 		} else if request.IsReplica {
 			removeOnlyReplicaData(request)
@@ -28,7 +34,26 @@ func Delete(request Request) {
 
 			removeClusterJobs(request)
 
-			removeCluster(request)
+			tries := 0
+			maxtries := 4
+			found := false
+			for i := 0; i < maxtries; i++ {
+				found = false
+				deployments, err := kubeapi.GetDeployments(request.Clientset,
+					config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
+				if err != nil {
+					log.Error(err)
+				}
+				if len(deployments.Items) > 0 {
+					removeCluster(request)
+					tries++
+					found = true
+				}
+				if found {
+					log.Info("sleeping to wait for Deployments to fully terminate")
+					time.Sleep(time.Second * time.Duration(4))
+				}
+			}
 
 			removeServices(request)
 
@@ -45,6 +70,9 @@ func Delete(request Request) {
 			if request.RemoveBackup {
 				removeBackups(request)
 			}
+
+			removePVCs(pvcList, request)
+
 		}
 	}
 
@@ -298,7 +326,7 @@ func removePgreplicas(request Request) {
 		return
 	}
 
-	log.Debug("pgreplicas found len is %d\n", len(replicaList.Items))
+	log.Debugf("pgreplicas found len is %d\n", len(replicaList.Items))
 
 	for _, r := range replicaList.Items {
 		err = kubeapi.Deletepgreplica(request.RESTClient, r.Spec.Name, request.Namespace)
@@ -323,5 +351,38 @@ func removePgtasks(request Request) {
 	for _, r := range taskList.Items {
 		err = kubeapi.Deletepgtask(request.RESTClient, r.Spec.Name, request.Namespace)
 	}
+
+}
+
+//get the pvc's for this cluster leaving out the backrest repo pvc
+func getPVCs(request Request) ([]string, error) {
+	pvcList := make([]string, 0)
+	deployments, err := kubeapi.GetDeployments(request.Clientset,
+		config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
+	if err != nil {
+		log.Error(err)
+		return pvcList, err
+	}
+
+	for _, d := range deployments.Items {
+		if d.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "" {
+			pvcList = append(pvcList, d.ObjectMeta.Name)
+		}
+	}
+
+	return pvcList, nil
+
+}
+func removePVCs(pvcList []string, request Request) error {
+
+	for _, p := range pvcList {
+		log.Infof("deleting pvc %s", p)
+		err := kubeapi.DeletePVC(request.Clientset, p, request.Namespace)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	return nil
 
 }
