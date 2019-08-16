@@ -389,6 +389,7 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = db
 	secret.ObjectMeta.Labels[config.LABEL_PGPOOL] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	secret.Data = make(map[string][]byte)
 	secret.Data["pgpool.conf"] = pgpoolConfBytes
 	secret.Data["pool_hba.conf"] = pgpoolHBABytes

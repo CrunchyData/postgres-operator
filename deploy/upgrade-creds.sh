@@ -49,14 +49,13 @@ do
         exit 1
     fi
 
-    export ROLENAME=$role
-    export PGO_ROLENAME=`echo -n $ROLENAME | base64 --wrap=0`
-    export PGO_PERMS=`echo -n $perms | base64 --wrap=0`
+    export PGO_ROLENAME=$role
+    export PGO_PERMS=$perms
 
     # see if the bootstrap pgorole Secret exists or not, deleting it if found
-    $PGO_CMD get secret pgorole-$ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null
+    $PGO_CMD get secret pgorole-$PGO_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null
     if [ $? -eq 0 ]; then
-        $PGO_CMD delete secret pgorole-$ROLENAME -n $PGO_OPERATOR_NAMESPACE
+        $PGO_CMD delete secret pgorole-$PGO_ROLENAME -n $PGO_OPERATOR_NAMESPACE
     fi
 
     expenv -f $DIR/pgorole.yaml | $PGO_CMD create -f -
@@ -71,18 +70,14 @@ do
         exit 1
     fi
 
-    export USERNAME=$user
-    export PASSWORD=$pass
-    export ROLENAME=$role
+    export PGO_USERNAME=$user
+    export PGO_PASSWORD=$pass
+    export PGO_ROLENAME=$role
 
     # see if the bootstrap pgouser Secret exists or not, deleting it if found
-    export PGO_USERNAME=`echo -n $USERNAME | base64 --wrap=0`
-    export PGO_PASSWORD=`echo -n $PASSWORD | base64 --wrap=0`
-    export PGO_ROLENAME=`echo -n $ROLENAME | base64 --wrap=0`
-
-    $PGO_CMD get secret pgouser-$USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null
+    $PGO_CMD get secret pgouser-$PGO_USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null
     if [ $? -eq 0 ]; then
-        $PGO_CMD delete secret pgouser-$USERNAME -n $PGO_OPERATOR_NAMESPACE
+        $PGO_CMD delete secret pgouser-$PGO_USERNAME -n $PGO_OPERATOR_NAMESPACE
     fi
     expenv -f $DIR/pgouser.yaml | $PGO_CMD create -f -
 done < "$USER_INPUT"

@@ -16,13 +16,15 @@ package util
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/kubeapi"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 const lowercharset = "abcdefghijklmnopqrstuvwxyz"
@@ -44,6 +46,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	secret.Name = secretName
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels["pg-cluster"] = db
+	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	secret.Data = make(map[string][]byte)
 	secret.Data["username"] = []byte(enUsername)
 	secret.Data["password"] = []byte(password)

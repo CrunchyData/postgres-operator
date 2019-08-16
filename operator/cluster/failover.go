@@ -19,6 +19,7 @@ package cluster
 */
 
 import (
+	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -26,13 +27,17 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
+	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 // FailoverBase ...
+// gets called first on a failover
 func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
 	var err error
 
@@ -48,6 +53,13 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	_, err = kubeapi.Getpgcluster(client, &cluster,
 		clusterName, namespace)
 	if err != nil {
+		return
+	}
+
+	//create marker (clustername, namespace)
+	err = PatchpgtaskFailoverStatus(client, task, namespace)
+	if err != nil {
+		log.Error("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
 		return
 	}
 
@@ -148,6 +160,8 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		log.Error(err)
 	}
 
+	//remove marker
+
 }
 
 func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string) {
@@ -188,5 +202,40 @@ func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string)
 	newInstance.ObjectMeta.Labels[config.LABEL_NAME] = uniqueName
 
 	kubeapi.Createpgreplica(client, newInstance, ns)
+
+}
+
+func PatchpgtaskFailoverStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtask, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Spec.Parameters[config.LABEL_FAILOVER_STARTED] = time.Now().Format("2006-01-02.15.04.05")
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgtaskResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
 
 }

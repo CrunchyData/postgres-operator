@@ -3,16 +3,86 @@
   set_fact:
     kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
   tags:
-  - deprovision
+  - uninstall
   - update
 
-- name: Delete existing Deployments
+- name: Find watched namespaces
+  shell: |
+    {{ kubectl_or_oc }} get namespaces -o json --selector=vendor=crunchydata
+  register: ns_result 
+  tags:
+  - uninstall
+  - update
+
+- name: Set Watched Namespaces
+  set_fact:
+    watched_namespaces: "{{ ns_result.stdout | from_json | json_query('items[*].metadata.name') }}"
+  tags:
+  - uninstall
+  - update
+
+- name: Delete PG Cluster Deployments
+  shell: |
+    {{ kubectl_or_oc }} delete deployment --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete PG Cluster Jobs
+  shell: |
+    {{ kubectl_or_oc }} delete jobs --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete PG Cluster Secrets
+  shell: |
+    {{ kubectl_or_oc }} delete secrets --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete PG Cluster Services
+  shell: |
+    {{ kubectl_or_oc }} delete services --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete PG PVC's
+  shell: |
+    {{ kubectl_or_oc }} delete pvc --selector=vendor=crunchydata -n {{ item }}
+  with_items:
+  - "{{ watched_namespaces }}"
+  when: not preserve_pg_clusters|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete Operator Deployment
   shell: |
     {{ kubectl_or_oc }} delete deployment postgres-operator -n {{ pgo_operator_namespace }}
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
 
 - name: Delete existing ConfigMaps
@@ -21,7 +91,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
 
 - name: Delete existing secrets (Operator Namespace)
@@ -31,7 +101,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
 
 - name: Delete pgo.tls secret
@@ -40,7 +110,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
 
 - name: Delete existing Services
   shell: |
@@ -48,7 +118,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
 
 - name: Delete existing Service Account (Operator Namespace)
@@ -57,19 +127,19 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
 - name: Delete existing Service Accounts (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete serviceaccount pgo-backrest -n {{ item }}
+    {{ kubectl_or_oc }} delete serviceaccount pgo-target pgo-backrest -n {{ item }}
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -81,7 +151,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -90,7 +160,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -102,7 +172,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -110,11 +180,11 @@
   shell: |
     {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding -n {{ item }}
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -122,11 +192,11 @@
   shell: |
     {{ kubectl_or_oc }} delete rolebinding pgo-target-role-binding -n {{ item }}
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -136,7 +206,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -144,11 +214,11 @@
   shell: |
     {{ kubectl_or_oc }} delete role pgo-backrest-role -n {{ item }}
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -156,11 +226,11 @@
   shell: |
     {{ kubectl_or_oc }} delete role pgo-target-role -n {{ item }}
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -170,7 +240,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
   when: create_rbac|bool
 
@@ -178,10 +248,10 @@
   shell: |
     {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ item }} --all
   with_items:
-  - "{{ all_namespaces }}"
+  - "{{ watched_namespaces }}"
   ignore_errors: yes
   no_log: false
-  tags: deprovision
+  tags: uninstall
 
 - name: Delete Custom Resource Definitions
   shell: |
@@ -189,17 +259,18 @@
         pgpolicies.crunchydata.com pgreplicas.crunchydata.com pgtasks.crunchydata.com
   ignore_errors: yes
   no_log: false
-  tags: deprovision
+  tags: uninstall
 
 - name: Remove Labels from Watched Namespaces
   shell: |
     {{ kubectl_or_oc }} label namespace {{ item }} vendor- pgo-created-by- pgo-installation-name-
   ignore_errors: yes
+  when: not delete_watched_namespaces|bool
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   no_log: false
   tags:
-  - deprovision
+  - uninstall
   - update
 
 - name: Check for output directory
@@ -208,7 +279,7 @@
   register: out_dir
   ignore_errors: yes
   no_log: false
-  tags: deprovision
+  tags: uninstall
 
 - name: Delete local output directory
   file:
@@ -217,7 +288,7 @@
   when: out_dir.stat.exists
   ignore_errors: yes
   no_log: false
-  tags: deprovision
+  tags: uninstall
 
 - name: Ensure output directory exists
   file:
@@ -235,4 +306,4 @@
   when: pgo_client_install == "true"
   ignore_errors: yes
   no_log: false
-  tags: deprovision
+  tags: uninstall

@@ -5,10 +5,10 @@
   when: delete_watched_namespaces|bool
   ignore_errors: yes
   with_items:
-  - "{{ namespace.split(',') }}"
+  - "{{ watched_namespaces }}"
   no_log: false
   tags:
-  - deprovision
+  - uninstall
 
 - name: Delete Operator Namespace (Openshift)
   shell: |
@@ -17,4 +17,4 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision
+  - uninstall

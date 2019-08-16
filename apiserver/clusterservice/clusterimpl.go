@@ -39,7 +39,7 @@ import (
 	_ "github.com/lib/pq"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -1505,6 +1505,7 @@ func createBackrestRepoSecrets(clusterName, namespace string) error {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET),
 			Labels: map[string]string{
+				config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
 				config.LABEL_PG_CLUSTER:        clusterName,
 				config.LABEL_PGO_BACKREST_REPO: "true",
 			},

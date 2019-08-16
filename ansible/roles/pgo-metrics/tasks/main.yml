@@ -26,15 +26,15 @@
   tags: always
 
 - include_tasks: cleanup.yml
-  tags: [deprovision-metrics, upgrade-metrics]
+  tags: [uninstall-metrics, upgrade-metrics]
 
 - include_tasks: kubernetes_cleanup.yml
   when: kubernetes_context is defined
-  tags: [deprovision-metrics]
+  tags: [uninstall-metrics]
 
 - include_tasks: openshift_cleanup.yml
   when: openshift_host is defined
-  tags: [deprovision-metrics]
+  tags: [uninstall-metrics]
 
 - name: Use kubectl or oc
   set_fact:
