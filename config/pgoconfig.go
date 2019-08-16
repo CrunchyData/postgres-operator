@@ -204,6 +204,8 @@ type ClusterStruct struct {
 	Badger                  bool   `yaml:"Badger"`
 	Port                    string `yaml:"Port"`
 	User                    string `yaml:"User"`
+	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
+	ArchiveMode             string `yaml:"ArchiveMode"`
 	Database                string `yaml:"Database"`
 	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
 	PasswordLength          string `yaml:"PasswordLength"`
