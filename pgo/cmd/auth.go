@@ -66,8 +66,19 @@ func UserHomeDir() string {
 }
 
 func parseCredentials(dat string) msgs.BasicAuthCredentials {
+	lines := strings.Split(strings.TrimSpace(dat), "\n")
+	if (len(lines) != 1){
+		log.Debug("found more than one line in credentials file")
+		fmt.Println("unable to parse credentials in pgouser file",)
+		os.Exit(2)
+	}
 
-	fields := strings.Split(strings.TrimSpace(dat), ":")
+	fields := strings.Split(lines[0], ":")
+	if len(fields) != 2 {
+		log.Debug("invalid credentials: expecting \"<username>:<password>\"")
+		fmt.Println("unable to parse credentials in pgouser file",)
+		os.Exit(2)
+	}
 	log.Debugf("%v", fields)
 	log.Debugf("username=[%s] password=[%s]", fields[0], fields[1])
 
