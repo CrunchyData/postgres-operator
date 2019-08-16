@@ -8,6 +8,8 @@ LABEL Vendor="Crunchy Data Solutions" \
 
 RUN yum -y update && yum -y clean all
 
+COPY redhat/licenses /licenses
+
 RUN mkdir -p /opt/cpm/bin 
 ADD bin/pgo-rmdata/ /opt/cpm/bin
 ADD bin/uid_postgres.sh /opt/cpm/bin
