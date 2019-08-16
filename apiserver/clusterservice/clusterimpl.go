@@ -583,6 +583,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 		}
 
+		//Set archive timeout value
+		userLabelsMap[config.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
+
 		//validate --pgpool-secret
 		if request.PgpoolSecret != "" {
 			var found bool
