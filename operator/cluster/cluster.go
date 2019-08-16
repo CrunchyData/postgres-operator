@@ -69,6 +69,7 @@ func init() {
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
+	log.Debugf("*** Entering AddClusterBase ***  %s", cl.Spec.ClusterName)
 	if cl.Spec.Status == crv1.UpgradeCompletedStatus {
 		log.Warn("crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate")
 		return
@@ -165,6 +166,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			log.Error("error in replicas value " + err.Error())
 			return
 		}
+	
+		log.Debugf("Cluster ReplicaCount: %s", cl.Spec.Replicas)
+		
 		//create a CRD for each replica
 		for i := 0; i < replicaCount; i++ {
 			spec := crv1.PgreplicaSpec{}
