@@ -101,8 +101,9 @@ func DeleteBackup(clusterName, ns string) msgs.DeleteBackupResponse {
 	deleteBackups := true
 	isReplica := false
 	isBackup := true
+	replicaName := ""
 
-	err = apiserver.CreateRMDataTask(clusterName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
+	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

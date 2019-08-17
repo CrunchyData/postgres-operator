@@ -14,6 +14,7 @@
 # limitations under the License.
 
 echo [$PG_CLUSTER] 
+echo [$REPLICA_NAME] 
 echo [$NAMESPACE] 
 echo [$REMOVE_DATA] 
 echo [$REMOVE_BACKUP] 
@@ -21,6 +22,7 @@ echo [$IS_BACKUP]
 echo [$IS_REPLICA] 
 
 /usr/local/bin/pgo-rmdata -pg-cluster=$PG_CLUSTER \
+	-replica-name=$REPLICA_NAME \
 	-namespace=$NAMESPACE \
 	-remove-data=$REMOVE_DATA \
 	-remove-backup=$REMOVE_BACKUP \

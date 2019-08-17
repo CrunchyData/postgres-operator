@@ -155,7 +155,11 @@ func (c *PgtaskController) processNextItem() bool {
 
 	case crv1.PgtaskDeleteData:
 		log.Debug("delete data task added")
-		taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, &tmpTask)
+		if !dupeDeleteData(c.PgtaskClient, &tmpTask, keyNamespace) {
+			taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+		} else {
+			log.Debug("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
+		}
 	case crv1.PgtaskDeleteBackups:
 		log.Debug("delete backups task added")
 		taskoperator.RemoveBackups(keyNamespace, c.PgtaskClientset, &tmpTask)
@@ -270,6 +274,25 @@ func dupeFailover(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) boo
 	}
 
 	if tmp.Spec.Parameters[config.LABEL_FAILOVER_STARTED] == "" {
+		return false
+	}
+
+	return true
+}
+
+//de-dupe logic for a delete data, if the delete data job started
+//parameter is set, it means a delete data job has already been
+//started on this
+func dupeDeleteData(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) bool {
+	tmp := crv1.Pgtask{}
+
+	found, _ := kubeapi.Getpgtask(restClient, &tmp, task.Spec.Name, ns)
+	if !found {
+		//a big time error if this occurs
+		return false
+	}
+
+	if tmp.Spec.Parameters[config.LABEL_DELETE_DATA_STARTED] == "" {
 		return false
 	}
 

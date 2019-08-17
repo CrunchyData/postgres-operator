@@ -6,7 +6,9 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+
 	"time"
 )
 
@@ -15,21 +17,36 @@ const MAX_TRIES = 6
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
 
-	//the user had done something like:
-	//pgo delete cluster mycluster --delete-backups
-	if request.RemoveBackup {
-		removeBackrestRepo(request)
-		removeBackupJobs(request)
-		removeBackups(request)
-	}
-
-	//the user had done something like:
-	//pgo delete cluster mycluster --delete-data
-	if request.RemoveData {
-		pvcList, err := getPVCs(request)
+	//the case of 'pgo scaledown'
+	if request.IsReplica {
+		removeOnlyReplicaData(request)
+		removeReplicaServices(request)
+		pvcList, err := getReplicaPVC(request)
 		if err != nil {
 			log.Error(err)
 		}
+		err = removeReplica(request)
+		if err == nil {
+			removePVCs(pvcList, request)
+		}
+		//delete the pgreplica CRD
+		err = kubeapi.Deletepgreplica(request.RESTClient, request.ReplicaName, request.Namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		//scale down is its own use case so we leave when done
+		return
+	}
+
+	pvcList, err := getPVCs(request)
+	if err != nil {
+		log.Error(err)
+	}
+	//the user had done something like:
+	//pgo delete cluster mycluster --delete-data
+	if request.RemoveData {
 
 		if request.IsBackup {
 			//the case of removing a backup using
@@ -41,34 +58,38 @@ func Delete(request Request) {
 			pvcList := make([]string, 0)
 			pvcList = append(pvcList, request.ClusterName+"-backup")
 			removePVCs(pvcList, request)
-		} else if request.IsReplica {
-			//this is the case where we scale down
-			removeOnlyReplicaData(request)
-			removeServices(request)
-			pvcList, err := getReplicaPVC(request)
-			if err != nil {
-				log.Error(err)
-			}
-			err = removeReplica(request)
-			if err == nil {
-				removePVCs(pvcList, request)
-			}
-		} else {
 
-			//this is the case where we delete an entire
-			//pg cluster
+			//removing a backup pvc is its own case, leave when done
+			return
+
+		} else {
 			removeData(request)
 			removeUserSecrets(request)
-			removeClusterJobs(request)
-			removeCluster(request)
-			removeServices(request)
-			removeAddons(request)
-			removePgreplicas(request)
-			removePgtasks(request)
-			removePVCs(pvcList, request)
 		}
 
 	}
+
+	//the user had done something like:
+	//pgo delete cluster mycluster --delete-backups
+	if request.RemoveBackup {
+		removeBackrestRepo(request)
+		removeBackupJobs(request)
+		removeBackups(request)
+	}
+
+	//handle the case of 'pgo delete cluster mycluster'
+	err = kubeapi.Deletepgcluster(request.RESTClient,
+		request.ClusterName, request.Namespace)
+	if err != nil {
+		log.Error(err)
+	}
+	removeClusterJobs(request)
+	removeCluster(request)
+	removeServices(request)
+	removeAddons(request)
+	removePgreplicas(request)
+	removePgtasks(request)
+	removePVCs(pvcList, request)
 
 }
 
@@ -215,7 +236,7 @@ func removeCluster(request Request) {
 func removeReplica(request Request) error {
 
 	d, found, err := kubeapi.GetDeployment(request.Clientset,
-		request.ClusterName, request.Namespace)
+		request.ReplicaName, request.Namespace)
 	if !found || err != nil {
 		log.Error(err)
 		return err
@@ -231,7 +252,7 @@ func removeReplica(request Request) error {
 	var completed bool
 	for i := 0; i < MAX_TRIES; i++ {
 		_, found, _ := kubeapi.GetDeployment(request.Clientset,
-			request.ClusterName, request.Namespace)
+			request.ReplicaName, request.Namespace)
 		if found {
 			log.Info("sleeping to wait for Deployments to fully terminate")
 			time.Sleep(time.Second * time.Duration(4))
@@ -270,8 +291,7 @@ func removeOnlyReplicaData(request Request) {
 	//get the replica pod only, this is the case where
 	//a user scales down a replica, in this case the DeploymentName
 	//is used to identify the correct pod
-	//in this case, the clustername is the replica deployment name
-	selector := config.LABEL_DEPLOYMENT_NAME + "=" + request.ClusterName
+	selector := config.LABEL_DEPLOYMENT_NAME + "=" + request.ReplicaName
 
 	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
 	if err != nil {
@@ -426,7 +446,7 @@ func getReplicaPVC(request Request) ([]string, error) {
 	//at this point, the naming convention is useful
 	//and ClusterName is the replica deployment name
 	//when isReplica=true
-	pvcList = append(pvcList, request.ClusterName)
+	pvcList = append(pvcList, request.ReplicaName)
 	return pvcList, nil
 
 }
@@ -474,4 +494,33 @@ func removeBackupJobs(request Request) {
 	if !completed {
 		log.Error("could not remove all backup jobs")
 	}
+}
+
+func removeReplicaServices(request Request) {
+
+	//remove the replica service if there is only a single replica
+	//which means we are scaling down the only replica
+
+	var err error
+	var replicaList *appsv1.DeploymentList
+	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_SERVICE_NAME + "=" + request.ClusterName + "-replica"
+	replicaList, err = kubeapi.GetDeployments(request.Clientset, selector, request.Namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if len(replicaList.Items) == 0 {
+		log.Error("no replicas found for this cluster")
+		return
+	}
+
+	if len(replicaList.Items) == 1 {
+		log.Debug("removing replica service when scaling down to 0 replicas")
+		err = kubeapi.DeleteService(request.Clientset, request.ClusterName+"-replica", request.Namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 }

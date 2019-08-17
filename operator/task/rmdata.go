@@ -23,32 +23,49 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"os"
+	"time"
 )
 
 type rmdatajobTemplateFields struct {
 	JobName            string
 	Name               string
 	ClusterName        string
+	ReplicaName        string
 	PGOImagePrefix     string
 	PGOImageTag        string
 	SecurityContext    string
 	ContainerResources string
-	RemoveData         bool
-	RemoveBackup       bool
-	IsBackup           bool
-	IsReplica          bool
+	RemoveData         string
+	RemoveBackup       string
+	IsBackup           string
+	IsReplica          string
 }
 
 // RemoveData ...
-func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask) {
+
+	//create marker (clustername, namespace)
+	err := PatchpgtaskDeleteDataStatus(restclient, task, namespace)
+	if err != nil {
+		log.Error("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
+		return
+	}
 
 	//create the Job to remove the data
 	//pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
 	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
+	replicaName := task.Spec.Parameters[config.LABEL_REPLICA_NAME]
+	isReplica := task.Spec.Parameters[config.LABEL_IS_REPLICA]
+	isBackup := task.Spec.Parameters[config.LABEL_IS_BACKUP]
+	removeData := task.Spec.Parameters[config.LABEL_DELETE_DATA]
+	removeBackup := task.Spec.Parameters[config.LABEL_DELETE_BACKUPS]
 
 	cr := ""
 	if operator.Pgo.DefaultRmdataResources != "" {
@@ -67,10 +84,11 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		JobName:            jobName,
 		Name:               task.Spec.Name,
 		ClusterName:        clusterName,
-		RemoveData:         true,
-		RemoveBackup:       true,
-		IsReplica:          true,
-		IsBackup:           true,
+		ReplicaName:        replicaName,
+		RemoveData:         removeData,
+		RemoveBackup:       removeBackup,
+		IsReplica:          isReplica,
+		IsBackup:           isBackup,
 		PGOImagePrefix:     operator.Pgo.Pgo.PGOImagePrefix,
 		PGOImageTag:        operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:    util.CreateSecContext(task.Spec.StorageSpec.Fsgroup, task.Spec.StorageSpec.SupplementalGroups),
@@ -79,7 +97,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 
 	var doc2 bytes.Buffer
-	err := config.RmdatajobTemplate.Execute(&doc2, jobFields)
+	err = config.RmdatajobTemplate.Execute(&doc2, jobFields)
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -103,5 +121,40 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, task *crv1.Pg
 		return
 	}
 	log.Debugf("successfully created rmdata job %s", jobname)
+
+}
+
+func PatchpgtaskDeleteDataStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtask, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Spec.Parameters[config.LABEL_DELETE_DATA_STARTED] = time.Now().Format("2006-01-02.15.04.05")
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgtaskResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
 
 }

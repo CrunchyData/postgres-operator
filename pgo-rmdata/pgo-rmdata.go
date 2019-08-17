@@ -26,6 +26,7 @@ func main() {
 		IsBackup:     false,
 		RemoveBackup: false,
 		ClusterName:  "",
+		ReplicaName:  "",
 		Namespace:    "",
 	}
 	flag.BoolVar(&request.RemoveData, "remove-data", false, "")
@@ -33,6 +34,7 @@ func main() {
 	flag.BoolVar(&request.IsBackup, "is-backup", false, "")
 	flag.BoolVar(&request.RemoveBackup, "remove-backup", false, "")
 	flag.StringVar(&request.ClusterName, "pg-cluster", "", "")
+	flag.StringVar(&request.ReplicaName, "replica-name", "", "")
 	flag.StringVar(&request.Namespace, "namespace", "", "")
 	flag.Parse()
 

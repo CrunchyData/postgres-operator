@@ -80,31 +80,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 
 	for _, cluster := range clusterList.Items {
 
-		if deleteData {
-			log.Debugf("deleting data on cluster %s", cluster.Spec.Name)
-			taskName := cluster.Spec.Name + "-rmdata"
-			log.Debugf("creating taskName %s", taskName)
-			isBackup := false
-			isReplica := false
+		log.Debugf("deleting cluster %s", cluster.Spec.Name)
+		taskName := cluster.Spec.Name + "-rmdata"
+		log.Debugf("creating taskName %s", taskName)
+		isBackup := false
+		isReplica := false
+		replicaName := ""
 
-			err := apiserver.CreateRMDataTask(cluster.Spec.Name, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
-			if err != nil {
-				log.Debugf("error on creating rmdata task %s", err.Error())
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-		}
-
-		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
-			cluster.Spec.Name, ns)
+		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 		if err != nil {
+			log.Debugf("error on creating rmdata task %s", err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
-		} else {
-			response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 		}
+
+		response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 
 	}
 

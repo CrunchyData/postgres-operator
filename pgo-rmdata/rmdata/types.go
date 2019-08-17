@@ -15,10 +15,11 @@ type Request struct {
 	IsBackup     bool
 	IsReplica    bool
 	ClusterName  string
+	ReplicaName  string
 	Namespace    string
 }
 
 func (x Request) String() string {
-	msg := fmt.Sprintf("Request: Cluster [%s] Namespace [%s] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]", x.ClusterName, x.Namespace, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
+	msg := fmt.Sprintf("Request: Cluster [%s] Namespace [%s] ReplicaName [%] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]", x.ClusterName, x.Namespace, x.ReplicaName, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
 	return msg
 }
