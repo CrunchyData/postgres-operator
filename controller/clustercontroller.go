@@ -163,7 +163,7 @@ func (c *PgclusterController) processNextItem() bool {
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	oldcluster := oldObj.(*crv1.Pgcluster)
 	newcluster := newObj.(*crv1.Pgcluster)
-	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
+	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
 
 	//handle the case for when the autofail lable is updated
 	if newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] != "" {
@@ -197,8 +197,8 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
-	cluster := obj.(*crv1.Pgcluster)
-	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+	//cluster := obj.(*crv1.Pgcluster)
+	//	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 
 	//handle pgcluster cleanup
 	//	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)

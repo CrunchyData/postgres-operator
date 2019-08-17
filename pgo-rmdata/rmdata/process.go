@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const MAX_TRIES = 6
+const MAX_TRIES = 16
 
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
@@ -78,18 +78,20 @@ func Delete(request Request) {
 	}
 
 	//handle the case of 'pgo delete cluster mycluster'
+	removeCluster(request)
 	err = kubeapi.Deletepgcluster(request.RESTClient,
 		request.ClusterName, request.Namespace)
 	if err != nil {
 		log.Error(err)
 	}
-	removeClusterJobs(request)
-	removeCluster(request)
 	removeServices(request)
 	removeAddons(request)
 	removePgreplicas(request)
 	removePgtasks(request)
-	removePVCs(pvcList, request)
+	//removeClusterJobs(request)
+	if request.RemoveData {
+		removePVCs(pvcList, request)
+	}
 
 }
 
@@ -322,20 +324,32 @@ func removeAddons(request Request) {
 
 	pgbouncerDepName := request.ClusterName + "-pgbouncer"
 
-	kubeapi.DeleteDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
+	_, found, _ := kubeapi.GetDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
+	if found {
+
+		kubeapi.DeleteDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
+	}
 
 	//delete the service name=<clustename>-pgbouncer
 
-	kubeapi.DeleteService(request.Clientset, pgbouncerDepName, request.Namespace)
+	_, found, _ = kubeapi.GetService(request.Clientset, pgbouncerDepName, request.Namespace)
+	if found {
+		kubeapi.DeleteService(request.Clientset, pgbouncerDepName, request.Namespace)
+	}
 
 	//remove pgpool
 	pgpoolDepName := request.ClusterName + "-pgpool"
-
-	kubeapi.DeleteDeployment(request.Clientset, pgpoolDepName, request.Namespace)
+	_, found, _ = kubeapi.GetDeployment(request.Clientset, pgpoolDepName, request.Namespace)
+	if found {
+		kubeapi.DeleteDeployment(request.Clientset, pgpoolDepName, request.Namespace)
+	}
 
 	//delete the service name=<clustename>-pgpool
 
-	kubeapi.DeleteService(request.Clientset, pgpoolDepName, request.Namespace)
+	_, found, _ = kubeapi.GetService(request.Clientset, pgpoolDepName, request.Namespace)
+	if found {
+		kubeapi.DeleteService(request.Clientset, pgpoolDepName, request.Namespace)
+	}
 
 }
 

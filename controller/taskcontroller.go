@@ -204,7 +204,7 @@ func (c *PgtaskController) processNextItem() bool {
 // onAdd is called when a pgtask is added
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 
 	//handle the case of when the operator restarts, we do not want
 	//to process pgtasks already processed
@@ -223,14 +223,14 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgtask is updated
 func (c *PgtaskController) onUpdate(oldObj, newObj interface{}) {
-	task := newObj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskController] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//task := newObj.(*crv1.Pgtask)
+	//	log.Debugf("[PgtaskController] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 // onDelete is called when a pgtask is deleted
 func (c *PgtaskController) onDelete(obj interface{}) {
-	task := obj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//task := obj.(*crv1.Pgtask)
+	//	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 func (c *PgtaskController) SetupWatch(ns string) {

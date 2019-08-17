@@ -102,10 +102,12 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	//handle the case of rmdata jobs succeeding
 	if job.Status.Succeeded > 0 && labels[config.LABEL_RMDATA] == "true" {
 		log.Debugf("jobController onUpdate rmdata job case")
+		/**
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
+		*/
 		return
 	}
 
