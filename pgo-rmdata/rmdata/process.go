@@ -151,7 +151,7 @@ func removeData(request Request) {
 			command := make([]string, 0)
 			command = append(command, "rm")
 			command = append(command, "-rf")
-			command = append(command, "/pgdata/"+v.ObjectMeta.Labels[config.LABEL_REPLICA_NAME])
+			command = append(command, "/pgdata/"+v.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME])
 			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, v.Spec.Containers[0].Name, v.Name, request.Namespace, nil)
 			if err != nil {
 				log.Errorf("error execing into remove data pod %s command %s error %s", v.Name, command, err.Error())
@@ -175,7 +175,7 @@ func removeData(request Request) {
 		command := make([]string, 0)
 		command = append(command, "rm")
 		command = append(command, "-rf")
-		command = append(command, "/pgdata/"+pod.ObjectMeta.Labels[config.LABEL_REPLICA_NAME])
+		command = append(command, "/pgdata/"+pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME])
 		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, request.Namespace, nil)
 		if err != nil {
 			log.Errorf("error execing into remove data pod %s command %s error %s", pod.Name, command, err.Error())
