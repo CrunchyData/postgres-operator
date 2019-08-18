@@ -19,21 +19,30 @@ func Delete(request Request) {
 
 	//the case of 'pgo scaledown'
 	if request.IsReplica {
-		removeOnlyReplicaData(request)
+		log.Info("rmdata.Process scaledown replica use case")
 		removeReplicaServices(request)
 		pvcList, err := getReplicaPVC(request)
 		if err != nil {
 			log.Error(err)
-		}
-		err = removeReplica(request)
-		if err == nil {
-			removePVCs(pvcList, request)
 		}
 		//delete the pgreplica CRD
 		err = kubeapi.Deletepgreplica(request.RESTClient, request.ReplicaName, request.Namespace)
 		if err != nil {
 			log.Error(err)
 			return
+		}
+
+		if request.RemoveData {
+			removeOnlyReplicaData(request)
+		}
+
+		err = removeReplica(request)
+		if err != nil {
+			log.Error(err)
+		}
+
+		if request.RemoveData {
+			removePVCs(pvcList, request)
 		}
 
 		//scale down is its own use case so we leave when done
@@ -44,28 +53,28 @@ func Delete(request Request) {
 	if err != nil {
 		log.Error(err)
 	}
+	if request.IsBackup {
+		log.Info("rmdata.Process backup use case")
+		//the case of removing a backup using
+		//pgo delete backup, only applies to
+		//backup-type=pgbasebackup
+		//currently we only support removing the PVC
+		//and not the backup contents
+		removeBackupJobs(request)
+		pvcList := make([]string, 0)
+		pvcList = append(pvcList, request.ClusterName+"-backup")
+		removePVCs(pvcList, request)
+
+		//removing a backup pvc is its own case, leave when done
+		return
+	}
+
+	log.Info("rmdata.Process cluster use case")
 	//the user had done something like:
 	//pgo delete cluster mycluster --delete-data
 	if request.RemoveData {
-
-		if request.IsBackup {
-			//the case of removing a backup using
-			//pgo delete backup, only applies to
-			//backup-type=pgbasebackup
-			//currently we only support removing the PVC
-			//and not the backup contents
-			removeBackupJobs(request)
-			pvcList := make([]string, 0)
-			pvcList = append(pvcList, request.ClusterName+"-backup")
-			removePVCs(pvcList, request)
-
-			//removing a backup pvc is its own case, leave when done
-			return
-
-		} else {
-			removeData(request)
-			removeUserSecrets(request)
-		}
+		removeData(request)
+		removeUserSecrets(request)
 
 	}
 
@@ -259,7 +268,8 @@ func removeReplica(request Request) error {
 			log.Info("sleeping to wait for Deployments to fully terminate")
 			time.Sleep(time.Second * time.Duration(4))
 		} else {
-			completed = false
+			completed = true
+			break
 		}
 	}
 	if !completed {

@@ -30,6 +30,9 @@
                         "name": "PG_CLUSTER",
                         "value": "{{.ClusterName}}"
                     }, {
+                        "name": "REPLICA_NAME",
+                        "value": "{{.ReplicaName}}"
+                    }, {
                         "name": "REMOVE_DATA",
                         "value": "{{.RemoveData}}"
                     }, {
