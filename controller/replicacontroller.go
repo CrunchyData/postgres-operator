@@ -141,7 +141,7 @@ func (c *PgreplicaController) processNextItem() bool {
 // onAdd is called when a pgreplica is added
 func (c *PgreplicaController) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
+	//	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//handle the case of pgreplicas being processed already and
 	//when the operator restarts
@@ -160,8 +160,8 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgreplica is updated
 func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
-	newExample := newObj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaController] ns=%s %s ", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
+	//newExample := newObj.(*crv1.Pgreplica)
+	//log.Debugf("[PgreplicaController] ns=%s %s ", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
 
 }
 
