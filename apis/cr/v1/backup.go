@@ -23,6 +23,7 @@ import (
 const PgbackupResourcePlural = "pgbackups"
 
 // Backup job processing states - used by pgdump
+const PgBackupJobReSubmitted = "Backup Job Re-Submitted"
 const PgBackupJobSubmitted = "Backup Job Submitted"
 const PgBackupJobInProgress = "Backup Job In Progress"
 const PgBackupJobCompleted = "Backup Job Completed"

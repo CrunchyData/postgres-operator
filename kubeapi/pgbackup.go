@@ -16,9 +16,12 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	jsonpatch "github.com/evanphx/json-patch"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
@@ -105,4 +108,80 @@ func Createpgbackup(client *rest.RESTClient, backup *crv1.Pgbackup, namespace st
 	}
 
 	return err
+}
+
+func PatchpgbackupStatus(restclient *rest.RESTClient, state crv1.PgbackupState, message string, oldCrd *crv1.Pgbackup, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Status = crv1.PgbackupStatus{
+		State:   state,
+		Message: message,
+	}
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgbackupResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
+}
+
+// PatchpgbacupBackupStatus - patch the backup status
+func PatchpgbackupBackupStatus(restclient *rest.RESTClient, status string, oldCrd *crv1.Pgbackup, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Spec.BackupStatus = status
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgbackupResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
 }
