@@ -108,26 +108,6 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		c.Queue.Add(key)
 	}
 
-	// clusterCopy.Status = crv1.PgclusterStatus{
-	// 	State:   crv1.PgclusterStateProcessed,
-	// 	Message: "Successfully processed Pgcluster by controller",
-	// }
-
-	// err := c.PgclusterClient.Put().
-	// 	Name(cluster.ObjectMeta.Name).
-	// 	Namespace(cluster.ObjectMeta.Namespace).
-	// 	Resource(crv1.PgclusterResourcePlural).
-	// 	Body(clusterCopy).
-	// 	Do().
-	// 	Error()
-
-	// if err != nil {
-	// 	log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
-	// }
-
-	// log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
-
-	// clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
 }
 
 
