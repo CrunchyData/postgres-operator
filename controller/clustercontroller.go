@@ -18,6 +18,8 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
+	"strings"
+	"io/ioutil"
 	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -29,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
 // PgclusterController holds the connections for the controller
@@ -36,12 +39,16 @@ type PgclusterController struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
+	Queue              workqueue.RateLimitingInterface
 	Namespace          string
 }
 
 // Run starts an pgcluster resource controller
 func (c *PgclusterController) Run(ctx context.Context) error {
 	log.Debug("Watch Pgcluster objects")
+
+	//shut down the work queue to cause workers to end
+	defer c.Queue.ShutDown()
 
 	_, err := c.watchPgclusters(ctx)
 	if err != nil {
@@ -95,33 +102,101 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 		return
 	}
 
-	// NEVER modify objects from the store. It's a read-only, local cache.
-	// You can use clusterScheme.Copy() to make a deep copy of original object and modify this copy
-	// Or create a copy manually for better performance
-	copyObj := cluster.DeepCopyObject()
-	clusterCopy := copyObj.(*crv1.Pgcluster)
-
-	clusterCopy.Status = crv1.PgclusterStatus{
-		State:   crv1.PgclusterStateProcessed,
-		Message: "Successfully processed Pgcluster by controller",
+	key, err := cache.MetaNamespaceKeyFunc(obj)
+	if err == nil {
+		log.Debugf("cluster putting key in queue %s", key)
+		c.Queue.Add(key)
 	}
 
-	err := c.PgclusterClient.Put().
-		Name(cluster.ObjectMeta.Name).
-		Namespace(cluster.ObjectMeta.Namespace).
-		Resource(crv1.PgclusterResourcePlural).
-		Body(clusterCopy).
-		Do().
-		Error()
+	// clusterCopy.Status = crv1.PgclusterStatus{
+	// 	State:   crv1.PgclusterStateProcessed,
+	// 	Message: "Successfully processed Pgcluster by controller",
+	// }
 
+	// err := c.PgclusterClient.Put().
+	// 	Name(cluster.ObjectMeta.Name).
+	// 	Namespace(cluster.ObjectMeta.Namespace).
+	// 	Resource(crv1.PgclusterResourcePlural).
+	// 	Body(clusterCopy).
+	// 	Do().
+	// 	Error()
+
+	// if err != nil {
+	// 	log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
+	// }
+
+	// log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
+
+	// clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
+}
+
+
+func (c *PgclusterController) RunWorker() {
+
+	//process the 'add' work queue forever
+	for c.processNextItem() {
+	}
+}
+
+func (c *PgclusterController) processNextItem() bool {
+	// Wait until there is a new item in the working queue
+	key, quit := c.Queue.Get()
+	if quit {
+		return false
+	}
+
+	log.Debugf("working on %s", key.(string))
+	keyParts := strings.Split(key.(string), "/")
+	keyNamespace := keyParts[0]
+	keyResourceName := keyParts[1]
+
+	log.Debugf("cluster add queue got key ns=[%s] resource=[%s]", keyNamespace, keyResourceName)
+
+	// Tell the queue that we are done with processing this key. This unblocks the key for other workers
+	// This allows safe parallel processing because two pods with the same key are never processed in
+	// parallel.
+	defer c.Queue.Done(key)
+
+	// Invoke the method containing the business logic
+	// for pgbackups, the convention is the CRD name is always
+	// the same as the pg-cluster label value
+
+	// in this case, the de-dupe logic is to test whether a cluster
+	// deployment exists , if so, then we don't create another
+	_, found, err := kubeapi.GetDeployment(c.PgclusterClientset, keyResourceName, keyNamespace)
+
+	if found {
+		log.Debugf("cluster add - dep already found, not creating again")
+		return true
+	}
+
+	//get the pgcluster
+	cluster := crv1.Pgcluster{}
+	found, err = kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
+	if !found {
+		log.Debugf("cluster add - pgcluster not found, this is invalid")
+		return false
+	}
+
+
+	addIdentifier(&cluster)
+
+	state := crv1.PgclusterStateProcessed
+	message := "Successfully processed Pgcluster by controller"
+
+	err = kubeapi.PatchpgclusterStatus(c.PgclusterClient, state, message, &cluster, keyNamespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
+		return false
 	}
 
 	log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
 
-	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, clusterCopy, cluster.ObjectMeta.Namespace)
+	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, &cluster, cluster.ObjectMeta.Namespace)
+
+	return true
 }
+
 
 // onUpdate is called when a pgcluster is updated
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
@@ -211,4 +286,13 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 	}
 	return fmt.Sprintf("%d/%d", readyCount, containerCount), equal
 
+}
+
+func addIdentifier(clusterCopy *crv1.Pgcluster) {
+	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
+	if err != nil {
+		log.Error(err)
+	}
+
+	clusterCopy.ObjectMeta.Labels[util.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
 }

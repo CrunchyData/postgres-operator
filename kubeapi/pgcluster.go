@@ -16,10 +16,13 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	jsonpatch "github.com/evanphx/json-patch"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
@@ -144,4 +147,45 @@ func Updatepgcluster(client *rest.RESTClient, cluster *crv1.Pgcluster, name, nam
 
 	log.Debugf("updated pgcluster %s", cluster.Name)
 	return err
+}
+
+
+// PatchpgclusterStatus - patches a pgcluster resource
+func PatchpgclusterStatus(restclient *rest.RESTClient, state crv1.PgclusterState, message string, oldCrd *crv1.Pgcluster, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Status = crv1.PgclusterStatus{
+		State:   state,
+		Message: message,
+	}
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgclusterResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
 }
