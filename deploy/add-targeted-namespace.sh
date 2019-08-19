@@ -45,5 +45,6 @@ cat $PGOROOT/conf/postgres-operator/pgo-backrest-sa.json | sed 's/{{.TargetNames
 cat $PGOROOT/conf/postgres-operator/pgo-target-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-target-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-target-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | sed 's/{{.OperatorNamespace}}/'"$PGO_OPERATOR_NAMESPACE"'/' | $PGO_CMD -n $1 create -f -
+cat $PGOROOT/conf/postgres-operator/pgo-target-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-backrest-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-backrest-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -

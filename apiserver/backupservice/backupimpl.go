@@ -72,7 +72,7 @@ func ShowBackup(name, ns string) msgs.ShowBackupResponse {
 }
 
 // DeleteBackup ...
-func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
+func DeleteBackup(clusterName, ns string) msgs.DeleteBackupResponse {
 	resp := msgs.DeleteBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -80,27 +80,30 @@ func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
 
 	var err error
 
-	if backupName == "all" {
+	if clusterName == "all" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "all not a valid cluster name"
 		return resp
 	}
 
-	err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, ns)
+	err = kubeapi.Deletepgbackup(apiserver.RESTClient, clusterName, ns)
 
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
-	resp.Results = append(resp.Results, backupName)
+	resp.Results = append(resp.Results, clusterName)
 
 	//create a pgtask to remove the PVC and its data
-	pvcName := backupName + "-backup"
-	dataRoots := []string{backupName + "-backups"}
+	taskName := clusterName + "-rmdata-backup"
+	deleteData := true
+	deleteBackups := true
+	isReplica := false
+	isBackup := true
+	replicaName := ""
 
-	storageSpec := crv1.PgStorageSpec{}
-	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots, backupName+"-backup", ns)
+	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -275,11 +278,11 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 		return newInstance, err
 	}
 
-        labelMap := make(map[string]string)
+	labelMap := make(map[string]string)
 
 	newInstance = &crv1.Pgbackup{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: name,
+			Name:   name,
 			Labels: labelMap,
 		},
 		Spec: spec,
