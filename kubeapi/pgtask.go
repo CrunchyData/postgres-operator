@@ -17,6 +17,8 @@ package kubeapi
 
 import (
 	"encoding/json"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -24,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
-	"time"
 )
 
 // GetpgtasksBySelector gets a list of pgtasks by selector
@@ -195,7 +196,7 @@ func PatchpgtaskStatus(restclient *rest.RESTClient, state crv1.PgtaskState, mess
 	_, err6 := restclient.Patch(types.MergePatchType).
 		Namespace(namespace).
 		Resource(crv1.PgtaskResourcePlural).
-		Name(oldCrd.Spec.Name).
+		Name(oldCrd.Name).
 		Body(patchBytes).
 		Do().
 		Get()
