@@ -21,6 +21,7 @@ var (
 	kubeconfig      = flag.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
 	namespace       = flag.String("namespace", "pgouser1", "namespace to test within ")
 	username        = flag.String("username", "pgouser1", "username to test within ")
+	rolename	= flag.String("rolename", "pgoadmin", "rolename to test with")
 	testclustername = flag.String("clustername", "", "cluster name to test with")
 	eventTcpAddress = flag.String("event-tcp-address", "localhost:14150", "tcp port to the event pgo-event port")
 
@@ -28,6 +29,7 @@ var (
 	Namespace       = "pgouser1"
 	TestUsername    = "pgouser1"
 	TestClusterName = "foo"
+	TestRolename	= "pgoadmin"
 	SLEEP_SECS      = 10
 )
 
@@ -60,9 +62,13 @@ func SetupKube() (*kubernetes.Clientset, *rest.RESTClient) {
 	if *username != "" {
 		TestUsername = *username
 	}
+	if *rolename != "" {
+		TestRolename = *rolename
+	}
 
 	log.Infof("running test in namespace %s\n", Namespace)
 	log.Infof("running test as user %s\n", TestUsername)
+	log.Infof("running test with pgorole %s\n", TestRolename)
 	log.Infof("running test on cluster %s\n", TestClusterName)
 	// uses the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
