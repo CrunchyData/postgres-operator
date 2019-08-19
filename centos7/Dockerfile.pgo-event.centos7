@@ -10,6 +10,8 @@ LABEL Vendor="Crunchy Data Solutions" \
 
 RUN yum -y update && yum -y clean all
 
+COPY redhat/licenses /licenses
+
 ADD bin/pgo-event /usr/local/bin
 
 USER daemon

@@ -10,8 +10,9 @@ LABEL  Vendor="Crunchy Data Solutions" \
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 
-# PGDG PostgreSQL Repository
+COPY redhat/licenses /licenses
 
+# PGDG PostgreSQL Repository
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
 RUN yum -y update && yum -y install hostname postgresql11  && yum -y clean all

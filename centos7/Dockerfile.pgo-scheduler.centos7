@@ -15,6 +15,8 @@ RUN yum -y update \
       procps-ng \
  && yum clean all -y
 
+COPY redhat/licenses /licenses
+
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /configs \
  && chown -R 2:2 /opt/cpm /configs
 
