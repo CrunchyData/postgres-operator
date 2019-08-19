@@ -180,13 +180,12 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 
 	var err error
 
-	/**
-	err := CreatePGOTargetServiceAccount(clientset, targetNamespace)
+	err = CreatePGOTargetServiceAccount(clientset, targetNamespace)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
-	*/
+
 	err = CreatePGOBackrestServiceAccount(clientset, targetNamespace)
 	if err != nil {
 		log.Error(err)

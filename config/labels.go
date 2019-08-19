@@ -55,6 +55,10 @@ const LABEL_VERSION = "version"
 const LABEL_PGO_VERSION = "pgo-version"
 const LABEL_UPGRADE_DATE = "operator-upgrade-date"
 const LABEL_DELETE_DATA = "delete-data"
+const LABEL_DELETE_DATA_STARTED = "delete-data-started"
+const LABEL_DELETE_BACKUPS = "delete-backups"
+const LABEL_IS_REPLICA = "is-replica"
+const LABEL_IS_BACKUP = "is-backup"
 
 const LABEL_BACKREST = "pgo-backrest"
 const LABEL_BACKREST_JOB = "pgo-backrest-job"
@@ -161,5 +165,6 @@ const LABEL_PGO_CREATED_BY = "pgo-created-by"
 const LABEL_PGO_UPDATED_BY = "pgo-updated-by"
 
 const LABEL_PGO_DEFAULT_SC = "pgo-default-sc"
+const LABEL_FAILOVER_STARTED = "failover-started"
 
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"

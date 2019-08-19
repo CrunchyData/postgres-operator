@@ -19,3 +19,9 @@ common_name: "crunchydata"
 crunchy_debug: "false"
 
 pgo_client_install: "true"
+pgo_cluster_admin: "false"
+
+delete_operator_namespace: "false"
+delete_watched_namespaces: "false"
+delete_metrics_namespace: "false"
+preserve_pg_clusters: "false"

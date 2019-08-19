@@ -191,45 +191,57 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	//delete the primary and replica deployments and replica sets
-	err = shutdownCluster(clientset, restclient, cl, namespace)
+	/*
+		//delete the primary and replica deployments and replica sets
+		err = shutdownCluster(clientset, restclient, cl, namespace)
+		if err != nil {
+			log.Error("error deleting primary Deployment " + err.Error())
+		}
+
+		//delete the pgbouncer service if exists
+		//	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+		if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
+			DeletePgbouncer(clientset, cl.Spec.Name, namespace)
+		}
+
+		//delete the primary service
+		kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
+
+		//delete the replica service
+		var found bool
+		_, found, err = kubeapi.GetService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+		if found {
+			kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+		}
+
+		//delete the pgpool deployment if necessary
+		if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
+			DeletePgpool(clientset, cl.Spec.Name, namespace)
+		}
+
+		//delete the backrest repo deployment if necessary
+		if cl.Labels[config.LABEL_BACKREST] == "true" {
+			deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
+		}
+
+		//delete the pgreplicas if necessary
+		DeletePgreplicas(restclient, cl.Spec.Name, namespace)
+
+		//delete any pgtasks for this cluster
+		deletePgtasks(restclient, cl.Spec.Name, namespace)
+	*/
+	//create rmdata job
+	isReplica := false
+	isBackup := false
+	removeData := true
+	removeBackup := false
+	err = CreateRmdataJob(clientset, cl, namespace, removeData, removeBackup, isReplica, isBackup)
 	if err != nil {
-		log.Error("error deleting primary Deployment " + err.Error())
+		log.Error(err)
+		return err
+	} else {
+		publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name, cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER])
 	}
-
-	//delete the pgbouncer service if exists
-	//	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
-	if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
-		DeletePgbouncer(clientset, cl.Spec.Name, namespace)
-	}
-
-	//delete the primary service
-	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
-
-	//delete the replica service
-	var found bool
-	_, found, err = kubeapi.GetService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
-	if found {
-		kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
-	}
-
-	//delete the pgpool deployment if necessary
-	if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
-		DeletePgpool(clientset, cl.Spec.Name, namespace)
-	}
-
-	//delete the backrest repo deployment if necessary
-	if cl.Labels[config.LABEL_BACKREST] == "true" {
-		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
-	}
-
-	//delete the pgreplicas if necessary
-	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
-
-	//delete any pgtasks for this cluster
-	deletePgtasks(restclient, cl.Spec.Name, namespace)
-
-	publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name, cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER])
 
 	return err
 

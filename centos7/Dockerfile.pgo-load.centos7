@@ -3,7 +3,7 @@ FROM centos:7
 LABEL name="crunchydata/pgo-load" \
     vendor="crunchy data" \
 	PostgresVersion="11" \
-	PostgresFullVersion="11.4" \
+	PostgresFullVersion="11.5" \
 	Version="7.6" \
 	Release="4.1.0" \
     url="https://crunchydata.com" \

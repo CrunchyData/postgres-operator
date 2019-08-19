@@ -10,7 +10,7 @@
             "name": "fromcrd",
             "pg-cluster": "fromcrd",
             "pgo-backrest": "true",
-            "pgo-version": "4.1.0",
+	"pgo-version": "4.1.0",
             "pgouser": "pgoadmin"
         },
         "name": "fromcrd",
@@ -83,7 +83,7 @@
         "user": "testuser",
         "userlabels": {
             "crunchy_collect": "false",
-            "pgo-version": "4.1.0",
+	"pgo-version": "4.1.0",
             "pgouser": "pgoadmin"
         },
         "usersecretname": "fromcrd-testuser-secret"

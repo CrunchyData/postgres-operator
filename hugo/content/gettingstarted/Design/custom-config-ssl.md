@@ -81,7 +81,7 @@ psql "postgresql://testuser@IP_OF_PGSQL:5432/userdb?sslmode=require&sslrootcert=
 ```
 You should see a connection that looks like the following:
 ```
-psql (11.4)
+psql (11.5)
 SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
 Type "help" for help.
 
