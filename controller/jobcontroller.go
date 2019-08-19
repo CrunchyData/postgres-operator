@@ -117,6 +117,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			status = crv1.JobErrorStatus
 		}
 
+		// change this to patchpgbackupbackupstatus ?? 
 		if labels[util.LABEL_BACKREST] != "true" {
 			err = util.Patch(c.JobClient, "/spec/backupstatus", status, "pgbackups", dbname, job.ObjectMeta.Namespace)
 			if err != nil {
