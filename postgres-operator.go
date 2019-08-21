@@ -90,6 +90,7 @@ func main() {
 		PgtaskClient:    crdClient,
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
+		Queue:           workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Namespace:       Namespace,
 	}
 
@@ -141,6 +142,7 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go pgTaskcontroller.Run(ctx)
+	go pgTaskcontroller.RunWorker()
 	go pgClustercontroller.Run(ctx)
 	go pgClustercontroller.RunWorker()
 	go pgReplicacontroller.Run(ctx)
