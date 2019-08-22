@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -41,9 +42,11 @@ import (
 
 // JobController holds the connections for the controller
 type JobController struct {
-	JobClient    *rest.RESTClient
-	JobClientset *kubernetes.Clientset
-	Ctx          context.Context
+	JobClient          *rest.RESTClient
+	JobClientset       *kubernetes.Clientset
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pod resource controller
@@ -427,6 +430,15 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 }
 
 func (c *JobController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+	c.informerNsMutex.Unlock()
+
 	source := cache.NewListWatchFromClient(
 		c.JobClientset.BatchV1().RESTClient(),
 		"jobs",
@@ -452,6 +464,7 @@ func (c *JobController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("JobController: created informer for namespace %s", ns)
 }
 
 func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype, namespace, path string) {

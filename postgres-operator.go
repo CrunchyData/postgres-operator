@@ -97,54 +97,61 @@ func main() {
 	// start a controller on instances of our custom resource
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	pgTaskcontroller := controller.PgtaskController{
-		PgtaskConfig:    config,
-		PgtaskClient:    crdClient,
-		PgtaskScheme:    crdScheme,
-		PgtaskClientset: Clientset,
-		Queue:           workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Ctx:             ctx,
+	pgTaskcontroller := &controller.PgtaskController{
+		PgtaskConfig:       config,
+		PgtaskClient:       crdClient,
+		PgtaskScheme:       crdScheme,
+		PgtaskClientset:    Clientset,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
 
-	pgClustercontroller := controller.PgclusterController{
+	pgClustercontroller := &controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
 		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgReplicacontroller := controller.PgreplicaController{
+	pgReplicacontroller := &controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
 		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgBackupcontroller := controller.PgbackupController{
-		PgbackupClient:    crdClient,
-		PgbackupScheme:    crdScheme,
-		PgbackupClientset: Clientset,
-		Ctx:               ctx,
-		Queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		UpdateQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+	pgBackupcontroller := &controller.PgbackupController{
+		PgbackupClient:     crdClient,
+		PgbackupScheme:     crdScheme,
+		PgbackupClientset:  Clientset,
+		Ctx:                ctx,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		UpdateQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgPolicycontroller := controller.PgpolicyController{
-		PgpolicyClient:    crdClient,
-		PgpolicyScheme:    crdScheme,
-		PgpolicyClientset: Clientset,
-		Ctx:               ctx,
+	pgPolicycontroller := &controller.PgpolicyController{
+		PgpolicyClient:     crdClient,
+		PgpolicyScheme:     crdScheme,
+		PgpolicyClientset:  Clientset,
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	podcontroller := controller.PodController{
-		PodClientset: Clientset,
-		PodClient:    crdClient,
-		Ctx:          ctx,
+	podcontroller := &controller.PodController{
+		PodClientset:       Clientset,
+		PodClient:          crdClient,
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	jobcontroller := controller.JobController{
-		JobClientset: Clientset,
-		JobClient:    crdClient,
-		Ctx:          ctx,
+	jobcontroller := &controller.JobController{
+		JobClientset:       Clientset,
+		JobClient:          crdClient,
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	nscontroller := controller.NamespaceController{
+	nscontroller := &controller.NamespaceController{
 		NamespaceClientset:     Clientset,
 		NamespaceClient:        crdClient,
 		Ctx:                    ctx,
