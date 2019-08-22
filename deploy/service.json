@@ -12,8 +12,8 @@
 	{
             "name": "apiserver",
             "protocol": "TCP",
-            "port": 8443,
-            "targetPort": 8443
+            "port": $PGO_APISERVER_PORT,
+            "targetPort": $PGO_APISERVER_PORT
         },
 	{
             "name": "nsqadmin",

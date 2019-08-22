@@ -52,4 +52,5 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create configmap pgo-config \
 # create the postgres-operator Deployment and Service
 #
 expenv -f $DIR/deployment.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f $DIR/service.json
+expenv -f $DIR/service.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+#$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f $DIR/service.json

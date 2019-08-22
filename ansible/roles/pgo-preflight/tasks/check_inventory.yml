@@ -35,3 +35,4 @@
     - primary_storage
     - replica_storage
     - pgo_client_version
+    - pgo_apiserver_port
