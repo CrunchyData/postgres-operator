@@ -82,7 +82,12 @@ events to the NSQ address as defined in the EVENT_ADDR environment
 variable.
 
 If you want to disable eventing, set the following environment
-variable in the Operator Deployment:
+variable in the Operator Deployment in the operator env section:
+
+```
+     vim deploy/deployment.json 
+
     "name": "DISABLE_EVENTING"
     "value": "true"
+```
 
