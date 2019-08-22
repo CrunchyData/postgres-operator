@@ -48,6 +48,18 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret tls pgo.tls --key=$PG
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create configmap pgo-config \
 	--from-file=$PGOROOT/conf/postgres-operator
 
+
+#
+# check if custom port value is set, otherwise set default values
+#
+
+if [[ -z ${PGO_APISERVER_PORT} ]]
+then
+        echo "PGO_APISERVER_PORT is not set. Setting to default port value of 8443 with TLS enabled."
+		export PGO_APISERVER_PORT=8443
+		export DISABLE_TLS=false
+fi
+
 #
 # create the postgres-operator Deployment and Service
 #
