@@ -140,7 +140,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
   when: create_rbac|bool
 
 - name: Delete existing Cluster Role Bindings
@@ -185,7 +184,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
   when: create_rbac|bool
 
 - name: Delete existing PGO Role Binding (Watched Namespaces)
@@ -197,7 +195,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
   when: create_rbac|bool
 
 - name: Delete existing PGO Role Binding (Operator Namespace)
@@ -219,7 +216,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
   when: create_rbac|bool
 
 - name: Delete existing PGO Role (Watched Namespaces)
@@ -231,7 +227,6 @@
   no_log: false
   tags:
   - uninstall
-  - update
   when: create_rbac|bool
 
 - name: Delete existing PGO Role Binding (Operator Namespace)
@@ -265,13 +260,11 @@
   shell: |
     {{ kubectl_or_oc }} label namespace {{ item }} vendor- pgo-created-by- pgo-installation-name-
   ignore_errors: yes
-  when: not delete_watched_namespaces|bool
   with_items:
   - "{{ watched_namespaces }}"
   no_log: false
   tags:
   - uninstall
-  - update
 
 - name: Check for output directory
   stat:
