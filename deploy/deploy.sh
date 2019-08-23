@@ -55,9 +55,8 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create configmap pgo-config \
 
 if [[ -z ${PGO_APISERVER_PORT} ]]
 then
-        echo "PGO_APISERVER_PORT is not set. Setting to default port value of 8443 with TLS enabled."
+        echo "PGO_APISERVER_PORT is not set. Setting to default port value of 8443."
 		export PGO_APISERVER_PORT=8443
-		export DISABLE_TLS=false
 fi
 
 #
