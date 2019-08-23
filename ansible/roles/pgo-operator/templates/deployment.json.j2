@@ -60,6 +60,10 @@
                             {
                                 "name": "DISABLE_TLS",
                                 "value": "{{ pgo_disable_tls }}"
+                            },
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "{{ pgo_disable_eventing }}"
                             }
                         ],
                         "volumeMounts": []
@@ -110,6 +114,10 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
+                            },
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "{{ pgo_disable_eventing }}"
                             }
                         ],
                         "volumeMounts": []
@@ -163,10 +171,6 @@
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"
-                            },
-                            {
-                                "name": "DISABLE_EVENTING",
-                                "value": "{{ pgo_disable_eventing }}"
                             }
                         ],
                         "volumeMounts": [

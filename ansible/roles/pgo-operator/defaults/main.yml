@@ -21,6 +21,7 @@ crunchy_debug: "false"
 pgo_client_install: "true"
 pgo_cluster_admin: "false"
 pgo_disable_tls: "false"
+pgo_tls_no_verify: "false"
 pgo_disable_eventing: "false"
 pgo_apiserver_port: 8443
 

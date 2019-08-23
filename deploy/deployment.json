@@ -56,10 +56,14 @@
                                 "name": "DISABLE_TLS",
                                 "value": "$DISABLE_TLS"
                             },
-			                {
-				                "name": "EVENT_ADDR",
-                        	    "value": "localhost:4150"
-			                }
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "$DISABLE_EVENTING"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            }
                         ],
                         "volumeMounts": [
                         ]
@@ -106,10 +110,14 @@
                                     }
                                 }
                             },
-			                {
-				                "name": "EVENT_ADDR",
-                        	    "value": "localhost:4150"
-			                }
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "$DISABLE_EVENTING"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            }
                         ],
                         "volumeMounts": [
                         ]
@@ -159,10 +167,6 @@
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"
-                            },
-                            {
-                                "name": "DISABLE_EVENTING",
-                                "value": "$DISABLE_EVENTING"
                             }
                         ],
                         "volumeMounts": [
