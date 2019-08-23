@@ -22,6 +22,7 @@ pgo_client_install: "true"
 pgo_cluster_admin: "false"
 pgo_disable_tls: "false"
 pgo_disable_eventing: "false"
+pgo_apiserver_port: 8443
 
 delete_operator_namespace: "false"
 delete_watched_namespaces: "false"

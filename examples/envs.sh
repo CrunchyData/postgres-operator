@@ -30,6 +30,9 @@ export PGO_APISERVER_PORT=8443		# Defaults: 8443 for TLS enabled, 8080 for TLS d
 export DISABLE_TLS=false
 export TLS_NO_VERIFY=false
 
+# for disabling the Operator eventing
+export DISABLE_EVENTING=false
+
 # for the pgo CLI to authenticate with using TLS
 export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_CERT=$PGOROOT/conf/postgres-operator/server.crt

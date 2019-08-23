@@ -55,11 +55,11 @@
                             {
                                 "name": "DISABLE_TLS",
                                 "value": "$DISABLE_TLS"
-                            }
-			    {
-				"name": "EVENT_ADDR",
-                        	"value": "localhost:4150"
-			    }
+                            },
+			                {
+				                "name": "EVENT_ADDR",
+                        	    "value": "localhost:4150"
+			                }
                         ],
                         "volumeMounts": [
                         ]
@@ -162,7 +162,7 @@
                             },
                             {
                                 "name": "DISABLE_EVENTING",
-                                "value": "false"
+                                "value": "$DISABLE_EVENTING"
                             }
                         ],
                         "volumeMounts": [
