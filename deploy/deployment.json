@@ -55,10 +55,6 @@
                             {
                                 "name": "DISABLE_TLS",
                                 "value": "$DISABLE_TLS"
-                            },
-                            {
-                                "name": "DISABLE_TLS",
-                                "value": "false"
                             }
 			    {
 				"name": "EVENT_ADDR",

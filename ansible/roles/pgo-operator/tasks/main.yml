@@ -131,6 +131,13 @@
         mode: '0600'
       tags: [install, update]
 
+      - name: Template PGO Service Configuration
+      template:
+        src: service.json.j2
+        dest: "{{ output_dir }}/service.json"
+        mode: '0600'
+      tags: [install, update]
+
     - name: Template BackRest AWS S3 Configuration
       template:
         src: aws-s3-credentials.yaml.j2
