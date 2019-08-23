@@ -328,7 +328,7 @@ That command chooses a specific target, and starts the failover workflow.
 To support an automated failover, you can specify the *--autofail* flag
 on a Postgres cluster when you create it as follows:
 
-    pgo create cluster mycluster --autofail --replica-count=1 -n pgouser1
+    pgo create cluster mycluster --autofail=true --replica-count=1 -n pgouser1
 
 You can set the auto-fail flag on a Postgres cluster after it is created
 by the following command:
