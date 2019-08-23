@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -32,13 +33,13 @@ type NamespaceController struct {
 	NamespaceClient        *rest.RESTClient
 	NamespaceClientset     *kubernetes.Clientset
 	Ctx                    context.Context
-	ThePodController       PodController
-	TheJobController       JobController
-	ThePgpolicyController  PgpolicyController
-	ThePgbackupController  PgbackupController
-	ThePgreplicaController PgreplicaController
-	ThePgclusterController PgclusterController
-	ThePgtaskController    PgtaskController
+	ThePodController       *PodController
+	TheJobController       *JobController
+	ThePgpolicyController  *PgpolicyController
+	ThePgbackupController  *PgbackupController
+	ThePgreplicaController *PgreplicaController
+	ThePgclusterController *PgclusterController
+	ThePgtaskController    *PgtaskController
 }
 
 // Run starts a namespace resource controller
@@ -100,7 +101,6 @@ func (c *NamespaceController) onAdd(obj interface{}) {
 		return
 	} else {
 		log.Debugf("NamespaceController: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
-		c.ThePodController.SetupWatch(newNs.Name)
 		c.ThePodController.SetupWatch(newNs.Name)
 		c.TheJobController.SetupWatch(newNs.Name)
 		c.ThePgpolicyController.SetupWatch(newNs.Name)

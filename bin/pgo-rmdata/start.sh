@@ -13,7 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo [$DATA_ROOT] is data root
-eval rm -rf /pgdata/$DATA_ROOT 
-eval rm -rf /pgdata/$DATA_ROOT-spool 
-eval rm -rf /pgdata/$DATA_ROOT-wal
+env
+
+/usr/local/bin/pgo-rmdata -pg-cluster=$PG_CLUSTER \
+	-replica-name=$REPLICA_NAME \
+	-namespace=$NAMESPACE \
+	-remove-data=$REMOVE_DATA \
+	-remove-backup=$REMOVE_BACKUP \
+	-is-backup=$IS_BACKUP \
+	-is-replica=$IS_REPLICA

@@ -8,6 +8,8 @@ LABEL Vendor="Crunchy Data Solutions" \
 
 RUN yum -y update && yum -y clean all
 
+COPY redhat/licenses /licenses
+
 VOLUME ["/pgdata"]
 
 USER 26

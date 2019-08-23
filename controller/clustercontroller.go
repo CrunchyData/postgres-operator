@@ -18,17 +18,19 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"sync"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"io/ioutil"
-	"strings"
 
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +46,8 @@ type PgclusterController struct {
 	PgclusterClientset *kubernetes.Clientset
 	Queue              workqueue.RateLimitingInterface
 	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pgcluster resource controller
@@ -163,7 +167,7 @@ func (c *PgclusterController) processNextItem() bool {
 func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	oldcluster := oldObj.(*crv1.Pgcluster)
 	newcluster := newObj.(*crv1.Pgcluster)
-	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
+	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
 
 	//handle the case for when the autofail lable is updated
 	if newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] != "" {
@@ -197,11 +201,11 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a pgcluster is deleted
 func (c *PgclusterController) onDelete(obj interface{}) {
-	cluster := obj.(*crv1.Pgcluster)
-	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+	//cluster := obj.(*crv1.Pgcluster)
+	//	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 
 	//handle pgcluster cleanup
-	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
+	//	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }
 
 func GetPrimaryPodStatus(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, ns string) (error, bool) {
@@ -250,6 +254,15 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 }
 
 func (c *PgclusterController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+	c.informerNsMutex.Unlock()
+
 	source := cache.NewListWatchFromClient(
 		c.PgclusterClient,
 		crv1.PgclusterResourcePlural,
@@ -275,6 +288,7 @@ func (c *PgclusterController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgclusterController created informer for namespace %s", ns)
 }
 
 func addIdentifier(clusterCopy *crv1.Pgcluster) {

@@ -24,7 +24,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
-                                "containerPort": 8443
+                                "containerPort": $PGO_APISERVER_PORT
                             }
                         ],
                         "env": [
@@ -34,7 +34,7 @@
                             },
                             {
                                 "name": "PORT",
-                                "value": "8443"
+                                "value": "$PGO_APISERVER_PORT"
                             },
                             {
                                 "name": "PGO_INSTALLATION_NAME",
@@ -50,12 +50,20 @@
                             },
                             {
                                 "name": "TLS_NO_VERIFY",
-                                "value": "false"
+                                "value": "$TLS_NO_VERIFY"
                             },
-			    {
-				"name": "EVENT_ADDR",
-                        	"value": "localhost:4150"
-			    }
+                            {
+                                "name": "DISABLE_TLS",
+                                "value": "$DISABLE_TLS"
+                            },
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "$DISABLE_EVENTING"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            }
                         ],
                         "volumeMounts": [
                         ]
@@ -102,10 +110,14 @@
                                     }
                                 }
                             },
-			    {
-				"name": "EVENT_ADDR",
-                        	"value": "localhost:4150"
-			    }
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "$DISABLE_EVENTING"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            }
                         ],
                         "volumeMounts": [
                         ]
