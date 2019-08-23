@@ -20,6 +20,8 @@ crunchy_debug: "false"
 
 pgo_client_install: "true"
 pgo_cluster_admin: "false"
+pgo_disable_tls: "false"
+pgo_disable_eventing: "false"
 
 delete_operator_namespace: "false"
 delete_watched_namespaces: "false"

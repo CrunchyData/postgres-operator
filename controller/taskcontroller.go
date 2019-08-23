@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"strings"
+	"sync"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -41,13 +42,14 @@ import (
 
 // PgtaskController holds connections for the controller
 type PgtaskController struct {
-	PgtaskConfig    *rest.Config
-	PgtaskClient    *rest.RESTClient
-	PgtaskScheme    *runtime.Scheme
-	PgtaskClientset *kubernetes.Clientset
-	Queue           workqueue.RateLimitingInterface
-
-	Ctx context.Context
+	PgtaskConfig       *rest.Config
+	PgtaskClient       *rest.RESTClient
+	PgtaskScheme       *runtime.Scheme
+	PgtaskClientset    *kubernetes.Clientset
+	Queue              workqueue.RateLimitingInterface
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pgtask resource controller
@@ -234,6 +236,15 @@ func (c *PgtaskController) onDelete(obj interface{}) {
 }
 
 func (c *PgtaskController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+	c.informerNsMutex.Unlock()
+
 	source := cache.NewListWatchFromClient(
 		c.PgtaskClient,
 		crv1.PgtaskResourcePlural,
@@ -259,6 +270,7 @@ func (c *PgtaskController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgtaskController created informer for namespace %s", ns)
 }
 
 //de-dupe logic for a failover, if the failover started

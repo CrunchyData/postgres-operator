@@ -56,6 +56,10 @@
                             {
                                 "name": "TLS_NO_VERIFY",
                                 "value": "{{ pgo_tls_no_verify }}"
+                            },
+                            {
+                                "name": "DISABLE_TLS",
+                                "value": "{{ pgo_disable_tls }}"
                             }
                         ],
                         "volumeMounts": []
@@ -159,6 +163,10 @@
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"
+                            },
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "{{ pgo_disable_eventing }}"
                             }
                         ],
                         "volumeMounts": [
