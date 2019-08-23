@@ -315,3 +315,28 @@ following:
 
 This server.key and server.crt can then be used to access the *pgo-apiserver*
 REST API from the pgo CLI on your client host.
+
+Should you desire to alter the default TLS settings for the Postgres Operator, you can set the
+following variables in bash:
+
+To disable TLS and make an unsecured connection on port 8080 instead of connecting securely over
+the default port, 8443, set:
+    
+Bash environment variables    
+
+    DISABLE_TLS=true
+    PGO_APISERVER_PORT=8080		
+
+Or inventory variables if using Ansible
+
+    pgo_disable_tls='false'
+    pgo_apiserver_port=8443
+
+To disable TLS verifcation, set the follwing as a Bash environment variable
+    
+    export TLS_NO_VERIFY=false
+
+Or the following in the inventory file is using Ansible
+
+    pgo_tls_no_verify='false'
+
