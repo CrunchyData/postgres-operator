@@ -105,11 +105,11 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
-                            }
-			    {
-				"name": "EVENT_ADDR",
-                        	"value": "localhost:4150"
-			    }
+                            },
+			                {
+				                "name": "EVENT_ADDR",
+                        	    "value": "localhost:4150"
+			                }
                         ],
                         "volumeMounts": [
                         ]
