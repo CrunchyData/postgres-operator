@@ -4,6 +4,7 @@ eventtest requires:
  * pass in the cluster name on the command line using -clustername flag
  * pass in the namespace on the command line using -namespace flag
  * pass in the username on the command line using -username flag
+ * pass in the rolename on the command line using -rolename flag
  * pass in the endpoint for the event router -event-tcp-address="127.0.0.1:14150"
 
 You can port-forward to the event router as follows:

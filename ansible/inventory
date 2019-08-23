@@ -253,6 +253,6 @@ prometheus_install='false'
 # resources deployed in these namespaces, and cannot be undone. By default (and unless otherwise 
 # specified using the variables below), all namespaces will be preserved when deprovisioning.
 
-#delete_operator_namespace: 'false'
-#delete_watched_namespaces: 'false'
-#delete_metrics_namespace: 'false'
+#delete_operator_namespace='false'
+#delete_watched_namespaces='false'
+#delete_metrics_namespace='false'

@@ -17,6 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+	"sync"
+
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
@@ -34,10 +36,12 @@ import (
 
 // PgpolicyController holds connections for the controller
 type PgpolicyController struct {
-	PgpolicyClient    *rest.RESTClient
-	PgpolicyScheme    *runtime.Scheme
-	PgpolicyClientset *kubernetes.Clientset
-	Ctx               context.Context
+	PgpolicyClient     *rest.RESTClient
+	PgpolicyScheme     *runtime.Scheme
+	PgpolicyClientset  *kubernetes.Clientset
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pgpolicy resource controller
@@ -146,6 +150,15 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 
 }
 func (c *PgpolicyController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+	c.informerNsMutex.Unlock()
+
 	source := cache.NewListWatchFromClient(
 		c.PgpolicyClient,
 		crv1.PgpolicyResourcePlural,
@@ -171,4 +184,5 @@ func (c *PgpolicyController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgpolicyController: created informer for namespace %s", ns)
 }
