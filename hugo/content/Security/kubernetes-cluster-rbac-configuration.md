@@ -1,16 +1,15 @@
 ---
-title: "Kubernetes RBAC"
+title: "Installation of PostgreSQL Operator RBAC on Kubernetes Cluster"
 date:
 draft: false
 weight: 7
 ---
 
-## Kubernetes RBAC
+## Installation of PostgreSQL Operator RBAC on Kubernetes Cluster
 
 Install the requisite PostgreSQL Operator RBAC resources, *as a Kubernetes cluster admin user*,  by running a Makefile target:
 
     make installrbac
-
 
 This script creates the following RBAC resources on your Kubernetes cluster:
 
@@ -32,7 +31,6 @@ This script creates the following RBAC resources on your Kubernetes cluster:
 | | pgo-backrest-role|
 |Role Bindings  (rbac.yaml) | pgo-backrest-role-binding|
 | | pgo-role-binding|
-
 
 Note that the cluster role bindings have a naming convention of pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  
 
