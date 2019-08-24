@@ -1,5 +1,12 @@
+---
+title: "PostgreSQL Operator RBAC"
+date:
+draft: false
+weight: 7
+---
 
-## Operator RBAC
+
+## PostreSQL Operator RBAC
 
 The *conf/postgres-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
 
@@ -98,7 +105,8 @@ get back this response:
     Error:  Authentication Failed: 401 
 
 ## Making Security Changes
-The Operator today requires you to make Operator user security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
+
+The PostgreSQL Operator requires you to make Operator user security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
 
     make deployoperator
 
