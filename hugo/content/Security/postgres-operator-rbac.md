@@ -8,7 +8,7 @@ weight: 7
 
 ## PostreSQL Operator RBAC
 
-The *conf/postgres-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the Operator roles whereby Operator API users can be authorized.
+The *conf/postgres-operator/pgorole* file is read at start up time when the operator is deployed to the Kubernetes cluster.  This file defines the PostgreSQL Operator roles whereby PostgreSQL Operator API users can be authorized.
 
 The *conf/postgres-operator/pgouser* file is read at start up time also and contains username, password, role, and namespace information as follows:
 
@@ -22,15 +22,9 @@ The format of the pgouser server file is:
 
     <username>:<password>:<role>:<namespace,namespace>
 
-The namespace is a comma separated list of namespaces that
-user has access to.  If you do not specify a namespace, then
-all namespaces is assumed, meaning this user can access any
-namespace that the Operator is watching.
+The namespace is a comma separated list of namespaces that user has access to.  If you do not specify a namespace, then all namespaces is assumed, meaning this user can access any namespace that the Operator is watching.
 
-A user creates a *.pgouser* file in their $HOME directory to identify
-themselves to the Operator.  An entry in .pgouser will need to match
-entries in the *conf/postgres-operator/pgouser* file.  A sample
-*.pgouser* file contains the following:
+A user creates a *.pgouser* file in their $HOME directory to identify themselves to the Operator.  An entry in .pgouser will need to match entries in the *conf/postgres-operator/pgouser* file.  A sample *.pgouser* file contains the following:
 
     username:password
 
@@ -39,12 +33,12 @@ The format of the .pgouser client file is:
     <username>:<password>
 
 The users pgouser file can also be located at:
-*/etc/pgo/pgouser* or it can be found at a path specified by the
-PGOUSER environment variable.
 
-If the user tries to access a namespace that they are not
-configured for within the server side *pgouser* file then they
-will get an error message as follows:
+*/etc/pgo/pgouser* 
+
+or it can be found at a path specified by the PGOUSER environment variable.
+
+If the user tries to access a namespace that they are not configured for within the server side *pgouser* file then they will get an error message as follows:
 
     Error: user [pgouser1] is not allowed access to namespace [pgouser2]
 
@@ -99,15 +93,14 @@ The following list shows the current complete list of possible pgo permissions t
 |Version | allow *pgo version*|
 
 
-If the user is unauthorized for a pgo command, the user will
-get back this response:
+If the user is unauthorized for a pgo command, the user will get back this response:
 
     Error:  Authentication Failed: 401 
 
 ## Making Security Changes
 
-The PostgreSQL Operator requires you to make Operator user security changes in the pgouser and pgorole files, and for those changes to take effect you are required to re-deploy the Operator:
+Importantly, it is necesssary to redeploy the PostgreSQL Operator prior to giving effect to the user security changes in the pgouser and pgorole files:
 
     make deployoperator
 
-This will recreate the *pgo-config* ConfigMap that stores these files and is mounted by the Operator during its initialization.
+Performing this command will recreate the *pgo-config* ConfigMap that stores these files and is mounted by the Operator during its initialization.
