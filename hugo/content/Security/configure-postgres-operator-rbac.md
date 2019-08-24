@@ -1,5 +1,5 @@
 ---
-title: "PostgreSQL Operator RBAC"
+title: "Configuration of PostgreSQL Operator RBAC"
 date:
 draft: false
 weight: 7
