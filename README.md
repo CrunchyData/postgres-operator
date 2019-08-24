@@ -58,7 +58,7 @@ For a quick start deployment to Google Kubernetes Engine (GKE), please see instr
 
 If you have the PostgreSQL Operator installed in your environment, and are interested in installation of the client interface, please start here:
 
-[PGO Client Install](https://access.crunchydata.com/documentation/postgres-operator/4.0.1/installation/install-pgo-client/)
+- [PGO Client Install](https://access.crunchydata.com/documentation/postgres-operator/4.0.1/installation/install-pgo-client/)
 
 
 ### Using the PostgreSQL Operator 
