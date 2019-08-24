@@ -1,13 +1,13 @@
 ---
-title: "API Security"
+title: "PostgreSQL Operator API Encryption Configuration"
 date:
 draft: false
 weight: 7
 ---
 
-## API Security
+## Configuring Encryption of PostgreSQL Operator API Connection
 
-The PostgreSQL Operator REST API is encrypted with keys stored in the *pgo.tls* Secret.  
+The PostgreSQL Operator REST API connection is encrypted with keys stored in the *pgo.tls* Secret.  
 
 The pgo.tls Secret can be generated prior to starting the PostgreSQL Operator or you can let the PostgreSQL Operator generate the Secret for you if the Secret
 does not exist.
