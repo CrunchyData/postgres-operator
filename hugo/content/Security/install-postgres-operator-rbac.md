@@ -7,11 +7,13 @@ weight: 7
 
 ## Installation of PostgreSQL Operator RBAC
 
-Install the requisite PostgreSQL Operator RBAC resources, *as a Kubernetes cluster admin user*,  by running a Makefile target:
+Please note, installation of the PostgreSQL Operator RBAC requires Kubernetes Cluster-Admin. 
+
+The first step is to install the PostgreSQL Operator RBAC configuration.  This can be accomplished  by running:
 
     make installrbac
 
-This script creates the following RBAC resources on your Kubernetes cluster:
+This script will install the PostreSQL Operator Custom Resource Definitions, CRD’s and creates the following RBAC resources on your Kubernetes cluster:
 
 | Setting |Definition  |
 |---|---|
