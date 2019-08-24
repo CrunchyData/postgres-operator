@@ -1,11 +1,11 @@
 ---
-title: "Installation of PostgreSQL Operator RBAC on Kubernetes Cluster"
+title: "Installation of PostgreSQL Operator RBAC"
 date:
 draft: false
 weight: 7
 ---
 
-## Installation of PostgreSQL Operator RBAC on Kubernetes Cluster
+## Installation of PostgreSQL Operator RBAC
 
 Install the requisite PostgreSQL Operator RBAC resources, *as a Kubernetes cluster admin user*,  by running a Makefile target:
 
