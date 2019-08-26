@@ -1,7 +1,6 @@
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
-
 # NAMESPACE is the list of namespaces the Operator will watch
 export NAMESPACE=pgouser1,pgouser2
 
