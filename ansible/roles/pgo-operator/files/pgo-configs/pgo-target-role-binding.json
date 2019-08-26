@@ -15,6 +15,11 @@
             "kind": "ServiceAccount",
             "name": "postgres-operator",
             "namespace": "{{.OperatorNamespace}}"
+        },
+        {
+            "kind": "ServiceAccount",
+            "name": "pgo-target",
+            "namespace": "{{.TargetNamespace}}"
         }
     ]
 }

@@ -18,17 +18,19 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"strings"
+	"sync"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"io/ioutil"
-	"strings"
 
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +46,8 @@ type PgclusterController struct {
 	PgclusterClientset *kubernetes.Clientset
 	Queue              workqueue.RateLimitingInterface
 	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pgcluster resource controller
@@ -250,6 +254,15 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 }
 
 func (c *PgclusterController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+	c.informerNsMutex.Unlock()
+
 	source := cache.NewListWatchFromClient(
 		c.PgclusterClient,
 		crv1.PgclusterResourcePlural,
@@ -275,6 +288,7 @@ func (c *PgclusterController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgclusterController created informer for namespace %s", ns)
 }
 
 func addIdentifier(clusterCopy *crv1.Pgcluster) {
