@@ -5,16 +5,14 @@ draft: false
 weight: 5
 ---
 
-## Custom Postgres SSL Configurations
+## Custom PostgreSQL SSL Configurations
 
-The Crunchy Data Postgres Operator can create clusters that use SSL authentication by 
-utilizing custom configmaps.
+The PostgreSQL Operator can create clusters that use SSL authentication by utilizing custom configmaps.
 
 #### Configuration Files for SSL Authentication
 
-Users and administrators can specify a
-custom set of Postgres configuration files to be used when creating
-a new Postgres cluster. This example uses the files below- 
+Users and administrators can specify a custom set of PostgreSQL configuration files to be used when creating
+a new PostgreSQL cluster. This example uses the files below- 
 
  * postgresql.conf
  * pg_hba.conf
@@ -24,8 +22,7 @@ along with generated security certificates, to setup a custom SSL configuration.
 
 #### Config Files Purpose
 
-The *postgresql.conf* file is the main Postgresql configuration file that allows
-the definition of a wide variety of tuning parameters and features.
+The *postgresql.conf* file is the main PostgreSQL configuration file that allows the definition of a wide variety of tuning parameters and features.
 
 The *pg_hba.conf* file is the way Postgresql secures client access.
 
