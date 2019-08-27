@@ -1,3 +1,10 @@
+---
+title: "PGO CLI Global Environment Variables"
+date:
+draft: false
+weight: 6
+---
+
 ## pgo Global Environment Variables
 
 *pgo* will pick up these settings if set in your environment:
