@@ -1,3 +1,10 @@
+---
+title: "PGO CLI Global Flags"
+date:
+draft: false
+weight: 6
+---
+
 ## pgo CLI Global Flags
 
 *pgo* global command flags include:
