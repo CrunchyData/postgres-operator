@@ -2,7 +2,7 @@
 title: "Failover in the PostgreSQL Operator Overview"
 date:
 draft: false
-weight:
+weight: 6
 ---
 
 ## Failover in the PostgreSQL Operator
