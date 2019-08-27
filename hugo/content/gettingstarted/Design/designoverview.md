@@ -41,6 +41,7 @@ using a label *service-name* of the following format:
     service-name=mycluster
     service-name=mycluster-replica
 
+The *postgres-operator* design incorporates the following concepts:
 
 ## Custom Resource Definitions
 
@@ -52,11 +53,17 @@ of the PostgreSQL Operator to define the following:
  * Policy - *pgpolicies*
  * Tasks - *pgtasks*
 
-Metadata about the Postgres cluster deployments are stored within
-these CRD resources which act as the source of truth for the
-Operator.
+Metadata about the PostgreSQL cluster deployments are stored within these CRD resources which act as the source of truth for the PostgreSQL Operator. The Operator makes use of custom resource definitions to maintain state and resource definitions as offered by the Operator. 
 
-The *postgres-operator* design incorporates the following concepts:
+![Reference](/operator-crd-architecture.png)
+
+In this above diagram, the CRDs heavily used by the Operator include:
+
+ * pgcluster - defines the Postgres cluster definition, new cluster requests
+are captured in a unique pgcluster resource for that Postgres cluster
+ * pgtask - workflow and other related administration tasks are captured within a set of pgtasks for a given pgcluster
+ * pgbackup - when you run a pgbasebackup, a pgbackup is created to hold the workflow and status of the last backup job, this CRD will eventually be deprecated in favor of a more general pgtask resource
+ * pgreplica - when you create a Postgres replica, a pgreplica CRD is created to define that replica
 
 ## Event Listeners
 
@@ -235,18 +242,5 @@ can supply both the database in which the policy should run and a secret that co
 and password of the PostgreSQL role that will run the SQL.  If no user is specified the scheduler will default to the replication user provided during cluster creation.
 
 
-## Custom Resource Definitions
 
-The Operator makes use of custom resource definitions to maintain state
-and resource definitions as offered by the Operator. 
-
-![Reference](/operator-crd-architecture.png)
-
-In this above diagram, the CRDs heavily used by the Operator include:
-
- * pgcluster - defines the Postgres cluster definition, new cluster requests
-are captured in a unique pgcluster resource for that Postgres cluster
- * pgtask - workflow and other related administration tasks are captured within a set of pgtasks for a given pgcluster
- * pgbackup - when you run a pgbasebackup, a pgbackup is created to hold the workflow and status of the last backup job, this CRD will eventually be deprecated in favor of a more general pgtask resource
- * pgreplica - when you create a Postgres replica, a pgreplica CRD is created to define that replica
 
