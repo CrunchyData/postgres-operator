@@ -194,6 +194,7 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 
 }
 
+// UpdatePgouser - update the pgouser secret
 func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
 
 	resp := msgs.UpdatePgouserResponse{}
@@ -211,7 +212,10 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 	secret.ObjectMeta.Labels[config.LABEL_PGO_UPDATED_BY] = updatedBy
 	secret.Data[MAP_KEY_USERNAME] = []byte(request.PgouserName)
-	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
+
+	if request.PgouserPassword != "" {
+		secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
+	}
 	if request.PgouserRoles != "" {
 		secret.Data[MAP_KEY_ROLES] = []byte(request.PgouserRoles)
 	}
@@ -221,8 +225,10 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 		secret.Data[MAP_KEY_NAMESPACES] = []byte("")
 	}
 
+	log.Info("Updating secret for: " , request.PgouserName )
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
 	if err != nil {
+		log.Debug("Error updating pgouser secret: " , err.Error)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
