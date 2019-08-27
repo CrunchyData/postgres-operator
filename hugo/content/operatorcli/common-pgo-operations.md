@@ -9,7 +9,9 @@ weight: 6
 
 In all the examples below, the user is specifying the *pgouser1* namespace as the target of the operator.  Replace this value with your own namespace value.  You can specify a default namespace to be used by setting the PGO_NAMESPACE environment variable on the *pgo* client environment.
 
-### Cluster Operations
+### PostgreSQL Cluster Operations
+
+#### Creating a Cluster
 
 A user will typically start using the PostgreSQL Operator by creating PostgreSQL cluster including a single PostgreSQL instance as follows:
 
