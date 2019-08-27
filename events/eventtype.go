@@ -49,6 +49,7 @@ const (
 	EventUpgradeCluster           = "UpgradeCluster"
 	EventUpgradeClusterCompleted  = "UpgradeClusterCompleted"
 	EventDeleteCluster            = "DeleteCluster"
+	EventDeleteClusterCompleted   = "DeleteClusterCompleted"
 	EventTestCluster              = "TestCluster"
 	EventCreateLabel              = "CreateLabel"
 	EventLoad                     = "Load"
