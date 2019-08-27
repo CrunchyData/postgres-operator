@@ -520,7 +520,7 @@ func publishDeleteClusterComplete(clusterName, identifier, username, namespace s
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
-	f := events.EventDeleteClusterFormat{
+	f := events.EventDeleteClusterCompletedFormat{
 		EventHeader: events.EventHeader{
 			Namespace: namespace,
 			Username:  username,

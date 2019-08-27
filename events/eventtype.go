@@ -303,6 +303,22 @@ func (lvl EventDeleteClusterFormat) String() string {
 }
 
 //----------------------------
+type EventDeleteClusterCompletedFormat struct {
+	EventHeader       `json:"eventheader"`
+	Clustername       string `json:"clustername"`
+	Clusteridentifier string `json:"clusteridentifier"`
+}
+
+func (p EventDeleteClusterCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventDeleteClusterCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (delete completed) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	return msg
+}
+
+//----------------------------
 type EventTestClusterFormat struct {
 	EventHeader       `json:"eventheader"`
 	Clustername       string `json:"clustername"`
